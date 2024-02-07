@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - alpha
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.CI_GITHUB_TOKEN }}
+      - name: Set Up node
+        uses: actions/setup-node@v3
+        with:
+          cache: 'yarn'
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: yarn --immutable --immutable-cache
+
+      - name: Build
+        run: yarn build
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.npm_token }}
+        run: yarn semantic-release

@@ -1,0 +1,22 @@
+<html>
+  <head>
+    <script type="module" src="./web.bundle.min.js"></script>
+    <style>
+      /* Center the button */
+      body {
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import { DefaultClient } from './web.bundle.min.js';
+
+      // set up our client
+      const client = new DefaultClient();
+
+      // print the client to the console
+      console.log(client);
+    </script>
+  </body>
+</html>
