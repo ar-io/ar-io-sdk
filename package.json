@@ -56,7 +56,9 @@
     "example:cjs": "yarn build:esm && node examples/node/index.mjs",
     "example:web": "yarn build:web && cp -r bundles/* examples/web && http-server --port 8080 --host -o examples/web"
   },
-  "dependencies": {},
+  "dependencies": {
+    "jest": "^29.7.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
