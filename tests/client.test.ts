@@ -1,5 +1,3 @@
-import { expect } from 'chai';
-
 import { DefaultClient } from '../src/index.js';
 
 describe('DefaultClient', () => {
