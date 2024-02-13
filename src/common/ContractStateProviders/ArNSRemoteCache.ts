@@ -62,7 +62,9 @@ export class ArNSRemoteCache implements ContractStateProvider {
   async getContractState<ContractState>(
     contractId: string,
   ): Promise<ContractState> {
-    validateArweaveId(contractId);
+    if (!validateArweaveId(contractId)) {
+      throw new BadRequest(`Invalid contract id: ${contractId}`);
+    }
     const contractLogger = this.logger.logger.child({ contractId });
     contractLogger.debug(`Fetching contract state`);
 

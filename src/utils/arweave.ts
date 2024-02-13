@@ -16,10 +16,6 @@
  */
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 
-export const validateArweaveId = (id: string): void => {
-  if (!ARWEAVE_TX_REGEX.test(id)) {
-    throw new Error(
-      `Invalid contract id: [${id}]. Must be a valid Arweave transaction id.`,
-    );
-  }
+export const validateArweaveId = (id: string): boolean => {
+  return ARWEAVE_TX_REGEX.test(id);
 };

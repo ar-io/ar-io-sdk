@@ -7,7 +7,11 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', 'tests/**/*.ts'],
   testEnvironment: 'node',
   testTimeout: 5000,
+  extensionsToTreatAsEsm: ['.ts'],
   transform: {
-    '^.+\\.(ts|js)$': 'ts-jest',
+    '^.+\\.(ts|js)$': ['ts-jest', { useESM: true }],
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 };
