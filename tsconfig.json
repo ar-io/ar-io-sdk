@@ -22,6 +22,6 @@
     "skipLibCheck": true,
     "strictNullChecks": true
   },
-  "include": ["src", "resources"],
+  "include": ["src", "resources", "jest.config.js"],
   "exclude": ["lib", "node_modules", "bundles"]
 }

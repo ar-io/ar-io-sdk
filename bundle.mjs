@@ -9,7 +9,7 @@ const bundle = () => {
     platform: 'browser',
     target: ['esnext'],
     format: 'esm',
-    globalName: 'turbo',
+    globalName: 'ar-io',
     plugins: [
       polyfillNode({
         polyfills: {

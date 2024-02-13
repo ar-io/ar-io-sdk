@@ -92,5 +92,10 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
-  "repository": "https://github.com/ardriveapp/node-sdk-template.git"
+  "repository": "https://github.com/ardriveapp/node-sdk-template.git",
+  "dependencies": {
+    "arweave": "^1.14.4",
+    "fetch-retry": "^5.0.6",
+    "warp-contracts": "^1.4.34"
+  }
 }
