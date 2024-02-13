@@ -54,9 +54,11 @@ export class ArNSRemoteCache implements ContractStateProvider {
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) => {
         this.logger.debug(`Retrying request. Error: ${error}`);
-        return RESPONSE_RETRY_CODES.has(error.response!.status);
+        return (
+          !!error.response && RESPONSE_RETRY_CODES.has(error.response.status)
+        );
       },
-    }) as any as AxiosInstance;
+    }) as unknown as AxiosInstance;
   }
 
   async getContractState<ContractState>(
@@ -68,10 +70,12 @@ export class ArNSRemoteCache implements ContractStateProvider {
     const contractLogger = this.logger.logger.child({ contractId });
     contractLogger.debug(`Fetching contract state`);
 
-    const response = await this.http<any, any>(`/contract/${contractId}`).catch(
-      (error) =>
-        contractLogger.debug(`Failed to fetch contract state: ${error}`),
-    );
+    const response = await this.http<ContractState>(
+      `/contract/${contractId}`,
+    ).catch((error) => {
+      contractLogger.debug(`Failed to fetch contract state: ${error}`);
+      return error;
+    });
 
     if (!response) {
       throw new BadRequest(

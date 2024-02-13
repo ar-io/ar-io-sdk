@@ -37,6 +37,7 @@ export class ArIoWinstonLogger implements ArIoLogger {
     });
   }
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   info(message: string, ...args: any[]) {
     this.logger.info(message, ...args);
   }
@@ -60,6 +61,7 @@ export class ArIoWinstonLogger implements ArIoLogger {
   setLogFormat(logFormat: string) {
     this.logger.format = getLogFormat(logFormat);
   }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
 
 function getLogFormat(logFormat: string) {

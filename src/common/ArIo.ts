@@ -57,9 +57,11 @@ export class ArIo implements ContractStateProvider {
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error) => {
         this.logger.debug(`Retrying request: ${error.message}`);
-        return RESPONSE_RETRY_CODES.has(error.response!.status);
+        return (
+          !!error.response && RESPONSE_RETRY_CODES.has(error.response.status)
+        );
       },
-    }) as any as AxiosInstance;
+    }) as unknown as AxiosInstance;
   }
 
   /**

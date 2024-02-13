@@ -21,7 +21,7 @@ export interface ContractStateProvider {
    */
   getContractState<T>(contractId: string): Promise<T>;
 }
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface ArIoLogger {
   setLogLevel: (level: string) => void;
   setLogFormat: (logFormat: string) => void;
@@ -30,3 +30,4 @@ export interface ArIoLogger {
   error: (message: string, ...args: any[]) => void;
   debug: (message: string, ...args: any[]) => void;
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
