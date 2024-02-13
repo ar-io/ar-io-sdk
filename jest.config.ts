@@ -1,4 +1,5 @@
 module.exports = {
+  preset: 'ts-jest',
   clearMocks: true,
   moduleFileExtensions: ['ts', 'js', 'mjs'],
   testMatch: ['**/src/**/*.test.ts', '**/tests/**/*.test.ts'],

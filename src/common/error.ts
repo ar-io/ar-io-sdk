@@ -14,19 +14,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-export interface ContractStateProvider {
-  /**
-   * The ContractStateProvider interface is used to define a contract state provider.
-   */
-  getContractState<T>(contractId: string): Promise<T>;
+export class BaseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = this.constructor.name;
+  }
 }
 
-export interface ArIoLogger {
-  setLogLevel: (level: string) => void;
-  setLogFormat: (logFormat: string) => void;
-  info: (message: string, ...args: any[]) => void;
-  warn: (message: string, ...args: any[]) => void;
-  error: (message: string, ...args: any[]) => void;
-  debug: (message: string, ...args: any[]) => void;
+export class NotFound extends BaseError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFound';
+  }
+}
+
+export class BadRequest extends BaseError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BadRequest';
+  }
 }

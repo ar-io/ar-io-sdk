@@ -15,83 +15,60 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import Arweave from 'arweave';
-import fetchBuilder from 'fetch-retry';
+import axios, { AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
 
-import { IContractStateProvider } from '../types.js';
+import { ContractStateProvider } from '../types.js';
+import { BaseError } from './error.js';
+import { ArIoWinstonLogger } from './logger.js';
 
-export class ArIoError extends Error {
+export class ArIoError extends BaseError {
   constructor(message: string) {
     super(message);
     this.name = 'ArIoError';
   }
 }
 
-export class ArIo implements IContractStateProvider {
+const RESPONSE_RETRY_CODES = new Set([429, 503]);
+
+export class ArIo implements ContractStateProvider {
   _arweave: Arweave;
-  _contractStateProviders: IContractStateProvider[];
-  http: typeof fetch;
-  log: (message: string) => void;
+  _contractStateProvider: ContractStateProvider;
+  http: AxiosInstance;
+  logger: ArIoWinstonLogger;
 
   constructor({
     arweave,
-    contractStateProviders,
-    logger,
+    contractStateProvider,
+    logger = new ArIoWinstonLogger({
+      level: 'debug',
+      logFormat: 'simple',
+    }),
   }: {
     arweave?: Arweave;
-    contractStateProviders: IContractStateProvider[];
-    logger?: (message: string) => void;
+    contractStateProvider: ContractStateProvider;
+    logger?: ArIoWinstonLogger;
   }) {
     this._arweave = arweave ?? Arweave.init({}); // use default arweave instance if not provided
-    this._contractStateProviders = contractStateProviders;
-    this.http = fetchBuilder(fetch, {
+    this._contractStateProvider = contractStateProvider;
+    this.logger = logger;
+    this.http = axiosRetry(axios, {
       retries: 3,
-      retryDelay: 2000,
-      retryOn: [429, 500, 502, 503, 504],
-    });
-    this.log =
-      logger ??
-      ((message: string) => {
-        console.debug(`[ArIo Client]: ${message}`);
-      });
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        this.logger.debug(`Retrying request: ${error.message}`);
+        return RESPONSE_RETRY_CODES.has(error.response!.status);
+      },
+    }) as any as AxiosInstance;
   }
 
   /**
-   * Fetches the state of a contract from the Arweave network.
-   * @param contractId - The contract ID to fetch the state for.
-   * @param strategy - The strategy to use when fetching the state - 'race', 'compare', or 'fallback'.
-   * - 'race' will call each provider and return the first result.
-   * - 'compare' will call each provider and return the result that has the highest blockheight evaluated.
-   * - 'fallback' will call first remote providers, then gql providers if remote fetch failed.
-   * @returns The state of the contract.
-   *
-   * @example
-   * const state = await ario.getContractState('contractId', 'fallback');
+   * Fetches the state of a contract.
+   * @param {string} contractId - The Arweave transaction id of the contract.
    */
   async getContractState<ContractState>(
     contractId: string,
-    strategy: 'race' | 'compare' | 'fallback' = 'race',
   ): Promise<ContractState> {
-    this.log(
-      `Fetching contract state for contract [${contractId}] using a ${strategy} strategy `,
-    );
-    switch (strategy) {
-      case 'race':
-        return Promise.race(
-          this._contractStateProviders.map((provider) =>
-            provider.getContractState<ContractState>(contractId),
-          ),
-        );
-      case 'compare':
-        // TODO: implement compare strategy
-        throw new Error('Not implemented');
-      case 'fallback':
-        // TODO: implement fallback strategy
-        throw new Error('Not implemented');
-      default: {
-        const message = `Invalid strategy provided for contract [${contractId}]: ${strategy}`;
-        this.log(message);
-        throw new ArIoError(message);
-      }
-    }
+    return await this._contractStateProvider.getContractState(contractId);
   }
 }

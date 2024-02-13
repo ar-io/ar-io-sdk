@@ -4,7 +4,7 @@ import { ArNSRemoteCache } from '../src/common/ContractStateProviders/ArNSRemote
 describe('ArIO Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
   const arioClient = new ArIo({
-    contractStateProviders: [remoteCacheProvider],
+    contractStateProvider: remoteCacheProvider,
   });
 
   it('should call remote state provider', async () => {

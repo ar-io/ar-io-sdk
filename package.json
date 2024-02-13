@@ -1,5 +1,5 @@
 {
-  "name": "@ardrive/node-sdk-client",
+  "name": "@ar-io/node-sdk-client",
   "version": "0.0.1",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -12,8 +12,8 @@
   ],
   "author": {
     "name": "Permanent Data Solutions Inc",
-    "email": "info@ardrive.io",
-    "website": "https://ardrive.io"
+    "email": "info@ar.io",
+    "website": "https://ar.io"
   },
   "exports": {
     ".": {
@@ -61,6 +61,7 @@
     "@commitlint/config-conventional": "^17.1.0",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/jest": "^29.5.12",
@@ -92,10 +93,12 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
-  "repository": "https://github.com/ardriveapp/node-sdk-template.git",
+  "repository": "https://github.com/ar-io/ar-io-sdk.git",
   "dependencies": {
     "arweave": "^1.14.4",
-    "fetch-retry": "^5.0.6",
-    "warp-contracts": "^1.4.34"
+    "axios": "^1.6.7",
+    "axios-retry": "^4.0.0",
+    "warp-contracts": "^1.4.34",
+    "winston": "^3.11.0"
   }
 }

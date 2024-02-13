@@ -15,18 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export interface ContractStateProvider {
-  /**
-   * The ContractStateProvider interface is used to define a contract state provider.
-   */
-  getContractState<T>(contractId: string): Promise<T>;
-}
+// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
 
-export interface ArIoLogger {
-  setLogLevel: (level: string) => void;
-  setLogFormat: (logFormat: string) => void;
-  info: (message: string, ...args: any[]) => void;
-  warn: (message: string, ...args: any[]) => void;
-  error: (message: string, ...args: any[]) => void;
-  debug: (message: string, ...args: any[]) => void;
-}
+export const version = '0.0.0';

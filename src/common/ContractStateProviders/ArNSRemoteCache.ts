@@ -14,93 +14,71 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import fetchBuilder from 'fetch-retry';
+import axios, { AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
 
-import { IContractStateProvider } from '../../types.js';
+import { ContractStateProvider } from '../../types.js';
 import { validateArweaveId } from '../../utils/index.js';
+import { BadRequest, BaseError } from '../error.js';
+import { ArIoWinstonLogger } from '../logger.js';
 
-export class ArNSRemoteCacheError extends Error {
+export class ArNSRemoteCacheError extends BaseError {
   constructor(message: string) {
     super(message);
     this.name = 'ArNSRemoteCacheError';
   }
 }
 
-/**
- * ArNSRemoteCache class implements the IContractStateProvider interface.
- * It provides methods to interact with a remote ArNS SmartWeave State Evaluator.
- *
- * @property {string} remoteCacheUrl - The URL of the remote cache. Defaults to 'api.arns.app'.
- * @property {string} apiVersion - The API version to use for the remote cache. Defaults to 'v1'.
- * @property {(message: string) => void} log - A logging function. If not provided, it defaults to a function that logs debug messages to the console.
- * @property {typeof fetch} http - A fetch function with retry capabilities.
- * @property {Object} httpOptions - Options to pass to the fetch function.
- *
- * @example
- * const cache = new ArNSRemoteCache({}) || new ArNSRemoteCache({
- *   url: 'https://example.com/cache',
- *   logger: message => console.log(`Custom logger: ${message}`),
- *   version: 'v1',
- *   httpOptions: {
- *     retries: 3,
- *     retryDelay: 2000,
- *     retryOn: [404, 429, 503],
- * },
- * });
- */
-export class ArNSRemoteCache implements IContractStateProvider {
-  remoteCacheUrl: string;
-  apiVersion: string;
-  log: (message: string) => void;
-  http: typeof fetch;
+const RESPONSE_RETRY_CODES = new Set([429, 503]);
+export class ArNSRemoteCache implements ContractStateProvider {
+  protected logger: ArIoWinstonLogger;
+  http: AxiosInstance;
   constructor({
     url = 'api.arns.app',
-    logger,
+    logger = new ArIoWinstonLogger({
+      level: 'debug',
+      logFormat: 'simple',
+    }),
     version = 'v1',
-    httpOptions = {
-      retries: 3,
-      retryDelay: 2000,
-      retryOn: [404, 429, 503],
-    },
   }: {
     url?: string;
-    logger?: (message: string) => void;
+    logger?: ArIoWinstonLogger;
     version?: string;
-    httpOptions?: Parameters<typeof fetchBuilder>[1];
   }) {
-    this.remoteCacheUrl = url;
-    this.apiVersion = version;
-    this.log =
-      logger ??
-      ((message: string) => {
-        console.debug(`[ArNS Remote Cache]: ${message}`);
-      });
-    this.http = fetchBuilder(fetch, httpOptions);
+    this.logger = logger;
+    const arnsServiceClient = axios.create({
+      baseURL: `${url}/${version}`,
+    });
+    this.http = axiosRetry(arnsServiceClient, {
+      retries: 3,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        this.logger.debug(`Retrying request. Error: ${error}`);
+        return RESPONSE_RETRY_CODES.has(error.response!.status);
+      },
+    }) as any as AxiosInstance;
   }
 
-  /**
-   * Fetches the state of a contract from the remote cache.
-   * @param {string} contractId - The Arweave transaction id of the contract.
-   */
   async getContractState<ContractState>(
     contractId: string,
   ): Promise<ContractState> {
     validateArweaveId(contractId);
+    const contractLogger = this.logger.logger.child({ contractId });
+    contractLogger.debug(`Fetching contract state`);
 
-    this.log(`Fetching contract state for [${contractId}]`);
+    const response = await this.http<any, any>(`/contract/${contractId}`).catch(
+      (error) =>
+        contractLogger.debug(`Failed to fetch contract state: ${error}`),
+    );
 
-    const response = await this.http(
-      `${this.remoteCacheUrl}/${this.apiVersion}/contract/${contractId}`,
-    ).catch((error) => {
-      const message = `Failed to fetch contract state for [${contractId}]: ${error}`;
+    if (!response) {
+      throw new BadRequest(
+        `Failed to fetch contract state. ${response?.status} ${response?.statusText()}`,
+      );
+    }
 
-      this.log(message);
-
-      throw new ArNSRemoteCacheError(message);
-    });
-
-    this.log(
-      `Fetched contract state for [${contractId}]. State size: ${response.headers.get('content-length')} bytes.`,
+    contractLogger.debug(
+      `Fetched contract state. Size: ${response?.headers?.get('content-length')} bytes.`,
     );
 
     return response.json();
