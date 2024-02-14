@@ -1,13 +1,13 @@
-import { ArIO } from '../src/common/ArIO.js';
+import { ArIo } from '../src/common/ArIo.js';
 import { ArNSRemoteCache } from '../src/common/ContractStateProviders/ArNSRemoteCache.js';
 
-describe('ArIO Client', () => {
+describe('ArIo Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
-  const arioClient = new ArIO({
+  const arioClient = new ArIo({
     contractStateProvider: remoteCacheProvider,
   });
 
-  it('should create an ArIO client', () => {
-    expect(arioClient).toBeInstanceOf(ArIO);
+  it('should create an ArIo client', () => {
+    expect(arioClient).toBeInstanceOf(ArIo);
   });
 });
