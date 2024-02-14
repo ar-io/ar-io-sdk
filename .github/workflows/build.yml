@@ -19,6 +19,6 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile
+        run: yarn --immutable --immutable-cache
 
       - run: yarn ${{ matrix.command }}

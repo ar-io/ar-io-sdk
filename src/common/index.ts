@@ -16,3 +16,5 @@
  */
 export * from './ArIO.js';
 export * from './ContractStateProviders/index.js';
+export * from './error.js';
+export * from './logger.js';

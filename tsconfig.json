@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2021",
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext", "dom"],
     "outDir": "./lib/esm",
