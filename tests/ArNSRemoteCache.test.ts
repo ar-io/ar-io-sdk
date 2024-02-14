@@ -18,7 +18,7 @@ describe('ArIO Client', () => {
     remoteProvider.getContractState = stubGetContractState;
     const contractTxId = ''.padEnd(43, 'a');
     await client.getContractState({ contractTxId });
-    expect(stubGetContractState).toHaveBeenCalledWith(contractTxId);
+    expect(stubGetContractState).toHaveBeenCalledWith({ contractTxId });
   });
 
   it('should call remote state provider and throw on bad contract id', async () => {

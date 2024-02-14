@@ -14,35 +14,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import Arweave from 'arweave';
-
 import { ContractStateProvider, HTTPServiceInterface } from '../types.js';
 import { AxiosHTTPService } from './http.js';
 import { DefaultLogger } from './logger.js';
 
 export class ArIO implements ContractStateProvider {
   private contractStateProvider: ContractStateProvider;
-  arweave: Arweave;
   http: HTTPServiceInterface;
   logger: DefaultLogger;
 
   constructor({
-    arweave = Arweave.init({}),
     contractStateProvider,
     logger = new DefaultLogger({
       level: 'debug',
       logFormat: 'simple',
     }),
   }: {
-    arweave: Arweave;
     contractStateProvider: ContractStateProvider;
     logger?: DefaultLogger;
   }) {
-    const { protocol, host } = arweave.api.config;
-    this.arweave = arweave;
     this.contractStateProvider = contractStateProvider;
     this.logger = logger;
-    this.http = new AxiosHTTPService({ url: `${protocol}://${host}`, logger });
+    this.http = new AxiosHTTPService({ url: '', logger }); // empty url allows for full url to be passed in get and post requests instead of the endpoint
   }
 
   /**
