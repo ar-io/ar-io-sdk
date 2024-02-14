@@ -23,6 +23,7 @@ export interface ContractStateProvider {
    */
   getContractState<T>({ contractTxId }: { contractTxId: string }): Promise<T>;
 }
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
   setLogLevel: (level: string) => void;

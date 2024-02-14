@@ -15,27 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ContractStateProvider } from '../types.js';
-import { DefaultLogger } from './logger.js';
 
 export class ArIO implements ContractStateProvider {
   private contractStateProvider: ContractStateProvider;
-  private logger: DefaultLogger;
 
   constructor({
     contractStateProvider,
-    logger = new DefaultLogger({
-      level: 'debug',
-      logFormat: 'simple',
-    }),
   }: {
     contractStateProvider: ContractStateProvider;
-    logger?: DefaultLogger;
   }) {
     this.contractStateProvider = contractStateProvider;
-    this.logger = logger;
-    this.logger.debug(
-      `ArIO initialized with ${contractStateProvider.constructor.name} as contract state provider`,
-    );
   }
 
   /**

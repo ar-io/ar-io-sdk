@@ -27,14 +27,7 @@ export class AxiosHTTPService implements HTTPClient {
   private logger: Logger;
 
   // TODO: re-implement axios-retry. Currently that package is broken for nodenext.
-  constructor({
-    url,
-    logger,
-  }: {
-    url: string;
-
-    logger: Logger;
-  }) {
+  constructor({ url, logger }: { url: string; logger: Logger }) {
     this.logger = logger;
     this.axios = createAxiosInstance({
       axiosConfig: {
