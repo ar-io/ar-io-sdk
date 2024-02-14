@@ -14,40 +14,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import axios, { AxiosInstance } from 'axios';
-import axiosRetry from 'axios-retry';
+import Arweave from 'arweave';
 
-import { RESPONSE_RETRY_CODES } from '../constants.js';
-import { ContractStateProvider } from '../types.js';
+import { ContractStateProvider, HTTPServiceInterface } from '../types.js';
+import { AxiosHTTPService } from './http.js';
 import { DefaultLogger } from './logger.js';
 
 export class ArIO implements ContractStateProvider {
   private contractStateProvider: ContractStateProvider;
-  http: AxiosInstance;
+  arweave: Arweave;
+  http: HTTPServiceInterface;
   logger: DefaultLogger;
 
   constructor({
+    arweave = Arweave.init({}),
     contractStateProvider,
     logger = new DefaultLogger({
       level: 'debug',
       logFormat: 'simple',
     }),
   }: {
+    arweave: Arweave;
     contractStateProvider: ContractStateProvider;
     logger?: DefaultLogger;
   }) {
+    const { protocol, host } = arweave.api.config;
+    this.arweave = arweave;
     this.contractStateProvider = contractStateProvider;
     this.logger = logger;
-    this.http = axiosRetry(axios, {
-      retries: 3,
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: (error) => {
-        this.logger.debug(`Retrying request: ${error.message}`);
-        return (
-          !!error.response && RESPONSE_RETRY_CODES.has(error.response.status)
-        );
-      },
-    }) as unknown as AxiosInstance;
+    this.http = new AxiosHTTPService({ url: `${protocol}://${host}`, logger });
   }
 
   /**

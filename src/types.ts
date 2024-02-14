@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { Readable } from 'stream';
+import { ReadableStream } from 'stream/web';
 
 export interface ContractStateProvider {
   /**
@@ -31,3 +33,30 @@ export interface Logger {
   debug: (message: string, ...args: any[]) => void;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+export interface HTTPServiceInterface {
+  get<T>({
+    endpoint,
+    signal,
+    headers,
+    allowedStatuses,
+  }: {
+    endpoint: string;
+    signal?: AbortSignal;
+    headers?: Record<string, string>;
+    allowedStatuses?: number[];
+  }): Promise<T>;
+  post<T>({
+    endpoint,
+    signal,
+    headers,
+    allowedStatuses,
+    data,
+  }: {
+    endpoint: string;
+    signal: AbortSignal;
+    headers?: Record<string, string>;
+    allowedStatuses?: number[];
+    data: Readable | ReadableStream | Buffer;
+  }): Promise<T>;
+}

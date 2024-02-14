@@ -14,16 +14,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import axios, { AxiosInstance } from 'axios';
-
-import { ContractStateProvider } from '../../types.js';
+import { ContractStateProvider, HTTPServiceInterface } from '../../types.js';
 import { validateArweaveId } from '../../utils/index.js';
 import { BadRequest } from '../error.js';
+import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
 export class ArNSRemoteCache implements ContractStateProvider {
   protected logger: DefaultLogger;
-  http: AxiosInstance;
+  http: HTTPServiceInterface;
   constructor({
     url = 'api.arns.app',
     protocol = 'https',
@@ -39,8 +38,9 @@ export class ArNSRemoteCache implements ContractStateProvider {
     version?: string;
   }) {
     this.logger = logger;
-    this.http = axios.create({
-      baseURL: `${protocol}://${url}/${version}`,
+    this.http = new AxiosHTTPService({
+      url: `${protocol}://${url}/${version}`,
+      logger,
     });
   }
 
@@ -54,12 +54,12 @@ export class ArNSRemoteCache implements ContractStateProvider {
     }
     this.logger.debug(`Fetching contract state`);
 
-    const response = await this.http<ContractState>(
-      `/contract/${contractTxId}`,
-    ).catch((error) => {
-      this.logger.debug(`Failed to fetch contract state: ${error}`);
-      return error;
-    });
+    const response = await this.http
+      .get<ContractState>({ endpoint: `/contract/${contractTxId}` })
+      .catch((error) => {
+        this.logger.debug(`Failed to fetch contract state: ${error}`);
+        return error;
+      });
 
     if (!response) {
       throw new BadRequest(

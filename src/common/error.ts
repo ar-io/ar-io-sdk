@@ -32,3 +32,9 @@ export class BadRequest extends BaseError {
     super(message);
   }
 }
+
+export class FailedRequestError extends BaseError {
+  constructor(status: number, message: string) {
+    super(`Failed request: ${status}: ${message}`);
+  }
+}
