@@ -14,43 +14,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import Arweave from 'arweave';
 import axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 
+import { RESPONSE_RETRY_CODES } from '../constants.js';
 import { ContractStateProvider } from '../types.js';
-import { BaseError } from './error.js';
-import { ArIoWinstonLogger } from './logger.js';
+import { DefaultLogger } from './logger.js';
 
-export class ArIoError extends BaseError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ArIoError';
-  }
-}
-
-const RESPONSE_RETRY_CODES = new Set([429, 503]);
-
-export class ArIo implements ContractStateProvider {
-  _arweave: Arweave;
-  _contractStateProvider: ContractStateProvider;
+export class ArIO implements ContractStateProvider {
+  private contractStateProvider: ContractStateProvider;
   http: AxiosInstance;
-  logger: ArIoWinstonLogger;
+  logger: DefaultLogger;
 
   constructor({
-    arweave,
     contractStateProvider,
-    logger = new ArIoWinstonLogger({
+    logger = new DefaultLogger({
       level: 'debug',
       logFormat: 'simple',
     }),
   }: {
-    arweave?: Arweave;
     contractStateProvider: ContractStateProvider;
-    logger?: ArIoWinstonLogger;
+    logger?: DefaultLogger;
   }) {
-    this._arweave = arweave ?? Arweave.init({}); // use default arweave instance if not provided
-    this._contractStateProvider = contractStateProvider;
+    this.contractStateProvider = contractStateProvider;
     this.logger = logger;
     this.http = axiosRetry(axios, {
       retries: 3,
@@ -66,11 +52,11 @@ export class ArIo implements ContractStateProvider {
 
   /**
    * Fetches the state of a contract.
-   * @param {string} contractId - The Arweave transaction id of the contract.
+   * @param {string} contractTxId - The Arweave transaction id of the contract.
    */
   async getContractState<ContractState>(
-    contractId: string,
+    contractTxId: string,
   ): Promise<ContractState> {
-    return await this._contractStateProvider.getContractState(contractId);
+    return this.contractStateProvider.getContractState(contractTxId);
   }
 }

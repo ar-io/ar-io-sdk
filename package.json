@@ -1,5 +1,5 @@
 {
-  "name": "@ar-io/node-sdk-client",
+  "name": "@ar-io/sdk",
   "version": "0.0.1",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -96,8 +96,8 @@
   "repository": "https://github.com/ar-io/ar-io-sdk.git",
   "dependencies": {
     "arweave": "^1.14.4",
-    "axios": "^1.6.7",
-    "axios-retry": "^4.0.0",
+    "axios": "1.4.0",
+    "axios-retry": "3.7.0",
     "warp-contracts": "^1.4.34",
     "winston": "^3.11.0"
   }

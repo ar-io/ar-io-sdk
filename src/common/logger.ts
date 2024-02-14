@@ -16,10 +16,10 @@
  */
 import winston, { createLogger, format, transports } from 'winston';
 
-import { ArIoLogger } from '../types.js';
+import { Logger } from '../types.js';
 import { version } from '../version.js';
 
-export class ArIoWinstonLogger implements ArIoLogger {
+export class DefaultLogger implements Logger {
   logger: winston.Logger;
   constructor({
     level = 'info',

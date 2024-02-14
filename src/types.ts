@@ -22,7 +22,7 @@ export interface ContractStateProvider {
   getContractState<T>(contractId: string): Promise<T>;
 }
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export interface ArIoLogger {
+export interface Logger {
   setLogLevel: (level: string) => void;
   setLogFormat: (logFormat: string) => void;
   info: (message: string, ...args: any[]) => void;

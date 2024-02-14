@@ -17,37 +17,32 @@
 import axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
 
+import { RESPONSE_RETRY_CODES } from '../../constants.js';
 import { ContractStateProvider } from '../../types.js';
 import { validateArweaveId } from '../../utils/index.js';
-import { BadRequest, BaseError } from '../error.js';
-import { ArIoWinstonLogger } from '../logger.js';
+import { BadRequest } from '../error.js';
+import { DefaultLogger } from '../logger.js';
 
-export class ArNSRemoteCacheError extends BaseError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ArNSRemoteCacheError';
-  }
-}
-
-const RESPONSE_RETRY_CODES = new Set([429, 503]);
 export class ArNSRemoteCache implements ContractStateProvider {
-  protected logger: ArIoWinstonLogger;
+  protected logger: DefaultLogger;
   http: AxiosInstance;
   constructor({
     url = 'api.arns.app',
-    logger = new ArIoWinstonLogger({
+    protocol = 'https',
+    logger = new DefaultLogger({
       level: 'debug',
       logFormat: 'simple',
     }),
     version = 'v1',
   }: {
+    protocol?: 'http' | 'https' | 'ws';
     url?: string;
-    logger?: ArIoWinstonLogger;
+    logger?: DefaultLogger;
     version?: string;
   }) {
     this.logger = logger;
     const arnsServiceClient = axios.create({
-      baseURL: `${url}/${version}`,
+      baseURL: `${protocol}://${url}/${version}`,
     });
     this.http = axiosRetry(arnsServiceClient, {
       retries: 3,
@@ -62,18 +57,17 @@ export class ArNSRemoteCache implements ContractStateProvider {
   }
 
   async getContractState<ContractState>(
-    contractId: string,
+    contractTxId: string,
   ): Promise<ContractState> {
-    if (!validateArweaveId(contractId)) {
-      throw new BadRequest(`Invalid contract id: ${contractId}`);
+    if (!validateArweaveId(contractTxId)) {
+      throw new BadRequest(`Invalid contract id: ${contractTxId}`);
     }
-    const contractLogger = this.logger.logger.child({ contractId });
-    contractLogger.debug(`Fetching contract state`);
+    this.logger.debug(`Fetching contract state`);
 
     const response = await this.http<ContractState>(
-      `/contract/${contractId}`,
+      `/contract/${contractTxId}`,
     ).catch((error) => {
-      contractLogger.debug(`Failed to fetch contract state: ${error}`);
+      this.logger.debug(`Failed to fetch contract state: ${error}`);
       return error;
     });
 
@@ -82,11 +76,12 @@ export class ArNSRemoteCache implements ContractStateProvider {
         `Failed to fetch contract state. ${response?.status} ${response?.statusText()}`,
       );
     }
+    const result = await response.json();
 
-    contractLogger.debug(
+    this.logger.debug(
       `Fetched contract state. Size: ${response?.headers?.get('content-length')} bytes.`,
     );
 
-    return response.json();
+    return result;
   }
 }

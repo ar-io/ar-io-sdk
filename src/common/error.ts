@@ -24,13 +24,11 @@ export class BaseError extends Error {
 export class NotFound extends BaseError {
   constructor(message: string) {
     super(message);
-    this.name = 'NotFound';
   }
 }
 
 export class BadRequest extends BaseError {
   constructor(message: string) {
     super(message);
-    this.name = 'BadRequest';
   }
 }
