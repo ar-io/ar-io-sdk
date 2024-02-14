@@ -17,14 +17,14 @@ describe('ArIO Client', () => {
     const stubGetContractState = jest.fn();
     remoteProvider.getContractState = stubGetContractState;
     const contractTxId = ''.padEnd(43, 'a');
-    await client.getContractState(contractTxId);
+    await client.getContractState({ contractTxId });
     expect(stubGetContractState).toHaveBeenCalledWith(contractTxId);
   });
 
   it('should call remote state provider and throw on bad contract id', async () => {
     const contractTxId = ''.padEnd(42, 'a');
     const result = await arioClient
-      .getContractState(contractTxId)
+      .getContractState({ contractTxId })
       .catch((e) => e);
 
     expect(result).toBeInstanceOf(BadRequest);

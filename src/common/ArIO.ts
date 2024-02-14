@@ -54,9 +54,11 @@ export class ArIO implements ContractStateProvider {
    * Fetches the state of a contract.
    * @param {string} contractTxId - The Arweave transaction id of the contract.
    */
-  async getContractState<ContractState>(
-    contractTxId: string,
-  ): Promise<ContractState> {
-    return this.contractStateProvider.getContractState(contractTxId);
+  async getContractState<ContractState>({
+    contractTxId,
+  }: {
+    contractTxId: string;
+  }): Promise<ContractState> {
+    return this.contractStateProvider.getContractState({ contractTxId });
   }
 }

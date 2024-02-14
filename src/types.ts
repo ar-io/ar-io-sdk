@@ -19,7 +19,7 @@ export interface ContractStateProvider {
   /**
    * The ContractStateProvider interface is used to define a contract state provider.
    */
-  getContractState<T>(contractId: string): Promise<T>;
+  getContractState<T>({ contractTxId }: { contractTxId: string }): Promise<T>;
 }
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {

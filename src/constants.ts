@@ -16,4 +16,3 @@
  */
 
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
-export const RESPONSE_RETRY_CODES = new Set([429, 503]);

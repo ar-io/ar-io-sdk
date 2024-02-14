@@ -15,9 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import axios, { AxiosInstance } from 'axios';
-import axiosRetry from 'axios-retry';
 
-import { RESPONSE_RETRY_CODES } from '../../constants.js';
 import { ContractStateProvider } from '../../types.js';
 import { validateArweaveId } from '../../utils/index.js';
 import { BadRequest } from '../error.js';
@@ -41,24 +39,16 @@ export class ArNSRemoteCache implements ContractStateProvider {
     version?: string;
   }) {
     this.logger = logger;
-    const arnsServiceClient = axios.create({
+    this.http = axios.create({
       baseURL: `${protocol}://${url}/${version}`,
     });
-    this.http = axiosRetry(arnsServiceClient, {
-      retries: 3,
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: (error) => {
-        this.logger.debug(`Retrying request. Error: ${error}`);
-        return (
-          !!error.response && RESPONSE_RETRY_CODES.has(error.response.status)
-        );
-      },
-    }) as unknown as AxiosInstance;
   }
 
-  async getContractState<ContractState>(
-    contractTxId: string,
-  ): Promise<ContractState> {
+  async getContractState<ContractState>({
+    contractTxId,
+  }: {
+    contractTxId: string;
+  }): Promise<ContractState> {
     if (!validateArweaveId(contractTxId)) {
       throw new BadRequest(`Invalid contract id: ${contractTxId}`);
     }
