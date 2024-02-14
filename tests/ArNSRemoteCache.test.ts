@@ -1,6 +1,5 @@
 import { ArIO } from '../src/common/ArIO.js';
 import { ArNSRemoteCache } from '../src/common/ContractStateProviders/ArNSRemoteCache.js';
-import { ArweaveTransactionID } from '../src/types.js';
 
 describe('ArIO Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
@@ -16,7 +15,7 @@ describe('ArIO Client', () => {
 
     const stubGetContractState = jest.fn();
     remoteProvider.getContractState = stubGetContractState;
-    const contractTxId = new ArweaveTransactionID(''.padEnd(43, 'a'));
+    const contractTxId = ''.padEnd(43, 'a');
     await client.getContractState({ contractTxId });
     expect(stubGetContractState).toHaveBeenCalledWith({ contractTxId });
   });
@@ -24,7 +23,7 @@ describe('ArIO Client', () => {
   it('should throw on bad contract id', async () => {
     let result;
     try {
-      const contractTxId = new ArweaveTransactionID(''.padEnd(42, 'a'));
+      const contractTxId = ''.padEnd(42, 'a');
       result = await arioClient
         .getContractState({ contractTxId })
         .catch((e) => e);

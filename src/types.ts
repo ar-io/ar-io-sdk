@@ -17,17 +17,11 @@
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
-import { ARWEAVE_TX_REGEX } from './constants.js';
-
 export interface ContractStateProvider {
   /**
    * The ContractStateProvider interface is used to define a contract state provider.
    */
-  getContractState<T>({
-    contractTxId,
-  }: {
-    contractTxId: ArweaveTransactionID;
-  }): Promise<T>;
+  getContractState<T>({ contractTxId }: { contractTxId: string }): Promise<T>;
 }
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
@@ -65,34 +59,4 @@ export interface HTTPClient {
     allowedStatuses?: number[];
     data: Readable | ReadableStream | Buffer;
   }): Promise<T>;
-}
-
-export interface Equatable<T> {
-  equals(other: T): boolean;
-}
-
-export class ArweaveTransactionID implements Equatable<ArweaveTransactionID> {
-  constructor(private readonly transactionId?: string) {
-    if (transactionId === undefined || !ARWEAVE_TX_REGEX.test(transactionId)) {
-      throw new Error(
-        'Transaction ID should be a 43-character, alphanumeric string potentially including "-" and "_" characters.',
-      );
-    }
-  }
-
-  [Symbol.toPrimitive](hint?: string): string {
-    if (hint === 'number') {
-      throw new Error('Transaction IDs cannot be interpreted as a number!');
-    }
-
-    return this.toString();
-  }
-
-  toString(): string {
-    return this.transactionId ?? '';
-  }
-
-  equals(entityId: ArweaveTransactionID): boolean {
-    return this.transactionId === entityId.transactionId;
-  }
 }

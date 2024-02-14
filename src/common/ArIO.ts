@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArweaveTransactionID } from '../types.js';
 import { ContractStateProvider } from '../types.js';
 import { DefaultLogger } from './logger.js';
 
@@ -46,7 +45,7 @@ export class ArIO implements ContractStateProvider {
   async getContractState<ContractState>({
     contractTxId,
   }: {
-    contractTxId: ArweaveTransactionID;
+    contractTxId: string;
   }): Promise<ContractState> {
     return this.contractStateProvider.getContractState({ contractTxId });
   }
