@@ -1,16 +1,16 @@
-import { ArIo } from '../src/common/ArIo.js';
+import { ArIO } from '../src/common/ArIO.js';
 import { ArNSRemoteCache } from '../src/common/ContractStateProviders/ArNSRemoteCache.js';
 import { BadRequest } from '../src/common/error.js';
 
-describe('ArIo Client', () => {
+describe('ArIO Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
-  const arioClient = new ArIo({
+  const arioClient = new ArIO({
     contractStateProvider: remoteCacheProvider,
   });
 
   it('should call remote state provider', async () => {
     const remoteProvider = new ArNSRemoteCache({});
-    const client = new ArIo({
+    const client = new ArIO({
       contractStateProvider: remoteProvider,
     });
 

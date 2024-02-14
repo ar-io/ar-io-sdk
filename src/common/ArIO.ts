@@ -21,7 +21,7 @@ import { RESPONSE_RETRY_CODES } from '../constants.js';
 import { ContractStateProvider } from '../types.js';
 import { DefaultLogger } from './logger.js';
 
-export class ArIo implements ContractStateProvider {
+export class ArIO implements ContractStateProvider {
   private contractStateProvider: ContractStateProvider;
   http: AxiosInstance;
   logger: DefaultLogger;
