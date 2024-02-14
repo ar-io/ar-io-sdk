@@ -20,7 +20,7 @@ import { Logger } from '../types.js';
 import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {
-  logger: winston.Logger;
+  private logger: winston.Logger;
   constructor({
     level = 'info',
     logFormat = 'simple',

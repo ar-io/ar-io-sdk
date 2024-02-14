@@ -16,34 +16,13 @@
  */
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
-// import { DefaultLogger } from '../common/logger.js';
-// import { Logger } from '../types.js';
-
-// import { version } from '../version.js';
-
 // TODO: re-implement axios-retry. Currently latest version of axios-retry is broken for node-next builds on v4.0.0
 export interface AxiosInstanceParameters {
   axiosConfig?: Omit<AxiosRequestConfig, 'validateStatus'>;
-  // retryConfig?: Record<string, string>;
-  // logger?: Logger;
 }
 
 export const createAxiosInstance = ({
-  //logger = new DefaultLogger(),
   axiosConfig = {},
-  // retryConfig = {
-  //   retryDelay: axiosRetry.exponentialDelay,
-  //   retries: 3,
-  //   retryCondition: (error) => {
-  //     return (
-  //       !(error instanceof CanceledError) &&
-  //       axiosRetry.isNetworkOrIdempotentRequestError(error)
-  //     );
-  //   },
-  //   onRetry: (retryCount, error) => {
-  //     logger.debug(`Request failed, ${error}. Retry attempt #${retryCount}...`);
-  //   },
-  // },
 }: AxiosInstanceParameters = {}): AxiosInstance => {
   const axiosInstance = axios.create({
     ...axiosConfig,
@@ -53,9 +32,5 @@ export const createAxiosInstance = ({
     validateStatus: () => true, // don't throw on non-200 status codes
   });
 
-  // eslint-disable-next-line
-  // if (retryConfig.retries && retryConfig.retries > 0) {
-  //   axiosRetry(axiosInstance, retryConfig);
-  // }
   return axiosInstance;
 };

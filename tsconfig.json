@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2021",
+    "target": "esnext",
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext", "dom"],
     "outDir": "./lib/esm",
@@ -22,6 +22,6 @@
     "skipLibCheck": true,
     "strictNullChecks": true
   },
-  "include": ["src"],
-  "exclude": ["lib", "node_modules"]
+  "include": ["src", "resources"],
+  "exclude": ["lib", "node_modules", "bundles"]
 }

@@ -14,14 +14,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractStateProvider, HTTPServiceInterface } from '../types.js';
-import { AxiosHTTPService } from './http.js';
+import { ArweaveTransactionID } from '../types.js';
+import { ContractStateProvider } from '../types.js';
 import { DefaultLogger } from './logger.js';
 
 export class ArIO implements ContractStateProvider {
   private contractStateProvider: ContractStateProvider;
-  http: HTTPServiceInterface;
-  logger: DefaultLogger;
+  private logger: DefaultLogger;
 
   constructor({
     contractStateProvider,
@@ -35,7 +34,9 @@ export class ArIO implements ContractStateProvider {
   }) {
     this.contractStateProvider = contractStateProvider;
     this.logger = logger;
-    this.http = new AxiosHTTPService({ url: '', logger }); // empty url allows for full url to be passed in get and post requests instead of the endpoint
+    this.logger.debug(
+      `ArIO initialized with ${contractStateProvider.constructor.name} as contract state provider`,
+    );
   }
 
   /**
@@ -45,7 +46,7 @@ export class ArIO implements ContractStateProvider {
   async getContractState<ContractState>({
     contractTxId,
   }: {
-    contractTxId: string;
+    contractTxId: ArweaveTransactionID;
   }): Promise<ContractState> {
     return this.contractStateProvider.getContractState({ contractTxId });
   }

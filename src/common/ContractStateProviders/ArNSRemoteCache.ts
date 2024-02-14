@@ -14,32 +14,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractStateProvider, HTTPServiceInterface } from '../../types.js';
-import { validateArweaveId } from '../../utils/index.js';
-import { BadRequest } from '../error.js';
+import {
+  ArweaveTransactionID,
+  ContractStateProvider,
+  HTTPClient,
+} from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
 export class ArNSRemoteCache implements ContractStateProvider {
-  protected logger: DefaultLogger;
-  http: HTTPServiceInterface;
+  private logger: DefaultLogger;
+  private http: HTTPClient;
+  private apiVersion = 'v1' as const; // use v1 endpoints
   constructor({
-    url = 'api.arns.app',
-    protocol = 'https',
+    url = 'https://api.arns.app',
     logger = new DefaultLogger({
       level: 'debug',
       logFormat: 'simple',
     }),
-    version = 'v1',
   }: {
-    protocol?: 'http' | 'https' | 'ws';
     url?: string;
     logger?: DefaultLogger;
-    version?: string;
   }) {
     this.logger = logger;
     this.http = new AxiosHTTPService({
-      url: `${protocol}://${url}/${version}`,
+      url: `${url}/${this.apiVersion}`,
       logger,
     });
   }
@@ -47,31 +46,14 @@ export class ArNSRemoteCache implements ContractStateProvider {
   async getContractState<ContractState>({
     contractTxId,
   }: {
-    contractTxId: string;
+    contractTxId: ArweaveTransactionID;
   }): Promise<ContractState> {
-    if (!validateArweaveId(contractTxId)) {
-      throw new BadRequest(`Invalid contract id: ${contractTxId}`);
-    }
     this.logger.debug(`Fetching contract state`);
 
-    const response = await this.http
-      .get<ContractState>({ endpoint: `/contract/${contractTxId}` })
-      .catch((error) => {
-        this.logger.debug(`Failed to fetch contract state: ${error}`);
-        return error;
-      });
+    const state = await this.http.get<ContractState>({
+      endpoint: `/contract/${contractTxId.toString()}`,
+    });
 
-    if (!response) {
-      throw new BadRequest(
-        `Failed to fetch contract state. ${response?.status} ${response?.statusText()}`,
-      );
-    }
-    const result = await response.json();
-
-    this.logger.debug(
-      `Fetched contract state. Size: ${response?.headers?.get('content-length')} bytes.`,
-    );
-
-    return result;
+    return state;
   }
 }

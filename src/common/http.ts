@@ -18,22 +18,21 @@ import { AxiosInstance } from 'axios';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
-import { HTTPServiceInterface, Logger } from '../types.js';
+import { HTTPClient, Logger } from '../types.js';
 import { createAxiosInstance } from '../utils/httpClient.js';
 import { FailedRequestError } from './error.js';
 
-export class AxiosHTTPService implements HTTPServiceInterface {
-  protected axios: AxiosInstance;
-  protected logger: Logger;
+export class AxiosHTTPService implements HTTPClient {
+  private axios: AxiosInstance;
+  private logger: Logger;
 
   // TODO: re-implement axios-retry. Currently that package is broken for nodenext.
   constructor({
     url,
-    // retryConfig,
     logger,
   }: {
     url: string;
-    // retryConfig?: IAxiosRetryConfig;
+
     logger: Logger;
   }) {
     this.logger = logger;
@@ -52,8 +51,6 @@ export class AxiosHTTPService implements HTTPServiceInterface {
           }
         },
       },
-      // retryConfig,
-      // logger: this.logger,
     });
   }
   async get<T>({
