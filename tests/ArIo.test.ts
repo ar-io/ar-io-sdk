@@ -7,7 +7,7 @@ describe('ArIO Client', () => {
     contractStateProvider: remoteCacheProvider,
   });
 
-  it('should create an ArIo client', () => {
+  it('should create an ArIO client', () => {
     expect(arioClient).toBeInstanceOf(ArIO);
   });
 });
