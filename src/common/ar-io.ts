@@ -15,14 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ContractCache } from '../types.js';
+import { ArNSRemoteCache } from './index.js';
 
 export class ArIO implements ContractCache {
   private contractStateProvider: ContractCache;
 
   constructor({
-    contractStateProvider,
+    contractStateProvider = new ArNSRemoteCache({}),
   }: {
-    contractStateProvider: ContractCache;
+    contractStateProvider?: ContractCache;
   }) {
     this.contractStateProvider = contractStateProvider;
   }
