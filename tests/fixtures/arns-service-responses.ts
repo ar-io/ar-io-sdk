@@ -1,4 +1,8 @@
-export const ArnsStateResponse = {
+import { Source, SourceType } from 'warp-contracts';
+
+import { EvaluatedContractState } from '../../src/types.js';
+
+export const ArnsStateResponse: EvaluatedContractState<Record<string, any>> = {
   contractTxId: 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U',
   state: {
     ticker: 'ARNS-TEST',
@@ -29,12 +33,14 @@ export const ArnsStateResponse = {
   sortKey:
     '000001301946,0000000000000,d2efe5278648460ed160e1d8a28fb86ab686e36cf14a3321d0a2b10c6851ea99',
   evaluationOptions: {
-    sourceType: 'arweave',
+    sourceType: 'arweave' as SourceType,
     internalWrites: true,
     useKVStorage: true,
     remoteStateSyncEnabled: true,
     waitForConfirmation: true,
     maxInteractionEvaluationTimeSeconds: 0,
     throwOnInternalWriteError: true,
-  },
+  } as any,
+  validity: {},
+  errorMessages: {},
 };

@@ -33,6 +33,7 @@ export type EvaluatedContractState<ContractState> =
   EvalStateResult<ContractState> & {
     sortKey: string;
     evaluationOptions: EvaluationOptions;
+    contractTxId: string;
   };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
