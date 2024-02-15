@@ -10,7 +10,7 @@
       "prerelease": true
     }
   ],
-  "repositoryUrl": "https://github.com/ardriveapp/node-sdk-template",
+  "repositoryUrl": "https://github.com/ar-io/ar-io-sdk",
   "debug": "false",
   "plugins": [
     "@semantic-release/commit-analyzer",

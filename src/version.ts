@@ -15,5 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// eslint-disable-next-line
-export class DefaultClient {}
+// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
+
+export const version = '0.0.0';
