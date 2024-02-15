@@ -1,6 +1,6 @@
-# node-sdk-template
+# ar-io/sdk
 
-This is the home of [INSERT SDK NAME] SDK. This SDK provides functionality for [SHORT DESCRIPTION HERE] available for both NodeJS and Web environments.
+This is the home of ar.io SDK. This SDK provides functionality for interacting with the ArNS and ar.io ecosystem. It is available for both NodeJS and Web environments.
 
 ## Table of Contents
 
@@ -23,19 +23,24 @@ This is the home of [INSERT SDK NAME] SDK. This SDK provides functionality for [
 ## Installation
 
 ```shell
-npm install @ardrive/INSERT-SDK-NAME
+npm install @ar-io/sdk
 ```
 
 or
 
 ```shell
-yarn add @ardrive/INSERT-SDK-NAME
+yarn add @ar-io/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-// INSERT A SHORT EXAMPLE OF HOW TO SETUP AND USE THE SDK
+const remoteStateProvider = new ArNSRemoteCache();
+const arIO = new ArIO({ contractStateProvider: cache });
+
+const state = arIO.getContractState({
+  contractTxId: 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U',
+});
 ```
 
 ## Usage
