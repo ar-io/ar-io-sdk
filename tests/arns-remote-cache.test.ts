@@ -1,5 +1,6 @@
 import { ArIO } from '../src/common/ar-io.js';
 import { ArNSRemoteCache } from '../src/common/caches/arns-remote-cache.js';
+import { FailedRequestError } from '../src/common/error.js';
 
 describe('ArIO Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
@@ -21,31 +22,21 @@ describe('ArIO Client', () => {
   });
 
   it('should throw on bad contract id', async () => {
-    let result;
-    try {
-      const contractTxId = ''.padEnd(42, 'a');
-      result = await arioClient
-        .getContractState({ contractTxId })
-        .catch((e) => e);
-    } catch (error) {
-      result = error;
-    }
+    const contractTxId = ''.padEnd(42, 'a');
+    const result = (await arioClient
+      .getContractState({ contractTxId })
+      .catch((e) => e)) as any;
 
     expect(result).toBeInstanceOf(Error);
   });
 
   it('should throw 404 on non existent contract', async () => {
-    let result;
-    try {
-      const contractTxId = ''.padEnd(43, 'a');
-      result = await arioClient
-        .getContractState({ contractTxId })
-        .catch((e) => e);
-    } catch (error) {
-      result = error;
-    }
+    const contractTxId = ''.padEnd(43, 'a');
+    const result = (await arioClient
+      .getContractState({ contractTxId })
+      .catch((e: any) => e)) as any;
 
-    expect(result).toBeInstanceOf(Error);
-    expect(result.message).toMatch(/404/);
+    expect(result).toBeInstanceOf(FailedRequestError);
+    expect(result?.message).toMatch(/404/);
   });
 });
