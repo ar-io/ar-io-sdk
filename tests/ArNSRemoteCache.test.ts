@@ -1,5 +1,5 @@
 import { ArIO } from '../src/common/ArIO.js';
-import { ArNSRemoteCache } from '../src/common/ContractStateProviders/ArNSRemoteCache.js';
+import { ArNSRemoteCache } from '../src/common/caches/ArNSRemoteCache.js';
 
 describe('ArIO Client', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
