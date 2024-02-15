@@ -16,6 +16,8 @@
  */
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
+import { version } from '../version.js';
+
 // TODO: re-implement axios-retry. Currently latest version of axios-retry is broken for node-next builds on v4.0.0
 export interface AxiosInstanceParameters {
   axiosConfig?: Omit<AxiosRequestConfig, 'validateStatus'>;
@@ -28,6 +30,8 @@ export const createAxiosInstance = ({
     ...axiosConfig,
     headers: {
       ...axiosConfig.headers,
+      'x-ar-io-sdk-version': `${version}`,
+      'x-source-identifier': 'ar-io-sdk',
     },
     validateStatus: () => true, // don't throw on non-200 status codes
   });

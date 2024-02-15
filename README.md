@@ -35,7 +35,12 @@ yarn add @ar-io/sdk
 ## Quick Start
 
 ```typescript
-const remoteStateProvider = new ArNSRemoteCache();
+const arIO = new ArIO({});
+// or
+const remoteStateProvider = new ArNSRemoteCache({
+  url: customUrlToService,
+  logger: customLoggerFunction
+});
 const arIO = new ArIO({ contractStateProvider: cache });
 
 const state = arIO.getContractState({

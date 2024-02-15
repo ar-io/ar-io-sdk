@@ -16,6 +16,8 @@ describe('ArIO Client', () => {
 
   it('should create an ArIO client', () => {
     expect(arioClient).toBeInstanceOf(ArIO);
+    const localClient = new ArIO({});
+    expect(localClient).toBeInstanceOf(ArIO);
   });
 
   it('should get a contract state', async () => {
