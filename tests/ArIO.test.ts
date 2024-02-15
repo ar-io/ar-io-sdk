@@ -9,19 +9,18 @@ jest
   .mockResolvedValue(ArnsStateResponse);
 
 describe('ArIO Client', () => {
-  const remoteCacheProvider = new ArNSRemoteCache({});
-  const arioClient = new ArIO({
-    contractStateProvider: remoteCacheProvider,
-  });
+  const arIO = new ArIO({});
 
-  it('should create an ArIO client', () => {
-    expect(arioClient).toBeInstanceOf(ArIO);
-    const localClient = new ArIO({});
-    expect(localClient).toBeInstanceOf(ArIO);
+  it('should create a custom ArIO client', () => {
+    const remoteCacheProvider = new ArNSRemoteCache({});
+    const customArioClient = new ArIO({
+      contractStateProvider: remoteCacheProvider,
+    });
+    expect(customArioClient).toBeInstanceOf(ArIO);
   });
 
   it('should get a contract state', async () => {
-    const state = await arioClient.getContractState<Record<string, any>>({
+    const state = await arIO.getContractState<Record<string, any>>({
       contractTxId: ARNS_REGISTRY_TX,
     });
     expect(state).toBeDefined();
