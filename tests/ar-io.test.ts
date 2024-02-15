@@ -1,12 +1,6 @@
 import { ArIO } from '../src/common/ar-io.js';
 import { ArNSRemoteCache } from '../src/common/caches/arns-remote-cache.js';
-import { AxiosHTTPService } from '../src/common/http.js';
 import { ARNS_REGISTRY_TX } from '../src/constants.js';
-import { ArnsStateResponse } from './fixtures/arns-service-responses.js';
-
-jest
-  .spyOn(AxiosHTTPService.prototype, 'get')
-  .mockResolvedValue(ArnsStateResponse);
 
 describe('ArIO Client', () => {
   const arIO = new ArIO({});
