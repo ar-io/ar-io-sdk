@@ -30,7 +30,7 @@ export const createAxiosInstance = ({
     ...axiosConfig,
     headers: {
       ...axiosConfig.headers,
-      'x-ar-io-sdk-version': `${version}`,
+      'x-source-version': `${version}`,
       'x-source-identifier': 'ar-io-sdk',
     },
     validateStatus: () => true, // don't throw on non-200 status codes
