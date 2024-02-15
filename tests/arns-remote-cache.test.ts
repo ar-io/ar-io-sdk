@@ -33,4 +33,19 @@ describe('ArIO Client', () => {
 
     expect(result).toBeInstanceOf(Error);
   });
+
+  it('should throw 404 on non existent contract', async () => {
+    let result;
+    try {
+      const contractTxId = ''.padEnd(43, 'a');
+      result = await arioClient
+        .getContractState({ contractTxId })
+        .catch((e) => e);
+    } catch (error) {
+      result = error;
+    }
+
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toMatch(/404/);
+  });
 });
