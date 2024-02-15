@@ -31,11 +31,13 @@ export class ArIO implements ContractCache {
    * Fetches the state of a contract.
    * @param {string} contractTxId - The Arweave transaction id of the contract.
    */
-  async getContractState<T>({
+  async getContractState<ContractState>({
     contractTxId,
   }: {
     contractTxId: string;
-  }): Promise<T> {
-    return this.contractStateProvider.getContractState({ contractTxId });
+  }): Promise<ContractState> {
+    return this.contractStateProvider.getContractState<ContractState>({
+      contractTxId,
+    });
   }
 }

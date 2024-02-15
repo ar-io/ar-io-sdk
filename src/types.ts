@@ -16,19 +16,24 @@
  */
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
-import { EvalStateResult, EvaluationOptions } from 'warp-contracts/web';
+import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
 
 export interface ContractCache {
   /**
    * The ContractStateProvider interface is used to define a contract state provider.
    */
-  getContractState<T>({ contractTxId }: { contractTxId: string }): Promise<T>;
+  getContractState<ContractState>({
+    contractTxId,
+  }: {
+    contractTxId: string;
+  }): Promise<ContractState>;
 }
 
-export type EvaluatedContractState<T> = EvalStateResult<T> & {
-  sortKey: string;
-  evaluationOptions: EvaluationOptions;
-};
+export type EvaluatedContractState<ContractState> =
+  EvalStateResult<ContractState> & {
+    sortKey: string;
+    evaluationOptions: EvaluationOptions;
+  };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {

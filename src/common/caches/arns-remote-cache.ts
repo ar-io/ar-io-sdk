@@ -43,14 +43,16 @@ export class ArNSRemoteCache implements ContractCache {
     });
   }
 
-  async getContractState<T>({
+  async getContractState<ContractState>({
     contractTxId,
   }: {
     contractTxId: string;
-  }): Promise<T> {
+  }): Promise<ContractState> {
     this.logger.debug(`Fetching contract state`);
 
-    const { state } = await this.http.get<EvaluatedContractState<T>>({
+    const { state } = await this.http.get<
+      EvaluatedContractState<ContractState>
+    >({
       endpoint: `/contract/${contractTxId.toString()}`,
     });
 
