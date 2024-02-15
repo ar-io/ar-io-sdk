@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractStateProvider } from '../types.js';
+import { ContractCache } from '../types.js';
 
-export class ArIO implements ContractStateProvider {
-  private contractStateProvider: ContractStateProvider;
+export class ArIO implements ContractCache {
+  private contractStateProvider: ContractCache;
 
   constructor({
     contractStateProvider,
   }: {
-    contractStateProvider: ContractStateProvider;
+    contractStateProvider: ContractCache;
   }) {
     this.contractStateProvider = contractStateProvider;
   }

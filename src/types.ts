@@ -17,7 +17,7 @@
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
-export interface ContractStateProvider {
+export interface ContractCache {
   /**
    * The ContractStateProvider interface is used to define a contract state provider.
    */

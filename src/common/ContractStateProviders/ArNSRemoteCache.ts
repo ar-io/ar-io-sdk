@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractStateProvider, HTTPClient } from '../../types.js';
+import { ContractCache, HTTPClient } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
-export class ArNSRemoteCache implements ContractStateProvider {
+export class ArNSRemoteCache implements ContractCache {
   private logger: DefaultLogger;
   private http: HTTPClient;
   private apiVersion = 'v1' as const; // use v1 endpoints
