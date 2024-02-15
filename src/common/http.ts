@@ -19,7 +19,7 @@ import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
 import { HTTPClient, Logger } from '../types.js';
-import { createAxiosInstance } from '../utils/httpClient.js';
+import { createAxiosInstance } from '../utils/http-client.js';
 import { FailedRequestError } from './error.js';
 
 export class AxiosHTTPService implements HTTPClient {

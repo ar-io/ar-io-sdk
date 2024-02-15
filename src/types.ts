@@ -16,6 +16,7 @@
  */
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
+import { EvalStateResult, EvaluationOptions } from 'warp-contracts/web';
 
 export interface ContractCache {
   /**
@@ -23,6 +24,11 @@ export interface ContractCache {
    */
   getContractState<T>({ contractTxId }: { contractTxId: string }): Promise<T>;
 }
+
+export type EvaluatedContractState<T> = EvalStateResult<T> & {
+  sortKey: string;
+  evaluationOptions: EvaluationOptions;
+};
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {

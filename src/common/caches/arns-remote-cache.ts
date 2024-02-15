@@ -14,7 +14,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractCache, HTTPClient } from '../../types.js';
+import {
+  ContractCache,
+  EvaluatedContractState,
+  HTTPClient,
+} from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
@@ -39,14 +43,14 @@ export class ArNSRemoteCache implements ContractCache {
     });
   }
 
-  async getContractState<ContractState>({
+  async getContractState<T>({
     contractTxId,
   }: {
     contractTxId: string;
-  }): Promise<ContractState> {
+  }): Promise<T> {
     this.logger.debug(`Fetching contract state`);
 
-    const state = await this.http.get<ContractState>({
+    const { state } = await this.http.get<EvaluatedContractState<T>>({
       endpoint: `/contract/${contractTxId.toString()}`,
     });
 

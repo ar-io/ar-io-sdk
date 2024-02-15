@@ -16,3 +16,5 @@
  */
 
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
+export const ARNS_REGISTRY_TX =
+  process.env.ARNS_REGISTRY_TX ?? 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U';
