@@ -16,25 +16,6 @@
  */
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
-import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
-
-export interface ContractCache {
-  /**
-   * The ContractStateProvider interface is used to define a contract state provider.
-   */
-  getContractState<ContractState>({
-    contractTxId,
-  }: {
-    contractTxId: string;
-  }): Promise<ContractState>;
-}
-
-export type EvaluatedContractState<ContractState> =
-  EvalStateResult<ContractState> & {
-    sortKey: string;
-    evaluationOptions: EvaluationOptions;
-    contractTxId: string;
-  };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
@@ -46,6 +27,8 @@ export interface Logger {
   debug: (message: string, ...args: any[]) => void;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+export type WalletAddress = string;
 
 export interface HTTPClient {
   get<T>({

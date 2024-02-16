@@ -18,7 +18,7 @@ import {
   ContractCache,
   EvaluatedContractState,
   HTTPClient,
-} from '../../types.js';
+} from '../../types/index.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 

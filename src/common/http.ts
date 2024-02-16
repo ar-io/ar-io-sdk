@@ -18,7 +18,7 @@ import { AxiosInstance } from 'axios';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
-import { HTTPClient, Logger } from '../types.js';
+import { HTTPClient, Logger } from '../types/index.js';
 import { createAxiosInstance } from '../utils/http-client.js';
 import { FailedRequestError } from './error.js';
 

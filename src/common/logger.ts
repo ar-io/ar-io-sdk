@@ -16,7 +16,7 @@
  */
 import winston, { createLogger, format, transports } from 'winston';
 
-import { Logger } from '../types.js';
+import { Logger } from '../types/index.js';
 import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {
