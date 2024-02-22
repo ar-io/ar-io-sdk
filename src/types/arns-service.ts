@@ -55,10 +55,6 @@ export type ObserversResponse = ArNSStateResponse<
   Record<string, WieghtedObserver[]>
 >;
 
-export type ArNSFilters = {
-  blockHeight?: number;
-  sortKey?: string;
-};
 export interface ArIONetworkContract {
   gateways(): Promise<Pick<GatewaysResponse, 'gateways'>>;
   records(): Promise<Pick<RecordsResponse, 'records'>>;
@@ -72,9 +68,11 @@ export interface ContractCache {
    */
   getContractState<ContractState>({
     contractTxId,
-    filters,
+    blockHeight,
+    sortKey,
   }: {
     contractTxId: string;
-    filters: Pick<ArNSFilters, 'blockHeight' | 'sortKey'>;
+    blockHeight?: number;
+    sortKey?: string;
   }): Promise<ContractState>;
 }
