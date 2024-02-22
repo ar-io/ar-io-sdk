@@ -20,7 +20,7 @@ import {
   ArNSNameData,
   Balances,
   Gateway,
-  WieghtedObserver,
+  WeightedObserver,
 } from './arns-state.js';
 
 export type EvaluatedContractState<ContractState> =
@@ -52,7 +52,7 @@ export type BalancesResponse = ArNSStateResponse<'balances', Balances>;
 
 export type ObserversResponse = ArNSStateResponse<
   'result',
-  Record<string, WieghtedObserver[]>
+  Record<string, WeightedObserver[]>
 >;
 
 export interface ArIONetworkContract {

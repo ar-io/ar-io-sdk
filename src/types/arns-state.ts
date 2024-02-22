@@ -55,7 +55,7 @@ export type GatewayStats = {
 
 // Observations
 
-export type WieghtedObserver = {
+export type WeightedObserver = {
   gatewayAddress: WalletAddress;
   observerAddress: WalletAddress;
   stake: number;
