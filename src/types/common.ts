@@ -17,6 +17,31 @@
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
+import { Gateway } from './contract-state.js';
+
+export interface ContractCache {
+  /**
+   * The ContractStateProvider interface is used to define a contract state provider.
+   */
+  setContractTxId(contractTxId: string): ArIOContract;
+  getContractState<ContractState>({
+    contractTxId,
+    blockHeight,
+    sortKey,
+  }: {
+    contractTxId: string;
+    blockHeight?: number;
+    sortKey?: string;
+  }): Promise<ContractState>;
+}
+// TODO: extend with additional methods
+export interface ArIOContract {
+  getGateway({ address }: { address: WalletAddress }): Promise<Gateway>;
+  getGateways(): Promise<Gateway[]>;
+  getBalance({ address }: { address: WalletAddress }): Promise<number>;
+  getBalances(): Promise<Record<WalletAddress, number>>;
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
   setLogLevel: (level: string) => void;

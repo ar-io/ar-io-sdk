@@ -103,3 +103,79 @@ export type VaultData = {
 // Balances
 
 export type Balances = Record<WalletAddress, number>;
+
+export type Fees = Record<string, number>;
+
+export type ReservedNameData = {
+  target?: string; // The target wallet address this name is reserved for
+  endTimestamp?: number; // At what unix time (seconds since epoch) this reserved name becomes available
+};
+
+export type ArNSBaseAuctionData = {
+  startPrice: number;
+  floorPrice: number;
+  startHeight: number;
+  endHeight: number;
+  type: RegistrationType;
+  initiator: string;
+  contractTxId: string;
+};
+
+export type ArNSLeaseAuctionData = ArNSBaseAuctionData & {
+  type: 'lease';
+  years: 1;
+};
+
+export type ArNSPermabuyAuctionData = ArNSBaseAuctionData & {
+  type: 'permabuy';
+};
+
+export type ArNSAuctionData = ArNSLeaseAuctionData | ArNSPermabuyAuctionData;
+
+export type DemandFactoringData = {
+  periodZeroBlockHeight: number; // TODO: The block height at which the contract was initialized
+  currentPeriod: number;
+  trailingPeriodPurchases: number[]; // Acts as a ring buffer of trailing period purchase counts
+  trailingPeriodRevenues: number[]; // Acts as a ring buffer of trailing period revenues
+  purchasesThisPeriod: number;
+  revenueThisPeriod: number;
+  demandFactor: number;
+  consecutivePeriodsWithMinDemandFactor: number;
+};
+
+export type EpochObservations = {
+  failureSummaries: Record<string, string[]>; // an observers summary of all failed gateways in the epoch
+  reports: Record<string, string>; // a reference point for the report submitted by this observer
+};
+
+export type Observations = Record<number, EpochObservations>;
+
+export type EpochDistributionData = {
+  epochZeroStartHeight: number;
+  epochStartHeight: number; // the current epoch start height
+  epochEndHeight: number; // the current epoch end height
+  epochPeriod: number;
+  nextDistributionHeight: number;
+};
+
+export type Vaults = Record<string, VaultData>;
+
+export type RegistryVaults = Record<string, Vaults>;
+
+export type PrescribedObservers = Record<number, WeightedObserver[]>;
+
+export interface IOState {
+  balances: Balances;
+  name: string; // The friendly name of the token, shown in block explorers and marketplaces
+  records: Record<string, ArNSNameData>; // The list of all ArNS names and their associated data
+  gateways: Record<string, Gateway>; // each gateway uses its public arweave wallet address to identify it in the gateway registry
+  fees: Fees; // starting list of all fees for purchasing ArNS names
+  reserved: Record<string, ReservedNameData>; // list of all reserved names that are not allowed to be purchased at this time
+  auctions: Record<string, ArNSAuctionData>;
+  lastTickedHeight: number; // periodicity management
+  demandFactoring: DemandFactoringData;
+  observations: Observations;
+  distributions: EpochDistributionData;
+  vaults: RegistryVaults;
+  prescribedObservers: PrescribedObservers;
+}

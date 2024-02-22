@@ -16,13 +16,6 @@
  */
 import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
 
-import {
-  ArNSNameData,
-  Balances,
-  Gateway,
-  WeightedObserver,
-} from './arns-state.js';
-
 export type EvaluatedContractState<ContractState> =
   EvalStateResult<ContractState> & {
     sortKey: string;
@@ -37,42 +30,3 @@ export type ArNSStateResponse<StateKey extends string, StateObject> = Pick<
   'contractTxId' | 'sortKey' | 'evaluationOptions'
 > &
   Record<StateKey, StateObject>;
-
-export type GatewaysResponse = ArNSStateResponse<
-  'gateways',
-  Record<string, Gateway>
->;
-
-export type RecordsResponse = ArNSStateResponse<
-  'records',
-  Record<string | number, ArNSNameData>
->;
-
-export type BalancesResponse = ArNSStateResponse<'balances', Balances>;
-
-export type ObserversResponse = ArNSStateResponse<
-  'result',
-  Record<string, WeightedObserver[]>
->;
-
-export interface ArIONetworkContract {
-  gateways(): Promise<Pick<GatewaysResponse, 'gateways'>>;
-  records(): Promise<Pick<RecordsResponse, 'records'>>;
-  balance(): Promise<Pick<BalancesResponse, 'balances'>>;
-  observers(): Promise<Pick<ObserversResponse, 'result'>>;
-}
-
-export interface ContractCache {
-  /**
-   * The ContractStateProvider interface is used to define a contract state provider.
-   */
-  getContractState<ContractState>({
-    contractTxId,
-    blockHeight,
-    sortKey,
-  }: {
-    contractTxId: string;
-    blockHeight?: number;
-    sortKey?: string;
-  }): Promise<ContractState>;
-}

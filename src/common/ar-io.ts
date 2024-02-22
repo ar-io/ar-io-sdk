@@ -14,31 +14,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ContractCache } from '../types/index.js';
+import {
+  ARNS_DEVNET_REGISTRY_TX,
+  ARNS_TESTNET_REGISTRY_TX,
+} from '../constants.js';
+import { ArIOContract, ContractCache } from '../types/index.js';
 import { ArNSRemoteCache } from './index.js';
 
-export class ArIO implements ContractCache {
-  private contractStateProvider: ContractCache;
+export class ArIO {
+  protected cache: ContractCache = new ArNSRemoteCache({});
 
-  constructor({
-    contractStateProvider = new ArNSRemoteCache({}),
-  }: {
-    contractStateProvider?: ContractCache;
-  }) {
-    this.contractStateProvider = contractStateProvider;
-  }
+  public testnet: ArIOContract = this.cache.setContractTxId(
+    ARNS_TESTNET_REGISTRY_TX,
+  );
+  public devnet: ArIOContract = this.cache.setContractTxId(
+    ARNS_DEVNET_REGISTRY_TX,
+  );
 
-  /**
-   * Fetches the state of a contract.
-   * @param {string} contractTxId - The Arweave transaction id of the contract.
-   */
-  async getContractState<ContractState>({
-    contractTxId,
-  }: {
-    contractTxId: string;
-  }): Promise<ContractState> {
-    return this.contractStateProvider.getContractState<ContractState>({
-      contractTxId,
-    });
+  constructor({ remoteCacheUrl }: { remoteCacheUrl?: string }) {
+    this.cache = new ArNSRemoteCache({ url: remoteCacheUrl });
   }
 }

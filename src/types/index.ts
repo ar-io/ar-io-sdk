@@ -16,5 +16,5 @@
  */
 
 export * from './arns-service.js';
-export * from './arns-state.js';
+export * from './contract-state.js';
 export * from './common.js';

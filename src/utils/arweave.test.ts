@@ -1,9 +1,9 @@
-import { ARNS_REGISTRY_TX } from '../constants.js';
+import { ARNS_MAINNET_REGISTRY_TX } from '../constants.js';
 import { validateArweaveId } from './arweave.js';
 
 describe('Arweave ID Validation', () => {
   it('should validate a valid Arweave ID', () => {
-    const validId = ARNS_REGISTRY_TX;
+    const validId = ARNS_MAINNET_REGISTRY_TX;
     expect(validateArweaveId(validId)).toBe(true);
   });
 
