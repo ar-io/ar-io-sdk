@@ -17,12 +17,11 @@
 import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
 
 import {
-  ArNSRecord,
+  ArNSNameData,
   Balances,
   Gateway,
   WieghtedObserver,
 } from './arns-state.js';
-import { WalletAddress } from './common.js';
 
 export type EvaluatedContractState<ContractState> =
   EvalStateResult<ContractState> & {
@@ -46,7 +45,7 @@ export type GatewaysResponse = ArNSStateResponse<
 
 export type RecordsResponse = ArNSStateResponse<
   'records',
-  Record<string | number, ArNSRecord>
+  Record<string | number, ArNSNameData>
 >;
 
 export type BalancesResponse = ArNSStateResponse<'balances', Balances>;
@@ -57,33 +56,14 @@ export type ObserversResponse = ArNSStateResponse<
 >;
 
 export type ArNSFilters = {
-  domains?: string[];
-  owners?: WalletAddress[];
-  contractTxIds?: string[];
-  fqdns?: string[];
-  observerWallets?: WalletAddress[];
+  blockHeight?: number;
+  sortKey?: string;
 };
 export interface ArIONetworkContract {
-  gateways({
-    filters,
-  }: {
-    filters?: Pick<ArNSFilters, 'fqdns' | 'owners' | 'observerWallets'>;
-  }): Promise<Pick<GatewaysResponse, 'gateways'>>;
-  records({
-    filters,
-  }: {
-    filters?: Pick<ArNSFilters, 'contractTxIds' | 'owners' | 'domains'>;
-  }): Promise<Pick<RecordsResponse, 'records'>>;
-  balance({
-    filters,
-  }: {
-    filters?: Pick<ArNSFilters, 'owners'>;
-  }): Promise<Pick<BalancesResponse, 'balances'>>;
-  observers({
-    filters,
-  }: {
-    filters?: Pick<ArNSFilters, 'owners'>;
-  }): Promise<Pick<ObserversResponse, 'result'>>;
+  gateways(): Promise<Pick<GatewaysResponse, 'gateways'>>;
+  records(): Promise<Pick<RecordsResponse, 'records'>>;
+  balance(): Promise<Pick<BalancesResponse, 'balances'>>;
+  observers(): Promise<Pick<ObserversResponse, 'result'>>;
 }
 
 export interface ContractCache {
@@ -92,7 +72,9 @@ export interface ContractCache {
    */
   getContractState<ContractState>({
     contractTxId,
+    filters,
   }: {
     contractTxId: string;
+    filters: Pick<ArNSFilters, 'blockHeight' | 'sortKey'>;
   }): Promise<ContractState>;
 }
