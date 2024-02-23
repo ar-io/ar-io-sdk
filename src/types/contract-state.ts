@@ -29,6 +29,7 @@ export type Gateway = {
   status: string;
   totalDelegatedStake: number;
   vaults: Record<WalletAddress, VaultData>;
+  weights: ObserverWeights;
 };
 
 export type GatewaySettings = {

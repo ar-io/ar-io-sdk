@@ -17,11 +17,12 @@
 import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
 import {
   ArIOContract,
+  ArNSStateResponse,
   ContractCache,
-  EvaluatedContractState,
   Gateway,
   HTTPClient,
 } from '../../types/index.js';
+import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
@@ -53,22 +54,6 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     return this;
   }
 
-  async getContractState<ContractState>({
-    contractTxId,
-  }: {
-    contractTxId: string;
-  }): Promise<ContractState> {
-    this.logger.debug(`Fetching contract state`);
-
-    const { state } = await this.http.get<
-      EvaluatedContractState<ContractState>
-    >({
-      endpoint: `/contract/${contractTxId.toString()}`,
-    });
-
-    return state;
-  }
-
   async getGateway({ address }: { address: string }) {
     if (!this.contractTxId) {
       throw new Error(
@@ -76,8 +61,11 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       );
     }
     this.logger.debug(`Fetching gateway ${address}`);
-    const gateway = await this.http.get<Gateway>({
-      endpoint: `/gateway/${address}`,
+    const gateway = await this.getGateways().then((gateways) => {
+      if (gateways[address] === undefined) {
+        throw new NotFound(`Gateway not found: ${address}`);
+      }
+      return gateways[address];
     });
     return gateway;
   }
@@ -89,10 +77,12 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       );
     }
     this.logger.debug(`Fetching gateways`);
-    const gateways = await this.http.get<Gateway[]>({
-      endpoint: `/gateways`,
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, Gateway>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/read/gateways`,
     });
-    return gateways;
+    return result;
   }
 
   async getBalance({ address }: { address: string }) {
@@ -102,10 +92,17 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       );
     }
     this.logger.debug(`Fetching balance for ${address}`);
-    const balance = await this.http.get<number>({
-      endpoint: `/balance/${address}`,
-    });
-    return balance;
+    const { result } = await this.http
+      .get<ArNSStateResponse<'result', number>>({
+        endpoint: `/contract/${this.contractTxId.toString()}/state/balances/${address}`,
+      })
+      .catch((e) => {
+        if (e instanceof NotFound) {
+          return { result: 0 };
+        }
+        throw e;
+      });
+    return result;
   }
 
   async getBalances() {
@@ -115,9 +112,11 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       );
     }
     this.logger.debug(`Fetching balances`);
-    const balances = await this.http.get<Record<string, number>>({
-      endpoint: `/balances`,
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, number>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/state/balances`,
     });
-    return balances;
+    return result;
   }
 }

@@ -14,30 +14,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
-
 import { Gateway } from './contract-state.js';
 
 export interface ContractCache {
   /**
-   * The ContractStateProvider interface is used to define a contract state provider.
+   * The ContractCache interface is used to define a contract state provider.
    */
   setContractTxId(contractTxId: string): ArIOContract;
-  getContractState<ContractState>({
-    contractTxId,
-    blockHeight,
-    sortKey,
-  }: {
-    contractTxId: string;
-    blockHeight?: number;
-    sortKey?: string;
-  }): Promise<ContractState>;
 }
 // TODO: extend with additional methods
 export interface ArIOContract {
   getGateway({ address }: { address: WalletAddress }): Promise<Gateway>;
-  getGateways(): Promise<Gateway[]>;
+  getGateways(): Promise<Record<WalletAddress, Gateway>>;
   getBalance({ address }: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number>>;
 }
@@ -67,17 +55,18 @@ export interface HTTPClient {
     headers?: Record<string, string>;
     allowedStatuses?: number[];
   }): Promise<T>;
-  post<T>({
-    endpoint,
-    signal,
-    headers,
-    allowedStatuses,
-    data,
-  }: {
-    endpoint: string;
-    signal: AbortSignal;
-    headers?: Record<string, string>;
-    allowedStatuses?: number[];
-    data: Readable | ReadableStream | Buffer;
-  }): Promise<T>;
+  // TODO: add post method
+  // post<T>({
+  //   endpoint,
+  //   signal,
+  //   headers,
+  //   allowedStatuses,
+  //   data,
+  // }: {
+  //   endpoint: string;
+  //   signal: AbortSignal;
+  //   headers?: Record<string, string>;
+  //   allowedStatuses?: number[];
+  //   data: Readable | ReadableStream | Buffer;
+  // }): Promise<T>;
 }

@@ -38,3 +38,9 @@ export class FailedRequestError extends BaseError {
     super(`Failed request: ${status}: ${message}`);
   }
 }
+
+export class UnknownError extends BaseError {
+  constructor(message: string) {
+    super(message);
+  }
+}
