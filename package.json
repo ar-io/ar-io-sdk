@@ -1,8 +1,10 @@
 {
   "name": "@ar-io/sdk",
   "version": "0.0.1",
-  "main": "./lib/index.js",
-  "types": "./lib/types/index.d.ts",
+  "main": "./lib/cjs/node/index.js",
+  "types": "./lib/types/node/index.d.ts",
+  "module": "./lib/esm/node/index.js",
+  "browser": "./bundles/web.bundle.min.js",
   "type": "module",
   "files": [
     "lib",
@@ -96,7 +98,6 @@
   "dependencies": {
     "arweave": "^1.14.4",
     "axios": "1.4.0",
-    "setimmediate": "^1.0.5",
     "warp-contracts": "^1.4.34",
     "winston": "^3.11.0"
   }
