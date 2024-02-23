@@ -2,7 +2,7 @@
   "name": "@ar-io/sdk",
   "version": "0.0.1",
   "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "types": "./lib/types/index.d.ts",
   "type": "module",
   "files": [
     "lib",
