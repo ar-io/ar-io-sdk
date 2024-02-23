@@ -45,7 +45,6 @@
     "build:types": "yarn tsc -p tsconfig.types.json",
     "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs && yarn build:types",
     "clean": "rimraf [ lib coverage bundles ]",
-    "postinstall": "husky install",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --check .",
