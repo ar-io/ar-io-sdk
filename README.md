@@ -85,11 +85,7 @@ const devnetGateways = await devnetClient.getGateways();
 const { ArIO } = require('@ar-io/sdk');
 
 const arIO = new ArIO({});
-const testnetClient = arIO.testnet;
-const devnetClient = arIO.devnet;
-
-const testnetGateways = await testnetClient.getGateways();
-const devnetGateways = await devnetClient.getGateways();
+const gateways = await arIO.mainnet.getGateways();
 ```
 
 ### Typescript
