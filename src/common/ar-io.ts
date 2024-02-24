@@ -33,5 +33,7 @@ export class ArIO {
 
   constructor({ remoteCacheUrl }: { remoteCacheUrl?: string }) {
     this.cache = new ArNSRemoteCache({ url: remoteCacheUrl });
+    this.testnet = this.cache.setContractTxId(ARNS_TESTNET_REGISTRY_TX);
+    this.devnet = this.cache.setContractTxId(ARNS_DEVNET_REGISTRY_TX);
   }
 }
