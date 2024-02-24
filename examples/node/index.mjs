@@ -4,7 +4,7 @@ import { ArIO } from '../../lib/esm/node/index.js';
   const arIO = new ArIO({});
   // testnet gateways
   const testnetGateways = await arIO.testnet.getGateways();
-  // mainnet gateways
+  // devnet gateways
   const devnetGateways = await arIO.devnet.getGateways();
 
   console.dir({ testnetGateways, devnetGateways }, { depth: 2 });
