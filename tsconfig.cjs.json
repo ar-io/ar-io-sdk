@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.json",
+  "exclude": ["src/web"],
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",

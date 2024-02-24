@@ -15,3 +15,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export * from './arweave.js';
+export * from './http-client.js';

@@ -13,6 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "declaration": true,
+    "declarationDir": "./lib/types",
     /* Additional Checks */
     "pretty": true,
     "noUnusedLocals": true,
@@ -22,6 +24,6 @@
     "skipLibCheck": true,
     "strictNullChecks": true
   },
-  "include": ["src", "resources"],
+  "include": ["src"],
   "exclude": ["lib", "node_modules", "bundles"]
 }

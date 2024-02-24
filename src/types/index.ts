@@ -15,9 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
-export const ARNS_TESTNET_REGISTRY_TX =
-  process.env.ARNS_REGISTRY_TX ?? 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U';
-
-export const ARNS_DEVNET_REGISTRY_TX =
-  '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
+export * from './arns-service.js';
+export * from './contract-state.js';
+export * from './common.js';

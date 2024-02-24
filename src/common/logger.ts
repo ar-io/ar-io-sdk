@@ -14,9 +14,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+// small polyfill for winston
+import 'setimmediate';
 import winston, { createLogger, format, transports } from 'winston';
 
-import { Logger } from '../types.js';
+import { Logger } from '../types/index.js';
 import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {

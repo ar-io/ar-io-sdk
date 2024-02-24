@@ -14,10 +14,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
 
-export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
-export const ARNS_TESTNET_REGISTRY_TX =
-  process.env.ARNS_REGISTRY_TX ?? 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U';
+export type EvaluatedContractState<ContractState> =
+  EvalStateResult<ContractState> & {
+    sortKey: string;
+    evaluationOptions: EvaluationOptions;
+    contractTxId: string;
+  };
 
-export const ARNS_DEVNET_REGISTRY_TX =
-  '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
+/* ArNS Service Responses */
+
+export type ArNSStateResponse<StateKey extends string, StateObject> = Pick<
+  EvaluatedContractState<unknown>,
+  'contractTxId' | 'sortKey' | 'evaluationOptions'
+> &
+  Record<StateKey, StateObject>;

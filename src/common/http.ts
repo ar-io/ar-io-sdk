@@ -15,12 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { AxiosInstance } from 'axios';
-import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
 
-import { HTTPClient, Logger } from '../types.js';
-import { createAxiosInstance } from '../utils/http-client.js';
-import { FailedRequestError } from './error.js';
+import { HTTPClient, Logger } from '../types/index.js';
+import { createAxiosInstance } from '../utils/index.js';
+import { FailedRequestError, NotFound, UnknownError } from './error.js';
 
 export class AxiosHTTPService implements HTTPClient {
   private axios: AxiosInstance;
@@ -32,17 +30,7 @@ export class AxiosHTTPService implements HTTPClient {
     this.axios = createAxiosInstance({
       axiosConfig: {
         baseURL: url,
-        maxRedirects: 0, // prevents backpressure issues when uploading larger streams via https
-        onUploadProgress: (progressEvent) => {
-          this.logger.debug(`Uploading...`, {
-            percent: Math.floor((progressEvent.progress ?? 0) * 100),
-            loaded: `${progressEvent.loaded} bytes`,
-            total: `${progressEvent.total} bytes`,
-          });
-          if (progressEvent.progress === 1) {
-            this.logger.debug(`Upload complete!`);
-          }
-        },
+        maxRedirects: 0,
       },
     });
   }
@@ -57,44 +45,58 @@ export class AxiosHTTPService implements HTTPClient {
     allowedStatuses?: number[];
     headers?: Record<string, string>;
   }): Promise<T> {
+    this.logger.debug(`Get request to endpoint: ${endpoint}`);
     const { status, statusText, data } = await this.axios.get<T>(endpoint, {
       headers,
       signal,
     });
 
     if (!allowedStatuses.includes(status)) {
-      throw new FailedRequestError(status, statusText);
+      switch (status) {
+        case 404:
+          throw new NotFound(statusText);
+        case 400:
+          throw new FailedRequestError(status, statusText);
+        default:
+          throw new UnknownError(statusText);
+      }
     }
 
     return data;
   }
 
-  async post<T>({
-    endpoint,
-    signal,
-    allowedStatuses = [200, 202],
-    headers,
-    data,
-  }: {
-    endpoint: string;
-    signal?: AbortSignal;
-    allowedStatuses?: number[];
-    headers?: Record<string, string>;
-    data: Readable | Buffer | ReadableStream;
-  }): Promise<T> {
-    const {
-      status,
-      statusText,
-      data: response,
-    } = await this.axios.post<T>(endpoint, data, {
-      headers,
-      signal,
-    });
+  // async post<T>({
+  //   endpoint,
+  //   signal,
+  //   allowedStatuses = [200, 202],
+  //   headers,
+  //   data,
+  // }: {
+  //   endpoint: string;
+  //   signal?: AbortSignal;
+  //   allowedStatuses?: number[];
+  //   headers?: Record<string, string>;
+  //   data: Readable | Buffer | ReadableStream;
+  // }): Promise<T> {
+  //   const {
+  //     status,
+  //     statusText,
+  //     data: response,
+  //   } = await this.axios.post<T>(endpoint, data, {
+  //     headers,
+  //     signal,
+  //   });
 
-    if (!allowedStatuses.includes(status)) {
-      throw new FailedRequestError(status, statusText);
-    }
-
-    return response;
-  }
+  //   if (!allowedStatuses.includes(status)) {
+  //     switch (status) {
+  //       case 404:
+  //         throw new NotFound(statusText);
+  //       case 400:
+  //         throw new FailedRequestError(status, statusText);
+  //       default:
+  //         throw new UnknownError(statusText);
+  //     }
+  //   }
+  //   return response;
+  // }
 }

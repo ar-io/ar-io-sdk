@@ -1,14 +1,17 @@
 {
   "name": "@ar-io/sdk",
   "version": "0.0.1",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./lib/cjs/node/index.js",
+  "module": "./lib/esm/node/index.js",
+  "types": "./lib/types/node/index.d.ts",
+  "browser": "./bundles/web.bundle.min.js",
   "type": "module",
   "files": [
     "lib",
     "bundles",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "package.json"
   ],
   "author": {
     "name": "Permanent Data Solutions Inc",
@@ -41,19 +44,17 @@
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
-    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > lib/cjs/package.json",
-    "build:types": "yarn tsc -p tsconfig.types.json",
-    "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs && yarn build:types",
+    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo \"{\\\"type\\\": \\\"commonjs\\\"}\" > lib/cjs/package.json",
+    "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs",
     "clean": "rimraf [ lib coverage bundles ]",
-    "postinstall": "husky install",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "test": "c8 jest .",
+    "test": "yarn clean && c8 jest .",
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
-    "example:cjs": "yarn build:esm && node examples/node/index.mjs",
+    "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
     "example:web": "yarn build:web && cp -r bundles/* examples/web && http-server --port 8080 --host -o examples/web"
   },
   "devDependencies": {
@@ -88,6 +89,7 @@
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
+    "setimmediate": "^1.0.5",
     "sinon": "^15.2.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",

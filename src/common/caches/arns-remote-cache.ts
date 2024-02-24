@@ -14,15 +14,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
 import {
+  ArIOContract,
+  ArNSStateResponse,
   ContractCache,
-  EvaluatedContractState,
+  Gateway,
   HTTPClient,
-} from '../../types.js';
+} from '../../types/index.js';
+import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
-export class ArNSRemoteCache implements ContractCache {
+export class ArNSRemoteCache implements ContractCache, ArIOContract {
+  private contractTxId: string;
   private logger: DefaultLogger;
   private http: HTTPClient;
   private apiVersion = 'v1' as const; // use v1 endpoints
@@ -36,6 +41,7 @@ export class ArNSRemoteCache implements ContractCache {
     url?: string;
     logger?: DefaultLogger;
   }) {
+    this.contractTxId = ARNS_TESTNET_REGISTRY_TX;
     this.logger = logger;
     this.http = new AxiosHTTPService({
       url: `${url}/${this.apiVersion}`,
@@ -43,19 +49,74 @@ export class ArNSRemoteCache implements ContractCache {
     });
   }
 
-  async getContractState<ContractState>({
-    contractTxId,
-  }: {
-    contractTxId: string;
-  }): Promise<ContractState> {
-    this.logger.debug(`Fetching contract state`);
+  setContractTxId(contractTxId: string): ArIOContract {
+    this.contractTxId = contractTxId;
+    return this;
+  }
 
-    const { state } = await this.http.get<
-      EvaluatedContractState<ContractState>
-    >({
-      endpoint: `/contract/${contractTxId.toString()}`,
+  async getGateway({ address }: { address: string }) {
+    if (!this.contractTxId) {
+      throw new Error(
+        'Contract TxId not set, set one before calling this function.',
+      );
+    }
+    this.logger.debug(`Fetching gateway ${address}`);
+    const gateway = await this.getGateways().then((gateways) => {
+      if (gateways[address] === undefined) {
+        throw new NotFound(`Gateway not found: ${address}`);
+      }
+      return gateways[address];
     });
+    return gateway;
+  }
 
-    return state;
+  async getGateways() {
+    if (!this.contractTxId) {
+      throw new Error(
+        'Contract TxId not set, set one before calling this function.',
+      );
+    }
+    this.logger.debug(`Fetching gateways`);
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, Gateway>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/read/gateways`,
+    });
+    return result;
+  }
+
+  async getBalance({ address }: { address: string }) {
+    if (!this.contractTxId) {
+      throw new Error(
+        'Contract TxId not set, set one before calling this function.',
+      );
+    }
+    this.logger.debug(`Fetching balance for ${address}`);
+    const { result } = await this.http
+      .get<ArNSStateResponse<'result', number>>({
+        endpoint: `/contract/${this.contractTxId.toString()}/state/balances/${address}`,
+      })
+      .catch((e) => {
+        if (e instanceof NotFound) {
+          return { result: 0 };
+        }
+        throw e;
+      });
+    return result;
+  }
+
+  async getBalances() {
+    if (!this.contractTxId) {
+      throw new Error(
+        'Contract TxId not set, set one before calling this function.',
+      );
+    }
+    this.logger.debug(`Fetching balances`);
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, number>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/state/balances`,
+    });
+    return result;
   }
 }

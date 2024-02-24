@@ -1,42 +1,32 @@
-import { ArIO } from '../src/common/ar-io.js';
 import { ArNSRemoteCache } from '../src/common/caches/arns-remote-cache.js';
-import { FailedRequestError } from '../src/common/error.js';
+import { NotFound } from '../src/common/error.js';
 
-describe('ArIO Client', () => {
+describe('ArNSRemoteCache', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
-  const arioClient = new ArIO({
-    contractStateProvider: remoteCacheProvider,
+
+  it('should be able to fetch gateways', async () => {
+    const gateways = await remoteCacheProvider.getGateways();
+    expect(gateways).toBeDefined();
   });
 
-  it('should call remote state provider', async () => {
-    const remoteProvider = new ArNSRemoteCache({});
-    const client = new ArIO({
-      contractStateProvider: remoteProvider,
+  it('should should throw NotFound error on non existent gateway', async () => {
+    const error = await remoteCacheProvider
+      .getGateway({
+        address: 'some-address',
+      })
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(NotFound);
+  });
+
+  it('should fetch a balance', async () => {
+    const balance = await remoteCacheProvider.getBalance({
+      address: 'some-address',
     });
-
-    const stubGetContractState = jest.fn();
-    remoteProvider.getContractState = stubGetContractState;
-    const contractTxId = ''.padEnd(43, 'a');
-    await client.getContractState({ contractTxId });
-    expect(stubGetContractState).toHaveBeenCalledWith({ contractTxId });
+    expect(balance).toEqual(0);
   });
 
-  it('should throw on bad contract id', async () => {
-    const contractTxId = ''.padEnd(42, 'a');
-    const result = (await arioClient
-      .getContractState({ contractTxId })
-      .catch((e) => e)) as any;
-
-    expect(result).toBeInstanceOf(Error);
-  });
-
-  it('should throw 404 on non existent contract', async () => {
-    const contractTxId = ''.padEnd(43, 'a');
-    const result = (await arioClient
-      .getContractState({ contractTxId })
-      .catch((e: any) => e)) as any;
-
-    expect(result).toBeInstanceOf(FailedRequestError);
-    expect(result?.message).toMatch(/404/);
+  it('should fetch all balances', async () => {
+    const balances = await remoteCacheProvider.getBalances();
+    expect(balances).toBeDefined();
   });
 });

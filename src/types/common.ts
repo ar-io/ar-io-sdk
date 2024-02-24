@@ -14,27 +14,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
-import { EvalStateResult, EvaluationOptions } from 'warp-contracts';
+import { Gateway } from './contract-state.js';
 
 export interface ContractCache {
   /**
-   * The ContractStateProvider interface is used to define a contract state provider.
+   * The ContractCache interface is used to define a contract state provider.
    */
-  getContractState<ContractState>({
-    contractTxId,
-  }: {
-    contractTxId: string;
-  }): Promise<ContractState>;
+  setContractTxId(contractTxId: string): ArIOContract;
 }
-
-export type EvaluatedContractState<ContractState> =
-  EvalStateResult<ContractState> & {
-    sortKey: string;
-    evaluationOptions: EvaluationOptions;
-    contractTxId: string;
-  };
+// TODO: extend with additional methods
+export interface ArIOContract {
+  getGateway({ address }: { address: WalletAddress }): Promise<Gateway>;
+  getGateways(): Promise<Record<WalletAddress, Gateway>>;
+  getBalance({ address }: { address: WalletAddress }): Promise<number>;
+  getBalances(): Promise<Record<WalletAddress, number>>;
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
@@ -46,6 +40,8 @@ export interface Logger {
   debug: (message: string, ...args: any[]) => void;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
+
+export type WalletAddress = string;
 
 export interface HTTPClient {
   get<T>({
@@ -59,17 +55,18 @@ export interface HTTPClient {
     headers?: Record<string, string>;
     allowedStatuses?: number[];
   }): Promise<T>;
-  post<T>({
-    endpoint,
-    signal,
-    headers,
-    allowedStatuses,
-    data,
-  }: {
-    endpoint: string;
-    signal: AbortSignal;
-    headers?: Record<string, string>;
-    allowedStatuses?: number[];
-    data: Readable | ReadableStream | Buffer;
-  }): Promise<T>;
+  // TODO: add post method
+  // post<T>({
+  //   endpoint,
+  //   signal,
+  //   headers,
+  //   allowedStatuses,
+  //   data,
+  // }: {
+  //   endpoint: string;
+  //   signal: AbortSignal;
+  //   headers?: Record<string, string>;
+  //   allowedStatuses?: number[];
+  //   data: Readable | ReadableStream | Buffer;
+  // }): Promise<T>;
 }

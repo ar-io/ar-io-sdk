@@ -1,4 +1,4 @@
-# ar-io/sdk
+# @ar-io/sdk
 
 This is the home of ar.io SDK. This SDK provides functionality for interacting with the ArNS and ar.io ecosystem. It is available for both NodeJS and Web environments.
 
@@ -35,11 +35,16 @@ yarn add @ar-io/sdk
 ## Quick Start
 
 ```typescript
-const arIO = new ArIO();
+import { ArIO } from '@ar-io/sdk';
 
-const state = arIO.getContractState({
-  contractTxId: 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U',
-});
+const arIO = new ArIO({});
+const address = 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ';
+// testnet
+const testnetBalance = await arIO.testnet.getBalance({ address });
+const testnetGateway = await arIO.testnet.getGateway({ address });
+// mainnet
+const balance = await arIO.mainnet.getBalance({ address });
+const gateway = await arIO.mainnet.getGateway({ address });
 ```
 
 ## Usage
@@ -51,19 +56,32 @@ The SDK is provided in both CommonJS and ESM formats, and it's compatible with b
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-// INSERT EXAMPLE FOR USING IN ESM PROJECT
+import { ArIO } from '@ar-io/sdk';
+
+const arIO = new ArIO({});
+const gateways = arIO.mainnet.getGateways();
 ```
 
 #### Browser
 
-```javascript
-// INSERT EXAMPLE FOR USING IN BROWSER PROJECT
+```html
+<script type="module">
+  import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
+
+  // set up our client
+  const arIO = new ArIO({});
+  // fetch mainnet gateways
+  const gateways = await arIO.mainnet.getGateways();
+</script>
 ```
 
 ### Node
 
 ```javascript
-// INSERT EXAMPLE FOR USING IN CJS PROJECT
+const { ArIO } = require('@ar-io/sdk');
+
+const arIO = new ArIO({});
+const gateways = await arIO.mainnet.getGateways();
 ```
 
 ### Typescript
@@ -74,7 +92,14 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 ## APIs
 
-[INSERT A LIST OF ALL THE APIS PROVIDED BY THE SDK AND HOW TO USE THEM]
+The contract that the following methods retrieve data from are determined by the `testnet` or `devnet` clients - see examples above for implementation details.
+
+| Method Name               | Description                                     |
+| ------------------------- | ----------------------------------------------- |
+| `getBalance({ address })` | Retrieves the balance of the specified address. |
+| `getBalances()`           | Retrieves all balances on the ArIO contract.    |
+| `getGateway({ address })` | Retrieves the specified gateway by address.     |
+| `getGateways()`           | Retrieves all gateways.                         |
 
 ## Developers
 
