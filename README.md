@@ -37,16 +37,14 @@ yarn add @ar-io/sdk
 ```typescript
 import { ArIO } from '@ar-io/sdk';
 
-const address = 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ';
 const arIO = new ArIO({});
-
-const testnetClient = arIO.testnet;
-const devnetClient = arIO.devnet;
-
-const testnetBalance = await testnetClient.getBalance({ address });
-const tesnetBalances = await testnetClient.getBalances();
-const testnetGateway = await testnetClient.getGateway({ address });
-const testnetGateways = await testnetClient.getGateways();
+const address = 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ';
+// testnet
+const testnetBalance = await arIO.testnet.getBalance({ address });
+const testnetGateway = await arIO.testnet.getGateway({ address });
+// mainnet
+const balance = await arIO.mainnet.getBalance({ address });
+const gateway = await arIO.mainnet.getGateway({ address });
 ```
 
 ## Usage
