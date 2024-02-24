@@ -1,4 +1,4 @@
-const { ArIO } = require('../../lib/cjs');
+const { ArIO } = require('../../../lib/cjs/node/index.js');
 
 (async () => {
   const arIO = new ArIO({});

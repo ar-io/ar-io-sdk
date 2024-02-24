@@ -1,4 +1,4 @@
-import { ArIO } from '../../lib/esm/index.js';
+import { ArIO } from '../../lib/esm/node/index.js';
 
 (async () => {
   const arIO = new ArIO({});
