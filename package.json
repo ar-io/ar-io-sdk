@@ -1,7 +1,7 @@
 {
   "name": "@ar-io/sdk",
   "version": "0.0.1",
-  "main": "./lib/cjs/index.js",
+  "main": "./lib/cjs/node/index.js",
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
   "browser": "./bundles/web.bundle.min.js",
@@ -44,7 +44,7 @@
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
-    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo {\"type\": \"commonjs\"} > lib/cjs/package.json",
+    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > lib/cjs/package.json",
     "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs",
     "clean": "rimraf [ lib coverage bundles ]",
     "lint": "eslint src",
