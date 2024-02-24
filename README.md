@@ -73,9 +73,9 @@ const devnetGateways = await devnetClient.getGateways();
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
 
   // set up our client
-  const arIO = new ArIO({}).testnet;
-  // fetch gateways
-  const gateways = await arIO.getGateways();
+  const arIO = new ArIO({});
+  // fetch mainnet gateways
+  const gateways = await arIO.mainnet.getGateways();
 </script>
 ```
 
