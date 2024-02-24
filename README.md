@@ -59,11 +59,7 @@ The SDK is provided in both CommonJS and ESM formats, and it's compatible with b
 import { ArIO } from '@ar-io/sdk';
 
 const arIO = new ArIO({});
-const testnetClient = arIO.testnet;
-const devnetClient = arIO.devnet;
-
-const testnetGateways = await testnetClient.getGateways();
-const devnetGateways = await devnetClient.getGateways();
+const gateways = arIO.mainnet.getGateways();
 ```
 
 #### Browser
