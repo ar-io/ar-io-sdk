@@ -18,7 +18,6 @@ import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
 import {
   ArIOContract,
   ArNSStateResponse,
-  ContractCache,
   Gateway,
   HTTPClient,
 } from '../../types/index.js';
@@ -26,7 +25,7 @@ import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
-export class ArNSRemoteCache implements ContractCache, ArIOContract {
+export class ArNSRemoteCache implements ArIOContract {
   private contractTxId: string;
   private logger: DefaultLogger;
   private http: HTTPClient;
@@ -37,11 +36,13 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       level: 'debug',
       logFormat: 'simple',
     }),
+    contractTxId = ARNS_TESTNET_REGISTRY_TX,
   }: {
     url?: string;
     logger?: DefaultLogger;
+    contractTxId?: string;
   }) {
-    this.contractTxId = ARNS_TESTNET_REGISTRY_TX;
+    this.contractTxId = contractTxId;
     this.logger = logger;
     this.http = new AxiosHTTPService({
       url: `${url}/${this.apiVersion}`,
@@ -49,17 +50,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     });
   }
 
-  setContractTxId(contractTxId: string): ArIOContract {
-    this.contractTxId = contractTxId;
-    return this;
-  }
-
   async getGateway({ address }: { address: string }) {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
     this.logger.debug(`Fetching gateway ${address}`);
     const gateway = await this.getGateways().then((gateways) => {
       if (gateways[address] === undefined) {
@@ -71,11 +62,6 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getGateways() {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
     this.logger.debug(`Fetching gateways`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, Gateway>>
@@ -86,11 +72,6 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalance({ address }: { address: string }) {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
     this.logger.debug(`Fetching balance for ${address}`);
     const { result } = await this.http
       .get<ArNSStateResponse<'result', number>>({
@@ -106,11 +87,6 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalances() {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
     this.logger.debug(`Fetching balances`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, number>>
