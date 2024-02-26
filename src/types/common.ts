@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Gateway } from './contract-state.js';
+import { ArNSNameData, Gateway } from './contract-state.js';
 
 export interface ContractCache {
   /**
@@ -28,6 +28,12 @@ export interface ArIOContract {
   getGateways(): Promise<Record<WalletAddress, Gateway>>;
   getBalance({ address }: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number>>;
+  getRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
+  getRecords({
+    contractTxIds,
+  }: {
+    contractTxIds?: string[];
+  }): Promise<Record<string, ArNSNameData>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

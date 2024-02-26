@@ -14,9 +14,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { chunk } from 'lodash';
+
 import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
 import {
   ArIOContract,
+  ArNSNameData,
   ArNSStateResponse,
   ContractCache,
   Gateway,
@@ -25,6 +28,14 @@ import {
 import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
+
+const validateContractTxId = (contractTxId: string) => {
+  if (!contractTxId) {
+    throw new Error(
+      'Contract TxId not set, set one before calling this function.',
+    );
+  }
+};
 
 export class ArNSRemoteCache implements ContractCache, ArIOContract {
   private contractTxId: string;
@@ -55,11 +66,8 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getGateway({ address }: { address: string }) {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
+    validateContractTxId(this.contractTxId);
+
     this.logger.debug(`Fetching gateway ${address}`);
     const gateway = await this.getGateways().then((gateways) => {
       if (gateways[address] === undefined) {
@@ -71,11 +79,8 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getGateways() {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
+    validateContractTxId(this.contractTxId);
+
     this.logger.debug(`Fetching gateways`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, Gateway>>
@@ -86,11 +91,8 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalance({ address }: { address: string }) {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
+    validateContractTxId(this.contractTxId);
+
     this.logger.debug(`Fetching balance for ${address}`);
     const { result } = await this.http
       .get<ArNSStateResponse<'result', number>>({
@@ -106,11 +108,8 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalances() {
-    if (!this.contractTxId) {
-      throw new Error(
-        'Contract TxId not set, set one before calling this function.',
-      );
-    }
+    validateContractTxId(this.contractTxId);
+
     this.logger.debug(`Fetching balances`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, number>>
@@ -118,5 +117,52 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
       endpoint: `/contract/${this.contractTxId.toString()}/state/balances`,
     });
     return result;
+  }
+
+  async getRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
+    validateContractTxId(this.contractTxId);
+
+    this.logger.debug(`Fetching record for ${domain}`);
+    const { record } = await this.http.get<
+      ArNSStateResponse<'record', ArNSNameData>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/records/${domain}`,
+    });
+    return record;
+  }
+
+  async getRecords({
+    contractTxIds,
+  }: {
+    contractTxIds?: string[];
+  }): Promise<Record<string, ArNSNameData>> {
+    validateContractTxId(this.contractTxId);
+
+    const contractTxIdsSet = new Set(contractTxIds);
+    const batches = chunk([...contractTxIdsSet]);
+
+    this.logger.debug(`Fetching records for ${contractTxIdsSet.size} ANT's`);
+    const records = await Promise.all(
+      batches.map((batch: string[]) =>
+        this.http.get<
+          ArNSStateResponse<'records', Record<string, ArNSNameData>>
+        >({
+          endpoint: `/contract/${this.contractTxId.toString()}/records${new URLSearchParams(batch.map((id) => ['contractTxId', id.toString()])).toString()}`,
+        }),
+      ),
+    ).then(
+      (
+        responses: ArNSStateResponse<'records', Record<string, ArNSNameData>>[],
+      ) => {
+        const recordsObj = responses.reduce(
+          (acc: Record<string, ArNSNameData>, response) => {
+            return { ...acc, ...response.records };
+          },
+          {},
+        );
+        return recordsObj;
+      },
+    );
+    return records;
   }
 }
