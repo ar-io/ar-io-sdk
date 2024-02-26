@@ -121,23 +121,23 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     validateContractTxId(this.contractTxId);
 
     this.logger.debug(`Fetching record for ${domain}`);
-    const { record } = await this.http.get<
-      ArNSStateResponse<'record', ArNSNameData>
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', ArNSNameData>
     >({
-      endpoint: `/contract/${this.contractTxId.toString()}/records/${domain}`,
+      endpoint: `/contract/${this.contractTxId.toString()}/state/records/${domain}`,
     });
-    return record;
+    return result;
   }
 
   async getRecords(): Promise<Record<string, ArNSNameData>> {
     validateContractTxId(this.contractTxId);
 
     this.logger.debug(`Fetching all records`);
-    const { records } = await this.http.get<
-      ArNSStateResponse<'records', Record<string, ArNSNameData>>
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, ArNSNameData>>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/state/records`,
     });
-    return records;
+    return result;
   }
 }
