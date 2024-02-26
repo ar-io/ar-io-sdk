@@ -47,9 +47,8 @@ const contractTxIds = [
 
 const balance = await arIO.mainnet.getBalance({ address });
 const gateway = await arIO.mainnet.getGateway({ address });
-const record = await arIO.mainnet.getRecord({ domain });
-const records = await arIO.mainnet.getRecords({ contractTxIds });
-const allRecords = await arIO.mainnet.getRecords({});
+const record = await arIO.mainnet.getRecord({ domain: 'ar-io' });;
+const records = await arIO.mainnet.getRecords({});
 ```
 
 ## Usage
