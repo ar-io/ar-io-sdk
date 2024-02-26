@@ -38,17 +38,7 @@ yarn add @ar-io/sdk
 import { ArIO } from '@ar-io/sdk';
 
 const arIO = new ArIO({});
-const address = 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ';
-const domain = 'ardrive';
-const contractTxIds = [
-  'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-  'DGWp8_6c1YywKgCgBFhncMglciQyCdfX1swil4qjNSc',
-];
-
-const balance = await arIO.mainnet.getBalance({ address });
-const gateway = await arIO.mainnet.getGateway({ address });
-const record = await arIO.mainnet.getRecord({ domain: 'ar-io' });
-const records = await arIO.mainnet.getRecords({});
+const gateways = arIO.testnet.getGateways();
 ```
 
 ## Usage
@@ -98,7 +88,7 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 The contract that the following methods retrieve data from are determined by the `testnet` or `devnet` clients - see examples above for implementation details.
 
-#### [`getBalance({ address })`](#getbalance-address)
+#### `getBalance({ address })`
 
 Retrieves the balance of the specified address.
 
@@ -108,7 +98,7 @@ const balance = new ArIO({}).testnet.getBalance({
 });
 ```
 
-#### [`getBalances()`](#getbalances)
+#### `getBalances()`
 
 Retrieves the balances of the ArIO contract.
 
@@ -116,7 +106,7 @@ Retrieves the balances of the ArIO contract.
 const balances = new ArIO({}).testnet.getBalances();
 ```
 
-#### [`getGateway({ address })`](#getgateway-address)
+#### `getGateway({ address })`
 
 Retrieves the gateway info of the specified address.
 
@@ -126,7 +116,7 @@ const gateway = new ArIO({}).testnet.getGateway({
 });
 ```
 
-#### [`getGateways()`](#getgateways)
+#### `getGateways()`
 
 Retrieves the registered gateways of the ArIO contract.
 
@@ -134,7 +124,7 @@ Retrieves the registered gateways of the ArIO contract.
 const gateways = new ArIO({}).testnet.getGateways();
 ```
 
-#### [`getRecord({ domain })`](#getrecord-domain)
+#### `getRecord({ domain })`
 
 Retrieves the domain info of the specified ArNS record.
 
@@ -142,7 +132,7 @@ Retrieves the domain info of the specified ArNS record.
 const record = new ArIO({}).testnet.getRecord({ domain: 'INSERT_ARNS_NAME' });
 ```
 
-#### [`getRecords()`](#getrecords)
+#### `getRecords()`
 
 Retrieves the registered ArNS domains of the ArIO contract.
 

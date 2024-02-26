@@ -51,6 +51,14 @@ export class ArNSRemoteCache implements ArIOContract {
     });
   }
 
+  private validateContractTxId() {
+    if (this.contractTxId === undefined) {
+      throw new Error(
+        'Contract ID not set. Please set the contract ID before using this method.',
+      );
+    }
+  }
+
   async getGateway({ address }: { address: string }) {
     this.logger.debug(`Fetching gateway ${address}`);
     const gateway = await this.getGateways().then((gateways) => {
