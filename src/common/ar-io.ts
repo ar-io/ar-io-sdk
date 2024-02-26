@@ -32,4 +32,47 @@ export class ArIO {
     this.testnet = this.cache.setContractTxId(ARNS_TESTNET_REGISTRY_TX);
     this.devnet = this.cache.setContractTxId(ARNS_DEVNET_REGISTRY_TX);
   }
+
+  static forMainnet({
+    remoteCacheUrl,
+  }: {
+    remoteCacheUrl?: string;
+  }): ArIOContract {
+    return ArIO.custom({
+      remoteCacheUrl,
+      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+    });
+  }
+  static forTestnet({
+    remoteCacheUrl,
+  }: {
+    remoteCacheUrl?: string;
+  }): ArIOContract {
+    return ArIO.custom({
+      remoteCacheUrl,
+      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+    });
+  }
+  static forDevnet({
+    remoteCacheUrl,
+  }: {
+    remoteCacheUrl?: string;
+  }): ArIOContract {
+    // TODO: implement arlocal support
+    return ArIO.custom({
+      remoteCacheUrl,
+      contractTxId: ARNS_DEVNET_REGISTRY_TX,
+    });
+  }
+  static custom({
+    remoteCacheUrl,
+    contractTxId,
+  }: {
+    remoteCacheUrl?: string;
+    contractTxId: string;
+  }): ArIOContract {
+    return new ArNSRemoteCache({ url: remoteCacheUrl }).setContractTxId(
+      contractTxId,
+    );
+  }
 }
