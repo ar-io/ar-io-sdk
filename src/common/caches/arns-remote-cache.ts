@@ -27,14 +27,6 @@ import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
-const validateContractTxId = (contractTxId: string) => {
-  if (!contractTxId) {
-    throw new Error(
-      'Contract TxId not set, set one before calling this function.',
-    );
-  }
-};
-
 export class ArNSRemoteCache implements ContractCache, ArIOContract {
   private contractTxId: string;
   private logger: DefaultLogger;
@@ -63,8 +55,16 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     return this;
   }
 
+  private validateContractTxId() {
+    if (!this.contractTxId) {
+      throw new Error(
+        'Contract TxId not set, set one before calling this function.',
+      );
+    }
+  }
+
   async getGateway({ address }: { address: string }) {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching gateway ${address}`);
     const gateway = await this.getGateways().then((gateways) => {
@@ -77,7 +77,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getGateways() {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching gateways`);
     const { result } = await this.http.get<
@@ -89,7 +89,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalance({ address }: { address: string }) {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching balance for ${address}`);
     const { result } = await this.http
@@ -106,7 +106,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getBalances() {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching balances`);
     const { result } = await this.http.get<
@@ -118,7 +118,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching record for ${domain}`);
     const { result } = await this.http.get<
@@ -130,7 +130,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
   }
 
   async getRecords(): Promise<Record<string, ArNSNameData>> {
-    validateContractTxId(this.contractTxId);
+    this.validateContractTxId();
 
     this.logger.debug(`Fetching all records`);
     const { result } = await this.http.get<
