@@ -18,18 +18,29 @@ import {
   ARNS_DEVNET_REGISTRY_TX,
   ARNS_TESTNET_REGISTRY_TX,
 } from '../constants.js';
-import { ArIOContract, ContractCache } from '../types/index.js';
+import { ArIOContract } from '../types/index.js';
 import { ArNSRemoteCache } from './index.js';
 
 export class ArIO {
-  protected cache: ContractCache = new ArNSRemoteCache({});
+  protected cache: ArIOContract = new ArNSRemoteCache({
+    contractTxId: ARNS_TESTNET_REGISTRY_TX,
+  });
 
   public testnet: ArIOContract;
   public devnet: ArIOContract;
 
   constructor({ remoteCacheUrl }: { remoteCacheUrl?: string }) {
-    this.cache = new ArNSRemoteCache({ url: remoteCacheUrl });
-    this.testnet = this.cache.setContractTxId(ARNS_TESTNET_REGISTRY_TX);
-    this.devnet = this.cache.setContractTxId(ARNS_DEVNET_REGISTRY_TX);
+    this.cache = new ArNSRemoteCache({
+      url: remoteCacheUrl,
+      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+    });
+    this.testnet = new ArNSRemoteCache({
+      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      url: remoteCacheUrl,
+    });
+    this.devnet = new ArNSRemoteCache({
+      contractTxId: ARNS_DEVNET_REGISTRY_TX,
+      url: remoteCacheUrl,
+    });
   }
 }

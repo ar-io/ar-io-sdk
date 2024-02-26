@@ -16,12 +16,6 @@
  */
 import { Gateway } from './contract-state.js';
 
-export interface ContractCache {
-  /**
-   * The ContractCache interface is used to define a contract state provider.
-   */
-  setContractTxId(contractTxId: string): ArIOContract;
-}
 // TODO: extend with additional methods
 export interface ArIOContract {
   getGateway({ address }: { address: WalletAddress }): Promise<Gateway>;
