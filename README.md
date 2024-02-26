@@ -98,14 +98,57 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 The contract that the following methods retrieve data from are determined by the `testnet` or `devnet` clients - see examples above for implementation details.
 
-| Method Name               | Description                                           |
-| ------------------------- | ----------------------------------------------------- |
-| `getBalance({ address })` | Retrieves the balance of the specified address.       |
-| `getBalances()`           | Retrieves all balances on the ArIO contract.          |
-| `getGateway({ address })` | Retrieves the specified gateway by address.           |
-| `getGateways()`           | Retrieves all gateways.                               |
-| `getRecord({ domain })`   | Retrieves a specified ArNS record by the domain name. |
-| `getRecords()`            | Retrieves all records                                 |
+#### [`getBalance({ address })`](#getbalance-address)
+
+Retrieves the balance of the specified address.
+
+```typescript
+const balance = new ArIO({}).testnet.getBalance({
+  address: 'INSERT_WALLET_ADDRESS',
+});
+```
+
+#### [`getBalances()`](#getbalances)
+
+Retrieves the balances of the ArIO contract.
+
+```typescript
+const balances = new ArIO({}).testnet.getBalances();
+```
+
+#### [`getGateway({ address })`](#getgateway-address)
+
+Retrieves the gateway info of the specified address.
+
+```typescript
+const gateway = new ArIO({}).testnet.getGateway({
+  address: 'INSERT_GATEWAY_ADDRESS',
+});
+```
+
+#### [`getGateways()`](#getgateways)
+
+Retrieves the registered gateways of the ArIO contract.
+
+```typescript
+const gateways = new ArIO({}).testnet.getGateways();
+```
+
+#### [`getRecord({ domain })`](#getrecord-domain)
+
+Retrieves the domain info of the specified ArNS record.
+
+```typescript
+const record = new ArIO({}).testnet.getRecord({ domain: 'INSERT_ARNS_NAME' });
+```
+
+#### [`getRecords()`](#getrecords)
+
+Retrieves the registered ArNS domains of the ArIO contract.
+
+```typescript
+const records = new ArIO({}).testnet.getRecords();
+```
 
 ## Developers
 
