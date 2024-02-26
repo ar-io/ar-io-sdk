@@ -136,7 +136,7 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     const { records } = await this.http.get<
       ArNSStateResponse<'records', Record<string, ArNSNameData>>
     >({
-      endpoint: `/contract/${this.contractTxId.toString()}/records`,
+      endpoint: `/contract/${this.contractTxId.toString()}/state/records`,
     });
     return records;
   }
