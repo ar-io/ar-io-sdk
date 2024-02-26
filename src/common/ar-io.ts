@@ -22,18 +22,10 @@ import { ArIOContract } from '../types/index.js';
 import { ArNSRemoteCache } from './index.js';
 
 export class ArIO {
-  protected cache: ArIOContract = new ArNSRemoteCache({
-    contractTxId: ARNS_TESTNET_REGISTRY_TX,
-  });
-
   public testnet: ArIOContract;
   public devnet: ArIOContract;
 
   constructor({ remoteCacheUrl }: { remoteCacheUrl?: string }) {
-    this.cache = new ArNSRemoteCache({
-      url: remoteCacheUrl,
-      contractTxId: ARNS_TESTNET_REGISTRY_TX,
-    });
     this.testnet = new ArNSRemoteCache({
       contractTxId: ARNS_TESTNET_REGISTRY_TX,
       url: remoteCacheUrl,
