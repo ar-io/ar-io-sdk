@@ -44,14 +44,7 @@ const contractTxIds = [
   'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
   'DGWp8_6c1YywKgCgBFhncMglciQyCdfX1swil4qjNSc',
 ];
-// testnet
-const testnetBalance = await arIO.testnet.getBalance({ address });
-const testnetGateway = await arIO.testnet.getGateway({ address });
-const testnetRecord = await arIO.testnet.getRecord({ domain });
-const testnetRecords = await arIO.testnet.getRecords({ contractTxIds });
-const allTestnetRecords = await arIO.testnet.getRecords({});
 
-// mainnet
 const balance = await arIO.mainnet.getBalance({ address });
 const gateway = await arIO.mainnet.getGateway({ address });
 const record = await arIO.mainnet.getRecord({ domain });
@@ -106,14 +99,14 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 The contract that the following methods retrieve data from are determined by the `testnet` or `devnet` clients - see examples above for implementation details.
 
-| Method Name                     | Description                                                                                                                |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `getBalance({ address })`       | Retrieves the balance of the specified address.                                                                            |
-| `getBalances()`                 | Retrieves all balances on the ArIO contract.                                                                               |
-| `getGateway({ address })`       | Retrieves the specified gateway by address.                                                                                |
-| `getGateways()`                 | Retrieves all gateways.                                                                                                    |
-| `getRecord({ domain })`         | Retrieves a specified ArNS record by the domain name.                                                                      |
-| `getRecords({ contractTxIds })` | Retrieves all records with an optional `contractTxIds` filter to only get records associated with specified ANT contracts. |
+| Method Name               | Description                                           |
+| ------------------------- | ----------------------------------------------------- |
+| `getBalance({ address })` | Retrieves the balance of the specified address.       |
+| `getBalances()`           | Retrieves all balances on the ArIO contract.          |
+| `getGateway({ address })` | Retrieves the specified gateway by address.           |
+| `getGateways()`           | Retrieves all gateways.                               |
+| `getRecord({ domain })`   | Retrieves a specified ArNS record by the domain name. |
+| `getRecords()`            | Retrieves all records                                 |
 
 ## Developers
 

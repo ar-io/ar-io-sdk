@@ -49,26 +49,9 @@ describe('ArNSRemoteCache', () => {
     expect(error).toBeInstanceOf(NotFound);
   });
 
-  it('should fetch records for list of contractIDs', async () => {
-    const allRecords = await remoteCacheProvider
-      .getRecords({})
-      .then((res) => Object.entries(res).slice(200))
-      .catch((e) => e); // deliberately attempting to get more than URL params can handle to test batching but limiting to 200 to not strain service
-
-    const contractTxIds = allRecords.map(([, record]) => record.contractTxId); // deliberately attempting to get more than URL params can handle to test batching but limiting to 200 to not strain service
-
-    const expectedRecords = allRecords
-      .map(([domain]) => domain)
-      .sort((a: string, b: string) => a.localeCompare(b));
-    const records = await remoteCacheProvider.getRecords({
-      contractTxIds: [...contractTxIds, ...contractTxIds], // mapping twice to test duplicates
-    });
-
-    const actualRecords = Object.keys(records).sort((a: string, b: string) =>
-      a.localeCompare(b),
-    );
+  it('should fetch all records', async () => {
+    const records = await remoteCacheProvider.getRecords();
 
     expect(records).toBeDefined();
-    expect(actualRecords).toEqual(expectedRecords);
   });
 });

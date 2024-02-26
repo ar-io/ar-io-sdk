@@ -29,11 +29,7 @@ export interface ArIOContract {
   getBalance({ address }: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number>>;
   getRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
-  getRecords({
-    contractTxIds,
-  }: {
-    contractTxIds?: string[];
-  }): Promise<Record<string, ArNSNameData>>;
+  getRecords(): Promise<Record<string, ArNSNameData>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { chunk } from 'lodash';
-
 import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
 import {
   ArIOContract,
@@ -131,38 +129,15 @@ export class ArNSRemoteCache implements ContractCache, ArIOContract {
     return record;
   }
 
-  async getRecords({
-    contractTxIds,
-  }: {
-    contractTxIds?: string[];
-  }): Promise<Record<string, ArNSNameData>> {
+  async getRecords(): Promise<Record<string, ArNSNameData>> {
     validateContractTxId(this.contractTxId);
 
-    const contractTxIdsSet = new Set(contractTxIds);
-    const batches = chunk([...contractTxIdsSet]);
-
-    this.logger.debug(`Fetching records for ${contractTxIdsSet.size} ANT's`);
-    const records = await Promise.all(
-      batches.map((batch: string[]) =>
-        this.http.get<
-          ArNSStateResponse<'records', Record<string, ArNSNameData>>
-        >({
-          endpoint: `/contract/${this.contractTxId.toString()}/records${new URLSearchParams(batch.map((id) => ['contractTxId', id.toString()])).toString()}`,
-        }),
-      ),
-    ).then(
-      (
-        responses: ArNSStateResponse<'records', Record<string, ArNSNameData>>[],
-      ) => {
-        const recordsObj = responses.reduce(
-          (acc: Record<string, ArNSNameData>, response) => {
-            return { ...acc, ...response.records };
-          },
-          {},
-        );
-        return recordsObj;
-      },
-    );
+    this.logger.debug(`Fetching all records`);
+    const { records } = await this.http.get<
+      ArNSStateResponse<'records', Record<string, ArNSNameData>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/records`,
+    });
     return records;
   }
 }
