@@ -43,73 +43,24 @@
           </tbody>
         </table>
       </div>
-      <button
-        id="fetch-gateways-button"
-        class="animate-bounce bg-primary text-textPrimary p-2 rounded-md w-full text-surface hover:shadow-xl"
-        style="color: black"
-      >
-        Fetch Gateways
-      </button>
     </div>
     <!-- balance -->
     <div
       class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md"
       style="width: 750px"
     >
-      <h1 class="w-full text-textPrimary font-bold">Get Balance</h1>
-      <form id="balance-form" class="w-full">
-        <div class="flex flex-col">
-          <label for="arweave-id" class="text-textPrimary"
-            >Arweave Address:</label
-          >
-          <input
-            type="text"
-            id="arweave-id"
-            name="arweave-id"
-            class="border border-surface px-4 py-2 rounded-md w-full"
-            placeholder="Enter a wallet address to see IO balance!"
-          />
-        </div>
-
-        <button
-          type="submit"
-          class="bg-primary text-textPrimary p-2 rounded-md w-full text-surface hover:shadow-xl mt-2"
-          style="color: black"
-        >
-          Get Balance
-        </button>
-      </form>
-      <div id="balance-result" class="text-textPrimary mt-2">Balance: 0 IO</div>
+      <h1 class="w-full text-textPrimary font-bold">
+        Get Balance of address 7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk
+      </h1>
+      <div id="balance-result" class="text-primary mt-2">Loading...</div>
     </div>
     <!-- record -->
     <div
       class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md"
       style="width: 750px"
     >
-      <h1 class="w-full text-textPrimary font-bold">Get Record</h1>
-      <form id="record-form" class="w-full">
-        <div class="flex flex-col">
-          <label for="record-input" class="text-textPrimary"
-            >ArNS Domain:</label
-          >
-          <input
-            type="text"
-            id="record-input"
-            name="record-input"
-            class="border border-surface px-4 py-2 rounded-md w-full"
-            placeholder="Enter an ArNS name to see the domain data!"
-          />
-        </div>
-
-        <button
-          type="submit"
-          class="bg-primary text-textPrimary p-2 rounded-md w-full text-surface hover:shadow-xl mt-2"
-          style="color: black"
-        >
-          Get record
-        </button>
-      </form>
-      <div id="record-result" class="text-textPrimary mt-2"></div>
+      <h1 class="w-full text-textPrimary font-bold">Get Record "ardrive"</h1>
+      <div id="record-result" class="text-primary mt-2">Loading...</div>
     </div>
     <!-- get all records -->
     <div
@@ -131,13 +82,6 @@
           </tbody>
         </table>
       </div>
-      <button
-        id="fetch-records-button"
-        class="animate-bounce bg-primary text-textPrimary p-2 rounded-md w-full text-surface hover:shadow-xl"
-        style="color: black"
-      >
-        Fetch records
-      </button>
     </div>
     <script type="module">
       import { ArIO } from './web.bundle.min.js';
@@ -145,16 +89,20 @@
       // set up our client
       const arIO = new ArIO({}).testnet;
 
-      async function setGateways() {
-        const tableBody = document.getElementById('table-body');
-        tableBody.innerHTML = `
-              <tr>
-                <td class="border border-surface px-4 py-2">Loading...</td>
-              </tr>
-            `;
+      // fetch data on page load
+      async function init() {
         const gateways = await arIO.getGateways();
+        const balance = await arIO.getBalance({
+          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        });
+        const record = await arIO.getRecord({ domain: 'ardrive' });
+        const records = await arIO.getRecords();
 
-        tableBody.innerHTML = Object.entries(gateways)
+        //  update the UI
+
+        document.getElementById('table-body').innerHTML = Object.entries(
+          gateways,
+        )
           .map(([gatewayOwner, gateway]) => {
             return `
               <tr>
@@ -165,65 +113,31 @@
             `;
           })
           .join('');
-      }
 
-      const fetchGatewaysButton = document.getElementById(
-        'fetch-gateways-button',
-      );
-      fetchGatewaysButton.addEventListener('click', () => {
-        setGateways();
-      });
+        document.getElementById('balance-result').textContent =
+          `Balance: ${balance} IO`;
 
-      const balanceForm = document.getElementById('balance-form');
-      const balanceResult = document.getElementById('balance-result');
+        document.getElementById('record-result').textContent = JSON.stringify(
+          record,
+          null,
+          2,
+        );
 
-      balanceForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        balanceResult.textContent = `Loading...`;
-        const arweaveId = document.getElementById('arweave-id').value;
-        const balance = await arIO.getBalance({ address: arweaveId });
-        balanceResult.textContent = `Balance: ${balance} IO`;
-      });
-
-      const recordForm = document.getElementById('record-form');
-      const recordResult = document.getElementById('record-result');
-
-      recordForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        recordResult.textContent = `Loading...`;
-        const domain = document.getElementById('record-input').value;
-        const record = await arIO.getRecord({ domain });
-        recordResult.textContent = JSON.stringify(record, null, 2);
-      });
-
-      async function setRecords() {
-        const tableBody = document.getElementById('records-table-body');
-        tableBody.innerHTML = `
-              <tr>
-                <td class="border border-surface px-4 py-2">Loading...</td>
-              </tr>
-            `;
-        const records = await arIO.getRecords();
-
-        tableBody.innerHTML = Object.entries(records)
-          .map(([domain, record]) => {
-            return `
+        document.getElementById('records-table-body').innerHTML =
+          Object.entries(records)
+            .map(([domain, record]) => {
+              return `
               <tr>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://${domain}.arweave.dev" target="_blank">${domain}</a></td>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/tx/${record.contractTxId}" target="_blank">${record.contractTxId}</a></td>
                 <td class="border border-surface px-4 py-2">${record.endTimestamp ? 'Lease' : 'Permanent'}</td>
               </tr>
             `;
-          })
-          .join('');
+            })
+            .join('');
       }
 
-      const fetchRecordsButton = document.getElementById(
-        'fetch-records-button',
-      );
-      fetchRecordsButton.addEventListener('click', () => {
-        setRecords();
-      });
+      window.addEventListener('load', init);
     </script>
   </body>
 </html>
