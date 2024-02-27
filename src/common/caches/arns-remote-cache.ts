@@ -14,9 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ARNS_TESTNET_REGISTRY_TX } from '../../constants.js';
+import { ARNS_TESTNET_REGISTRY_TX, ARWEAVE_TX_REGEX } from '../../constants.js';
 import {
   ArIOContract,
+  ArNSNameData,
   ArNSStateResponse,
   Gateway,
   HTTPClient,
@@ -42,12 +43,19 @@ export class ArNSRemoteCache implements ArIOContract {
     logger?: DefaultLogger;
     contractTxId?: string;
   }) {
+    this.validateContractTxId(contractTxId);
     this.contractTxId = contractTxId;
     this.logger = logger;
     this.http = new AxiosHTTPService({
       url: `${url}/${this.apiVersion}`,
       logger,
     });
+  }
+
+  private validateContractTxId(id: string) {
+    if (!ARWEAVE_TX_REGEX.test(id)) {
+      throw new Error(`Invalid contract tx id: ${id}`);
+    }
   }
 
   async getGateway({ address }: { address: string }) {
@@ -92,6 +100,26 @@ export class ArNSRemoteCache implements ArIOContract {
       ArNSStateResponse<'result', Record<string, number>>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/state/balances`,
+    });
+    return result;
+  }
+
+  async getRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
+    this.logger.debug(`Fetching record for ${domain}`);
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', ArNSNameData>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/state/records/${domain}`,
+    });
+    return result;
+  }
+
+  async getRecords(): Promise<Record<string, ArNSNameData>> {
+    this.logger.debug(`Fetching all records`);
+    const { result } = await this.http.get<
+      ArNSStateResponse<'result', Record<string, ArNSNameData>>
+    >({
+      endpoint: `/contract/${this.contractTxId.toString()}/state/records`,
     });
     return result;
   }

@@ -22,11 +22,13 @@
       };
     </script>
   </head>
-  <body class="bg-background flex flex-col items-center p-10">
+  <body class="bg-background flex flex-col items-center p-10 gap-10">
+    <!-- gateways -->
     <div
       class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md h-full"
-      style="width: 750px"
+      style="width: 750px; height: 500px"
     >
+      <h1 class="text-textPrimary w-full font-bold">Browse Gateways</h1>
       <div class="h-full w-full" style="overflow-y: scroll">
         <table class="w-full bg-background text-textPrimary">
           <thead>
@@ -41,13 +43,45 @@
           </tbody>
         </table>
       </div>
-      <button
-        id="fetch-gateways-button"
-        class="animate-bounce bg-primary text-textPrimary p-2 rounded-md w-full text-surface hover:shadow-xl"
-        style="color: black"
-      >
-        Fetch Gateways
-      </button>
+    </div>
+    <!-- balance -->
+    <div
+      class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md"
+      style="width: 750px"
+    >
+      <h1 class="w-full text-textPrimary font-bold">
+        Get Balance of address 7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk
+      </h1>
+      <div id="balance-result" class="text-primary mt-2">Loading...</div>
+    </div>
+    <!-- record -->
+    <div
+      class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md"
+      style="width: 750px"
+    >
+      <h1 class="w-full text-textPrimary font-bold">Get Record "ardrive"</h1>
+      <div id="record-result" class="text-primary mt-2">Loading...</div>
+    </div>
+    <!-- get all records -->
+    <div
+      class="bg-surface flex flex-col gap-5 items-end justify-center p-5 rounded-md h-full"
+      style="width: 750px; height: 500px"
+    >
+      <h1 class="text-textPrimary w-full font-bold">Browse Records</h1>
+      <div class="h-full w-full" style="overflow-y: scroll">
+        <table class="w-full bg-background text-textPrimary">
+          <thead>
+            <tr>
+              <th class="px-4 py-2">Domain</th>
+              <th class="px-4 py-2">ANT</th>
+              <th class="px-4 py-2">Purchase type</th>
+            </tr>
+          </thead>
+          <tbody id="records-table-body">
+            <!-- Add more rows as needed -->
+          </tbody>
+        </table>
+      </div>
     </div>
     <script type="module">
       import { ArIO } from './web.bundle.min.js';
@@ -55,34 +89,55 @@
       // set up our client
       const arIO = new ArIO({}).testnet;
 
-      async function setGateways() {
-        const tableBody = document.getElementById('table-body');
-        tableBody.innerHTML = `
-              <tr>
-                <td class="border border-surface px-4 py-2">Loading...</td>
-              </tr>
-            `;
+      // fetch data on page load
+      async function init() {
         const gateways = await arIO.getGateways();
+        const balance = await arIO.getBalance({
+          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        });
+        const record = await arIO.getRecord({ domain: 'ardrive' });
+        const records = await arIO.getRecords();
 
-        tableBody.innerHTML = Object.entries(gateways)
+        //  update the UI
+
+        document.getElementById('table-body').innerHTML = Object.entries(
+          gateways,
+        )
           .map(([gatewayOwner, gateway]) => {
             return `
               <tr>
-                <td class="border border-surface px-4 py-2 text-primary"><a href="https://${gateway.settings.fqdn}" target="_blank">${gateway.settings.fqdn}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary" style="width: fit-content"><a href="https://${gateway.settings.fqdn}" target="_blank">${gateway.settings.fqdn}</a></td>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/address/${gatewayOwner}" target="_blank">${gatewayOwner}</a></td>
                 <td class="border border-surface px-4 py-2">${gateway.operatorStake} IO</td>
               </tr>
             `;
           })
           .join('');
+
+        document.getElementById('balance-result').textContent =
+          `Balance: ${balance} IO`;
+
+        document.getElementById('record-result').textContent = JSON.stringify(
+          record,
+          null,
+          2,
+        );
+
+        document.getElementById('records-table-body').innerHTML =
+          Object.entries(records)
+            .map(([domain, record]) => {
+              return `
+              <tr>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://${domain}.arweave.dev" target="_blank">${domain}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/tx/${record.contractTxId}" target="_blank">${record.contractTxId}</a></td>
+                <td class="border border-surface px-4 py-2">${record.endTimestamp ? 'Lease' : 'Permanent'}</td>
+              </tr>
+            `;
+            })
+            .join('');
       }
 
-      const fetchGatewaysButton = document.getElementById(
-        'fetch-gateways-button',
-      );
-      fetchGatewaysButton.addEventListener('click', () => {
-        setGateways();
-      });
+      window.addEventListener('load', init);
     </script>
   </body>
 </html>
