@@ -37,7 +37,7 @@ yarn add @ar-io/sdk
 ```typescript
 import { ArIO } from '@ar-io/sdk';
 
-const arIO = new ArIO({});
+const arIO = new ArIO();
 const gateways = arIO.testnet.getGateways();
 ```
 
@@ -52,7 +52,7 @@ The SDK is provided in both CommonJS and ESM formats, and it's compatible with b
 ```javascript
 import { ArIO } from '@ar-io/sdk';
 
-const arIO = new ArIO({});
+const arIO = new ArIO();
 const gateways = arIO.mainnet.getGateways();
 ```
 
@@ -63,7 +63,7 @@ const gateways = arIO.mainnet.getGateways();
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
 
   // set up our client
-  const arIO = new ArIO({});
+  const arIO = new ArIO();
   // fetch mainnet gateways
   const gateways = await arIO.mainnet.getGateways();
 </script>
@@ -74,7 +74,7 @@ const gateways = arIO.mainnet.getGateways();
 ```javascript
 const { ArIO } = require('@ar-io/sdk');
 
-const arIO = new ArIO({});
+const arIO = new ArIO();
 const gateways = await arIO.mainnet.getGateways();
 ```
 
@@ -93,7 +93,7 @@ The contract that the following methods retrieve data from are determined by the
 Retrieves the balance of the specified address.
 
 ```typescript
-const balance = new ArIO({}).testnet.getBalance({
+const balance = new ArIO().testnet.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
 ```
@@ -103,7 +103,7 @@ const balance = new ArIO({}).testnet.getBalance({
 Retrieves the balances of the ArIO contract.
 
 ```typescript
-const balances = new ArIO({}).testnet.getBalances();
+const balances = new ArIO().testnet.getBalances();
 ```
 
 #### `getGateway({ address })`
@@ -111,7 +111,7 @@ const balances = new ArIO({}).testnet.getBalances();
 Retrieves the gateway info of the specified address.
 
 ```typescript
-const gateway = new ArIO({}).testnet.getGateway({
+const gateway = new ArIO().testnet.getGateway({
   address: 'INSERT_GATEWAY_ADDRESS',
 });
 ```
@@ -121,7 +121,7 @@ const gateway = new ArIO({}).testnet.getGateway({
 Retrieves the registered gateways of the ArIO contract.
 
 ```typescript
-const gateways = new ArIO({}).testnet.getGateways();
+const gateways = new ArIO().testnet.getGateways();
 ```
 
 #### `getRecord({ domain })`
@@ -129,7 +129,7 @@ const gateways = new ArIO({}).testnet.getGateways();
 Retrieves the domain info of the specified ArNS record.
 
 ```typescript
-const record = new ArIO({}).testnet.getRecord({ domain: 'INSERT_ARNS_NAME' });
+const record = new ArIO().testnet.getRecord({ domain: 'INSERT_ARNS_NAME' });
 ```
 
 #### `getRecords()`
@@ -137,7 +137,7 @@ const record = new ArIO({}).testnet.getRecord({ domain: 'INSERT_ARNS_NAME' });
 Retrieves the registered ArNS domains of the ArIO contract.
 
 ```typescript
-const records = new ArIO({}).testnet.getRecords();
+const records = new ArIO().testnet.getRecords();
 ```
 
 ## Developers
