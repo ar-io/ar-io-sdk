@@ -4,7 +4,7 @@ const {
 } = require('../../lib/cjs/node/index.js');
 
 (async () => {
-  const arIO = new ArIO({});
+  const arIO = new ArIO();
   // testnet gateways
   const testnetGateways = await arIO.testnet.getGateways();
   const protocolBalance = await arIO.testnet.getBalance({
