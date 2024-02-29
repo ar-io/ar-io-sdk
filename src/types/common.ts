@@ -14,15 +14,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { SmartWeaveSortKey } from '../utils/index.js';
 import { ArNSNameData, Gateway } from './contract-state.js';
+
+export type EvaluationFilters = {
+  blockHeight?: number;
+  sortKey?: SmartWeaveSortKey; // should be tested against regex for validity
+};
+
+// TODO: extend type with other read filters (e.g max eval time)
+export type ReadInteractionFilters = EvaluationFilters;
 
 // TODO: extend with additional methods
 export interface ArIOContract {
-  getGateway({ address }: { address: WalletAddress }): Promise<Gateway>;
+  getGateway(
+    props: { address: WalletAddress } & ReadInteractionFilters,
+  ): Promise<Gateway>;
   getGateways(): Promise<Record<WalletAddress, Gateway>>;
-  getBalance({ address }: { address: WalletAddress }): Promise<number>;
-  getBalances(): Promise<Record<WalletAddress, number>>;
-  getRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
+  getBalance(
+    props: { address: WalletAddress } & ReadInteractionFilters,
+  ): Promise<number>;
+  getBalances(
+    props: ReadInteractionFilters,
+  ): Promise<Record<WalletAddress, number>>;
+  getRecord(
+    props: { domain: string } & ReadInteractionFilters,
+  ): Promise<ArNSNameData>;
   getRecords(): Promise<Record<string, ArNSNameData>>;
 }
 
@@ -45,11 +62,13 @@ export interface HTTPClient {
     signal,
     headers,
     allowedStatuses,
+    params,
   }: {
     endpoint: string;
     signal?: AbortSignal;
     headers?: Record<string, string>;
     allowedStatuses?: number[];
+    params?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   }): Promise<T>;
   // TODO: add post method
   // post<T>({

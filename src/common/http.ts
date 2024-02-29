@@ -39,16 +39,19 @@ export class AxiosHTTPService implements HTTPClient {
     signal,
     allowedStatuses = [200, 202],
     headers,
+    params,
   }: {
     endpoint: string;
     signal?: AbortSignal;
     allowedStatuses?: number[];
     headers?: Record<string, string>;
+    params?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   }): Promise<T> {
     this.logger.debug(`Get request to endpoint: ${endpoint}`);
     const { status, statusText, data } = await this.axios.get<T>(endpoint, {
       headers,
       signal,
+      params,
     });
 
     if (!allowedStatuses.includes(status)) {

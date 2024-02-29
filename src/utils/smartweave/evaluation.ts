@@ -14,6 +14,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export * from './arweave.js';
-export * from './http-client.js';
-export * from './smartweave/index.js';
+import { SORT_KEY_REGEX } from '../../constants.js';
+
+export class SmartWeaveSortKey {
+  private _sortKey: string;
+  constructor(sortKey: string) {
+    if (!SmartWeaveSortKey.validate(sortKey)) {
+      throw new Error(`Invalid sort key: ${sortKey}`);
+    }
+
+    this._sortKey = sortKey;
+  }
+
+  static validate(sortKey: string): boolean {
+    return SORT_KEY_REGEX.test(sortKey);
+  }
+
+  toString(): string {
+    return this._sortKey;
+  }
+
+  parts(): string[] {
+    return this._sortKey.split(',');
+  }
+  blockHeight(): number {
+    return parseInt(this.parts()[0]);
+  }
+  timestamp(): number {
+    return parseInt(this.parts()[1]);
+  }
+  hash(): string {
+    return this.parts()[2];
+  }
+}
