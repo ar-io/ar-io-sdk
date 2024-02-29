@@ -7,8 +7,8 @@ import { ARNS_TESTNET_REGISTRY_TX, ArIO } from '../../lib/esm/node/index.js';
   const protocolBalance = await arIO.testnet.getBalance({
     address: ARNS_TESTNET_REGISTRY_TX,
   });
-  const ardriveRecord = await arIO.testnet.getRecord({ domain: 'ardrive' });
-  const allRecords = await arIO.testnet.getRecords();
+  const ardriveRecord = await arIO.testnet.getArNSRecord({ domain: 'ardrive' });
+  const allRecords = await arIO.testnet.getArNSRecords();
 
   console.dir(
     {

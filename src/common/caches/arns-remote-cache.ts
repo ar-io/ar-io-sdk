@@ -104,7 +104,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
+  async getArNSRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
     this.logger.debug(`Fetching record for ${domain}`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', ArNSNameData>
@@ -114,7 +114,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getRecords(): Promise<Record<string, ArNSNameData>> {
+  async getArNSRecords(): Promise<Record<string, ArNSNameData>> {
     this.logger.debug(`Fetching all records`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, ArNSNameData>>

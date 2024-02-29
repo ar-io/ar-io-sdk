@@ -34,7 +34,7 @@ describe('ArNSRemoteCache', () => {
 
   // records tests
   it('should fetch a record', async () => {
-    const record = await remoteCacheProvider.getRecord({
+    const record = await remoteCacheProvider.getArNSRecord({
       domain: 'ar-io',
     });
     expect(record).toBeDefined();
@@ -42,7 +42,7 @@ describe('ArNSRemoteCache', () => {
 
   it('should throw NotFound error on non existent record', async () => {
     const error = await remoteCacheProvider
-      .getRecord({
+      .getArNSRecord({
         domain: 'some-domain',
       })
       .catch((e) => e);
@@ -50,7 +50,7 @@ describe('ArNSRemoteCache', () => {
   });
 
   it('should fetch all records', async () => {
-    const records = await remoteCacheProvider.getRecords();
+    const records = await remoteCacheProvider.getArNSRecords();
 
     expect(records).toBeDefined();
   });

@@ -22,8 +22,8 @@ export interface ArIOContract {
   getGateways(): Promise<Record<WalletAddress, Gateway>>;
   getBalance({ address }: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number>>;
-  getRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
-  getRecords(): Promise<Record<string, ArNSNameData>>;
+  getArNSRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
+  getArNSRecords(): Promise<Record<string, ArNSNameData>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
