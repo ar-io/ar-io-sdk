@@ -14,32 +14,44 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-  ARNS_DEVNET_REGISTRY_TX,
-  ARNS_TESTNET_REGISTRY_TX,
-} from '../constants.js';
-import { ArIOContract } from '../types/index.js';
+import { ArIOContract, ArNSNameData, Gateway } from '../types/index.js';
 import { ArNSRemoteCache } from './index.js';
 
 export type CacheConfiguration = {
   remoteCacheUrl?: string;
+  contractTxId?: string;
 };
 export type ArIOConfiguration = {
   cacheConfig?: CacheConfiguration;
 };
 
-export class ArIO {
-  public testnet: ArIOContract;
-  public devnet: ArIOContract;
+export class ArIO implements ArIOContract {
+  protected cache: ArIOContract;
 
   constructor({ cacheConfig }: ArIOConfiguration = {}) {
-    this.testnet = new ArNSRemoteCache({
-      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+    this.cache = new ArNSRemoteCache({
+      contractTxId: cacheConfig?.contractTxId,
       url: cacheConfig?.remoteCacheUrl,
     });
-    this.devnet = new ArNSRemoteCache({
-      contractTxId: ARNS_DEVNET_REGISTRY_TX,
-      url: cacheConfig?.remoteCacheUrl,
-    });
+  }
+  // implement ArIOContract interface
+
+  async getArNSRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
+    return this.cache.getArNSRecord({ domain });
+  }
+  async getArNSRecords(): Promise<Record<string, ArNSNameData>> {
+    return this.cache.getArNSRecords();
+  }
+  async getBalance({ address }: { address: string }): Promise<number> {
+    return this.cache.getBalance({ address });
+  }
+  async getBalances(): Promise<Record<string, number>> {
+    return this.cache.getBalances();
+  }
+  async getGateway({ address }: { address: string }): Promise<Gateway> {
+    return this.cache.getGateway({ address });
+  }
+  async getGateways(): Promise<Record<string, Gateway>> {
+    return this.cache.getGateways();
   }
 }

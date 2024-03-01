@@ -4,8 +4,6 @@ This is the home of ar.io SDK. This SDK provides functionality for interacting w
 
 ## Table of Contents
 
-// ALM - Consider hoisting requirements before installation, e.g. Prerequisites header
-
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
@@ -23,9 +21,9 @@ This is the home of ar.io SDK. This SDK provides functionality for interacting w
   - [Architecture](#architecture)
 - [Contributing](./CONTRIBUTING.md)
 
-## Prerequisites
+# Prerequisites
 
-- Node XYZ or above
+- Node v18.0.0 or above
 - npm or yarn package managers
 
 ## Installation
@@ -46,12 +44,50 @@ yarn add @ar-io/sdk
 import { ArIO } from '@ar-io/sdk';
 
 const arIO = new ArIO();
-const gateways = arIO.testnet.getGateways();
+const gateways = arIO.getGateways();
 
-// PRINT/ EXPLAIN WHATEVER THIS GIVES YOU
+// output
+{
+  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
+  "end": 0,
+  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+  "operatorStake": 250000,
+  "settings": {
+    "fqdn": "ar-io.dev",
+    "label": "AR.IO Test",
+    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+    "port": 443,
+    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+    "protocol": "https"
+    },
+  "start": 1256694,
+  "stats": {
+    "failedConsecutiveEpochs": 0,
+    "passedEpochCount": 30,
+    "submittedEpochCount": 30,
+    "totalEpochParticipationCount": 31,
+    "totalEpochsPrescribedCount": 31
+    },
+  "status": "joined",
+  "vaults": {},
+  "weights": {
+    "stakeWeight": 25,
+    "tenureWeight": 0.9031327160493827,
+    "gatewayRewardRatioWeight": 0.96875,
+    "observerRewardRatioWeight": 0.96875,
+    "compositeWeight": 21.189222170982834,
+    "normalizedCompositeWeight": 0.27485583057217183
+    }
+},
+"-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
+"end": 0,
+"observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
+"operatorStake": 11300,
+...
+}
 ```
 
-## Usage
+# Usage
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
@@ -63,10 +99,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 import { ArIO } from '@ar-io/sdk';
 
 const arIO = new ArIO();
-// ALM - I DON'T LIKE THIS PATTERN OF SPECIFYING THE ENVIRONMENT ON EACH API CALL.
-// IT WILL BE REDUNDANT CODE IN 99% OF PLACES. FAVOR INSTEAD INSTANTIATING ArIO
-// WITH THE APPROPRIATE ENVIRONMENT CONFIGURATION
-const gateways = arIO.mainnet.getGateways();
+const gateways = arIO.getGateways();
 ```
 
 #### Browser
@@ -77,8 +110,8 @@ const gateways = arIO.mainnet.getGateways();
 
   // set up our client
   const arIO = new ArIO();
-  // fetch mainnet gateways
-  const gateways = await arIO.mainnet.getGateways();
+  // fetch gateways
+  const gateways = await arIO.getGateways();
 </script>
 ```
 
@@ -88,41 +121,61 @@ const gateways = arIO.mainnet.getGateways();
 const { ArIO } = require('@ar-io/sdk');
 
 const arIO = new ArIO();
-const gateways = await arIO.mainnet.getGateways();
+const gateways = await arIO.getGateways();
 ```
 
-### Typescript
+## Typescript
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project:
 
-// ALM - "and should be automatically recognized," ... by?
-Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized, offering benefits such as type-checking and autocompletion.
+Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
 ## APIs
 
-// I'd like to see an instantiation example here with explanations about:
+<!-- TODO: add instantiation examples here for warp and remote cache for comparisons once write API's are available. -->
 
-- warp configuration
-- using API vs. using warp directly
-- caching configuration options and tradeoffs
+### Warp
 
-// I'd like to see an example of the returned objects in each example below, either a printout of their console log representation or an interface definition.
+The SDK offers pass-throughs to warp evaluation options and will use the contracts configured evaluation options by default.
 
-// ALM - I don't like this pattern. I'm ok with us providing constants for known/trusted contracts. Also worth disambiguating the environenments - i.e. their purposes.
-The contract that the following methods retrieve data from are determined by the `testnet` or `devnet` clients - see examples above for implementation details.
+<!-- ```typescript
+example
+``` -->
+
+### Remote Cache vs Local Cache (Warp and other GQL based evaluators)
+
+For reading contract state it is faster to use a remote cache that evaluates contract state. The tradeoff here is you are trusting the remote evaluator both accurately evaluates the state, and does not have a corrupted cached state.
+
+On remote caches you sacrifice trustlessness (depending on the cache) for fast response times, with local evaluation you sacrifice fast response times (taking potentially hours to evaluate the contract) for trustless evaluation.
+
+<!-- ```typescript
+example
+``` -->
+
+### Caching Configurations
+
+if running the a local contract cache you can point to both the local url of the cache and a locally deployed, or live deployed arweave mainnet contract
+
+```typescript
+const arIOLocal = new ArIO({
+  cacheConfig: {
+    remoteCacheUrl: 'http://localhost:3000',
+    contractTxId: 'INSERT_CUSTOM_REGISTRY_CONTRACT_ID',
+  },
+});
+```
 
 #### `getBalance({ address })`
 
 Retrieves the balance of the specified address.
 
 ```typescript
-// ALM - REPEATING THE new ArIO() pattern in each example might be misconstrued by less
-// sophisticated devs as necessary or beneficial. Better to have the instantiation example
-// explain the benefits of preserving a reference (e.g. caching and memory management) and
-// then use the instantiated reference in each of the subsequent examples.
-const balance = new ArIO().testnet.getBalance({
+const arIO = new ArIO();
+const balance = arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
+// output
+0;
 ```
 
 #### `getBalances()`
@@ -133,7 +186,15 @@ Retrieves the balances of the ArIO contract.
 // ALM - A part of me wonders whether streaming JSON might be beneficial in the future
 // and if providing streaming versions of these APIs will scale nicely longer term, e.g.
 // arIO.streamBalances({ sortingCriteria: BALANCE_DESC });
-const balances = new ArIO().testnet.getBalances();
+const arIO = new ArIO();
+const balances = arIO.getBalances();
+// output
+{
+  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000,
+  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000,
+  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000,
+  ...
+}
 ```
 
 #### `getGateway({ address })`
@@ -141,9 +202,43 @@ const balances = new ArIO().testnet.getBalances();
 Retrieves the gateway info of the specified address.
 
 ```typescript
-const gateway = new ArIO().testnet.getGateway({
+const arIO = new ArIO();
+const gateway = arIO.getGateway({
   address: 'INSERT_GATEWAY_ADDRESS',
 });
+// output
+{
+  "end": 0,
+  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+  "operatorStake": 250000,
+  "settings": {
+    "fqdn": "ar-io.dev",
+    "label": "AR.IO Test",
+    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+    "port": 443,
+    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+    "protocol": "https"
+    },
+  "start": 1256694,
+  "stats": {
+    "failedConsecutiveEpochs": 0,
+    "passedEpochCount": 30,
+    "submittedEpochCount": 30,
+    "totalEpochParticipationCount": 31,
+    "totalEpochsPrescribedCount": 31
+    },
+  "status": "joined",
+  "vaults": {},
+  "weights": {
+    "stakeWeight": 25,
+    "tenureWeight": 0.9031327160493827,
+    "gatewayRewardRatioWeight": 0.96875,
+    "observerRewardRatioWeight": 0.96875,
+    "compositeWeight": 21.189222170982834,
+    "normalizedCompositeWeight": 0.27485583057217183
+    }
+}
+
 ```
 
 #### `getGateways()`
@@ -151,7 +246,47 @@ const gateway = new ArIO().testnet.getGateway({
 Retrieves the registered gateways of the ArIO contract.
 
 ```typescript
-const gateways = new ArIO().testnet.getGateways();
+const arIO = new ArIO();
+const gateways = arIO.getGateways();
+// output
+{
+  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
+  "end": 0,
+  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+  "operatorStake": 250000,
+  "settings": {
+    "fqdn": "ar-io.dev",
+    "label": "AR.IO Test",
+    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+    "port": 443,
+    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+    "protocol": "https"
+    },
+  "start": 1256694,
+  "stats": {
+    "failedConsecutiveEpochs": 0,
+    "passedEpochCount": 30,
+    "submittedEpochCount": 30,
+    "totalEpochParticipationCount": 31,
+    "totalEpochsPrescribedCount": 31
+    },
+  "status": "joined",
+  "vaults": {},
+  "weights": {
+    "stakeWeight": 25,
+    "tenureWeight": 0.9031327160493827,
+    "gatewayRewardRatioWeight": 0.96875,
+    "observerRewardRatioWeight": 0.96875,
+    "compositeWeight": 21.189222170982834,
+    "normalizedCompositeWeight": 0.27485583057217183
+    }
+},
+"-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
+"end": 0,
+"observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
+"operatorStake": 11300,
+...
+}
 ```
 
 #### `getArNSRecord({ domain })`
@@ -159,7 +294,16 @@ const gateways = new ArIO().testnet.getGateways();
 Retrieves the domain info of the specified ArNS record.
 
 ```typescript
-const record = new ArIO().testnet.getArNSRecord({ domain: 'INSERT_ARNS_NAME' });
+const arIO = new ArIO();
+const record = arIO.getArNSRecord({ domain: 'INSERT_ARNS_NAME' });
+// output
+{
+  "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "endTimestamp": 1711122739,
+  "startTimestamp": 1694101828,
+  "type": "lease",
+  "undernames": 100
+}
 ```
 
 #### `getArNSRecords()`
@@ -167,7 +311,26 @@ const record = new ArIO().testnet.getArNSRecord({ domain: 'INSERT_ARNS_NAME' });
 Retrieves the registered ArNS domains of the ArIO contract.
 
 ```typescript
-const records = new ArIO().testnet.getArNSRecords();
+const arIO = new ArIO();
+const records = arIO.getArNSRecords();
+// output
+
+{
+  "ardrive": {
+    "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+    "endTimestamp": 1711122739,
+    "startTimestamp": 1694101828,
+    "type": "lease",
+    "undernames": 100
+  },
+  "ar-io": {
+    "contractTxId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
+    "purchasePrice": 17386.717520731843,
+    "startTimestamp": 1706747215,
+    "type": "permabuy",
+    "undernames": 10
+  }
+}
 ```
 
 ## Developers
