@@ -49,40 +49,40 @@ const gateways = arIO.getGateways();
 // output
 {
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-  "end": 0,
-  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000,
-  "settings": {
-    "fqdn": "ar-io.dev",
-    "label": "AR.IO Test",
-    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-    "port": 443,
-    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-    "protocol": "https"
-    },
-  "start": 1256694,
-  "stats": {
-    "failedConsecutiveEpochs": 0,
-    "passedEpochCount": 30,
-    "submittedEpochCount": 30,
-    "totalEpochParticipationCount": 31,
-    "totalEpochsPrescribedCount": 31
-    },
-  "status": "joined",
-  "vaults": {},
-  "weights": {
-    "stakeWeight": 25,
-    "tenureWeight": 0.9031327160493827,
-    "gatewayRewardRatioWeight": 0.96875,
-    "observerRewardRatioWeight": 0.96875,
-    "compositeWeight": 21.189222170982834,
-    "normalizedCompositeWeight": 0.27485583057217183
-    }
-},
+    "end": 0,
+    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+    "operatorStake": 250000,
+    "settings": {
+      "fqdn": "ar-io.dev",
+      "label": "AR.IO Test",
+      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+      "port": 443,
+      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+      "protocol": "https"
+      },
+    "start": 1256694,
+    "stats": {
+      "failedConsecutiveEpochs": 0,
+      "passedEpochCount": 30,
+      "submittedEpochCount": 30,
+      "totalEpochParticipationCount": 31,
+      "totalEpochsPrescribedCount": 31
+      },
+    "status": "joined",
+    "vaults": {},
+    "weights": {
+      "stakeWeight": 25,
+      "tenureWeight": 0.9031327160493827,
+      "gatewayRewardRatioWeight": 0.96875,
+      "observerRewardRatioWeight": 0.96875,
+      "compositeWeight": 21.189222170982834,
+      "normalizedCompositeWeight": 0.27485583057217183
+      }
+  },
 "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
-"end": 0,
-"observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
-"operatorStake": 11300,
+  "end": 0,
+  "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
+  "operatorStake": 11300,
 ...
 }
 ```
@@ -255,40 +255,40 @@ const gateways = arIO.getGateways();
 // output
 {
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-  "end": 0,
-  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000,
-  "settings": {
-    "fqdn": "ar-io.dev",
-    "label": "AR.IO Test",
-    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-    "port": 443,
-    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-    "protocol": "https"
-    },
-  "start": 1256694,
-  "stats": {
-    "failedConsecutiveEpochs": 0,
-    "passedEpochCount": 30,
-    "submittedEpochCount": 30,
-    "totalEpochParticipationCount": 31,
-    "totalEpochsPrescribedCount": 31
-    },
-  "status": "joined",
-  "vaults": {},
-  "weights": {
-    "stakeWeight": 25,
-    "tenureWeight": 0.9031327160493827,
-    "gatewayRewardRatioWeight": 0.96875,
-    "observerRewardRatioWeight": 0.96875,
-    "compositeWeight": 21.189222170982834,
-    "normalizedCompositeWeight": 0.27485583057217183
-    }
+    "end": 0,
+    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+    "operatorStake": 250000,
+    "settings": {
+      "fqdn": "ar-io.dev",
+      "label": "AR.IO Test",
+      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+      "port": 443,
+      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+      "protocol": "https"
+      },
+    "start": 1256694,
+    "stats": {
+      "failedConsecutiveEpochs": 0,
+      "passedEpochCount": 30,
+      "submittedEpochCount": 30,
+      "totalEpochParticipationCount": 31,
+      "totalEpochsPrescribedCount": 31
+      },
+    "status": "joined",
+    "vaults": {},
+    "weights": {
+      "stakeWeight": 25,
+      "tenureWeight": 0.9031327160493827,
+      "gatewayRewardRatioWeight": 0.96875,
+      "observerRewardRatioWeight": 0.96875,
+      "compositeWeight": 21.189222170982834,
+      "normalizedCompositeWeight": 0.27485583057217183
+      }
 },
 "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
-"end": 0,
-"observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
-"operatorStake": 11300,
+  "end": 0,
+  "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
+  "operatorStake": 11300,
 ...
 }
 ```
@@ -299,7 +299,7 @@ Retrieves the domain info of the specified ArNS record.
 
 ```typescript
 const arIO = new ArIO();
-const record = arIO.getArNSRecord({ domain: 'INSERT_ARNS_NAME' });
+const record = arIO.getArNSRecord({ domain: 'ardrive' });
 // output
 {
   "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
@@ -334,6 +334,7 @@ const records = arIO.getArNSRecords();
     "type": "permabuy",
     "undernames": 10
   }
+  ...
 }
 ```
 
