@@ -76,7 +76,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return gateway;
   }
 
-  async getGateways({ blockHeight, sortKey }: ReadInteractionFilters = {}) {
+  async getGateways({ blockHeight, sortKey }: ReadInteractionFilters) {
     this.logger.debug(`Fetching gateways`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, Gateway>>
@@ -107,7 +107,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getBalances({ blockHeight, sortKey }: ReadInteractionFilters = {}) {
+  async getBalances({ blockHeight, sortKey }: ReadInteractionFilters) {
     this.logger.debug(`Fetching balances`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, number>>
@@ -136,7 +136,7 @@ export class ArNSRemoteCache implements ArIOContract {
   async getArNSRecords({
     blockHeight,
     sortKey,
-  }: ReadInteractionFilters = {}): Promise<Record<string, ArNSNameData>> {
+  }: ReadInteractionFilters): Promise<Record<string, ArNSNameData>> {
     this.logger.debug(`Fetching all records`);
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, ArNSNameData>>

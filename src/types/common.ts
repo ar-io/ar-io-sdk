@@ -30,7 +30,9 @@ export interface ArIOContract {
   getGateway(
     props: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<Gateway>;
-  getGateways(): Promise<Record<WalletAddress, Gateway>>;
+  getGateways(
+    props: ReadInteractionFilters,
+  ): Promise<Record<WalletAddress, Gateway>>;
   getBalance(
     props: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<number>;
@@ -40,7 +42,9 @@ export interface ArIOContract {
   getArNSRecord(
     props: { domain: string } & ReadInteractionFilters,
   ): Promise<ArNSNameData>;
-  getArNSRecords(): Promise<Record<string, ArNSNameData>>;
+  getArNSRecords(
+    prop: ReadInteractionFilters,
+  ): Promise<Record<string, ArNSNameData>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
