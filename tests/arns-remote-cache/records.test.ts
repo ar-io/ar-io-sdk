@@ -6,7 +6,7 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
   const remoteCacheProvider = new ArNSRemoteCache({});
   // records tests
   it('should fetch a record', async () => {
-    const record = await remoteCacheProvider.getRecord({
+    const record = await remoteCacheProvider.getArNSRecord({
       domain: 'ar-io',
     });
     expect(record).toBeDefined();
@@ -14,7 +14,7 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
 
   it('should throw NotFound error on non existent record', async () => {
     const error = await remoteCacheProvider
-      .getRecord({
+      .getArNSRecord({
         domain: 'some-domain',
       })
       .catch((e) => e);
@@ -22,7 +22,7 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
   });
 
   it('should fetch all records', async () => {
-    const records = await remoteCacheProvider.getRecords();
+    const records = await remoteCacheProvider.getArNSRecords();
 
     expect(records).toBeDefined();
   });
@@ -30,14 +30,14 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
   it('should return record at a given block height', async () => {
     const domain = 'raiman';
     const registrationBlockHeight = 1372652;
-    const currentRecord = await remoteCacheProvider.getRecord({
+    const currentRecord = await remoteCacheProvider.getArNSRecord({
       domain,
       blockHeight: registrationBlockHeight,
     });
     expect(currentRecord).toBeDefined();
 
     const error = await remoteCacheProvider
-      .getRecord({ domain, blockHeight: registrationBlockHeight - 1 })
+      .getArNSRecord({ domain, blockHeight: registrationBlockHeight - 1 })
       .catch((e) => e);
     expect(error).toBeInstanceOf(NotFound);
   });
@@ -47,7 +47,7 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
     const registrationSortKey = new SmartWeaveSortKey(
       '000001372652,0000000000000,7c697ffe5ffdad0f554dbd4fe8aa4ac997ea58d34ff9bf54178ab894d47e41e8',
     );
-    const record = await remoteCacheProvider.getRecord({
+    const record = await remoteCacheProvider.getArNSRecord({
       domain,
       sortKey: registrationSortKey,
     });
@@ -57,12 +57,12 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
   it('should return records at a given block height', async () => {
     const domain = 'raiman';
     const registrationBlockHeight = 1372652;
-    const currentRecords = await remoteCacheProvider.getRecords({
+    const currentRecords = await remoteCacheProvider.getArNSRecords({
       blockHeight: registrationBlockHeight,
     });
     expect(currentRecords[domain]).toBeDefined();
 
-    const previousRecords = await remoteCacheProvider.getRecords({
+    const previousRecords = await remoteCacheProvider.getArNSRecords({
       blockHeight: registrationBlockHeight - 1,
     });
     expect(previousRecords[domain]).not.toBeDefined();
@@ -73,7 +73,7 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
     const registrationSortKey = new SmartWeaveSortKey(
       '000001372652,0000000000000,7c697ffe5ffdad0f554dbd4fe8aa4ac997ea58d34ff9bf54178ab894d47e41e8',
     );
-    const records = await remoteCacheProvider.getRecords({
+    const records = await remoteCacheProvider.getArNSRecords({
       sortKey: registrationSortKey,
     });
     expect(records[domain]).toBeDefined();
