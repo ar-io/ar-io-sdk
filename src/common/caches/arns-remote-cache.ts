@@ -118,7 +118,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getRecord({
+  async getArNSRecord({
     domain,
     blockHeight,
     sortKey,
@@ -133,7 +133,7 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getRecords({
+  async getArNSRecords({
     blockHeight,
     sortKey,
   }: ReadInteractionFilters = {}): Promise<Record<string, ArNSNameData>> {

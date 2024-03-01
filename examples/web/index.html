@@ -95,8 +95,8 @@
         const balance = await arIO.getBalance({
           address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
         });
-        const record = await arIO.getRecord({ domain: 'ardrive' });
-        const records = await arIO.getRecords();
+        const record = await arIO.getArNSRecord({ domain: 'ardrive' });
+        const records = await arIO.getArNSRecords();
 
         //  update the UI
 

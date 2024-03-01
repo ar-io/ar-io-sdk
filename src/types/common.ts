@@ -37,10 +37,10 @@ export interface ArIOContract {
   getBalances(
     props: ReadInteractionFilters,
   ): Promise<Record<WalletAddress, number>>;
-  getRecord(
+  getArNSRecord(
     props: { domain: string } & ReadInteractionFilters,
   ): Promise<ArNSNameData>;
-  getRecords(): Promise<Record<string, ArNSNameData>>;
+  getArNSRecords(): Promise<Record<string, ArNSNameData>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
