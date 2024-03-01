@@ -72,7 +72,7 @@ export interface HTTPClient {
     signal?: AbortSignal;
     headers?: Record<string, string>;
     allowedStatuses?: number[];
-    params?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    params?: Record<string, unknown>;
   }): Promise<T>;
   // TODO: add post method
   // post<T>({

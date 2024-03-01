@@ -45,7 +45,7 @@ export class AxiosHTTPService implements HTTPClient {
     signal?: AbortSignal;
     allowedStatuses?: number[];
     headers?: Record<string, string>;
-    params?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    params?: Record<string, unknown>;
   }): Promise<T> {
     this.logger.debug(`Get request to endpoint: ${endpoint}`);
     const { status, statusText, data } = await this.axios.get<T>(endpoint, {
