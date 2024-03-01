@@ -182,10 +182,14 @@ const balance = arIO.getBalance({
 
 Retrieves the balances of the ArIO contract.
 
-```typescript
+<!--
 // ALM - A part of me wonders whether streaming JSON might be beneficial in the future
 // and if providing streaming versions of these APIs will scale nicely longer term, e.g.
 // arIO.streamBalances({ sortingCriteria: BALANCE_DESC });
+ -->
+
+```typescript
+
 const arIO = new ArIO();
 const balances = arIO.getBalances();
 // output

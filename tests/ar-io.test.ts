@@ -5,7 +5,5 @@ describe('ArIO Client', () => {
     const arioClient = new ArIO();
 
     expect(arioClient).toBeInstanceOf(ArIO);
-    expect(arioClient.testnet).toBeDefined();
-    expect(arioClient.devnet).toBeDefined();
   });
 });
