@@ -31,19 +31,19 @@ export interface ArIOContract {
     props: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<Gateway>;
   getGateways(
-    props: ReadInteractionFilters,
+    props?: ReadInteractionFilters,
   ): Promise<Record<WalletAddress, Gateway>>;
   getBalance(
     props: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<number>;
   getBalances(
-    props: ReadInteractionFilters,
+    props?: ReadInteractionFilters,
   ): Promise<Record<WalletAddress, number>>;
   getArNSRecord(
     props: { domain: string } & ReadInteractionFilters,
   ): Promise<ArNSNameData>;
   getArNSRecords(
-    prop: ReadInteractionFilters,
+    props?: ReadInteractionFilters,
   ): Promise<Record<string, ArNSNameData>>;
 }
 
