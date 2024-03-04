@@ -19,8 +19,10 @@ import {
   ArIOContract,
   ArNSNameData,
   ArNSStateResponse,
+  EpochDistributionData,
   Gateway,
   HTTPClient,
+  Observations,
 } from '../../types/index.js';
 import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
@@ -122,5 +124,24 @@ export class ArNSRemoteCache implements ArIOContract {
       endpoint: `/contract/${this.contractTxId.toString()}/state/records`,
     });
     return result;
+  }
+
+  async getObservations(): Promise<Observations> {
+    this.logger.debug(`Fetching Observations`);
+    const { result } = await this.http.get<ArNSStateResponse<'result', Observations>>({
+      endpoint: `/contract/${this.contractTxId.toString()}/state/observations`
+    })
+
+    return result
+  }
+  async getDistributions({ epoch }: { epoch: number; }): Promise<EpochDistributionData> {
+    this.logger.debug(`Fetching distributions for epoch ${epoch}`);
+    const {result} = await this.http.get<ArNSStateResponse<'result', EpochDistributionData>>({
+      endpoint: `/contract/${this.contractTxId.toString()}/read/epoch`,
+      params: {
+        height: epoch
+      }
+    });
+    return result
   }
 }

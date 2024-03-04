@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArNSNameData, Gateway } from './contract-state.js';
+import { ArNSNameData, EpochDistributionData, Gateway, Observations } from './contract-state.js';
 
 // TODO: extend with additional methods
 export interface ArIOContract {
@@ -24,6 +24,8 @@ export interface ArIOContract {
   getBalances(): Promise<Record<WalletAddress, number>>;
   getArNSRecord({ domain }: { domain: string }): Promise<ArNSNameData>;
   getArNSRecords(): Promise<Record<string, ArNSNameData>>;
+  getObservations(): Promise<Observations>
+  getDistributions(props: {epoch: EpochTimeStamp}):Promise<EpochDistributionData>
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -45,11 +47,13 @@ export interface HTTPClient {
     signal,
     headers,
     allowedStatuses,
+    params
   }: {
     endpoint: string;
     signal?: AbortSignal;
     headers?: Record<string, string>;
     allowedStatuses?: number[];
+    params?: Record<string, unknown>
   }): Promise<T>;
   // TODO: add post method
   // post<T>({
