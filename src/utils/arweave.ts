@@ -22,5 +22,5 @@ export const validateArweaveId = (id: string): boolean => {
 };
 
 export function isBlockHeight(height: string | number): height is BlockHeight {
-  return height !== undefined;
+  return height !== undefined && !isNaN(parseInt(height.toString()));
 }
