@@ -47,7 +47,9 @@ export class AxiosHTTPService implements HTTPClient {
     headers?: Record<string, string>;
     params?: Record<string, unknown>;
   }): Promise<T> {
-    this.logger.debug(`Get request to endpoint: ${endpoint}`);
+    this.logger.debug(
+      `Get request to endpoint: ${endpoint} with params ${JSON.stringify(params, undefined, 2)}`,
+    );
     const { status, statusText, data } = await this.axios.get<T>(endpoint, {
       headers,
       signal,

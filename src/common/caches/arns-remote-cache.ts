@@ -19,10 +19,12 @@ import {
   ArIOContract,
   ArNSNameData,
   ArNSStateResponse,
+  EvalToParams,
   Gateway,
   HTTPClient,
   ReadInteractionFilters,
 } from '../../types/index.js';
+import { isBlockHeight, isSortKey } from '../../utils/index.js';
 import { NotFound } from '../error.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
@@ -52,7 +54,15 @@ export class ArNSRemoteCache implements ArIOContract {
       logger,
     });
   }
-
+  sortKeyOrBlockHeightParams(historicalIndex: any): EvalToParams {
+    if (isSortKey(historicalIndex?.sortKey)) {
+      return { sortKey: historicalIndex.sortKey };
+    }
+    if (isBlockHeight(historicalIndex?.blockHeight)) {
+      return { blockHeight: historicalIndex.blockHeight };
+    }
+    return {};
+  }
   private validateContractTxId(id: string) {
     if (!ARWEAVE_TX_REGEX.test(id)) {
       throw new Error(`Invalid contract tx id: ${id}`);
@@ -61,11 +71,11 @@ export class ArNSRemoteCache implements ArIOContract {
 
   async getGateway({
     address,
-    blockHeight,
-    sortKey,
+    evaluationParameters,
   }: { address: string } & ReadInteractionFilters) {
     this.logger.debug(`Fetching gateway ${address}`);
-    const gateway = await this.getGateways({ blockHeight, sortKey }).then(
+
+    const gateway = await this.getGateways({ evaluationParameters }).then(
       (gateways) => {
         if (gateways[address] === undefined) {
           throw new NotFound(`Gateway not found: ${address}`);
@@ -76,27 +86,36 @@ export class ArNSRemoteCache implements ArIOContract {
     return gateway;
   }
 
-  async getGateways({ blockHeight, sortKey }: ReadInteractionFilters) {
+  async getGateways({ evaluationParameters }: ReadInteractionFilters = {}) {
     this.logger.debug(`Fetching gateways`);
+
+    const params = this.sortKeyOrBlockHeightParams(
+      evaluationParameters?.evalTo,
+    );
+
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, Gateway>>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/read/gateways`,
-      params: { blockHeight, sortKey: sortKey?.toString() },
+      params,
     });
     return result;
   }
 
   async getBalance({
     address,
-    blockHeight,
-    sortKey,
+    evaluationParameters,
   }: { address: string } & ReadInteractionFilters) {
     this.logger.debug(`Fetching balance for ${address}`);
+
+    const params = this.sortKeyOrBlockHeightParams(
+      evaluationParameters?.evalTo,
+    );
+
     const { result } = await this.http
       .get<ArNSStateResponse<'result', number>>({
         endpoint: `/contract/${this.contractTxId.toString()}/state/balances/${address}`,
-        params: { blockHeight, sortKey: sortKey?.toString() },
+        params,
       })
       .catch((e) => {
         if (e instanceof NotFound) {
@@ -107,42 +126,55 @@ export class ArNSRemoteCache implements ArIOContract {
     return result;
   }
 
-  async getBalances({ blockHeight, sortKey }: ReadInteractionFilters) {
+  async getBalances({ evaluationParameters }: ReadInteractionFilters = {}) {
     this.logger.debug(`Fetching balances`);
+
+    const params = this.sortKeyOrBlockHeightParams(
+      evaluationParameters?.evalTo,
+    );
+
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, number>>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/state/balances`,
-      params: { blockHeight, sortKey: sortKey?.toString() },
+      params,
     });
     return result;
   }
 
   async getArNSRecord({
     domain,
-    blockHeight,
-    sortKey,
+    evaluationParameters,
   }: { domain: string } & ReadInteractionFilters): Promise<ArNSNameData> {
     this.logger.debug(`Fetching record for ${domain}`);
+
+    const params = this.sortKeyOrBlockHeightParams(
+      evaluationParameters?.evalTo,
+    );
+
     const { result } = await this.http.get<
       ArNSStateResponse<'result', ArNSNameData>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/state/records/${domain}`,
-      params: { blockHeight, sortKey: sortKey?.toString() },
+      params,
     });
     return result;
   }
 
   async getArNSRecords({
-    blockHeight,
-    sortKey,
-  }: ReadInteractionFilters): Promise<Record<string, ArNSNameData>> {
+    evaluationParameters,
+  }: ReadInteractionFilters = {}): Promise<Record<string, ArNSNameData>> {
     this.logger.debug(`Fetching all records`);
+
+    const params = this.sortKeyOrBlockHeightParams(
+      evaluationParameters?.evalTo,
+    );
+
     const { result } = await this.http.get<
       ArNSStateResponse<'result', Record<string, ArNSNameData>>
     >({
       endpoint: `/contract/${this.contractTxId.toString()}/state/records`,
-      params: { blockHeight, sortKey: sortKey?.toString() },
+      params,
     });
     return result;
   }

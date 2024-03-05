@@ -1,9 +1,12 @@
 import { ArNSRemoteCache } from '../../src/common/caches/arns-remote-cache.js';
 import { NotFound } from '../../src/common/error.js';
+import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { SmartWeaveSortKey } from '../../src/utils/index.js';
 
 describe('ArNSRemoteCache ~ RECORDS', () => {
-  const remoteCacheProvider = new ArNSRemoteCache({});
+  const remoteCacheProvider = new ArNSRemoteCache({
+    contractTxId: ARNS_DEVNET_REGISTRY_TX,
+  });
   // records tests
   it('should fetch a record', async () => {
     const record = await remoteCacheProvider.getArNSRecord({
@@ -28,53 +31,68 @@ describe('ArNSRemoteCache ~ RECORDS', () => {
   });
 
   it('should return record at a given block height', async () => {
-    const domain = 'raiman';
-    const registrationBlockHeight = 1372652;
+    const domain = 'testing5';
+    const registrationBlockHeight = 1363242;
     const currentRecord = await remoteCacheProvider.getArNSRecord({
       domain,
-      blockHeight: registrationBlockHeight,
+      evaluationParameters: {
+        evalTo: { blockHeight: registrationBlockHeight + 1 },
+      },
     });
     expect(currentRecord).toBeDefined();
 
     const error = await remoteCacheProvider
-      .getArNSRecord({ domain, blockHeight: registrationBlockHeight - 1 })
+      .getArNSRecord({
+        domain,
+        evaluationParameters: {
+          evalTo: { blockHeight: registrationBlockHeight - 1 },
+        },
+      })
       .catch((e) => e);
     expect(error).toBeInstanceOf(NotFound);
   });
 
   it('should return record at a given sort key', async () => {
-    const domain = 'raiman';
+    const domain = 'testing5';
     const registrationSortKey = new SmartWeaveSortKey(
-      '000001372652,0000000000000,7c697ffe5ffdad0f554dbd4fe8aa4ac997ea58d34ff9bf54178ab894d47e41e8',
+      '000001363242,0000000000000,e7ac482567afa26cf205b158af46bf99f12b1dea0c1dd00caf9a573c8e648430',
     );
     const record = await remoteCacheProvider.getArNSRecord({
       domain,
-      sortKey: registrationSortKey,
+      evaluationParameters: {
+        evalTo: { sortKey: registrationSortKey.toString() },
+      },
     });
     expect(record).toBeDefined();
   });
 
   it('should return records at a given block height', async () => {
-    const domain = 'raiman';
-    const registrationBlockHeight = 1372652;
+    const domain = 'testing5';
+    const registrationBlockHeight = 1363242;
     const currentRecords = await remoteCacheProvider.getArNSRecords({
-      blockHeight: registrationBlockHeight,
+      evaluationParameters: {
+        evalTo: { blockHeight: registrationBlockHeight },
+      },
     });
     expect(currentRecords[domain]).toBeDefined();
 
     const previousRecords = await remoteCacheProvider.getArNSRecords({
-      blockHeight: registrationBlockHeight - 1,
+      evaluationParameters: {
+        evalTo: { blockHeight: registrationBlockHeight - 1 },
+      },
     });
     expect(previousRecords[domain]).not.toBeDefined();
   });
 
   it('should return records at a given sort key', async () => {
-    const domain = 'raiman';
+    const domain = 'testing5';
     const registrationSortKey = new SmartWeaveSortKey(
-      '000001372652,0000000000000,7c697ffe5ffdad0f554dbd4fe8aa4ac997ea58d34ff9bf54178ab894d47e41e8',
+      '000001363242,0000000000000,e7ac482567afa26cf205b158af46bf99f12b1dea0c1dd00caf9a573c8e648430',
     );
     const records = await remoteCacheProvider.getArNSRecords({
-      sortKey: registrationSortKey,
+      evaluationParameters: {
+        evalTo: { sortKey: registrationSortKey.toString() },
+      },
     });
     expect(records[domain]).toBeDefined();
   });

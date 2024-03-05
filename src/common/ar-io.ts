@@ -14,7 +14,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArIOContract, ArNSNameData, Gateway } from '../types/index.js';
+import {
+  ArIOContract,
+  ArNSNameData,
+  Gateway,
+  ReadInteractionFilters,
+} from '../types/index.js';
 import { ArNSRemoteCache } from './index.js';
 
 export type CacheConfiguration = {
@@ -36,22 +41,30 @@ export class ArIO implements ArIOContract {
   }
   // implement ArIOContract interface
 
-  async getArNSRecord({ domain }: { domain: string }): Promise<ArNSNameData> {
-    return this.cache.getArNSRecord({ domain });
+  async getArNSRecord(
+    params: { domain: string } & ReadInteractionFilters,
+  ): Promise<ArNSNameData> {
+    return this.cache.getArNSRecord(params);
   }
-  async getArNSRecords(): Promise<Record<string, ArNSNameData>> {
-    return this.cache.getArNSRecords();
+  async getArNSRecords(
+    params: ReadInteractionFilters,
+  ): Promise<Record<string, ArNSNameData>> {
+    return this.cache.getArNSRecords(params);
   }
-  async getBalance({ address }: { address: string }): Promise<number> {
-    return this.cache.getBalance({ address });
+  async getBalance(
+    params: { address: string } & ReadInteractionFilters,
+  ): Promise<number> {
+    return this.cache.getBalance(params);
   }
   async getBalances(): Promise<Record<string, number>> {
     return this.cache.getBalances();
   }
-  async getGateway({ address }: { address: string }): Promise<Gateway> {
-    return this.cache.getGateway({ address });
+  async getGateway(params: { address: string }): Promise<Gateway> {
+    return this.cache.getGateway(params);
   }
-  async getGateways(): Promise<Record<string, Gateway>> {
-    return this.cache.getGateways();
+  async getGateways(
+    params: ReadInteractionFilters,
+  ): Promise<Record<string, Gateway>> {
+    return this.cache.getGateways(params);
   }
 }

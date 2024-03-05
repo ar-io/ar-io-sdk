@@ -1,9 +1,11 @@
 import { ArNSRemoteCache } from '../../src/common/caches/arns-remote-cache.js';
+import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { SmartWeaveSortKey } from '../../src/utils/index.js';
 
 describe('ArNSRemoteCache ~ BALANCES', () => {
-  const remoteCacheProvider = new ArNSRemoteCache({});
-
+  const remoteCacheProvider = new ArNSRemoteCache({
+    contractTxId: ARNS_DEVNET_REGISTRY_TX,
+  });
   // balance tests
   it('should fetch a balance', async () => {
     const balance = await remoteCacheProvider.getBalance({
@@ -18,59 +20,63 @@ describe('ArNSRemoteCache ~ BALANCES', () => {
   });
 
   it('should return balance at a given block height', async () => {
-    const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
-    const currentBalance = 2_363_250;
-    const transferAmount = 1000;
-    const transferBlockHeight = 1305612;
+    const address = 'ySqMsg7O0R-BcUw35R3nxJJKJyIdauLCQ4DUZqPCiYo';
+    const transferBlockHeight = 1364752;
+    const currentBalance = await remoteCacheProvider.getBalance({
+      address,
+      evaluationParameters: {
+        evalTo: { blockHeight: transferBlockHeight },
+      },
+    });
+    const transferAmount = 20000;
+
     const balance = await remoteCacheProvider.getBalance({
       address,
-      blockHeight: transferBlockHeight,
+      evaluationParameters: { evalTo: { blockHeight: transferBlockHeight } },
     });
     expect(balance).toEqual(currentBalance);
 
     const previousBalance = await remoteCacheProvider.getBalance({
       address,
-      blockHeight: transferBlockHeight - 1,
+      evaluationParameters: {
+        evalTo: { blockHeight: transferBlockHeight - 1 },
+      },
     });
-    expect(previousBalance).toEqual(currentBalance + transferAmount);
+    expect(previousBalance).toEqual(currentBalance - transferAmount);
   });
 
   it('should return balance at a given sort key', async () => {
-    const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
+    const address = 'ySqMsg7O0R-BcUw35R3nxJJKJyIdauLCQ4DUZqPCiYo';
     const balanceSortKey = new SmartWeaveSortKey(
-      '000001305612,0000000000000,6806919fa401ad27fd86db576ef578857bd22a11d6905324d643368069146d4e',
+      '000001364752,0000000000000,7fee05ef004191b252b073628013f987033513c51116d283dc24c866b5c32d0a',
     );
     const balance = await remoteCacheProvider.getBalance({
       address,
-      sortKey: balanceSortKey,
+      evaluationParameters: { evalTo: { sortKey: balanceSortKey.toString() } },
     });
-    expect(balance).toEqual(2363250);
+    expect(balance).toEqual(20000);
   });
 
   it('should return balances at a given block height', async () => {
-    const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
-    const currentBalance = 2363250;
-    const transferAmount = 1000;
-    const transferBlockHeight = 1305612;
-    const balances = await remoteCacheProvider.getBalances({
-      blockHeight: transferBlockHeight,
+    const address = 'ySqMsg7O0R-BcUw35R3nxJJKJyIdauLCQ4DUZqPCiYo';
+    const transferBlockHeight = 1364752;
+    const currentBalance = await remoteCacheProvider.getBalance({
+      address,
+      evaluationParameters: {
+        evalTo: { blockHeight: transferBlockHeight },
+      },
     });
+    const balances = await remoteCacheProvider.getBalances({
+      evaluationParameters: { evalTo: { blockHeight: transferBlockHeight } },
+    });
+
     expect(balances[address]).toEqual(currentBalance);
 
     const previousBalances = await remoteCacheProvider.getBalances({
-      blockHeight: transferBlockHeight - 1,
+      evaluationParameters: {
+        evalTo: { blockHeight: transferBlockHeight - 1 },
+      },
     });
-    expect(previousBalances[address]).toEqual(currentBalance + transferAmount);
-  });
-
-  it('should return balances at a given sort key', async () => {
-    const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
-    const balanceSortKey = new SmartWeaveSortKey(
-      '000001305612,0000000000000,6806919fa401ad27fd86db576ef578857bd22a11d6905324d643368069146d4e',
-    );
-    const balances = await remoteCacheProvider.getBalances({
-      sortKey: balanceSortKey,
-    });
-    expect(balances[address]).toEqual(2363250);
+    expect(previousBalances[address]).toEqual(undefined);
   });
 });

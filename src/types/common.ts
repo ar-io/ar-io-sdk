@@ -14,36 +14,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { SmartWeaveSortKey } from '../utils/index.js';
 import { ArNSNameData, Gateway } from './contract-state.js';
 
-export type EvaluationFilters = {
-  blockHeight?: number;
-  sortKey?: SmartWeaveSortKey; // should be tested against regex for validity
+export type BlockHeight = number;
+export type SortKey = string;
+
+export type EvalToParams =
+  | { sortKey?: SortKey }
+  | { blockHeight?: BlockHeight };
+
+export type EvaluationParameters = {
+  evalTo?: EvalToParams;
 };
 
 // TODO: extend type with other read filters (e.g max eval time)
-export type ReadInteractionFilters = EvaluationFilters;
+export type ReadInteractionFilters = {
+  evaluationParameters?: EvaluationParameters;
+};
 
 // TODO: extend with additional methods
 export interface ArIOContract {
   getGateway(
-    props: { address: WalletAddress } & ReadInteractionFilters,
+    params: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<Gateway>;
   getGateways(
-    props?: ReadInteractionFilters,
+    params?: ReadInteractionFilters,
   ): Promise<Record<WalletAddress, Gateway>>;
   getBalance(
-    props: { address: WalletAddress } & ReadInteractionFilters,
+    params: { address: WalletAddress } & ReadInteractionFilters,
   ): Promise<number>;
   getBalances(
-    props?: ReadInteractionFilters,
+    params?: ReadInteractionFilters,
   ): Promise<Record<WalletAddress, number>>;
   getArNSRecord(
-    props: { domain: string } & ReadInteractionFilters,
+    params: { domain: string } & ReadInteractionFilters,
   ): Promise<ArNSNameData>;
   getArNSRecords(
-    props?: ReadInteractionFilters,
+    params?: ReadInteractionFilters,
   ): Promise<Record<string, ArNSNameData>>;
 }
 

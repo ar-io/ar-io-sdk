@@ -15,6 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { SORT_KEY_REGEX } from '../../constants.js';
+import { SortKey } from '../../types/common.js';
+
+export function isSortKey(sortKey: string): sortKey is SortKey {
+  return SmartWeaveSortKey.validate(sortKey);
+}
 
 export class SmartWeaveSortKey {
   private _sortKey: string;
