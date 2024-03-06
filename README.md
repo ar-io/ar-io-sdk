@@ -157,7 +157,7 @@ Alternatively - you can choose to evaluate contracts locally leveraging [Warp].
 // setup a local contract and evaluate it using warp
 const localContract = new WarpContract<ArIOState>({
   contractTxId: 'TESTNET_CONTRACT_TX_ID',
-})
+});
 
 const localArIO = new ArIO({
   contract: localContract,
@@ -192,7 +192,6 @@ Retrieves the balances of the ArIO contract.
  -->
 
 ```typescript
-
 const arIO = new ArIO();
 const balances = arIO.getBalances();
 
@@ -249,7 +248,6 @@ const gateway = arIO.getGateway({
 //     "normalizedCompositeWeight": 0.27485583057217183
 //     }
 // }
-
 ```
 
 #### `getGateways()`

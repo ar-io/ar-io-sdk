@@ -16,16 +16,14 @@
  */
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
-  AntState,
   ArIOContract,
   ArIOState,
-  ArNSAntContract,
   ArNSNameData,
   EvaluationOptions,
   Gateway,
   SmartWeaveContract,
 } from '../types/index.js';
-import { ArIORemoteContract, WarpContract } from './index.js';
+import { ArIORemoteContract } from './index.js';
 
 export type ContractConfiguration = {
   contract?: SmartWeaveContract;
@@ -39,7 +37,7 @@ export class ArIO implements ArIOContract {
       contractTxId: ARNS_TESTNET_REGISTRY_TX,
     }),
   }: {
-    contract?: SmartWeaveContract
+    contract?: SmartWeaveContract;
   }) {
     this.contract = contract;
   }
@@ -89,45 +87,5 @@ export class ArIO implements ArIOContract {
       functionName: 'gateways',
       evaluationParameters: params.evaluationParameters,
     });
-  }
-}
-
-export class AntContract implements ArNSAntContract {
-  private contract: SmartWeaveContract;
-
-  constructor({ contractTxId, contract = new ArIORemoteContract({
-    contractTxId,
-  }) }: { contractTxId: string } & ContractConfiguration) {
-    this.contract = contract;
-  }
-
-  async getState(params: EvaluationOptions): Promise<AntState> {
-    return this.contract.getContractState(params);
-  }
-
-  async getRecord(
-    params: { undername: string } & EvaluationOptions,
-  ): Promise<{ ttlSeconds: number; transactionId: string }> {
-    const state = await this.contract.getContractState(params);
-    return state.records[params.undername];
-  }
-
-  async getRecords(
-    params: EvaluationOptions,
-  ): Promise<Record<string, { ttlSeconds: number; transactionId: string }>> {
-    const state = await this.contract.getContractState(params);
-    return state.records;
-  }
-
-  async getOwner(
-    params: { domain: string } & EvaluationOptions,
-  ): Promise<string> {
-    const state = await this.contract.getContractState(params);
-    return state.owner;
-  }
-
-  async getControllers(params: EvaluationOptions): Promise<string[]> {
-    const state = await this.contract.getContractState(params);
-    return state.controllers;
   }
 }

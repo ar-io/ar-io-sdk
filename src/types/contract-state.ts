@@ -180,17 +180,3 @@ export interface ArIOState {
   vaults: RegistryVaults;
   prescribedObservers: PrescribedObservers;
 }
-
-export type AntRecord = {
-  ttlSeconds: number;
-  transactionId: string;
-};
-
-export interface AntState {
-  balances: Balances;
-  name: string;
-  ticket: string;
-  records: Record<string, AntRecord>;
-  owner: string;
-  controllers: string[];
-}
