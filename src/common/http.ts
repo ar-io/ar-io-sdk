@@ -69,39 +69,4 @@ export class AxiosHTTPService implements HTTPClient {
 
     return data;
   }
-
-  // async post<T>({
-  //   endpoint,
-  //   signal,
-  //   allowedStatuses = [200, 202],
-  //   headers,
-  //   data,
-  // }: {
-  //   endpoint: string;
-  //   signal?: AbortSignal;
-  //   allowedStatuses?: number[];
-  //   headers?: Record<string, string>;
-  //   data: Readable | Buffer | ReadableStream;
-  // }): Promise<T> {
-  //   const {
-  //     status,
-  //     statusText,
-  //     data: response,
-  //   } = await this.axios.post<T>(endpoint, data, {
-  //     headers,
-  //     signal,
-  //   });
-
-  //   if (!allowedStatuses.includes(status)) {
-  //     switch (status) {
-  //       case 404:
-  //         throw new NotFound(statusText);
-  //       case 400:
-  //         throw new FailedRequestError(status, statusText);
-  //       default:
-  //         throw new UnknownError(statusText);
-  //     }
-  //   }
-  //   return response;
-  // }
 }

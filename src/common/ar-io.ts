@@ -14,57 +14,116 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
+  AntState,
   ArIOContract,
+  ArIOState,
   ArNSNameData,
+  EvaluationOptions,
   Gateway,
-  ReadInteractionFilters,
+  AntContract as IAntContract,
+  SmartWeaveContract,
 } from '../types/index.js';
-import { ArNSRemoteCache } from './index.js';
+import { ArIOServiceContract } from './index.js';
 
-export type CacheConfiguration = {
-  remoteCacheUrl?: string;
-  contractTxId?: string;
-};
-export type ArIOConfiguration = {
-  cacheConfig?: CacheConfiguration;
+export type ContractConfiguration = {
+  contract?: SmartWeaveContract;
 };
 
 export class ArIO implements ArIOContract {
-  protected cache: ArIOContract;
+  private contract: SmartWeaveContract;
 
-  constructor({ cacheConfig }: ArIOConfiguration = {}) {
-    this.cache = new ArNSRemoteCache({
-      contractTxId: cacheConfig?.contractTxId,
-      url: cacheConfig?.remoteCacheUrl,
-    });
+  constructor({
+    contract = new ArIOServiceContract({
+      contractTxId: ARNS_TESTNET_REGISTRY_TX,
+    }),
+  }: ContractConfiguration) {
+    this.contract = contract;
   }
-  // implement ArIOContract interface
 
+  async getState(params: EvaluationOptions): Promise<ArIOState> {
+    return this.contract.getContractState<ArIOState>(params);
+  }
   async getArNSRecord(
-    params: { domain: string } & ReadInteractionFilters,
+    params: { domain: string } & EvaluationOptions,
   ): Promise<ArNSNameData> {
-    return this.cache.getArNSRecord(params);
+    const records = await this.getArNSRecords(params);
+    return records[params.domain];
   }
   async getArNSRecords(
-    params: ReadInteractionFilters,
+    params: EvaluationOptions,
   ): Promise<Record<string, ArNSNameData>> {
-    return this.cache.getArNSRecords(params);
+    const state = await this.contract.getContractState<ArIOState>(params);
+    return state.records;
   }
   async getBalance(
-    params: { address: string } & ReadInteractionFilters,
+    params: { address: string } & EvaluationOptions,
   ): Promise<number> {
-    return this.cache.getBalance(params);
+    const balances = await this.getBalances(params);
+    return balances[params.address] || 0;
   }
-  async getBalances(): Promise<Record<string, number>> {
-    return this.cache.getBalances();
+  async getBalances(
+    params: EvaluationOptions,
+  ): Promise<Record<string, number>> {
+    const state = await this.contract.getContractState<ArIOState>(params);
+    return state.balances;
   }
-  async getGateway(params: { address: string }): Promise<Gateway> {
-    return this.cache.getGateway(params);
+  async getGateway(
+    params: { address: string } & EvaluationOptions,
+  ): Promise<Gateway> {
+    return this.contract.readInteraction({
+      functionName: 'gateway',
+      inputs: {
+        target: params.address,
+      },
+      evaluationParameters: params.evaluationParameters,
+    });
   }
   async getGateways(
-    params: ReadInteractionFilters,
+    params: EvaluationOptions,
   ): Promise<Record<string, Gateway>> {
-    return this.cache.getGateways(params);
+    return this.contract.readInteraction({
+      functionName: 'gateways',
+      evaluationParameters: params.evaluationParameters,
+    });
+  }
+}
+
+export class AntContract implements IAntContract {
+  private contract: SmartWeaveContract;
+
+  constructor({ contract }: Required<ContractConfiguration>) {
+    this.contract = contract;
+  }
+
+  async getState(params: EvaluationOptions): Promise<AntState> {
+    return this.contract.getContractState<AntState>(params);
+  }
+
+  async getRecord(
+    params: { undername: string } & EvaluationOptions,
+  ): Promise<{ ttlSeconds: number; transactionId: string }> {
+    const state = await this.contract.getContractState<AntState>(params);
+    return state.records[params.undername];
+  }
+
+  async getRecords(
+    params: EvaluationOptions,
+  ): Promise<Record<string, { ttlSeconds: number; transactionId: string }>> {
+    const state = await this.contract.getContractState<AntState>(params);
+    return state.records;
+  }
+
+  async getOwner(
+    params: { domain: string } & EvaluationOptions,
+  ): Promise<string> {
+    const state = await this.contract.getContractState<AntState>(params);
+    return state.owner;
+  }
+
+  async getControllers(params: EvaluationOptions): Promise<string[]> {
+    const state = await this.contract.getContractState<AntState>(params);
+    return state.controllers;
   }
 }

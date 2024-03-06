@@ -14,44 +14,71 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArNSNameData, Gateway } from './contract-state.js';
+import {
+  AntRecord,
+  AntState,
+  ArIOState,
+  ArNSNameData,
+  Gateway,
+} from './contract-state.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
+export type WalletAddress = string;
 
 export type EvalToParams =
-  | { sortKey?: SortKey }
-  | { blockHeight?: BlockHeight };
+  | { sortKey: SortKey }
+  | { blockHeight: BlockHeight }
+  | undefined;
 
 export type EvaluationParameters = {
   evalTo?: EvalToParams;
 };
 
 // TODO: extend type with other read filters (e.g max eval time)
-export type ReadInteractionFilters = {
+export type EvaluationOptions = {
   evaluationParameters?: EvaluationParameters;
 };
 
+export interface SmartWeaveContract {
+  getContractState(params: EvaluationOptions): Promise<any>;
+  readInteraction<T>(
+    params: { functionName: string; inputs?: unknown } & EvaluationOptions,
+  ): Promise<T>;
+  // TODO: write interaction
+}
+
 // TODO: extend with additional methods
 export interface ArIOContract {
+  getState(params: EvaluationOptions): Promise<ArIOState>;
   getGateway(
-    params: { address: WalletAddress } & ReadInteractionFilters,
+    params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<Gateway>;
   getGateways(
-    params?: ReadInteractionFilters,
+    params?: EvaluationOptions,
   ): Promise<Record<WalletAddress, Gateway>>;
   getBalance(
-    params: { address: WalletAddress } & ReadInteractionFilters,
+    params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<number>;
   getBalances(
-    params?: ReadInteractionFilters,
+    params?: EvaluationOptions,
   ): Promise<Record<WalletAddress, number>>;
   getArNSRecord(
-    params: { domain: string } & ReadInteractionFilters,
+    params: { domain: string } & EvaluationOptions,
   ): Promise<ArNSNameData>;
   getArNSRecords(
-    params?: ReadInteractionFilters,
+    params?: EvaluationOptions,
   ): Promise<Record<string, ArNSNameData>>;
+}
+
+export interface AntContract {
+  getState(params: EvaluationOptions): Promise<AntState>;
+  getRecords(params: EvaluationOptions): Promise<Record<string, AntRecord>>;
+  getRecord(
+    params: { undername: string } & EvaluationOptions,
+  ): Promise<AntRecord>;
+  getOwner(params: EvaluationOptions): Promise<WalletAddress>;
+  getControllers(params: EvaluationOptions): Promise<WalletAddress[]>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -64,8 +91,6 @@ export interface Logger {
   debug: (message: string, ...args: any[]) => void;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
-
-export type WalletAddress = string;
 
 export interface HTTPClient {
   get<T>({
@@ -81,18 +106,4 @@ export interface HTTPClient {
     allowedStatuses?: number[];
     params?: Record<string, unknown>;
   }): Promise<T>;
-  // TODO: add post method
-  // post<T>({
-  //   endpoint,
-  //   signal,
-  //   headers,
-  //   allowedStatuses,
-  //   data,
-  // }: {
-  //   endpoint: string;
-  //   signal: AbortSignal;
-  //   headers?: Record<string, string>;
-  //   allowedStatuses?: number[];
-  //   data: Readable | ReadableStream | Buffer;
-  // }): Promise<T>;
 }
