@@ -177,7 +177,6 @@ Retrieves the balances of the ArIO contract.
  -->
 
 ```typescript
-
 const arIO = new ArIO();
 const balances = arIO.getBalances();
 
@@ -234,7 +233,6 @@ const gateway = arIO.getGateway({
 //     "normalizedCompositeWeight": 0.27485583057217183
 //     }
 // }
-
 ```
 
 #### `getGateways()`
