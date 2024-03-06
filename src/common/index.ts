@@ -15,6 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export * from './ar-io.js';
-export * from './caches/index.js';
+export * from './contracts/index.js';
 export * from './error.js';
 export * from './logger.js';

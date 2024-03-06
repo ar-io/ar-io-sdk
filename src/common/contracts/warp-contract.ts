@@ -19,7 +19,7 @@ import {
   Warp,
   WarpFactory,
   defaultCacheOptions,
-} from 'warp-contracts/web';
+} from 'warp-contracts';
 
 import { SmartWeaveContract } from '../../types/index.js';
 

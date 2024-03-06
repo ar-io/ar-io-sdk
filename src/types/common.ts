@@ -71,7 +71,7 @@ export interface ArIOContract {
   ): Promise<Record<string, ArNSNameData>>;
 }
 
-export interface AntContract {
+export interface ArNSAntContract {
   getState(params: EvaluationOptions): Promise<AntState>;
   getRecords(params: EvaluationOptions): Promise<Record<string, AntRecord>>;
   getRecord(

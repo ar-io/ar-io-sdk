@@ -19,31 +19,33 @@ import {
   AntState,
   ArIOContract,
   ArIOState,
+  ArNSAntContract,
   ArNSNameData,
   EvaluationOptions,
   Gateway,
-  AntContract as IAntContract,
   SmartWeaveContract,
 } from '../types/index.js';
-import { ArIOServiceContract } from './index.js';
+import { ArIORemoteContract, WarpContract } from './index.js';
 
 export type ContractConfiguration = {
   contract?: SmartWeaveContract;
 };
 
 export class ArIO implements ArIOContract {
-  private contract: SmartWeaveContract;
+  private contract: SmartWeaveContract; // TODO: this could just be SmartWeaveContract but with the generic ensures any custom setup requires the user to pass in the correct contract type
 
   constructor({
-    contract = new ArIOServiceContract({
+    contract = new ArIORemoteContract<ArIOContract>({
       contractTxId: ARNS_TESTNET_REGISTRY_TX,
     }),
-  }: ContractConfiguration) {
+  }: {
+    contract?: SmartWeaveContract
+  }) {
     this.contract = contract;
   }
 
   async getState(params: EvaluationOptions): Promise<ArIOState> {
-    return this.contract.getContractState<ArIOState>(params);
+    return this.contract.getContractState(params);
   }
   async getArNSRecord(
     params: { domain: string } & EvaluationOptions,
@@ -54,7 +56,7 @@ export class ArIO implements ArIOContract {
   async getArNSRecords(
     params: EvaluationOptions,
   ): Promise<Record<string, ArNSNameData>> {
-    const state = await this.contract.getContractState<ArIOState>(params);
+    const state = await this.contract.getContractState(params);
     return state.records;
   }
   async getBalance(
@@ -66,7 +68,7 @@ export class ArIO implements ArIOContract {
   async getBalances(
     params: EvaluationOptions,
   ): Promise<Record<string, number>> {
-    const state = await this.contract.getContractState<ArIOState>(params);
+    const state = await this.contract.getContractState(params);
     return state.balances;
   }
   async getGateway(
@@ -90,7 +92,7 @@ export class ArIO implements ArIOContract {
   }
 }
 
-export class AntContract implements IAntContract {
+export class AntContract implements ArNSAntContract {
   private contract: SmartWeaveContract;
 
   constructor({ contract }: Required<ContractConfiguration>) {
@@ -98,32 +100,32 @@ export class AntContract implements IAntContract {
   }
 
   async getState(params: EvaluationOptions): Promise<AntState> {
-    return this.contract.getContractState<AntState>(params);
+    return this.contract.getContractState(params);
   }
 
   async getRecord(
     params: { undername: string } & EvaluationOptions,
   ): Promise<{ ttlSeconds: number; transactionId: string }> {
-    const state = await this.contract.getContractState<AntState>(params);
+    const state = await this.contract.getContractState(params);
     return state.records[params.undername];
   }
 
   async getRecords(
     params: EvaluationOptions,
   ): Promise<Record<string, { ttlSeconds: number; transactionId: string }>> {
-    const state = await this.contract.getContractState<AntState>(params);
+    const state = await this.contract.getContractState(params);
     return state.records;
   }
 
   async getOwner(
     params: { domain: string } & EvaluationOptions,
   ): Promise<string> {
-    const state = await this.contract.getContractState<AntState>(params);
+    const state = await this.contract.getContractState(params);
     return state.owner;
   }
 
   async getControllers(params: EvaluationOptions): Promise<string[]> {
-    const state = await this.contract.getContractState<AntState>(params);
+    const state = await this.contract.getContractState(params);
     return state.controllers;
   }
 }
