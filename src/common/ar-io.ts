@@ -32,7 +32,7 @@ export type ContractConfiguration = {
 };
 
 export class ArIO implements ArIOContract {
-  private contract: SmartWeaveContract; // TODO: this could just be SmartWeaveContract but with the generic ensures any custom setup requires the user to pass in the correct contract type
+  private contract: SmartWeaveContract; // TODO: this could just be scoped to WarpContract<ArIOState> | ArIORemoteContract<ArIOState>
 
   constructor({
     contract = new ArIORemoteContract<ArIOContract>({
@@ -95,7 +95,9 @@ export class ArIO implements ArIOContract {
 export class AntContract implements ArNSAntContract {
   private contract: SmartWeaveContract;
 
-  constructor({ contract }: Required<ContractConfiguration>) {
+  constructor({ contractTxId, contract = new ArIORemoteContract({
+    contractTxId,
+  }) }: { contractTxId: string } & ContractConfiguration) {
     this.contract = contract;
   }
 
