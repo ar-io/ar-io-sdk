@@ -14,13 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-  AntRecord,
-  AntState,
-  ArIOState,
-  ArNSNameData,
-  Gateway,
-} from './contract-state.js';
+import { ArIOState, ArNSNameData, Gateway } from './contract-state.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -69,16 +63,6 @@ export interface ArIOContract {
   getArNSRecords(
     params?: EvaluationOptions,
   ): Promise<Record<string, ArNSNameData>>;
-}
-
-export interface ArNSAntContract {
-  getState(params: EvaluationOptions): Promise<AntState>;
-  getRecords(params: EvaluationOptions): Promise<Record<string, AntRecord>>;
-  getRecord(
-    params: { undername: string } & EvaluationOptions,
-  ): Promise<AntRecord>;
-  getOwner(params: EvaluationOptions): Promise<WalletAddress>;
-  getControllers(params: EvaluationOptions): Promise<WalletAddress[]>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
