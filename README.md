@@ -98,6 +98,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 
 ```javascript
 import { ArIO } from '@ar-io/sdk';
+
 // set up client
 const arIO = new ArIO();
 // fetch gateways
@@ -109,6 +110,7 @@ const gateways = arIO.getGateways();
 ```html
 <script type="module">
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
+
   // set up client
   const arIO = new ArIO();
   // fetch gateways
@@ -203,7 +205,7 @@ Retrieves a gateway's info by its staking wallet address.
 ```typescript
 const arIO = new ArIO();
 const gateway = arIO.getGateway({
-  stakingAddress: 'INSERT_GATEWAY_ADDRESS',
+  address: 'INSERT_GATEWAY_ADDRESS',
 });
 
 // outputs:
@@ -297,7 +299,7 @@ Retrieves the record info of the specified ArNS name.
 
 ```typescript
 const arIO = new ArIO();
-const record = arIO.getArNSRecord({ arnsName: 'ardrive' });
+const record = arIO.getArNSRecord({ domain: 'ardrive' });
 
 // outputs
 
@@ -370,6 +372,7 @@ const records = arIO.getArNSRecords();
 For more information on how to contribute, please see [CONTRIBUTING.md].
 
 <!-- ADD ALL LINK REFERENCES BELOW -->
+
 [ar.io]: https://ar.io
 [package.json]: ./package.json
 [examples]: ./examples
