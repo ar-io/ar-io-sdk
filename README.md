@@ -149,14 +149,14 @@ const remoteCustomArIO = new ArIO({
 const localCustomArIO = new ArIO({
   contract: new WarpContract<ArIOState>({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
-  })
+  }),
 });
 
 // provide a custom contract to the client, and specify local evaluation using remote cache
 const remoteCacheCustomArIO = new ArIO({
   contract: new RemoteContract<ArIOState>({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
-  })
+  }),
 });
 ```
 

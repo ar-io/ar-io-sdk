@@ -14,7 +14,7 @@ describe('ArIO Client', () => {
   const arioClient = new ArIO({
     contract: new RemoteContract<ArIOState>({
       url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
-      contractTxId: ARNS_DEVNET_REGISTRY_TX
+      contractTxId: ARNS_DEVNET_REGISTRY_TX,
     }),
   });
   it('should create a custom ArIO client', () => {
@@ -22,8 +22,10 @@ describe('ArIO Client', () => {
   });
 
   it('should should return undefined for non existent gateway', async () => {
-    const nonExistent = await arioClient.getGateway({ address: 'some-address' })
-    expect(nonExistent).toEqual(undefined)
+    const nonExistent = await arioClient.getGateway({
+      address: 'some-address',
+    });
+    expect(nonExistent).toEqual(undefined);
   });
 
   it('should return gateway state at a given block height', async () => {
@@ -56,14 +58,16 @@ describe('ArIO Client', () => {
     expect(gateways[gatewayAddress]).toBeDefined();
   });
 
-   it('should fetch a record', async () => {
+  it('should fetch a record', async () => {
     const record = await arioClient.getArNSRecord({ domain: 'ar-io' });
     expect(record).toBeDefined();
   });
 
   it('should throw NotFound error on non existent record', async () => {
-    const nonExistent = await arioClient.getArNSRecord({ domain: 'some-domain' })
-    expect(nonExistent).toEqual(undefined)
+    const nonExistent = await arioClient.getArNSRecord({
+      domain: 'some-domain',
+    });
+    expect(nonExistent).toEqual(undefined);
   });
 
   it('should fetch all records', async () => {
@@ -80,15 +84,14 @@ describe('ArIO Client', () => {
     });
     expect(currentRecord).toBeDefined();
 
-    const nonExistent = await arioClient
-      .getArNSRecord({
-        domain,
-        evaluationOptions: {
-          evalTo: { blockHeight: 0 },
-        },
-      })
-     
-    expect(nonExistent).toEqual(undefined)
+    const nonExistent = await arioClient.getArNSRecord({
+      domain,
+      evaluationOptions: {
+        evalTo: { blockHeight: 0 },
+      },
+    });
+
+    expect(nonExistent).toEqual(undefined);
   });
 
   it('should return record at a given sort key', async () => {
