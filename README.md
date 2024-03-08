@@ -343,6 +343,12 @@ const records = arIO.getArNSRecords();
 
 ## Developers
 
+### Requirements
+
+- `node>=v.18.0`
+- `npm` or `yarn`
+- `docker` (recommended for testing)
+
 ### Setup & Build
 
 - `yarn install` - installs dependencies
