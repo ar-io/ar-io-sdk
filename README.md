@@ -1,6 +1,6 @@
 # @ar-io/sdk
 
-This is the home of ar.io SDK. This SDK provides functionality for interacting with the ar.io ecosystem of services (e.g. gateways and observers) and protocols (e.g. ArNS). It is available for both NodeJS and Web environments.
+This is the home of [ar.io] SDK. This SDK provides functionality for interacting with the ar.io ecosystem of services (e.g. gateways and observers) and protocols (e.g. ArNS). It is available for both NodeJS and Web environments.
 
 ## Table of Contents
 
@@ -21,7 +21,7 @@ This is the home of ar.io SDK. This SDK provides functionality for interacting w
   - [Architecture](#architecture)
 - [Contributing](./CONTRIBUTING.md)
 
-# Prerequisites
+## Prerequisites
 
 - `node>=v.18.0`
 - `npm` or `yarn`
@@ -88,29 +88,27 @@ const gateways = arIO.getGateways();
 // }
 ```
 
-# Usage
+## Usage
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
-## Web
+### Web
 
-### Bundlers (Webpack, Rollup, ESbuild, etc.)
+#### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
 import { ArIO } from '@ar-io/sdk';
-
 // set up client
 const arIO = new ArIO();
 // fetch gateways
 const gateways = arIO.getGateways();
 ```
 
-### Browser
+#### Browser
 
 ```html
 <script type="module">
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
-
   // set up client
   const arIO = new ArIO();
   // fetch gateways
@@ -118,11 +116,10 @@ const gateways = arIO.getGateways();
 </script>
 ```
 
-### Node
+#### Node
 
 ```javascript
 const { ArIO } = require('@ar-io/sdk');
-
 // set up client
 const arIO = new ArIO();
 // fetch gateways
@@ -135,11 +132,9 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 ## Configuration
 
-<!-- TODO: add instantiation examples here for warp and remote cache for comparisons once write API's are available. -->
-
 ### Custom Contracts
 
-By default - the `ArIO` client uses the `mainnet` contract and exposes APIs relevant to the `ArIO` contract. You can provide custom `contract` or `contractTxId` to the `ArIO` constructor and expose those APIs, assuming the contract is compatible with the `ArIO` contract.
+The ArIO contract client class exposes APIs relevant to the ar.io contract. It can be configured to use any contract ID that adheres to the spec of the ar.io contract. In the default case, it will automatically build and utilize a contract data provider interface that is configured to point the the known mainnet contract ID at construction time. You can provide custom contract data provider or, alternatively, a `contractTxId` to the ArIO constructor to use a different, ar.io-spec-compatible contract.
 
 ```typescript
 // provide a custom contractTxId to the client and default to remote evaluation
@@ -164,7 +159,7 @@ const remoteCacheCustomArIO = new ArIO({
 
 ## APIs
 
-#### `getBalance({ address })`
+### `getBalance({ address })`
 
 Retrieves the balance of the specified wallet address.
 
@@ -177,7 +172,7 @@ const balance = arIO.getBalance({
 // outputs: 0
 ```
 
-#### `getBalances()`
+### `getBalances()`
 
 Retrieves the balances of the ArIO contract.
 
@@ -201,7 +196,7 @@ const balances = arIO.getBalances();
 // }
 ```
 
-#### `getGateway({ address })`
+### `getGateway({ address, evaluationOptions })`
 
 Retrieves a gateway's info by its staking wallet address.
 
@@ -246,7 +241,7 @@ const gateway = arIO.getGateway({
 // }
 ```
 
-#### `getGateways()`
+### `getGateways({ evaluationOptions })`
 
 Retrieves the registered gateways of the ArIO contract.
 
@@ -296,7 +291,7 @@ const gateways = arIO.getGateways();
 // }
 ```
 
-#### `getArNSRecord({ domain })`
+### `getArNSRecord({ domain, evaluationOptions })`
 
 Retrieves the record info of the specified ArNS name.
 
@@ -315,7 +310,7 @@ const record = arIO.getArNSRecord({ arnsName: 'ardrive' });
 // }
 ```
 
-#### `getArNSRecords()`
+### `getArNSRecords({ evaluationOptions })`
 
 Retrieves all registered ArNS records of the ArIO contract.
 
@@ -375,7 +370,7 @@ const records = arIO.getArNSRecords();
 For more information on how to contribute, please see [CONTRIBUTING.md].
 
 <!-- ADD ALL LINK REFERENCES BELOW -->
-
+[ar.io]: https://ar.io
 [package.json]: ./package.json
 [examples]: ./examples
 [arns-service]: https://github.com/ar-io/arns-service
