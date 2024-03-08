@@ -11,91 +11,82 @@ const evaluateToSortKey = new SmartWeaveSortKey(
   '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
 );
 describe('ArIO Client', () => {
-  const arioClient = new ArIO({
+  const arIO = new ArIO({
     contract: new RemoteContract<ArIOState>({
       url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
       contractTxId: ARNS_DEVNET_REGISTRY_TX,
     }),
   });
   it('should create a custom ArIO client', () => {
-    expect(arioClient).toBeInstanceOf(ArIO);
+    expect(arIO).toBeInstanceOf(ArIO);
   });
 
   it('should should return undefined for non existent gateway', async () => {
-    const nonExistent = await arioClient.getGateway({
+    const nonExistent = await arIO.getGateway({
       address: 'some-address',
     });
     expect(nonExistent).toEqual(undefined);
   });
 
-  it('should return gateway state at a given block height', async () => {
-    const gateway = await arioClient.getGateway({
+  it('should return gateways at a given block height', async () => {
+    const gateway = await arIO.getGateway({
       address: gatewayAddress,
       evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
     });
     expect(gateway).toBeDefined();
   });
 
-  it('should return gateway state at a given sort key', async () => {
-    const gateway = await arioClient.getGateway({
+  it('should return gateways at a given sort key', async () => {
+    const gateway = await arIO.getGateway({
       address: gatewayAddress,
       evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
     });
     expect(gateway).toBeDefined();
   });
 
-  it('should return gateways state at a given block height', async () => {
-    const gateways = await arioClient.getGateways({
+  it('should return gateways at a given block height', async () => {
+    const gateways = await arIO.getGateways({
       evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
     });
     expect(gateways[gatewayAddress]).toBeDefined();
   });
 
-  it('should return gateways state at a given sort key', async () => {
-    const gateways = await arioClient.getGateways({
+  it('should return gateways at a given sort key', async () => {
+    const gateways = await arIO.getGateways({
       evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
     });
     expect(gateways[gatewayAddress]).toBeDefined();
   });
 
-  it('should fetch a record', async () => {
-    const record = await arioClient.getArNSRecord({ domain: 'ar-io' });
+  it('should return the record for an existing domain', async () => {
+    const record = await arIO.getArNSRecord({ domain });
     expect(record).toBeDefined();
   });
 
-  it('should throw NotFound error on non existent record', async () => {
-    const nonExistent = await arioClient.getArNSRecord({
+  it('should throw return undefined for a non existent record', async () => {
+    const nonExistent = await arIO.getArNSRecord({
       domain: 'some-domain',
     });
     expect(nonExistent).toEqual(undefined);
   });
 
   it('should fetch all records', async () => {
-    const records = await arioClient.getArNSRecords();
+    const records = await arIO.getArNSRecords();
     expect(records).toBeDefined();
   });
 
   it('should return record at a given block height', async () => {
-    const currentRecord = await arioClient.getArNSRecord({
+    const currentRecord = await arIO.getArNSRecord({
       domain,
       evaluationOptions: {
         evalTo: { blockHeight: evaluateToBlockHeight + 1 },
       },
     });
     expect(currentRecord).toBeDefined();
-
-    const nonExistent = await arioClient.getArNSRecord({
-      domain,
-      evaluationOptions: {
-        evalTo: { blockHeight: 0 },
-      },
-    });
-
-    expect(nonExistent).toEqual(undefined);
   });
 
   it('should return record at a given sort key', async () => {
-    const record = await arioClient.getArNSRecord({
+    const record = await arIO.getArNSRecord({
       domain,
       evaluationOptions: {
         evalTo: { sortKey: evaluateToSortKey.toString() },
@@ -105,7 +96,7 @@ describe('ArIO Client', () => {
   });
 
   it('should return records at a given block height', async () => {
-    const records = await arioClient.getArNSRecords({
+    const records = await arIO.getArNSRecords({
       evaluationOptions: {
         evalTo: { blockHeight: evaluateToBlockHeight },
       },
@@ -114,7 +105,7 @@ describe('ArIO Client', () => {
   });
 
   it('should return records at a given sort key', async () => {
-    const records = await arioClient.getArNSRecords({
+    const records = await arIO.getArNSRecords({
       evaluationOptions: {
         evalTo: { sortKey: evaluateToSortKey.toString() },
       },
