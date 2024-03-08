@@ -19,7 +19,7 @@ import {
   HTTPClient,
   Logger,
   SmartWeaveContract,
-} from '../../types/index.js';
+} from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 

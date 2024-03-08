@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { BlockHeight } from '../types/common.js';
 
 export const validateArweaveId = (id: string): boolean => {
   return ARWEAVE_TX_REGEX.test(id);

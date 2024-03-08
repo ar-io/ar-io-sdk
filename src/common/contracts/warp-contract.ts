@@ -21,13 +21,8 @@ import {
   defaultCacheOptions,
 } from 'warp-contracts';
 
-import { EvaluationParameters, SmartWeaveContract } from '../../types/index.js';
+import { EvaluationParameters, SmartWeaveContract } from '../../types.js';
 import { FailedRequestError } from '../error.js';
-
-export const defaultWarpClient = WarpFactory.forMainnet({
-  ...defaultCacheOptions,
-  inMemory: true, // default to in memory for now, a custom warp implementation can be provided
-});
 
 export class WarpContract<T> implements SmartWeaveContract<T> {
   private contract: Contract<T>;
@@ -37,18 +32,21 @@ export class WarpContract<T> implements SmartWeaveContract<T> {
   constructor({
     contractTxId,
     cacheUrl,
-    warp = defaultWarpClient,
+    warp = WarpFactory.forMainnet({
+      ...defaultCacheOptions,
+      inMemory: true, // default to in memory for now, a custom warp implementation can be provided
+    }),
   }: {
+    contractTxId: string;
     cacheUrl?: string;
     warp: Warp;
-    contractTxId: string;
   }) {
-    // sync state
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
   }
 
   private async syncState() {
+    // TODO: get contract manifest and set it before evaluating
     if (this.cacheUrl !== undefined) {
       await this.contract.syncState(
         `${this.cacheUrl}/v1/contract/${this.contractTxId}`,

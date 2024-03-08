@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { SortKey } from '../common.js';
 import { SORT_KEY_REGEX } from '../constants.js';
-import { SortKey } from '../types/common.js';
 
 export function isSortKey(sortKey: string): sortKey is SortKey {
   return SmartWeaveSortKey.validate(sortKey);

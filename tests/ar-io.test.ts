@@ -1,7 +1,7 @@
 import { ArIO } from '../src/common/ar-io.js';
-import { RemoteContract } from '../src/common/index.js';
+import { RemoteContract } from '../src/common/contracts/remote-contract.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../src/constants.js';
-import { ArIOState } from '../src/types/contract-state.js';
+import { ArIOState } from '../src/contract-state.js';
 import { SmartWeaveSortKey } from '../src/utils/smartweave.js';
 
 const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
