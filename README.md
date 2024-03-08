@@ -23,8 +23,8 @@ This is the home of ar.io SDK. This SDK provides functionality for interacting w
 
 # Prerequisites
 
-- Node v18.0.0 or above
-- npm or yarn package managers
+- `node>=v.18.0`
+- `npm` or `yarn`
 
 ## Installation
 
@@ -92,9 +92,9 @@ const gateways = arIO.getGateways();
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
-### Web
+## Web
 
-#### Bundlers (Webpack, Rollup, ESbuild, etc.)
+### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
 import { ArIO } from '@ar-io/sdk';
@@ -103,7 +103,7 @@ const arIO = new ArIO();
 const gateways = arIO.getGateways();
 ```
 
-#### Browser
+### Browser
 
 ```html
 <script type="module">
@@ -135,7 +135,7 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 <!-- TODO: add instantiation examples here for warp and remote cache for comparisons once write API's are available. -->
 
-### Custom Contract Evaluation
+### Custom Contracts
 
 By default - the `ArIO` client uses the `mainnet` contract and exposes APIs relevant to the `ArIO` contract. You can provide custom `contract` or `contractTxId` to the `ArIO` constructor and expose those APIs, assuming the contract is compatible with the `ArIO` contract.
 
@@ -158,6 +158,7 @@ const remoteCacheCustomArIO = new ArIO({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
   }),
 });
+
 ```
 
 ## APIs
@@ -351,7 +352,7 @@ const records = arIO.getArNSRecords();
 
 ### Testing
 
-- `yarn test` - runs integration tests
+- `yarn test:integration` - runs integration tests against a local [arns-service]
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
@@ -373,3 +374,7 @@ const records = arIO.getArNSRecords();
 For more information on how to contribute, please see [CONTRIBUTING.md].
 
 <!-- ADD ALL LINK REFERENCES BELOW -->
+[package.json]: ./package.json
+[examples]: ./examples
+[arns-service]: https://github.com/ar-io/arns-service
+[CONTRIBUTING.md]: ./CONTRIBUTING.md
