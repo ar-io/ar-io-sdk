@@ -12,6 +12,12 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Web Environments](#web)
   - [Typescript](#typescript)
 - [APIs](#apis)
+  - [getBalance](#getbalance-address-evaluationoptions)
+  - [getBalances](#getbalances-evaluationoptions)
+  - [getGateway](#getgateway-address-evaluationoptions)
+  - [getGateways](#getgateways-evaluationoptions)
+  - [getArNSRecord](#getarnsrecord-domain-evaluationoptions)
+  - [getArNSRecords](#getarnsrecords-evaluationoptions)
 - [Examples](./examples)
 - [Developers](#developers)
   - [Requirements](#requirements)
@@ -161,7 +167,7 @@ const remoteCacheCustomArIO = new ArIO({
 
 ## APIs
 
-### `getBalance({ address })`
+### `getBalance({ address, evaluationOptions })`
 
 Retrieves the balance of the specified wallet address.
 
@@ -174,7 +180,7 @@ const balance = arIO.getBalance({
 // outputs: 0
 ```
 
-### `getBalances()`
+### `getBalances({ evaluationOptions })`
 
 Retrieves the balances of the ArIO contract.
 
