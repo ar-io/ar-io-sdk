@@ -25,5 +25,5 @@
     "strictNullChecks": true
   },
   "include": ["src"],
-  "exclude": ["lib", "node_modules", "bundles"]
+  "exclude": ["lib", "node_modules", "bundles", "tests"]
 }

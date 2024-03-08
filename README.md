@@ -135,19 +135,28 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 <!-- TODO: add instantiation examples here for warp and remote cache for comparisons once write API's are available. -->
 
-### Contract Data Provider Configuration
+### Custom Contract Evaluation
+
+By default - the `ArIO` client uses the `mainnet` contract and exposes APIs relevant to the `ArIO` contract. You can provide custom `contract` or `contractTxId` to the `ArIO` constructor and expose those APIs, assuming the contract is compatible with the `ArIO` contract.
 
 ```typescript
-const arIoContractId = 'INSERT_CUSTOM_REGISTRY_CONTRACT_ID';
-
-const contractDataProvider = new ArNSRemoteCache({
-  arIoContractId,
-  remoteCacheUrl: 'http://localhost:3000',
+// provide a custom contractTxId to the client and default to remote evaluation
+const remoteCustomArIO = new ArIO({
+  contractTxId: 'TESTNET_CONTRACT_TX_ID',
 });
 
-const arIOLocal = new ArIO({
-  arIoContractId,
-  contractDataProvider,
+// provide a custom contract to the client, and specify local evaluation using warp
+const localCustomArIO = new ArIO({
+  contract: new WarpContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  }),
+});
+
+// provide a custom contract to the client, and specify local evaluation using remote cache
+const remoteCacheCustomArIO = new ArIO({
+  contract: new RemoteContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  }),
 });
 ```
 

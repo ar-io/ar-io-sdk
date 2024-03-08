@@ -16,41 +16,51 @@
  */
 import { AxiosInstance } from 'axios';
 
-import { HTTPClient, Logger } from '../types/index.js';
+import { HTTPClient, Logger } from '../types.js';
 import { createAxiosInstance } from '../utils/index.js';
 import { FailedRequestError, NotFound, UnknownError } from './error.js';
+import { DefaultLogger } from './logger.js';
 
 export class AxiosHTTPService implements HTTPClient {
   private axios: AxiosInstance;
   private logger: Logger;
 
   // TODO: re-implement axios-retry. Currently that package is broken for nodenext.
-  constructor({ url, logger }: { url: string; logger: Logger }) {
+  constructor({
+    url,
+    logger = new DefaultLogger(),
+  }: {
+    url: string;
+    logger?: Logger;
+  }) {
     this.logger = logger;
     this.axios = createAxiosInstance({
       axiosConfig: {
         baseURL: url,
-        maxRedirects: 0,
       },
     });
   }
-  async get<T>({
+  async get<I, K>({
     endpoint,
     signal,
     allowedStatuses = [200, 202],
     headers,
+    params,
   }: {
     endpoint: string;
     signal?: AbortSignal;
     allowedStatuses?: number[];
     headers?: Record<string, string>;
-  }): Promise<T> {
-    this.logger.debug(`Get request to endpoint: ${endpoint}`);
-    const { status, statusText, data } = await this.axios.get<T>(endpoint, {
+    params?: I;
+  }): Promise<K> {
+    this.logger.debug(
+      `Get request to endpoint: ${endpoint} with params ${JSON.stringify(params, undefined, 2)}`,
+    );
+    const { status, statusText, data } = await this.axios.get<K>(endpoint, {
       headers,
       signal,
+      params,
     });
-
     if (!allowedStatuses.includes(status)) {
       switch (status) {
         case 404:
@@ -64,39 +74,4 @@ export class AxiosHTTPService implements HTTPClient {
 
     return data;
   }
-
-  // async post<T>({
-  //   endpoint,
-  //   signal,
-  //   allowedStatuses = [200, 202],
-  //   headers,
-  //   data,
-  // }: {
-  //   endpoint: string;
-  //   signal?: AbortSignal;
-  //   allowedStatuses?: number[];
-  //   headers?: Record<string, string>;
-  //   data: Readable | Buffer | ReadableStream;
-  // }): Promise<T> {
-  //   const {
-  //     status,
-  //     statusText,
-  //     data: response,
-  //   } = await this.axios.post<T>(endpoint, data, {
-  //     headers,
-  //     signal,
-  //   });
-
-  //   if (!allowedStatuses.includes(status)) {
-  //     switch (status) {
-  //       case 404:
-  //         throw new NotFound(statusText);
-  //       case 400:
-  //         throw new FailedRequestError(status, statusText);
-  //       default:
-  //         throw new UnknownError(statusText);
-  //     }
-  //   }
-  //   return response;
-  // }
 }
