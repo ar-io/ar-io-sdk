@@ -23,7 +23,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
 ## Prerequisites
 
-- `node>=v.18.0`
+- `node>=v18.0.0`
 - `npm` or `yarn`
 
 ## Installation
@@ -345,7 +345,7 @@ const records = arIO.getArNSRecords();
 
 ### Requirements
 
-- `node>=v.18.0`
+- `node>=v18.0.0`
 - `npm` or `yarn`
 - `docker` (recommended for testing)
 
