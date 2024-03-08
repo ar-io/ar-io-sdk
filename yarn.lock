@@ -2162,7 +2162,17 @@ arrify@^1.0.1:
   resolved "https://registry.yarnpkg.com/arrify/-/arrify-1.0.1.tgz#898508da2226f380df904728456849c1501a4b0d"
   integrity sha512-3CYzex9M9FGQjCGMGyi6/31c8GJbgb0qGyrx5HWxPd0aCwh4cB2YjMb2Xf9UuoogrMrlO9cTqnB5rI5GHZTcUA==
 
-arweave@1.14.4, arweave@^1.10.13, arweave@^1.13.7, arweave@^1.14.4:
+arweave@1.13.7:
+  version "1.13.7"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.13.7.tgz#cda8534c833baec372a7052c61f53b4e39a886d7"
+  integrity sha512-Hv+x2bSI6UyBHpuVbUDMMpMje1ETfpJWj52kKfz44O0IqDRi/LukOkkDUptup1p6OT6KP1/DdpnUnsNHoskFeA==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+
+arweave@^1.10.13, arweave@^1.13.7, arweave@^1.14.4:
   version "1.14.4"
   resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.14.4.tgz#5ba22136aa0e7fd9495258a3931fb770c9d6bf21"
   integrity sha512-tmqU9fug8XAmFETYwgUhLaD3WKav5DaM4p1vgJpEj/Px2ORPPMikwnSySlFymmL2qgRh2ZBcZsg11+RXPPGLsA==
@@ -8064,13 +8074,13 @@ warp-arbundles@^1.0.4:
     buffer "^6.0.3"
     warp-isomorphic "^1.0.7"
 
-warp-contracts@^1.4.37:
-  version "1.4.37"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.37.tgz#d22d34750bb50638188ca40d53015207688d1f58"
-  integrity sha512-jDQQF4FqRCy6OAnsb87d9LMzVp18eRTFyDQp9QirLD2C7IwBAH2DVrfpVcyPeZuxw4bNz3CSVemdMS+oFJIldQ==
+warp-contracts@1.4.29:
+  version "1.4.29"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.29.tgz#fbab7b64ad055f7245229d9bfab992161fda2f33"
+  integrity sha512-cwNgKmKl5vMd5ptLeyPqMug5IPCyQIJZMalQ7FBFZjLMC7atlMcNYDKgaBHi14vXjtTtw1g+V6BRETwQhqCfzA==
   dependencies:
     archiver "^5.3.0"
-    arweave "1.14.4"
+    arweave "1.13.7"
     async-mutex "^0.4.0"
     bignumber.js "9.1.1"
     events "3.3.0"
