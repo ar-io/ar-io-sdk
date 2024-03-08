@@ -52,6 +52,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "yarn clean && c8 jest .",
+    "test:integration": "docker compose up -d && yarn test && docker compose down",
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
     "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
@@ -85,7 +86,6 @@
     "http-server": "^14.1.1",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
-    "node-stdlib-browser": "^1.2.0",
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
@@ -99,7 +99,7 @@
   "dependencies": {
     "arweave": "^1.14.4",
     "axios": "1.4.0",
-    "warp-contracts": "^1.4.34",
+    "warp-contracts": "1.4.29",
     "winston": "^3.11.0"
   }
 }

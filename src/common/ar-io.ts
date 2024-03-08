@@ -14,57 +14,139 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
+  ArIOState,
   ArNSNameData,
+  EvaluationParameters,
   Gateway,
-  ReadInteractionFilters,
-} from '../types/index.js';
-import { ArNSRemoteCache } from './index.js';
+  SmartWeaveContract,
+} from '../types.js';
+import { RemoteContract } from './contracts/remote-contract.js';
 
-export type CacheConfiguration = {
-  remoteCacheUrl?: string;
-  contractTxId?: string;
-};
-export type ArIOConfiguration = {
-  cacheConfig?: CacheConfiguration;
-};
+// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
+export type ContractConfiguration =
+  | {
+      contract?: SmartWeaveContract<unknown>;
+    }
+  | {
+      contractTxId: string;
+    };
+
+function isContractConfiguration<T>(
+  config: ContractConfiguration,
+): config is { contract: SmartWeaveContract<T> } {
+  return 'contract' in config;
+}
+
+function isContractTxIdConfiguration(
+  config: ContractConfiguration,
+): config is { contractTxId: string } {
+  return 'contractTxId' in config;
+}
 
 export class ArIO implements ArIOContract {
-  protected cache: ArIOContract;
+  private contract: SmartWeaveContract<ArIOState>;
 
-  constructor({ cacheConfig }: ArIOConfiguration = {}) {
-    this.cache = new ArNSRemoteCache({
-      contractTxId: cacheConfig?.contractTxId,
-      url: cacheConfig?.remoteCacheUrl,
+  constructor(
+    config: ContractConfiguration = {
+      // default to a contract that uses the arns service to do the evaluation
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      }),
+    },
+  ) {
+    if (isContractConfiguration<ArIOState>(config)) {
+      this.contract = config.contract;
+    } else if (isContractTxIdConfiguration(config)) {
+      this.contract = new RemoteContract<ArIOState>({
+        contractTxId: config.contractTxId,
+      });
+    }
+  }
+
+  /**
+   * Returns the current state of the contract.
+   */
+  async getState(params: EvaluationParameters): Promise<ArIOState> {
+    const state = await this.contract.getContractState(params);
+    return state;
+  }
+
+  /**
+   * Returns the ARNS record for the given domain.
+   */
+  async getArNSRecord({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSNameData | undefined
+  > {
+    const records = await this.getArNSRecords({ evaluationOptions });
+    return records[domain];
+  }
+
+  /**
+   * Returns all ArNS records.
+   */
+  async getArNSRecords({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
+    const state = await this.contract.getContractState({ evaluationOptions });
+    return state.records;
+  }
+
+  /**
+   * Returns the balance of the given address.
+   */
+  async getBalance({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: string }>): Promise<number> {
+    const balances = await this.getBalances({ evaluationOptions });
+    return balances[address] || 0;
+  }
+
+  /**
+   * Returns the balances of all addresses.
+   */
+  async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
+    Record<string, number>
+  > {
+    const state = await this.contract.getContractState({ evaluationOptions });
+    return state.balances;
+  }
+
+  /**
+   * Returns the gateway for the given address, including weights.
+   */
+  async getGateway({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
+    return this.contract
+      .readInteraction<{ target: string }, Gateway>({
+        functionName: 'gateway',
+        inputs: {
+          target: address,
+        },
+        evaluationOptions,
+      })
+      .catch(() => {
+        return undefined;
+      });
+  }
+
+  /**
+   * Returns all gateways, including weights.
+   */
+  async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
+    Record<string, Gateway> | Record<string, never>
+  > {
+    return this.contract.readInteraction({
+      functionName: 'gateways',
+      evaluationOptions,
     });
-  }
-  // implement ArIOContract interface
-
-  async getArNSRecord(
-    params: { domain: string } & ReadInteractionFilters,
-  ): Promise<ArNSNameData> {
-    return this.cache.getArNSRecord(params);
-  }
-  async getArNSRecords(
-    params: ReadInteractionFilters,
-  ): Promise<Record<string, ArNSNameData>> {
-    return this.cache.getArNSRecords(params);
-  }
-  async getBalance(
-    params: { address: string } & ReadInteractionFilters,
-  ): Promise<number> {
-    return this.cache.getBalance(params);
-  }
-  async getBalances(): Promise<Record<string, number>> {
-    return this.cache.getBalances();
-  }
-  async getGateway(params: { address: string }): Promise<Gateway> {
-    return this.cache.getGateway(params);
-  }
-  async getGateways(
-    params: ReadInteractionFilters,
-  ): Promise<Record<string, Gateway>> {
-    return this.cache.getGateways(params);
   }
 }
