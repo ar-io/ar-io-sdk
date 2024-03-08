@@ -351,6 +351,7 @@ const records = arIO.getArNSRecords();
 
 ### Setup & Build
 
+- `nvm use` - use the correct node version
 - `yarn install` - installs dependencies
 - `yarn build` - builds web/node/bundled outputs
 
