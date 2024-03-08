@@ -99,7 +99,9 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 ```javascript
 import { ArIO } from '@ar-io/sdk';
 
+// set up client
 const arIO = new ArIO();
+// fetch gateways
 const gateways = arIO.getGateways();
 ```
 
@@ -109,7 +111,7 @@ const gateways = arIO.getGateways();
 <script type="module">
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
 
-  // set up our client
+  // set up client
   const arIO = new ArIO();
   // fetch gateways
   const gateways = await arIO.getGateways();
@@ -121,15 +123,15 @@ const gateways = arIO.getGateways();
 ```javascript
 const { ArIO } = require('@ar-io/sdk');
 
+// set up client
 const arIO = new ArIO();
+// fetch gateways
 const gateways = await arIO.getGateways();
 ```
 
 ## Typescript
 
-The SDK provides TypeScript types. When you import the SDK in a TypeScript project:
-
-Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
+The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
 ## Configuration
 
@@ -158,7 +160,6 @@ const remoteCacheCustomArIO = new ArIO({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
   }),
 });
-
 ```
 
 ## APIs
@@ -374,6 +375,7 @@ const records = arIO.getArNSRecords();
 For more information on how to contribute, please see [CONTRIBUTING.md].
 
 <!-- ADD ALL LINK REFERENCES BELOW -->
+
 [package.json]: ./package.json
 [examples]: ./examples
 [arns-service]: https://github.com/ar-io/arns-service
