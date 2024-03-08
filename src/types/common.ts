@@ -20,49 +20,59 @@ export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
 
-export type EvalToParams =
-  | { sortKey: SortKey }
-  | { blockHeight: BlockHeight }
-  | undefined;
-
-export type EvaluationParameters = {
-  evalTo?: EvalToParams;
-};
-
-// TODO: extend type with other read filters (e.g max eval time)
 export type EvaluationOptions = {
-  evaluationParameters?: EvaluationParameters;
+  evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
+  // TODO: any other evaluation constraints
 };
 
-export interface SmartWeaveContract {
-  getContractState(params: EvaluationOptions): Promise<any>;
-  readInteraction<T>(
-    params: { functionName: string; inputs?: unknown } & EvaluationOptions,
-  ): Promise<T>;
+// combine evaluation parameters with read interaction inputs
+export type EvaluationParameters<T = NonNullable<unknown>> = {
+  evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+} & T;
+
+export interface SmartWeaveContract<T> {
+  getContractState(params: EvaluationParameters): Promise<T>;
+  readInteraction<I, K>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K>;
   // TODO: write interaction
 }
 
 // TODO: extend with additional methods
 export interface ArIOContract {
-  getState(params: EvaluationOptions): Promise<ArIOState>;
-  getGateway(
-    params: { address: WalletAddress } & EvaluationOptions,
-  ): Promise<Gateway>;
-  getGateways(
-    params?: EvaluationOptions,
-  ): Promise<Record<WalletAddress, Gateway>>;
+  getState({ evaluationOptions }: EvaluationParameters): Promise<ArIOState>;
+  getGateway({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: WalletAddress }>): Promise<
+    Gateway | undefined
+  >;
+  getGateways({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<WalletAddress, Gateway> | Record<string, never>
+  >;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<number>;
-  getBalances(
-    params?: EvaluationOptions,
-  ): Promise<Record<WalletAddress, number>>;
-  getArNSRecord(
-    params: { domain: string } & EvaluationOptions,
-  ): Promise<ArNSNameData>;
-  getArNSRecords(
-    params?: EvaluationOptions,
-  ): Promise<Record<string, ArNSNameData>>;
+  getBalances({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<WalletAddress, number> | Record<string, never>
+  >;
+  getArNSRecord({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSNameData | undefined
+  >;
+  getArNSRecords({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<string, ArNSNameData> | Record<string, never>
+  >;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -75,9 +85,8 @@ export interface Logger {
   debug: (message: string, ...args: any[]) => void;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
-
 export interface HTTPClient {
-  get<T>({
+  get<I, K>({
     endpoint,
     signal,
     headers,
@@ -88,6 +97,6 @@ export interface HTTPClient {
     signal?: AbortSignal;
     headers?: Record<string, string>;
     allowedStatuses?: number[];
-    params?: Record<string, unknown>;
-  }): Promise<T>;
+    params?: object | I;
+  }): Promise<K>;
 }

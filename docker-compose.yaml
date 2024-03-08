@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  arns-service: 
+    image: ghcr.io/ar-io/arns-service:latest
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - LOG_LEVEL=debug
+      - PREFETCH_CONTRACTS=true
+      - PREFETCH_CONTRACT_IDS=_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8
+      - BOOTSTRAP_CONTRACTS=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

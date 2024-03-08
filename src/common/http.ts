@@ -19,22 +19,28 @@ import { AxiosInstance } from 'axios';
 import { HTTPClient, Logger } from '../types/index.js';
 import { createAxiosInstance } from '../utils/index.js';
 import { FailedRequestError, NotFound, UnknownError } from './error.js';
+import { DefaultLogger } from './logger.js';
 
 export class AxiosHTTPService implements HTTPClient {
   private axios: AxiosInstance;
   private logger: Logger;
 
   // TODO: re-implement axios-retry. Currently that package is broken for nodenext.
-  constructor({ url, logger }: { url: string; logger: Logger }) {
+  constructor({
+    url,
+    logger = new DefaultLogger(),
+  }: {
+    url: string;
+    logger?: Logger;
+  }) {
     this.logger = logger;
     this.axios = createAxiosInstance({
       axiosConfig: {
         baseURL: url,
-        maxRedirects: 0,
       },
     });
   }
-  async get<T>({
+  async get<I, K>({
     endpoint,
     signal,
     allowedStatuses = [200, 202],
@@ -45,17 +51,16 @@ export class AxiosHTTPService implements HTTPClient {
     signal?: AbortSignal;
     allowedStatuses?: number[];
     headers?: Record<string, string>;
-    params?: Record<string, unknown>;
-  }): Promise<T> {
+    params?: I;
+  }): Promise<K> {
     this.logger.debug(
       `Get request to endpoint: ${endpoint} with params ${JSON.stringify(params, undefined, 2)}`,
     );
-    const { status, statusText, data } = await this.axios.get<T>(endpoint, {
+    const { status, statusText, data } = await this.axios.get<K>(endpoint, {
       headers,
       signal,
       params,
     });
-
     if (!allowedStatuses.includes(status)) {
       switch (status) {
         case 404:

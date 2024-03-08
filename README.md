@@ -137,33 +137,27 @@ Types are exported from `./lib/types/[node/web]/index.d.ts` and should be automa
 
 ### Custom Contract Evaluation
 
-```typescript
-// use an experimental contract that satisfies the ArIOContract state and evaluate it using a remote contract service
-const testnetContract = new ArIORemoteContract<ArIOState>({
-  contractTxId: 'TESTNET_CONTRACT_TX_ID',
-  remoteCacheUrl: 'http://localhost:3000', // my local cache service
-});
-
-const testnet = new ArIO({
-  contract: remoteContract,
-});
-
-const gateways = testnet.getGateways(); // evaluates the ArIO contract using the remote cache service
-```
-
-Alternatively - you can choose to evaluate contracts locally leveraging [Warp].
+By default - the `ArIO` client uses the `mainnet` contract and exposes APIs relevant to the `ArIO` contract. You can provide custom `contract` or `contractTxId` to the `ArIO` constructor and expose those APIs, assuming the contract is compatible with the `ArIO` contract.
 
 ```typescript
-// setup a local contract and evaluate it using warp
-const localContract = new WarpContract<ArIOState>({
+// provide a custom contractTxId to the client and default to remote evaluation
+const remoteCustomArIO = new ArIO({
   contractTxId: 'TESTNET_CONTRACT_TX_ID',
 });
 
-const localArIO = new ArIO({
-  contract: localContract,
+// provide a custom contract to the client, and specify local evaluation using warp
+const localCustomArIO = new ArIO({
+  contract: new WarpContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  })
 });
 
-const gateways = localArIO.getGateways(); // evaluates the ArIO contract locally using warp
+// provide a custom contract to the client, and specify local evaluation using remote cache
+const remoteCacheCustomArIO = new ArIO({
+  contract: new RemoteContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  })
+});
 ```
 
 ## APIs

@@ -23,7 +23,8 @@ import {
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
-export class ArIORemoteContract<T> implements SmartWeaveContract {
+// TODO: this assumes the API structure matches the current arns-service API - we will want to consider another interface that exposes relevant APIs with client implementations (arns-service, DRE nodes, etc.)
+export class RemoteContract<T> implements SmartWeaveContract<T> {
   private logger: Logger;
   private http: HTTPClient;
   private contractTxId: string;
@@ -31,58 +32,58 @@ export class ArIORemoteContract<T> implements SmartWeaveContract {
   constructor({
     url = 'https://api.arns.app',
     contractTxId,
-    logger = new DefaultLogger({
-      level: 'debug',
-      logFormat: 'simple',
-    }),
+    logger = new DefaultLogger(),
   }: {
     contractTxId: string;
     url?: string;
     logger?: DefaultLogger;
   }) {
+    this.contractTxId = contractTxId;
     this.logger = logger;
     this.http = new AxiosHTTPService({
-      url: `${url}/v1`,
-      logger,
+      url: `${url}/v1/contract/${contractTxId}`,
     });
-    this.contractTxId = contractTxId;
   }
 
   async getContractState({
-    evaluationParameters,
-  }: {
-    evaluationParameters?: EvaluationParameters;
-  }): Promise<T> {
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<T> {
     this.logger.debug(`Fetching contract state`, {
       contractTxId: this.contractTxId,
-      evaluationParameters,
+      evaluationOptions,
     });
-    return this.http.get<T>({
-      endpoint: `/contract/${this.contractTxId}/state`,
-      params: evaluationParameters?.evalTo,
+    const { state } = await this.http.get<
+      { sortKey: string } | { blockHeight: number } | Record<string, never>,
+      { state: T }
+    >({
+      endpoint: ``,
+      params: {
+        ...evaluationOptions?.evalTo,
+      },
     });
+    return state;
   }
 
-  async readInteraction<K>({
+  async readInteraction<I, K>({
     functionName,
     inputs,
-    evaluationParameters,
-  }: {
-    functionName: string;
-    inputs: object;
-    evaluationParameters: EvaluationParameters;
-  }): Promise<K> {
+    evaluationOptions,
+  }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K> {
     this.logger.debug(`Evaluating read interaction on contract`, {
       functionName,
       inputs,
-      evaluationParameters,
+      evaluationOptions,
     });
-    return this.http.get<K>({
-      endpoint: `/contract/${this.contractTxId}/read/${functionName}`,
+    const { result } = await this.http.get<
+      I | Record<string, never>,
+      { result: K }
+    >({
+      endpoint: `/read/${functionName}`,
       params: {
-        ...evaluationParameters.evalTo,
+        ...evaluationOptions?.evalTo,
         ...inputs,
       },
     });
+    return result;
   }
 }

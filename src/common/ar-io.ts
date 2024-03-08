@@ -19,73 +19,134 @@ import {
   ArIOContract,
   ArIOState,
   ArNSNameData,
-  EvaluationOptions,
+  EvaluationParameters,
   Gateway,
   SmartWeaveContract,
 } from '../types/index.js';
-import { ArIORemoteContract } from './index.js';
+import { RemoteContract } from './index.js';
 
-export type ContractConfiguration = {
-  contract?: SmartWeaveContract;
-};
+// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
+export type ContractConfiguration =
+  | {
+      contract?: SmartWeaveContract<unknown>;
+    }
+  | {
+      contractTxId: string;
+    };
+
+function isContractConfiguration<T>(
+  config: ContractConfiguration,
+): config is { contract: SmartWeaveContract<T> } {
+  return 'contract' in config;
+}
+
+function isContractTxIdConfiguration(
+  config: ContractConfiguration,
+): config is { contractTxId: string } {
+  return 'contractTxId' in config;
+}
 
 export class ArIO implements ArIOContract {
-  private contract: SmartWeaveContract; // TODO: this could just be scoped to WarpContract<ArIOState> | ArIORemoteContract<ArIOState>
+  private contract: SmartWeaveContract<ArIOState>;
 
-  constructor({
-    contract = new ArIORemoteContract<ArIOContract>({
-      contractTxId: ARNS_TESTNET_REGISTRY_TX,
-    }),
-  }: {
-    contract?: SmartWeaveContract;
-  }) {
-    this.contract = contract;
+  constructor(
+    config: ContractConfiguration = {
+      // default to a contract that uses the arns service to do the evaluation
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      }),
+    },
+  ) {
+    if (isContractConfiguration<ArIOState>(config)) {
+      this.contract = config.contract;
+    } else if (isContractTxIdConfiguration(config)) {
+      this.contract = new RemoteContract<ArIOState>({
+        contractTxId: config.contractTxId,
+      });
+    }
   }
 
-  async getState(params: EvaluationOptions): Promise<ArIOState> {
-    return this.contract.getContractState(params);
-  }
-  async getArNSRecord(
-    params: { domain: string } & EvaluationOptions,
-  ): Promise<ArNSNameData> {
-    const records = await this.getArNSRecords(params);
-    return records[params.domain];
-  }
-  async getArNSRecords(
-    params: EvaluationOptions,
-  ): Promise<Record<string, ArNSNameData>> {
+  /**
+   * Returns the current state of the contract.
+   */
+  async getState(params: EvaluationParameters): Promise<ArIOState> {
     const state = await this.contract.getContractState(params);
+    return state;
+  }
+
+  /**
+   * Returns the ARNS record for the given domain.
+   */
+  async getArNSRecord({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSNameData | undefined
+  > {
+    const records = await this.getArNSRecords({ evaluationOptions });
+    return records[domain];
+  }
+
+  /**
+   * Returns all ArNS records.
+   */
+  async getArNSRecords({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
+    const state = await this.contract.getContractState({ evaluationOptions });
     return state.records;
   }
-  async getBalance(
-    params: { address: string } & EvaluationOptions,
-  ): Promise<number> {
-    const balances = await this.getBalances(params);
-    return balances[params.address] || 0;
+
+  /**
+   * Returns the balance of the given address.
+   */
+  async getBalance({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: string }>): Promise<number> {
+    const balances = await this.getBalances({ evaluationOptions });
+    return balances[address] || 0;
   }
-  async getBalances(
-    params: EvaluationOptions,
-  ): Promise<Record<string, number>> {
-    const state = await this.contract.getContractState(params);
+
+  /**
+   * Returns the balances of all addresses.
+   */
+  async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
+    Record<string, number>
+  > {
+    const state = await this.contract.getContractState({ evaluationOptions });
     return state.balances;
   }
-  async getGateway(
-    params: { address: string } & EvaluationOptions,
-  ): Promise<Gateway> {
-    return this.contract.readInteraction({
-      functionName: 'gateway',
-      inputs: {
-        target: params.address,
-      },
-      evaluationParameters: params.evaluationParameters,
-    });
+
+  /**
+   * Returns the gateway for the given address, including weights.
+   */
+  async getGateway({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
+    return this.contract
+      .readInteraction<{ target: string }, Gateway>({
+        functionName: 'gateway',
+        inputs: {
+          target: address,
+        },
+        evaluationOptions,
+      })
+      .catch(() => {
+        return undefined;
+      });
   }
-  async getGateways(
-    params: EvaluationOptions,
-  ): Promise<Record<string, Gateway>> {
+
+  /**
+   * Returns all gateways, including weights.
+   */
+  async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
+    Record<string, Gateway> | Record<string, never>
+  > {
     return this.contract.readInteraction({
       functionName: 'gateways',
-      evaluationParameters: params.evaluationParameters,
+      evaluationOptions,
     });
   }
 }

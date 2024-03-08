@@ -52,6 +52,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "yarn clean && c8 jest .",
+    "test:integration": "docker compose up -d && yarn test && docker compose down",
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
     "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
@@ -98,7 +99,7 @@
   "dependencies": {
     "arweave": "^1.14.4",
     "axios": "1.4.0",
-    "warp-contracts": "1.4.29",
+    "warp-contracts": "^1.4.37",
     "winston": "^3.11.0"
   }
 }

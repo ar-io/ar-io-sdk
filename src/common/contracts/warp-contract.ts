@@ -21,14 +21,15 @@ import {
   defaultCacheOptions,
 } from 'warp-contracts';
 
-import { SmartWeaveContract } from '../../types/index.js';
+import { EvaluationParameters, SmartWeaveContract } from '../../types/index.js';
+import { FailedRequestError } from '../error.js';
 
 export const defaultWarpClient = WarpFactory.forMainnet({
   ...defaultCacheOptions,
   inMemory: true, // default to in memory for now, a custom warp implementation can be provided
 });
 
-export class WarpContract<T> implements SmartWeaveContract {
+export class WarpContract<T> implements SmartWeaveContract<T> {
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
@@ -58,28 +59,40 @@ export class WarpContract<T> implements SmartWeaveContract {
     }
   }
 
-  async getContractState(): Promise<T> {
+  async getContractState({
+    evaluationOptions = {},
+  }: EvaluationParameters): Promise<T> {
     await this.syncState();
-    const evaluationResult = await this.contract.readState();
-    if (!evaluationResult.cachedValue.state) {
-      throw new Error('Contract state is not available');
+    const evalTo = evaluationOptions?.evalTo;
+    let sortKeyOrBlockHeight: string | number | undefined;
+    if (evalTo && 'sortKey' in evalTo) {
+      sortKeyOrBlockHeight = evalTo.sortKey;
+    } else if (evalTo && 'blockHeight') {
+      sortKeyOrBlockHeight = evalTo.blockHeight;
     }
-    return evaluationResult.cachedValue.state;
+
+    const evaluationResult =
+      await this.contract.readState(sortKeyOrBlockHeight);
+    if (!evaluationResult.cachedValue.state) {
+      throw new FailedRequestError(502, 'Failed to evaluate contract state');
+    }
+    return evaluationResult.cachedValue.state as T;
   }
 
-  async readInteraction<K>({
+  async readInteraction<I, K>({
     functionName,
     inputs,
-  }: {
-    functionName: string;
-    inputs: object;
-  }): Promise<K> {
+    // TODO: view state only supports sort key so we won't be able to use block height
+  }: EvaluationParameters<{ functionName: string; inputs: I }>): Promise<K> {
     const evaluationResult = await this.contract.viewState<unknown, K>({
       functionName,
       ...inputs,
     });
     if (!evaluationResult.result) {
-      throw new Error('Contract state is not available');
+      throw new FailedRequestError(
+        502,
+        'Failed to evaluate contract read interaction',
+      );
     }
     return evaluationResult.result;
   }

@@ -28,6 +28,7 @@ export const createAxiosInstance = ({
 }: AxiosInstanceParameters = {}): AxiosInstance => {
   const axiosInstance = axios.create({
     ...axiosConfig,
+    maxRedirects: 0,
     headers: {
       ...axiosConfig.headers,
       'x-source-version': `${version}`,
