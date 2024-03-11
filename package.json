@@ -1,6 +1,10 @@
 {
   "name": "@ar-io/sdk",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ar-io/ar-io-sdk.git"
+  },
   "main": "./lib/cjs/node/index.js",
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
@@ -94,7 +98,6 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   },
-  "repository": "https://github.com/ar-io/ar-io-sdk.git",
   "dependencies": {
     "arweave": "^1.14.4",
     "axios": "1.4.0",
