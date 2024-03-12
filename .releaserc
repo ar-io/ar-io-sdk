@@ -4,10 +4,6 @@
     {
       "name": "alpha",
       "prerelease": true
-    },
-    {
-      "name": "beta",
-      "prerelease": true
     }
   ],
   "repositoryUrl": "https://github.com/ar-io/ar-io-sdk",
@@ -16,12 +12,19 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "./update-version.sh ${nextRelease.version}"
+      }
+    ],
     "@semantic-release/npm",
     [
       "@semantic-release/github",
       {
         "assets": [
-          "dist/**"
+          "lib/**",
+          "bundles/**"
         ]
       }
     ],
@@ -29,8 +32,8 @@
       "@semantic-release/git",
       {
         "assets": [
+          "src/version.ts",
           "package.json",
-          "yarn.lock",
           "CHANGELOG.md"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"

@@ -1,15 +1,19 @@
 {
-  "name": "@ar-io/sdk",
+  "name": "@ar.io/sdk",
   "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ar-io/ar-io-sdk.git"
+    "url": "git+https://github.com/ar-io/ar-io-sdk.git"
   },
   "main": "./lib/cjs/node/index.js",
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
   "browser": "./bundles/web.bundle.min.js",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "AGPL-3.0-or-later",
   "files": [
     "lib",
     "bundles",
@@ -17,6 +21,9 @@
     "README.md",
     "package.json"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": {
     "name": "Permanent Data Solutions Inc",
     "email": "info@ar.io",
@@ -41,10 +48,6 @@
       "browser": "./bundles/web.bundle.min.js"
     }
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "license": "AGPL-3.0-or-later",
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
@@ -69,6 +72,7 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^11.0.3",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.4.8",
