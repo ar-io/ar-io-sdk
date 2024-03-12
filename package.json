@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -105,7 +105,6 @@
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
-    "setimmediate": "^1.0.5",
     "sinon": "^15.2.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",
@@ -115,6 +114,7 @@
     "arweave": "^1.14.4",
     "axios": "1.4.0",
     "warp-contracts": "^1.4.38",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "setimmediate": "^1.0.5"
   }
 }
