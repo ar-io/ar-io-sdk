@@ -1,3 +1,10 @@
+# [1.0.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2024-03-12)
+
+
+### Bug Fixes
+
+* **release:** remove release assets entirely ([9d5a1b3](https://github.com/ar-io/ar-io-sdk/commit/9d5a1b3b693134062754892674428936df122c9b))
+
 # [1.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2024-03-12)
 
 
