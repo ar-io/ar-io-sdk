@@ -16,6 +16,10 @@
  */
 
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
+// sortkey: padded blockheight to 12, JS timestamp, hash of transactionID + block hash. Timestamp only applicable to L2 and normally is all zeros.
+export const SORT_KEY_REGEX = new RegExp(
+  '^[0-9]{12},[0-9]{13},[a-fA-F0-9]{64}$',
+);
 export const ARNS_TESTNET_REGISTRY_TX =
   process.env.ARNS_REGISTRY_TX ?? 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U';
 

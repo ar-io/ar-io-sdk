@@ -16,3 +16,4 @@
  */
 export * from './arweave.js';
 export * from './http-client.js';
+export * from './smartweave.js';

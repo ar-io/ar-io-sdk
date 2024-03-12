@@ -165,7 +165,7 @@ export type RegistryVaults = Record<string, Vaults>;
 
 export type PrescribedObservers = Record<number, WeightedObserver[]>;
 
-export interface IOState {
+export interface ArIOState {
   balances: Balances;
   name: string; // The friendly name of the token, shown in block explorers and marketplaces
   records: Record<string, ArNSNameData>; // The list of all ArNS names and their associated data
