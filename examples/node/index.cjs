@@ -1,6 +1,28 @@
-const { DefaultClient } = require('../../lib/index.js');
+const {
+  ArIO,
+  ARNS_TESTNET_REGISTRY_TX,
+} = require('../../lib/cjs/node/index.js');
 
 (async () => {
-  const client = new DefaultClient();
-  console.log(client);
+  const arIO = new ArIO();
+  // testnet gateways
+  const testnetGateways = await arIO.getGateways();
+  const protocolBalance = await arIO.getBalance({
+    address: ARNS_TESTNET_REGISTRY_TX,
+  });
+  const ardriveRecord = await arIO.getArNSRecord({ domain: 'ardrive' });
+  const allRecords = await arIO.getArNSRecords();
+
+  console.dir(
+    {
+      testnetGateways,
+      ardriveRecord,
+      protocolBalance,
+      arnsStats: {
+        'registered domains': Object.keys(allRecords).length,
+        ardrive: allRecords.ardrive,
+      },
+    },
+    { depth: 2 },
+  );
 })();
