@@ -112,4 +112,41 @@ describe('ArIO Client', () => {
     });
     expect(records[domain]).toBeDefined();
   });
+
+  it('should return the current epoch information', async () => {
+    const epoch = await arIO.getCurrentEpoch();
+    expect(epoch).toBeDefined();
+    expect(epoch.epochStartHeight).toBeDefined();
+    expect(epoch.epochBlockLength).toBeDefined();
+    expect(epoch.epochDistributionHeight).toBeDefined();
+    expect(epoch.epochEndHeight).toBeDefined();
+    expect(epoch.epochPeriod).toBeDefined();
+    expect(epoch.epochZeroStartHeight).toBeDefined();
+  });
+
+  it('should return the current epoch information when evaluated at a given block height', async () => {
+    const epoch = await arIO.getCurrentEpoch({
+      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
+    });
+    expect(epoch).toBeDefined();
+    expect(epoch.epochStartHeight).toBeDefined();
+    expect(epoch.epochBlockLength).toBeDefined();
+    expect(epoch.epochDistributionHeight).toBeDefined();
+    expect(epoch.epochEndHeight).toBeDefined();
+    expect(epoch.epochPeriod).toBeDefined();
+    expect(epoch.epochZeroStartHeight).toBeDefined();
+  });
+
+  it('should return the epoch information at a given block height', async () => {
+    const epoch = await arIO.getEpoch({
+      blockHeight: evaluateToBlockHeight,
+    });
+    expect(epoch).toBeDefined();
+    expect(epoch.epochStartHeight).toBeDefined();
+    expect(epoch.epochBlockLength).toBeDefined();
+    expect(epoch.epochDistributionHeight).toBeDefined();
+    expect(epoch.epochEndHeight).toBeDefined();
+    expect(epoch.epochPeriod).toBeDefined();
+    expect(epoch.epochZeroStartHeight).toBeDefined();
+  });
 });

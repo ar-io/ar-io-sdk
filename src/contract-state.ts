@@ -156,7 +156,8 @@ export type EpochDistributionData = {
   epochStartHeight: number; // the current epoch start height
   epochEndHeight: number; // the current epoch end height
   epochPeriod: number;
-  nextDistributionHeight: number;
+  epochDistributionHeight: number;
+  epochBlockLength: number;
 };
 
 export type Vaults = Record<string, VaultData>;
