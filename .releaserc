@@ -19,15 +19,7 @@
       }
     ],
     "@semantic-release/npm",
-    [
-      "@semantic-release/github",
-      {
-        "assets": [
-          "lib",
-          "bundles"
-        ]
-      }
-    ],
+    "@semantic-release/github",
     [
       "@semantic-release/git",
       {
