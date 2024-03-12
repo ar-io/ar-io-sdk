@@ -79,6 +79,15 @@ export interface ArIOContract {
   }: EvaluationParameters): Promise<
     Record<string, ArNSNameData> | Record<string, never>
   >;
+  getEpoch({
+    blockHeight,
+    evaluationOptions,
+  }: {
+    blockHeight: number;
+  } & EvaluationParameters): Promise<EpochDistributionData>;
+  getCurrentEpoch({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<EpochDistributionData>;
   getObservations({
     evaluationOptions,
   }: EvaluationParameters): Promise<Observations>;

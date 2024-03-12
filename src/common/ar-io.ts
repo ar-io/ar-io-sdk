@@ -31,11 +31,11 @@ import { RemoteContract } from './contracts/remote-contract.js';
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractConfiguration =
   | {
-      contract?: SmartWeaveContract<unknown>;
-    }
+    contract?: SmartWeaveContract<unknown>;
+  }
   | {
-      contractTxId: string;
-    };
+    contractTxId: string;
+  };
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -149,6 +149,39 @@ export class ArIO implements ArIOContract {
   > {
     return this.contract.readInteraction({
       functionName: 'gateways',
+      evaluationOptions,
+    });
+  }
+
+  /**
+   * Returns the current epoch.
+   */
+  async getCurrentEpoch({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<EpochDistributionData> {
+    return this.contract.readInteraction({
+      functionName: 'epoch',
+      evaluationOptions,
+    });
+  }
+
+  /**
+   * Returns the epoch information for the provided block height.
+   */
+  async getEpoch({
+    blockHeight,
+    evaluationOptions,
+  }: {
+    blockHeight: number;
+  } & EvaluationParameters): Promise<EpochDistributionData> {
+    return this.contract.readInteraction<
+      { height: number },
+      EpochDistributionData
+    >({
+      functionName: 'epoch',
+      inputs: {
+        height: blockHeight,
+      },
       evaluationOptions,
     });
   }
