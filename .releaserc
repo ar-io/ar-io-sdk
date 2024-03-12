@@ -23,8 +23,8 @@
       "@semantic-release/github",
       {
         "assets": [
-          "lib/**",
-          "bundles/**"
+          "lib",
+          "bundles"
         ]
       }
     ],
