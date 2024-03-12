@@ -101,7 +101,7 @@
   "dependencies": {
     "arweave": "^1.14.4",
     "axios": "1.4.0",
-    "warp-contracts": "1.4.29",
+    "warp-contracts": "^1.4.38",
     "winston": "^3.11.0"
   }
 }
