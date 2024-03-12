@@ -19,8 +19,11 @@ import {
   ArIOContract,
   ArIOState,
   ArNSNameData,
+  EpochDistributionData,
+  EvaluationOptions,
   EvaluationParameters,
   Gateway,
+  Observations,
   SmartWeaveContract,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
@@ -148,5 +151,25 @@ export class ArIO implements ArIOContract {
       functionName: 'gateways',
       evaluationOptions,
     });
+  }
+  async getObservations({
+    evaluationOptions,
+  }: {
+    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+  }): Promise<Observations> {
+    const { observations } = await this.contract.getContractState({
+      evaluationOptions,
+    });
+    return observations;
+  }
+  async getDistributions({
+    evaluationOptions,
+  }: {
+    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+  }): Promise<EpochDistributionData> {
+    const { distributions } = await this.contract.getContractState({
+      evaluationOptions,
+    });
+    return distributions;
   }
 }
