@@ -1,3 +1,10 @@
+# [1.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2024-03-12)
+
+
+### Bug Fixes
+
+* **release:** update github release config to publish packages to github ([5534d9d](https://github.com/ar-io/ar-io-sdk/commit/5534d9d6c9b86b1642668705dc0cb6c301f03d9e))
+
 # [1.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2024-03-12)
 
 
