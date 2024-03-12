@@ -1,3 +1,10 @@
+# [1.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.2...v1.0.0-alpha.3) (2024-03-12)
+
+
+### Bug Fixes
+
+* **setimmediate:** make set immediate a build dependency as it is required by the node winston ([9292eaa](https://github.com/ar-io/ar-io-sdk/commit/9292eaab29c3c955d1c981d6d22fa6e11da55500))
+
 # [1.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2024-03-12)
 
 
