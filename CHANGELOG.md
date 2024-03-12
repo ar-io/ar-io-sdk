@@ -1,3 +1,11 @@
+# [1.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.1...v1.0.0-alpha.2) (2024-03-12)
+
+
+### Features
+
+* **PE-5800:** add epoch apis ([48ee4ba](https://github.com/ar-io/ar-io-sdk/commit/48ee4ba04e162c09e0d75c0194119fa9c76649d4))
+* **PE-5800:** epoch apis ([#15](https://github.com/ar-io/ar-io-sdk/issues/15)) ([70563b1](https://github.com/ar-io/ar-io-sdk/commit/70563b18f07a31d001cc4610297182860536c2df))
+
 # 1.0.0-alpha.1 (2024-03-12)
 
 
