@@ -112,4 +112,16 @@ describe('ArIO Client', () => {
     });
     expect(records[domain]).toBeDefined();
   });
+
+  it('should return the current epoch information', async () => {
+    const epoch = await arIO.getCurrentEpoch();
+    expect(epoch).toBeDefined();
+  });
+
+  it('should return the epoch information at a given block height', async () => {
+    const epoch = await arIO.getEpoch({
+      blockHeight: evaluateToBlockHeight,
+    });
+    expect(epoch).toBeDefined();
+  });
 });

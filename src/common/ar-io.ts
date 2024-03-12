@@ -19,6 +19,7 @@ import {
   ArIOContract,
   ArIOState,
   ArNSNameData,
+  EpochDistributionData,
   EvaluationParameters,
   Gateway,
   SmartWeaveContract,
@@ -146,6 +147,39 @@ export class ArIO implements ArIOContract {
   > {
     return this.contract.readInteraction({
       functionName: 'gateways',
+      evaluationOptions,
+    });
+  }
+
+  /**
+   * Returns the current epoch.
+   */
+  async getCurrentEpoch({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<EpochDistributionData> {
+    return this.contract.readInteraction({
+      functionName: 'epoch',
+      evaluationOptions,
+    });
+  }
+
+  /**
+   * Returns the epoch information for the provided block height.
+   */
+  async getEpoch({
+    blockHeight,
+    evaluationOptions,
+  }: {
+    blockHeight: number;
+  } & EvaluationParameters): Promise<EpochDistributionData> {
+    return this.contract.readInteraction<
+      { height: number },
+      EpochDistributionData
+    >({
+      functionName: 'epoch',
+      inputs: {
+        height: blockHeight,
+      },
       evaluationOptions,
     });
   }
