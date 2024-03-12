@@ -29,6 +29,15 @@
     "email": "info@ar.io",
     "website": "https://ar.io"
   },
+  "keywords": [
+    "arweave",
+    "ar",
+    "blockchain",
+    "warp",
+    "contracts",
+    "ar.io",
+    "ao"
+  ],
   "exports": {
     ".": {
       "import": "./lib/esm/node/index.js",
