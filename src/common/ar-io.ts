@@ -20,7 +20,6 @@ import {
   ArIOState,
   ArNSNameData,
   EpochDistributionData,
-  EvaluationOptions,
   EvaluationParameters,
   Gateway,
   Observations,
@@ -186,23 +185,30 @@ export class ArIO implements ArIOContract {
     });
   }
   async getObservations({
+    epoch,
     evaluationOptions,
-  }: {
-    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<Observations> {
+  }: EvaluationParameters<{ epoch?: number }> = {}): Promise<Observations> {
     const { observations } = await this.contract.getContractState({
       evaluationOptions,
     });
-    return observations;
+    return epoch !== undefined ? { [epoch]: observations[epoch] } : observations;
   }
   async getDistributions({
+    epoch,
     evaluationOptions,
-  }: {
-    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<EpochDistributionData> {
-    const { distributions } = await this.contract.getContractState({
-      evaluationOptions,
-    });
+  }: EvaluationParameters<{
+    epoch?: number;
+  }> = {}): Promise<EpochDistributionData> {
+    const distributions = epoch !== undefined
+      ? await this.getEpoch({
+        ...evaluationOptions,
+        blockHeight: epoch,
+      })
+      : await this.contract
+        .getContractState({
+          evaluationOptions,
+        })
+        .then((state) => state.distributions);
     return distributions;
   }
 }

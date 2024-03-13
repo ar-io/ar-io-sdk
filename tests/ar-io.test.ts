@@ -149,4 +149,45 @@ describe('ArIO Client', () => {
     expect(epoch.epochPeriod).toBeDefined();
     expect(epoch.epochZeroStartHeight).toBeDefined();
   });
+
+  it('should return observation information', async () => {
+    const observations = await arIO.getObservations();
+    const observation = await arIO.getObservations({
+      epoch: parseInt(Object.keys(observations)[0]),
+    });
+    expect(observations).toBeDefined();
+    expect(observation).toBeDefined();
+  });
+
+  it('should get the observation information at a given block height', async () => {
+    const observations = await arIO.getObservations({
+      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
+    });
+    expect(observations).toBeDefined();
+  });
+
+  it('should return observations at a sortkey', async () => {
+    const observations = await arIO.getObservations({
+      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
+    });
+    expect(observations).toBeDefined();
+  });
+
+  it('should return distributions', async () => {
+    const distributions = await arIO.getDistributions();
+    expect(distributions).toBeDefined();
+  });
+
+  it('should return distributions at a blockheight', async () => {
+    const distributions = await arIO.getDistributions({
+      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
+    });
+    expect(distributions).toBeDefined();
+  });
+  it('should return distributions at a sortkey', async () => {
+    const distributions = await arIO.getDistributions({
+      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
+    });
+    expect(distributions).toBeDefined();
+  });
 });
