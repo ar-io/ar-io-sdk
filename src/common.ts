@@ -19,6 +19,7 @@ import {
   ArNSNameData,
   EpochDistributionData,
   Gateway,
+  WeightedObserver,
 } from './contract-state.js';
 
 export type BlockHeight = number;
@@ -87,6 +88,9 @@ export interface ArIOContract {
   getCurrentEpoch({
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;
+  getPrescribedObservers({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<WeightedObserver[]>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

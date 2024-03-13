@@ -149,4 +149,46 @@ describe('ArIO Client', () => {
     expect(epoch.epochPeriod).toBeDefined();
     expect(epoch.epochZeroStartHeight).toBeDefined();
   });
+
+  it('should return the prescribed observers for the current epoch', async () => {
+    const observers = await arIO.getPrescribedObservers();
+    expect(observers).toBeDefined();
+    for (const observer of observers) {
+      expect(observer.gatewayAddress).toBeDefined();
+      expect(observer.observerAddress).toBeDefined();
+      expect(observer.stake).toBeDefined();
+      expect(observer.start).toBeDefined();
+      expect(observer.stakeWeight).toBeDefined();
+      expect(observer.tenureWeight).toBeDefined();
+      expect(observer.gatewayRewardRatioWeight).toBeDefined();
+      expect(observer.observerRewardRatioWeight).toBeDefined();
+      expect(observer.compositeWeight).toBeDefined();
+      expect(observer.normalizedCompositeWeight).toBeDefined();
+    }
+  });
+
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const observers = await arIO.getPrescribedObservers({
+        evaluationOptions: { evalTo },
+      });
+      expect(observers).toBeDefined();
+      for (const observer of observers) {
+        expect(observer.gatewayAddress).toBeDefined();
+        expect(observer.observerAddress).toBeDefined();
+        expect(observer.stake).toBeDefined();
+        expect(observer.start).toBeDefined();
+        expect(observer.stakeWeight).toBeDefined();
+        expect(observer.tenureWeight).toBeDefined();
+        expect(observer.gatewayRewardRatioWeight).toBeDefined();
+        expect(observer.observerRewardRatioWeight).toBeDefined();
+        expect(observer.compositeWeight).toBeDefined();
+        expect(observer.normalizedCompositeWeight).toBeDefined();
+      }
+    },
+  );
 });

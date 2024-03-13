@@ -23,6 +23,7 @@ import {
   EvaluationParameters,
   Gateway,
   SmartWeaveContract,
+  WeightedObserver,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 
@@ -180,6 +181,18 @@ export class ArIO implements ArIOContract {
       inputs: {
         height: blockHeight,
       },
+      evaluationOptions,
+    });
+  }
+
+  /**
+   * Returns the prescribed observers for the current epoch. If you are looking for prescribed observers for a past epoch, use `evaluationOptions: { blockHeight: <blockHeightDuringEpoch> }`.
+   */
+  async getPrescribedObservers({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
+    return this.contract.readInteraction<never, WeightedObserver[]>({
+      functionName: 'prescribedObservers',
       evaluationOptions,
     });
   }

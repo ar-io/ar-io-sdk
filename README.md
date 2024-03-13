@@ -347,6 +347,56 @@ const records = arIO.getArNSRecords();
 // }
 ```
 
+### `getPrescribedObservers({ evaluationOptions })`
+
+Retrieves the prescribed observers of the ArIO contract. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
+
+```typescript
+const arIO = new ArIO();
+const observers = arIO.getPrescribedObservers();
+
+// outputs:
+
+// [
+//   {
+//     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
+//     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+//     "stake": 10000,
+//     "start": 1296976,
+//     "stakeWeight": 1,
+//     "tenureWeight": 0.41453703703703704,
+//     "gatewayRewardRatioWeight": 1,
+//     "observerRewardRatioWeight": 1,
+//     "compositeWeight": 0.41453703703703704,
+//     "normalizedCompositeWeight": 0.0018972019546783507
+//   },
+//   ...
+// ]
+
+// observers from a previous epoch
+const previousEpochObservers = arIO.getPrescribedObservers({
+  evaluationOptions: {
+    evalTo: { blockHeight: 1296975 }, // some block height from a previous epoch
+  },
+});
+
+// [
+//   {
+//     "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
+//     "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
+//     "stake": 10000,
+//     "start": 1292450,
+//     "stakeWeight": 1,
+//     "tenureWeight": 0.4494598765432099,
+//     "gatewayRewardRatioWeight": 1,
+//     "observerRewardRatioWeight": 1,
+//     "compositeWeight": 0.4494598765432099,
+//     "normalizedCompositeWeight": 0.002057032496835938
+//   },
+//   ...
+// ]
+```
+
 ## Developers
 
 ### Requirements
