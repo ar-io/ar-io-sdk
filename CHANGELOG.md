@@ -1,3 +1,11 @@
+# [1.0.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2024-03-13)
+
+
+### Features
+
+* **observers:** add API for fetching prescribed observers ([a18e130](https://github.com/ar-io/ar-io-sdk/commit/a18e1306b185143b3b44416da168bf0610418d9c))
+* **observers:** add API for fetching prescribed observers ([#17](https://github.com/ar-io/ar-io-sdk/issues/17)) ([17ce6de](https://github.com/ar-io/ar-io-sdk/commit/17ce6de4aea61e5f97c999cdc96011dd911f7ad6))
+
 # [1.0.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2024-03-12)
 
 
