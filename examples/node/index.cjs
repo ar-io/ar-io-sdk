@@ -17,7 +17,7 @@ const {
   });
   const epoch = await arIO.getCurrentEpoch();
   const observations = await arIO.getObservations();
-  const observation = await arIO.getObservations({ epoch: 1350700 });
+  const observation = await arIO.getObservations({ epochStartHeight: 1350700 });
   const distributions = await arIO.getDistributions();
 
   console.dir(

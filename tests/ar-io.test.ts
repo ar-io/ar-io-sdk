@@ -153,7 +153,7 @@ describe('ArIO Client', () => {
   it('should return observation information', async () => {
     const observations = await arIO.getObservations();
     const observation = await arIO.getObservations({
-      epoch: parseInt(Object.keys(observations)[0]),
+      epochStartHeight: parseInt(Object.keys(observations)[0]),
     });
     expect(observations).toBeDefined();
     expect(observation).toBeDefined();

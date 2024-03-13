@@ -89,13 +89,17 @@ export interface ArIOContract {
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;
   getObservations({
-    epoch,
+    epochStartHeight,
     evaluationOptions,
-  }: EvaluationParameters<{ epoch?: number }>): Promise<Observations>;
+  }: EvaluationParameters<{
+    epochStartHeight?: number;
+  }>): Promise<Observations>;
   getDistributions({
-    epoch,
+    epochStartHeight,
     evaluationOptions,
-  }: EvaluationParameters<{ epoch?: number }>): Promise<EpochDistributionData>;
+  }: EvaluationParameters<{
+    epochStartHeight?: number;
+  }>): Promise<EpochDistributionData>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

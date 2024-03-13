@@ -30,11 +30,11 @@ import { RemoteContract } from './contracts/remote-contract.js';
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractConfiguration =
   | {
-    contract?: SmartWeaveContract<unknown>;
-  }
+      contract?: SmartWeaveContract<unknown>;
+    }
   | {
-    contractTxId: string;
-  };
+      contractTxId: string;
+    };
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -185,30 +185,35 @@ export class ArIO implements ArIOContract {
     });
   }
   async getObservations({
-    epoch,
+    epochStartHeight,
     evaluationOptions,
-  }: EvaluationParameters<{ epoch?: number }> = {}): Promise<Observations> {
+  }: EvaluationParameters<{
+    epochStartHeight?: number;
+  }> = {}): Promise<Observations> {
     const { observations } = await this.contract.getContractState({
       evaluationOptions,
     });
-    return epoch !== undefined ? { [epoch]: observations[epoch] } : observations;
+    return epochStartHeight !== undefined
+      ? { [epochStartHeight]: observations[epochStartHeight] }
+      : observations;
   }
   async getDistributions({
-    epoch,
+    epochStartHeight,
     evaluationOptions,
   }: EvaluationParameters<{
-    epoch?: number;
+    epochStartHeight?: number;
   }> = {}): Promise<EpochDistributionData> {
-    const distributions = epoch !== undefined
-      ? await this.getEpoch({
-        ...evaluationOptions,
-        blockHeight: epoch,
-      })
-      : await this.contract
-        .getContractState({
-          evaluationOptions,
-        })
-        .then((state) => state.distributions);
+    const distributions =
+      epochStartHeight !== undefined
+        ? await this.getEpoch({
+            ...evaluationOptions,
+            blockHeight: epochStartHeight,
+          })
+        : await this.contract
+            .getContractState({
+              evaluationOptions,
+            })
+            .then((state) => state.distributions);
     return distributions;
   }
 }
