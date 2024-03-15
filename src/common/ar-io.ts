@@ -185,7 +185,6 @@ export class ArIO implements ArIOContract {
     });
   }
   async getObservations({
-    epochStartHeight,
     evaluationOptions,
   }: EvaluationParameters<{
     epochStartHeight?: number;
@@ -193,27 +192,14 @@ export class ArIO implements ArIOContract {
     const { observations } = await this.contract.getContractState({
       evaluationOptions,
     });
-    return epochStartHeight !== undefined
-      ? { [epochStartHeight]: observations[epochStartHeight] }
-      : observations;
+    return observations;
   }
   async getDistributions({
-    epochStartHeight,
     evaluationOptions,
-  }: EvaluationParameters<{
-    epochStartHeight?: number;
-  }> = {}): Promise<EpochDistributionData> {
-    const distributions =
-      epochStartHeight !== undefined
-        ? await this.getEpoch({
-            ...evaluationOptions,
-            blockHeight: epochStartHeight,
-          })
-        : await this.contract
-            .getContractState({
-              evaluationOptions,
-            })
-            .then((state) => state.distributions);
+  }: EvaluationParameters = {}): Promise<EpochDistributionData> {
+    const { distributions } = await this.contract.getContractState({
+      evaluationOptions,
+    });
     return distributions;
   }
 }

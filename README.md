@@ -413,7 +413,7 @@ const observations = await arIO.getObservations();
 
 ### `getDistributions({ evaluationOptions })`
 
-Returns the current rewards distribution information.
+Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
 
 ```typescript
 const arIO = new ArIO();
