@@ -19,35 +19,17 @@ import {
   ArIOContract,
   ArIOState,
   ArNSNameData,
+  ContractConfiguration,
   EpochDistributionData,
   EvaluationParameters,
   Gateway,
   Observations,
   SmartWeaveContract,
   WeightedObserver,
+  isContractConfiguration,
+  isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-
-// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractConfiguration =
-  | {
-      contract?: SmartWeaveContract<unknown>;
-    }
-  | {
-      contractTxId: string;
-    };
-
-function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is { contract: SmartWeaveContract<T> } {
-  return 'contract' in config;
-}
-
-function isContractTxIdConfiguration(
-  config: ContractConfiguration,
-): config is { contractTxId: string } {
-  return 'contractTxId' in config;
-}
 
 export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
