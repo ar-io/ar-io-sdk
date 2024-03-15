@@ -347,6 +347,89 @@ const records = arIO.getArNSRecords();
 // }
 ```
 
+### `getObservations({ evaluationOptions })`
+
+Returns the epoch-indexed observation list.
+
+```typescript
+const arIO = new ArIO();
+const observations = await arIO.getObservations();
+
+// output
+
+// {
+//     "1350700": {
+//       "failureSummaries": {
+//         "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+//         ...
+//      "reports": {
+//         "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
+//         "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
+//         "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
+//         "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
+//       }
+// }
+```
+
+### `getDistributions({ evaluationOptions })`
+
+Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
+
+```typescript
+const arIO = new ArIO();
+const distributions = await arIO.getDistributions();
+
+// output
+
+// {
+//     epochEndHeight: 1382379,
+//     epochPeriod: 43,
+//     epochStartHeight: 1381660,
+//     epochZeroStartHeight: 1350700,
+//     nextDistributionHeight: 1382394
+// }
+```
+
+### `getEpoch({ evaluationOptions })`
+
+Returns the epoch data for the specified block height.
+
+```typescript
+const arIO = new ArIO();
+const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
+
+// output
+
+// {
+//     epochStartHeight: 1381660,
+//     epochEndHeight: 1382379,
+//     epochZeroStartHeight: 1350700,
+//     epochDistributionHeight: 1382394,
+//     epochPeriod: 43,
+//     epochBlockLength: 720
+// }
+```
+
+### `getCurrentEpoch({ evaluationOptions })`
+
+Returns the current epoch data.
+
+```typescript
+const arIO = new ArIO();
+const epoch = await arIO.getCurrentEpoch();
+
+// output
+
+// {
+//     epochStartHeight: 1381660,
+//     epochEndHeight: 1382379,
+//     epochZeroStartHeight: 1350700,
+//     epochDistributionHeight: 1382394,
+//     epochPeriod: 43,
+//     epochBlockLength: 720
+// }
+```
+
 ### `getPrescribedObservers({ evaluationOptions })`
 
 Retrieves the prescribed observers of the ArIO contract. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.

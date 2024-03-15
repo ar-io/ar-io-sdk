@@ -12,6 +12,13 @@ const {
   });
   const ardriveRecord = await arIO.getArNSRecord({ domain: 'ardrive' });
   const allRecords = await arIO.getArNSRecords();
+  const oldEpoch = await arIO.getEpoch({
+    blockHeight: 1382230,
+  });
+  const epoch = await arIO.getCurrentEpoch();
+  const observations = await arIO.getObservations();
+  const observation = await arIO.getObservations({ epochStartHeight: 1350700 });
+  const distributions = await arIO.getDistributions();
 
   console.dir(
     {
@@ -22,6 +29,11 @@ const {
         'registered domains': Object.keys(allRecords).length,
         ardrive: allRecords.ardrive,
       },
+      oldEpoch,
+      epoch,
+      observations,
+      observation,
+      distributions,
     },
     { depth: 2 },
   );

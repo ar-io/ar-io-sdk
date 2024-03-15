@@ -22,6 +22,7 @@ import {
   EpochDistributionData,
   EvaluationParameters,
   Gateway,
+  Observations,
   SmartWeaveContract,
   WeightedObserver,
 } from '../types.js';
@@ -195,5 +196,23 @@ export class ArIO implements ArIOContract {
       functionName: 'prescribedObservers',
       evaluationOptions,
     });
+  }
+  async getObservations({
+    evaluationOptions,
+  }: EvaluationParameters<{
+    epochStartHeight?: number;
+  }> = {}): Promise<Observations> {
+    const { observations } = await this.contract.getContractState({
+      evaluationOptions,
+    });
+    return observations;
+  }
+  async getDistributions({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<EpochDistributionData> {
+    const { distributions } = await this.contract.getContractState({
+      evaluationOptions,
+    });
+    return distributions;
   }
 }

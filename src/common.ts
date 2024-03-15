@@ -19,6 +19,7 @@ import {
   ArNSNameData,
   EpochDistributionData,
   Gateway,
+  Observations,
   WeightedObserver,
 } from './contract-state.js';
 
@@ -91,6 +92,14 @@ export interface ArIOContract {
   getPrescribedObservers({
     evaluationOptions,
   }: EvaluationParameters): Promise<WeightedObserver[]>;
+  getObservations({
+    evaluationOptions,
+  }: EvaluationParameters<{
+    epochStartHeight?: number;
+  }>): Promise<Observations>;
+  getDistributions({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<EpochDistributionData>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
