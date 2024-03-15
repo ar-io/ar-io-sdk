@@ -1,3 +1,19 @@
+# [1.0.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2024-03-15)
+
+
+### Bug Fixes
+
+* **apis:** remove epoch from distributions and observations ([7b2d279](https://github.com/ar-io/ar-io-sdk/commit/7b2d2799d534378183122ef986fc3bd75755558e))
+* **ario:** formatting ([c61570a](https://github.com/ar-io/ar-io-sdk/commit/c61570ac609566d294d6c42b97ba65b91ef81d9c))
+* **naming:** change epoch to epochStartHeight ([908971c](https://github.com/ar-io/ar-io-sdk/commit/908971c273aaac20ab320e867ec1e790706a11f3))
+
+
+### Features
+
+* **ario contract:** add distributions and observation apis ([21e38d1](https://github.com/ar-io/ar-io-sdk/commit/21e38d1229e640a1cec685f491b1b07b84ee6a56))
+* **contract:** add distribution, observations apis, update readme and examples ([0208317](https://github.com/ar-io/ar-io-sdk/commit/0208317c211d659afbbc55d06345a0c33cd076eb))
+* **PE-5759:** observations and distributions apis ([#16](https://github.com/ar-io/ar-io-sdk/issues/16)) ([dded361](https://github.com/ar-io/ar-io-sdk/commit/dded3619784561b416297855724fc5924a1cd1d0))
+
 # [1.0.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2024-03-13)
 
 
