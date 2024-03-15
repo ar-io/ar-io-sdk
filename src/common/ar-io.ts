@@ -34,11 +34,11 @@ import { RemoteContract } from './contracts/remote-contract.js';
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractConfiguration =
   | {
-    contract?: SmartWeaveContract<unknown>;
-  }
+      contract?: SmartWeaveContract<unknown>;
+    }
   | {
-    contractTxId: string;
-  };
+      contractTxId: string;
+    };
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -219,7 +219,14 @@ export class ArIO implements ArIOContract {
     return distributions;
   }
 
-  async getAuction({ domain, type, evaluationOptions }: EvaluationParameters<{ domain: string; type?: RegistrationType }>): Promise<ArNSAuctionData> {
+  async getAuction({
+    domain,
+    type,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    domain: string;
+    type?: RegistrationType;
+  }>): Promise<ArNSAuctionData> {
     return this.contract.readInteraction({
       functionName: 'auction',
       inputs: {
@@ -229,11 +236,15 @@ export class ArIO implements ArIOContract {
       evaluationOptions,
     });
   }
-  async getAuctions({ evaluationOptions }: { evaluationOptions?: EvaluationOptions | Record<string, never> | undefined; }): Promise<Record<string, ArNSAuctionData>> {
+  async getAuctions({
+    evaluationOptions,
+  }: {
+    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+  }): Promise<Record<string, ArNSAuctionData>> {
     const { auctions } = await this.contract.getContractState({
       evaluationOptions,
     });
 
-    return auctions
+    return auctions;
   }
 }

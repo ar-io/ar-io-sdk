@@ -240,7 +240,7 @@ describe('ArIO Client', () => {
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auction = await arIO.getAuction({
-        domain: "ardrive",
+        domain: 'ardrive',
         evaluationOptions: { evalTo },
       });
       expect(auction).toBeDefined();
@@ -259,5 +259,4 @@ describe('ArIO Client', () => {
       expect(auctions).toBeDefined();
     },
   );
-
 });

@@ -485,7 +485,6 @@ const previousEpochObservers = arIO.getPrescribedObservers({
 Return the auction info for the supplied domain, be it in auction, registered, or available to auction.
 
 ```typescript
-
 const auction = await arIO.getAuction({ domain });
 
 // output
@@ -592,3 +591,4 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples]: ./examples
 [arns-service]: https://github.com/ar-io/arns-service
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
+```
