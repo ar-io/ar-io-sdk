@@ -18,12 +18,15 @@ import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
   ArIOState,
+  ArNSAuctionData,
   ArNSNameData,
   ContractConfiguration,
   EpochDistributionData,
+  EvaluationOptions,
   EvaluationParameters,
   Gateway,
   Observations,
+  RegistrationType,
   SmartWeaveContract,
   WeightedObserver,
   isContractConfiguration,
@@ -196,5 +199,34 @@ export class ArIO implements ArIOContract {
       evaluationOptions,
     });
     return distributions;
+  }
+
+  async getAuction({
+    domain,
+    type,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    domain: string;
+    type?: RegistrationType;
+  }>): Promise<ArNSAuctionData> {
+    return this.contract.readInteraction({
+      functionName: 'auction',
+      inputs: {
+        name: domain,
+        type,
+      },
+      evaluationOptions,
+    });
+  }
+  async getAuctions({
+    evaluationOptions,
+  }: {
+    evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+  }): Promise<Record<string, ArNSAuctionData>> {
+    const { auctions } = await this.contract.getContractState({
+      evaluationOptions,
+    });
+
+    return auctions;
   }
 }
