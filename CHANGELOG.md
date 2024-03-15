@@ -1,3 +1,16 @@
+# [1.0.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2024-03-15)
+
+
+### Bug Fixes
+
+* **formating:** format ([3f30f77](https://github.com/ar-io/ar-io-sdk/commit/3f30f772a7571b9958f8a202128abd483da372b5))
+
+
+### Features
+
+* **auctions:** add auctions apis ([faf08c5](https://github.com/ar-io/ar-io-sdk/commit/faf08c51f3b499e158e96cc2a0b97a06a20c6f8c))
+* **PE-5773:** add auctions read apis ([#18](https://github.com/ar-io/ar-io-sdk/issues/18)) ([e0c6fca](https://github.com/ar-io/ar-io-sdk/commit/e0c6fca49788b361478aca85d3dae3ca96f6aa97))
+
 # [1.0.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2024-03-15)
 
 
