@@ -16,10 +16,12 @@
  */
 import {
   ArIOState,
+  ArNSAuctionData,
   ArNSNameData,
   EpochDistributionData,
   Gateway,
   Observations,
+  RegistrationType,
   WeightedObserver,
 } from './contract-state.js';
 
@@ -100,6 +102,17 @@ export interface ArIOContract {
   getDistributions({
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;
+  getAuctions({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<Record<string, ArNSAuctionData>>;
+  getAuction({
+    domain,
+    type,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    domain: string;
+    type?: RegistrationType;
+  }>): Promise<ArNSAuctionData>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
