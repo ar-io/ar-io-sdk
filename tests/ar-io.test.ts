@@ -232,4 +232,32 @@ describe('ArIO Client', () => {
     });
     expect(distributions).toBeDefined();
   });
+
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const auction = await arIO.getAuction({
+        domain: "ardrive",
+        evaluationOptions: { evalTo },
+      });
+      expect(auction).toBeDefined();
+    },
+  );
+
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const auctions = await arIO.getAuctions({
+        evaluationOptions: { evalTo },
+      });
+      expect(auctions).toBeDefined();
+    },
+  );
+
 });

@@ -480,6 +480,74 @@ const previousEpochObservers = arIO.getPrescribedObservers({
 // ]
 ```
 
+### `getAuction({ domain, evaluationOptions })`
+
+Return the auction info for the supplied domain, be it in auction, registered, or available to auction.
+
+```typescript
+
+const auction = await arIO.getAuction({ domain });
+
+// output
+
+// {
+//   "name": "ardrive",
+//   "initiator": "",
+//   "contractTxId": "",
+//   "startPrice": 89950,
+//   "floorPrice": 1799,
+//   "startHeight": 1384196,
+//   "endHeight": 1394276,
+//   "type": "lease",
+//   "years": 1,
+//   "isActive": false,
+//   "isAvailableForAuction": false,
+//   "isRequiredToBeAuctioned": false,
+//   "currentPrice": 1799,
+//   "prices": {
+//     "1384196": 89950,
+//     "1384226": 88930,
+//     "1384256": 87922,
+//     ...
+//     "1394216": 1921,
+//     "1394246": 1899,
+//     "1394276": 1877
+//   }
+// }
+```
+
+### `getAuctions({ evauluationOptions })`
+
+Retrieves all active auctions.
+
+```typescript
+
+const auctions = await arIO.getAuctions({ evaluationOptions });
+
+// output
+
+// {
+//   "cyprien": {
+//     "contractTxId": "Fmhdc4f1rWK6Zn1W__7GNvWvo4d1FSze7rLK5AOnO5E",
+//     "endHeight": 1386879,
+//     "floorPrice": 4758777913,
+//     "initiator": "UPJHTNsaKcC6baqLFHMAMI7daWPIG3NDDfFQ2s2h8T0",
+//     "startHeight": 1376799,
+//     "startPrice": 237938895627,
+//     "type": "permabuy"
+//   },
+//   "saktinaga": {
+//     "contractTxId": "nl8heYyDxKowujaDqbsPkjALzULYG8T0z3J91CdWDIM",
+//     "endHeight": 1386834,
+//     "floorPrice": 2379388956,
+//     "initiator": "TE0zVR32RF5qFAO8K50-pEivZpM_s35HK-dex-5d-IU",
+//     "startHeight": 1376754,
+//     "startPrice": 118969447813,
+//     "type": "permabuy"
+//   }
+// }
+
+
 ## Developers
 
 ### Requirements
