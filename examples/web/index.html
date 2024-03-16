@@ -131,10 +131,12 @@
     </div>
 
     <script type="module">
+      import Arweave from 'https://unpkg.com/arweave/bundles/web.bundle.js';
+
       import { ArIO } from './web.bundle.min.js';
 
-      // set up our client
-      const arIO = new ArIO();
+      const jwk = await Arweave.init({}).wallets.generate();
+      const arIO = new ArIO({ signer: jwk });
 
       // fetch data on page load
       async function init() {

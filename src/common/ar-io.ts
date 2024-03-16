@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ArconnectSigner, ArweaveSigner } from 'arbundles/web';
+import { JWKInterface } from 'arweave/node/lib/wallet.js';
+
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
@@ -29,6 +32,7 @@ import {
   SmartWeaveContract,
   WeightedObserver,
 } from '../types.js';
+import { isJwk } from '../utils/arweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
@@ -54,21 +58,36 @@ function isContractTxIdConfiguration(
 
 export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
+  signer: ArweaveSigner | ArconnectSigner | JWKInterface;
 
-  constructor(
-    config: ContractConfiguration = {
-      // default to a contract that uses the arns service to do the evaluation
-      contract: new RemoteContract<ArIOState>({
-        contractTxId: ARNS_TESTNET_REGISTRY_TX,
-      }),
-    },
-  ) {
-    if (isContractConfiguration<ArIOState>(config)) {
-      this.contract = config.contract;
-    } else if (isContractTxIdConfiguration(config)) {
-      this.contract = new RemoteContract<ArIOState>({
-        contractTxId: config.contractTxId,
-      });
+  constructor({
+    signer,
+    ...config
+  }: ContractConfiguration & {
+    signer: ArweaveSigner | ArconnectSigner | JWKInterface;
+  }) {
+    this.signer = isJwk(signer) ? new ArweaveSigner(signer) : signer;
+
+    const isContract = isContractConfiguration<ArIOState>(config);
+    const isContractTxId = isContractTxIdConfiguration(config);
+    const isBoth = isContract && isContractTxId;
+    switch (true) {
+      case isBoth:
+        throw new Error(
+          'ArIO contract configuration must include either `contract` or `contractTxId`, but not both',
+        );
+      case isContract:
+        this.contract = config.contract;
+        return;
+      case isContractTxId:
+        this.contract = new RemoteContract<ArIOState>({
+          contractTxId: config.contractTxId,
+        });
+        return;
+      default:
+        this.contract = new RemoteContract<ArIOState>({
+          contractTxId: ARNS_TESTNET_REGISTRY_TX,
+        });
     }
   }
 

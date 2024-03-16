@@ -1,3 +1,6 @@
+import { ArweaveSigner } from 'arbundles';
+import Arweave from 'arweave';
+
 import { ArIO } from '../src/common/ar-io.js';
 import { RemoteContract } from '../src/common/contracts/remote-contract.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../src/constants.js';
@@ -11,11 +14,21 @@ const evaluateToSortKey = new SmartWeaveSortKey(
   '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
 );
 describe('ArIO Client', () => {
-  const arIO = new ArIO({
-    contract: new RemoteContract<ArIOState>({
-      url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
-      contractTxId: ARNS_DEVNET_REGISTRY_TX,
-    }),
+  let arIO: ArIO;
+  beforeAll(async () => {
+    const arweave = Arweave.init({
+      host: 'arweave.net',
+      protocol: 'https',
+      port: 443,
+    });
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    arIO = new ArIO({
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_DEVNET_REGISTRY_TX,
+      }),
+      signer,
+    });
   });
   it('should create a custom ArIO client', () => {
     expect(arIO).toBeInstanceOf(ArIO);

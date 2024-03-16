@@ -1,7 +1,12 @@
+import { ArweaveSigner } from 'arbundles';
+import Arweave from 'arweave';
+
 import { ARNS_TESTNET_REGISTRY_TX, ArIO } from '../../lib/esm/node/index.js';
 
 (async () => {
-  const arIO = new ArIO();
+  const jwk = await Arweave.init({}).wallets.generate();
+  const signer = new ArweaveSigner(jwk);
+  const arIO = new ArIO({ signer });
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({

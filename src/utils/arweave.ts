@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { b64UrlToBuffer } from 'arweave/node/lib/utils.js';
+import { JWKInterface } from 'arweave/node/lib/wallet.js';
+
 import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 
@@ -24,3 +27,15 @@ export const validateArweaveId = (id: string): boolean => {
 export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
+
+export const isJwk = (obj: object): obj is JWKInterface => {
+  let valid = true;
+  ['n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi'].map(
+    (key) => !(key in obj) && (valid = false),
+  );
+  const bufferOfN = b64UrlToBuffer(obj['n']);
+  if (bufferOfN.length !== 512) {
+    valid = false;
+  }
+  return valid;
+};
