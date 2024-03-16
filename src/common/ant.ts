@@ -53,9 +53,9 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: EvaluationParameters<{ domain: string }>): Promise<ANTRecord> {
     const records = await this.getRecords({ evaluationOptions });
-
     return records[domain];
   }
+
   async getRecords({
     evaluationOptions,
   }: {

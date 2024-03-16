@@ -148,9 +148,11 @@ export interface ANTContract {
     evaluationOptions,
   }: EvaluationParameters): Promise<Record<string, ANTRecord>>;
   getOwner({ evaluationOptions }: EvaluationParameters): Promise<string>;
-  getControllers({ evaluationOptions }: EvaluationParameters): Promise<any[]>;
-  getTicker({ evaluationOptions }: EvaluationParameters): Promise<any>;
-  getName({ evaluationOptions }: EvaluationParameters): Promise<any>;
+  getControllers({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<string[]>;
+  getTicker({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getName({ evaluationOptions }: EvaluationParameters): Promise<string>;
   getBalance({
     address,
     evaluationOptions,
