@@ -16,7 +16,6 @@
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 
-import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
   ArIOState,
@@ -34,13 +33,17 @@ import {
 import { RemoteContract } from './contracts/remote-contract.js';
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractConfiguration =
+export type ArIOSigner = ArweaveSigner | ArconnectSigner;
+export type ContractConfiguration = {
+  signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
+} & (
   | {
       contract?: SmartWeaveContract<unknown>;
     }
   | {
       contractTxId: string;
-    };
+    }
+);
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -58,36 +61,18 @@ export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  private signer: ArweaveSigner | ArconnectSigner;
+  private signer: ArIOSigner | undefined;
 
-  constructor({
-    signer,
-    ...config
-  }: ContractConfiguration & {
-    signer: ArweaveSigner | ArconnectSigner;
-  }) {
+  constructor({ signer, ...config }: ContractConfiguration) {
     this.signer = signer;
-
-    const isContract = isContractConfiguration<ArIOState>(config);
-    const isContractTxId = isContractTxIdConfiguration(config);
-    const isBoth = isContract && isContractTxId;
-    switch (true) {
-      case isBoth:
-        throw new Error(
-          'ArIO contract configuration must include either `contract` or `contractTxId`, but not both',
-        );
-      case isContract:
-        this.contract = config.contract;
-        return;
-      case isContractTxId:
-        this.contract = new RemoteContract<ArIOState>({
-          contractTxId: config.contractTxId,
-        });
-        return;
-      default:
-        this.contract = new RemoteContract<ArIOState>({
-          contractTxId: ARNS_TESTNET_REGISTRY_TX,
-        });
+    if (isContractConfiguration<ArIOState>(config)) {
+      this.contract = config.contract;
+    } else if (isContractTxIdConfiguration(config)) {
+      this.contract = new RemoteContract<ArIOState>({
+        contractTxId: config.contractTxId,
+      });
+    } else {
+      throw new Error('Invalid configuration.');
     }
   }
 
