@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
+  ANTRecord,
+  ANTState,
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
@@ -28,6 +30,27 @@ import {
 export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
+
+// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
+export type ContractConfiguration =
+  | {
+      contract?: SmartWeaveContract<unknown>;
+    }
+  | {
+      contractTxId: string;
+    };
+
+export function isContractConfiguration<T>(
+  config: ContractConfiguration,
+): config is { contract: SmartWeaveContract<T> } {
+  return 'contract' in config;
+}
+
+export function isContractTxIdConfiguration(
+  config: ContractConfiguration,
+): config is { contractTxId: string } {
+  return 'contractTxId' in config;
+}
 
 export type EvaluationOptions = {
   evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
@@ -113,6 +136,30 @@ export interface ArIOContract {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+}
+
+export interface ANTContract {
+  getState({ evaluationOptions }: EvaluationParameters): Promise<ANTState>;
+  getRecord({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<ANTRecord>;
+  getRecords({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<Record<string, ANTRecord>>;
+  getOwner({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getControllers({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<string[]>;
+  getTicker({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getName({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getBalance({
+    address,
+    evaluationOptions,
+  }: EvaluationParameters<{ address: string }>): Promise<number>;
+  getBalances({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<Record<string, number>>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

@@ -20,6 +20,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  ContractConfiguration,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
@@ -30,15 +31,6 @@ import {
   WeightedObserver,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-
-// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractConfiguration =
-  | {
-      contract?: SmartWeaveContract<unknown>;
-    }
-  | {
-      contractTxId: string;
-    };
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -69,6 +61,8 @@ export class ArIO implements ArIOContract {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: config.contractTxId,
       });
+    } else {
+      throw new Error('Invalid configuration.');
     }
   }
 
