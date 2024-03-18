@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner } from 'arbundles/web';
+import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
