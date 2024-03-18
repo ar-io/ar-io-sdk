@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
   ArIOState,
@@ -46,7 +47,14 @@ function isContractTxIdConfiguration(
 export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
 
-  constructor(config: ContractConfiguration) {
+  constructor(
+    config: ContractConfiguration = {
+      // default to a contract that uses the arns service to do the evaluation
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      }),
+    },
+  ) {
     if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
