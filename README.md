@@ -548,7 +548,7 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 
 ## Arweave Name Tokens (ANT's)
 
-The ANT contract class allows for fetching data given a provided ANT contract ID.
+The ANT contract client class exposes APIs relevant to compliant Arweave Name Token contracts. It can be configured to use any contract ID that adheres to the ANT contract spec. You must provide either a custom contract data provider or a contractTxId to the ANT class constructor to use.
 
 ### `getRecords({ evaluationOptions })`
 
