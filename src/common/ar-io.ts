@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner } from 'arbundles';
-
 import {
   ArIOContract,
   ArIOState,
@@ -33,17 +31,13 @@ import {
 import { RemoteContract } from './contracts/remote-contract.js';
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ArIOSigner = ArweaveSigner | ArconnectSigner;
-export type ContractConfiguration = {
-  signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
-} & (
+export type ContractConfiguration =
   | {
       contract?: SmartWeaveContract<unknown>;
     }
   | {
       contractTxId: string;
-    }
-);
+    };
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -59,12 +53,8 @@ function isContractTxIdConfiguration(
 
 export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  private signer: ArIOSigner | undefined;
 
-  constructor({ signer, ...config }: ContractConfiguration) {
-    this.signer = signer;
+  constructor(config: ContractConfiguration) {
     if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {

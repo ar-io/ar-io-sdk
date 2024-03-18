@@ -616,7 +616,3 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples]: ./examples
 [arns-service]: https://github.com/ar-io/arns-service
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
-
-```
-
-```
