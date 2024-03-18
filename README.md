@@ -520,7 +520,6 @@ const auction = await arIO.getAuction({ domain });
 Retrieves all active auctions.
 
 ```typescript
-
 const auctions = await arIO.getAuctions({ evaluationOptions });
 
 // output
@@ -545,7 +544,33 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 //     "type": "permabuy"
 //   }
 // }
+```
 
+## ANT API's
+
+The ANT contract class allows for fetching data given a provided ANT contract ID.
+
+### `getRecords({ evaluationOptions })`
+
+Returns all records on the configured ANT contract, including the required `@` record that resolve connected ArNS names.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = new ANT({ contractTxId });
+const records = await ANT.getRecords();
+
+// output
+// {
+//     "@": {
+//       "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+//       "ttlSeconds": 3600
+//     },
+//     "cn": {
+//       "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
+//       "ttlSeconds": 3300
+//     }
+//   }
+```
 
 ## Developers
 
@@ -591,4 +616,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples]: ./examples
 [arns-service]: https://github.com/ar-io/arns-service
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
+
+```
+
 ```
