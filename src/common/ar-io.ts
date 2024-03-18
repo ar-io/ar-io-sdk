@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner } from 'arbundles/web';
-import { JWKInterface } from 'arweave/node/lib/wallet.js';
+import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
@@ -32,7 +31,6 @@ import {
   SmartWeaveContract,
   WeightedObserver,
 } from '../types.js';
-import { isJwk } from '../utils/arweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
@@ -58,15 +56,17 @@ function isContractTxIdConfiguration(
 
 export class ArIO implements ArIOContract {
   private contract: SmartWeaveContract<ArIOState>;
-  signer: ArweaveSigner | ArconnectSigner | JWKInterface;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  private signer: ArweaveSigner | ArconnectSigner;
 
   constructor({
     signer,
     ...config
   }: ContractConfiguration & {
-    signer: ArweaveSigner | ArconnectSigner | JWKInterface;
+    signer: ArweaveSigner | ArconnectSigner;
   }) {
-    this.signer = isJwk(signer) ? new ArweaveSigner(signer) : signer;
+    this.signer = signer;
 
     const isContract = isContractConfiguration<ArIOState>(config);
     const isContractTxId = isContractTxIdConfiguration(config);
