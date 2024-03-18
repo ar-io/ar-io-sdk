@@ -189,11 +189,13 @@ export type ANTRecord = {
   ttlSeconds: number;
 };
 
+export type ANTRecords = Record<string, ANTRecord> & { '@': ANTRecord };
+
 export type ANTState = {
   owner: WalletAddress;
   controllers: WalletAddress[];
   name: string;
   ticker: string;
-  records: Record<string, ANTRecord>;
+  records: ANTRecords;
   balances: Balances;
 };
