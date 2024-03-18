@@ -21,6 +21,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  ContractConfiguration,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,

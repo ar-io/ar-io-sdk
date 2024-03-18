@@ -181,3 +181,21 @@ export interface ArIOState {
   vaults: RegistryVaults;
   prescribedObservers: PrescribedObservers;
 }
+
+// ANT
+
+export type ANTRecord = {
+  transactionId: string;
+  ttlSeconds: number;
+};
+
+export type ANTRecords = Record<string, ANTRecord> & { '@': ANTRecord };
+
+export type ANTState = {
+  owner: WalletAddress;
+  controllers: WalletAddress[];
+  name: string;
+  ticker: string;
+  records: ANTRecords;
+  balances: Balances;
+};
