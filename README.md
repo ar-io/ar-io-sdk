@@ -11,13 +11,17 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [NodeJS Environments](#node)
   - [Web Environments](#web)
   - [Typescript](#typescript)
-- [APIs](#apis)
+- [ArIO Contract](#ario-contract)
   - [getBalance](#getbalance-address-evaluationoptions-)
   - [getBalances](#getbalances-evaluationoptions-)
   - [getGateway](#getgateway-address-evaluationoptions-)
   - [getGateways](#getgateways-evaluationoptions-)
   - [getArNSRecord](#getarnsrecord-domain-evaluationoptions-)
   - [getArNSRecords](#getarnsrecords-evaluationoptions-)
+- [ANT Contracts](#arweave-name-tokens-ants)
+  - [getRecords](#getrecords-evaluationoptions-)
+  - [getOwner](#getowner-evaluationoptions-)
+  - [getControllers](#getcontrollers-evaluationoptions-)
 - [Examples](./examples)
 - [Developers](#developers)
   - [Requirements](#requirements)
@@ -165,7 +169,7 @@ const remoteCacheCustomArIO = new ArIO({
 });
 ```
 
-## APIs
+## ArIO Contract
 
 ### `getBalance({ address, evaluationOptions })`
 
@@ -549,6 +553,30 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 ## Arweave Name Tokens (ANT's)
 
 The ANT contract client class exposes APIs relevant to compliant Arweave Name Token contracts. It can be configured to use any contract ID that adheres to the ANT contract spec. You must provide either a custom contract data provider or a contractTxId to the ANT class constructor to use.
+
+### `getOwner({ evaluationOptions })`
+
+Returns the owner of the configured ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = new ANT({ contractTxId });
+const owner = await ant.getOwner();
+
+// output: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
+```
+
+### `getControllers({ evaluationOptions })`
+
+Returns the controllers of the configured ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = new ANT({ contractTxId });
+const controllers = await ant.getControllers();
+
+// output: ["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
+```
 
 ### `getRecords({ evaluationOptions })`
 
