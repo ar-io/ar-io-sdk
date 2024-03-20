@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+
 import {
   ANTRecord,
   ANTState,
@@ -32,13 +34,17 @@ export type SortKey = string;
 export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractConfiguration =
-  | {
+export type ArIOSigner = ArweaveSigner | ArconnectSigner;
+export type ContractConfiguration = {
+  signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
+} & (
+    | {
       contract?: SmartWeaveContract<unknown>;
     }
-  | {
+    | {
       contractTxId: string;
-    };
+    }
+  );
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,

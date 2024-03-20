@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner } from 'arbundles';
-
+import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
   ArIOState,
@@ -32,19 +31,6 @@ import {
   WeightedObserver,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-
-// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ArIOSigner = ArweaveSigner | ArconnectSigner;
-export type ContractConfiguration = {
-  signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
-} & (
-  | {
-      contract?: SmartWeaveContract<unknown>;
-    }
-  | {
-      contractTxId: string;
-    }
-);
 
 function isContractConfiguration<T>(
   config: ContractConfiguration,
@@ -64,7 +50,13 @@ export class ArIO implements ArIOContract {
   // @ts-ignore
   private signer: ArIOSigner | undefined;
 
-  constructor({ signer, ...config }: ContractConfiguration) {
+  constructor(
+    { signer, ...config }: ContractConfiguration = {
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      }),
+    },
+  ) {
     this.signer = signer;
     if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;

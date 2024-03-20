@@ -29,8 +29,12 @@ import { RemoteContract } from './contracts/remote-contract.js';
 
 export class ANT implements ANTContract {
   private contract: SmartWeaveContract<ANTState>;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  private signer: ArIOSigner | undefined;
 
-  constructor(config: ContractConfiguration) {
+  constructor({ signer, ...config }: ContractConfiguration) {
+    this.signer = signer;
     if (isContractConfiguration<ANTState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
