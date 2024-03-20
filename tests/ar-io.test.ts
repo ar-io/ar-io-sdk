@@ -26,7 +26,7 @@ describe('ArIO Client', () => {
     arIO = new ArIO({
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_DEVNET_REGISTRY_TX,
-        url: 'https://localhost:3000',
+        url: process.env.REMOTE_CACHE_URL || 'https://localhost:3000',
       }),
       signer,
     });
