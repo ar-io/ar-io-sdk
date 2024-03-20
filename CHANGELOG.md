@@ -1,3 +1,23 @@
+# [1.0.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2024-03-18)
+
+
+### Bug Fixes
+
+* **ario:** re-add contract default config ([2296cc3](https://github.com/ar-io/ar-io-sdk/commit/2296cc3e152c136e2df45481340a625a80a0be3f))
+* **build:** remove redundant exported type ([134319b](https://github.com/ar-io/ar-io-sdk/commit/134319b8707cd479dc91d6832bf078bdb5c5e886))
+* **readme:** update ant header ([77235ce](https://github.com/ar-io/ar-io-sdk/commit/77235ce077ef4a12dfa6b403968b6ab148ebf196))
+* **readme:** update ANT usage description ([70c8520](https://github.com/ar-io/ar-io-sdk/commit/70c852087f75a17c494cc12719d1dc9f96da39f2))
+* **signer:** remove signer, will do in other pr ([d02276d](https://github.com/ar-io/ar-io-sdk/commit/d02276dd9fa166d254eb76a45e2c6025f632c0ba))
+* **types:** add @ to records ([53601c1](https://github.com/ar-io/ar-io-sdk/commit/53601c1d08f7bf3e522f25b58e514b0c809ad195))
+* **types:** remove any types ([d8d910b](https://github.com/ar-io/ar-io-sdk/commit/d8d910b9f2d0b95232ccf3c52e74f57b086df435))
+* **types:** use string instead of any ([014a262](https://github.com/ar-io/ar-io-sdk/commit/014a26210b2482b3aa5150b4fd37925760f39dd8))
+
+
+### Features
+
+* **ant:** add ANT read interface ([c941c96](https://github.com/ar-io/ar-io-sdk/commit/c941c96cd201983270cc9e04c0fcaa5b4dc3b798))
+* **PE-5825:** ANT read interface ([#19](https://github.com/ar-io/ar-io-sdk/issues/19)) ([6a0c477](https://github.com/ar-io/ar-io-sdk/commit/6a0c47754689071d292eaebfa7b3af6c8e851fa4))
+
 # [1.0.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2024-03-15)
 
 

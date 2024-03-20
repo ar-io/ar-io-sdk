@@ -11,13 +11,28 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [NodeJS Environments](#node)
   - [Web Environments](#web)
   - [Typescript](#typescript)
-- [APIs](#apis)
-  - [getBalance](#getbalance-address-evaluationoptions-)
-  - [getBalances](#getbalances-evaluationoptions-)
-  - [getGateway](#getgateway-address-evaluationoptions-)
-  - [getGateways](#getgateways-evaluationoptions-)
-  - [getArNSRecord](#getarnsrecord-domain-evaluationoptions-)
-  - [getArNSRecords](#getarnsrecords-evaluationoptions-)
+- [ArIO Contract](#ario-contract)
+  - [APIs](#apis)
+    - [getBalance](#getbalance-address-evaluationoptions-)
+    - [getBalances](#getbalances-evaluationoptions-)
+    - [getGateway](#getgateway-address-evaluationoptions-)
+    - [getGateways](#getgateways-evaluationoptions-)
+    - [getArNSRecord](#getarnsrecord-domain-evaluationoptions-)
+    - [getArNSRecords](#getarnsrecords-evaluationoptions-)
+    - [getObservations](#getobservations-evaluationoptions-)
+    - [getDistributions](#getdistributions-evaluationoptions-)
+    - [getEpoch](#getepoch-evaluationoptions-)
+    - [getCurrentEpoch](#getcurrentepoch-evaluationoptions-)
+    - [getPrescribedObservers](#getprescribedobservers-evaluationoptions-)
+    - [getAuction](#getauction-domain-evaluationoptions-)
+    - [getAuctions](#getauctions-evauluationoptions-)
+  - [Custom Contracts](#custom-contracts)
+- [ANT Contracts](#arweave-name-tokens-ants)
+  - [APIs](#apis-1)
+    - [getRecords](#getrecords-evaluationoptions-)
+    - [getOwner](#getowner-evaluationoptions-)
+    - [getControllers](#getcontrollers-evaluationoptions-)
+  - [Configuration](#configuration)
 - [Examples](./examples)
 - [Developers](#developers)
   - [Requirements](#requirements)
@@ -126,8 +141,22 @@ const gateways = arIO.getGateways();
 
 #### Node
 
+##### ESM (NodeNext)
+
 ```javascript
-const { ArIO } = require('@ar-io/sdk');
+import { ArIO } from '@ar-io/sdk/node';
+
+// set up client
+const arIO = new ArIO();
+// fetch gateways
+const gateways = await arIO.getGateways();
+```
+
+##### CJS
+
+```javascript
+import { ArIO } from '@ar-io/sdk';
+
 // set up client
 const arIO = new ArIO();
 // fetch gateways
@@ -138,36 +167,11 @@ const gateways = await arIO.getGateways();
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
-## Configuration
+## ArIO Contract
 
-### Custom Contracts
+### APIs
 
-The ArIO contract client class exposes APIs relevant to the ar.io contract. It can be configured to use any contract ID that adheres to the spec of the ar.io contract. In the default case, it will automatically build and utilize a contract data provider interface that is configured to point the the known mainnet contract ID at construction time. You can provide custom contract data provider or, alternatively, a `contractTxId` to the ArIO constructor to use a different, ar.io-spec-compatible contract.
-
-```typescript
-// provide a custom contractTxId to the client and default to remote evaluation
-const remoteCustomArIO = new ArIO({
-  contractTxId: 'TESTNET_CONTRACT_TX_ID',
-});
-
-// provide a custom contract to the client, and specify local evaluation using warp
-const localCustomArIO = new ArIO({
-  contract: new WarpContract<ArIOState>({
-    contractTxId: 'TESTNET_CONTRACT_TX_ID',
-  }),
-});
-
-// provide a custom contract to the client, and specify local evaluation using remote cache
-const remoteCacheCustomArIO = new ArIO({
-  contract: new RemoteContract<ArIOState>({
-    contractTxId: 'TESTNET_CONTRACT_TX_ID',
-  }),
-});
-```
-
-## APIs
-
-### `getBalance({ address, evaluationOptions })`
+#### `getBalance({ address, evaluationOptions })`
 
 Retrieves the balance of the specified wallet address.
 
@@ -180,7 +184,7 @@ const balance = arIO.getBalance({
 // outputs: 0
 ```
 
-### `getBalances({ evaluationOptions })`
+#### `getBalances({ evaluationOptions })`
 
 Retrieves the balances of the ArIO contract.
 
@@ -204,7 +208,7 @@ const balances = arIO.getBalances();
 // }
 ```
 
-### `getGateway({ address, evaluationOptions })`
+#### `getGateway({ address, evaluationOptions })`
 
 Retrieves a gateway's info by its staking wallet address.
 
@@ -249,7 +253,7 @@ const gateway = arIO.getGateway({
 // }
 ```
 
-### `getGateways({ evaluationOptions })`
+#### `getGateways({ evaluationOptions })`
 
 Retrieves the registered gateways of the ArIO contract.
 
@@ -299,7 +303,7 @@ const gateways = arIO.getGateways();
 // }
 ```
 
-### `getArNSRecord({ domain, evaluationOptions })`
+#### `getArNSRecord({ domain, evaluationOptions })`
 
 Retrieves the record info of the specified ArNS name.
 
@@ -318,7 +322,7 @@ const record = arIO.getArNSRecord({ domain: 'ardrive' });
 // }
 ```
 
-### `getArNSRecords({ evaluationOptions })`
+#### `getArNSRecords({ evaluationOptions })`
 
 Retrieves all registered ArNS records of the ArIO contract.
 
@@ -347,7 +351,7 @@ const records = arIO.getArNSRecords();
 // }
 ```
 
-### `getObservations({ evaluationOptions })`
+#### `getObservations({ evaluationOptions })`
 
 Returns the epoch-indexed observation list.
 
@@ -371,7 +375,7 @@ const observations = await arIO.getObservations();
 // }
 ```
 
-### `getDistributions({ evaluationOptions })`
+#### `getDistributions({ evaluationOptions })`
 
 Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
 
@@ -390,7 +394,7 @@ const distributions = await arIO.getDistributions();
 // }
 ```
 
-### `getEpoch({ evaluationOptions })`
+#### `getEpoch({ evaluationOptions })`
 
 Returns the epoch data for the specified block height.
 
@@ -410,7 +414,7 @@ const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
 // }
 ```
 
-### `getCurrentEpoch({ evaluationOptions })`
+#### `getCurrentEpoch({ evaluationOptions })`
 
 Returns the current epoch data.
 
@@ -430,7 +434,7 @@ const epoch = await arIO.getCurrentEpoch();
 // }
 ```
 
-### `getPrescribedObservers({ evaluationOptions })`
+#### `getPrescribedObservers({ evaluationOptions })`
 
 Retrieves the prescribed observers of the ArIO contract. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
 
@@ -480,7 +484,7 @@ const previousEpochObservers = arIO.getPrescribedObservers({
 // ]
 ```
 
-### `getAuction({ domain, evaluationOptions })`
+#### `getAuction({ domain, evaluationOptions })`
 
 Return the auction info for the supplied domain, be it in auction, registered, or available to auction.
 
@@ -515,7 +519,7 @@ const auction = await arIO.getAuction({ domain });
 // }
 ```
 
-### `getAuctions({ evauluationOptions })`
+#### `getAuctions({ evauluationOptions })`
 
 Retrieves all active auctions.
 
@@ -546,11 +550,62 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
+### Custom Contracts
+
+The ArIO contract client class exposes APIs relevant to the ar.io contract. It can be configured to use any contract ID that adheres to the spec of the ar.io contract. In the default case, it will automatically build and utilize a contract data provider interface that is configured to point the the known mainnet contract ID at construction time. You can provide custom contract data provider or, alternatively, a `contractTxId` to the ArIO constructor to use a different, ar.io-spec-compatible contract.
+
+```typescript
+// provide a custom contractTxId to the client and default to remote evaluation
+const remoteCustomArIO = new ArIO({
+  contractTxId: 'TESTNET_CONTRACT_TX_ID',
+});
+
+// provide a custom contract to the client, and specify local evaluation using warp
+const localCustomArIO = new ArIO({
+  contract: new WarpContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  }),
+});
+
+// provide a custom contract to the client, and specify local evaluation using remote cache
+const remoteCacheCustomArIO = new ArIO({
+  contract: new RemoteContract<ArIOState>({
+    contractTxId: 'TESTNET_CONTRACT_TX_ID',
+  }),
+});
+```
+
 ## Arweave Name Tokens (ANT's)
 
 The ANT contract client class exposes APIs relevant to compliant Arweave Name Token contracts. It can be configured to use any contract ID that adheres to the ANT contract spec. You must provide either a custom contract data provider or a contractTxId to the ANT class constructor to use.
 
-### `getRecords({ evaluationOptions })`
+### APIs
+
+#### `getOwner({ evaluationOptions })`
+
+Returns the owner of the configured ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = new ANT({ contractTxId });
+const owner = await ant.getOwner();
+
+// output: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
+```
+
+#### `getControllers({ evaluationOptions })`
+
+Returns the controllers of the configured ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = new ANT({ contractTxId });
+const controllers = await ant.getControllers();
+
+// output: ["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
+```
+
+#### `getRecords({ evaluationOptions })`
 
 Returns all records on the configured ANT contract, including the required `@` record that resolve connected ArNS names.
 
@@ -570,6 +625,33 @@ const records = await ANT.getRecords();
 //       "ttlSeconds": 3300
 //     }
 //   }
+```
+
+### Configuration
+
+ANT clients can be configured to use custom contract evaluator. By default they will use the remote evaluator that leverages the [arns-service].
+
+```typescript
+// provide a contractTxId to the client and default to remote evaluation
+const remoteANT = new ANT({
+  contractTxId: 'ANT_CONTRACT_TX_ID',
+});
+
+// provide a custom contract to the client, and specify local evaluation using warp
+const warpEvaluatedANT = new ANT({
+  contract: new WarpContract<ANTState>({
+    contractTxId: 'ANT_CONTRACT_TX_ID',
+  }),
+});
+
+// provide a custom contract to the client, and specify local evaluation using remote cache
+const remoteANTContract = new ANT({
+  contract: new RemoteContract<ANTState>({
+    contractTxId: 'ANT_CONTRACT_TX_ID',
+    // the remote api that returns warp compliant contract evaluation
+    url: 'https://api.arns.app/v1/contract',
+  }),
+});
 ```
 
 ## Developers

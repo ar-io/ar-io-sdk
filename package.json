@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -102,6 +102,7 @@
     "http-server": "^14.1.1",
     "husky": "^8.0.3",
     "jest": "^29.7.0",
+    "lint-staged": "^15.2.2",
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
@@ -117,5 +118,10 @@
     "setimmediate": "^1.0.5",
     "warp-contracts": "^1.4.38",
     "winston": "^3.11.0"
+  },
+  "lint-staged": {
+    "**/*.{ts,js,mjs,cjs,md,json}": [
+      "prettier --write ."
+    ]
   }
 }
