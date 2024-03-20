@@ -1,18 +1,32 @@
+import { ArweaveSigner } from 'arbundles';
+import Arweave from 'arweave';
+
 import { ANT } from '../src/common/ant';
 import { RemoteContract } from '../src/common/contracts/remote-contract';
 import { ANTState } from '../src/contract-state';
 
+const arweave = Arweave.init({
+  host: 'arweave.net',
+  protocol: 'https',
+  port: 443,
+});
+const sortKey =
+  '000001383961,0000000000000,13987aba2d71b6229989690c15d2838a4deef0a90c3fc9e4d7227ed17e35d0bd';
+const blockHeight = 1383961;
 describe('ANT contract apis', () => {
-  const ant = new ANT({
-    contract: new RemoteContract<ANTState>({
-      url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
-      contractTxId: 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4',
-    }),
-  });
+  let ant: ANT;
 
-  const sortKey =
-    '000001383961,0000000000000,13987aba2d71b6229989690c15d2838a4deef0a90c3fc9e4d7227ed17e35d0bd';
-  const blockHeight = 1383961;
+  beforeAll(async () => {
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    ant = new ANT({
+      signer,
+      contract: new RemoteContract<ANTState>({
+        url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
+        contractTxId: 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4',
+      }),
+    });
+  });
 
   it.each([[{ sortKey }], [{ blockHeight }]])(
     `should get contract state with evaluation options: ${JSON.stringify('%s')}`,

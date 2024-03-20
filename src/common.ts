@@ -38,13 +38,13 @@ export type ArIOSigner = ArweaveSigner | ArconnectSigner;
 export type ContractConfiguration = {
   signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
 } & (
-    | {
+  | {
       contract?: SmartWeaveContract<unknown>;
     }
-    | {
+  | {
       contractTxId: string;
     }
-  );
+);
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,

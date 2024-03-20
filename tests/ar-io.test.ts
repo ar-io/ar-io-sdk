@@ -7,6 +7,11 @@ import { ARNS_DEVNET_REGISTRY_TX } from '../src/constants.js';
 import { ArIOState } from '../src/contract-state.js';
 import { SmartWeaveSortKey } from '../src/utils/smartweave.js';
 
+const arweave = Arweave.init({
+  host: 'arweave.net',
+  protocol: 'https',
+  port: 443,
+});
 const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 const domain = 'ar-io';
 const evaluateToBlockHeight = 1377100;
@@ -16,16 +21,12 @@ const evaluateToSortKey = new SmartWeaveSortKey(
 describe('ArIO Client', () => {
   let arIO: ArIO;
   beforeAll(async () => {
-    const arweave = Arweave.init({
-      host: 'arweave.net',
-      protocol: 'https',
-      port: 443,
-    });
     const jwk = await arweave.wallets.generate();
     const signer = new ArweaveSigner(jwk);
     arIO = new ArIO({
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_DEVNET_REGISTRY_TX,
+        url: 'https://localhost:3000',
       }),
       signer,
     });
