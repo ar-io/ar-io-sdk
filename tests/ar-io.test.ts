@@ -13,7 +13,7 @@ const arweave = Arweave.init({
   port: 443,
 });
 const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
-const domain = 'ar-io';
+const domain = 'uniswap';
 const evaluateToBlockHeight = 1377100;
 const evaluateToSortKey = new SmartWeaveSortKey(
   '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
@@ -36,12 +36,18 @@ describe('ArIO Client', () => {
     expect(arIO).toBeInstanceOf(ArIO);
   });
 
-  // it('should connect and return a valid instance', async () => {
-  //   const jwk = await arweave.wallets.generate();
-  //   const signer = new ArweaveSigner(jwk);
-  //   expect(arIO.connect(signer)).toBeDefined();
-  //   expect(arIO).toBeInstanceOf(ArIO);
-  // });
+  it('should connect and return a valid instance', async () => {
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    const client = new ArIO({
+      contract: new RemoteContract<ArIOState>({
+        contractTxId: ARNS_DEVNET_REGISTRY_TX,
+        url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
+      }),
+    });
+    expect(client.connect(signer)).toBeDefined();
+    expect(client).toBeInstanceOf(ArIO);
+  });
 
   it('should should return undefined for non existent gateway', async () => {
     const nonExistent = await arIO.getGateway({

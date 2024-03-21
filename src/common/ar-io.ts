@@ -102,7 +102,6 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
     const state = await this.contract.getState({ evaluationOptions });
-    console.log(state);
     return state.records;
   }
 

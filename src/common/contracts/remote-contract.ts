@@ -63,9 +63,7 @@ export class RemoteContract<T> implements ContractInteractionProvider<T> {
       { state: T }
     >({
       endpoint: ``,
-      params: {
-        ...evaluationOptions?.evalTo,
-      },
+      params: evaluationOptions?.evalTo,
     });
     return state;
   }
