@@ -15,19 +15,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
+  ArIOSigner,
+  ContractInteractionProvider,
   EvaluationParameters,
   HTTPClient,
   Logger,
-  SmartWeaveContract,
 } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
 // TODO: this assumes the API structure matches the current arns-service API - we will want to consider another interface that exposes relevant APIs with client implementations (arns-service, DRE nodes, etc.)
-export class RemoteContract<T> implements SmartWeaveContract<T> {
+export class RemoteContract<T> implements ContractInteractionProvider<T> {
   private logger: Logger;
   private http: HTTPClient;
-  private contractTxId: string;
+  contractTxId: string;
 
   constructor({
     url = 'https://api.arns.app',
@@ -45,9 +46,14 @@ export class RemoteContract<T> implements SmartWeaveContract<T> {
     });
   }
 
-  async getContractState({
-    evaluationOptions,
-  }: EvaluationParameters = {}): Promise<T> {
+  /* eslint-disable */
+  // @ts-ignore
+  connect(signer: ArIOSigner): this {
+    /* eslint-enable */
+    throw new Error('Cannot connect to a remote contract');
+  }
+
+  async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {
     this.logger.debug(`Fetching contract state`, {
       contractTxId: this.contractTxId,
       evaluationOptions,
@@ -85,5 +91,18 @@ export class RemoteContract<T> implements SmartWeaveContract<T> {
       },
     });
     return result;
+  }
+  /* eslint-disable */
+  // @ts-ignore
+  async writeInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs: Input;
+  }>): Promise<State> {
+    /* eslint-enable */
+    throw new Error('Cannot write to a remote contract');
   }
 }

@@ -13,6 +13,7 @@ const arweave = Arweave.init({
 const sortKey =
   '000001383961,0000000000000,13987aba2d71b6229989690c15d2838a4deef0a90c3fc9e4d7227ed17e35d0bd';
 const blockHeight = 1383961;
+const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
 describe('ANT contract apis', () => {
   let ant: ANT;
 
@@ -23,9 +24,16 @@ describe('ANT contract apis', () => {
       signer,
       contract: new RemoteContract<ANTState>({
         url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
-        contractTxId: 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4',
+        contractTxId,
       }),
     });
+  });
+
+  it('should connect and return a valid instance', async () => {
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    expect(ant.connect(signer)).toBeDefined();
+    expect(ant).toBeInstanceOf(ANT);
   });
 
   it.each([[{ sortKey }], [{ blockHeight }]])(

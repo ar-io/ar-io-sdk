@@ -18,17 +18,19 @@ import {
   ANTContract,
   ANTRecord,
   ANTState,
+  ArIOSigner,
   ContractConfiguration,
+  ContractInteractionProvider,
   EvaluationOptions,
   EvaluationParameters,
-  SmartWeaveContract,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
+import { WarpContract } from './index.js';
 
-export class ANT implements ANTContract {
-  private contract: SmartWeaveContract<ANTState>;
+export class ANT implements ANTContract, ContractInteractionProvider<ANTState> {
+  private contract: ContractInteractionProvider<ANTState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   private signer: ArIOSigner | undefined;
@@ -44,12 +46,54 @@ export class ANT implements ANTContract {
     }
   }
 
+  connect(signer: ArIOSigner): this {
+    this.signer = signer;
+    if (this.contract instanceof RemoteContract) {
+      this.contract = new WarpContract<ANTState>({
+        contractTxId: this.contract.contractTxId,
+        signer,
+      });
+    } else {
+      this.contract.connect(signer);
+    }
+    return this;
+  }
   /**
    * Returns the current state of the contract.
    */
   async getState(params: EvaluationParameters): Promise<ANTState> {
-    const state = await this.contract.getContractState(params);
+    const state = await this.contract.getState(params);
     return state;
+  }
+
+  async readInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs?: Input | undefined;
+  }>): Promise<State> {
+    return this.contract.readInteraction({
+      functionName,
+      inputs,
+      evaluationOptions,
+    });
+  }
+
+  async writeInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs: Input;
+  }>): Promise<State> {
+    return this.contract.writeInteraction({
+      functionName,
+      inputs,
+      evaluationOptions,
+    });
   }
 
   async getRecord({
@@ -65,7 +109,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<Record<string, ANTRecord>> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
 
@@ -74,7 +118,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.owner;
   }
 
@@ -83,7 +127,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<string[]> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.controllers;
   }
 
@@ -92,7 +136,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.name;
   }
 
@@ -101,7 +145,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.ticker;
   }
 
@@ -110,7 +154,7 @@ export class ANT implements ANTContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<Record<string, number>> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }
 

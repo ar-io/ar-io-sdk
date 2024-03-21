@@ -39,16 +39,20 @@ export type ContractConfiguration = {
   signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
 } & (
   | {
-      contract?: SmartWeaveContract<unknown>;
+      contract?: ContractInteractionProvider<unknown>;
     }
   | {
       contractTxId: string;
     }
 );
 
+export type ContractInteractionProvider<T> = BaseContract<T> &
+  ReadContract &
+  WriteContract;
+
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
-): config is { contract: SmartWeaveContract<T> } {
+): config is { contract: ContractInteractionProvider<T> } {
   return 'contract' in config;
 }
 
@@ -68,6 +72,33 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
+export interface BaseContract<T> {
+  getState(params: EvaluationParameters): Promise<T>;
+  connect(signer: ArIOSigner): this;
+}
+
+export interface ReadContract {
+  readInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs?: Input;
+  }>): Promise<State>;
+}
+
+export interface WriteContract {
+  writeInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs: Input;
+  }>): Promise<State>;
+}
+
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
   readInteraction<I, K>({
@@ -75,12 +106,10 @@ export interface SmartWeaveContract<T> {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K>;
-  // TODO: write interaction
 }
 
 // TODO: extend with additional methods
-export interface ArIOContract {
-  getState({ evaluationOptions }: EvaluationParameters): Promise<ArIOState>;
+export interface ArIOContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -144,8 +173,7 @@ export interface ArIOContract {
   }>): Promise<ArNSAuctionData>;
 }
 
-export interface ANTContract {
-  getState({ evaluationOptions }: EvaluationParameters): Promise<ANTState>;
+export interface ANTContract extends BaseContract<ANTState> {
   getRecord({
     domain,
     evaluationOptions,

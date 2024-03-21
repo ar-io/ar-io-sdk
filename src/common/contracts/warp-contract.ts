@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { Signer } from 'arbundles/node';
 import {
   Contract,
   Warp,
@@ -21,12 +22,16 @@ import {
   defaultCacheOptions,
 } from 'warp-contracts';
 
-import { EvaluationParameters, SmartWeaveContract } from '../../types.js';
+import {
+  ArIOSigner,
+  ContractInteractionProvider,
+  EvaluationParameters,
+} from '../../types.js';
 import { FailedRequestError } from '../error.js';
 
-export class WarpContract<T> implements SmartWeaveContract<T> {
+export class WarpContract<T> implements ContractInteractionProvider<T> {
   private contract: Contract<T>;
-  private contractTxId: string;
+  protected contractTxId: string;
   private cacheUrl: string | undefined;
 
   constructor({
@@ -39,27 +44,20 @@ export class WarpContract<T> implements SmartWeaveContract<T> {
   }: {
     contractTxId: string;
     cacheUrl?: string;
-    warp: Warp;
+    warp?: Warp;
+    signer?: ArIOSigner;
   }) {
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
   }
 
-  private async syncState() {
-    // TODO: get contract manifest and set it before evaluating
-    if (this.cacheUrl !== undefined) {
-      await this.contract.syncState(
-        `${this.cacheUrl}/v1/contract/${this.contractTxId}`,
-        {
-          validity: true,
-        },
-      );
-    }
-  }
+  // base contract methods
 
-  async getContractState({
-    evaluationOptions = {},
-  }: EvaluationParameters): Promise<T> {
+  connect(signer: ArIOSigner) {
+    this.contract = this.contract.connect(signer as Signer);
+    return this;
+  }
+  async getState({ evaluationOptions = {} }: EvaluationParameters): Promise<T> {
     await this.syncState();
     const evalTo = evaluationOptions?.evalTo;
     let sortKeyOrBlockHeight: string | number | undefined;
@@ -77,6 +75,18 @@ export class WarpContract<T> implements SmartWeaveContract<T> {
     return evaluationResult.cachedValue.state as T;
   }
 
+  private async syncState() {
+    // TODO: get contract manifest and set it before evaluating
+    if (this.cacheUrl !== undefined) {
+      await this.contract.syncState(
+        `${this.cacheUrl}/v1/contract/${this.contractTxId}`,
+        {
+          validity: true,
+        },
+      );
+    }
+  }
+
   async readInteraction<I, K>({
     functionName,
     inputs,
@@ -92,6 +102,17 @@ export class WarpContract<T> implements SmartWeaveContract<T> {
         'Failed to evaluate contract read interaction',
       );
     }
+
     return evaluationResult.result;
+  }
+  /* eslint-disable */
+  // @ts-ignore
+  async writeInteraction<I, K>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{ functionName: string; inputs: I }>): Promise<K> {
+    /* eslint-enable */
+    throw new Error('Method not implemented.');
   }
 }

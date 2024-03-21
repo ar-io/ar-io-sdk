@@ -18,6 +18,7 @@ const evaluateToBlockHeight = 1377100;
 const evaluateToSortKey = new SmartWeaveSortKey(
   '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
 );
+
 describe('ArIO Client', () => {
   let arIO: ArIO;
   beforeAll(async () => {
@@ -32,6 +33,13 @@ describe('ArIO Client', () => {
     });
   });
   it('should create a custom ArIO client', () => {
+    expect(arIO).toBeInstanceOf(ArIO);
+  });
+
+  it('should connect and return a valid instance', async () => {
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    expect(arIO.connect(signer)).toBeDefined();
     expect(arIO).toBeInstanceOf(ArIO);
   });
 
