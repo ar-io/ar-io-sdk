@@ -21,6 +21,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  BaseContract,
   ContractConfiguration,
   ContractInteractionProvider,
   EpochDistributionData,
@@ -36,9 +37,7 @@ import {
 import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
-export class ArIO
-  implements ArIOContract, ContractInteractionProvider<ArIOState>
-{
+export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   private contract: ContractInteractionProvider<ArIOState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -83,37 +82,6 @@ export class ArIO
     const state = await this.contract.getState(params);
     return state;
   }
-
-  async readInteraction<Input, State>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs?: Input | undefined;
-  }>): Promise<State> {
-    return this.contract.readInteraction({
-      functionName,
-      inputs,
-      evaluationOptions,
-    });
-  }
-
-  async writeInteraction<Input, State>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<State> {
-    return this.contract.writeInteraction({
-      functionName,
-      inputs,
-      evaluationOptions,
-    });
-  }
-
   /**
    * Returns the ARNS record for the given domain.
    */

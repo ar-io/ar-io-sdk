@@ -59,7 +59,6 @@ describe('ANT contract apis', () => {
     `should get records with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const records = await ant.getRecords({ evaluationOptions: { evalTo } });
-      console.dir({ records: records['@'] }, { depth: 4 });
       expect(records).toBeDefined();
     },
   );

@@ -17,6 +17,7 @@
 import { Signer } from 'arbundles/node';
 import {
   Contract,
+  LoggerFactory,
   Warp,
   WarpFactory,
   defaultCacheOptions,
@@ -28,6 +29,10 @@ import {
   EvaluationParameters,
 } from '../../types.js';
 import { FailedRequestError } from '../error.js';
+
+LoggerFactory.INST.setOptions({
+  logLevel: 'fatal',
+});
 
 export class WarpContract<T> implements ContractInteractionProvider<T> {
   private contract: Contract<T>;
@@ -93,13 +98,19 @@ export class WarpContract<T> implements ContractInteractionProvider<T> {
     // TODO: view state only supports sort key so we won't be able to use block height
   }: EvaluationParameters<{ functionName: string; inputs: I }>): Promise<K> {
     const evaluationResult = await this.contract.viewState<unknown, K>({
-      functionName,
+      function: functionName,
       ...inputs,
     });
+
     if (!evaluationResult.result) {
       throw new FailedRequestError(
         502,
-        'Failed to evaluate contract read interaction',
+        'Failed to evaluate contract read interaction: ' +
+          JSON.stringify(
+            { error: evaluationResult.errorMessage, functionName, inputs },
+            null,
+            2,
+          ),
       );
     }
 

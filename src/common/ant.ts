@@ -19,6 +19,7 @@ import {
   ANTRecord,
   ANTState,
   ArIOSigner,
+  BaseContract,
   ContractConfiguration,
   ContractInteractionProvider,
   EvaluationOptions,
@@ -29,7 +30,7 @@ import {
 import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
-export class ANT implements ANTContract, ContractInteractionProvider<ANTState> {
+export class ANT implements ANTContract, BaseContract<ANTState> {
   private contract: ContractInteractionProvider<ANTState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
@@ -64,36 +65,6 @@ export class ANT implements ANTContract, ContractInteractionProvider<ANTState> {
   async getState(params: EvaluationParameters): Promise<ANTState> {
     const state = await this.contract.getState(params);
     return state;
-  }
-
-  async readInteraction<Input, State>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs?: Input | undefined;
-  }>): Promise<State> {
-    return this.contract.readInteraction({
-      functionName,
-      inputs,
-      evaluationOptions,
-    });
-  }
-
-  async writeInteraction<Input, State>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<State> {
-    return this.contract.writeInteraction({
-      functionName,
-      inputs,
-      evaluationOptions,
-    });
   }
 
   async getRecord({
