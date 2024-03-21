@@ -70,9 +70,9 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
         contractTxId: this.contract.contractTxId,
         signer,
       });
-    } else {
-      this.contract.connect(signer);
     }
+    this.contract.connect(signer);
+
     return this;
   }
   /**
