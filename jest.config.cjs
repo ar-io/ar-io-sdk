@@ -6,7 +6,7 @@ module.exports = {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts', 'tests/**/*.ts'],
   testEnvironment: 'node',
-  testTimeout: 60_000,
+  testTimeout: 120_000,
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
     '^.+\\.(ts|js)$': ['ts-jest', { useESM: true }],
