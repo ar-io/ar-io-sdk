@@ -6,7 +6,9 @@ describe('ANT contract apis', () => {
   const ant = new ANT({
     contract: new RemoteContract<ANTState>({
       url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
-      contractTxId: 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4',
+      contractTxId:
+        process.env.ANT_CONTRACT_TX_ID ||
+        'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4',
     }),
   });
 
@@ -37,7 +39,6 @@ describe('ANT contract apis', () => {
     `should get records with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const records = await ant.getRecords({ evaluationOptions: { evalTo } });
-      console.dir({ records: records['@'] }, { depth: 4 });
       expect(records).toBeDefined();
     },
   );
