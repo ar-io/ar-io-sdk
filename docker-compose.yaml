@@ -12,13 +12,7 @@ services:
       - PREFETCH_CONTRACT_IDS=_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8,UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4
       - BOOTSTRAP_CONTRACTS=false
     healthcheck:
-      test:
-        [
-          'CMD',
-          'curl',
-          '-f',
-          'http://localhost:3000/healthcheck'
-        ]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/healthcheck']
       interval: 10s
       timeout: 5s
       retries: 5

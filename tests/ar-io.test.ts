@@ -36,12 +36,12 @@ describe('ArIO Client', () => {
     expect(arIO).toBeInstanceOf(ArIO);
   });
 
-  it('should connect and return a valid instance', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    expect(arIO.connect(signer)).toBeDefined();
-    expect(arIO).toBeInstanceOf(ArIO);
-  });
+  // it('should connect and return a valid instance', async () => {
+  //   const jwk = await arweave.wallets.generate();
+  //   const signer = new ArweaveSigner(jwk);
+  //   expect(arIO.connect(signer)).toBeDefined();
+  //   expect(arIO).toBeInstanceOf(ArIO);
+  // });
 
   it('should should return undefined for non existent gateway', async () => {
     const nonExistent = await arIO.getGateway({

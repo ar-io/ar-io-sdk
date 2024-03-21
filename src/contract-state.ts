@@ -42,6 +42,7 @@ export type GatewaySettings = {
   port: number;
   properties?: string;
   protocol: AllowedProtocols;
+  autoStake: boolean;
 };
 
 export type AllowedProtocols = 'http' | 'https';

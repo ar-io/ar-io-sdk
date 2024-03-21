@@ -14,6 +14,7 @@ const sortKey =
   '000001383961,0000000000000,13987aba2d71b6229989690c15d2838a4deef0a90c3fc9e4d7227ed17e35d0bd';
 const blockHeight = 1383961;
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
+
 describe('ANT contract apis', () => {
   let ant: ANT;
 
