@@ -16,16 +16,17 @@
  */
 import {
   ArIOSigner,
-  ContractInteractionProvider,
+  BaseContract,
   EvaluationParameters,
   HTTPClient,
   Logger,
+  ReadContract,
 } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
 // TODO: this assumes the API structure matches the current arns-service API - we will want to consider another interface that exposes relevant APIs with client implementations (arns-service, DRE nodes, etc.)
-export class RemoteContract<T> implements ContractInteractionProvider<T> {
+export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   private logger: Logger;
   private http: HTTPClient;
   contractTxId: string;
@@ -89,18 +90,5 @@ export class RemoteContract<T> implements ContractInteractionProvider<T> {
       },
     });
     return result;
-  }
-  /* eslint-disable */
-  // @ts-ignore
-  async writeInteraction<Input, State>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<State> {
-    /* eslint-enable */
-    throw new Error('Cannot write to a remote contract');
   }
 }

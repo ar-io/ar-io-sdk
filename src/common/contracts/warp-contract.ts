@@ -25,8 +25,10 @@ import {
 
 import {
   ArIOSigner,
-  ContractInteractionProvider,
+  BaseContract,
   EvaluationParameters,
+  ReadContract,
+  WriteContract,
 } from '../../types.js';
 import { FailedRequestError } from '../error.js';
 
@@ -34,7 +36,9 @@ LoggerFactory.INST.setOptions({
   logLevel: 'fatal',
 });
 
-export class WarpContract<T> implements ContractInteractionProvider<T> {
+export class WarpContract<T>
+  implements BaseContract<T>, ReadContract, WriteContract
+{
   private contract: Contract<T>;
   protected contractTxId: string;
   private cacheUrl: string | undefined;

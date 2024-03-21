@@ -46,9 +46,9 @@ export type ContractConfiguration = {
     }
 );
 
-export type ContractInteractionProvider<T> = BaseContract<T> &
-  ReadContract &
-  WriteContract;
+export type ContractInteractionProvider<T> =
+  | (BaseContract<T> & ReadContract & WriteContract)
+  | (BaseContract<T> & ReadContract);
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
