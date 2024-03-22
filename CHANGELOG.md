@@ -1,3 +1,41 @@
+# [1.0.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.12...v1.0.0-alpha.13) (2024-03-22)
+
+
+### Bug Fixes
+
+* **ant:** add signer to ant test ([4581b8d](https://github.com/ar-io/ar-io-sdk/commit/4581b8d461e57f4769befe5f650e5fe4e94bbc09))
+* **arbundle version:** pin version ([35ffab6](https://github.com/ar-io/ar-io-sdk/commit/35ffab6fbb9a2209391bb5f10120fb9a9c91b0aa))
+* **arbundles:** update arbundles import ([f02d83f](https://github.com/ar-io/ar-io-sdk/commit/f02d83f4766a92be930a7c51e23f1f63b5692224))
+* **cache:** remove cache folder ([2ac9427](https://github.com/ar-io/ar-io-sdk/commit/2ac942742017344e1d8c06883449453c88bfa155))
+* **contract configuration:** return cache url as well ([b4a7bc3](https://github.com/ar-io/ar-io-sdk/commit/b4a7bc3960be0532ec7cdedf5875128f11f60672))
+* **contracts:** add configuration view method and update types ([4fae4a2](https://github.com/ar-io/ar-io-sdk/commit/4fae4a2688f96388d5b53d8fe292ff7942af0c57))
+* **contracts:** remove write method and type from remote contract ([740d8b8](https://github.com/ar-io/ar-io-sdk/commit/740d8b88a5486f90cd61d024f8fdd4e6b9a370a0))
+* **ctrl flow:** remove else from control flow ([4b3c4c2](https://github.com/ar-io/ar-io-sdk/commit/4b3c4c2058767b05199ac75c44c4684a66149bb9))
+* **eslint:** remove eslint comments and use this signer ([32530eb](https://github.com/ar-io/ar-io-sdk/commit/32530eb777367b71bfba16bd97dcf6d6a75de791))
+* **gitignore:** remove cache from gitignore ([2867abc](https://github.com/ar-io/ar-io-sdk/commit/2867abcdba2fc4a4cece01c6ed3346065a54e2eb))
+* **lint:** formatting ([21224e2](https://github.com/ar-io/ar-io-sdk/commit/21224e2f47605d1959853c99ddb1c8a3df6a0d7d))
+* **signer:** remove jwk use, ignore web example for now ([bc7e577](https://github.com/ar-io/ar-io-sdk/commit/bc7e577e0f7f42a91ae4bbca853addf7f178a1f8))
+* **signer:** remove use of JWK, simplify constructor ([#22](https://github.com/ar-io/ar-io-sdk/issues/22)) ([d2ef573](https://github.com/ar-io/ar-io-sdk/commit/d2ef5732d1ef268d9fb1420c96f520b0fcb4bedd))
+* **signer:** update ANT to have signer ([c7f8eee](https://github.com/ar-io/ar-io-sdk/commit/c7f8eeec4c2141548d202f76934304a310b177b7))
+* **tests:** dont make blockHeight or sortKey undefined but rather evalTo ([f76a201](https://github.com/ar-io/ar-io-sdk/commit/f76a201eb53069f611b17bfef01506143fdec080))
+* **tests:** instantiate new ant to connect in tests ([9869415](https://github.com/ar-io/ar-io-sdk/commit/98694156a55a5dfba2a96cb09b4f734c33ed0c64))
+* **tests:** update docker compose params ([a71befd](https://github.com/ar-io/ar-io-sdk/commit/a71befd8b06e18181f52ca78babe878196f3673f))
+* **tests:** update tests with constants and update types ([1bdcfeb](https://github.com/ar-io/ar-io-sdk/commit/1bdcfebae93123aa46f500ebbd9693d3e1e36ef6))
+* **tests:** update tests with new name ([2cd1b5c](https://github.com/ar-io/ar-io-sdk/commit/2cd1b5ce18ed63c2b787d70e7e502aade26315eb))
+* **tests:** use angela for testing ([10f30fe](https://github.com/ar-io/ar-io-sdk/commit/10f30fe0770cb2cfef4f0a2ce18a4c5e4fe5ce77))
+* **tests:** use http not https in tests ([fddba1e](https://github.com/ar-io/ar-io-sdk/commit/fddba1e34c9a195cb6a5cdcf3ec6f3dcbd41524c))
+* **tests:** use process vars as priority url ([faab4f3](https://github.com/ar-io/ar-io-sdk/commit/faab4f3ee7624828cb25a32b6ecfb655cd5c1fc5))
+* **types and tests:** update evalTo to allow undefined sortKey and block and test that ([a59f05c](https://github.com/ar-io/ar-io-sdk/commit/a59f05c8669750b59b01ee140bcd84d91b9cfaf8))
+* **types:** rename signer to ContractSigner ([87d6c90](https://github.com/ar-io/ar-io-sdk/commit/87d6c90b625b8bb97d68ea89d63d7a97ea894051))
+* **types:** update interaction type to only use read for now ([2c02e90](https://github.com/ar-io/ar-io-sdk/commit/2c02e90076bc0fe8580bef041cd7c07e65db43d9))
+* **warp contract:** added test for getting state after connecting with warp ([060ee2c](https://github.com/ar-io/ar-io-sdk/commit/060ee2c4a8bc21c345eb6ab006c3da41b29ff7d5))
+
+
+### Features
+
+* **PE-5758:** add signer to ario class ([#20](https://github.com/ar-io/ar-io-sdk/issues/20)) ([1b82077](https://github.com/ar-io/ar-io-sdk/commit/1b820774104d90f2bcbec9a18c8fbca891616f7b))
+* **signer:** add arweave signer to ario class ([7e08097](https://github.com/ar-io/ar-io-sdk/commit/7e08097e9abccf4a57673209751b2cd2fc25b746))
+
 # [1.0.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.11...v1.0.0-alpha.12) (2024-03-22)
 
 
