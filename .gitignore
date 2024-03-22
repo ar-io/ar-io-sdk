@@ -5,6 +5,7 @@ coverage
 .nyc_output
 dist
 .husky/_
+cache
 
 # IDEs and editors
 .vscode
