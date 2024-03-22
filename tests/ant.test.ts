@@ -41,7 +41,9 @@ describe('ANT contract apis', () => {
   });
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get contract state with evaluation options: ${JSON.stringify('%s')}`,
@@ -52,7 +54,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(`should get record: ${JSON.stringify('%s')}`, async (evalTo) => {
     const record = await ant.getRecord({
@@ -63,7 +67,9 @@ describe('ANT contract apis', () => {
   });
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get records with evaluation options: ${JSON.stringify('%s')}`,
@@ -74,7 +80,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get owner with evaluation options: ${JSON.stringify('%s')}`,
@@ -85,7 +93,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get controllers with evaluation options: ${JSON.stringify('%s')}`,
@@ -98,7 +108,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get name with evaluation options: ${JSON.stringify('%s')}`,
@@ -109,7 +121,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get ticker with evaluation options: ${JSON.stringify('%s')}`,
@@ -120,7 +134,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get balances with evaluation options: ${JSON.stringify('%s')}`,
@@ -131,7 +147,9 @@ describe('ANT contract apis', () => {
   );
 
   it.each([
+    [{ sortKey: undefined }],
     [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: undefined }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should get balance with evaluation options: ${JSON.stringify('%s')}`,

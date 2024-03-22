@@ -80,7 +80,7 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
     let sortKeyOrBlockHeight: string | number | undefined;
     if (evalTo && 'sortKey' in evalTo) {
       sortKeyOrBlockHeight = evalTo.sortKey;
-    } else if (evalTo && 'blockHeight') {
+    } else if (evalTo && 'blockHeight' in evalTo) {
       sortKeyOrBlockHeight = evalTo.blockHeight;
     }
 
