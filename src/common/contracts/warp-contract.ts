@@ -25,7 +25,6 @@ import {
 
 import {
   BaseContract,
-  ContractConfiguration,
   ContractSigner,
   EvaluationParameters,
   ReadContract,

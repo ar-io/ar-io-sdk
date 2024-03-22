@@ -16,7 +16,6 @@
  */
 import {
   BaseContract,
-  ContractConfiguration,
   ContractSigner,
   EvaluationParameters,
   HTTPClient,

@@ -99,7 +99,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.controllers;
   }
-  
+
   async getName({
     evaluationOptions,
   }: {
