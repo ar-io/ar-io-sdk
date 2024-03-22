@@ -1,3 +1,10 @@
+# [1.0.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2024-03-22)
+
+
+### Bug Fixes
+
+* **gateway:** update gateway settings to support autostake ([82c6840](https://github.com/ar-io/ar-io-sdk/commit/82c68408fb562146053b9180dacc53fb490743ea))
+
 # [1.0.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2024-03-18)
 
 
