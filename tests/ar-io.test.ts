@@ -5,7 +5,7 @@ import { ArIOState } from '../src/contract-state.js';
 import { SmartWeaveSortKey } from '../src/utils/smartweave.js';
 
 const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
-const domain = 'ar-io';
+const domain = 'angela'; // permabuy domain
 const evaluateToBlockHeight = 1377100;
 const evaluateToSortKey = new SmartWeaveSortKey(
   '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
