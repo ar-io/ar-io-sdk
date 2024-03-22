@@ -29,6 +29,7 @@ import {
   EvaluationParameters,
   ReadContract,
   WriteContract,
+  WriteParameters,
 } from '../../types.js';
 import { isDataItem, isTransaction } from '../../utils/arweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
@@ -136,28 +137,49 @@ export class WarpContract<T>
   async writeInteraction<Input>({
     functionName,
     inputs,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<Transaction | DataItem> {
-    // Sync state before writing
-    await this.syncState();
-    const { interactionTx } =
-      (await this.contract.writeInteraction<Input>({
-        function: functionName,
-        ...inputs,
-      })) ?? {};
+    syncState = true,
+    dryRun = true,
+    abortSignal,
+  }: EvaluationParameters<WriteParameters<Input>>): Promise<
+    Transaction | DataItem
+  > {
+    let writeResult: unknown;
 
-    if (!interactionTx) {
-      throw new WriteInteractionError(
-        `Failed to write contract interaction ${functionName}`,
-      );
+    while (!abortSignal || !abortSignal.aborted) {
+      // Sync state before writing
+      if (syncState) await this.syncState();
+
+      if (dryRun) {
+        const { errorMessage, type } = await this.contract.dryWrite<Input>({
+          function: functionName,
+          ...inputs,
+        });
+        // type is ok, error, exception
+        if (type !== 'ok') {
+          throw new WriteInteractionError(
+            `Failed to dry run contract interaction ${functionName} with error: ${errorMessage}`,
+          );
+        }
+      }
+      const { interactionTx } =
+        (await this.contract.writeInteraction<Input>({
+          function: functionName,
+          ...inputs,
+        })) ?? {};
+
+      if (!interactionTx) {
+        throw new WriteInteractionError(
+          `Failed to write contract interaction ${functionName}`,
+        );
+      }
+      writeResult = interactionTx;
     }
+
     // Flexible way to return information on the transaction, aids in caching and redoployment if desired by simply refetching tx anchor and resigning.
-    if (isTransaction(interactionTx)) {
-      return interactionTx as Transaction;
-    } else if (isDataItem(interactionTx)) {
-      return interactionTx as DataItem;
+    if (isTransaction(writeResult)) {
+      return writeResult as Transaction;
+    } else if (isDataItem(writeResult)) {
+      return writeResult as DataItem;
     }
 
     throw new WriteInteractionError(

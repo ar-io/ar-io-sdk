@@ -73,6 +73,14 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
+export type WriteParameters<Input> = {
+  dryRun?: boolean;
+  syncState?: boolean;
+  abortSignal?: AbortSignal;
+  functionName: string;
+  inputs: Input;
+};
+
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
   connect(signer: ContractSigner): this;
@@ -94,10 +102,9 @@ export interface WriteContract {
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<Transaction | DataItem>;
+  }: EvaluationParameters<WriteParameters<Input>>): Promise<
+    Transaction | DataItem
+  >;
 }
 
 export interface SmartWeaveContract<T> {
