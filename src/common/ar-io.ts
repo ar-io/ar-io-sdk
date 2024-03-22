@@ -22,13 +22,13 @@ import {
   ArNSNameData,
   BaseContract,
   ContractConfiguration,
-  ContractInteractionProvider,
   ContractSigner,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
   Gateway,
   Observations,
+  ReadContract,
   RegistrationType,
   WeightedObserver,
   isContractConfiguration,
@@ -38,7 +38,7 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
-  private contract: ContractInteractionProvider<ArIOState>;
+  private contract: BaseContract<ArIOState> & ReadContract;
   private signer: ContractSigner | undefined;
 
   constructor(

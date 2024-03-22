@@ -1,18 +1,15 @@
 import { ArweaveSigner } from 'arbundles';
-import Arweave from 'arweave';
 
 import { ANT } from '../src/common/ant';
 import { RemoteContract } from '../src/common/contracts/remote-contract';
 import { ANTState } from '../src/contract-state';
+import {
+  arweave,
+  evaluateToBlockHeight,
+  evaluateToSortKey,
+  localCacheUrl,
+} from './constants';
 
-const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
-const sortKey =
-  '000001383961,0000000000000,13987aba2d71b6229989690c15d2838a4deef0a90c3fc9e4d7227ed17e35d0bd';
-const blockHeight = 1383961;
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
 
 describe('ANT contract apis', () => {
@@ -24,7 +21,7 @@ describe('ANT contract apis', () => {
     ant = new ANT({
       signer,
       contract: new RemoteContract<ANTState>({
-        url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
+        url: localCacheUrl,
         contractTxId,
       }),
     });
@@ -37,7 +34,10 @@ describe('ANT contract apis', () => {
     expect(ant).toBeInstanceOf(ANT);
   });
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get contract state with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getState({ evaluationOptions: { evalTo } });
@@ -45,18 +45,21 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
-    `should get record: ${JSON.stringify('%s')}`,
-    async (evalTo) => {
-      const record = await ant.getRecord({
-        domain: '@',
-        evaluationOptions: { evalTo },
-      });
-      expect(record).toBeDefined();
-    },
-  );
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(`should get record: ${JSON.stringify('%s')}`, async (evalTo) => {
+    const record = await ant.getRecord({
+      domain: '@',
+      evaluationOptions: { evalTo },
+    });
+    expect(record).toBeDefined();
+  });
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get records with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const records = await ant.getRecords({ evaluationOptions: { evalTo } });
@@ -64,7 +67,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get owner with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const owner = await ant.getOwner({ evaluationOptions: { evalTo } });
@@ -72,7 +78,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get controllers with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const controllers = await ant.getControllers({
@@ -82,7 +91,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get name with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getName({ evaluationOptions: { evalTo } });
@@ -90,7 +102,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get ticker with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getTicker({ evaluationOptions: { evalTo } });
@@ -98,7 +113,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get balances with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getBalances({ evaluationOptions: { evalTo } });
@@ -106,7 +124,10 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([[{ sortKey }], [{ blockHeight }]])(
+  it.each([
+    [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
     `should get balance with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getBalance({

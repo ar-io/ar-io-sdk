@@ -39,18 +39,16 @@ export type ContractConfiguration = {
   signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
 } & (
   | {
-      contract?: ContractInteractionProvider<unknown>;
+      contract?: BaseContract<unknown> & ReadContract;
     }
   | {
       contractTxId: string;
     }
 );
 
-export type ContractInteractionProvider<T> = BaseContract<T> & ReadContract;
-
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
-): config is { contract: ContractInteractionProvider<T> } {
+): config is { contract: BaseContract<T> & ReadContract } {
   return 'contract' in config;
 }
 

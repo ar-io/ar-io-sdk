@@ -58,8 +58,8 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
   }
 
   // base contract methods
-
   connect(signer: ContractSigner) {
+    // TODO: Update type to use Signer interface
     this.contract = this.contract.connect(signer as Signer);
     return this;
   }

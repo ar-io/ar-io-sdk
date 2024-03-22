@@ -20,7 +20,6 @@ import {
   ANTState,
   BaseContract,
   ContractConfiguration,
-  ContractInteractionProvider,
   ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
@@ -31,7 +30,7 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
 export class ANT implements ANTContract, BaseContract<ANTState> {
-  private contract: ContractInteractionProvider<ANTState>;
+  private contract: BaseContract<ANTState>;
   private signer: ContractSigner | undefined;
 
   constructor({ signer, ...config }: ContractConfiguration) {

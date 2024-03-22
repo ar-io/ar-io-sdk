@@ -1,23 +1,17 @@
 import { ArweaveSigner } from 'arbundles';
-import Arweave from 'arweave';
 
 import { ArIO } from '../src/common/ar-io.js';
 import { RemoteContract } from '../src/common/contracts/remote-contract.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../src/constants.js';
 import { ArIOState } from '../src/contract-state.js';
-import { SmartWeaveSortKey } from '../src/utils/smartweave.js';
-
-const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
-const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
-const domain = 'angela';
-const evaluateToBlockHeight = 1377100;
-const evaluateToSortKey = new SmartWeaveSortKey(
-  '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
-);
+import {
+  arweave,
+  evaluateToBlockHeight,
+  evaluateToSortKey,
+  gatewayAddress,
+  localCacheUrl,
+  testDomain,
+} from './constants.js';
 
 describe('ArIO Client', () => {
   let arIO: ArIO;
@@ -27,7 +21,7 @@ describe('ArIO Client', () => {
     arIO = new ArIO({
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_DEVNET_REGISTRY_TX,
-        url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
+        url: localCacheUrl,
       }),
       signer,
     });
@@ -87,7 +81,7 @@ describe('ArIO Client', () => {
   });
 
   it('should return the record for an existing domain', async () => {
-    const record = await arIO.getArNSRecord({ domain });
+    const record = await arIO.getArNSRecord({ domain: testDomain });
     expect(record).toBeDefined();
   });
 
@@ -105,7 +99,7 @@ describe('ArIO Client', () => {
 
   it('should return record at a given block height', async () => {
     const currentRecord = await arIO.getArNSRecord({
-      domain,
+      domain: testDomain,
       evaluationOptions: {
         evalTo: { blockHeight: evaluateToBlockHeight + 1 },
       },
@@ -115,7 +109,7 @@ describe('ArIO Client', () => {
 
   it('should return record at a given sort key', async () => {
     const record = await arIO.getArNSRecord({
-      domain,
+      domain: testDomain,
       evaluationOptions: {
         evalTo: { sortKey: evaluateToSortKey.toString() },
       },
@@ -129,7 +123,7 @@ describe('ArIO Client', () => {
         evalTo: { blockHeight: evaluateToBlockHeight },
       },
     });
-    expect(records[domain]).toBeDefined();
+    expect(records[testDomain]).toBeDefined();
   });
 
   it('should return records at a given sort key', async () => {
@@ -138,7 +132,7 @@ describe('ArIO Client', () => {
         evalTo: { sortKey: evaluateToSortKey.toString() },
       },
     });
-    expect(records[domain]).toBeDefined();
+    expect(records[testDomain]).toBeDefined();
   });
 
   it('should return the current epoch information', async () => {
