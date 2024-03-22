@@ -16,6 +16,7 @@
  */
 import {
   BaseContract,
+  ContractConfiguration,
   ContractSigner,
   EvaluationParameters,
   HTTPClient,
@@ -29,7 +30,7 @@ import { DefaultLogger } from '../logger.js';
 export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   private logger: Logger;
   private http: HTTPClient;
-  public readonly contractTxId: string;
+  private contractTxId: string;
 
   constructor({
     url = 'https://api.arns.app',
@@ -45,6 +46,12 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
     this.http = new AxiosHTTPService({
       url: `${url}/v1/contract/${contractTxId}`,
     });
+  }
+
+  configuration(): { contractTxId: string } {
+    return {
+      contractTxId: this.contractTxId,
+    };
   }
 
   /* eslint-disable */

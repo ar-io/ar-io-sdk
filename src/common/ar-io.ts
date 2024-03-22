@@ -64,8 +64,9 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   connect(signer: ContractSigner): this {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
+      const config = this.contract.configuration();
       this.contract = new WarpContract<ArIOState>({
-        contractTxId: this.contract.contractTxId,
+        ...config,
         signer,
       });
     }

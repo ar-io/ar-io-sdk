@@ -25,6 +25,7 @@ import {
 
 import {
   BaseContract,
+  ContractConfiguration,
   ContractSigner,
   EvaluationParameters,
   ReadContract,
@@ -37,7 +38,7 @@ LoggerFactory.INST.setOptions({
 
 export class WarpContract<T> implements BaseContract<T>, ReadContract {
   private contract: Contract<T>;
-  protected contractTxId: string;
+  private contractTxId: string;
   private cacheUrl: string | undefined;
 
   constructor({
@@ -55,6 +56,12 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
   }) {
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
+  }
+
+  configuration(): { contractTxId: string } {
+    return {
+      contractTxId: this.contractTxId,
+    };
   }
 
   // base contract methods

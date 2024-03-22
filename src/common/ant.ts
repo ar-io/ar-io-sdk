@@ -47,8 +47,9 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
   connect(signer: ContractSigner): this {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
+      const config = this.contract.configuration();
       this.contract = new WarpContract<ANTState>({
-        contractTxId: this.contract.contractTxId,
+        ...config,
         signer,
       });
     }
