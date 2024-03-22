@@ -30,8 +30,14 @@ describe('ANT contract apis', () => {
   it('should connect and return a valid instance', async () => {
     const jwk = await arweave.wallets.generate();
     const signer = new ArweaveSigner(jwk);
-    expect(ant.connect(signer)).toBeDefined();
-    expect(ant).toBeInstanceOf(ANT);
+    const connectAnt = new ANT({
+      contract: new RemoteContract<ANTState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+      }),
+    });
+    expect(connectAnt.connect(signer)).toBeDefined();
+    expect(connectAnt).toBeInstanceOf(ANT);
   });
 
   it.each([
