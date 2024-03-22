@@ -18,10 +18,10 @@ import {
   ANTContract,
   ANTRecord,
   ANTState,
-  ArIOSigner,
   BaseContract,
   ContractConfiguration,
   ContractInteractionProvider,
+  ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
   isContractConfiguration,
@@ -34,7 +34,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
   private contract: ContractInteractionProvider<ANTState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  private signer: ArIOSigner | undefined;
+  private signer: ContractSigner | undefined;
 
   constructor({ signer, ...config }: ContractConfiguration) {
     this.signer = signer;
@@ -47,7 +47,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     }
   }
 
-  connect(signer: ArIOSigner): this {
+  connect(signer: ContractSigner): this {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
       this.contract = new WarpContract<ANTState>({

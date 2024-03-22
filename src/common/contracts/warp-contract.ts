@@ -24,8 +24,8 @@ import {
 } from 'warp-contracts';
 
 import {
-  ArIOSigner,
   BaseContract,
+  ContractSigner,
   EvaluationParameters,
   ReadContract,
 } from '../../types.js';
@@ -51,7 +51,7 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
-    signer?: ArIOSigner;
+    signer?: ContractSigner;
   }) {
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
@@ -59,7 +59,7 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
 
   // base contract methods
 
-  connect(signer: ArIOSigner) {
+  connect(signer: ContractSigner) {
     this.contract = this.contract.connect(signer as Signer);
     return this;
   }

@@ -17,13 +17,13 @@
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
-  ArIOSigner,
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
   BaseContract,
   ContractConfiguration,
   ContractInteractionProvider,
+  ContractSigner,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
@@ -41,7 +41,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   private contract: ContractInteractionProvider<ArIOState>;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  private signer: ArIOSigner | undefined;
+  private signer: ContractSigner | undefined;
 
   constructor(
     { signer, ...config }: ContractConfiguration = {
@@ -63,7 +63,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
   }
 
-  connect(signer: ArIOSigner): this {
+  connect(signer: ContractSigner): this {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
       this.contract = new WarpContract<ArIOState>({

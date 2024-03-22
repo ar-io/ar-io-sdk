@@ -34,9 +34,9 @@ export type SortKey = string;
 export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ArIOSigner = ArweaveSigner | ArconnectSigner;
+export type ContractSigner = ArweaveSigner | ArconnectSigner;
 export type ContractConfiguration = {
-  signer?: ArIOSigner; // TODO: optionally allow JWK in place of signer
+  signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
 } & (
   | {
       contract?: ContractInteractionProvider<unknown>;
@@ -72,7 +72,7 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ArIOSigner): this;
+  connect(signer: ContractSigner): this;
 }
 
 export interface ReadContract {

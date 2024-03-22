@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
-  ArIOSigner,
   BaseContract,
+  ContractSigner,
   EvaluationParameters,
   HTTPClient,
   Logger,
@@ -49,7 +49,7 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
 
   /* eslint-disable */
   // @ts-ignore
-  connect(signer: ArIOSigner): this {
+  connect(signer: ContractSigner): this {
     /* eslint-enable */
     throw new Error('Cannot connect to a remote contract');
   }
