@@ -59,7 +59,7 @@ export function isContractTxIdConfiguration(
 }
 
 export type EvaluationOptions = {
-  evalTo?: { sortKey?: SortKey } | { blockHeight?: BlockHeight };
+  evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
   // TODO: any other evaluation constraints
 };
 

@@ -192,6 +192,7 @@ describe('ArIO Client', () => {
   it.each([
     [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
+    [undefined],
   ])(
     `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
@@ -258,6 +259,7 @@ describe('ArIO Client', () => {
   it.each([
     [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
+    [undefined],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
@@ -272,6 +274,7 @@ describe('ArIO Client', () => {
   it.each([
     [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
+    [undefined],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
