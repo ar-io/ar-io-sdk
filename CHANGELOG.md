@@ -1,3 +1,11 @@
+# [1.0.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.11...v1.0.0-alpha.12) (2024-03-22)
+
+
+### Bug Fixes
+
+* **ant:** default evaluation options for ant apis that do not take an… ([#25](https://github.com/ar-io/ar-io-sdk/issues/25)) ([0c8b55d](https://github.com/ar-io/ar-io-sdk/commit/0c8b55ddbc5019f365af43389524af5bd733d0c9))
+* **ant:** default evaluation options for ant apis that do not take another parameter ([7c59033](https://github.com/ar-io/ar-io-sdk/commit/7c590334f6f99998839fecc78505e41931c80045))
+
 # [1.0.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2024-03-22)
 
 
