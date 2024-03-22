@@ -28,7 +28,6 @@ import {
   BaseContract,
   EvaluationParameters,
   ReadContract,
-  WriteContract,
 } from '../../types.js';
 import { FailedRequestError } from '../error.js';
 
@@ -36,9 +35,7 @@ LoggerFactory.INST.setOptions({
   logLevel: 'fatal',
 });
 
-export class WarpContract<T>
-  implements BaseContract<T>, ReadContract, WriteContract
-{
+export class WarpContract<T> implements BaseContract<T>, ReadContract {
   private contract: Contract<T>;
   protected contractTxId: string;
   private cacheUrl: string | undefined;
@@ -119,15 +116,5 @@ export class WarpContract<T>
     }
 
     return evaluationResult.result;
-  }
-  /* eslint-disable */
-  // @ts-ignore
-  async writeInteraction<I, K>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{ functionName: string; inputs: I }>): Promise<K> {
-    /* eslint-enable */
-    throw new Error('Method not implemented.');
   }
 }

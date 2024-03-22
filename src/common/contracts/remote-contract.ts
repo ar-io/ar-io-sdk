@@ -29,7 +29,7 @@ import { DefaultLogger } from '../logger.js';
 export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   private logger: Logger;
   private http: HTTPClient;
-  contractTxId: string;
+  public readonly contractTxId: string;
 
   constructor({
     url = 'https://api.arns.app',

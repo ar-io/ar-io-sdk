@@ -54,9 +54,9 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
         contractTxId: this.contract.contractTxId,
         signer,
       });
-    } else {
-      this.contract.connect(signer);
     }
+    this.contract.connect(signer);
+
     return this;
   }
   /**
