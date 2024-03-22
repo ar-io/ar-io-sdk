@@ -32,8 +32,6 @@ import { WarpContract } from './index.js';
 
 export class ANT implements ANTContract, BaseContract<ANTState> {
   private contract: ContractInteractionProvider<ANTState>;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   private signer: ContractSigner | undefined;
 
   constructor({ signer, ...config }: ContractConfiguration) {
@@ -55,7 +53,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
         signer,
       });
     }
-    this.contract.connect(signer);
+    this.contract.connect(this.signer);
 
     return this;
   }

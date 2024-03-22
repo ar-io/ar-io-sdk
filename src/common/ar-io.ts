@@ -39,8 +39,6 @@ import { WarpContract } from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   private contract: ContractInteractionProvider<ArIOState>;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
   private signer: ContractSigner | undefined;
 
   constructor(
@@ -71,7 +69,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
         signer,
       });
     }
-    this.contract.connect(signer);
+    this.contract.connect(this.signer);
 
     return this;
   }
