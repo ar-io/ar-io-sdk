@@ -1,10 +1,14 @@
+const Arweave = require('arweave');
 const {
   ArIO,
   ARNS_TESTNET_REGISTRY_TX,
 } = require('../../lib/cjs/node/index.js');
+const { ArweaveSigner } = require('arbundles');
 
 (async () => {
-  const arIO = new ArIO();
+  const jwk = await Arweave.init({}).wallets.generate();
+  const signer = new ArweaveSigner(jwk);
+  const arIO = new ArIO({ signer });
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({

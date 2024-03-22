@@ -13,6 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
+    - [connect](#connectsigner)
     - [getBalance](#getbalance-address-evaluationoptions-)
     - [getBalances](#getbalances-evaluationoptions-)
     - [getGateway](#getgateway-address-evaluationoptions-)
@@ -29,6 +30,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Custom Contracts](#custom-contracts)
 - [ANT Contracts](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
+    - [connect](#connectsigner)
     - [getRecords](#getrecords-evaluationoptions-)
     - [getOwner](#getowner-evaluationoptions-)
     - [getControllers](#getcontrollers-evaluationoptions-)
@@ -170,6 +172,23 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 ## ArIO Contract
 
 ### APIs
+
+#### `connect(signer)`
+
+Connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
+Supported only on clients configured with a `WarpContract` instance.
+
+NOTE: if you have a client configured with a `RemoteContract` instance, it will be overriden with a `WarpContract` instance using the existing configuration of the `RemoteContract` instance when `connect` is executed.
+
+```typescript
+const arIO = new ArIO();
+
+const browserSigner = new ArConnectSigner(window.arweaveWallet);
+arIO.connect(browserSigner);
+
+const nodeSigner = new ArweaveSigner(JWK);
+arIO.connect(nodeSigner);
+```
 
 #### `getBalance({ address, evaluationOptions })`
 
@@ -580,6 +599,23 @@ const remoteCacheCustomArIO = new ArIO({
 The ANT contract client class exposes APIs relevant to compliant Arweave Name Token contracts. It can be configured to use any contract ID that adheres to the ANT contract spec. You must provide either a custom contract data provider or a contractTxId to the ANT class constructor to use.
 
 ### APIs
+
+#### `connect(signer)`
+
+Connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
+Supported only on clients configured with a `WarpContract` instance.
+
+NOTE: if you have a client configured with a `RemoteContract` instance, it will be overriden with a `WarpContract` instance using the existing configuration of the `RemoteContract` instance when `connect` is executed.
+
+```typescript
+const ant = new ANT();
+
+const browserSigner = new ArConnectSigner(window.arweaveWallet);
+ant.connect(browserSigner);
+
+const nodeSigner = new ArweaveSigner(JWK);
+ant.connect(nodeSigner);
+```
 
 #### `getOwner({ evaluationOptions })`
 

@@ -20,41 +20,36 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  BaseContract,
   ContractConfiguration,
+  ContractSigner,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
   Gateway,
   Observations,
+  ReadContract,
   RegistrationType,
-  SmartWeaveContract,
   WeightedObserver,
+  isContractConfiguration,
+  isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
+import { WarpContract } from './index.js';
 
-function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is { contract: SmartWeaveContract<T> } {
-  return 'contract' in config;
-}
-
-function isContractTxIdConfiguration(
-  config: ContractConfiguration,
-): config is { contractTxId: string } {
-  return 'contractTxId' in config;
-}
-
-export class ArIO implements ArIOContract {
-  private contract: SmartWeaveContract<ArIOState>;
+export class ArIO implements ArIOContract, BaseContract<ArIOState> {
+  private contract: BaseContract<ArIOState> & ReadContract;
+  private signer: ContractSigner | undefined;
 
   constructor(
-    config: ContractConfiguration = {
-      // default to a contract that uses the arns service to do the evaluation
+    { signer, ...config }: ContractConfiguration = {
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
       }),
     },
   ) {
+    this.signer = signer;
+
     if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
@@ -66,14 +61,26 @@ export class ArIO implements ArIOContract {
     }
   }
 
+  connect(signer: ContractSigner): this {
+    this.signer = signer;
+    if (this.contract instanceof RemoteContract) {
+      const config = this.contract.configuration();
+      this.contract = new WarpContract<ArIOState>({
+        ...config,
+        signer,
+      });
+    }
+    this.contract.connect(this.signer);
+
+    return this;
+  }
   /**
    * Returns the current state of the contract.
    */
   async getState(params: EvaluationParameters): Promise<ArIOState> {
-    const state = await this.contract.getContractState(params);
+    const state = await this.contract.getState(params);
     return state;
   }
-
   /**
    * Returns the ARNS record for the given domain.
    */
@@ -93,7 +100,7 @@ export class ArIO implements ArIOContract {
   async getArNSRecords({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
 
@@ -114,7 +121,7 @@ export class ArIO implements ArIOContract {
   async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<string, number>
   > {
-    const state = await this.contract.getContractState({ evaluationOptions });
+    const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }
 
@@ -199,7 +206,7 @@ export class ArIO implements ArIOContract {
   }: EvaluationParameters<{
     epochStartHeight?: number;
   }> = {}): Promise<Observations> {
-    const { observations } = await this.contract.getContractState({
+    const { observations } = await this.contract.getState({
       evaluationOptions,
     });
     return observations;
@@ -207,7 +214,7 @@ export class ArIO implements ArIOContract {
   async getDistributions({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
-    const { distributions } = await this.contract.getContractState({
+    const { distributions } = await this.contract.getState({
       evaluationOptions,
     });
     return distributions;
@@ -235,7 +242,7 @@ export class ArIO implements ArIOContract {
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
   }): Promise<Record<string, ArNSAuctionData>> {
-    const { auctions } = await this.contract.getContractState({
+    const { auctions } = await this.contract.getState({
       evaluationOptions,
     });
 

@@ -18,19 +18,23 @@ import {
   ANTContract,
   ANTRecord,
   ANTState,
+  BaseContract,
   ContractConfiguration,
+  ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
-  SmartWeaveContract,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
+import { WarpContract } from './index.js';
 
-export class ANT implements ANTContract {
-  private contract: SmartWeaveContract<ANTState>;
+export class ANT implements ANTContract, BaseContract<ANTState> {
+  private contract: BaseContract<ANTState>;
+  private signer: ContractSigner | undefined;
 
-  constructor(config: ContractConfiguration) {
+  constructor({ signer, ...config }: ContractConfiguration) {
+    this.signer = signer;
     if (isContractConfiguration<ANTState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
@@ -40,13 +44,24 @@ export class ANT implements ANTContract {
     }
   }
 
+  connect(signer: ContractSigner): this {
+    this.signer = signer;
+    if (this.contract instanceof RemoteContract) {
+      const config = this.contract.configuration();
+      this.contract = new WarpContract<ANTState>({
+        ...config,
+        signer,
+      });
+    }
+    this.contract.connect(this.signer);
+
+    return this;
+  }
   /**
    * Returns the current state of the contract.
    */
-  async getState({
-    evaluationOptions,
-  }: EvaluationParameters = {}): Promise<ANTState> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  async getState(params: EvaluationParameters = {}): Promise<ANTState> {
+    const state = await this.contract.getState(params);
     return state;
   }
 
@@ -62,8 +77,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<Record<string, ANTRecord>> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<Record<string, ANTRecord>> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
 
@@ -71,8 +86,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<string> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.owner;
   }
 
@@ -80,8 +95,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<string[]> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<string[]> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.controllers;
   }
 
@@ -89,8 +104,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<string> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.name;
   }
 
@@ -98,8 +113,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<string> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<string> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.ticker;
   }
 
@@ -107,8 +122,8 @@ export class ANT implements ANTContract {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  } = {}): Promise<Record<string, number>> {
-    const state = await this.contract.getContractState({ evaluationOptions });
+  }): Promise<Record<string, number>> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }
 

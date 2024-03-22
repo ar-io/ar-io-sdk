@@ -15,39 +15,55 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
+  BaseContract,
+  ContractSigner,
   EvaluationParameters,
   HTTPClient,
   Logger,
-  SmartWeaveContract,
+  ReadContract,
 } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
 
 // TODO: this assumes the API structure matches the current arns-service API - we will want to consider another interface that exposes relevant APIs with client implementations (arns-service, DRE nodes, etc.)
-export class RemoteContract<T> implements SmartWeaveContract<T> {
+export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   private logger: Logger;
   private http: HTTPClient;
   private contractTxId: string;
+  private cacheUrl: string;
 
   constructor({
-    url = 'https://api.arns.app',
+    cacheUrl = 'https://api.arns.app',
     contractTxId,
     logger = new DefaultLogger(),
   }: {
     contractTxId: string;
-    url?: string;
+    cacheUrl?: string;
     logger?: DefaultLogger;
   }) {
+    this.cacheUrl = cacheUrl;
     this.contractTxId = contractTxId;
     this.logger = logger;
     this.http = new AxiosHTTPService({
-      url: `${url}/v1/contract/${contractTxId}`,
+      url: `${cacheUrl}/v1/contract/${contractTxId}`,
     });
   }
 
-  async getContractState({
-    evaluationOptions,
-  }: EvaluationParameters = {}): Promise<T> {
+  configuration(): { contractTxId: string; cacheUrl: string } {
+    return {
+      contractTxId: this.contractTxId,
+      cacheUrl: this.cacheUrl,
+    };
+  }
+
+  /* eslint-disable */
+  // @ts-ignore
+  connect(signer: ContractSigner): this {
+    /* eslint-enable */
+    throw new Error('Cannot connect to a remote contract');
+  }
+
+  async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {
     this.logger.debug(`Fetching contract state`, {
       contractTxId: this.contractTxId,
       evaluationOptions,
@@ -57,9 +73,7 @@ export class RemoteContract<T> implements SmartWeaveContract<T> {
       { state: T }
     >({
       endpoint: ``,
-      params: {
-        ...evaluationOptions?.evalTo,
-      },
+      params: evaluationOptions?.evalTo,
     });
     return state;
   }

@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+
 import {
   ANTRecord,
   ANTState,
@@ -32,17 +34,21 @@ export type SortKey = string;
 export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractConfiguration =
+export type ContractSigner = ArweaveSigner | ArconnectSigner;
+export type ContractConfiguration = {
+  signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
+} & (
   | {
-      contract?: SmartWeaveContract<unknown>;
+      contract?: BaseContract<unknown> & ReadContract;
     }
   | {
       contractTxId: string;
-    };
+    }
+);
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
-): config is { contract: SmartWeaveContract<T> } {
+): config is { contract: BaseContract<T> & ReadContract } {
   return 'contract' in config;
 }
 
@@ -62,6 +68,33 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
+export interface BaseContract<T> {
+  getState(params: EvaluationParameters): Promise<T>;
+  connect(signer: ContractSigner): this;
+}
+
+export interface ReadContract {
+  readInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs?: Input;
+  }>): Promise<State>;
+}
+
+export interface WriteContract {
+  writeInteraction<Input, State>({
+    functionName,
+    inputs,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs: Input;
+  }>): Promise<State>;
+}
+
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
   readInteraction<I, K>({
@@ -69,12 +102,10 @@ export interface SmartWeaveContract<T> {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K>;
-  // TODO: write interaction
 }
 
 // TODO: extend with additional methods
-export interface ArIOContract {
-  getState({ evaluationOptions }: EvaluationParameters): Promise<ArIOState>;
+export interface ArIOContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -138,8 +169,7 @@ export interface ArIOContract {
   }>): Promise<ArNSAuctionData>;
 }
 
-export interface ANTContract {
-  getState({ evaluationOptions }: EvaluationParameters): Promise<ANTState>;
+export interface ANTContract extends BaseContract<ANTState> {
   getRecord({
     domain,
     evaluationOptions,
