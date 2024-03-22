@@ -1,3 +1,10 @@
+# [1.0.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2024-03-22)
+
+
+### Bug Fixes
+
+* **ant:** add ant contract to exports ([a2ff57b](https://github.com/ar-io/ar-io-sdk/commit/a2ff57bc1b6f77dcf9f3ace1fd3b346069aec6b4))
+
 # [1.0.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2024-03-22)
 
 
