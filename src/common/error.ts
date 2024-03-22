@@ -44,3 +44,9 @@ export class UnknownError extends BaseError {
     super(message);
   }
 }
+
+export class WriteInteractionError extends BaseError {
+  constructor(message: string) {
+    super(message);
+  }
+}

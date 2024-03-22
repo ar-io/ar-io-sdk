@@ -14,7 +14,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+import {
+  ArconnectSigner,
+  ArweaveSigner,
+  DataItem,
+  Transaction,
+} from 'arbundles';
 
 import {
   ANTRecord,
@@ -85,14 +90,14 @@ export interface ReadContract {
 }
 
 export interface WriteContract {
-  writeInteraction<Input, State>({
+  writeInteraction<Input>({
     functionName,
     inputs,
     evaluationOptions,
   }: EvaluationParameters<{
     functionName: string;
     inputs: Input;
-  }>): Promise<State>;
+  }>): Promise<Transaction | DataItem>;
 }
 
 export interface SmartWeaveContract<T> {

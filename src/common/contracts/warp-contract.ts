@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Signer } from 'arbundles';
+import { DataItem, Signer, Transaction } from 'arbundles';
 import {
   Contract,
   LoggerFactory,
@@ -28,14 +28,18 @@ import {
   ContractSigner,
   EvaluationParameters,
   ReadContract,
+  WriteContract,
 } from '../../types.js';
-import { FailedRequestError } from '../error.js';
+import { isDataItem, isTransaction } from '../../utils/arweave.js';
+import { FailedRequestError, WriteInteractionError } from '../error.js';
 
 LoggerFactory.INST.setOptions({
   logLevel: 'fatal',
 });
 
-export class WarpContract<T> implements BaseContract<T>, ReadContract {
+export class WarpContract<T>
+  implements BaseContract<T>, ReadContract, WriteContract
+{
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
@@ -127,5 +131,37 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
     }
 
     return evaluationResult.result;
+  }
+
+  async writeInteraction<Input>({
+    functionName,
+    inputs,
+  }: EvaluationParameters<{
+    functionName: string;
+    inputs: Input;
+  }>): Promise<Transaction | DataItem> {
+    // Sync state before writing
+    await this.syncState();
+    const { interactionTx } =
+      (await this.contract.writeInteraction<Input>({
+        function: functionName,
+        ...inputs,
+      })) ?? {};
+
+    if (!interactionTx) {
+      throw new WriteInteractionError(
+        `Failed to write contract interaction ${functionName}`,
+      );
+    }
+    // Flexible way to return information on the transaction, aids in caching and redoployment if desired by simply refetching tx anchor and resigning.
+    if (isTransaction(interactionTx)) {
+      return interactionTx as Transaction;
+    } else if (isDataItem(interactionTx)) {
+      return interactionTx as DataItem;
+    }
+
+    throw new WriteInteractionError(
+      `Failed to write contract interaction ${functionName}`,
+    );
   }
 }

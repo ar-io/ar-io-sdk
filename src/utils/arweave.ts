@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { DataItem, Transaction } from 'arbundles';
+import Arweave from 'arweave';
+
 import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 
@@ -24,3 +27,19 @@ export const validateArweaveId = (id: string): boolean => {
 export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isTransaction = (tx: any): tx is Transaction => {
+  const testTx = Arweave.init({}).createTransaction({ data: 'test' });
+  const testTxKeys = Object.keys(testTx);
+  const txKeys = Object.keys(tx);
+  return txKeys.every((key) => testTxKeys.includes(key));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isDataItem = (item: any): item is DataItem => {
+  const testItem = new DataItem(Buffer.from('test'));
+  const testItemKeys = Object.keys(testItem);
+  const itemKeys = Object.keys(item);
+  return itemKeys.every((key) => testItemKeys.includes(key));
+};
