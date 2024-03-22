@@ -21,7 +21,7 @@ describe('ANT contract apis', () => {
     ant = new ANT({
       signer,
       contract: new RemoteContract<ANTState>({
-        url: localCacheUrl,
+        cacheUrl: localCacheUrl,
         contractTxId,
       }),
     });

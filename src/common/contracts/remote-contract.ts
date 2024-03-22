@@ -30,26 +30,29 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   private logger: Logger;
   private http: HTTPClient;
   private contractTxId: string;
+  private cacheUrl: string;
 
   constructor({
-    url = 'https://api.arns.app',
+    cacheUrl = 'https://api.arns.app',
     contractTxId,
     logger = new DefaultLogger(),
   }: {
     contractTxId: string;
-    url?: string;
+    cacheUrl?: string;
     logger?: DefaultLogger;
   }) {
+    this.cacheUrl = cacheUrl;
     this.contractTxId = contractTxId;
     this.logger = logger;
     this.http = new AxiosHTTPService({
-      url: `${url}/v1/contract/${contractTxId}`,
+      url: `${cacheUrl}/v1/contract/${contractTxId}`,
     });
   }
 
-  configuration(): { contractTxId: string } {
+  configuration(): { contractTxId: string; cacheUrl: string } {
     return {
       contractTxId: this.contractTxId,
+      cacheUrl: this.cacheUrl,
     };
   }
 

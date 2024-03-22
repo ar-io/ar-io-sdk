@@ -21,7 +21,7 @@ describe('ArIO Client', () => {
     arIO = new ArIO({
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_DEVNET_REGISTRY_TX,
-        url: localCacheUrl,
+        cacheUrl: localCacheUrl,
       }),
       signer,
     });
@@ -36,7 +36,7 @@ describe('ArIO Client', () => {
     const client = new ArIO({
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_DEVNET_REGISTRY_TX,
-        url: process.env.REMOTE_CACHE_URL || 'http://localhost:3000',
+        cacheUrl: localCacheUrl,
       }),
     });
     expect(client.connect(signer)).toBeDefined();

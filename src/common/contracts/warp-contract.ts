@@ -57,9 +57,10 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
     this.cacheUrl = cacheUrl;
   }
 
-  configuration(): { contractTxId: string } {
+  configuration(): { contractTxId: string; cacheUrl: string | undefined } {
     return {
       contractTxId: this.contractTxId,
+      cacheUrl: this.cacheUrl,
     };
   }
 
