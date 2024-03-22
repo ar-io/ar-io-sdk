@@ -46,7 +46,7 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
     warp = WarpFactory.forMainnet(
       {
         ...defaultCacheOptions,
-        // inMemory: true, // default to in memory for now, a custom warp implementation can be provided
+        inMemory: true, // default to in memory for now, a custom warp implementation can be provided
       },
       true,
     ),
