@@ -43,16 +43,20 @@ export class WarpContract<T> implements BaseContract<T>, ReadContract {
   constructor({
     contractTxId,
     cacheUrl,
-    warp = WarpFactory.forMainnet({
-      ...defaultCacheOptions,
-      inMemory: true, // default to in memory for now, a custom warp implementation can be provided
-    }),
+    warp = WarpFactory.forMainnet(
+      {
+        ...defaultCacheOptions,
+        // inMemory: true, // default to in memory for now, a custom warp implementation can be provided
+      },
+      true,
+    ),
   }: {
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
     signer?: ContractSigner;
   }) {
+    this.contractTxId = contractTxId;
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
   }

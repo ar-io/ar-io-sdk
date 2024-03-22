@@ -143,4 +143,13 @@ describe('ANT contract apis', () => {
       expect(state).toBeDefined();
     },
   );
+
+  it('Should get state with warp contract', async () => {
+    const jwk = await arweave.wallets.generate();
+    const signer = new ArweaveSigner(jwk);
+    // connecting updates contract to use warp
+    ant.connect(signer);
+    const state = await ant.getState();
+    expect(state).toBeDefined();
+  });
 });

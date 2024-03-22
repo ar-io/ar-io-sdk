@@ -60,7 +60,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
   /**
    * Returns the current state of the contract.
    */
-  async getState(params: EvaluationParameters): Promise<ANTState> {
+  async getState(params: EvaluationParameters = {}): Promise<ANTState> {
     const state = await this.contract.getState(params);
     return state;
   }
