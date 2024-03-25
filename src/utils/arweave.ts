@@ -27,26 +27,10 @@ export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
 
-export const dummyTransaction: Transaction = new Transaction({
-  format: 2,
-  id: 'dummy',
-  last_tx: 'dummy',
-  owner: 'dummy',
-  tags: [],
-  target: 'dummy',
-  quantity: 'dummy',
-  data: new Uint8Array(),
-  reward: 'dummy',
-  signature: 'dummy',
-  data_size: 'dummy',
-  data_root: 'dummy',
-});
-
 export const isTransaction = (tx: object): tx is Transaction => {
   try {
-    const testTxKeys = Object.keys(dummyTransaction);
-    const txKeys = Object.keys(tx);
-    return txKeys.every((key) => testTxKeys.includes(key));
+    const requiredTxKeys = ['id', 'owner', 'tags', 'signature'];
+    return requiredTxKeys.every((key) => key in tx);
   } catch (error: unknown) {
     return false;
   }

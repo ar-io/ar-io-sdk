@@ -50,7 +50,7 @@ export class WarpContract<T>
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
-  private arweave = defaultArweave;
+  private arweave;
   private log = new DefaultLogger({
     level: 'debug',
   });
@@ -65,16 +65,18 @@ export class WarpContract<T>
       },
       true,
     ),
+    arweave = defaultArweave,
   }: {
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
     signer?: ContractSigner;
+    arweave?: Arweave;
   }) {
     this.contractTxId = contractTxId;
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
-    this.arweave = warp.arweave as unknown as Arweave;
+    this.arweave = arweave;
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {
@@ -180,17 +182,18 @@ export class WarpContract<T>
         })) as InteractionResult<unknown, Input>;
       }
 
-      const { interactionTx } =
-        (await this.contract.writeInteraction<Input>({
-          function: functionName,
-          ...inputs,
-        })) ?? {};
+      const writeResult = await this.contract.writeInteraction<Input>({
+        function: functionName,
+        ...inputs,
+      });
+
+      if (!writeResult) {
+        throw new Error(`Failed to write contract interaction ${functionName}`);
+      }
+      const { interactionTx } = writeResult;
 
       // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
-      if (
-        (interactionTx && isTransaction(interactionTx)) ||
-        (interactionTx && DataItem.isDataItem(interactionTx))
-      ) {
+      if (isTransaction(interactionTx) || DataItem.isDataItem(interactionTx)) {
         this.log.debug(`Write interaction succesful`, {
           contractTxId: this.contractTxId,
           functionName,
@@ -201,12 +204,9 @@ export class WarpContract<T>
         });
         return interactionTx;
       }
+      throw new Error(`Failed to write contract interaction ${functionName}`);
     } catch (error) {
       throw new WriteInteractionError(error);
     }
-
-    throw new WriteInteractionError(
-      `Failed to write contract interaction ${functionName}`,
-    );
   }
 }
