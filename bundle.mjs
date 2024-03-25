@@ -10,7 +10,13 @@ const bundle = () => {
     target: ['esnext'],
     format: 'esm',
     globalName: 'ar.io',
-    plugins: [polyfillNode()],
+    plugins: [
+      polyfillNode({
+        polyfills: {
+          crypto: true,
+        },
+      }),
+    ],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
   })
