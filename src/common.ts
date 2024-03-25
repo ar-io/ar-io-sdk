@@ -74,11 +74,10 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
 } & T;
 
 export type WriteParameters<Input> = {
-  dryRun?: boolean;
-  syncState?: boolean;
-  abortSignal?: AbortSignal;
   functionName: string;
   inputs: Input;
+  dryRun?: boolean;
+  // TODO: add syncState and abortSignal options
 };
 
 export interface BaseContract<T> {

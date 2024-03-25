@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { DataItem, Transaction } from 'arbundles';
-import Arweave from 'arweave';
+import { Tag } from 'warp-contracts/web';
 
 import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
@@ -28,18 +28,53 @@ export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isTransaction = (tx: any): tx is Transaction => {
-  const testTx = Arweave.init({}).createTransaction({ data: 'test' });
-  const testTxKeys = Object.keys(testTx);
-  const txKeys = Object.keys(tx);
-  return txKeys.every((key) => testTxKeys.includes(key));
+export const dummyTransaction: Transaction = new Transaction({
+  attributes: {
+    format: 2,
+    id: 'dummy',
+    last_tx: 'dummy',
+    owner: 'dummy',
+    tags: [],
+    target: 'dummy',
+    quantity: 'dummy',
+    data: Buffer.from('dummy'),
+    reward: 'dummy',
+    signature: 'dummy',
+    data_size: 'dummy',
+    data_root: 'dummy',
+  }, // deps unnecesaary for testing and type checking
+  deps: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+});
+
+export const dummyDataItem: DataItem = new DataItem(Buffer.from('dummy'));
+
+export const isTransaction = (tx: object): tx is Transaction => {
+  try {
+    const testTxKeys = Object.keys(dummyTransaction);
+    const txKeys = Object.keys(tx);
+    return txKeys.every((key) => testTxKeys.includes(key));
+  } catch (error: unknown) {
+    return false;
+  }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isDataItem = (item: any): item is DataItem => {
-  const testItem = new DataItem(Buffer.from('test'));
-  const testItemKeys = Object.keys(testItem);
-  const itemKeys = Object.keys(item);
-  return itemKeys.every((key) => testItemKeys.includes(key));
+export const isDataItem = (item: object): item is DataItem => {
+  try {
+    const testItemKeys = Object.keys(dummyDataItem);
+    const itemKeys = Object.keys(item);
+    return itemKeys.every((key) => testItemKeys.includes(key));
+  } catch (error) {
+    return false;
+  }
 };
+
+export function tagsToObject(tags: Tag[]): {
+  [x: string]: string;
+} {
+  return tags.reduce((decodedTags: { [x: string]: string }, tag) => {
+    const key = tag.get('name', { decode: true, string: true });
+    const value = tag.get('value', { decode: true, string: true });
+    decodedTags[key] = value;
+    return decodedTags;
+  }, {});
+}

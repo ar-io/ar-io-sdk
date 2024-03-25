@@ -14,8 +14,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import Arweave from 'arweave';
+import { EvaluationManifest } from 'warp-contracts/web';
+
 import { SortKey } from '../common.js';
 import { SORT_KEY_REGEX } from '../constants.js';
+import { tagsToObject } from './arweave.js';
 
 export function isSortKey(sortKey: string): sortKey is SortKey {
   return SmartWeaveSortKey.validate(sortKey);
@@ -51,4 +55,19 @@ export class SmartWeaveSortKey {
   hash(): string {
     return this.parts()[2];
   }
+}
+
+export async function getContractManifest({
+  arweave,
+  contractTxId,
+}: {
+  arweave: Arweave;
+  contractTxId: string;
+}): Promise<EvaluationManifest> {
+  const { tags: encodedTags } = await arweave.transactions.get(contractTxId);
+  const decodedTags = tagsToObject(encodedTags);
+  const contractManifestString = decodedTags['Contract-Manifest'] ?? '{}';
+  // TODO throw if manifest is missing
+  const contractManifest = JSON.parse(contractManifestString);
+  return contractManifest;
 }

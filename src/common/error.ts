@@ -21,17 +21,9 @@ export class BaseError extends Error {
   }
 }
 
-export class NotFound extends BaseError {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class NotFound extends BaseError {}
 
-export class BadRequest extends BaseError {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class BadRequest extends BaseError {}
 
 export class FailedRequestError extends BaseError {
   constructor(status: number, message: string) {
@@ -39,14 +31,6 @@ export class FailedRequestError extends BaseError {
   }
 }
 
-export class UnknownError extends BaseError {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class UnknownError extends BaseError {}
 
-export class WriteInteractionError extends BaseError {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class WriteInteractionError extends BaseError {}
