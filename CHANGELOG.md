@@ -1,3 +1,11 @@
+# [1.0.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2024-03-25)
+
+
+### Bug Fixes
+
+* **esm:** add polyfills for crypto ([dd8fbfe](https://github.com/ar-io/ar-io-sdk/commit/dd8fbfe5b373ba95ec406c1642e81ef520cdeddb))
+* **esm:** add polyfills for crypto ([#27](https://github.com/ar-io/ar-io-sdk/issues/27)) ([553822c](https://github.com/ar-io/ar-io-sdk/commit/553822cab7ec8652efbc9545ef3c20c0312c38f0))
+
 # [1.0.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.12...v1.0.0-alpha.13) (2024-03-22)
 
 
