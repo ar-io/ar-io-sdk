@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner, ArweaveSigner, DataItem } from 'arbundles';
-import { InteractionResult, Transaction } from 'warp-contracts';
+import { Transaction } from 'warp-contracts';
 
 import {
   ANTRecord,
@@ -98,7 +98,7 @@ export interface WriteContract {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem | InteractionResult<unknown, Input>
+    Transaction | DataItem
   >;
 }
 

@@ -18,7 +18,6 @@ import { DataItem, Signer } from 'arbundles';
 import Arweave from 'arweave';
 import {
   Contract,
-  InteractionResult,
   LoggerFactory,
   Transaction,
   Warp,
@@ -169,7 +168,7 @@ export class WarpContract<T>
     inputs,
     dryWrite = true,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem | InteractionResult<unknown, Input>
+    Transaction | DataItem
   > {
     try {
       this.log.debug(`Write interaction: ${functionName}`, {
@@ -179,11 +178,15 @@ export class WarpContract<T>
       await this.ensureContractInit();
 
       if (dryWrite) {
-        // responsibility of the caller to handle the dry write result for control flows
-        return (await this.contract.dryWrite<Input>({
+        const { errorMessage, type } = await this.contract.dryWrite<Input>({
           function: functionName,
           ...inputs,
-        })) as InteractionResult<unknown, Input>;
+        });
+        if (type !== 'ok') {
+          throw new Error(
+            `Failed to dry write contract interaction ${functionName}: ${errorMessage}`,
+          );
+        }
       }
 
       const writeResult = await this.contract.writeInteraction<Input>({
