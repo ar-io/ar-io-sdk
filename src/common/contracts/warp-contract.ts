@@ -18,7 +18,7 @@ import { DataItem, Signer } from 'arbundles';
 import Arweave from 'arweave';
 import {
   Contract,
-  EvaluationOptions,
+  InteractionResult,
   LoggerFactory,
   Transaction,
   Warp,
@@ -51,7 +51,6 @@ export class WarpContract<T>
   private contractTxId: string;
   private cacheUrl: string | undefined;
   private arweave = defaultArweave;
-  private warpEvaluationOptions: Partial<EvaluationOptions> | undefined;
   private log = new DefaultLogger({
     level: 'debug',
   });
@@ -114,18 +113,13 @@ export class WarpContract<T>
       contractTxId: this.contractTxId,
     });
     // Get contact manifest and sync state
-    if (this.warpEvaluationOptions === undefined) {
-      this.log.debug(`Contract not initialized - syncing state and manifest`, {
-        contractTxId: this.contractTxId,
-      });
-      const { evaluationOptions = {} } = await getContractManifest({
-        arweave: this.arweave,
-        contractTxId: this.contractTxId,
-      });
-      this.contract.setEvaluationOptions(evaluationOptions);
-      this.warpEvaluationOptions = evaluationOptions;
-      await this.syncState();
-    }
+
+    const { evaluationOptions = {} } = await getContractManifest({
+      arweave: this.arweave,
+      contractTxId: this.contractTxId,
+    });
+    this.contract.setEvaluationOptions(evaluationOptions);
+    await this.syncState();
   }
 
   private async syncState() {
@@ -167,48 +161,48 @@ export class WarpContract<T>
   async writeInteraction<Input>({
     functionName,
     inputs,
-    dryRun = true,
+    dryWrite = true,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem
+    Transaction | DataItem | InteractionResult<unknown, Input>
   > {
-    this.log.debug(`Write interaction: ${functionName}`, {
-      contractTxId: this.contractTxId,
-    });
-    // Sync state before writing
-    await this.ensureContractInit();
-
-    if (dryRun) {
-      const { errorMessage, type } = await this.contract.dryWrite<Input>({
-        function: functionName,
-        ...inputs,
-      });
-      // type is ok, error, exception
-      if (type !== 'ok') {
-        throw new WriteInteractionError(
-          `Failed to dry run contract interaction ${functionName} with error: ${errorMessage}`,
-        );
-      }
-    }
-    const { interactionTx } =
-      (await this.contract.writeInteraction<Input>({
-        function: functionName,
-        ...inputs,
-      })) ?? {};
-
-    // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
-    if (
-      (interactionTx && isTransaction(interactionTx)) ||
-      (interactionTx && DataItem.isDataItem(interactionTx))
-    ) {
-      this.log.debug(`Write interaction succesful`, {
+    try {
+      this.log.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
-        functionName,
-        interactionTx: {
-          id: interactionTx.id,
-          tags: interactionTx.tags,
-        },
       });
-      return interactionTx;
+      // Sync state before writing
+      await this.ensureContractInit();
+
+      if (dryWrite) {
+        // responsibility of the caller to handle the dry write result for control flows
+        return (await this.contract.dryWrite<Input>({
+          function: functionName,
+          ...inputs,
+        })) as InteractionResult<unknown, Input>;
+      }
+
+      const { interactionTx } =
+        (await this.contract.writeInteraction<Input>({
+          function: functionName,
+          ...inputs,
+        })) ?? {};
+
+      // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
+      if (
+        (interactionTx && isTransaction(interactionTx)) ||
+        (interactionTx && DataItem.isDataItem(interactionTx))
+      ) {
+        this.log.debug(`Write interaction succesful`, {
+          contractTxId: this.contractTxId,
+          functionName,
+          interactionTx: {
+            id: interactionTx.id,
+            tags: interactionTx.tags,
+          },
+        });
+        return interactionTx;
+      }
+    } catch (error) {
+      throw new WriteInteractionError(error);
     }
 
     throw new WriteInteractionError(
