@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DataItem, Transaction } from 'arbundles';
-import { Tag } from 'warp-contracts/web';
+import { Tag, Transaction } from 'warp-contracts';
 
 import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
@@ -29,24 +28,19 @@ export function isBlockHeight(height: string | number): height is BlockHeight {
 }
 
 export const dummyTransaction: Transaction = new Transaction({
-  attributes: {
-    format: 2,
-    id: 'dummy',
-    last_tx: 'dummy',
-    owner: 'dummy',
-    tags: [],
-    target: 'dummy',
-    quantity: 'dummy',
-    data: Buffer.from('dummy'),
-    reward: 'dummy',
-    signature: 'dummy',
-    data_size: 'dummy',
-    data_root: 'dummy',
-  }, // deps unnecesaary for testing and type checking
-  deps: {} as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+  format: 2,
+  id: 'dummy',
+  last_tx: 'dummy',
+  owner: 'dummy',
+  tags: [],
+  target: 'dummy',
+  quantity: 'dummy',
+  data: new Uint8Array(),
+  reward: 'dummy',
+  signature: 'dummy',
+  data_size: 'dummy',
+  data_root: 'dummy',
 });
-
-export const dummyDataItem: DataItem = new DataItem(Buffer.from('dummy'));
 
 export const isTransaction = (tx: object): tx is Transaction => {
   try {
@@ -54,16 +48,6 @@ export const isTransaction = (tx: object): tx is Transaction => {
     const txKeys = Object.keys(tx);
     return txKeys.every((key) => testTxKeys.includes(key));
   } catch (error: unknown) {
-    return false;
-  }
-};
-
-export const isDataItem = (item: object): item is DataItem => {
-  try {
-    const testItemKeys = Object.keys(dummyDataItem);
-    const itemKeys = Object.keys(item);
-    return itemKeys.every((key) => testItemKeys.includes(key));
-  } catch (error) {
     return false;
   }
 };

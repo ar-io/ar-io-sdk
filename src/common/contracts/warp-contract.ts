@@ -14,17 +14,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DataItem, Signer, Transaction } from 'arbundles';
+import { DataItem, Signer } from 'arbundles';
 import Arweave from 'arweave';
 import {
   Contract,
   EvaluationOptions,
   LoggerFactory,
+  Transaction,
   Warp,
   WarpFactory,
   defaultCacheOptions,
 } from 'warp-contracts';
 
+import { defaultArweave } from '../../constants.js';
 import {
   BaseContract,
   ContractSigner,
@@ -33,7 +35,7 @@ import {
   WriteContract,
   WriteParameters,
 } from '../../types.js';
-import { isDataItem, isTransaction } from '../../utils/arweave.js';
+import { isTransaction } from '../../utils/arweave.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
@@ -48,11 +50,7 @@ export class WarpContract<T>
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
-  private arweave = Arweave.init({
-    host: 'arweave.net',
-    port: 443,
-    protocol: 'https',
-  });
+  private arweave = defaultArweave;
   private warpEvaluationOptions: Partial<EvaluationOptions> | undefined;
   private log = new DefaultLogger({
     level: 'debug',
@@ -68,18 +66,16 @@ export class WarpContract<T>
       },
       true,
     ),
-    warpEvaluationOptions,
   }: {
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
     signer?: ContractSigner;
-    warpEvaluationOptions?: Partial<EvaluationOptions>;
   }) {
     this.contractTxId = contractTxId;
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
-    this.warpEvaluationOptions = warpEvaluationOptions;
+    this.arweave = warp.arweave as unknown as Arweave;
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {
@@ -202,7 +198,7 @@ export class WarpContract<T>
     // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
     if (
       (interactionTx && isTransaction(interactionTx)) ||
-      (interactionTx && isDataItem(interactionTx))
+      (interactionTx && DataItem.isDataItem(interactionTx))
     ) {
       this.log.debug(`Write interaction succesful`, {
         contractTxId: this.contractTxId,

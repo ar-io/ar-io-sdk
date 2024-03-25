@@ -14,12 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import {
-  ArconnectSigner,
-  ArweaveSigner,
-  DataItem,
-  Transaction,
-} from 'arbundles';
+import { ArconnectSigner, ArweaveSigner, DataItem } from 'arbundles';
+import { Transaction } from 'warp-contracts';
 
 import {
   ANTRecord,
