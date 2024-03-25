@@ -31,6 +31,7 @@ import {
   BaseContract,
   ContractSigner,
   EvaluationParameters,
+  Logger,
   ReadContract,
   WriteContract,
   WriteParameters,
@@ -50,10 +51,8 @@ export class WarpContract<T>
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
-  private arweave;
-  private log = new DefaultLogger({
-    level: 'debug',
-  });
+  private arweave: Arweave;
+  private log: Logger;
 
   constructor({
     contractTxId,
@@ -66,17 +65,22 @@ export class WarpContract<T>
       true,
     ),
     arweave = defaultArweave,
+    log = new DefaultLogger({
+      level: 'debug',
+    }),
   }: {
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
     signer?: ContractSigner;
     arweave?: Arweave;
+    log?: Logger;
   }) {
     this.contractTxId = contractTxId;
     this.contract = warp.contract<T>(contractTxId);
     this.cacheUrl = cacheUrl;
     this.arweave = arweave;
+    this.log = log;
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {

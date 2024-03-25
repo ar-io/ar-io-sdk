@@ -28,12 +28,8 @@ export function isBlockHeight(height: string | number): height is BlockHeight {
 }
 
 export const isTransaction = (tx: object): tx is Transaction => {
-  try {
-    const requiredTxKeys = ['id', 'owner', 'tags', 'signature'];
-    return requiredTxKeys.every((key) => key in tx);
-  } catch (error: unknown) {
-    return false;
-  }
+  const requiredTxKeys = ['id', 'owner', 'tags', 'signature'];
+  return requiredTxKeys.every((key) => key in tx);
 };
 
 export function tagsToObject(tags: Tag[]): {
