@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import Arweave from 'arweave';
-import { EvaluationManifest } from 'warp-contracts/web';
+import { EvaluationManifest } from 'warp-contracts';
 
 import { SortKey } from '../common.js';
 import { SORT_KEY_REGEX } from '../constants.js';
