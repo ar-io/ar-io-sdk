@@ -125,6 +125,9 @@ export class WarpContract<T>
     });
 
     // Get contact manifest and sync state
+    this.log.debug(`Fetching contract manifest`, {
+      contractTxId: this.contractTxId,
+    });
     const { evaluationOptions = {} } = await getContractManifest({
       arweave: this.arweave,
       contractTxId: this.contractTxId,
@@ -135,6 +138,10 @@ export class WarpContract<T>
 
   private async syncState() {
     if (this.cacheUrl !== undefined) {
+      this.log.debug(`Syncing contract state`, {
+        contractTxId: this.contractTxId,
+        remoteCacheUrl: this.cacheUrl,
+      });
       await this.contract.syncState(
         `${this.cacheUrl}/v1/contract/${this.contractTxId}`,
         {
@@ -218,7 +225,7 @@ export class WarpContract<T>
 
       return writeResult.interactionTx;
     } catch (error) {
-      throw new WriteInteractionError(error);
+      throw new WriteInteractionError(error.message);
     }
   }
 }

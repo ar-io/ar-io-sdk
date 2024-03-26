@@ -1,6 +1,10 @@
 version: '3'
 
 services:
+  arlocal:
+    image: textury/arlocal:v1.1.35
+    ports:
+      - '1984:1984'
   arns-service:
     image: ghcr.io/ar-io/arns-service:latest
     build: .
@@ -8,8 +12,10 @@ services:
       - '3000:3000'
     environment:
       - LOG_LEVEL=debug
+      - GATEWAY_HOST=arlocal
+      - GATEWAY_PORT=1984
+      - GATEWAY_PROTOCOL=http
       - PREFETCH_CONTRACTS=true
-      - PREFETCH_CONTRACT_IDS=_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8,UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4
       - BOOTSTRAP_CONTRACTS=false
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/healthcheck']

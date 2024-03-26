@@ -1,41 +1,36 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ArIO } from '../src/common/ar-io.js';
-import { RemoteContract } from '../src/common/contracts/remote-contract.js';
-import { ARNS_DEVNET_REGISTRY_TX } from '../src/constants.js';
-import { ArIOState } from '../src/contract-state.js';
+import { ArIO } from '../../src/common/ar-io.js';
+import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
+import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
+import { ArIOState } from '../../src/contract-state.js';
 import {
-  arweave,
   evaluateToBlockHeight,
   evaluateToSortKey,
   gatewayAddress,
-  localCacheUrl,
   testDomain,
-} from './constants.js';
+} from '../constants.js';
 
+const contractTxId = ARNS_DEVNET_REGISTRY_TX;
+const localCacheUrl = `https://api.arns.app`;
 describe('ArIO Client', () => {
-  let arIO: ArIO;
-  beforeAll(async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    arIO = new ArIO({
-      contract: new RemoteContract<ArIOState>({
-        contractTxId: ARNS_DEVNET_REGISTRY_TX,
-        cacheUrl: localCacheUrl,
-      }),
-      signer,
-    });
+  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+  const arIO = new ArIO({
+    signer,
+    contract: new RemoteContract<ArIOState>({
+      cacheUrl: localCacheUrl,
+      contractTxId,
+    }),
   });
+
   it('should create a custom ArIO client', () => {
     expect(arIO).toBeInstanceOf(ArIO);
   });
 
   it('should connect and return a valid instance', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
     const client = new ArIO({
       contract: new RemoteContract<ArIOState>({
-        contractTxId: ARNS_DEVNET_REGISTRY_TX,
+        contractTxId,
         cacheUrl: localCacheUrl,
       }),
     });

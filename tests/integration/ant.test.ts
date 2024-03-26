@@ -1,30 +1,24 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ANT } from '../src/common/ant';
-import { RemoteContract } from '../src/common/contracts/remote-contract';
-import { ANTState } from '../src/contract-state';
+import { ANT } from '../../src/common/ant';
+import { RemoteContract } from '../../src/common/contracts/remote-contract';
+import { ANTState } from '../../src/contract-state';
 import {
   arweave,
   evaluateToBlockHeight,
   evaluateToSortKey,
-  localCacheUrl,
-} from './constants';
+} from '../constants';
 
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
-
+const localCacheUrl = `https://api.arns.app`;
 describe('ANT contract apis', () => {
-  let ant: ANT;
-
-  beforeAll(async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    ant = new ANT({
-      signer,
-      contract: new RemoteContract<ANTState>({
-        cacheUrl: localCacheUrl,
-        contractTxId,
-      }),
-    });
+  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+  const ant = new ANT({
+    signer,
+    contract: new RemoteContract<ANTState>({
+      cacheUrl: localCacheUrl,
+      contractTxId,
+    }),
   });
 
   it('should connect and return a valid instance', async () => {

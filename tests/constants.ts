@@ -1,12 +1,30 @@
 import Arweave from 'arweave';
+import {
+  LoggerFactory,
+  WarpFactory,
+  defaultCacheOptions,
+} from 'warp-contracts';
+import { DeployPlugin } from 'warp-contracts-plugin-deploy';
 
 import { SmartWeaveSortKey } from '../src/utils';
 
-export const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
+const GATEWAY_PORT = process.env.GATEWAY_PORT ?? 1984;
+const GATEWAY_HOST = process.env.GATEWAY_HOST ?? '127.0.0.1';
+const GATEWAY_PROTOCOL = process.env.GATEWAY_PROTOCOL ?? 'http';
+// Arweave
+export const arweave = new Arweave({
+  protocol: GATEWAY_PROTOCOL,
+  port: GATEWAY_PORT,
+  host: GATEWAY_HOST,
+}) as any;
+
+LoggerFactory.INST.logLevel('fatal');
+export const warp = WarpFactory.forMainnet(
+  defaultCacheOptions,
+  true,
+  arweave as any,
+).use(new DeployPlugin());
+
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 export const testDomain = 'angela';
 export const evaluateToBlockHeight = 1377100;
