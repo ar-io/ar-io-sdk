@@ -52,6 +52,7 @@ export class WarpContract<T>
   private cacheUrl: string | undefined;
   private arweave: Arweave;
   private log: Logger;
+  private signer: ContractSigner | undefined;
 
   constructor({
     contractTxId,
@@ -63,6 +64,7 @@ export class WarpContract<T>
       },
       true,
     ),
+    signer,
     arweave = defaultArweave,
     log = new DefaultLogger({
       level: 'debug',
@@ -80,6 +82,9 @@ export class WarpContract<T>
     this.cacheUrl = cacheUrl;
     this.arweave = arweave;
     this.log = log;
+    if (signer) {
+      this.connect(signer);
+    }
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {
@@ -92,6 +97,7 @@ export class WarpContract<T>
   // base contract methods
   connect(signer: ContractSigner) {
     // TODO: Update type to use Signer interface
+    this.signer = signer;
     this.contract = this.contract.connect(signer as Signer);
     return this;
   }
@@ -171,6 +177,11 @@ export class WarpContract<T>
     Transaction | DataItem | InteractionResult<unknown, unknown>
   > {
     try {
+      if (!this.signer) {
+        throw new Error(
+          'Contract not connected - call .connect(signer) to connect a signer for write interactions ',
+        );
+      }
       this.log.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
       });
