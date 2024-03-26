@@ -20,11 +20,13 @@ import { Transaction } from 'warp-contracts';
 import {
   ANTRecord,
   ANTState,
+  AllowedProtocols,
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
   EpochDistributionData,
   Gateway,
+  GatewaySettings,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -174,7 +176,49 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+  // write interactions
+  joinNetwork(params: JoinNetworkParams): Promise<Transaction>;
+  updateGatewaySettings(
+    params: UpdateGatewaySettingsParams,
+  ): Promise<Transaction | DataItem>;
+  increaseOperatorStake(params: { qty: number }): Promise<Transaction>;
+  decreaseOperatorStake(params: { qty: number }): Promise<Transaction>;
+  increaseDelegateState(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<Transaction>;
+  decreaseDelegateState(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<Transaction>;
 }
+
+export type JoinNetworkParams = {
+  qty: number;
+  allowDelegatedStaking?: boolean;
+  delegateRewardShareRatio?: number;
+  fqdn: string;
+  label: string;
+  minDelegatedStake?: number;
+  note: string;
+  port: number;
+  properties: string;
+  protocol: AllowedProtocols;
+  autoStake?: boolean;
+};
+
+export type UpdateGatewaySettingsParams = {
+  allowDelegatedStaking?: boolean;
+  delegateRewardShareRatio?: number;
+  fqdn?: string;
+  label?: string;
+  minDelegatedStake?: number;
+  note?: string;
+  port?: number;
+  properties?: string;
+  protocol?: AllowedProtocols;
+  autoStake?: boolean;
+};
 
 export interface ANTContract extends BaseContract<ANTState> {
   getRecord({
