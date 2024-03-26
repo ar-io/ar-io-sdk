@@ -116,6 +116,7 @@
     "arweave": "^1.14.4",
     "axios": "1.4.0",
     "setimmediate": "^1.0.5",
+    "warp-arbundles": "^1.0.4",
     "warp-contracts": "^1.4.38",
     "winston": "^3.11.0"
   },

@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DataItem, Signer } from 'arbundles';
 import Arweave from 'arweave';
+import { DataItem, Signer } from 'warp-arbundles';
 import {
   Contract,
+  InteractionResult,
   LoggerFactory,
   Transaction,
   Warp,
@@ -35,7 +36,6 @@ import {
   WriteContract,
   WriteParameters,
 } from '../../types.js';
-import { isTransaction } from '../../utils/arweave.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
@@ -117,8 +117,8 @@ export class WarpContract<T>
     this.log.debug(`Checking contract initialized`, {
       contractTxId: this.contractTxId,
     });
-    // Get contact manifest and sync state
 
+    // Get contact manifest and sync state
     const { evaluationOptions = {} } = await getContractManifest({
       arweave: this.arweave,
       contractTxId: this.contractTxId,
@@ -168,7 +168,7 @@ export class WarpContract<T>
     inputs,
     dryWrite = true,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem
+    Transaction | DataItem | InteractionResult<unknown, unknown>
   > {
     try {
       this.log.debug(`Write interaction: ${functionName}`, {
@@ -177,16 +177,23 @@ export class WarpContract<T>
       // Sync state before writing
       await this.ensureContractInit();
 
+      // run dry write before actual write
+      const result = await this.contract.dryWrite<Input>({
+        function: functionName,
+        ...inputs,
+      });
+      if (result.type !== 'ok') {
+        throw new Error(
+          `Failed to dry write contract interaction ${functionName}: ${result.errorMessage}`,
+        );
+      }
+
       if (dryWrite) {
-        const { errorMessage, type } = await this.contract.dryWrite<Input>({
-          function: functionName,
-          ...inputs,
+        this.log.debug(`Dry write interaction successful`, {
+          contractTxId: this.contractTxId,
+          functionName,
         });
-        if (type !== 'ok') {
-          throw new Error(
-            `Failed to dry write contract interaction ${functionName}: ${errorMessage}`,
-          );
-        }
+        return result;
       }
 
       const writeResult = await this.contract.writeInteraction<Input>({
@@ -194,24 +201,11 @@ export class WarpContract<T>
         ...inputs,
       });
 
-      if (!writeResult) {
+      if (!writeResult?.interactionTx) {
         throw new Error(`Failed to write contract interaction ${functionName}`);
       }
-      const { interactionTx } = writeResult;
 
-      // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
-      if (isTransaction(interactionTx) || DataItem.isDataItem(interactionTx)) {
-        this.log.debug(`Write interaction succesful`, {
-          contractTxId: this.contractTxId,
-          functionName,
-          interactionTx: {
-            id: interactionTx.id,
-            tags: interactionTx.tags,
-          },
-        });
-        return interactionTx;
-      }
-      throw new Error(`Failed to write contract interaction ${functionName}`);
+      return writeResult.interactionTx;
     } catch (error) {
       throw new WriteInteractionError(error);
     }
