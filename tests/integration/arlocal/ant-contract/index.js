@@ -1136,7 +1136,6 @@ var setTicker = async (state, { caller, input }) => {
   const controllers = state.controllers;
   const { ticker } = input;
   if (!validateSetTicker(input)) {
-    console.log(input);
     throw new ContractError(INVALID_INPUT_MESSAGE);
   }
   if (caller !== owner && !controllers.includes(caller)) {

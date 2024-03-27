@@ -2,6 +2,7 @@ import { ArweaveSigner } from 'arbundles';
 
 import { ArIO } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
+import { DefaultLogger } from '../../src/common/logger.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { ArIOState } from '../../src/contract-state.js';
 import {
@@ -20,6 +21,7 @@ describe('ArIO Client', () => {
     contract: new RemoteContract<ArIOState>({
       cacheUrl: localCacheUrl,
       contractTxId,
+      logger: new DefaultLogger({ level: 'none' }),
     }),
   });
 
