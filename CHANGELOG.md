@@ -1,3 +1,10 @@
+# [1.0.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2024-03-27)
+
+
+### Bug Fixes
+
+* **remote:** getState not properly setting evalTo in http requests ([55745c1](https://github.com/ar-io/ar-io-sdk/commit/55745c1881af9ea93a0545e1b04eaff210257802))
+
 # [1.0.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2024-03-25)
 
 
