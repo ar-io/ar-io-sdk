@@ -1,21 +1,26 @@
 import { ArweaveSigner } from 'arbundles';
-import { Transaction, WarpFactory, defaultCacheOptions } from 'warp-contracts';
+import { Transaction } from 'warp-contracts';
 
 import { WarpContract } from '../../src/common/contracts/warp-contract';
 import { WriteInteractionError } from '../../src/common/error';
 import { ANTState } from '../../src/contract-state';
-import { arweave, localCacheUrl } from '../constants';
-
-const contractTxId = process.env.DEPLOYED_ANT_CONTRACT_TX_ID!;
+import { arweave, localCacheUrl, warp } from '../constants';
 
 describe('warp-contract client', () => {
-  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const contract: WarpContract<ANTState> = new WarpContract<ANTState>({
-    cacheUrl: localCacheUrl,
-    contractTxId,
-    warp: WarpFactory.forMainnet(defaultCacheOptions, true, arweave),
-    arweave,
+  let signer: ArweaveSigner;
+  let contractTxId: string;
+  let contract: WarpContract<ANTState>;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_ANT_CONTRACT_TX_ID!;
+    signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+    contract = new WarpContract<ANTState>({
+      cacheUrl: localCacheUrl,
+      contractTxId,
+      warp,
+    });
   });
+
   it('should connect and return a valid instance', async () => {
     expect(contract.connect(signer)).toBeDefined();
     expect(contract).toBeInstanceOf(WarpContract);

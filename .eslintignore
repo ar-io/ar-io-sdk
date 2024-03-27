@@ -5,3 +5,4 @@ lib
 **/*.mjs
 examples
 jest.config.ts
+jest.integration.config.ts

@@ -4,7 +4,7 @@ module.exports = {
   globalTeardown: './tests/integration/jest.teardown.ts',
   clearMocks: true,
   moduleFileExtensions: ['ts', 'js', 'mjs'],
-  testMatch: ['**/src/**/*.test.ts', '**/tests/**/*.test.ts'],
+  testMatch: ['**/tests/**/*.test.ts'],
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts', 'tests/**/*.ts'],
   testEnvironment: 'node',

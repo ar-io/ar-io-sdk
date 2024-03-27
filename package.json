@@ -68,7 +68,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "yarn clean && jest .",
-    "test:integration": "docker compose up -d && yarn test --config=jest.integration.config.cjs && docker compose down",
+    "test:integration": "docker compose up -d && yarn test --config=jest.integration.config.ts && docker compose down",
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
     "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
