@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { DataItem } from 'arbundles/node';
+import { Transaction } from 'warp-contracts/web';
+
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
@@ -27,10 +30,13 @@ import {
   EvaluationOptions,
   EvaluationParameters,
   Gateway,
+  JoinNetworkParams,
   Observations,
   ReadContract,
   RegistrationType,
+  UpdateGatewaySettingsParams,
   WeightedObserver,
+  WriteContract,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
@@ -38,7 +44,9 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
-  private contract: BaseContract<ArIOState> & ReadContract;
+  private contract:
+    | (BaseContract<ArIOState> & ReadContract)
+    | (BaseContract<ArIOState> & ReadContract & WriteContract);
   private signer: ContractSigner | undefined;
 
   constructor(
@@ -61,7 +69,9 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
   }
 
-  connect(signer: ContractSigner): this {
+  connect(
+    signer: ContractSigner,
+  ): this & BaseContract<ArIOState> & ReadContract & WriteContract {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
       const config = this.contract.configuration();
@@ -72,7 +82,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
     this.contract.connect(this.signer);
 
-    return this;
+    return this as this &
+      BaseContract<ArIOState> &
+      ReadContract &
+      WriteContract;
   }
   /**
    * Returns the current state of the contract.
@@ -247,5 +260,54 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     });
 
     return auctions;
+  }
+
+  async joinNetwork(params: JoinNetworkParams): Promise<Transaction> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'joinNetwork',
+      inputs: params,
+    });
+  }
+  async updateGatewaySettings(
+    params: UpdateGatewaySettingsParams,
+  ): Promise<Transaction | DataItem> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'updateGatewaySettings',
+      inputs: params,
+    });
+  }
+
+  async increaseDelegateState(params: {
+    target: string;
+    qty: number;
+  }): Promise<Transaction> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'delegateState',
+      inputs: params,
+    });
+  }
+
+  async decreaseDelegateState(params: {
+    target: string;
+    qty: number;
+  }): Promise<Transaction> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'decreaseDelegateState',
+      inputs: params,
+    });
+  }
+
+  async increaseOperatorStake(params: { qty: number }): Promise<Transaction> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'increaseOperatorStake',
+      inputs: params,
+    });
+  }
+
+  async decreaseOperatorStake(params: { qty: number }): Promise<Transaction> {
+    return this.contract.connect(this.signer).writeInteraction({
+      functionName: 'decreaseOperatorStake',
+      inputs: params,
+    });
   }
 }

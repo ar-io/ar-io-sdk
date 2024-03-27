@@ -21,6 +21,7 @@ import {
   HTTPClient,
   Logger,
   ReadContract,
+  WriteContract,
 } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
@@ -58,7 +59,9 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
 
   /* eslint-disable */
   // @ts-ignore
-  connect(signer: ContractSigner): this {
+  connect(
+    signer: ContractSigner,
+  ): this & BaseContract<T> & ReadContract & WriteContract {
     /* eslint-enable */
     throw new Error('Cannot connect to a remote contract');
   }

@@ -26,7 +26,6 @@ import {
   ArNSNameData,
   EpochDistributionData,
   Gateway,
-  GatewaySettings,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -42,7 +41,9 @@ export type ContractConfiguration = {
   signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
 } & (
   | {
-      contract?: BaseContract<unknown> & ReadContract;
+      contract?:
+        | (BaseContract<unknown> & ReadContract)
+        | (BaseContract<unknown> & ReadContract & WriteContract);
     }
   | {
       contractTxId: string;
@@ -80,7 +81,9 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ContractSigner): this;
+  connect(
+    signer: ContractSigner,
+  ): this & BaseContract<ArIOState> & ReadContract & WriteContract;
 }
 
 export interface ReadContract {
