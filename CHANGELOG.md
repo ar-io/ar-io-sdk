@@ -1,3 +1,30 @@
+# [1.0.0-alpha.17](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2024-03-27)
+
+
+### Bug Fixes
+
+* **deps:** pin arweave ([d39391c](https://github.com/ar-io/ar-io-sdk/commit/d39391c19dc7d1396b735cd87920a2dc224f94e4))
+* **deps:** remove extra crypto-browserify ([9b42898](https://github.com/ar-io/ar-io-sdk/commit/9b4289809eacba3cd870adddb2bd73def576d50a))
+* **drywrite:** throw on bad drywrite and continue if successful ([5052c0a](https://github.com/ar-io/ar-io-sdk/commit/5052c0a4deb06ac938d898d990e425dcc8ac6443))
+* **eslintignore:** remove old file names ([415c163](https://github.com/ar-io/ar-io-sdk/commit/415c1632fc1d363894d17d4a335c7a0bbf78f3d8))
+* **imports:** update to use indexed imports from warp ([1242568](https://github.com/ar-io/ar-io-sdk/commit/124256835e0137fb1332e0e7a670ccfaad8ef228))
+* **safety:** update type safety checks ([32eebbc](https://github.com/ar-io/ar-io-sdk/commit/32eebbc21a4592384dd6fed3247f0e00292b6471))
+* **signer:** check that contract is connected before trying to write ([d352e9c](https://github.com/ar-io/ar-io-sdk/commit/d352e9c7ac1038caa238df21d1165345c64d61de))
+* **signer:** check that contract is connected before trying to write ([#29](https://github.com/ar-io/ar-io-sdk/issues/29)) ([536a116](https://github.com/ar-io/ar-io-sdk/commit/536a116c1cfecd1bfbe1ffc9d5fe87ab4006a81c))
+* **signer:** fix signer in WarpContracts - update tests ([ea9448f](https://github.com/ar-io/ar-io-sdk/commit/ea9448f3440c58811891fa37db2ceb7948b8d200))
+* **signer:** fix signer in WarpContracts - update tests ([#32](https://github.com/ar-io/ar-io-sdk/issues/32)) ([16d69d8](https://github.com/ar-io/ar-io-sdk/commit/16d69d8a996d0692b28c956d7ec7f38245ff2f6b))
+* **test warp-contract:** use beforeAll to read env vars ([95cc019](https://github.com/ar-io/ar-io-sdk/commit/95cc0194ffd9b04a0e389557ad39e53cfa87c443))
+* **warp-contract:** provide logger - update isTransaction flow ctrl - use typed props ([5f6e0a1](https://github.com/ar-io/ar-io-sdk/commit/5f6e0a17662e43d4b2d560fcd505a07e006a308b))
+* **write:** add dry run - sync state - abortSignal - update interface ([970bdef](https://github.com/ar-io/ar-io-sdk/commit/970bdefaff2eea93e3c0783dccafd6276a80ea03))
+* **write:** update control flow for write interaction ([01e9921](https://github.com/ar-io/ar-io-sdk/commit/01e99218d2f89f08fbf1f3a8b49f2c5385efcc03))
+* **write:** update utils - change error flow - update arweave constructor props ([0a81c92](https://github.com/ar-io/ar-io-sdk/commit/0a81c920e82c03beba7dad41c189c00e128ced10))
+* **write:** update write methods on warp ([9c0540b](https://github.com/ar-io/ar-io-sdk/commit/9c0540b1f98af68ada417e1e052d282a1c93fb07))
+
+
+### Features
+
+* **write:** add write interface and base implementation on warp-contract ([6dfc969](https://github.com/ar-io/ar-io-sdk/commit/6dfc969a23dd965fe169edeacf117aed8e59d642))
+
 # [1.0.0-alpha.16](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2024-03-27)
 
 
