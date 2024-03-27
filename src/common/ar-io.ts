@@ -77,8 +77,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   /**
    * Returns the current state of the contract.
    */
-  async getState(params: EvaluationParameters): Promise<ArIOState> {
-    const state = await this.contract.getState(params);
+  async getState({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<ArIOState> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state;
   }
   /**
