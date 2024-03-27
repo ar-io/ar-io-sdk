@@ -1,3 +1,10 @@
+# [1.0.0-alpha.16](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2024-03-27)
+
+
+### Bug Fixes
+
+* **tyeps:** set types to objects rather than top level params for easier readability ([edfd77b](https://github.com/ar-io/ar-io-sdk/commit/edfd77bb01f38c21f2e96aacaea07705372fe664))
+
 # [1.0.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2024-03-27)
 
 
