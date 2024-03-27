@@ -73,7 +73,9 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       { state: T }
     >({
       endpoint: ``,
-      params: evaluationOptions?.evalTo,
+      params: {
+        ...evaluationOptions?.evalTo,
+      },
     });
     return state;
   }
