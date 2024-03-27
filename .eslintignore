@@ -4,4 +4,3 @@ lib
 **/*.cjs
 **/*.mjs
 examples
-jest.config.ts

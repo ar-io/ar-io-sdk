@@ -1,0 +1,15 @@
+{
+  "name": "ANT",
+  "owner": "",
+  "ticker": "",
+  "records": {
+    "@": {
+      "ttlSeconds": 3600,
+      "transactionId": ""
+    }
+  },
+  "balances": {
+    "7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk": 1
+  },
+  "controllers": []
+}

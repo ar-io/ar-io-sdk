@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner, ArweaveSigner, DataItem } from 'arbundles';
-import { Transaction } from 'warp-contracts';
+import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+import { DataItem } from 'warp-arbundles';
+import { InteractionResult, Transaction } from 'warp-contracts';
 
 import {
   ANTRecord,
@@ -103,7 +104,7 @@ export interface WriteContract {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem
+    Transaction | DataItem | InteractionResult<unknown, unknown>
   >;
 }
 

@@ -14,18 +14,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DataItem, Signer } from 'arbundles';
 import Arweave from 'arweave';
+import { DataItem } from 'warp-arbundles';
 import {
   Contract,
+  CustomSignature,
+  InteractionResult,
   LoggerFactory,
+  Signature,
   Transaction,
   Warp,
-  WarpFactory,
-  defaultCacheOptions,
 } from 'warp-contracts';
 
-import { defaultArweave } from '../../constants.js';
+import { defaultWarp } from '../../constants.js';
 import {
   BaseContract,
   ContractSigner,
@@ -35,7 +36,7 @@ import {
   WriteContract,
   WriteParameters,
 } from '../../types.js';
-import { isTransaction } from '../../utils/arweave.js';
+import { sha256B64Url, toB64Url } from '../../utils/base64.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
@@ -50,21 +51,17 @@ export class WarpContract<T>
   private contract: Contract<T>;
   private contractTxId: string;
   private cacheUrl: string | undefined;
-  private arweave: Arweave;
-  private log: Logger;
+  private logger: Logger;
+  private warp: Warp;
+  // warp compatible signer that uses ContractSigner
+  private signer: CustomSignature | undefined;
 
   constructor({
     contractTxId,
     cacheUrl,
-    warp = WarpFactory.forMainnet(
-      {
-        ...defaultCacheOptions,
-        inMemory: true, // default to in memory for now, a custom warp implementation can be provided
-      },
-      true,
-    ),
-    arweave = defaultArweave,
-    log = new DefaultLogger({
+    warp = defaultWarp,
+    signer,
+    logger = new DefaultLogger({
       level: 'debug',
     }),
   }: {
@@ -73,13 +70,16 @@ export class WarpContract<T>
     warp?: Warp;
     signer?: ContractSigner;
     arweave?: Arweave;
-    log?: Logger;
+    logger?: Logger;
   }) {
     this.contractTxId = contractTxId;
-    this.contract = warp.contract<T>(contractTxId);
+    this.contract = warp.contract(contractTxId);
     this.cacheUrl = cacheUrl;
-    this.arweave = arweave;
-    this.log = log;
+    this.warp = warp;
+    this.logger = logger;
+    if (signer) {
+      this.connect(signer);
+    }
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {
@@ -89,12 +89,25 @@ export class WarpContract<T>
     };
   }
 
-  // base contract methods
   connect(signer: ContractSigner) {
-    // TODO: Update type to use Signer interface
-    this.contract = this.contract.connect(signer as Signer);
+    const warpSigner = new Signature(this.warp, {
+      signer: async (tx: Transaction) => {
+        const dataToSign = await tx.getSignatureData();
+        const signatureBuffer = Buffer.from(await signer.sign(dataToSign));
+        const id = sha256B64Url(signatureBuffer);
+        tx.setSignature({
+          id: id,
+          owner: toB64Url(signer.publicKey),
+          signature: toB64Url(signatureBuffer),
+        });
+      },
+      type: 'arweave',
+    });
+    this.contract = this.contract.connect(warpSigner);
+    this.signer = warpSigner;
     return this;
   }
+
   async getState({ evaluationOptions = {} }: EvaluationParameters): Promise<T> {
     await this.ensureContractInit();
     const evalTo = evaluationOptions?.evalTo;
@@ -114,13 +127,16 @@ export class WarpContract<T>
   }
 
   async ensureContractInit(): Promise<void> {
-    this.log.debug(`Checking contract initialized`, {
+    this.logger.debug(`Checking contract initialized`, {
       contractTxId: this.contractTxId,
     });
-    // Get contact manifest and sync state
 
+    // Get contact manifest and sync state
+    this.logger.debug(`Fetching contract manifest`, {
+      contractTxId: this.contractTxId,
+    });
     const { evaluationOptions = {} } = await getContractManifest({
-      arweave: this.arweave,
+      arweave: this.warp.arweave,
       contractTxId: this.contractTxId,
     });
     this.contract.setEvaluationOptions(evaluationOptions);
@@ -129,6 +145,10 @@ export class WarpContract<T>
 
   private async syncState() {
     if (this.cacheUrl !== undefined) {
+      this.logger.debug(`Syncing contract state`, {
+        contractTxId: this.contractTxId,
+        remoteCacheUrl: this.cacheUrl,
+      });
       await this.contract.syncState(
         `${this.cacheUrl}/v1/contract/${this.contractTxId}`,
         {
@@ -166,27 +186,39 @@ export class WarpContract<T>
   async writeInteraction<Input>({
     functionName,
     inputs,
-    dryWrite = true,
+    dryWrite = false,
   }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem
+    Transaction | DataItem | InteractionResult<unknown, unknown>
   > {
     try {
-      this.log.debug(`Write interaction: ${functionName}`, {
+      if (!this.signer) {
+        throw new Error(
+          'Contract not connected - call .connect(signer) to connect a signer for write interactions ',
+        );
+      }
+      this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
       });
       // Sync state before writing
       await this.ensureContractInit();
 
+      // run dry write before actual write
+      const result = await this.contract.dryWrite<Input>({
+        function: functionName,
+        ...inputs,
+      });
+      if (result.type !== 'ok') {
+        throw new Error(
+          `Failed to dry write contract interaction ${functionName}: ${result.errorMessage}`,
+        );
+      }
+
       if (dryWrite) {
-        const { errorMessage, type } = await this.contract.dryWrite<Input>({
-          function: functionName,
-          ...inputs,
+        this.logger.debug(`Dry write interaction successful`, {
+          contractTxId: this.contractTxId,
+          functionName,
         });
-        if (type !== 'ok') {
-          throw new Error(
-            `Failed to dry write contract interaction ${functionName}: ${errorMessage}`,
-          );
-        }
+        return result;
       }
 
       const writeResult = await this.contract.writeInteraction<Input>({
@@ -194,26 +226,13 @@ export class WarpContract<T>
         ...inputs,
       });
 
-      if (!writeResult) {
+      if (!writeResult?.interactionTx) {
         throw new Error(`Failed to write contract interaction ${functionName}`);
       }
-      const { interactionTx } = writeResult;
 
-      // Flexible way to return information on the transaction, aids in caching and re-deployment if desired by simply refetching tx anchor and resigning.
-      if (isTransaction(interactionTx) || DataItem.isDataItem(interactionTx)) {
-        this.log.debug(`Write interaction succesful`, {
-          contractTxId: this.contractTxId,
-          functionName,
-          interactionTx: {
-            id: interactionTx.id,
-            tags: interactionTx.tags,
-          },
-        });
-        return interactionTx;
-      }
-      throw new Error(`Failed to write contract interaction ${functionName}`);
+      return writeResult.interactionTx;
     } catch (error) {
-      throw new WriteInteractionError(error);
+      throw new WriteInteractionError(error.message);
     }
   }
 }
