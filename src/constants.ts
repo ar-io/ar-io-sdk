@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import Arweave from 'arweave';
+import { WarpFactory, defaultCacheOptions } from 'warp-contracts';
 
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
 // sortkey: padded blockheight to 12, JS timestamp, hash of transactionID + block hash. Timestamp only applicable to L2 and normally is all zeros.
@@ -25,3 +27,18 @@ export const ARNS_TESTNET_REGISTRY_TX =
 
 export const ARNS_DEVNET_REGISTRY_TX =
   '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
+
+export const defaultArweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https',
+});
+
+export const defaultWarp = WarpFactory.forMainnet(
+  {
+    ...defaultCacheOptions,
+    inMemory: true,
+  },
+  true,
+  defaultArweave,
+);

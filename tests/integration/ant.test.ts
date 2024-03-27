@@ -1,43 +1,31 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ANT } from '../src/common/ant';
-import { RemoteContract } from '../src/common/contracts/remote-contract';
-import { ANTState } from '../src/contract-state';
+import { ANT } from '../../src/common/ant';
+import { RemoteContract } from '../../src/common/contracts/remote-contract';
+import { DefaultLogger } from '../../src/common/logger';
+import { ANTState } from '../../src/contract-state';
 import {
   arweave,
   evaluateToBlockHeight,
   evaluateToSortKey,
-  localCacheUrl,
-} from './constants';
+} from '../constants';
 
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
-
+const localCacheUrl = `https://api.arns.app`;
 describe('ANT contract apis', () => {
-  let ant: ANT;
-
-  beforeAll(async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    ant = new ANT({
-      signer,
-      contract: new RemoteContract<ANTState>({
-        cacheUrl: localCacheUrl,
-        contractTxId,
-      }),
-    });
+  const ant = new ANT({
+    contract: new RemoteContract<ANTState>({
+      cacheUrl: localCacheUrl,
+      contractTxId,
+      logger: new DefaultLogger({ level: 'none' }),
+    }),
   });
 
   it('should connect and return a valid instance', async () => {
     const jwk = await arweave.wallets.generate();
     const signer = new ArweaveSigner(jwk);
-    const connectAnt = new ANT({
-      contract: new RemoteContract<ANTState>({
-        cacheUrl: localCacheUrl,
-        contractTxId,
-      }),
-    });
-    expect(connectAnt.connect(signer)).toBeDefined();
-    expect(connectAnt).toBeInstanceOf(ANT);
+    expect(ant.connect(signer)).toBeDefined();
+    expect(ant).toBeInstanceOf(ANT);
   });
 
   it.each([
@@ -153,10 +141,9 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it('Should get state with warp contract', async () => {
+  it('should get state with warp contract', async () => {
     const jwk = await arweave.wallets.generate();
     const signer = new ArweaveSigner(jwk);
-    // connecting updates contract to use warp
     ant.connect(signer);
     const state = await ant.getState();
     expect(state).toBeDefined();

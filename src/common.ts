@@ -15,6 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+import { DataItem } from 'warp-arbundles';
+import { InteractionResult, Transaction } from 'warp-contracts';
 
 import {
   ANTRecord,
@@ -68,6 +70,13 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
+export type WriteParameters<Input> = {
+  functionName: string;
+  inputs: Input;
+  dryWrite?: boolean;
+  // TODO: add syncState and abortSignal options
+};
+
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
   connect(signer: ContractSigner): this;
@@ -85,14 +94,13 @@ export interface ReadContract {
 }
 
 export interface WriteContract {
-  writeInteraction<Input, State>({
+  writeInteraction<Input>({
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs: Input;
-  }>): Promise<State>;
+  }: EvaluationParameters<WriteParameters<Input>>): Promise<
+    Transaction | DataItem | InteractionResult<unknown, unknown>
+  >;
 }
 
 export interface SmartWeaveContract<T> {

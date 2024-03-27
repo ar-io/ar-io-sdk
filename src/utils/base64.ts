@@ -14,23 +14,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export class BaseError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-  }
+import { bufferTob64Url } from 'arweave/node/lib/utils.js';
+import { createHash } from 'crypto';
+
+export function fromB64Url(input: string): Buffer {
+  const paddingLength = input.length % 4 === 0 ? 0 : 4 - (input.length % 4);
+
+  const base64 = input
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .concat('='.repeat(paddingLength));
+
+  return Buffer.from(base64, 'base64');
 }
 
-export class NotFound extends BaseError {}
-
-export class BadRequest extends BaseError {}
-
-export class FailedRequestError extends BaseError {
-  constructor(status: number, message: string) {
-    super(`Failed request: ${status}: ${message}`);
-  }
+export function toB64Url(buffer: Buffer): string {
+  return bufferTob64Url(buffer);
 }
 
-export class UnknownError extends BaseError {}
-
-export class WriteInteractionError extends BaseError {}
+export function sha256B64Url(input: Buffer): string {
+  return toB64Url(createHash('sha256').update(input).digest());
+}

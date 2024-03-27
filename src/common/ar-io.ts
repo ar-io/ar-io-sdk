@@ -243,7 +243,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<Record<string, ArNSAuctionData>> {
+  } = {}): Promise<Record<string, ArNSAuctionData>> {
     const { auctions } = await this.contract.getState({
       evaluationOptions,
     });
