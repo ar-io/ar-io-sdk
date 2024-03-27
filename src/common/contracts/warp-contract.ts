@@ -108,6 +108,10 @@ export class WarpContract<T>
     return this;
   }
 
+  connected(): boolean {
+    return this.signer !== undefined;
+  }
+
   async getState({ evaluationOptions = {} }: EvaluationParameters): Promise<T> {
     await this.ensureContractInit();
     const evalTo = evaluationOptions?.evalTo;

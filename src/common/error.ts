@@ -35,5 +35,11 @@ export class UnknownError extends BaseError {}
 
 export class WriteInteractionError extends BaseError {}
 
-export const NO_SIGNER_ERROR =
-  'No signer provided in contract configuration. Connect a signer to write transaction.';
+export const INVALID_SIGNER_ERROR =
+  'Invalid signer. Please provide a valid signer to interact with the contract.';
+
+export class InvalidSignerError extends BaseError {
+  constructor() {
+    super(INVALID_SIGNER_ERROR);
+  }
+}

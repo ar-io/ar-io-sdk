@@ -57,6 +57,11 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
 
     return this;
   }
+
+  connected(): boolean {
+    return this.signer !== undefined;
+  }
+
   /**
    * Returns the current state of the contract.
    */

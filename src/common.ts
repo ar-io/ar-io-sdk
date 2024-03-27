@@ -86,7 +86,8 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ContractSigner): this & BaseContract<T> & ReadWriteContract;
+  connect(signer: ContractSigner): this;
+  connected(): boolean;
 }
 
 export interface ReadContract {
@@ -185,10 +186,31 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
   // write interactions
-  joinNetwork(params: JoinNetworkParams): Promise<WriteInteractionResult>;
-  updateGatewaySettings(
-    params: UpdateGatewaySettingsParams,
-  ): Promise<WriteInteractionResult>;
+  joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: JoinNetworkParams): Promise<WriteInteractionResult>;
+  updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
   increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult>;

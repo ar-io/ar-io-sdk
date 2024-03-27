@@ -39,11 +39,7 @@ import {
   isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import {
-  NO_SIGNER_ERROR,
-  WarpContract,
-  WriteInteractionError,
-} from './index.js';
+import { InvalidSignerError, WarpContract } from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   private contract:
@@ -71,9 +67,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
   }
 
-  connect(
-    signer: ContractSigner,
-  ): this & BaseContract<ArIOState> & ReadContract & WriteContract {
+  connect(signer: ContractSigner): this {
     this.signer = signer;
     if (this.contract instanceof RemoteContract) {
       const config = this.contract.configuration();
@@ -84,11 +78,13 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
     this.contract.connect(this.signer);
 
-    return this as this &
-      BaseContract<ArIOState> &
-      ReadContract &
-      WriteContract;
+    return this;
   }
+
+  connected(): boolean {
+    return this.signer !== undefined;
+  }
+
   /**
    * Returns the current state of the contract.
    */
@@ -265,13 +261,19 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   }
   // write methods
 
+  isContractWritable(
+    contract: BaseContract<ArIOState>,
+  ): contract is BaseContract<ArIOState> & WriteContract {
+    return 'writeInteraction' in contract && contract.connected();
+  }
+
   async joinNetwork(
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'joinNetwork',
       inputs: params,
     });
@@ -279,10 +281,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'updateGatewaySettings',
       inputs: params,
     });
@@ -292,10 +294,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'delegateState',
       inputs: params,
     });
@@ -305,10 +307,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'decreaseDelegateState',
       inputs: params,
     });
@@ -317,10 +319,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   async increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'increaseOperatorStake',
       inputs: params,
     });
@@ -329,10 +331,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.signer) {
-      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    if (!this.isContractWritable(this.contract)) {
+      throw new InvalidSignerError();
     }
-    return this.contract.connect(this.signer).writeInteraction({
+    return this.contract.writeInteraction({
       functionName: 'decreaseOperatorStake',
       inputs: params,
     });
