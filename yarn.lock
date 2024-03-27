@@ -10215,7 +10215,7 @@ warp-contracts-plugin-deploy@^1.0.13:
     node-pre-gyp "^0.17.0"
     node-stdlib-browser "^1.2.0"
 
-warp-contracts@^1.4.38:
+warp-contracts@1.4.39:
   version "1.4.39"
   resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.39.tgz#b56f4baa61b633c04d8abba65ee5dfca333ffea5"
   integrity sha512-Dyk9wjhYceLRSq+U5Ba8h2mTbMPeB1hjdnDhYJP825E7gcc3jGc12GTLynSBqx5eJscOtpGG5Z5SQNxcTOP7/A==

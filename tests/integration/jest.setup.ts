@@ -22,8 +22,8 @@ async function jestGlobalSetup() {
 
   // deploy example any contract
   const [arIOContractDeploy, antContractDeploy] = await Promise.all([
-    deployArIOContract({ jwk: wallet, warp }),
-    deployANTContract({ jwk: wallet, warp }),
+    deployArIOContract({ jwk: wallet, address, warp }),
+    deployANTContract({ jwk: wallet, address, warp }),
   ]);
 
   // set in the environment

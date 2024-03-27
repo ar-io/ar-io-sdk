@@ -1,8 +1,9 @@
 import { ArweaveSigner } from 'arbundles';
-import { Transaction } from 'warp-contracts';
+import Transaction from 'arweave/node/lib/transaction';
 
 import { WarpContract } from '../../src/common/contracts/warp-contract';
 import { WriteInteractionError } from '../../src/common/error';
+import { DefaultLogger } from '../../src/common/logger';
 import { ANTState } from '../../src/contract-state';
 import { arweave, localCacheUrl, warp } from '../constants';
 
@@ -18,6 +19,7 @@ describe('warp-contract client', () => {
       cacheUrl: localCacheUrl,
       contractTxId,
       warp,
+      logger: new DefaultLogger({ level: 'none' }),
     });
   });
 
@@ -38,7 +40,6 @@ describe('warp-contract client', () => {
         console.error(e);
         return e;
       });
-
     expect(tx).toBeDefined();
     expect(tx).toBeInstanceOf(Transaction);
   });
@@ -48,6 +49,7 @@ describe('warp-contract client', () => {
       cacheUrl: localCacheUrl,
       contractTxId,
       arweave,
+      logger: new DefaultLogger({ level: 'none' }),
     }).connect(signer);
 
     const error = await contract

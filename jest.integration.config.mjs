@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   preset: 'ts-jest',
   setupFiles: ['./tests/integration/jest.setup.ts'],
   globalTeardown: './tests/integration/jest.teardown.ts',

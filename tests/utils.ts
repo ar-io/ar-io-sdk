@@ -6,9 +6,11 @@ import { ContractDeploy, Warp } from 'warp-contracts';
 
 export async function deployANTContract({
   jwk,
+  address,
   warp,
 }: {
   jwk: JWKInterface;
+  address: string;
   warp: Warp;
 }): Promise<ContractDeploy> {
   const src = fs.readFileSync(
@@ -24,24 +26,25 @@ export async function deployANTContract({
       'utf8',
     ),
   );
-  const owner = await warp.arweave.wallets.jwkToAddress(jwk);
   return await warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
       ...state,
-      owner,
-      controllers: [owner],
-      balances: { [owner]: 1000000 },
+      owner: address,
+      controllers: [address],
+      balances: { [address]: 1000000 },
     }),
   });
 }
 
 export async function deployArIOContract({
   jwk,
+  address,
   warp,
 }: {
   jwk: JWKInterface;
+  address: string;
   warp: Warp;
 }): Promise<ContractDeploy> {
   const src = fs.readFileSync(
@@ -57,14 +60,13 @@ export async function deployArIOContract({
       'utf8',
     ),
   );
-  const owner = await warp.arweave.wallets.jwkToAddress(jwk);
   return await warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
       ...state,
-      owner,
-      balances: { [owner]: 1 * 1_000_000 * 1_000_000 },
+      owner: address,
+      balances: { [address]: 1 * 1_000_000 * 1_000_000 },
     }),
   });
 }
