@@ -16,13 +16,13 @@ export const arweave = new Arweave({
   protocol: GATEWAY_PROTOCOL,
   port: GATEWAY_PORT,
   host: GATEWAY_HOST,
-}) as any;
+});
 
 LoggerFactory.INST.logLevel('fatal');
 export const warp = WarpFactory.forMainnet(
   defaultCacheOptions,
   true,
-  arweave as any,
+  arweave,
 ).use(new DeployPlugin());
 
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';

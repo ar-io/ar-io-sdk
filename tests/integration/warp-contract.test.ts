@@ -13,7 +13,7 @@ describe('warp-contract client', () => {
   const contract: WarpContract<ANTState> = new WarpContract<ANTState>({
     cacheUrl: localCacheUrl,
     contractTxId,
-    warp: WarpFactory.forMainnet(defaultCacheOptions, true, arweave as any),
+    warp: WarpFactory.forMainnet(defaultCacheOptions, true, arweave),
     arweave,
   });
   it('should connect and return a valid instance', async () => {

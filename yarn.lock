@@ -2775,7 +2775,7 @@ arweave@1.14.4:
     base64-js "^1.5.1"
     bignumber.js "^9.0.2"
 
-arweave@^1.10.13, arweave@^1.13.7, arweave@^1.14.4:
+arweave@^1.10.13, arweave@^1.13.7:
   version "1.15.0"
   resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.15.0.tgz#56203c13badf28a0e420ca700d966e89a53c711b"
   integrity sha512-sYfq2yJwkJLthRADsfHygNP+L7fTCyprTjOLYnpP8zaqwywddoNO3UpTk6XGjEiyyU3WfxoFLRLpzx+llZx1WA==
