@@ -34,3 +34,6 @@ export class FailedRequestError extends BaseError {
 export class UnknownError extends BaseError {}
 
 export class WriteInteractionError extends BaseError {}
+
+export const NO_SIGNER_ERROR =
+  'No signer provided in contract configuration. Connect a signer to write transaction.';

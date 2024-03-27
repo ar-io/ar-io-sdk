@@ -44,7 +44,7 @@ export type ContractConfiguration = {
   | {
       contract?:
         | (BaseContract<unknown> & ReadContract)
-        | (BaseContract<unknown> & ReadContract & WriteContract);
+        | (BaseContract<unknown> & ReadWriteContract);
     }
   | {
       contractTxId: string;
@@ -53,7 +53,11 @@ export type ContractConfiguration = {
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
-): config is { contract: BaseContract<T> & ReadContract } {
+): config is {
+  contract:
+    | (BaseContract<T> & ReadContract)
+    | (BaseContract<T> & ReadWriteContract);
+} {
   return 'contract' in config;
 }
 
@@ -82,9 +86,7 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(
-    signer: ContractSigner,
-  ): this & BaseContract<ArIOState> & ReadContract & WriteContract;
+  connect(signer: ContractSigner): this & BaseContract<T> & ReadWriteContract;
 }
 
 export interface ReadContract {
@@ -107,6 +109,8 @@ export interface WriteContract {
     Transaction | DataItem | InteractionResult<unknown, unknown>
   >;
 }
+
+export interface ReadWriteContract extends ReadContract, WriteContract {}
 
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
@@ -181,21 +185,30 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
   // write interactions
-  joinNetwork(params: JoinNetworkParams): Promise<Transaction>;
+  joinNetwork(params: JoinNetworkParams): Promise<WriteInteractionResult>;
   updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
-  ): Promise<Transaction | DataItem>;
-  increaseOperatorStake(params: { qty: number }): Promise<Transaction>;
-  decreaseOperatorStake(params: { qty: number }): Promise<Transaction>;
+  ): Promise<WriteInteractionResult>;
+  increaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  decreaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
   increaseDelegateState(params: {
     target: WalletAddress;
     qty: number;
-  }): Promise<Transaction>;
+  }): Promise<WriteInteractionResult>;
   decreaseDelegateState(params: {
     target: WalletAddress;
     qty: number;
-  }): Promise<Transaction>;
+  }): Promise<WriteInteractionResult>;
 }
+
+export type WriteInteractionResult =
+  | Transaction
+  | DataItem
+  | InteractionResult<unknown, unknown>;
 
 export type JoinNetworkParams = {
   qty: number;

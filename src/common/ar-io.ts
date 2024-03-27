@@ -14,9 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { DataItem } from 'arbundles/node';
-import { Transaction } from 'warp-contracts/web';
-
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   ArIOContract,
@@ -37,11 +34,16 @@ import {
   UpdateGatewaySettingsParams,
   WeightedObserver,
   WriteContract,
+  WriteInteractionResult,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { WarpContract } from './index.js';
+import {
+  NO_SIGNER_ERROR,
+  WarpContract,
+  WriteInteractionError,
+} from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   private contract:
@@ -261,8 +263,14 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
 
     return auctions;
   }
+  // write methods
 
-  async joinNetwork(params: JoinNetworkParams): Promise<Transaction> {
+  async joinNetwork(
+    params: JoinNetworkParams,
+  ): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'joinNetwork',
       inputs: params,
@@ -270,7 +278,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   }
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
-  ): Promise<Transaction | DataItem> {
+  ): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'updateGatewaySettings',
       inputs: params,
@@ -280,7 +291,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   async increaseDelegateState(params: {
     target: string;
     qty: number;
-  }): Promise<Transaction> {
+  }): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'delegateState',
       inputs: params,
@@ -290,21 +304,34 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   async decreaseDelegateState(params: {
     target: string;
     qty: number;
-  }): Promise<Transaction> {
+  }): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'decreaseDelegateState',
       inputs: params,
     });
   }
 
-  async increaseOperatorStake(params: { qty: number }): Promise<Transaction> {
+  async increaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'increaseOperatorStake',
       inputs: params,
     });
   }
 
-  async decreaseOperatorStake(params: { qty: number }): Promise<Transaction> {
+  async decreaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    if (!this.signer) {
+      throw new WriteInteractionError(NO_SIGNER_ERROR);
+    }
     return this.contract.connect(this.signer).writeInteraction({
       functionName: 'decreaseOperatorStake',
       inputs: params,

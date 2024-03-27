@@ -89,7 +89,7 @@ export class WarpContract<T>
     };
   }
 
-  connect(signer: ContractSigner) {
+  connect(signer: ContractSigner): this {
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
         const dataToSign = await tx.getSignatureData();
