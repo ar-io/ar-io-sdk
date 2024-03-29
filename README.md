@@ -569,6 +569,142 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
+#### `joinNetwork({ ...JoinNetworkParams})`
+
+Executes the interaction for the connected gateway wallet to join the ar.io network.
+
+```typescript
+const params = {
+  qty: 4000,
+  allowDelegatedStaking: true,
+  delegateRewardShareRatio: 1,
+  fqdn: 'impossible.com',
+  label: 'john smith',
+  minDelegatedStake: 100,
+  note: 'The impossible gateway',
+  port: 443,
+  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44',
+  protocol: 'https',
+  autoStake: true,
+};
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const joinNetworkTx = await authenticatedArIO.joinNetwork(params);
+
+// joinNetworkTx is an Arweave transaction.
+// example:
+// joinNetworkTx.id
+// t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
+```
+
+#### `updateGatewaySettings({ ...UpdateGatewaySettingsParams})`
+
+Writes new gateway settings to the callers gateway configuration.
+
+```typescript
+const params = {
+  minDelegatedStake: 100,
+};
+
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const updateGatewaySettingsTx =
+  await authenticatedArIO.updateGatewaySettings(params);
+
+// updateGatewaySettingsTx is an Arweave transaction.
+// example:
+// updateGatewaySettingsTx.id
+// t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
+```
+
+#### `increaseDelegateStake({ target, qty })`
+
+Increases the callers stake on the target gateway.
+
+```typescript
+const params = {
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  qty: 100,
+};
+
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const increaseDelegateStakeTx =
+  await authenticatedArIO.increaseDelegateStake(params);
+
+// increaseDelegateStakeTx is an Arweave transaction.
+// example:
+// increaseDelegateStakeTx.id
+// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
+#### `decreaseDelegateStake({ target, qty })`
+
+Decreases the callers stake on the target gateway.
+
+```typescript
+const params = {
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  qty: 100,
+};
+
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const decreaseDelegateStakeTx =
+  await authenticatedArIO.decreaseDelegateStake(params);
+
+// decreaseDelegateStakeTx is an Arweave transaction.
+// example:
+// decreaseDelegateStakeTx.id
+// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
+#### `increaseOperatorStake({ qty })`
+
+Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+
+```typescript
+const params = {
+  qty: 100,
+};
+
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const increaseOperatorStakeTx =
+  await authenticatedArIO.increaseOperatorStake(params);
+
+// increaseOperatorStakeTx is an Arweave transaction.
+// example:
+// increaseOperatorStakeTx.id
+// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
+#### `decreaseOperatorStake({ qty })`
+
+Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+
+```typescript
+const params = {
+  qty: 100,
+};
+
+const signer = new ArweaveSigner(jwk);
+// connection required for write interactions
+const authenticatedArIO = arIO.connect(signer);
+const decreaseOperatorStakeTx =
+  await authenticatedArIO.decreaseOperatorStake(params);
+
+// decreaseOperatorStakeTx is an Arweave transaction.
+// example:
+// decreaseOperatorStakeTx.id
+// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
 ### Custom Contracts
 
 The ArIO contract client class exposes APIs relevant to the ar.io contract. It can be configured to use any contract ID that adheres to the spec of the ar.io contract. In the default case, it will automatically build and utilize a contract data provider interface that is configured to point the the known mainnet contract ID at construction time. You can provide custom contract data provider or, alternatively, a `contractTxId` to the ArIO constructor to use a different, ar.io-spec-compatible contract.
