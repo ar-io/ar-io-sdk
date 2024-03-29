@@ -42,9 +42,9 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidSignerError, WarpContract } from './index.js';
 
 export class ArIO implements ArIOContract, BaseContract<ArIOState> {
-  private contract:
-    | (BaseContract<ArIOState> & ReadContract)
-    | (BaseContract<ArIOState> & ReadContract & WriteContract);
+  private contract: BaseContract<ArIOState> &
+    ReadContract &
+    Partial<WriteContract>;
   private signer: ContractSigner | undefined;
 
   constructor(
