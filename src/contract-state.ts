@@ -18,6 +18,35 @@ import { WalletAddress } from './common.js';
 
 // Gateways
 
+export const CONTRACT_FUNCTIONS = {
+  GATEWAY: 'getGateway',
+  GATEWAYS: 'getGateways',
+  PRESCRIBED_OBSERVERS: 'getPrescribedObservers',
+  DELEGATE_STAKE: 'delegateStake',
+  DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
+  JOIN_NETWORK: 'joinNetwork',
+  LEAVE_NETWORK: 'leaveNetwork',
+  INCREASE_OPERATOR_STAKE: 'increaseOperatorStake',
+  DECREASE_OPERATOR_STAKE: 'decreaseOperatorStake',
+  UPDATE_GATEWAY_SETTINGS: 'updateGatewaySettings',
+  SAVE_OBSERVATIONS: 'saveObservations',
+  SUBMIT_AUCTION_BID: 'submitAuctionBid',
+  BUY_RECORD: 'buyRecord',
+  EXTEND_RECORD: 'extendRecord',
+  INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
+  RECORD: 'getRecord',
+  AUCTION: 'getAuction',
+  TRANSFER: 'transferTokens',
+  VAULTED_TRANSFER: 'vaultedTransfer',
+  CREATE_VAULT: 'createVault',
+  EXTEND_VAULT: 'extendVault',
+  INCREASE_VAULT: 'increaseVault',
+  BALANCE: 'balance',
+  TICK: 'tick',
+  PRICE_FOR_INTERACTION: 'getPriceForInteraction',
+  EPOCH: 'epoch',
+};
+
 export type Gateway = {
   delegates: Record<string, unknown>;
   end: number;

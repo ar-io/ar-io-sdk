@@ -21,6 +21,7 @@ import {
   ArNSAuctionData,
   ArNSNameData,
   BaseContract,
+  CONTRACT_FUNCTIONS,
   ContractConfiguration,
   ContractSigner,
   EpochDistributionData,
@@ -145,7 +146,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
     return this.contract
       .readInteraction<{ target: string }, Gateway>({
-        functionName: 'gateway',
+        functionName: CONTRACT_FUNCTIONS.GATEWAY,
         inputs: {
           target: address,
         },
@@ -163,7 +164,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     Record<string, Gateway> | Record<string, never>
   > {
     return this.contract.readInteraction({
-      functionName: 'gateways',
+      functionName: CONTRACT_FUNCTIONS.GATEWAYS,
       evaluationOptions,
     });
   }
@@ -175,7 +176,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
     return this.contract.readInteraction({
-      functionName: 'epoch',
+      functionName: CONTRACT_FUNCTIONS.EPOCH,
       evaluationOptions,
     });
   }
@@ -193,7 +194,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
       { height: number },
       EpochDistributionData
     >({
-      functionName: 'epoch',
+      functionName: CONTRACT_FUNCTIONS.EPOCH,
       inputs: {
         height: blockHeight,
       },
@@ -208,7 +209,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
     return this.contract.readInteraction<never, WeightedObserver[]>({
-      functionName: 'prescribedObservers',
+      functionName: CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
       evaluationOptions,
     });
   }

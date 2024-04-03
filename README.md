@@ -571,26 +571,30 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 
 #### `joinNetwork({ ...JoinNetworkParams})`
 
-Executes the interaction for the connected gateway wallet to join the ar.io network.
+Joins a gateway to the ar.io network via its associated wallet.
 
 ```typescript
-const params = {
+const jointNetworkParams = {
+  /* initial operator stake */
   qty: 4000,
+  /* delegated staking settings */
   allowDelegatedStaking: true,
-  delegateRewardShareRatio: 1,
-  fqdn: 'impossible.com',
-  label: 'john smith',
   minDelegatedStake: 100,
-  note: 'The impossible gateway',
-  port: 443,
-  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44',
-  protocol: 'https',
+  delegateRewardShareRatio: 1,
   autoStake: true,
+  /* gateway metadata info */
+  label: 'john smith', // min 1, max 64 characters
+  note: 'The example gateway', // max 256 characters
+  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway.
+  /* gateway info */
+  fqdn: 'example.com',
+  port: 443,
+  protocol: 'https',
 };
 const signer = new ArweaveSigner(jwk);
 // connection required for write interactions
 const authenticatedArIO = arIO.connect(signer);
-const joinNetworkTx = await authenticatedArIO.joinNetwork(params);
+const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 
 // joinNetworkTx is an Arweave transaction.
 // example:
