@@ -16,7 +16,7 @@
  */
 export function mixInto(targetInstance: object, mixinInstance: object) {
   Object.getOwnPropertyNames(mixinInstance.constructor.prototype)
-    .filter((prop) => prop !== 'constructor')
+    .filter((prop) => prop !== 'constructor' && !prop.startsWith('#'))
     .forEach((method) => {
       targetInstance[method] = mixinInstance[method].bind(mixinInstance);
     });
