@@ -16,11 +16,11 @@
  */
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
-  ArIOContract,
+  ArIOReadContract,
   ArIOState,
+  ArIOWriteContract,
   ArNSAuctionData,
   ArNSNameData,
-  BaseContract,
   CONTRACT_FUNCTIONS,
   ContractConfiguration,
   ContractSigner,
@@ -30,22 +30,19 @@ import {
   Gateway,
   JoinNetworkParams,
   Observations,
-  ReadContract,
   RegistrationType,
   UpdateGatewaySettingsParams,
   WeightedObserver,
-  WriteContract,
   WriteInteractionResult,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
+import { mixInto } from '../utils/common.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidSignerError, WarpContract } from './index.js';
 
-export class ArIO implements ArIOContract, BaseContract<ArIOState> {
-  private contract: BaseContract<ArIOState> &
-    ReadContract &
-    Partial<WriteContract>;
+export class ArIO implements ArIOReadContract {
+  private contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
   private signer: ContractSigner | undefined;
 
   constructor(
@@ -66,20 +63,6 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     } else {
       throw new Error('Invalid configuration.');
     }
-  }
-
-  connect(signer: ContractSigner): this {
-    this.signer = signer;
-    if (this.contract instanceof RemoteContract) {
-      const config = this.contract.configuration();
-      this.contract = new WarpContract<ArIOState>({
-        ...config,
-        signer,
-      });
-    }
-    this.contract.connect(this.signer);
-
-    return this;
   }
 
   connected(): boolean {
@@ -260,34 +243,61 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
 
     return auctions;
   }
-  // write methods
 
-  isContractWritable(
-    contract: BaseContract<ArIOState>,
-  ): contract is BaseContract<ArIOState> & WriteContract {
-    return 'writeInteraction' in contract && contract.connected();
+  connect(signer: ContractSigner): void {
+    let writeableContract: WarpContract<ArIOState> | undefined = undefined;
+
+    // create or set the writable contract to be used in our mixin class
+    if (this.contract instanceof RemoteContract) {
+      writeableContract = new WarpContract(this.contract.configuration());
+    } else if (this.contract instanceof WarpContract) {
+      writeableContract = this.contract;
+    }
+
+    if (!writeableContract) {
+      throw new InvalidSignerError();
+    }
+
+    mixInto(
+      this.contract,
+      new ArIOWritable({
+        contract: writeableContract,
+        signer,
+      }),
+    );
+  }
+}
+
+export class ArIOWritable implements ArIOWriteContract {
+  private contract: WarpContract<ArIOState>;
+  private signer: ContractSigner;
+  constructor({
+    contract,
+    signer,
+  }: {
+    contract: WarpContract<ArIOState>;
+    signer: ContractSigner;
+  }) {
+    this.contract = contract;
+    this.signer = signer;
   }
 
   async joinNetwork(
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'joinNetwork',
       inputs: params,
+      signer: this.signer,
     });
   }
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'updateGatewaySettings',
       inputs: params,
+      signer: this.signer,
     });
   }
 
@@ -295,12 +305,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'delegateState',
       inputs: params,
+      signer: this.signer,
     });
   }
 
@@ -308,36 +316,30 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'decreaseDelegateState',
       inputs: params,
+      signer: this.signer,
     });
   }
 
   async increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'increaseOperatorStake',
       inputs: params,
+      signer: this.signer,
     });
   }
 
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    if (!this.isContractWritable(this.contract)) {
-      throw new InvalidSignerError();
-    }
     return this.contract.writeInteraction({
       functionName: 'decreaseOperatorStake',
       inputs: params,
+      signer: this.signer,
     });
   }
 }

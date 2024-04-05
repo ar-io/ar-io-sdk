@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { ArconnectSigner } from 'arbundles';
 import Arweave from 'arweave';
 import { DataItem } from 'warp-arbundles';
 import {
@@ -54,13 +55,12 @@ export class WarpContract<T>
   private logger: Logger;
   private warp: Warp;
   // warp compatible signer that uses ContractSigner
-  private signer: CustomSignature | undefined;
+  //private signer: CustomSignature | undefined;
 
   constructor({
     contractTxId,
     cacheUrl,
     warp = defaultWarp,
-    signer,
     logger = new DefaultLogger({
       level: 'debug',
     }),
@@ -68,7 +68,6 @@ export class WarpContract<T>
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
-    signer?: ContractSigner;
     arweave?: Arweave;
     logger?: Logger;
   }) {
@@ -77,9 +76,6 @@ export class WarpContract<T>
     this.cacheUrl = cacheUrl;
     this.warp = warp;
     this.logger = logger;
-    if (signer) {
-      this.connect(signer);
-    }
   }
 
   configuration(): { contractTxId: string; cacheUrl: string | undefined } {
@@ -89,7 +85,12 @@ export class WarpContract<T>
     };
   }
 
-  connect(signer: ContractSigner): this {
+  // TODO: could abstract into our own interface that constructs different signers
+  async createWarpSigner(signer: ContractSigner): Promise<CustomSignature> {
+    // ensure appropriate permissions are granted with injected signers.
+    if (signer.publicKey === undefined && signer instanceof ArconnectSigner) {
+      await signer.setPublicKey();
+    }
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
         const dataToSign = await tx.getSignatureData();
@@ -103,13 +104,9 @@ export class WarpContract<T>
       },
       type: 'arweave',
     });
-    this.contract = this.contract.connect(warpSigner);
-    this.signer = warpSigner;
-    return this;
-  }
-
-  connected(): boolean {
-    return this.signer !== undefined;
+    //this.contract = this.contract.connect(warpSigner);
+    //this.signer = warpSigner;
+    return warpSigner;
   }
 
   async getState({ evaluationOptions = {} }: EvaluationParameters): Promise<T> {
@@ -130,7 +127,11 @@ export class WarpContract<T>
     return evaluationResult.cachedValue.state as T;
   }
 
-  async ensureContractInit(): Promise<void> {
+  async ensureContractInit({
+    signer,
+  }: {
+    signer?: ContractSigner;
+  } = {}): Promise<void> {
     this.logger.debug(`Checking contract initialized`, {
       contractTxId: this.contractTxId,
     });
@@ -144,15 +145,15 @@ export class WarpContract<T>
       contractTxId: this.contractTxId,
     });
     this.contract.setEvaluationOptions(evaluationOptions);
-    await this.syncState();
-  }
 
-  private async syncState() {
+    if (signer) this.contract.connect(await this.createWarpSigner(signer));
+
     if (this.cacheUrl !== undefined) {
       this.logger.debug(`Syncing contract state`, {
         contractTxId: this.contractTxId,
         remoteCacheUrl: this.cacheUrl,
       });
+
       await this.contract.syncState(
         `${this.cacheUrl}/v1/contract/${this.contractTxId}`,
         {
@@ -166,7 +167,7 @@ export class WarpContract<T>
     functionName,
     inputs,
     // TODO: view state only supports sort key so we won't be able to use block height
-  }: EvaluationParameters<{ functionName: string; inputs: I }>): Promise<K> {
+  }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K> {
     const evaluationResult = await this.contract.viewState<unknown, K>({
       function: functionName,
       ...inputs,
@@ -191,20 +192,16 @@ export class WarpContract<T>
     functionName,
     inputs,
     dryWrite = false,
-  }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem | InteractionResult<unknown, unknown>
-  > {
+    signer,
+  }: EvaluationParameters<WriteParameters<Input>> & {
+    signer: ContractSigner;
+  }): Promise<Transaction | DataItem | InteractionResult<unknown, unknown>> {
     try {
-      if (!this.signer) {
-        throw new Error(
-          'Contract not connected - call .connect(signer) to connect a signer for write interactions ',
-        );
-      }
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
       });
       // Sync state before writing
-      await this.ensureContractInit();
+      await this.ensureContractInit({ signer });
 
       // run dry write before actual write
       const result = await this.contract.dryWrite<Input>({
