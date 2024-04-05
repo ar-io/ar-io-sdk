@@ -16,29 +16,33 @@
  */
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
-  ArIOContract,
+  ArIOReadContract,
   ArIOState,
+  ArIOWriteContract,
   ArNSAuctionData,
   ArNSNameData,
-  BaseContract,
+  CONTRACT_FUNCTIONS,
   ContractConfiguration,
   ContractSigner,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
   Gateway,
+  JoinNetworkParams,
   Observations,
-  ReadContract,
   RegistrationType,
+  UpdateGatewaySettingsParams,
   WeightedObserver,
+  WriteInteractionResult,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
+import { mixInto } from '../utils/common.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { WarpContract } from './index.js';
+import { InvalidSignerError, WarpContract } from './index.js';
 
-export class ArIO implements ArIOContract, BaseContract<ArIOState> {
-  private contract: BaseContract<ArIOState> & ReadContract;
+export class ArIO implements ArIOReadContract {
+  private contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
   private signer: ContractSigner | undefined;
 
   constructor(
@@ -61,19 +65,10 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     }
   }
 
-  connect(signer: ContractSigner): this {
-    this.signer = signer;
-    if (this.contract instanceof RemoteContract) {
-      const config = this.contract.configuration();
-      this.contract = new WarpContract<ArIOState>({
-        ...config,
-        signer,
-      });
-    }
-    this.contract.connect(this.signer);
-
-    return this;
+  connected(): boolean {
+    return this.signer !== undefined;
   }
+
   /**
    * Returns the current state of the contract.
    */
@@ -136,7 +131,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
   }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
     return this.contract
       .readInteraction<{ target: string }, Gateway>({
-        functionName: 'gateway',
+        functionName: CONTRACT_FUNCTIONS.GATEWAY,
         inputs: {
           target: address,
         },
@@ -154,7 +149,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     Record<string, Gateway> | Record<string, never>
   > {
     return this.contract.readInteraction({
-      functionName: 'gateways',
+      functionName: CONTRACT_FUNCTIONS.GATEWAYS,
       evaluationOptions,
     });
   }
@@ -166,7 +161,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
     return this.contract.readInteraction({
-      functionName: 'epoch',
+      functionName: CONTRACT_FUNCTIONS.EPOCH,
       evaluationOptions,
     });
   }
@@ -184,7 +179,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
       { height: number },
       EpochDistributionData
     >({
-      functionName: 'epoch',
+      functionName: CONTRACT_FUNCTIONS.EPOCH,
       inputs: {
         height: blockHeight,
       },
@@ -199,7 +194,7 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
     return this.contract.readInteraction<never, WeightedObserver[]>({
-      functionName: 'prescribedObservers',
+      functionName: CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
       evaluationOptions,
     });
   }
@@ -249,5 +244,104 @@ export class ArIO implements ArIOContract, BaseContract<ArIOState> {
     });
 
     return auctions;
+  }
+
+  connect(signer: ContractSigner): void {
+    let writeableContract: WarpContract<ArIOState> | undefined = undefined;
+
+    // create or set the writable contract to be used in our mixin class
+    if (this.contract instanceof RemoteContract) {
+      writeableContract = new WarpContract(this.contract.configuration());
+    } else if (this.contract instanceof WarpContract) {
+      writeableContract = this.contract;
+    }
+
+    if (!writeableContract) {
+      throw new InvalidSignerError();
+    }
+
+    mixInto(
+      this.contract,
+      new ArIOWritable({
+        contract: writeableContract,
+        signer,
+      }),
+    );
+  }
+}
+
+export class ArIOWritable implements ArIOWriteContract {
+  private contract: WarpContract<ArIOState>;
+  private signer: ContractSigner;
+  constructor({
+    contract,
+    signer,
+  }: {
+    contract: WarpContract<ArIOState>;
+    signer: ContractSigner;
+  }) {
+    this.contract = contract;
+    this.signer = signer;
+  }
+
+  async joinNetwork(
+    params: JoinNetworkParams,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'joinNetwork',
+      inputs: params,
+      signer: this.signer,
+    });
+  }
+  async updateGatewaySettings(
+    params: UpdateGatewaySettingsParams,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'updateGatewaySettings',
+      inputs: params,
+      signer: this.signer,
+    });
+  }
+
+  async increaseDelegateState(params: {
+    target: string;
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'delegateState',
+      inputs: params,
+      signer: this.signer,
+    });
+  }
+
+  async decreaseDelegateState(params: {
+    target: string;
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'decreaseDelegateState',
+      inputs: params,
+      signer: this.signer,
+    });
+  }
+
+  async increaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'increaseOperatorStake',
+      inputs: params,
+      signer: this.signer,
+    });
+  }
+
+  async decreaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: 'decreaseOperatorStake',
+      inputs: params,
+      signer: this.signer,
+    });
   }
 }

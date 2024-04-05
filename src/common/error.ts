@@ -34,3 +34,12 @@ export class FailedRequestError extends BaseError {
 export class UnknownError extends BaseError {}
 
 export class WriteInteractionError extends BaseError {}
+
+export const INVALID_SIGNER_ERROR =
+  'Invalid signer. Please provide a valid signer to interact with the contract.';
+
+export class InvalidSignerError extends BaseError {
+  constructor() {
+    super(INVALID_SIGNER_ERROR);
+  }
+}

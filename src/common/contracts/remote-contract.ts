@@ -62,6 +62,9 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
     /* eslint-enable */
     throw new Error('Cannot connect to a remote contract');
   }
+  connected(): boolean {
+    return false;
+  }
 
   async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {
     this.logger.debug(`Fetching contract state`, {

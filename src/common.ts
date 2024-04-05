@@ -18,9 +18,11 @@ import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
 import { InteractionResult, Transaction } from 'warp-contracts';
 
+import { RemoteContract, WarpContract } from './common/index.js';
 import {
   ANTRecord,
   ANTState,
+  AllowedProtocols,
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
@@ -41,7 +43,7 @@ export type ContractConfiguration = {
   signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
 } & (
   | {
-      contract?: BaseContract<unknown> & ReadContract;
+      contract?: WarpContract<unknown> | RemoteContract<unknown>;
     }
   | {
       contractTxId: string;
@@ -50,7 +52,9 @@ export type ContractConfiguration = {
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,
-): config is { contract: BaseContract<T> & ReadContract } {
+): config is {
+  contract: WarpContract<T> | RemoteContract<T>;
+} {
   return 'contract' in config;
 }
 
@@ -79,7 +83,6 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ContractSigner): this;
 }
 
 export interface ReadContract {
@@ -103,6 +106,8 @@ export interface WriteContract {
   >;
 }
 
+export interface ReadWriteContract extends ReadContract, WriteContract {}
+
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
   readInteraction<I, K>({
@@ -113,7 +118,7 @@ export interface SmartWeaveContract<T> {
 }
 
 // TODO: extend with additional methods
-export interface ArIOContract extends BaseContract<ArIOState> {
+export interface ArIOReadContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -176,6 +181,81 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
 }
+
+export interface ArIOWriteContract {
+  // write interactions
+  joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: JoinNetworkParams): Promise<WriteInteractionResult>;
+  updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
+  increaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  decreaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  increaseDelegateState(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  decreaseDelegateState(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+}
+
+export type WriteInteractionResult =
+  | Transaction
+  | DataItem
+  | InteractionResult<unknown, unknown>;
+
+export type JoinNetworkParams = {
+  qty: number;
+  allowDelegatedStaking?: boolean;
+  delegateRewardShareRatio?: number;
+  fqdn: string;
+  label: string;
+  minDelegatedStake?: number;
+  note: string;
+  port: number;
+  properties: string;
+  protocol: AllowedProtocols;
+  autoStake?: boolean;
+};
+
+export type UpdateGatewaySettingsParams = {
+  allowDelegatedStaking?: boolean;
+  delegateRewardShareRatio?: number;
+  fqdn?: string;
+  label?: string;
+  minDelegatedStake?: number;
+  note?: string;
+  port?: number;
+  properties?: string;
+  protocol?: AllowedProtocols;
+  autoStake?: boolean;
+};
 
 export interface ANTContract extends BaseContract<ANTState> {
   getRecord({
