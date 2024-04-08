@@ -33,27 +33,79 @@ import {
   RegistrationType,
   UpdateGatewaySettingsParams,
   WeightedObserver,
+  WithSigner,
   WriteInteractionResult,
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../types.js';
-import { mixInto } from '../utils/common.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { InvalidSignerError, WarpContract } from './index.js';
+import { WarpContract } from './index.js';
 
-export class ArIO implements ArIOReadContract {
-  private contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
-  private signer: ContractSigner | undefined;
+export class ArIO {
+  static createContract(
+    config: ContractConfiguration,
+  ): WarpContract<ArIOState> {
+    if (isContractConfiguration<ArIOState>(config)) {
+      if (config.contract instanceof WarpContract) {
+        return config.contract;
+      } else {
+        // TODO: throw error if contract is not of WarpContract type
+        return new WarpContract<ArIOState>(config.contract.configuration());
+      }
+    } else if (isContractTxIdConfiguration(config)) {
+      return new WarpContract<ArIOState>({ contractTxId: config.contractTxId });
+    } else {
+      throw new Error('Invalid configuration.');
+    }
+  }
+
+  /**
+   * Initializes an ArIO instance.
+   *
+   * There are two overloads for this function:
+   * 1. When a signer is provided in the configuration, it returns an instance of ArIOWritable.
+   * 2. When a signer is NOT provided in the configuration, it returns an instance of ArIOReadable.
+   *
+   *
+   * @param {ContractConfiguration & WithSigner} config - The configuration object.
+   *    If a signer is provided, it should be an object that implements the ContractSigner interface.
+   *
+   * @returns {ArIOWritable | ArIOReadable} - An instance of ArIOWritable if a signer is provided, otherwise an instance of ArIOReadable.
+   * @throws {Error} - Throws an error if the configuration is invalid.
+   *
+   * @example
+   * // Overload 1: When signer is provided
+   * const writable = ArIO.init({ signer: mySigner, contract: myContract });
+   *
+   * @example
+   * // Overload 2: When signer is not provided
+   * const readable = ArIO.init({ contract: myContract });
+   */
+  static init(config?: ContractConfiguration & WithSigner): ArIOWritable;
+  static init(config?: ContractConfiguration): ArIOReadable;
+  static init(
+    config: ContractConfiguration & { signer?: ContractSigner } = {},
+  ) {
+    if (config.signer) {
+      const signer = config.signer;
+      const contract = this.createContract(config);
+      return new ArIOWritable({ signer, contract });
+    } else {
+      return new ArIOReadable(config);
+    }
+  }
+}
+
+export class ArIOReadable implements ArIOReadContract {
+  protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
 
   constructor(
-    { signer, ...config }: ContractConfiguration = {
+    config: ContractConfiguration = {
       contract: new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
       }),
     },
   ) {
-    this.signer = signer;
-
     if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
@@ -63,10 +115,6 @@ export class ArIO implements ArIOReadContract {
     } else {
       throw new Error('Invalid configuration.');
     }
-  }
-
-  connected(): boolean {
-    return this.signer !== undefined;
   }
 
   /**
@@ -243,42 +291,18 @@ export class ArIO implements ArIOReadContract {
 
     return auctions;
   }
-
-  connect(signer: ContractSigner): void {
-    let writeableContract: WarpContract<ArIOState> | undefined = undefined;
-
-    // create or set the writable contract to be used in our mixin class
-    if (this.contract instanceof RemoteContract) {
-      writeableContract = new WarpContract(this.contract.configuration());
-    } else if (this.contract instanceof WarpContract) {
-      writeableContract = this.contract;
-    }
-
-    if (!writeableContract) {
-      throw new InvalidSignerError();
-    }
-
-    mixInto(
-      this.contract,
-      new ArIOWritable({
-        contract: writeableContract,
-        signer,
-      }),
-    );
-  }
 }
 
-export class ArIOWritable implements ArIOWriteContract {
-  private contract: WarpContract<ArIOState>;
+export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
+  protected declare contract: WarpContract<ArIOState>;
   private signer: ContractSigner;
   constructor({
     contract,
     signer,
   }: {
     contract: WarpContract<ArIOState>;
-    signer: ContractSigner;
-  }) {
-    this.contract = contract;
+  } & WithSigner) {
+    super({ contract });
     this.signer = signer;
   }
 

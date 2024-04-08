@@ -39,16 +39,14 @@ export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
-export type ContractConfiguration = {
-  signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
-} & (
+export type WithSigner = { signer: ContractSigner }; // TODO: optionally allow JWK in place of signer
+export type ContractConfiguration =
   | {
       contract?: WarpContract<unknown> | RemoteContract<unknown>;
     }
   | {
       contractTxId: string;
-    }
-);
+    };
 
 export function isContractConfiguration<T>(
   config: ContractConfiguration,

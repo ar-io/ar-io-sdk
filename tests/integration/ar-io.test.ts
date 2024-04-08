@@ -16,7 +16,8 @@ const contractTxId = ARNS_DEVNET_REGISTRY_TX;
 const localCacheUrl = `https://api.arns.app`;
 describe('ArIO Client', () => {
   const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const arIO = new ArIO({
+  const ar = ArIO.init();
+  const arIO = ArIO.init({
     signer,
     contract: new RemoteContract<ArIOState>({
       cacheUrl: localCacheUrl,
@@ -30,13 +31,13 @@ describe('ArIO Client', () => {
   });
 
   it('should connect and return a valid instance', async () => {
-    const client = new ArIO({
+    const client = ArIO.init({
       contract: new RemoteContract<ArIOState>({
         contractTxId,
         cacheUrl: localCacheUrl,
       }),
     });
-    expect(client.connect(signer)).toBeDefined();
+    expect(client).toBeDefined();
     expect(client).toBeInstanceOf(ArIO);
   });
 
