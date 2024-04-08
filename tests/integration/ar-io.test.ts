@@ -16,7 +16,6 @@ const contractTxId = ARNS_DEVNET_REGISTRY_TX;
 const localCacheUrl = `https://api.arns.app`;
 describe('ArIO Client', () => {
   const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const ar = ArIO.init();
   const arIO = ArIO.init({
     signer,
     contract: new RemoteContract<ArIOState>({
