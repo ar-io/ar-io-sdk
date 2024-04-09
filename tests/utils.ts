@@ -65,6 +65,7 @@ export async function deployArIOContract({
     src: src,
     initState: JSON.stringify({
       ...state,
+      evolve: null,
       owner: address,
       balances: { [address]: 1 * 1_000_000 * 1_000_000 },
     }),

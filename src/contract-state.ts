@@ -19,9 +19,9 @@ import { WalletAddress } from './common.js';
 // Gateways
 
 export const CONTRACT_FUNCTIONS = {
-  GATEWAY: 'getGateway',
-  GATEWAYS: 'getGateways',
-  PRESCRIBED_OBSERVERS: 'getPrescribedObservers',
+  GATEWAY: 'gateway',
+  GATEWAYS: 'gateways',
+  PRESCRIBED_OBSERVERS: 'prescribedObservers',
   DELEGATE_STAKE: 'delegateStake',
   DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
   JOIN_NETWORK: 'joinNetwork',

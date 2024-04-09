@@ -23,11 +23,6 @@ describe('warp-contract client', () => {
     });
   });
 
-  it('should connect and return a valid instance', async () => {
-    expect(contract.connect(signer)).toBeDefined();
-    expect(contract).toBeInstanceOf(WarpContract);
-  });
-
   it('should write a transaction', async () => {
     const tx = await contract
       .writeInteraction({
@@ -35,6 +30,7 @@ describe('warp-contract client', () => {
         inputs: {
           name: 'test',
         },
+        signer,
       })
       .catch((e) => {
         console.error(e);
@@ -50,7 +46,7 @@ describe('warp-contract client', () => {
       contractTxId,
       arweave,
       logger: new DefaultLogger({ level: 'none' }),
-    }).connect(signer);
+    });
 
     const error = await contract
       .writeInteraction({
@@ -58,6 +54,7 @@ describe('warp-contract client', () => {
         inputs: {
           name: 'test',
         },
+        signer,
       })
       .catch((e) => e);
 

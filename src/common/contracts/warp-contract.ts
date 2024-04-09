@@ -54,8 +54,6 @@ export class WarpContract<T>
   private cacheUrl: string | undefined;
   private logger: Logger;
   private warp: Warp;
-  // warp compatible signer that uses ContractSigner
-  //private signer: CustomSignature | undefined;
 
   constructor({
     contractTxId,
@@ -104,8 +102,6 @@ export class WarpContract<T>
       },
       type: 'arweave',
     });
-    //this.contract = this.contract.connect(warpSigner);
-    //this.signer = warpSigner;
     return warpSigner;
   }
 
@@ -124,7 +120,7 @@ export class WarpContract<T>
     if (!evaluationResult.cachedValue.state) {
       throw new FailedRequestError(502, 'Failed to evaluate contract state');
     }
-    return evaluationResult.cachedValue.state as T;
+    return evaluationResult.cachedValue.state;
   }
 
   async ensureContractInit({

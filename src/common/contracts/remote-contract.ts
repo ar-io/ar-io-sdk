@@ -16,7 +16,6 @@
  */
 import {
   BaseContract,
-  ContractSigner,
   EvaluationParameters,
   HTTPClient,
   Logger,
@@ -56,16 +55,6 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
     };
   }
 
-  /* eslint-disable */
-  // @ts-ignore
-  connect(signer: ContractSigner): this {
-    /* eslint-enable */
-    throw new Error('Cannot connect to a remote contract');
-  }
-  connected(): boolean {
-    return false;
-  }
-
   async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {
     this.logger.debug(`Fetching contract state`, {
       contractTxId: this.contractTxId,
@@ -76,8 +65,11 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       { state: T }
     >({
       endpoint: ``,
-      params: evaluationOptions?.evalTo,
+      params: {
+        ...evaluationOptions?.evalTo,
+      },
     });
+
     return state;
   }
 

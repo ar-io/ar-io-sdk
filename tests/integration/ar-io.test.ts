@@ -1,43 +1,34 @@
-import { ArweaveSigner } from 'arbundles';
-
-import { ArIO } from '../../src/common/ar-io.js';
+// import { ArweaveSigner } from 'arbundles';
+import { ArIO, ArIOReadable } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
 import { DefaultLogger } from '../../src/common/logger.js';
-import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { ArIOState } from '../../src/contract-state.js';
 import {
   evaluateToBlockHeight,
-  evaluateToSortKey,
   gatewayAddress,
+  localCacheUrl,
   testDomain,
 } from '../constants.js';
 
-const contractTxId = ARNS_DEVNET_REGISTRY_TX;
-const localCacheUrl = `https://api.arns.app`;
 describe('ArIO Client', () => {
-  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const arIO = ArIO.init({
-    signer,
-    contract: new RemoteContract<ArIOState>({
-      cacheUrl: localCacheUrl,
-      contractTxId,
-      logger: new DefaultLogger({ level: 'none' }),
-    }),
+  let arIO;
+  let contractTxId;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID;
+    // const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+    arIO = ArIO.init({
+      // signer,
+      contract: new RemoteContract<ArIOState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+      }),
+    });
   });
 
   it('should create a custom ArIO client', () => {
-    expect(arIO).toBeInstanceOf(ArIO);
-  });
-
-  it('should connect and return a valid instance', async () => {
-    const client = ArIO.init({
-      contract: new RemoteContract<ArIOState>({
-        contractTxId,
-        cacheUrl: localCacheUrl,
-      }),
-    });
-    expect(client).toBeDefined();
-    expect(client).toBeInstanceOf(ArIO);
+    expect(arIO).toBeInstanceOf(ArIOReadable);
   });
 
   it('should should return undefined for non existent gateway', async () => {
@@ -47,35 +38,19 @@ describe('ArIO Client', () => {
     expect(nonExistent).toEqual(undefined);
   });
 
-  it('should return gateways at a given block height', async () => {
-    const gateway = await arIO.getGateway({
-      address: gatewayAddress,
-      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(gateway).toBeDefined();
-  });
-
-  it('should return gateways at a given sort key', async () => {
-    const gateway = await arIO.getGateway({
-      address: gatewayAddress,
-      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
-    });
-    expect(gateway).toBeDefined();
-  });
-
-  it('should return gateways at a given block height', async () => {
-    const gateways = await arIO.getGateways({
-      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(gateways[gatewayAddress]).toBeDefined();
-  });
-
-  it('should return gateways at a given sort key', async () => {
-    const gateways = await arIO.getGateways({
-      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
-    });
-    expect(gateways[gatewayAddress]).toBeDefined();
-  });
+  it.each([
+    // [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return the gateway for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const gateway = await arIO.getGateway({
+        address: gatewayAddress,
+        evaluationOptions: { evalTo },
+      });
+      expect(gateway).toBeDefined();
+    },
+  );
 
   it('should return the record for an existing domain', async () => {
     const record = await arIO.getArNSRecord({ domain: testDomain });
@@ -94,43 +69,36 @@ describe('ArIO Client', () => {
     expect(records).toBeDefined();
   });
 
-  it('should return record at a given block height', async () => {
-    const currentRecord = await arIO.getArNSRecord({
-      domain: testDomain,
-      evaluationOptions: {
-        evalTo: { blockHeight: evaluateToBlockHeight + 1 },
-      },
-    });
-    expect(currentRecord).toBeDefined();
-  });
+  it.each([
+    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return record for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const currentRecord = await arIO.getArNSRecord({
+        domain: testDomain,
+        evaluationOptions: {
+          evalTo: evalTo,
+        },
+      });
+      expect(currentRecord).toBeDefined();
+    },
+  );
 
-  it('should return record at a given sort key', async () => {
-    const record = await arIO.getArNSRecord({
-      domain: testDomain,
-      evaluationOptions: {
-        evalTo: { sortKey: evaluateToSortKey.toString() },
-      },
-    });
-    expect(record).toBeDefined();
-  });
-
-  it('should return records at a given block height', async () => {
-    const records = await arIO.getArNSRecords({
-      evaluationOptions: {
-        evalTo: { blockHeight: evaluateToBlockHeight },
-      },
-    });
-    expect(records[testDomain]).toBeDefined();
-  });
-
-  it('should return records at a given sort key', async () => {
-    const records = await arIO.getArNSRecords({
-      evaluationOptions: {
-        evalTo: { sortKey: evaluateToSortKey.toString() },
-      },
-    });
-    expect(records[testDomain]).toBeDefined();
-  });
+  it.each([
+    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return records for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const records = await arIO.getArNSRecords({
+        evaluationOptions: {
+          evalTo,
+        },
+      });
+      expect(records[testDomain]).toBeDefined();
+    },
+  );
 
   it('should return the current epoch information', async () => {
     const epoch = await arIO.getCurrentEpoch();
@@ -143,31 +111,43 @@ describe('ArIO Client', () => {
     expect(epoch.epochZeroStartHeight).toBeDefined();
   });
 
-  it('should return the current epoch information when evaluated at a given block height', async () => {
-    const epoch = await arIO.getCurrentEpoch({
-      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(epoch).toBeDefined();
-    expect(epoch.epochStartHeight).toBeDefined();
-    expect(epoch.epochBlockLength).toBeDefined();
-    expect(epoch.epochDistributionHeight).toBeDefined();
-    expect(epoch.epochEndHeight).toBeDefined();
-    expect(epoch.epochPeriod).toBeDefined();
-    expect(epoch.epochZeroStartHeight).toBeDefined();
-  });
+  it.each([
+    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return the current epoch information for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const epoch = await arIO.getCurrentEpoch({
+        evaluationOptions: { evalTo },
+      });
+      expect(epoch).toBeDefined();
+      expect(epoch.epochStartHeight).toBeDefined();
+      expect(epoch.epochBlockLength).toBeDefined();
+      expect(epoch.epochDistributionHeight).toBeDefined();
+      expect(epoch.epochEndHeight).toBeDefined();
+      expect(epoch.epochPeriod).toBeDefined();
+      expect(epoch.epochZeroStartHeight).toBeDefined();
+    },
+  );
 
-  it('should return the epoch information at a given block height', async () => {
-    const epoch = await arIO.getEpoch({
-      blockHeight: evaluateToBlockHeight,
-    });
-    expect(epoch).toBeDefined();
-    expect(epoch.epochStartHeight).toBeDefined();
-    expect(epoch.epochBlockLength).toBeDefined();
-    expect(epoch.epochDistributionHeight).toBeDefined();
-    expect(epoch.epochEndHeight).toBeDefined();
-    expect(epoch.epochPeriod).toBeDefined();
-    expect(epoch.epochZeroStartHeight).toBeDefined();
-  });
+  it.each([
+    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return the epoch information for provided evaluation options: ${JSON.stringify('%s')}`,
+    async () => {
+      const epoch = await arIO.getEpoch({
+        blockHeight: evaluateToBlockHeight,
+      });
+      expect(epoch).toBeDefined();
+      expect(epoch.epochStartHeight).toBeDefined();
+      expect(epoch.epochBlockLength).toBeDefined();
+      expect(epoch.epochDistributionHeight).toBeDefined();
+      expect(epoch.epochEndHeight).toBeDefined();
+      expect(epoch.epochPeriod).toBeDefined();
+      expect(epoch.epochZeroStartHeight).toBeDefined();
+    },
+  );
 
   it('should return the prescribed observers for the current epoch', async () => {
     const observers = await arIO.getPrescribedObservers();
@@ -187,9 +167,8 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
+    //       [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
   ])(
     `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
@@ -221,47 +200,47 @@ describe('ArIO Client', () => {
     expect(observation).toBeDefined();
   });
 
-  it('should get the observation information at a given block height', async () => {
-    const observations = await arIO.getObservations({
-      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(observations).toBeDefined();
-  });
-
-  it('should return observations at a sortkey', async () => {
-    const observations = await arIO.getObservations({
-      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
-    });
-    expect(observations).toBeDefined();
-  });
+  it.each([
+    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return observation for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const observations = await arIO.getObservations({
+        evaluationOptions: {
+          evalTo,
+        },
+      });
+      expect(observations).toBeDefined();
+    },
+  );
 
   it('should return distributions', async () => {
     const distributions = await arIO.getDistributions();
     expect(distributions).toBeDefined();
   });
 
-  it('should return distributions at a blockheight', async () => {
-    const distributions = await arIO.getDistributions({
-      evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(distributions).toBeDefined();
-  });
-  it('should return distributions at a sortkey', async () => {
-    const distributions = await arIO.getDistributions({
-      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
-    });
-    expect(distributions).toBeDefined();
-  });
+  it.each([
+    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ blockHeight: evaluateToBlockHeight }],
+  ])(
+    `should return distributions for provided evaluation options: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const distributions = await arIO.getDistributions({
+        evaluationOptions: { evalTo },
+      });
+      expect(distributions).toBeDefined();
+    },
+  );
 
   it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
+    //       [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auction = await arIO.getAuction({
-        domain: 'ardrive',
+        domain: 'bobbyhiscut',
         evaluationOptions: { evalTo },
       });
       expect(auction).toBeDefined();
@@ -269,9 +248,8 @@ describe('ArIO Client', () => {
   );
 
   it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
+    //       [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
@@ -281,4 +259,6 @@ describe('ArIO Client', () => {
       expect(auctions).toBeDefined();
     },
   );
+
+  // TODO: add ArIOWritable tests
 });

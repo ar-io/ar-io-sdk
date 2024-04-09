@@ -11,12 +11,11 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - LOG_LEVEL=debug
-      - GATEWAY_HOST=arlocal
-      - GATEWAY_PORT=1984
-      - GATEWAY_PROTOCOL=http
-      - PREFETCH_CONTRACTS=true
-      - BOOTSTRAP_CONTRACTS=false
+      NODE_ENV: ${NODE_ENV:-dev}
+      GATEWAY_HOST: ${GATEWAY_HOST:-arlocal}
+      GATEWAY_PORT: ${GATEWAY_PORT:-1984}
+      GATEWAY_PROTOCOL: ${GATEWAY_PROTOCOL:-http}
+      PREFETCH_CONTRACTS: ${PREFETCH_CONTRACTS:-false}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/healthcheck']
       interval: 10s

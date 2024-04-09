@@ -1,14 +1,8 @@
-import { ArweaveSigner } from 'arbundles';
-
 import { ANT } from '../../src/common/ant';
 import { RemoteContract } from '../../src/common/contracts/remote-contract';
 import { DefaultLogger } from '../../src/common/logger';
 import { ANTState } from '../../src/contract-state';
-import {
-  arweave,
-  evaluateToBlockHeight,
-  evaluateToSortKey,
-} from '../constants';
+import { evaluateToBlockHeight, evaluateToSortKey } from '../constants';
 
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
 const localCacheUrl = `https://api.arns.app`;
@@ -19,13 +13,6 @@ describe('ANT contract apis', () => {
       contractTxId,
       logger: new DefaultLogger({ level: 'none' }),
     }),
-  });
-
-  it('should connect and return a valid instance', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    expect(ant.connect(signer)).toBeDefined();
-    expect(ant).toBeInstanceOf(ANT);
   });
 
   it.each([
@@ -142,9 +129,6 @@ describe('ANT contract apis', () => {
   );
 
   it('should get state with warp contract', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    ant.connect(signer);
     const state = await ant.getState();
     expect(state).toBeDefined();
   });

@@ -30,6 +30,9 @@ async function jestGlobalSetup() {
   process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID =
     arIOContractDeploy.contractTxId;
   process.env.DEPLOYED_ANT_CONTRACT_TX_ID = antContractDeploy.contractTxId;
+
+  // mine a single block
+  await arweave.api.get('mine');
 }
 
 module.exports = jestGlobalSetup;
