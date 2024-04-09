@@ -1,4 +1,3 @@
-// import { ArweaveSigner } from 'arbundles';
 import { ArIO, ArIOReadable } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
 import { DefaultLogger } from '../../src/common/logger.js';
