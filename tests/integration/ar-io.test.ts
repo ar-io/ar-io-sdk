@@ -14,6 +14,11 @@ import {
 
 const contractTxId = ARNS_DEVNET_REGISTRY_TX;
 const localCacheUrl = `https://api.arns.app`;
+const testCases = [
+  [{ sortKey: evaluateToSortKey.toString() }],
+  [{ blockHeight: evaluateToBlockHeight }],
+  [undefined],
+] as const;
 describe('ArIO Client', () => {
   const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
   const ar = ArIO.init();
@@ -187,11 +192,7 @@ describe('ArIO Client', () => {
     }
   });
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const observers = await arIO.getPrescribedObservers({
@@ -254,11 +255,7 @@ describe('ArIO Client', () => {
     expect(distributions).toBeDefined();
   });
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auction = await arIO.getAuction({
