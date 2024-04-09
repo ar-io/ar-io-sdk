@@ -30,7 +30,7 @@ export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 export const testDomain = 'angela';
 export const evaluateToBlockHeight = 1;
 export const evaluateToSortKey = new SmartWeaveSortKey(
-  '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
+  '000000000000,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
 );
 export const contractTxId = ARNS_DEVNET_REGISTRY_TX;
 export const localCacheUrl =

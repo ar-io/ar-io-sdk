@@ -5,20 +5,19 @@ import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
 import {
   evaluateToBlockHeight,
+  evaluateToSortKey,
   gatewayAddress,
   localCacheUrl,
   testDomain,
 } from '../constants.js';
 
-describe('ArIO Client', () => {
+describe('ArIOReadable Client', () => {
   let arIO;
   let contractTxId;
 
   beforeAll(() => {
     contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID;
-    // const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
     arIO = ArIO.init({
-      // signer,
       contract: new RemoteContract<ArIOState>({
         cacheUrl: localCacheUrl,
         contractTxId,
@@ -39,7 +38,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    // [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return the gateway for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -70,7 +69,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return record for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -86,7 +85,7 @@ describe('ArIO Client', () => {
   );
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return records for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -112,7 +111,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return the current epoch information for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -131,7 +130,7 @@ describe('ArIO Client', () => {
   );
 
   it.each([
-    //   //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return the epoch information for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -167,7 +166,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -201,7 +200,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return observation for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -221,7 +220,7 @@ describe('ArIO Client', () => {
   });
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return distributions for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -234,7 +233,7 @@ describe('ArIO Client', () => {
   );
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -248,7 +247,7 @@ describe('ArIO Client', () => {
   );
 
   it.each([
-    //       [{ sortKey: evaluateToSortKey.toString() }],
+    [{ sortKey: evaluateToSortKey.toString() }],
     [{ blockHeight: evaluateToBlockHeight }],
   ])(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
@@ -259,6 +258,6 @@ describe('ArIO Client', () => {
       expect(auctions).toBeDefined();
     },
   );
-
-  // TODO: add ArIOWritable tests
 });
+
+// TODO: add ArIOWritable tests
