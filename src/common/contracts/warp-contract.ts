@@ -187,7 +187,6 @@ export class WarpContract<T>
 
     return evaluationResult.result;
   }
-
   async writeInteraction<Input>({
     functionName,
     inputs,

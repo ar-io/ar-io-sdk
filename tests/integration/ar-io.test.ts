@@ -266,11 +266,7 @@ describe('ArIO Client', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auctions = await arIO.getAuctions({

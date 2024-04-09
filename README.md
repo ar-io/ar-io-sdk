@@ -13,7 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
-    - [connect](#connectsigner)
+    - [init](#init-signer)
     - [getBalance](#getbalance-address-evaluationoptions-)
     - [getBalances](#getbalances-evaluationoptions-)
     - [getGateway](#getgateway-address-evaluationoptions-)
@@ -175,18 +175,19 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 #### `init({ signer })`
 
-Connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
-Supported only on clients configured with a `WarpContract` instance.
+If a signer is passed in, connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
+If `signer` is passed in, returns an `ArIOWritable` instance. Otherwise will return a `ArIOReadable`.
 
-NOTE: if you have a client configured with a `RemoteContract` instance, it will be overriden with a `WarpContract` instance using the existing configuration of the `RemoteContract` instance when `connect` is executed.
+The `ArIOWritable` has access to read methods as well as write methods.
 
 ```typescript
-
 const browserSigner = new ArConnectSigner(window.arweaveWallet);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
 const arIOWriteable = ArIO.init({ signer: nodeSigner});
+
+const arIOReadable = ArIO.init()
 ```
 
 #### `getBalance({ address, evaluationOptions })`
@@ -568,7 +569,7 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
-#### `joinNetwork({ ...JoinNetworkParams })`
+#### `joinNetwork(params)`
 
 Joins a gateway to the ar.io network via its associated wallet.
 
@@ -591,7 +592,7 @@ const jointNetworkParams = {
   protocol: 'https',
 };
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 
@@ -601,20 +602,21 @@ const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `updateGatewaySettings({ ...UpdateGatewaySettingsParams })`
+#### `updateGatewaySettings(gatewaySettings)`
 
 Writes new gateway settings to the callers gateway configuration.
 
 ```typescript
-const params = {
+const updateGatewaySettingsParams = {
   minDelegatedStake: 100,
 };
 
 const signer = new ArweaveSigner(jwk);
 // connection required for write interactions
 const authenticatedArIO = ArIO.init({ signer });
-const updateGatewaySettingsTx =
-  await authenticatedArIO.updateGatewaySettings(params);
+const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
+  updateGatewaySettingsParams,
+);
 
 // updateGatewaySettingsTx is an Arweave transaction.
 // example:

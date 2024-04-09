@@ -360,10 +360,11 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    const res = this.contract.writeInteraction({
       functionName: 'decreaseOperatorStake',
       inputs: params,
       signer: this.signer,
     });
+    return res;
   }
 }
