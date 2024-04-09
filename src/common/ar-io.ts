@@ -81,7 +81,10 @@ export class ArIO {
    * // Overload 2: When signer is not provided
    * const readable = ArIO.init({ contract: myContract });
    */
-  static init(config?: ContractConfiguration & WithSigner): ArIOWritable;
+  static init(
+    config?: ContractConfiguration &
+      WithSigner & { contract?: WarpContract<ArIOState> },
+  ): ArIOWritable;
   static init(config?: ContractConfiguration): ArIOReadable;
   static init(
     config: ContractConfiguration & { signer?: ContractSigner } = {},
