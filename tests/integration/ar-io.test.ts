@@ -2,6 +2,7 @@ import { ArweaveSigner } from 'arbundles';
 
 import { ArIO } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
+import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { ArIOState } from '../../src/contract-state.js';
@@ -21,10 +22,9 @@ const testCases = [
 ] as const;
 describe('ArIO Client', () => {
   const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const ar = ArIO.init();
   const arIO = ArIO.init({
     signer,
-    contract: new RemoteContract<ArIOState>({
+    contract: new WarpContract<ArIOState>({
       cacheUrl: localCacheUrl,
       contractTxId,
       logger: new DefaultLogger({ level: 'none' }),

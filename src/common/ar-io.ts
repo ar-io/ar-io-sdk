@@ -48,15 +48,11 @@ export class ArIO {
     if (isContractConfiguration<ArIOState>(config)) {
       if (config.contract instanceof WarpContract) {
         return config.contract;
-      } else {
-        // TODO: throw error if contract is not of WarpContract type
-        return new WarpContract<ArIOState>(config.contract.configuration());
       }
     } else if (isContractTxIdConfiguration(config)) {
       return new WarpContract<ArIOState>({ contractTxId: config.contractTxId });
-    } else {
-      throw new Error('Invalid configuration.');
     }
+    throw new Error('Invalid configuration.');
   }
 
   /**
@@ -82,14 +78,20 @@ export class ArIO {
    * const readable = ArIO.init({ contract: myContract });
    */
   static init(
-    config?: ContractConfiguration &
-      WithSigner & { contract?: WarpContract<ArIOState> },
+    config: ContractConfiguration &
+      WithSigner &
+      ({ contract: WarpContract<ArIOState> } | { contractTxId: string }),
   ): ArIOWritable;
-  static init(config?: ContractConfiguration): ArIOReadable;
   static init(
-    config: ContractConfiguration & { signer?: ContractSigner } = {},
+    config?: ContractConfiguration &
+      ({ contract?: RemoteContract<ArIOState> } | { contractTxId: string }),
+  ): ArIOReadable;
+  static init(
+    config: ContractConfiguration & {
+      signer?: ContractSigner;
+    } = {},
   ) {
-    if (config.signer) {
+    if (config?.signer) {
       const signer = config.signer;
       const contract = this.createContract(config);
       return new ArIOWritable({ signer, contract });

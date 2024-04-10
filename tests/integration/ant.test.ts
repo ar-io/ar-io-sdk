@@ -12,6 +12,12 @@ import {
 
 const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
 const localCacheUrl = `https://api.arns.app`;
+
+const testCases = [
+  [{ sortKey: evaluateToSortKey.toString() }],
+  [{ blockHeight: evaluateToBlockHeight }],
+  [undefined],
+] as const;
 describe('ANT contract apis', () => {
   const ant = new ANT({
     contract: new RemoteContract<ANTState>({
@@ -28,11 +34,7 @@ describe('ANT contract apis', () => {
     expect(ant).toBeInstanceOf(ANT);
   });
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get contract state with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getState({ evaluationOptions: { evalTo } });
@@ -40,23 +42,18 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(`should get record: ${JSON.stringify('%s')}`, async (evalTo) => {
-    const record = await ant.getRecord({
-      domain: '@',
-      evaluationOptions: { evalTo },
-    });
-    expect(record).toBeDefined();
-  });
+  it.each(testCases)(
+    `should get record: ${JSON.stringify('%s')}`,
+    async (evalTo) => {
+      const record = await ant.getRecord({
+        domain: '@',
+        evaluationOptions: { evalTo },
+      });
+      expect(record).toBeDefined();
+    },
+  );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get records with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const records = await ant.getRecords({ evaluationOptions: { evalTo } });
@@ -64,11 +61,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get owner with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const owner = await ant.getOwner({ evaluationOptions: { evalTo } });
@@ -76,11 +69,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get controllers with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const controllers = await ant.getControllers({
@@ -90,11 +79,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get name with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getName({ evaluationOptions: { evalTo } });
@@ -102,11 +87,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get ticker with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getTicker({ evaluationOptions: { evalTo } });
@@ -114,11 +95,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get balances with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getBalances({ evaluationOptions: { evalTo } });
@@ -126,11 +103,7 @@ describe('ANT contract apis', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [undefined],
-    [{ blockHeight: evaluateToBlockHeight }],
-  ])(
+  it.each(testCases)(
     `should get balance with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const state = await ant.getBalance({

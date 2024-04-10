@@ -612,7 +612,7 @@ const updateGatewaySettingsParams = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
   updateGatewaySettingsParams,
@@ -635,7 +635,7 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const increaseDelegateStakeTx =
   await authenticatedArIO.increaseDelegateStake(params);
@@ -657,7 +657,7 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const decreaseDelegateStakeTx =
   await authenticatedArIO.decreaseDelegateStake(params);
@@ -678,7 +678,7 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const increaseOperatorStakeTx =
   await authenticatedArIO.increaseOperatorStake(params);
@@ -699,7 +699,7 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
+// signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
 const decreaseOperatorStakeTx =
   await authenticatedArIO.decreaseOperatorStake(params);
