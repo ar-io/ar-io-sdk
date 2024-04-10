@@ -315,7 +315,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: 'joinNetwork',
+      functionName: CONTRACT_FUNCTIONS.JOIN_NETWORK,
       inputs: params,
       signer: this.signer,
     });
@@ -324,29 +324,29 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: 'updateGatewaySettings',
+      functionName: CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
       inputs: params,
       signer: this.signer,
     });
   }
 
-  async increaseDelegateState(params: {
+  async increaseDelegateStake(params: {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: 'delegateState',
+      functionName: CONTRACT_FUNCTIONS.DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
     });
   }
 
-  async decreaseDelegateState(params: {
+  async decreaseDelegateStake(params: {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: 'decreaseDelegateState',
+      functionName: CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
     });
@@ -356,7 +356,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: 'increaseOperatorStake',
+      functionName: CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
     });
@@ -366,7 +366,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     const res = this.contract.writeInteraction({
-      functionName: 'decreaseOperatorStake',
+      functionName: CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
     });

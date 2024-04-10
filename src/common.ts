@@ -213,11 +213,11 @@ export interface ArIOWriteContract {
   decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult>;
-  increaseDelegateState(params: {
+  increaseDelegateStake(params: {
     target: WalletAddress;
     qty: number;
   }): Promise<WriteInteractionResult>;
-  decreaseDelegateState(params: {
+  decreaseDelegateStake(params: {
     target: WalletAddress;
     qty: number;
   }): Promise<WriteInteractionResult>;

@@ -5,7 +5,7 @@ import { WarpContract } from '../../src/common/contracts/warp-contract';
 import { WriteInteractionError } from '../../src/common/error';
 import { DefaultLogger } from '../../src/common/logger';
 import { ANTState } from '../../src/contract-state';
-import { arweave, localCacheUrl, warp } from '../constants';
+import { localCacheUrl, warp } from '../constants';
 
 describe('warp-contract client', () => {
   let signer: ArweaveSigner;
@@ -49,7 +49,6 @@ describe('warp-contract client', () => {
     const contract: WarpContract<ANTState> = new WarpContract<ANTState>({
       cacheUrl: localCacheUrl,
       contractTxId,
-      arweave,
       logger: new DefaultLogger({ level: 'none' }),
     });
 

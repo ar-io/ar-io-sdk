@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner } from 'arbundles';
-import Arweave from 'arweave';
 import { DataItem } from 'warp-arbundles';
 import {
   Contract,
@@ -68,7 +67,6 @@ export class WarpContract<T>
     contractTxId: string;
     cacheUrl?: string;
     warp?: Warp;
-    arweave?: Arweave;
     logger?: Logger;
   }) {
     this.contractTxId = contractTxId;
