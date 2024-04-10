@@ -1,3 +1,10 @@
+# [1.0.0-alpha.19](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.18...v1.0.0-alpha.19) (2024-04-10)
+
+
+### Bug Fixes
+
+* **ant:** fix API for getRecords ([c714aa3](https://github.com/ar-io/ar-io-sdk/commit/c714aa3563580c19427d55d6938893665ecc3ea2))
+
 # [1.0.0-alpha.18](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2024-04-10)
 
 
