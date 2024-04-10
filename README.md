@@ -183,6 +183,7 @@ const browserSigner = new ArConnectSigner(window.arweaveWallet);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
+// read and write client that has access to all APIs
 const arIOWriteable = ArIO.init({ signer: nodeSigner});
 
 const arIOReadable = ArIO.init()
