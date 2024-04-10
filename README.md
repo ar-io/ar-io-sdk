@@ -177,7 +177,6 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
-The `ArIOWritable` has access to read methods as well as write methods.
 
 ```typescript
 const browserSigner = new ArConnectSigner(window.arweaveWallet);
