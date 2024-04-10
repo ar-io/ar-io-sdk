@@ -175,8 +175,7 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 #### `init({ signer })`
 
-If a signer is passed in, connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
-If `signer` is passed in, returns an `ArIOWritable` instance. Otherwise will return a `ArIOReadable`.
+Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
 The `ArIOWritable` has access to read methods as well as write methods.
 
