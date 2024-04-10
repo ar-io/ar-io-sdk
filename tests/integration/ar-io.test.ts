@@ -1,6 +1,6 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ArIO } from '../../src/common/ar-io.js';
+import { ArIO, ArIOReadable, ArIOWritable } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
@@ -31,19 +31,25 @@ describe('ArIO Client', () => {
     }),
   });
 
-  it('should create a custom ArIO client', () => {
-    expect(arIO).toBeInstanceOf(ArIO);
-  });
-
-  it('should connect and return a valid instance', async () => {
-    const client = ArIO.init({
+  it('should connect and return a valid instances of read and write clients', async () => {
+    const readClient = ArIO.init({
       contract: new RemoteContract<ArIOState>({
         contractTxId,
         cacheUrl: localCacheUrl,
       }),
     });
-    expect(client).toBeDefined();
-    expect(client).toBeInstanceOf(ArIO);
+    const writeClient = ArIO.init({
+      signer,
+      contract: new WarpContract<ArIOState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+      }),
+    });
+    expect(readClient).toBeDefined();
+    expect(readClient).toBeInstanceOf(ArIOReadable);
+    expect(writeClient).toBeDefined();
+    expect(writeClient).toBeInstanceOf(ArIOWritable);
   });
 
   it('should should return undefined for non existent gateway', async () => {
