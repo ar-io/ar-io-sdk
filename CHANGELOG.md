@@ -1,3 +1,10 @@
+# [1.0.0-alpha.18](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2024-04-10)
+
+
+### Bug Fixes
+
+* **ant:** default evaluation options for apis that do not require them ([72b57d5](https://github.com/ar-io/ar-io-sdk/commit/72b57d5626cbcda0931fd5f0b88bf113fbb05066))
+
 # [1.0.0-alpha.17](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2024-03-27)
 
 
