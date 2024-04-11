@@ -23,9 +23,11 @@ import {
   ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
+} from '../types.js';
+import {
   isContractConfiguration,
   isContractTxIdConfiguration,
-} from '../types.js';
+} from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 

@@ -43,3 +43,10 @@ export class InvalidSignerError extends BaseError {
     super(INVALID_SIGNER_ERROR);
   }
 }
+export const INVALID_CONTRACT_CONFIGURATION_ERROR =
+  'Invalid contract configuration';
+export class InvalidContractConfigurationError extends BaseError {
+  constructor() {
+    super(INVALID_CONTRACT_CONFIGURATION_ERROR);
+  }
+}

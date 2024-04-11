@@ -17,9 +17,10 @@
 import Arweave from 'arweave';
 import { EvaluationManifest } from 'warp-contracts';
 
-import { SortKey } from '../common.js';
+import { ContractConfiguration, SortKey } from '../common.js';
+import { RemoteContract, WarpContract } from '../common/index.js';
 import { SORT_KEY_REGEX } from '../constants.js';
-import { tagsToObject } from './arweave.js';
+import { tagsToObject, validateArweaveId } from './arweave.js';
 
 export function isSortKey(sortKey: string): sortKey is SortKey {
   return SmartWeaveSortKey.validate(sortKey);
@@ -70,4 +71,20 @@ export async function getContractManifest({
   // TODO throw if manifest is missing
   const contractManifest = JSON.parse(contractManifestString);
   return contractManifest;
+}
+
+export function isContractConfiguration<T>(
+  config: ContractConfiguration,
+): config is {
+  contract: WarpContract<T> | RemoteContract<T>;
+} {
+  return 'contract' in config;
+}
+
+export function isContractTxIdConfiguration(
+  config: ContractConfiguration,
+): config is { contractTxId: string } {
+  return (
+    'contractTxId' in config && validateArweaveId(config.contractTxId) === true
+  );
 }

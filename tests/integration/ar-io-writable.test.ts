@@ -1,7 +1,6 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ArIO, ArIOReadable, ArIOWritable } from '../../src/common/ar-io.js';
-import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
+import { ArIO } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
@@ -42,27 +41,6 @@ describe('ArIO Client', () => {
       logger: new DefaultLogger({ level: 'none' }),
       warp: warp,
     }),
-  });
-
-  it('should connect and return a valid instances of read and write clients', async () => {
-    const readClient = ArIO.init({
-      contract: new RemoteContract<ArIOState>({
-        contractTxId,
-        cacheUrl: localCacheUrl,
-      }),
-    });
-    const writeClient = ArIO.init({
-      signer,
-      contract: new WarpContract<ArIOState>({
-        cacheUrl: localCacheUrl,
-        contractTxId,
-        logger: new DefaultLogger({ level: 'none' }),
-      }),
-    });
-    expect(readClient).toBeDefined();
-    expect(readClient).toBeInstanceOf(ArIOReadable);
-    expect(writeClient).toBeDefined();
-    expect(writeClient).toBeInstanceOf(ArIOWritable);
   });
 
   it.each(writeTestCases)(

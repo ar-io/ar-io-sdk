@@ -35,11 +35,13 @@ import {
   WeightedObserver,
   WithSigner,
   WriteInteractionResult,
+} from '../types.js';
+import {
   isContractConfiguration,
   isContractTxIdConfiguration,
-} from '../types.js';
+} from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { WarpContract } from './index.js';
+import { InvalidContractConfigurationError, WarpContract } from './index.js';
 
 export class ArIO {
   static createContract(
@@ -52,7 +54,7 @@ export class ArIO {
     } else if (isContractTxIdConfiguration(config)) {
       return new WarpContract<ArIOState>({ contractTxId: config.contractTxId });
     }
-    throw new Error('Invalid configuration.');
+    throw new InvalidContractConfigurationError();
   }
 
   /**
@@ -125,7 +127,7 @@ export class ArIOReadable implements ArIOReadContract {
   /**
    * Returns the current state of the contract.
    */
-  async getState(params: EvaluationParameters): Promise<ArIOState> {
+  async getState(params: EvaluationParameters = {}): Promise<ArIOState> {
     const state = await this.contract.getState(params);
     return state;
   }

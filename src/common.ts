@@ -48,20 +48,6 @@ export type ContractConfiguration =
       contractTxId: string;
     };
 
-export function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is {
-  contract: WarpContract<T> | RemoteContract<T>;
-} {
-  return 'contract' in config;
-}
-
-export function isContractTxIdConfiguration(
-  config: ContractConfiguration,
-): config is { contractTxId: string } {
-  return 'contractTxId' in config;
-}
-
 export type EvaluationOptions = {
   evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
   // TODO: any other evaluation constraints

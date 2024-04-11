@@ -28,6 +28,13 @@ describe('warp-contract client', () => {
     expect(contract).toBeInstanceOf(WarpContract);
   });
 
+  it('should return contract configuration', async () => {
+    const config = contract.configuration();
+    expect(config).toBeDefined();
+    expect(config).toHaveProperty('cacheUrl');
+    expect(config).toHaveProperty('contractTxId');
+  });
+
   it('should write a transaction', async () => {
     const tx = await contract
       .writeInteraction({
@@ -64,5 +71,21 @@ describe('warp-contract client', () => {
 
     expect(error).toBeDefined();
     expect(error).toBeInstanceOf(WriteInteractionError);
+  });
+
+  it('Should dryWrite a transaction', async () => {
+    const tx = await contract.writeInteraction({
+      signer,
+      dryWrite: true,
+      functionName: 'setName',
+      inputs: {
+        name: 'test',
+      },
+    });
+    const txKeys = Object.keys(tx);
+    expect(tx).toBeDefined();
+    expect(txKeys).toContain('type');
+    expect(txKeys).toContain('result');
+    expect(txKeys).toContain('state');
   });
 });

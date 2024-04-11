@@ -31,13 +31,7 @@ describe('ArIO Client', () => {
     }),
   });
 
-  it('should connect and return a valid instances of read and write clients', async () => {
-    const readClient = ArIO.init({
-      contract: new RemoteContract<ArIOState>({
-        contractTxId,
-        cacheUrl: localCacheUrl,
-      }),
-    });
+  it('should return a valid instance of ArIOWritable with contract config', async () => {
     const writeClient = ArIO.init({
       signer,
       contract: new WarpContract<ArIOState>({
@@ -46,10 +40,53 @@ describe('ArIO Client', () => {
         logger: new DefaultLogger({ level: 'none' }),
       }),
     });
-    expect(readClient).toBeDefined();
-    expect(readClient).toBeInstanceOf(ArIOReadable);
     expect(writeClient).toBeDefined();
     expect(writeClient).toBeInstanceOf(ArIOWritable);
+  });
+  it('should return a valid instance of ArIOWritable with contractTxId config', async () => {
+    const writeClient = ArIO.init({
+      signer,
+      contractTxId,
+    });
+    expect(writeClient).toBeDefined();
+    expect(writeClient).toBeInstanceOf(ArIOWritable);
+  });
+
+  it('should return a valid instance if ArIOReadable with contract config', async () => {
+    const readClient = ArIO.init({
+      contract: new RemoteContract<ArIOState>({
+        contractTxId,
+        cacheUrl: localCacheUrl,
+      }),
+    });
+
+    expect(readClient).toBeDefined();
+    expect(readClient).toBeInstanceOf(ArIOReadable);
+  });
+  it('should return a valid instance if ArIOReadable with contractTxId config', async () => {
+    const readClient = ArIO.init({
+      contractTxId,
+    });
+
+    expect(readClient).toBeDefined();
+    expect(readClient).toBeInstanceOf(ArIOReadable);
+  });
+
+  it('should getState successfully', async () => {
+    const state = await arIO.getState();
+    expect(state).toBeDefined();
+  });
+
+  it('should getBalance of an address successfully', async () => {
+    const balance = await arIO.getBalance({
+      address: process.env.PRIMARY_WALLET_ADDRESS!,
+    });
+    expect(balance).toBeDefined();
+  });
+
+  it('should getBalances successfully', async () => {
+    const balances = await arIO.getBalances();
+    expect(balances).toBeDefined();
   });
 
   it('should should return undefined for non existent gateway', async () => {
