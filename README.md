@@ -178,6 +178,9 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
+// read-only client that has access to all read APIs
+const arIOReadable = ArIO.init()
+
 const browserSigner = new ArConnectSigner(window.arweaveWallet);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
@@ -185,7 +188,6 @@ const nodeSigner = new ArweaveSigner(JWK);
 // read and write client that has access to all APIs
 const arIOWriteable = ArIO.init({ signer: nodeSigner});
 
-const arIOReadable = ArIO.init()
 ```
 
 #### `getBalance({ address, evaluationOptions })`
@@ -567,7 +569,7 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
-#### `joinNetwork(params)`
+#### `joinNetwork(params) ~ Requires signer during init()`
 
 Joins a gateway to the ar.io network via its associated wallet.
 
@@ -600,7 +602,7 @@ const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `updateGatewaySettings(gatewaySettings)`
+#### `updateGatewaySettings(gatewaySettings) ~ Requires signer during init()`
 
 Writes new gateway settings to the callers gateway configuration.
 
@@ -622,7 +624,7 @@ const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `increaseDelegateStake({ target, qty })`
+#### `increaseDelegateStake({ target, qty }) ~ Requires signer during init()`
 
 Increases the callers stake on the target gateway.
 
@@ -644,7 +646,7 @@ const increaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseDelegateStake({ target, qty })`
+#### `decreaseDelegateStake({ target, qty }) ~ Requires signer during init()`
 
 Decreases the callers stake on the target gateway.
 
@@ -666,7 +668,7 @@ const decreaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `increaseOperatorStake({ qty })`
+#### `increaseOperatorStake({ qty }) ~ Requires signer during init()`
 
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
 
@@ -687,7 +689,7 @@ const increaseOperatorStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseOperatorStake({ qty })`
+#### `decreaseOperatorStake({ qty }) ~ Requires signer during init()`
 
 Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
 
