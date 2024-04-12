@@ -18,6 +18,7 @@ import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
 import { InteractionResult, Transaction } from 'warp-contracts';
 
+import { RemoteContract, WarpContract } from './common/index.js';
 import {
   ANTRecord,
   ANTState,
@@ -38,34 +39,14 @@ export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
-export type ContractConfiguration = {
-  signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
-} & (
+export type WithSigner = { signer: ContractSigner }; // TODO: optionally allow JWK in place of signer
+export type ContractConfiguration =
   | {
-      contract?:
-        | (BaseContract<unknown> & ReadContract)
-        | (BaseContract<unknown> & ReadWriteContract);
+      contract?: WarpContract<unknown> | RemoteContract<unknown>;
     }
   | {
       contractTxId: string;
-    }
-);
-
-export function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is {
-  contract:
-    | (BaseContract<T> & ReadContract)
-    | (BaseContract<T> & ReadWriteContract);
-} {
-  return 'contract' in config;
-}
-
-export function isContractTxIdConfiguration(
-  config: ContractConfiguration,
-): config is { contractTxId: string } {
-  return 'contractTxId' in config;
-}
+    };
 
 export type EvaluationOptions = {
   evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
@@ -86,8 +67,6 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ContractSigner): this;
-  connected(): boolean;
 }
 
 export interface ReadContract {
@@ -123,7 +102,7 @@ export interface SmartWeaveContract<T> {
 }
 
 // TODO: extend with additional methods
-export interface ArIOContract extends BaseContract<ArIOState> {
+export interface ArIOReadContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -185,6 +164,9 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+}
+
+export interface ArIOWriteContract {
   // write interactions
   joinNetwork({
     qty,
@@ -217,11 +199,11 @@ export interface ArIOContract extends BaseContract<ArIOState> {
   decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult>;
-  increaseDelegateState(params: {
+  increaseDelegateStake(params: {
     target: WalletAddress;
     qty: number;
   }): Promise<WriteInteractionResult>;
-  decreaseDelegateState(params: {
+  decreaseDelegateStake(params: {
     target: WalletAddress;
     qty: number;
   }): Promise<WriteInteractionResult>;

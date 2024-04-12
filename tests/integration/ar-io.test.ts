@@ -1,7 +1,8 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ArIO } from '../../src/common/ar-io.js';
+import { ArIO, ArIOReadable, ArIOWritable } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
+import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { ArIOState } from '../../src/contract-state.js';
@@ -14,30 +15,78 @@ import {
 
 const contractTxId = ARNS_DEVNET_REGISTRY_TX;
 const localCacheUrl = `https://api.arns.app`;
+const testCases = [
+  [{ sortKey: evaluateToSortKey.toString() }],
+  [{ blockHeight: evaluateToBlockHeight }],
+  [undefined],
+] as const;
 describe('ArIO Client', () => {
   const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const arIO = new ArIO({
+  const arIO = ArIO.init({
     signer,
-    contract: new RemoteContract<ArIOState>({
+    contract: new WarpContract<ArIOState>({
       cacheUrl: localCacheUrl,
       contractTxId,
       logger: new DefaultLogger({ level: 'none' }),
     }),
   });
 
-  it('should create a custom ArIO client', () => {
-    expect(arIO).toBeInstanceOf(ArIO);
+  it('should return a valid instance of ArIOWritable with contract config', async () => {
+    const writeClient = ArIO.init({
+      signer,
+      contract: new WarpContract<ArIOState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+      }),
+    });
+    expect(writeClient).toBeDefined();
+    expect(writeClient).toBeInstanceOf(ArIOWritable);
+  });
+  it('should return a valid instance of ArIOWritable with contractTxId config', async () => {
+    const writeClient = ArIO.init({
+      signer,
+      contractTxId,
+    });
+    expect(writeClient).toBeDefined();
+    expect(writeClient).toBeInstanceOf(ArIOWritable);
   });
 
-  it('should connect and return a valid instance', async () => {
-    const client = new ArIO({
+  it('should return a valid instance if ArIOReadable with contract config', async () => {
+    const readClient = ArIO.init({
       contract: new RemoteContract<ArIOState>({
         contractTxId,
         cacheUrl: localCacheUrl,
       }),
     });
-    expect(client.connect(signer)).toBeDefined();
-    expect(client).toBeInstanceOf(ArIO);
+
+    expect(readClient).toBeDefined();
+    expect(readClient).toBeInstanceOf(ArIOReadable);
+  });
+  it('should return a valid instance if ArIOReadable with contractTxId config', async () => {
+    const readClient = ArIO.init({
+      contractTxId,
+    });
+
+    expect(readClient).toBeDefined();
+    expect(readClient).toBeInstanceOf(ArIOReadable);
+  });
+
+  it('should getState successfully', async () => {
+    const state = await arIO.getState();
+    expect(state).toBeDefined();
+  });
+
+  it('should getBalance of an address successfully', async () => {
+    const balance = await arIO.getBalance({
+      address: process.env.PRIMARY_WALLET_ADDRESS!,
+    });
+    expect(balance).toBeDefined();
+  });
+
+  it('should getBalances successfully', async () => {
+    const balances = await arIO.getBalances();
+    expect(balances).toBeDefined();
   });
 
   it('should should return undefined for non existent gateway', async () => {
@@ -186,11 +235,7 @@ describe('ArIO Client', () => {
     }
   });
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return the prescribed observers for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const observers = await arIO.getPrescribedObservers({
@@ -253,11 +298,7 @@ describe('ArIO Client', () => {
     expect(distributions).toBeDefined();
   });
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auction = await arIO.getAuction({
@@ -268,11 +309,7 @@ describe('ArIO Client', () => {
     },
   );
 
-  it.each([
-    [{ sortKey: evaluateToSortKey.toString() }],
-    [{ blockHeight: evaluateToBlockHeight }],
-    [undefined],
-  ])(
+  it.each(testCases)(
     `should return auction for provided evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
       const auctions = await arIO.getAuctions({

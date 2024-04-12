@@ -66,7 +66,7 @@ export async function deployArIOContract({
     initState: JSON.stringify({
       ...state,
       owner: address,
-      balances: { [address]: 1 * 1_000_000 * 1_000_000 },
+      balances: { [address]: 100_000_000_000_000 },
     }),
   });
 }
@@ -80,6 +80,8 @@ export async function createLocalWallet(
   const address = await arweave.wallets.jwkToAddress(wallet);
   // mint some tokens
   await arweave.api.get(`/mint/${address}/${amount}`);
+  const walletBalance = await arweave.wallets.getBalance(address);
+  console.log(`Wallet balance: ${walletBalance}`);
   // save it to local directory
   if (!fs.existsSync(path.join(__dirname, `./wallets/${address}.json`))) {
     fs.writeFileSync(

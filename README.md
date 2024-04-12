@@ -13,7 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
-    - [connect](#connectsigner)
+    - [init](#init-signer)
     - [getBalance](#getbalance-address-evaluationoptions-)
     - [getBalances](#getbalances-evaluationoptions-)
     - [getGateway](#getgateway-address-evaluationoptions-)
@@ -66,7 +66,7 @@ yarn add @ar-io/sdk
 ```typescript
 import { ArIO } from '@ar-io/sdk';
 
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const gateways = arIO.getGateways();
 
 // outputs:
@@ -123,7 +123,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 import { ArIO } from '@ar-io/sdk';
 
 // set up client
-const arIO = new ArIO();
+const arIO = ArIO.init();
 // fetch gateways
 const gateways = arIO.getGateways();
 ```
@@ -135,7 +135,7 @@ const gateways = arIO.getGateways();
   import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
 
   // set up client
-  const arIO = new ArIO();
+  const arIO = ArIO.init();
   // fetch gateways
   const gateways = await arIO.getGateways();
 </script>
@@ -149,7 +149,7 @@ const gateways = arIO.getGateways();
 import { ArIO } from '@ar-io/sdk/node';
 
 // set up client
-const arIO = new ArIO();
+const arIO = ArIO.init();
 // fetch gateways
 const gateways = await arIO.getGateways();
 ```
@@ -160,7 +160,7 @@ const gateways = await arIO.getGateways();
 import { ArIO } from '@ar-io/sdk';
 
 // set up client
-const arIO = new ArIO();
+const arIO = ArIO.init();
 // fetch gateways
 const gateways = await arIO.getGateways();
 ```
@@ -173,21 +173,21 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 ### APIs
 
-#### `connect(signer)`
+#### `init({ signer })`
 
-Connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
-Supported only on clients configured with a `WarpContract` instance.
-
-NOTE: if you have a client configured with a `RemoteContract` instance, it will be overriden with a `WarpContract` instance using the existing configuration of the `RemoteContract` instance when `connect` is executed.
+Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-const arIO = new ArIO();
+// read-only client that has access to all read APIs
+const arIOReadable = ArIO.init()
 
 const browserSigner = new ArConnectSigner(window.arweaveWallet);
-arIO.connect(browserSigner);
+const arIOWriteable = ArIO.init({ signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
-arIO.connect(nodeSigner);
+// read and write client that has access to all APIs
+const arIOWriteable = ArIO.init({ signer: nodeSigner});
+
 ```
 
 #### `getBalance({ address, evaluationOptions })`
@@ -195,7 +195,7 @@ arIO.connect(nodeSigner);
 Retrieves the balance of the specified wallet address.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const balance = arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
@@ -214,7 +214,7 @@ Retrieves the balances of the ArIO contract.
  -->
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const balances = arIO.getBalances();
 
 // outputs:
@@ -232,7 +232,7 @@ const balances = arIO.getBalances();
 Retrieves a gateway's info by its staking wallet address.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const gateway = arIO.getGateway({
   address: 'INSERT_GATEWAY_ADDRESS',
 });
@@ -277,7 +277,7 @@ const gateway = arIO.getGateway({
 Retrieves the registered gateways of the ArIO contract.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const gateways = arIO.getGateways();
 
 // outputs:
@@ -327,7 +327,7 @@ const gateways = arIO.getGateways();
 Retrieves the record info of the specified ArNS name.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const record = arIO.getArNSRecord({ domain: 'ardrive' });
 
 // outputs
@@ -346,7 +346,7 @@ const record = arIO.getArNSRecord({ domain: 'ardrive' });
 Retrieves all registered ArNS records of the ArIO contract.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const records = arIO.getArNSRecords();
 
 // outputs:
@@ -375,7 +375,7 @@ const records = arIO.getArNSRecords();
 Returns the epoch-indexed observation list.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const observations = await arIO.getObservations();
 
 // output
@@ -399,7 +399,7 @@ const observations = await arIO.getObservations();
 Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const distributions = await arIO.getDistributions();
 
 // output
@@ -418,7 +418,7 @@ const distributions = await arIO.getDistributions();
 Returns the epoch data for the specified block height.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
 
 // output
@@ -438,7 +438,7 @@ const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
 Returns the current epoch data.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const epoch = await arIO.getCurrentEpoch();
 
 // output
@@ -458,7 +458,7 @@ const epoch = await arIO.getCurrentEpoch();
 Retrieves the prescribed observers of the ArIO contract. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
 
 ```typescript
-const arIO = new ArIO();
+const arIO = ArIO.init();
 const observers = arIO.getPrescribedObservers();
 
 // outputs:
@@ -569,7 +569,7 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
-#### `joinNetwork({ ...JoinNetworkParams})`
+#### `joinNetwork(params) ~ Requires signer during init()`
 
 Joins a gateway to the ar.io network via its associated wallet.
 
@@ -592,8 +592,8 @@ const jointNetworkParams = {
   protocol: 'https',
 };
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
 const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 
 // joinNetworkTx is an Arweave transaction.
@@ -602,20 +602,21 @@ const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `updateGatewaySettings({ ...UpdateGatewaySettingsParams})`
+#### `updateGatewaySettings(gatewaySettings) ~ Requires signer during init()`
 
 Writes new gateway settings to the callers gateway configuration.
 
 ```typescript
-const params = {
+const updateGatewaySettingsParams = {
   minDelegatedStake: 100,
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
-const updateGatewaySettingsTx =
-  await authenticatedArIO.updateGatewaySettings(params);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
+const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
+  updateGatewaySettingsParams,
+);
 
 // updateGatewaySettingsTx is an Arweave transaction.
 // example:
@@ -623,7 +624,7 @@ const updateGatewaySettingsTx =
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `increaseDelegateStake({ target, qty })`
+#### `increaseDelegateStake({ target, qty }) ~ Requires signer during init()`
 
 Increases the callers stake on the target gateway.
 
@@ -634,8 +635,8 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
 const increaseDelegateStakeTx =
   await authenticatedArIO.increaseDelegateStake(params);
 
@@ -645,7 +646,7 @@ const increaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseDelegateStake({ target, qty })`
+#### `decreaseDelegateStake({ target, qty }) ~ Requires signer during init()`
 
 Decreases the callers stake on the target gateway.
 
@@ -656,8 +657,8 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
 const decreaseDelegateStakeTx =
   await authenticatedArIO.decreaseDelegateStake(params);
 
@@ -667,7 +668,7 @@ const decreaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `increaseOperatorStake({ qty })`
+#### `increaseOperatorStake({ qty }) ~ Requires signer during init()`
 
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
 
@@ -677,8 +678,8 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
 const increaseOperatorStakeTx =
   await authenticatedArIO.increaseOperatorStake(params);
 
@@ -688,7 +689,7 @@ const increaseOperatorStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseOperatorStake({ qty })`
+#### `decreaseOperatorStake({ qty }) ~ Requires signer during init()`
 
 Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
 
@@ -698,8 +699,8 @@ const params = {
 };
 
 const signer = new ArweaveSigner(jwk);
-// connection required for write interactions
-const authenticatedArIO = arIO.connect(signer);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
 const decreaseOperatorStakeTx =
   await authenticatedArIO.decreaseOperatorStake(params);
 
@@ -715,19 +716,19 @@ The ArIO contract client class exposes APIs relevant to the ar.io contract. It c
 
 ```typescript
 // provide a custom contractTxId to the client and default to remote evaluation
-const remoteCustomArIO = new ArIO({
+const remoteCustomArIO = ArIO.init({
   contractTxId: 'TESTNET_CONTRACT_TX_ID',
 });
 
 // provide a custom contract to the client, and specify local evaluation using warp
-const localCustomArIO = new ArIO({
+const localCustomArIO = ArIO.init({
   contract: new WarpContract<ArIOState>({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
   }),
 });
 
 // provide a custom contract to the client, and specify local evaluation using remote cache
-const remoteCacheCustomArIO = new ArIO({
+const remoteCacheCustomArIO = ArIO.init({
   contract: new RemoteContract<ArIOState>({
     contractTxId: 'TESTNET_CONTRACT_TX_ID',
   }),
