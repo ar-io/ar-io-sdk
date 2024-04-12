@@ -64,8 +64,10 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
   /**
    * Returns the current state of the contract.
    */
-  async getState(params: EvaluationParameters = {}): Promise<ANTState> {
-    const state = await this.contract.getState(params);
+  async getState({
+    evaluationOptions,
+  }: EvaluationParameters = {}): Promise<ANTState> {
+    const state = await this.contract.getState({ evaluationOptions });
     return state;
   }
 
@@ -81,7 +83,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<Record<string, ANTRecord>> {
+  } = {}): Promise<Record<string, ANTRecord>> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
@@ -90,7 +92,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<string> {
+  } = {}): Promise<string> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.owner;
   }
@@ -99,7 +101,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<string[]> {
+  } = {}): Promise<string[]> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.controllers;
   }
@@ -108,7 +110,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<string> {
+  } = {}): Promise<string> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.name;
   }
@@ -117,7 +119,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<string> {
+  } = {}): Promise<string> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.ticker;
   }
@@ -126,7 +128,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
     evaluationOptions,
   }: {
     evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
-  }): Promise<Record<string, number>> {
+  } = {}): Promise<Record<string, number>> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }

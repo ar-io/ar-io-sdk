@@ -60,12 +60,11 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       contractTxId: this.contractTxId,
       evaluationOptions,
     });
-    const { state } = await this.http.get<
-      { sortKey: string } | { blockHeight: number } | Record<string, never>,
-      { state: T }
-    >({
+    const { state } = await this.http.get<EvaluationParameters, { state: T }>({
       endpoint: ``,
-      params: evaluationOptions?.evalTo,
+      params: {
+        ...evaluationOptions?.evalTo,
+      },
     });
     return state;
   }
