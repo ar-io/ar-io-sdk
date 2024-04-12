@@ -24,6 +24,6 @@
     "skipLibCheck": true,
     "strictNullChecks": true
   },
-  "include": ["src", "tests/unit/smartweave.test.ts"],
+  "include": ["src"],
   "exclude": ["lib", "node_modules", "bundles", "tests"]
 }

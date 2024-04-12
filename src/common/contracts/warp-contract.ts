@@ -53,8 +53,6 @@ export class WarpContract<T>
   private cacheUrl: string | undefined;
   private logger: Logger;
   private warp: Warp;
-  // warp compatible signer that uses ContractSigner
-  //private signer: CustomSignature | undefined;
 
   constructor({
     contractTxId,
