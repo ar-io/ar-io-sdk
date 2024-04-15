@@ -28,6 +28,9 @@ import {
   ArNSNameData,
   EpochDistributionData,
   Gateway,
+  GatewayConnectionSettings,
+  GatewayMetadata,
+  GatewayStakingSettings,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -214,21 +217,12 @@ export type WriteInteractionResult =
   | DataItem
   | InteractionResult<unknown, unknown>;
 
-export type JoinNetworkParams = {
-  qty: number;
-  allowDelegatedStaking?: boolean;
-  delegateRewardShareRatio?: number;
-  fqdn: string;
-  label: string;
-  minDelegatedStake?: number;
-  note: string;
-  port: number;
-  properties: string;
-  protocol: AllowedProtocols;
-  autoStake?: boolean;
-};
+export type JoinNetworkParams = GatewayConnectionSettings &
+  GatewayStakingSettings &
+  GatewayMetadata & { qty: number };
 
-export type UpdateGatewaySettingsParams = {
+// Original type definition refined with proper field-specific types
+export type UpdateGatewaySettingsParamsBase = {
   allowDelegatedStaking?: boolean;
   delegateRewardShareRatio?: number;
   fqdn?: string;
@@ -240,6 +234,14 @@ export type UpdateGatewaySettingsParams = {
   protocol?: AllowedProtocols;
   autoStake?: boolean;
 };
+
+// Utility type to require at least one of the fields
+export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
+  { [K in keyof U]: Required<Pick<U, K>> }[keyof U];
+
+// Define the type used for function parameters
+export type UpdateGatewaySettingsParams =
+  AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
 export interface ANTContract extends BaseContract<ANTState> {
   getRecord({

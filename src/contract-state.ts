@@ -18,7 +18,7 @@ import { WalletAddress } from './common.js';
 
 // Gateways
 
-export const CONTRACT_FUNCTIONS = {
+export const AR_IO_CONTRACT_FUNCTIONS = {
   GATEWAY: 'gateway',
   GATEWAYS: 'gateways',
   PRESCRIBED_OBSERVERS: 'prescribedObservers',
@@ -61,18 +61,28 @@ export type Gateway = {
   weights: ObserverWeights;
 };
 
-export type GatewaySettings = {
+export type GatewayStakingSettings = {
   allowDelegatedStaking: boolean;
   delegateRewardShareRatio: number;
-  fqdn: string;
-  label: string;
   minDelegatedStake: number;
-  note?: string;
-  port: number;
-  properties?: string;
-  protocol: AllowedProtocols;
   autoStake: boolean;
 };
+
+export type GatewayMetadata = {
+  label: string;
+  note?: string;
+  properties?: string;
+};
+
+export type GatewayConnectionSettings = {
+  fqdn: string;
+  port: number;
+  protocol: AllowedProtocols;
+};
+
+export type GatewaySettings = GatewayConnectionSettings &
+  GatewayStakingSettings &
+  GatewayMetadata;
 
 export type AllowedProtocols = 'http' | 'https';
 

@@ -16,12 +16,12 @@
  */
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
+  AR_IO_CONTRACT_FUNCTIONS,
   ArIOReadContract,
   ArIOState,
   ArIOWriteContract,
   ArNSAuctionData,
   ArNSNameData,
-  CONTRACT_FUNCTIONS,
   ContractConfiguration,
   ContractSigner,
   EpochDistributionData,
@@ -184,7 +184,7 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
     return this.contract
       .readInteraction<{ target: string }, Gateway>({
-        functionName: CONTRACT_FUNCTIONS.GATEWAY,
+        functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAY,
         inputs: {
           target: address,
         },
@@ -202,7 +202,7 @@ export class ArIOReadable implements ArIOReadContract {
     Record<string, Gateway> | Record<string, never>
   > {
     return this.contract.readInteraction({
-      functionName: CONTRACT_FUNCTIONS.GATEWAYS,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAYS,
       evaluationOptions,
     });
   }
@@ -214,7 +214,7 @@ export class ArIOReadable implements ArIOReadContract {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
     return this.contract.readInteraction({
-      functionName: CONTRACT_FUNCTIONS.EPOCH,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.EPOCH,
       evaluationOptions,
     });
   }
@@ -232,7 +232,7 @@ export class ArIOReadable implements ArIOReadContract {
       { height: number },
       EpochDistributionData
     >({
-      functionName: CONTRACT_FUNCTIONS.EPOCH,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.EPOCH,
       inputs: {
         height: blockHeight,
       },
@@ -247,7 +247,7 @@ export class ArIOReadable implements ArIOReadContract {
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
     return this.contract.readInteraction<never, WeightedObserver[]>({
-      functionName: CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
       evaluationOptions,
     });
   }
@@ -317,7 +317,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.JOIN_NETWORK,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
       inputs: params,
       signer: this.signer,
     });
@@ -326,7 +326,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
       inputs: params,
       signer: this.signer,
     });
@@ -337,7 +337,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.DELEGATE_STAKE,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
     });
@@ -348,7 +348,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
     });
@@ -358,7 +358,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
     });
@@ -368,7 +368,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     qty: number;
   }): Promise<WriteInteractionResult> {
     const res = this.contract.writeInteraction({
-      functionName: CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
+      functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
     });
