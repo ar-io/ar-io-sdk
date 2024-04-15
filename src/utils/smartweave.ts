@@ -88,3 +88,7 @@ export function isContractTxIdConfiguration(
     'contractTxId' in config && validateArweaveId(config.contractTxId) === true
   );
 }
+
+export function mioToIo(mio: number): number {
+  return mio / 1_000_000;
+}

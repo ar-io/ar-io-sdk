@@ -318,4 +318,9 @@ describe('ArIO Client', () => {
       expect(auctions).toBeDefined();
     },
   );
+  it('should return token supply', async () => {
+    const supply = await arIO.getTotalTokenSupply();
+    console.dir({ supply });
+    expect(supply).toBeDefined();
+  });
 });

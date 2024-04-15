@@ -39,6 +39,7 @@ import {
 import {
   isContractConfiguration,
   isContractTxIdConfiguration,
+  mioToIo,
 } from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidContractConfigurationError, WarpContract } from './index.js';
@@ -297,6 +298,33 @@ export class ArIOReadable implements ArIOReadContract {
     });
 
     return auctions;
+  }
+  async getTotalTokenSupply(
+    params: {
+      evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
+    } = {},
+  ): Promise<number> {
+    const state = await this.contract.getState(params);
+    let totalSupply = 0;
+
+    const { balances, gateways, auctions } = state;
+    // balances
+    Object.values(balances).forEach((balance) => (totalSupply += balance));
+    // gateways
+    Object.values(gateways).forEach((gateway: Gateway) => {
+      totalSupply += gateway.operatorStake;
+      totalSupply += gateway.totalDelegatedStake;
+      // gateways vaults
+      Object.values(gateway.vaults).forEach((vault) => {
+        totalSupply += vault.balance;
+      });
+    });
+    // auctions
+    Object.values(auctions).forEach((auction) => {
+      totalSupply += auction.floorPrice;
+    });
+
+    return mioToIo(totalSupply);
   }
 }
 

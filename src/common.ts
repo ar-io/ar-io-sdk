@@ -167,6 +167,7 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+  getTotalTokenSupply(params: EvaluationParameters): Promise<number>;
 }
 
 export interface ArIOWriteContract {
