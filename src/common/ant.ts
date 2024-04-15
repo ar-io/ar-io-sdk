@@ -23,9 +23,11 @@ import {
   ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
+} from '../types.js';
+import {
   isContractConfiguration,
   isContractTxIdConfiguration,
-} from '../types.js';
+} from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
 import { WarpContract } from './index.js';
 
@@ -33,8 +35,7 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
   private contract: BaseContract<ANTState>;
   private signer: ContractSigner | undefined;
 
-  constructor({ signer, ...config }: ContractConfiguration) {
-    this.signer = signer;
+  constructor(config: ContractConfiguration) {
     if (isContractConfiguration<ANTState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
@@ -50,13 +51,16 @@ export class ANT implements ANTContract, BaseContract<ANTState> {
       const config = this.contract.configuration();
       this.contract = new WarpContract<ANTState>({
         ...config,
-        signer,
       });
     }
-    this.contract.connect(this.signer);
 
     return this;
   }
+
+  connected(): boolean {
+    return this.signer !== undefined;
+  }
+
   /**
    * Returns the current state of the contract.
    */

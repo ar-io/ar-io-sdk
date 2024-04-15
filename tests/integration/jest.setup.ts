@@ -30,6 +30,14 @@ async function jestGlobalSetup() {
   process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID =
     arIOContractDeploy.contractTxId;
   process.env.DEPLOYED_ANT_CONTRACT_TX_ID = antContractDeploy.contractTxId;
+
+  console.log('Warp, Arlocal and Arweave clients setup complete!');
+  console.dir({
+    PRIMARY_WALLET_ADDRESS: process.env.PRIMARY_WALLET_ADDRESS,
+    DEPLOYED_REGISTRY_CONTRACT_TX_ID:
+      process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID,
+    DEPLOYED_ANT_CONTRACT_TX_ID: process.env.DEPLOYED_ANT_CONTRACT_TX_ID,
+  });
 }
 
 module.exports = jestGlobalSetup;

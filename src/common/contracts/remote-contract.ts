@@ -16,7 +16,6 @@
  */
 import {
   BaseContract,
-  ContractSigner,
   EvaluationParameters,
   HTTPClient,
   Logger,
@@ -54,13 +53,6 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       contractTxId: this.contractTxId,
       cacheUrl: this.cacheUrl,
     };
-  }
-
-  /* eslint-disable */
-  // @ts-ignore
-  connect(signer: ContractSigner): this {
-    /* eslint-enable */
-    throw new Error('Cannot connect to a remote contract');
   }
 
   async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {

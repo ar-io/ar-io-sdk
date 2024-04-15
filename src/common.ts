@@ -18,14 +18,19 @@ import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
 import { InteractionResult, Transaction } from 'warp-contracts';
 
+import { RemoteContract, WarpContract } from './common/index.js';
 import {
   ANTRecord,
   ANTState,
+  AllowedProtocols,
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
   EpochDistributionData,
   Gateway,
+  GatewayConnectionSettings,
+  GatewayMetadata,
+  GatewayStakingSettings,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -37,28 +42,14 @@ export type WalletAddress = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
-export type ContractConfiguration = {
-  signer?: ContractSigner; // TODO: optionally allow JWK in place of signer
-} & (
+export type WithSigner = { signer: ContractSigner }; // TODO: optionally allow JWK in place of signer
+export type ContractConfiguration =
   | {
-      contract?: BaseContract<unknown> & ReadContract;
+      contract?: WarpContract<unknown> | RemoteContract<unknown>;
     }
   | {
       contractTxId: string;
-    }
-);
-
-export function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is { contract: BaseContract<T> & ReadContract } {
-  return 'contract' in config;
-}
-
-export function isContractTxIdConfiguration(
-  config: ContractConfiguration,
-): config is { contractTxId: string } {
-  return 'contractTxId' in config;
-}
+    };
 
 export type EvaluationOptions = {
   evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
@@ -79,7 +70,6 @@ export type WriteParameters<Input> = {
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
-  connect(signer: ContractSigner): this;
 }
 
 export interface ReadContract {
@@ -103,6 +93,8 @@ export interface WriteContract {
   >;
 }
 
+export interface ReadWriteContract extends ReadContract, WriteContract {}
+
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
   readInteraction<I, K>({
@@ -113,7 +105,7 @@ export interface SmartWeaveContract<T> {
 }
 
 // TODO: extend with additional methods
-export interface ArIOContract extends BaseContract<ArIOState> {
+export interface ArIOReadContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -176,6 +168,80 @@ export interface ArIOContract extends BaseContract<ArIOState> {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
 }
+
+export interface ArIOWriteContract {
+  // write interactions
+  joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: JoinNetworkParams): Promise<WriteInteractionResult>;
+  updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
+  increaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  decreaseOperatorStake(params: {
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  increaseDelegateStake(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+  decreaseDelegateStake(params: {
+    target: WalletAddress;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
+}
+
+export type WriteInteractionResult =
+  | Transaction
+  | DataItem
+  | InteractionResult<unknown, unknown>;
+
+export type JoinNetworkParams = GatewayConnectionSettings &
+  GatewayStakingSettings &
+  GatewayMetadata & { qty: number };
+
+// Original type definition refined with proper field-specific types
+export type UpdateGatewaySettingsParamsBase = {
+  allowDelegatedStaking?: boolean;
+  delegateRewardShareRatio?: number;
+  fqdn?: string;
+  label?: string;
+  minDelegatedStake?: number;
+  note?: string;
+  port?: number;
+  properties?: string;
+  protocol?: AllowedProtocols;
+  autoStake?: boolean;
+};
+
+// Utility type to require at least one of the fields
+export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
+  { [K in keyof U]: Required<Pick<U, K>> }[keyof U];
+
+// Define the type used for function parameters
+export type UpdateGatewaySettingsParams =
+  AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
 export interface ANTContract extends BaseContract<ANTState> {
   getRecord({

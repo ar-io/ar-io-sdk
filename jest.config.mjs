@@ -4,7 +4,7 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'mjs'],
   testMatch: ['**/src/**/*.test.ts'],
   collectCoverage: true,
-  collectCoverageFrom: ['src/**/*.ts', 'tests/**/*.ts'],
+  collectCoverageFrom: ['src/**/*.ts'],
   testEnvironment: 'node',
   testTimeout: 120_000,
   extensionsToTreatAsEsm: ['.ts'],

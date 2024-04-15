@@ -18,6 +18,35 @@ import { WalletAddress } from './common.js';
 
 // Gateways
 
+export const AR_IO_CONTRACT_FUNCTIONS = {
+  GATEWAY: 'gateway',
+  GATEWAYS: 'gateways',
+  PRESCRIBED_OBSERVERS: 'prescribedObservers',
+  DELEGATE_STAKE: 'delegateStake',
+  DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
+  JOIN_NETWORK: 'joinNetwork',
+  LEAVE_NETWORK: 'leaveNetwork',
+  INCREASE_OPERATOR_STAKE: 'increaseOperatorStake',
+  DECREASE_OPERATOR_STAKE: 'decreaseOperatorStake',
+  UPDATE_GATEWAY_SETTINGS: 'updateGatewaySettings',
+  SAVE_OBSERVATIONS: 'saveObservations',
+  SUBMIT_AUCTION_BID: 'submitAuctionBid',
+  BUY_RECORD: 'buyRecord',
+  EXTEND_RECORD: 'extendRecord',
+  INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
+  RECORD: 'record',
+  AUCTION: 'auction',
+  TRANSFER: 'transfer',
+  VAULTED_TRANSFER: 'vaultedTransfer',
+  CREATE_VAULT: 'createVault',
+  EXTEND_VAULT: 'extendVault',
+  INCREASE_VAULT: 'increaseVault',
+  BALANCE: 'balance',
+  TICK: 'tick',
+  PRICE_FOR_INTERACTION: 'priceForInteraction',
+  EPOCH: 'epoch',
+};
+
 export type Gateway = {
   delegates: Record<string, unknown>;
   end: number;
@@ -32,18 +61,28 @@ export type Gateway = {
   weights: ObserverWeights;
 };
 
-export type GatewaySettings = {
+export type GatewayStakingSettings = {
   allowDelegatedStaking: boolean;
   delegateRewardShareRatio: number;
-  fqdn: string;
-  label: string;
   minDelegatedStake: number;
-  note?: string;
-  port: number;
-  properties?: string;
-  protocol: AllowedProtocols;
   autoStake: boolean;
 };
+
+export type GatewayMetadata = {
+  label: string;
+  note?: string;
+  properties?: string;
+};
+
+export type GatewayConnectionSettings = {
+  fqdn: string;
+  port: number;
+  protocol: AllowedProtocols;
+};
+
+export type GatewaySettings = GatewayConnectionSettings &
+  GatewayStakingSettings &
+  GatewayMetadata;
 
 export type AllowedProtocols = 'http' | 'https';
 
