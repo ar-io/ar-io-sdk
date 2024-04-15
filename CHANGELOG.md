@@ -1,3 +1,27 @@
+# [1.0.0-alpha.20](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.19...v1.0.0-alpha.20) (2024-04-15)
+
+
+### Bug Fixes
+
+* **connect:** add init static function on ario class to create interaction classes ([765f39c](https://github.com/ar-io/ar-io-sdk/commit/765f39c5816b35c41b43fdeddf765b9b50845b9a))
+* **contract functions:** correct contract function names ([ad9bc56](https://github.com/ar-io/ar-io-sdk/commit/ad9bc5625b582d5714624c491904e68380f10ae3))
+* **exports:** add arweavesigner and arconnectsigner to exports, clean up docs ([c7860ed](https://github.com/ar-io/ar-io-sdk/commit/c7860ed40d19ac43c091b6afd52db0402537e7ee))
+* **gar write:** fix types and flow on gar write ([f5e7774](https://github.com/ar-io/ar-io-sdk/commit/f5e77741107b82df24c293a1cde37a4a907e1f4c))
+* **logs:** removing debug logs ([f025171](https://github.com/ar-io/ar-io-sdk/commit/f025171586e2f440ef92550ddf37c5254db86a44))
+* **mixin:** filter private methods in mixin util ([beb8610](https://github.com/ar-io/ar-io-sdk/commit/beb8610807038a7fc51baaa266db1435781c6e8c))
+* **overloads:** only accept warp contract as a contract config for ariowritable ([e3c97e9](https://github.com/ar-io/ar-io-sdk/commit/e3c97e9eaddc98e704a2192bcae6dfdee42f7ae6))
+* **readme:** update joinNetwork docs ([9fcf440](https://github.com/ar-io/ar-io-sdk/commit/9fcf440d2ed2f71005f1e9bd3b0a7691aae90a63))
+* **tests:** add test cases as a const ([8458185](https://github.com/ar-io/ar-io-sdk/commit/845818528fc5364971738fa549173f6f019065c0))
+* **tests:** update client instantiation test to check read vs write clients ([059653c](https://github.com/ar-io/ar-io-sdk/commit/059653c38ed78aa305a796bcf8a18a119c83d63c))
+* **types:** require atleast one param to update gateway settings ([857ebdc](https://github.com/ar-io/ar-io-sdk/commit/857ebdc1b0dd39d5b12943f9b15dd0ddb9b5785e))
+* **types:** update tests, readme, and types ([e9985dd](https://github.com/ar-io/ar-io-sdk/commit/e9985ddada117561f8e666d133b3d573e0beef3e))
+* **types:** use partial write type ([fa6a638](https://github.com/ar-io/ar-io-sdk/commit/fa6a638ae9d69b234b264c3e510c09709fc56fd8))
+
+
+### Features
+
+* **gar methods:** add gar write methods to the ario client ([e01b08b](https://github.com/ar-io/ar-io-sdk/commit/e01b08beccb64112ae4ec333e9a5a2ea872b816f))
+
 # [1.0.0-alpha.19](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.18...v1.0.0-alpha.19) (2024-04-10)
 
 
