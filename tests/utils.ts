@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import path from 'path';
 import { ContractDeploy, Warp } from 'warp-contracts';
 
+import { WeightedObserver } from '../src/contract-state';
+
 export async function deployANTContract({
   jwk,
   address,
@@ -60,6 +62,21 @@ export async function deployArIOContract({
       'utf8',
     ),
   );
+
+  // add the wallet owner as a prescribed observer and as a gateway
+  const prescribedObservers: WeightedObserver[] =
+    state.prescribedObservers['0'];
+  const lastObserver: WeightedObserver =
+    prescribedObservers.pop() as WeightedObserver;
+  const newPrescribedObserver: WeightedObserver = {
+    ...lastObserver,
+    gatewayAddress: address,
+    observerAddress: address,
+  };
+  const updatedPrescribedObservers = [
+    ...prescribedObservers,
+    newPrescribedObserver,
+  ];
   return await warp.deploy({
     wallet: jwk,
     src: src,
@@ -67,6 +84,9 @@ export async function deployArIOContract({
       ...state,
       owner: address,
       balances: { [address]: 100_000_000_000_000 },
+      prescribedObservers: {
+        0: updatedPrescribedObservers,
+      },
     }),
   });
 }
@@ -81,12 +101,11 @@ export async function createLocalWallet(
   // mint some tokens
   await arweave.api.get(`/mint/${address}/${amount}`);
 
+  const walletDir = path.join(__dirname, './wallets');
+  const walletPath = path.join(walletDir, `${address}.json`);
   // save it to local directory
-  if (!fs.existsSync(path.join(__dirname, `./wallets/${address}.json`))) {
-    fs.writeFileSync(
-      path.join(__dirname, `./wallets/${address}.json`),
-      JSON.stringify(wallet),
-    );
+  if (!fs.existsSync(walletPath)) {
+    fs.writeFileSync(walletPath, JSON.stringify(wallet));
   }
 
   return {
@@ -97,16 +116,28 @@ export async function createLocalWallet(
 
 export function removeDirectories() {
   ['./wallets', './contracts'].forEach((dir) => {
-    if (fs.existsSync(path.join(__dirname, dir))) {
-      fs.rmSync(path.join(__dirname, dir), { recursive: true });
+    const dirPath = path.join(__dirname, dir);
+    if (fs.existsSync(dirPath)) {
+      fs.rmSync(dirPath, { recursive: true });
     }
   });
 }
 
 export function createDirectories() {
   ['./wallets', './contracts'].forEach((dir) => {
-    if (!fs.existsSync(path.join(__dirname, dir))) {
-      fs.mkdirSync(path.join(__dirname, dir));
+    const dirPath = path.join(__dirname, dir);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath);
     }
   });
+}
+
+export function mineBlocks({
+  arweave,
+  blocks = 1,
+}: {
+  arweave: Arweave;
+  blocks?: number;
+}) {
+  return arweave.api.get('/mine/' + blocks);
 }

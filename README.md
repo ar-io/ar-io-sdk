@@ -13,7 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
-    - [init](#init-signer)
+    - [init](#init-signer-)
     - [getBalance](#getbalance-address-evaluationoptions-)
     - [getBalances](#getbalances-evaluationoptions-)
     - [getGateway](#getgateway-address-evaluationoptions-)
@@ -27,6 +27,12 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [getPrescribedObservers](#getprescribedobservers-evaluationoptions-)
     - [getAuction](#getauction-domain-evaluationoptions-)
     - [getAuctions](#getauctions-evauluationoptions-)
+    - [joinNetwork](#joinnetworkparams)
+    - [updateGatewaySettings](#updategatewaysettingsgatewaysettings)
+    - [increaseDelegateStake](#increasedelegatestake-target-qty-)
+    - [decreaseDelegateStake](#decreasedelegatestake-target-qty-)
+    - [increaseOperatorStake](#increaseoperatorstake-qty-)
+    - [decreaseOperatorStake](#decreaseoperatorstake-qty-)
   - [Custom Contracts](#custom-contracts)
 - [ANT Contracts](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
@@ -569,9 +575,9 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 // }
 ```
 
-#### `joinNetwork(params) ~ Requires signer during init()`
+#### `joinNetwork(params)`
 
-Joins a gateway to the ar.io network via its associated wallet.
+Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const jointNetworkParams = {
@@ -602,9 +608,9 @@ const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `updateGatewaySettings(gatewaySettings) ~ Requires signer during init()`
+#### `updateGatewaySettings(gatewaySettings)`
 
-Writes new gateway settings to the callers gateway configuration.
+Writes new gateway settings to the callers gateway configuration. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const updateGatewaySettingsParams = {
@@ -624,9 +630,9 @@ const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
 // t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
-#### `increaseDelegateStake({ target, qty }) ~ Requires signer during init()`
+#### `increaseDelegateStake({ target, qty })`
 
-Increases the callers stake on the target gateway.
+Increases the callers stake on the target gateway. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const params = {
@@ -646,9 +652,9 @@ const increaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseDelegateStake({ target, qty }) ~ Requires signer during init()`
+#### `decreaseDelegateStake({ target, qty })`
 
-Decreases the callers stake on the target gateway.
+Decreases the callers stake on the target gateway. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const params = {
@@ -668,9 +674,9 @@ const decreaseDelegateStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `increaseOperatorStake({ qty }) ~ Requires signer during init()`
+#### `increaseOperatorStake({ qty })`
 
-Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const params = {
@@ -689,9 +695,9 @@ const increaseOperatorStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-#### `decreaseOperatorStake({ qty }) ~ Requires signer during init()`
+#### `decreaseOperatorStake({ qty })`
 
-Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
 const params = {
@@ -707,6 +713,27 @@ const decreaseOperatorStakeTx =
 // decreaseOperatorStakeTx is an Arweave transaction.
 // example:
 // decreaseOperatorStakeTx.id
+// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
+### `saveObservations({ reportTxId, failedGateways })`
+
+Saves the observations of the current epoch. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
+
+```typescript
+const params = {
+  reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
+};
+
+const signer = new ArweaveSigner(jwk);
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
+const saveObservationsTx = await authenticatedArIO.saveObservations(params);
+
+// saveObservationsTx is an Arweave transaction.
+// example:
+// saveObservationsTx.id
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 

@@ -59,7 +59,7 @@ export class WarpContract<T>
     cacheUrl,
     warp = defaultWarp,
     logger = new DefaultLogger({
-      level: 'debug',
+      level: 'info',
     }),
   }: {
     contractTxId: string;

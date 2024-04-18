@@ -383,7 +383,10 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
-      inputs: params,
+      inputs: {
+        observerReportTxId: params.reportTxId,
+        failedGateways: params.failedGateways,
+      },
       signer: this.signer,
     });
   }
