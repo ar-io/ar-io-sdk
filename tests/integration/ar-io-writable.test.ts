@@ -56,7 +56,7 @@ describe('ArIO Client', () => {
 
   it('should successfully submit saveObservations interaction with parameters', async () => {
     // mine blocks so we can submit a observations
-    await mineBlocks({ arweave, blocks: 15 });
+    await mineBlocks({ arweave, blocks: 20 });
     const tx = await arIO.saveObservations({
       reportTxId: gatewayAddress,
       failedGateways: [gatewayAddress],
