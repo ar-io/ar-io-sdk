@@ -31,7 +31,9 @@ import {
   JoinNetworkParams,
   Observations,
   RegistrationType,
+  TransactionId,
   UpdateGatewaySettingsParams,
+  WalletAddress,
   WeightedObserver,
   WithSigner,
   WriteInteractionResult,
@@ -373,5 +375,16 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       signer: this.signer,
     });
     return res;
+  }
+
+  async saveObservations(params: {
+    reportTxId: TransactionId;
+    failedGateways: WalletAddress[];
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
+      inputs: params,
+      signer: this.signer,
+    });
   }
 }
