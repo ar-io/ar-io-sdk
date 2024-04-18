@@ -93,8 +93,6 @@ export interface WriteContract {
   >;
 }
 
-export interface ReadWriteContract extends ReadContract, WriteContract {}
-
 export interface SmartWeaveContract<T> {
   getContractState(params: EvaluationParameters): Promise<T>;
   readInteraction<I, K>({
@@ -243,7 +241,7 @@ export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
 export type UpdateGatewaySettingsParams =
   AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
-export interface ANTContract extends BaseContract<ANTState> {
+export interface ANTReadContract extends BaseContract<ANTState> {
   getRecord({
     domain,
     evaluationOptions,
@@ -264,6 +262,40 @@ export interface ANTContract extends BaseContract<ANTState> {
   getBalances({
     evaluationOptions,
   }: EvaluationParameters): Promise<Record<string, number>>;
+}
+
+export interface ANTWriteContract {
+  transfer({
+    target,
+  }: {
+    target: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  setController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  removeController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  setRecord({
+    subDomain,
+    transactionId,
+    ttlSeconds,
+  }: {
+    subDomain: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<WriteInteractionResult>;
+  removeRecord({
+    subDomain,
+  }: {
+    subDomain: string;
+  }): Promise<WriteInteractionResult>;
+  setTicker({ ticker }: { ticker: string }): Promise<WriteInteractionResult>;
+  setName({ name }: { name: string }): Promise<WriteInteractionResult>;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

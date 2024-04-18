@@ -1,7 +1,8 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { ANT } from '../../src/common/ant';
+import { ANT, ANTReadable } from '../../src/common/ant';
 import { RemoteContract } from '../../src/common/contracts/remote-contract';
+import { WarpContract } from '../../src/common/contracts/warp-contract';
 import { DefaultLogger } from '../../src/common/logger';
 import { ANTState } from '../../src/contract-state';
 import {
@@ -18,8 +19,9 @@ const testCases = [
   [{ blockHeight: evaluateToBlockHeight }],
   [undefined],
 ] as const;
+
 describe('ANT contract apis', () => {
-  const ant = new ANT({
+  const ant = ANT.init({
     contract: new RemoteContract<ANTState>({
       cacheUrl: localCacheUrl,
       contractTxId,
@@ -28,10 +30,7 @@ describe('ANT contract apis', () => {
   });
 
   it('should connect and return a valid instance', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    expect(ant.connect(signer)).toBeDefined();
-    expect(ant).toBeInstanceOf(ANT);
+    expect(ant).toBeInstanceOf(ANTReadable);
   });
 
   it.each(testCases)(
@@ -117,7 +116,14 @@ describe('ANT contract apis', () => {
   it('should get state with warp contract', async () => {
     const jwk = await arweave.wallets.generate();
     const signer = new ArweaveSigner(jwk);
-    ant.connect(signer);
+    ANT.init({
+      contract: new WarpContract<ANTState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+      }),
+      signer,
+    });
     const state = await ant.getState();
     expect(state).toBeDefined();
   });
