@@ -55,7 +55,6 @@ describe('ArIO Client', () => {
   );
 
   it('should successfully submit saveObservations interaction with parameters', async () => {
-    console.log((await arIO.getState()).prescribedObservers);
     // mine blocks so we can submit a observations
     await mineBlocks({ arweave, blocks: 15 });
     const tx = await arIO.saveObservations({
