@@ -1,3 +1,10 @@
+# [1.0.0-alpha.22](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2024-04-19)
+
+
+### Features
+
+* **ants:** add readable-writable framework to the ant client and implement write methods ([3019f53](https://github.com/ar-io/ar-io-sdk/commit/3019f53953d362629a34c6282012b58de1171b23))
+
 # [1.0.0-alpha.21](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2024-04-19)
 
 
