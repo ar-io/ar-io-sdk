@@ -16,8 +16,6 @@
  */
 import { WalletAddress } from './common.js';
 
-// Gateways
-
 export const AR_IO_CONTRACT_FUNCTIONS = {
   GATEWAY: 'gateway',
   GATEWAYS: 'gateways',
@@ -46,6 +44,7 @@ export const AR_IO_CONTRACT_FUNCTIONS = {
   PRICE_FOR_INTERACTION: 'priceForInteraction',
   EPOCH: 'epoch',
 };
+// Gateways
 
 export type Gateway = {
   delegates: Record<string, unknown>;
@@ -238,4 +237,16 @@ export type ANTState = {
   ticker: string;
   records: ANTRecords;
   balances: Balances;
+};
+
+export const ANT_CONTRACT_FUNCTIONS = {
+  TRANSFER: 'transfer',
+  SET_CONTROLLER: 'setController',
+  REMOVE_CONTROLLER: 'removeController',
+  SET_NAME: 'setName',
+  SET_TICKER: 'setTicker',
+  SET_RECORD: 'setRecord',
+  REMOVE_RECORD: 'removeRecord',
+  BALANCE: 'balance',
+  EVOLVE: 'evolve',
 };

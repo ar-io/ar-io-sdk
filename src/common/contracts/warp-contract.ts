@@ -216,7 +216,6 @@ export class WarpContract<T>
         });
         return result;
       }
-
       const writeResult = await this.contract.writeInteraction<Input>({
         function: functionName,
         ...inputs,

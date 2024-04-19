@@ -29,6 +29,11 @@ export async function deployANTContract({
     ),
   );
   return await warp.deploy({
+    evaluationManifest: {
+      evaluationOptions: {
+        useKVStorage: true,
+      },
+    },
     wallet: jwk,
     src: src,
     initState: JSON.stringify({

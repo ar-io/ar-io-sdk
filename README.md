@@ -768,21 +768,17 @@ The ANT contract client class exposes APIs relevant to compliant Arweave Name To
 
 ### APIs
 
-#### `connect(signer)`
+#### `init(signer)`
 
-Connects an `ArweaveSigner` or `ArConnectSigner` instance to the client for performing `writeInteraction` calls.
-Supported only on clients configured with a `WarpContract` instance.
-
-NOTE: if you have a client configured with a `RemoteContract` instance, it will be overriden with a `WarpContract` instance using the existing configuration of the `RemoteContract` instance when `connect` is executed.
+Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-const ant = new ANT();
-
 const browserSigner = new ArConnectSigner(window.arweaveWallet);
-ant.connect(browserSigner);
+const ant = ANT.init({signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
-ant.connect(nodeSigner);
+const ant = ANT.init({signer: nodeSigner});
+
 ```
 
 #### `getOwner({ evaluationOptions })`
@@ -791,7 +787,7 @@ Returns the owner of the configured ANT contract.
 
 ```typescript
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = new ANT({ contractTxId });
+const ant = ANT.init({ contractTxId });
 const owner = await ant.getOwner();
 
 // output: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
@@ -803,7 +799,7 @@ Returns the controllers of the configured ANT contract.
 
 ```typescript
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = new ANT({ contractTxId });
+const ant = ANT.init({ contractTxId });
 const controllers = await ant.getControllers();
 
 // output: ["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
@@ -815,8 +811,8 @@ Returns all records on the configured ANT contract, including the required `@` r
 
 ```typescript
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = new ANT({ contractTxId });
-const records = await ANT.getRecords();
+const ant = ANT.init({ contractTxId });
+const records = await ant.getRecords();
 
 // output
 // {
@@ -831,25 +827,107 @@ const records = await ANT.getRecords();
 //   }
 ```
 
+#### `transfer({ target })`
+
+Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const recipient = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
+const result = await ant.transfer({ target: recipient });
+```
+
+#### `setController({ controller })`
+
+Adds a new controller to the list of approved controllers on the ANT. Controllers can set records and change the ticker and name of the ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
+const result = await ant.setController({ controller });
+```
+
+#### `removeController({ controller })`
+
+Removes a controller from the list of approved controllers on the ANT.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
+const result = await ant.removeController({ controller });
+```
+
+#### `setRecord({ subDomain, transactionId, ttlSeconds })`
+
+Updates or creates a record in the ANT contract.
+
+> Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const subDomain = 'test-domain';
+const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ttlSeconds = 900;
+const result = await ant.setRecord({ subDomain, transactionId, ttlSeconds });
+```
+
+#### `removeRecord({ subDomain })`
+
+Removes a record from the ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const subDomain = 'test-domain';
+const result = await ant.removeRecord({ subDomain });
+```
+
+#### `setName({ name })`
+
+Sets the name of the ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const name = 'chumbawumba';
+const result = await ant.setName({ name });
+```
+
+#### `setTicker({ ticker })`
+
+Sets the ticker of the ANT contract.
+
+```typescript
+const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
+const ant = ANT.init({ contractTxId });
+const ticker = 'ANT-WUMBA';
+const result = await ant.setTicker({ ticker });
+```
+
 ### Configuration
 
 ANT clients can be configured to use custom contract evaluator. By default they will use the remote evaluator that leverages the [arns-service].
 
 ```typescript
 // provide a contractTxId to the client and default to remote evaluation
-const remoteANT = new ANT({
+const remoteANT = ANT.init({
   contractTxId: 'ANT_CONTRACT_TX_ID',
 });
 
 // provide a custom contract to the client, and specify local evaluation using warp
-const warpEvaluatedANT = new ANT({
+const warpEvaluatedANT = ANT.init({
   contract: new WarpContract<ANTState>({
     contractTxId: 'ANT_CONTRACT_TX_ID',
   }),
+  signer, // signer is required when created warp-contract instances
 });
 
 // provide a custom contract to the client, and specify local evaluation using remote cache
-const remoteANTContract = new ANT({
+const remoteANTContract = ANT.init({
   contract: new RemoteContract<ANTState>({
     contractTxId: 'ANT_CONTRACT_TX_ID',
     // the remote api that returns warp compliant contract evaluation
