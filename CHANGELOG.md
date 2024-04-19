@@ -1,3 +1,10 @@
+# [1.0.0-alpha.23](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2024-04-19)
+
+
+### Bug Fixes
+
+* **deps:** remove warp-contracts-deploy from deps ([9d4f9fa](https://github.com/ar-io/ar-io-sdk/commit/9d4f9faa860789ced003dc3b6d36c4db99962b8e))
+
 # [1.0.0-alpha.22](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2024-04-19)
 
 
