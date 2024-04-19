@@ -24,6 +24,7 @@ import {
   ArNSNameData,
   ContractConfiguration,
   ContractSigner,
+  DENOMINATIONS,
   EpochDistributionData,
   EvaluationOptions,
   EvaluationParameters,
@@ -313,6 +314,26 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   } & WithSigner) {
     super({ contract });
     this.signer = signer;
+  }
+
+  async transfer({
+    target,
+    qty,
+    denomination = DENOMINATIONS.IO,
+  }: {
+    target: string;
+    qty: number;
+    denomination: DENOMINATIONS;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
+      inputs: {
+        target,
+        qty,
+        denomination,
+      },
+      signer: this.signer,
+    });
   }
 
   async joinNetwork(

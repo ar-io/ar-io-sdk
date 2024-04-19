@@ -26,6 +26,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  DENOMINATIONS,
   EpochDistributionData,
   Gateway,
   GatewayConnectionSettings,
@@ -170,6 +171,15 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
 
 export interface ArIOWriteContract {
   // write interactions
+  transfer({
+    target,
+    qty,
+    denomination,
+  }: {
+    target: WalletAddress;
+    qty: number;
+    denomination: DENOMINATIONS;
+  }): Promise<WriteInteractionResult>;
   joinNetwork({
     qty,
     allowDelegatedStaking,
