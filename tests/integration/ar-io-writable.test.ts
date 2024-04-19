@@ -1,5 +1,6 @@
 import { ArweaveSigner } from 'arbundles';
 
+import { WriteInteractionResult } from '../../src/common.js';
 import { ArIO } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
@@ -7,7 +8,6 @@ import { ArIOState } from '../../src/contract-state.js';
 import { localCacheUrl, warp } from '../constants.js';
 
 const gatewayAddress = process.env.PRIMARY_WALLET_ADDRESS!;
-
 const contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
 const writeTestCases = [
   [
@@ -44,15 +44,22 @@ describe('ArIO Client', () => {
   });
 
   it.each(writeTestCases)(
-    'Should execute writes with parameters: %s',
-    async (
-      functionName: string,
-      inputs: Record<string, string | number | boolean>,
-    ) => {
-      const tx = await arIO[functionName]({
+    'should execute write interaction with parameters: %s',
+    async (functionName: string, inputs: Record<string, any>) => {
+      const tx: WriteInteractionResult = await arIO[functionName]({
         ...inputs,
       });
       expect(tx).toBeDefined();
     },
   );
+
+  // it('should successfully submit saveObservations interaction with parameters', async () => {
+  //   // mine blocks so we can submit a observations
+  //   await mineBlocks({ arweave, blocks: 20 });
+  //   const tx = await arIO.saveObservations({
+  //     reportTxId: gatewayAddress,
+  //     failedGateways: [gatewayAddress],
+  //   });
+  //   expect(tx).toBeDefined();
+  // });
 });

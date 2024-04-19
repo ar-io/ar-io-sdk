@@ -39,6 +39,7 @@ import {
 export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
+export type TransactionId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
@@ -209,6 +210,10 @@ export interface ArIOWriteContract {
   decreaseDelegateStake(params: {
     target: WalletAddress;
     qty: number;
+  }): Promise<WriteInteractionResult>;
+  saveObservations(params: {
+    reportTxId: TransactionId;
+    failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult>;
 }
 
