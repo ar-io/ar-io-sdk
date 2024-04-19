@@ -5,8 +5,7 @@ import { ArIO } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
-import { arweave, localCacheUrl, warp } from '../constants.js';
-import { mineBlocks } from '../utils.js';
+import { localCacheUrl, warp } from '../constants.js';
 
 const gatewayAddress = process.env.PRIMARY_WALLET_ADDRESS!;
 const contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
