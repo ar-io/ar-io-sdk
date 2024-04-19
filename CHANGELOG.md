@@ -1,3 +1,10 @@
+# [1.0.0-alpha.21](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2024-04-19)
+
+
+### Features
+
+* **observerations:** add `saveObservations` write interaction ([8dd977c](https://github.com/ar-io/ar-io-sdk/commit/8dd977c55091b038c6b4a1b30fbeed5bc816f433))
+
 # [1.0.0-alpha.20](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.19...v1.0.0-alpha.20) (2024-04-15)
 
 
