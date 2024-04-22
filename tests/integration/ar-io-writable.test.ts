@@ -29,6 +29,7 @@ const writeTestCases = [
   ['decreaseDelegateStake', { target: gatewayAddress, qty: 101 }],
   ['increaseOperatorStake', { qty: 101 }],
   ['decreaseOperatorStake', { qty: 101 }],
+  ['transfer', { target: ''.padEnd(43, 'f'), qty: 101 }],
 ] as const;
 
 describe('ArIO Client', () => {

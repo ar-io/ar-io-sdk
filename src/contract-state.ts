@@ -142,6 +142,11 @@ export type VaultData = {
 
 // Balances
 
+export enum DENOMINATIONS {
+  IO = 'IO',
+  MIO = 'mIO',
+}
+
 export type Balances = Record<WalletAddress, number>;
 
 export type Fees = Record<string, number>;

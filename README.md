@@ -716,7 +716,7 @@ const decreaseOperatorStakeTx =
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
 ```
 
-### `saveObservations({ reportTxId, failedGateways })`
+#### `saveObservations({ reportTxId, failedGateways })`
 
 Saves the observations of the current epoch. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
@@ -735,6 +735,19 @@ const saveObservationsTx = await authenticatedArIO.saveObservations(params);
 // example:
 // saveObservationsTx.id
 // fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+```
+
+#### `transfer({ target, qty, denomination })`
+
+Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as `IO`, to the designated `target` recipient address. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
+
+```typescript
+// signer required for write interactions APIs
+const authenticatedArIO = ArIO.init({ signer });
+const decreaseOperatorStakeTx = await authenticatedArIO.transfer({
+  target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+  qty: 1000,
+});
 ```
 
 ### Custom Contracts
