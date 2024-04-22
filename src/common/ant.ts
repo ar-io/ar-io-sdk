@@ -34,6 +34,19 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidContractConfigurationError, WarpContract } from './index.js';
 
 export class ANT {
+  /**
+   * @param config - @type {ContractConfiguration} The configuration object.
+   * @returns {WarpContract<ANTState>} The contract object.
+   * @example
+   * Using the contract object
+   * ```ts
+   * ANT.createContract({ contract: new WarpContract<ANTState>({ contractTxId: 'myContractTxId' });
+   * ```
+   * Using the contractTxId
+   * ```ts
+   * ANT.createContract({ contractTxId: 'myContractTxId' });
+   * ```
+   */
   static createContract(config: ContractConfiguration): WarpContract<ANTState> {
     if (isContractConfiguration<ANTState>(config)) {
       if (config.contract instanceof WarpContract) {
@@ -60,12 +73,14 @@ export class ANT {
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
-   * // Overload 1: When signer is provided
+   * Overload 1: When signer is provided
+   * ```ts
    * const writable = ANT.init({ signer: mySigner, contract: myContract });
-   *
-   * @example
-   * // Overload 2: When signer is not provided
+   *```
+   * Overload 2: When signer is not provided
+   * ```ts
    * const readable = ANT.init({ contract: myContract });
+   * ```
    */
   static init(
     config: ContractConfiguration &
@@ -105,7 +120,18 @@ export class ANTReadable implements ANTReadContract {
   }
 
   /**
-   * Returns the current state of the contract.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ANTState>} The state of the contract.
+   * @example
+   * Get the current state
+   * ```ts
+   * ant.getState();
+   * ```
+   * Get the state at a specific block height or sortkey
+   * ```ts
+   *  ant.getState({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  ant.getState({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getState({
     evaluationOptions,
@@ -114,6 +140,21 @@ export class ANTReadable implements ANTReadContract {
     return state;
   }
 
+  /**
+   * @param domain @type {string} The domain name.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ANTRecord>} The record of the undername domain.
+   * @example
+   * Get the current record
+   * ```ts
+   * ant.getRecord({ domain: "john" });
+   * ```
+   * Get the record at a specific block height or sortkey
+   * ```ts
+   *  ant.getRecord({ domain: "john", evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  ant.getRecord({  domain: "john", evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getRecord({
     domain,
     evaluationOptions,
@@ -122,6 +163,20 @@ export class ANTReadable implements ANTReadContract {
     return records[domain];
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, ANTRecord>>} All the undernames managed by the ANT.
+   * @example
+   * Get the current records
+   * ```ts
+   * ant.getRecords();
+   * ```
+   * Get the records at a specific block height or sortkey
+   * ```ts
+   *  ant.getRecords({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  ant.getRecords({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getRecords({
     evaluationOptions,
   }: {
@@ -131,6 +186,20 @@ export class ANTReadable implements ANTReadContract {
     return state.records;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<string>} The owner of the ANT.
+   * @example
+   * Get the current owner
+   * ```ts
+   *  ant.getOwner();
+   * ```
+   * Get the owner at a specific block height or sortkey
+   * ```ts
+   * ant.getOwner({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getOwner({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getOwner({
     evaluationOptions,
   }: {
@@ -140,6 +209,20 @@ export class ANTReadable implements ANTReadContract {
     return state.owner;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<string[]>} The controllers of the ANT.
+   * @example
+   * Get the controllers of the ANT.
+   * ```ts
+   * ant.getControllers();
+   * ```
+   * Get the controllers at a specific block height or sortkey
+   * ```ts
+   * ant.getControllers({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getControllers({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getControllers({
     evaluationOptions,
   }: {
@@ -149,6 +232,21 @@ export class ANTReadable implements ANTReadContract {
     return state.controllers;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<string>} The name of the ANT (not the same as ArNS name).
+   * @example
+   * Get the current name
+   * ```ts
+   * ant.getName();
+   * ```
+   * @example
+   * Get the ticker at a specific block height or sortkey
+   * ```ts
+   * ant.getName({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getName({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getName({
     evaluationOptions,
   }: {
@@ -158,6 +256,21 @@ export class ANTReadable implements ANTReadContract {
     return state.name;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<string>} The name of the ANT (not the same as ArNS name).
+   * @example
+   * The current ticker of the ANT.
+   * ```ts
+   * ant.getTicker();
+   * ```
+   * @example
+   * Get the ticker at a specific block height or sortkey
+   * ```ts
+   * ant.getTicker({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getTicker({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getTicker({
     evaluationOptions,
   }: {
@@ -167,6 +280,21 @@ export class ANTReadable implements ANTReadContract {
     return state.ticker;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, number>>} The balances of the ANT
+   * @example
+   * The current balances of the ANT.
+   * ```ts
+   * ant.getBalances();
+   * ```
+   * @example
+   * Get the balances at a specific block height or sortkey
+   * ```ts
+   * ant.getBalances({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getBalances({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getBalances({
     evaluationOptions,
   }: {
@@ -176,6 +304,22 @@ export class ANTReadable implements ANTReadContract {
     return state.balances;
   }
 
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @param address @type {string} The address of the account you want the balance of.
+   * @returns {Promise<number>} The balance of the provided address
+   * @example
+   * The current balance of the address.
+   * ```ts
+   * ant.getBalance({ address });
+   * ```
+   * @example
+   * Get the balance at a specific block height or sortkey
+   * ```ts
+   * ant.getBalance({ address, evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * ant.getBalance({ address, evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getBalance({
     address,
     evaluationOptions,
@@ -197,6 +341,14 @@ export class ANTWritable extends ANTReadable {
     this.signer = signer;
   }
 
+  /**
+   * @param target @type {string} The address of the account you want to transfer the ANT to.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.transfer({ target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
+   * ```
+   */
   async transfer({
     target,
   }: {
@@ -209,6 +361,14 @@ export class ANTWritable extends ANTReadable {
     });
   }
 
+  /**
+   * @param controller @type {string} The address of the account you want to set as a controller.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
+   * ```
+   */
   async setController({
     controller,
   }: {
@@ -221,6 +381,14 @@ export class ANTWritable extends ANTReadable {
     });
   }
 
+  /**
+   * @param controller @type {string} The address of the account you want to remove from the controllers list
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.removeController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
+   * ```
+   */
   async removeController({
     controller,
   }: {
@@ -233,6 +401,16 @@ export class ANTWritable extends ANTReadable {
     });
   }
 
+  /**
+   * @param subDomain @type {string} The record you want to set the transactionId and ttlSeconds of.
+   * @param transactionId @type {string} The transactionId of the record.
+   * @param ttlSeconds @type {number} The time to live of the record.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
+   * ```
+   */
   async setRecord({
     subDomain,
     transactionId,
@@ -249,6 +427,14 @@ export class ANTWritable extends ANTReadable {
     });
   }
 
+  /**
+   * @param subDomain @type {string} The record you want to remove.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.removeRecord({ subDomain: "shorts" });
+   * ```
+   */
   async removeRecord({
     subDomain,
   }: {
@@ -261,6 +447,14 @@ export class ANTWritable extends ANTReadable {
     });
   }
 
+  /**
+   * @param ticker @type {string} Sets the ANT Ticker.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setTicker({ ticker: "KAPOW" });
+   * ```
+   */
   async setTicker({
     ticker,
   }: {
@@ -272,6 +466,14 @@ export class ANTWritable extends ANTReadable {
       signer: this.signer,
     });
   }
+  /**
+   * @param name @type {string} Sets the Name of the ANT.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setName({ name: "ships at sea" });
+   * ```
+   */
   async setName({ name }: { name: string }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction({
       functionName: ANT_CONTRACT_FUNCTIONS.SET_NAME,
