@@ -1,3 +1,10 @@
+# [1.0.0-alpha.24](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2024-04-22)
+
+
+### Features
+
+* **io transfer:** add transfer api to ario writable client ([0d37623](https://github.com/ar-io/ar-io-sdk/commit/0d37623bdf0a460242ac8d2b6f819f686fb2cbce))
+
 # [1.0.0-alpha.23](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2024-04-19)
 
 
