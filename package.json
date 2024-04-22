@@ -73,7 +73,10 @@
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
     "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
-    "example:web": "yarn build:web && cp -r bundles/* examples/web && http-server --port 8080 --host -o examples/web"
+    "example:web": "yarn build:web && cp -r bundles/* examples/web && http-server --port 8080 --host -o examples/web",
+    "docs:generate": "typedoc --out docs src/web src/node",
+    "docs:serve": "http-server --port 8080 --host -o docs",
+    "docs:watch": "yarn docs:generate --watch"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
@@ -110,6 +113,7 @@
     "sinon": "^15.2.0",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",
+    "typedoc": "^0.25.13",
     "typescript": "^5.1.6",
     "warp-contracts-plugin-deploy": "^1.0.13"
   },

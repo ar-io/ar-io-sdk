@@ -47,6 +47,19 @@ import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidContractConfigurationError, WarpContract } from './index.js';
 
 export class ArIO {
+  /**
+   * @param config - @type {ContractConfiguration} The configuration object.
+   * @returns {WarpContract<ArIOState>} The contract object.
+   * @example
+   * Using the contract object
+   * ```ts
+   * ArIO.createContract({ contract: new WarpContract<ArIOState>({ contractTxId: 'myContractTxId' });
+   * ```
+   * Using the contractTxId
+   * ```ts
+   * ArIO.createContract({ contractTxId: 'myContractTxId' });
+   * ```
+   */
   static createContract(
     config: ContractConfiguration,
   ): WarpContract<ArIOState> {
@@ -75,12 +88,14 @@ export class ArIO {
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
-   * // Overload 1: When signer is provided
+   * Overload 1: When signer is provided
+   * ```ts
    * const writable = ArIO.init({ signer: mySigner, contract: myContract });
-   *
-   * @example
-   * // Overload 2: When signer is not provided
+   *```
+   * Overload 2: When signer is not provided
+   * ```ts
    * const readable = ArIO.init({ contract: myContract });
+   * ```
    */
   static init(
     config: ContractConfiguration &
@@ -128,14 +143,37 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the current state of the contract.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ArIOState>} The state of the contract.
+   * @example
+   * Get the current state
+   * ```ts
+   * arIO.getState();
+   * ```
+   * Get the state at a specific block height or sortkey
+   * ```ts
+   *  arIO.getState({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  arIO.getState({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getState(params: EvaluationParameters = {}): Promise<ArIOState> {
     const state = await this.contract.getState(params);
     return state;
   }
   /**
-   * Returns the ARNS record for the given domain.
+   * @param domain @type {string} The domain name.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ArNSNameData | undefined>} The record of the undername domain.
+   * @example
+   * Get the current record
+   * ```ts
+   * arIO.getRecord({ domain: "john" });
+   * ```
+   * Get the record at a specific block height or sortkey
+   * ```ts
+   *  arIO.getRecord({ domain: "john", evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  arIO.getRecord({  domain: "john", evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getArNSRecord({
     domain,
@@ -148,7 +186,18 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns all ArNS records.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, ANTRecord>>} All the undernames managed by the ANT.
+   * @example
+   * Get the current records
+   * ```ts
+   * ant.getRecords();
+   * ```
+   * Get the records at a specific block height or sortkey
+   * ```ts
+   *  ant.getRecords({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   *  ant.getRecords({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getArNSRecords({
     evaluationOptions,
@@ -158,7 +207,20 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the balance of the given address.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @param address @type {string} The address of the account you want the balance of.
+   * @returns {Promise<number>} The balance of the provided address
+   * @example
+   * The current balance of the address.
+   * ```ts
+   * arIO.getBalance({ address });
+   * ```
+   * @example
+   * Get the balance at a specific block height or sortkey
+   * ```ts
+   * arIO.getBalance({ address, evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getBalance({ address, evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getBalance({
     address,
@@ -169,7 +231,19 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the balances of all addresses.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, number>>} The balances of the ArIO Contract
+   * @example
+   * The current balances of the ANT.
+   * ```ts
+   * arIO.getBalances();
+   * ```
+   * @example
+   * Get the balances at a specific block height or sortkey
+   * ```ts
+   * arIO.getBalances({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getBalances({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<string, number>
@@ -179,7 +253,20 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the gateway for the given address, including weights.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @param address @type {string} The address of the gateway you want information about.
+   * @returns {Promise<Gateway>} The balance of the provided address
+   * @example
+   * The current gateway info of the address.
+   * ```ts
+   * arIO.getGateway({ address });
+   * ```
+   * @example
+   * Get the gateway info of the address at a certain block height or sortkey
+   * ```ts
+   * arIO.getGateway({ address, evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getGateway({ address, evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getGateway({
     address,
@@ -199,7 +286,19 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns all gateways, including weights.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, Gateway> >} The registered gateways of the ArIO Network.
+   * @example
+   * The current gateways.
+   * ```ts
+   * arIO.getGateways();
+   * ```
+   * @example
+   * Get the gateways at a specific block height or sortkey
+   * ```ts
+   * arIO.getGateways({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getGateways({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<string, Gateway> | Record<string, never>
@@ -211,7 +310,19 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the current epoch.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<EpochDistributionData>} The current distribution data of the epoch.
+   * @example
+   * The current epoch
+   * ```ts
+   * arIO.getCurrentEpoch();
+   * ```
+   * @example
+   * Get the epoch at a given block height or sortkey
+   * ```ts
+   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getCurrentEpoch({
     evaluationOptions,
@@ -223,7 +334,20 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the epoch information for the provided block height.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @param blockHeight @type {number} The block height of the epoch you want to get.
+   * @returns {Promise<EpochDistributionData>} The current distribution data of the epoch.
+   * @example
+   * The current epoch
+   * ```ts
+   * arIO.getEpoch({ blockeHeight: 1000 });
+   * ```
+   * @example
+   * Get the epoch at a given block height or sortkey
+   * ```ts
+   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getEpoch({
     blockHeight,
