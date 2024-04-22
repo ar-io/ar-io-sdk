@@ -9,8 +9,6 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Web](#web)
-    - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
-    - [Browser](#browser)
   - [Node](#node)
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
