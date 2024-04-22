@@ -345,8 +345,8 @@ export class ArIOReadable implements ArIOReadContract {
    * @example
    * Get the epoch at a given block height or sortkey
    * ```ts
-   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
-   * arIO.getCurrentEpoch({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * arIO.getEpoch({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getEpoch({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
    * ```
    */
   async getEpoch({
@@ -368,7 +368,19 @@ export class ArIOReadable implements ArIOReadContract {
   }
 
   /**
-   * Returns the prescribed observers for the current epoch. If you are looking for prescribed observers for a past epoch, use `evaluationOptions: { blockHeight: <blockHeightDuringEpoch> }`.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<WeightedObserver[]>} The current distribution data of the epoch.
+   * @example
+   * Current prescribed observers
+   * ```ts
+   * arIO.getPrescribedObservers();
+   * ```
+   * @example
+   * Get the previous prescribed observers at a given block height or sortkey
+   * ```ts
+   * arIO.getPrescribedObservers({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getPrescribedObservers({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
    */
   async getPrescribedObservers({
     evaluationOptions,
@@ -378,6 +390,22 @@ export class ArIOReadable implements ArIOReadContract {
       evaluationOptions,
     });
   }
+
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Observations>} The current observations data.
+   * @example
+   * All observations.
+   * ```ts
+   * arIO.getObservations();
+   * ```
+   * @example
+   * Get observations at a given block height or sortkey
+   * ```ts
+   * arIO.getObservations({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getObservations({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getObservations({
     evaluationOptions,
   }: EvaluationParameters<{
@@ -388,6 +416,22 @@ export class ArIOReadable implements ArIOReadContract {
     });
     return observations;
   }
+
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<EpochDistributionData>} The current distribution data of the epoch.
+   * @example
+   * Get the current distribution data.
+   * ```ts
+   * arIO.getDistributions();
+   * ```
+   * @example
+   * Get distributions at a given block height or sortkey
+   * ```ts
+   * arIO.getDistributions({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getDistributions({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getDistributions({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
@@ -397,6 +441,25 @@ export class ArIOReadable implements ArIOReadContract {
     return distributions;
   }
 
+  /**
+   * Fetches the in-auction domain or the pricing data for how much it would cost to initiate the auction.
+   *
+   * @param domain @type {string} The domain name in auction
+   * @param type @type {RegistrationType} The type of registration, relevant for reading auction prices
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ArNSAuctionData>} The auction data for the specified name.
+   * @example
+   * Get the current auction data
+   * ```ts
+   * arIO.getAuction({ domain: 'myDomain' });
+   * ```
+   * @example
+   * Get the auction data at a given block height or sortkey
+   * ```ts
+   * arIO.getAuction({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getAuction({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getAuction({
     domain,
     type,
@@ -414,6 +477,24 @@ export class ArIOReadable implements ArIOReadContract {
       evaluationOptions,
     });
   }
+
+  /**
+   * Fetches the current auctions.
+   *
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, ArNSAuctionData>>} The current auctions data.
+   * @example
+   * Get the current auction data
+   * ```ts
+   * arIO.getAuctions();
+   * ```
+   * @example
+   * Get the auction data at a given block height or sortkey
+   * ```ts
+   * arIO.getAuctions({ evaluationOptions: { evalTo: { blockHeight: 1000 } } });
+   * arIO.getAuctions({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
+   * ```
+   */
   async getAuctions({
     evaluationOptions,
   }: {
@@ -440,6 +521,28 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     this.signer = signer;
   }
 
+  /**
+   * @param target @type {string} The address of the account you want to transfer IO tokens to.
+   * @param qty @type {number} The amount of IO or mIO to transfer.
+   * @param denomination @type {DENOMINATIONS} The denomination of the amount to transfer (io or mio).
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * mIO transfer
+   * ```ts
+   * arIO.transfer({
+   * target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk",
+   * qty: 1 * 10 ** 6,
+   * denomination: DENOMINATIONS.MIO
+   * });
+   *```
+   * IO transfer
+   * ```ts
+   * arIO.transfer({
+   * target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk",
+   * qty: 1,
+   * denomination: DENOMINATIONS.IO
+   * ```
+   */
   async transfer({
     target,
     qty,
@@ -460,6 +563,32 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     });
   }
 
+  /**
+   * @param params @type {JoinNetworkParams} Your gateway configuration.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Join the network with the your configuration.
+   * ```ts
+   *   const jointNetworkParams = {
+    // initial operator stake 
+    qty: 4000,
+    // delegated staking settings 
+    allowDelegatedStaking: true,
+    minDelegatedStake: 100,
+    delegateRewardShareRatio: 1,
+    autoStake: true,
+    // gateway metadata info
+    label: 'john smith', // min 1, max 64 characters
+    note: 'The example gateway', // max 256 characters
+    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway.
+    // gateway info
+    fqdn: 'example.com',
+    port: 443,
+    protocol: 'https',
+  };
+    * arIO.joinNetwork(jointNetworkParams);
+   * ```
+   */
   async joinNetwork(
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
@@ -469,6 +598,16 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       signer: this.signer,
     });
   }
+
+  /**
+   * @param params @type {UpdateGatewaySettingsParams} Gateway settings to update
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Update a setting of the gateway.
+   * ```ts
+   * arIO.updateGatewaySettings({ autoStake: true });
+   * ```
+   */
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
@@ -479,6 +618,16 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     });
   }
 
+  /**
+   * @param target @type {string} The gateway you wish to delegate stake to.
+   * @param qty @type {number} The amount of stake to delegate.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Delegate stake to a gateway.
+   * ```ts
+   * arIO.increaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: 1000 });
+   * ```
+   */
   async increaseDelegateStake(params: {
     target: string;
     qty: number;
@@ -490,6 +639,16 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     });
   }
 
+  /**
+   * @param target @type {string} The gateway you wish to decrease stake at.
+   * @param qty @type {number} The amount of stake to decrease.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Decrease your delegated staked tokens at a gateway.
+   * ```ts
+   * arIO.decreaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: 1000 });
+   * ```
+   */
   async decreaseDelegateStake(params: {
     target: string;
     qty: number;
@@ -501,6 +660,15 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     });
   }
 
+  /**
+   * @param qty @type {number} The amount of stake to increase by.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Increase your staked tokens as an operater
+   * ```ts
+   * arIO.increaseOperatorStake({ qty: 1000 });
+   * ```
+   */
   async increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
@@ -511,6 +679,15 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     });
   }
 
+  /**
+   * @param qty @type {number} The amount of stake to decrease by.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Decrease your staked tokens as an operator
+   * ```ts
+   * arIO.decreaseOperatorStake({ qty: 1000 });
+   * ```
+   */
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
@@ -522,6 +699,19 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     return res;
   }
 
+  /**
+   * @param reportTxId @type {TransactionId} The transaction ID of the report.
+   * @param failedGateways @type {WalletAddress[]} The failed gateways you are reporting.
+   * @returns {Promise<WriteInteractionResult>} The result of the interaction.
+   * @example
+   * Save your observations.
+   * ```ts
+   * arIO.saveObservations({
+   *  reportTxId: '5f7aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2Pe6ko',
+   * failedGateways: ['FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44']
+   *  });
+   * ```
+   */
   async saveObservations(params: {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
