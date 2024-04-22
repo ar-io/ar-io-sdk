@@ -8,47 +8,56 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [NodeJS Environments](#node)
-  - [Web Environments](#web)
+  - [Web](#web)
+    - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
+    - [Browser](#browser)
+  - [Node](#node)
   - [Typescript](#typescript)
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
-    - [init](#init-signer-)
-    - [getBalance](#getbalance-address-evaluationoptions-)
-    - [getBalances](#getbalances-evaluationoptions-)
-    - [getGateway](#getgateway-address-evaluationoptions-)
-    - [getGateways](#getgateways-evaluationoptions-)
-    - [getArNSRecord](#getarnsrecord-domain-evaluationoptions-)
-    - [getArNSRecords](#getarnsrecords-evaluationoptions-)
-    - [getObservations](#getobservations-evaluationoptions-)
-    - [getDistributions](#getdistributions-evaluationoptions-)
-    - [getEpoch](#getepoch-evaluationoptions-)
-    - [getCurrentEpoch](#getcurrentepoch-evaluationoptions-)
-    - [getPrescribedObservers](#getprescribedobservers-evaluationoptions-)
-    - [getAuction](#getauction-domain-evaluationoptions-)
-    - [getAuctions](#getauctions-evauluationoptions-)
-    - [joinNetwork](#joinnetworkparams)
-    - [updateGatewaySettings](#updategatewaysettingsgatewaysettings)
-    - [increaseDelegateStake](#increasedelegatestake-target-qty-)
-    - [decreaseDelegateStake](#decreasedelegatestake-target-qty-)
-    - [increaseOperatorStake](#increaseoperatorstake-qty-)
-    - [decreaseOperatorStake](#decreaseoperatorstake-qty-)
+    - [`init({ signer })`](#init-signer-)
+    - [`getBalance({ address, evaluationOptions })`](#getbalance-address-evaluationoptions-)
+    - [`getBalances({ evaluationOptions })`](#getbalances-evaluationoptions-)
+    - [`getGateway({ address, evaluationOptions })`](#getgateway-address-evaluationoptions-)
+    - [`getGateways({ evaluationOptions })`](#getgateways-evaluationoptions-)
+    - [`getArNSRecord({ domain, evaluationOptions })`](#getarnsrecord-domain-evaluationoptions-)
+    - [`getArNSRecords({ evaluationOptions })`](#getarnsrecords-evaluationoptions-)
+    - [`getObservations({ evaluationOptions })`](#getobservations-evaluationoptions-)
+    - [`getDistributions({ evaluationOptions })`](#getdistributions-evaluationoptions-)
+    - [`getEpoch({ evaluationOptions })`](#getepoch-evaluationoptions-)
+    - [`getCurrentEpoch({ evaluationOptions })`](#getcurrentepoch-evaluationoptions-)
+    - [`getPrescribedObservers({ evaluationOptions })`](#getprescribedobservers-evaluationoptions-)
+    - [`getAuction({ domain, evaluationOptions })`](#getauction-domain-evaluationoptions-)
+    - [`getAuctions({ evauluationOptions })`](#getauctions-evauluationoptions-)
+    - [`joinNetwork(params)`](#joinnetworkparams)
+    - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
+    - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
+    - [`decreaseDelegateStake({ target, qty })`](#decreasedelegatestake-target-qty-)
+    - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
+    - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
+    - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
+    - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
   - [Custom Contracts](#custom-contracts)
-- [ANT Contracts](#arweave-name-tokens-ants)
+- [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
-    - [connect](#connectsigner)
-    - [getRecords](#getrecords-evaluationoptions-)
-    - [getOwner](#getowner-evaluationoptions-)
-    - [getControllers](#getcontrollers-evaluationoptions-)
+    - [`init(signer)`](#initsigner)
+    - [`getOwner({ evaluationOptions })`](#getowner-evaluationoptions-)
+    - [`getControllers({ evaluationOptions })`](#getcontrollers-evaluationoptions-)
+    - [`getRecords({ evaluationOptions })`](#getrecords-evaluationoptions-)
+    - [`transfer({ target })`](#transfer-target-)
+    - [`setController({ controller })`](#setcontroller-controller-)
+    - [`removeController({ controller })`](#removecontroller-controller-)
+    - [`setRecord({ subDomain, transactionId, ttlSeconds })`](#setrecord-subdomain-transactionid-ttlseconds-)
+    - [`removeRecord({ subDomain })`](#removerecord-subdomain-)
+    - [`setName({ name })`](#setname-name-)
+    - [`setTicker({ ticker })`](#setticker-ticker-)
   - [Configuration](#configuration)
-- [Examples](./examples)
 - [Developers](#developers)
   - [Requirements](#requirements)
-  - [Setup & Build](#setup--build)
+  - [Setup \& Build](#setup--build)
   - [Testing](#testing)
-  - [Linting and Formatting](#linting--formatting)
+  - [Linting \& Formatting](#linting--formatting)
   - [Architecture](#architecture)
-- [Contributing](./CONTRIBUTING.md)
 
 ## Prerequisites
 
@@ -147,9 +156,9 @@ const gateways = arIO.getGateways();
 </script>
 ```
 
-#### Node
+### Node
 
-##### ESM (NodeNext)
+#### ESM (NodeNext)
 
 ```javascript
 import { ArIO } from '@ar-io/sdk/node';
@@ -171,7 +180,7 @@ const arIO = ArIO.init();
 const gateways = await arIO.getGateways();
 ```
 
-## Typescript
+### Typescript
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
