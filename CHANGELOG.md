@@ -1,3 +1,10 @@
+# [1.0.0-alpha.25](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.24...v1.0.0-alpha.25) (2024-04-22)
+
+
+### Bug Fixes
+
+* **docs:** remove docs folder ([47e8403](https://github.com/ar-io/ar-io-sdk/commit/47e84037357fd69f9af18b1e9b84286257b49331))
+
 # [1.0.0-alpha.24](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2024-04-22)
 
 
