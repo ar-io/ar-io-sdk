@@ -16,7 +16,7 @@
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
-import { InteractionResult, Transaction } from 'warp-contracts';
+import { Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
 import {
@@ -90,9 +90,9 @@ export interface WriteContract {
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem | InteractionResult<unknown, unknown>
-  >;
+  }: EvaluationParameters<
+    WriteParameters<Input>
+  >): Promise<WriteInteractionResult>;
 }
 
 export interface SmartWeaveContract<T> {
@@ -225,10 +225,7 @@ export interface ArIOWriteContract {
   }): Promise<WriteInteractionResult>;
 }
 
-export type WriteInteractionResult =
-  | Transaction
-  | DataItem
-  | InteractionResult<unknown, unknown>;
+export type WriteInteractionResult = Transaction | DataItem;
 
 export type JoinNetworkParams = GatewayConnectionSettings &
   GatewayStakingSettings &

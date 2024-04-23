@@ -1,14 +1,11 @@
 import { ArweaveSigner } from 'arbundles';
 
-import { WriteInteractionResult } from '../../src/common.js';
-import { ArIO } from '../../src/common/ar-io.js';
+import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
-import { localCacheUrl, warp } from '../constants.js';
+import { gatewayAddress, localCacheUrl, warp } from '../constants.js';
 
-const gatewayAddress = process.env.PRIMARY_WALLET_ADDRESS!;
-const contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
 const writeTestCases = [
   [
     'joinNetwork',
@@ -32,22 +29,29 @@ const writeTestCases = [
   ['transfer', { target: ''.padEnd(43, 'f'), qty: 101 }],
 ] as const;
 
-describe('ArIO Client', () => {
-  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const arIO = ArIO.init({
-    signer,
-    contract: new WarpContract<ArIOState>({
-      cacheUrl: localCacheUrl,
-      contractTxId,
-      logger: new DefaultLogger({ level: 'none' }),
-      warp: warp,
-    }),
+describe('ArIOWriteable', () => {
+  let signer: ArweaveSigner;
+  let contractTxId: string;
+  let arIO: ArIOWritable;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
+    signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+    arIO = ArIO.init({
+      signer,
+      contract: new WarpContract<ArIOState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+        warp,
+      }),
+    });
   });
 
   it.each(writeTestCases)(
     'should execute write interaction with parameters: %s',
     async (functionName: string, inputs: Record<string, any>) => {
-      const tx: WriteInteractionResult = await arIO[functionName]({
+      const tx = await arIO[functionName]({
         ...inputs,
       });
       expect(tx).toBeDefined();
