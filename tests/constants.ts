@@ -1,9 +1,5 @@
 import Arweave from 'arweave';
-import {
-  LoggerFactory,
-  WarpFactory,
-  defaultCacheOptions,
-} from 'warp-contracts';
+import { LoggerFactory, WarpFactory } from 'warp-contracts';
 import { DeployPlugin } from 'warp-contracts-plugin-deploy';
 
 import { SmartWeaveSortKey } from '../src/utils';
@@ -19,10 +15,7 @@ export const arweave = new Arweave({
 });
 
 LoggerFactory.INST.logLevel('fatal');
-export const warp = WarpFactory.forLocal(undefined, arweave, {
-  ...defaultCacheOptions,
-  inMemory: true,
-}).use(new DeployPlugin());
+export const warp = WarpFactory.forLocal(1984, arweave).use(new DeployPlugin());
 
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 export const testDomain = 'angela';
