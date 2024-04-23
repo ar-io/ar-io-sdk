@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         node_version: [18.x, 20.x]
-        command: ['lint', 'format', 'test:integration', 'build']
+        command: ['lint', 'format', 'build']
     steps:
       - uses: actions/checkout@v4
 
@@ -24,3 +24,28 @@ jobs:
         run: yarn --immutable --immutable-cache
 
       - run: yarn ${{ matrix.command }}
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node_version: [18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn --immutable --immutable-cache
+
+      - name: Run tests
+        run: yarn test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4.0.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
