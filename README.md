@@ -40,7 +40,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Custom Contracts](#custom-contracts)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
-    - [`init({ signer })`](#initsigner)
+    - [`init({ signer })`](#init-signer-)
     - [`getOwner({ evaluationOptions })`](#getowner-evaluationoptions-)
     - [`getControllers({ evaluationOptions })`](#getcontrollers-evaluationoptions-)
     - [`getRecords({ evaluationOptions })`](#getrecords-evaluationoptions-)
