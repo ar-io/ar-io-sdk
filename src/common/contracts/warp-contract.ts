@@ -136,10 +136,6 @@ export class WarpContract<T>
       contractTxId: this.contractTxId,
     });
 
-    console.log('Fetching contract manifest', {
-      contractTxId: this.contractTxId,
-      warp: this.warp.arweave,
-    });
     const { evaluationOptions = {} } = await getContractManifest({
       arweave: this.warp.arweave,
       contractTxId: this.contractTxId,
