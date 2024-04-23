@@ -190,7 +190,7 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 #### `init({ signer })`
 
-Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
+Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
 // read-only client that has access to all read APIs
