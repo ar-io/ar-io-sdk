@@ -14,3 +14,7 @@ yarn-error.log
 
 # Build files
 **/*.min.js
+
+# test files
+tests/wallets
+tests/contracts
