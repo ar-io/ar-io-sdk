@@ -11,8 +11,6 @@ services:
     build: .
     ports:
       - '3000:3000'
-    volumes:
-      - ./cache:/usr/src/app/cache
     environment:
       - LOG_LEVEL=error
       - GATEWAY_HOST=arlocal
@@ -25,3 +23,5 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      - arlocal
