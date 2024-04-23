@@ -40,7 +40,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Custom Contracts](#custom-contracts)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
-    - [`init(signer)`](#initsigner)
+    - [`init({ signer })`](#initsigner)
     - [`getOwner({ evaluationOptions })`](#getowner-evaluationoptions-)
     - [`getControllers({ evaluationOptions })`](#getcontrollers-evaluationoptions-)
     - [`getRecords({ evaluationOptions })`](#getrecords-evaluationoptions-)
@@ -790,7 +790,7 @@ The ANT contract client class exposes APIs relevant to compliant Arweave Name To
 
 ### APIs
 
-#### `init(signer)`
+#### `init({ signer })`
 
 Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
