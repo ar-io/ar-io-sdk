@@ -226,7 +226,12 @@ export class WarpContract<T>
 
       return writeResult.interactionTx;
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        `Failed to write contract interaction: ${error.message}`,
+        {
+          contractTxId: this.contractTxId,
+        },
+      );
       throw new WriteInteractionError(error.message);
     }
   }
