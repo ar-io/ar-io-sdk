@@ -4,12 +4,12 @@ import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 const bundle = () => {
   console.log('Building web bundle esm.');
   const result = build({
-    entryPoints: ['./src/index.ts'],
+    entryPoints: ['./src/web/index.ts'],
     bundle: true,
     platform: 'browser',
     target: ['esnext'],
     format: 'esm',
-    globalName: 'turbo',
+    globalName: 'ar.io',
     plugins: [
       polyfillNode({
         polyfills: {

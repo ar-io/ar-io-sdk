@@ -5,6 +5,7 @@ coverage
 .nyc_output
 dist
 .husky/_
+cache
 
 # IDEs and editors
 .vscode
@@ -13,3 +14,7 @@ yarn-error.log
 
 # Build files
 **/*.min.js
+
+# test files
+tests/wallets
+tests/contracts

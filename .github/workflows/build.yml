@@ -1,6 +1,8 @@
 name: Build and Test
 
-on: [push]
+on:
+  pull_request:
+  workflow_call:
 
 jobs:
   build:
@@ -8,12 +10,12 @@ jobs:
     strategy:
       matrix:
         node_version: [18.x, 20.x]
-        command: ['lint', 'format', 'test', 'build']
+        command: ['lint', 'format', 'test:integration', 'build']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set Up node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
