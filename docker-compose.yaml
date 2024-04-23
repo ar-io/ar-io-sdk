@@ -5,17 +5,20 @@ services:
     image: textury/arlocal:v1.1.35
     ports:
       - '1984:1984'
+
   arns-service:
     image: ghcr.io/ar-io/arns-service:latest
     build: .
     ports:
       - '3000:3000'
+    volumes:
+      - ./cache:/usr/src/app/cache
     environment:
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=error
       - GATEWAY_HOST=arlocal
       - GATEWAY_PORT=1984
       - GATEWAY_PROTOCOL=http
-      - PREFETCH_CONTRACTS=true
+      - PREFETCH_CONTRACTS=false
       - BOOTSTRAP_CONTRACTS=false
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/healthcheck']

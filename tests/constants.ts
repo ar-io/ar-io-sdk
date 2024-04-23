@@ -9,7 +9,7 @@ import { DeployPlugin } from 'warp-contracts-plugin-deploy';
 import { SmartWeaveSortKey } from '../src/utils';
 
 export const GATEWAY_PORT = process.env.GATEWAY_PORT ?? 1984;
-export const GATEWAY_HOST = process.env.GATEWAY_HOST ?? '127.0.0.1';
+export const GATEWAY_HOST = process.env.GATEWAY_HOST ?? 'localhost';
 export const GATEWAY_PROTOCOL = process.env.GATEWAY_PROTOCOL ?? 'http';
 // Arweave
 export const arweave = new Arweave({
@@ -26,9 +26,9 @@ export const warp = WarpFactory.forLocal(undefined, arweave, {
 
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 export const testDomain = 'angela';
-export const evaluateToBlockHeight = 1377100;
+export const evaluateToBlockHeight = 1;
 export const evaluateToSortKey = new SmartWeaveSortKey(
-  '000001376946,0000000000000,18d52956c8e13ae1f557b4e67f6f298b8ffd2a5cd96e42ec24ca649b7401510f',
+  '000000000000,0000000000000,0000000000000000000000000000000000000000000000000000000000000000',
 );
 export const localCacheUrl =
   process.env.REMOTE_CACHE_URL || 'http://localhost:3000';

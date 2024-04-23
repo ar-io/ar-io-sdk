@@ -15,11 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner } from 'arbundles';
-import { DataItem } from 'warp-arbundles';
 import {
   Contract,
   CustomSignature,
-  InteractionResult,
   LoggerFactory,
   Signature,
   Transaction,
@@ -34,6 +32,7 @@ import {
   Logger,
   ReadContract,
   WriteContract,
+  WriteInteractionResult,
   WriteParameters,
 } from '../../types.js';
 import { sha256B64Url, toB64Url } from '../../utils/base64.js';
@@ -136,10 +135,16 @@ export class WarpContract<T>
     this.logger.debug(`Fetching contract manifest`, {
       contractTxId: this.contractTxId,
     });
+
+    console.log('Fetching contract manifest', {
+      contractTxId: this.contractTxId,
+      warp: this.warp.arweave,
+    });
     const { evaluationOptions = {} } = await getContractManifest({
       arweave: this.warp.arweave,
       contractTxId: this.contractTxId,
     });
+
     this.contract.setEvaluationOptions(evaluationOptions);
 
     if (signer) this.contract.connect(await this.createWarpSigner(signer));
@@ -183,14 +188,15 @@ export class WarpContract<T>
 
     return evaluationResult.result;
   }
+
   async writeInteraction<Input>({
     functionName,
     inputs,
-    dryWrite = false,
     signer,
+    // TODO: support dryWrite
   }: EvaluationParameters<WriteParameters<Input>> & {
     signer: ContractSigner;
-  }): Promise<Transaction | DataItem | InteractionResult<unknown, unknown>> {
+  }): Promise<WriteInteractionResult> {
     try {
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
@@ -209,13 +215,6 @@ export class WarpContract<T>
         );
       }
 
-      if (dryWrite) {
-        this.logger.debug(`Dry write interaction successful`, {
-          contractTxId: this.contractTxId,
-          functionName,
-        });
-        return result;
-      }
       const writeResult = await this.contract.writeInteraction<Input>({
         function: functionName,
         ...inputs,
@@ -227,6 +226,7 @@ export class WarpContract<T>
 
       return writeResult.interactionTx;
     } catch (error) {
+      console.log(error);
       throw new WriteInteractionError(error.message);
     }
   }

@@ -45,7 +45,6 @@ describe('warp-contract client', () => {
         },
       })
       .catch((e) => {
-        console.error(e);
         return e;
       });
     expect(tx).toBeDefined();
@@ -71,21 +70,5 @@ describe('warp-contract client', () => {
 
     expect(error).toBeDefined();
     expect(error).toBeInstanceOf(WriteInteractionError);
-  });
-
-  it('Should dryWrite a transaction', async () => {
-    const tx = await contract.writeInteraction({
-      signer,
-      dryWrite: true,
-      functionName: 'setName',
-      inputs: {
-        name: 'test',
-      },
-    });
-    const txKeys = Object.keys(tx);
-    expect(tx).toBeDefined();
-    expect(txKeys).toContain('type');
-    expect(txKeys).toContain('result');
-    expect(txKeys).toContain('state');
   });
 });
