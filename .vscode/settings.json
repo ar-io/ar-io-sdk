@@ -16,5 +16,10 @@
     "**/lib": true,
     "**/dist": true,
     "**/coverage": true
+  },
+  "markdownlint.config": {
+    "MD033": {
+      "allowed_elements": ["details", "summary"]
+    }
   }
 }
