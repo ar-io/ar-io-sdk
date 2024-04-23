@@ -1,4 +1,4 @@
-# @ar-io/sdk
+# @ar.io/sdk
 
 [![codecov](https://codecov.io/gh/ar-io/ar-io-sdk/graph/badge.svg?token=7dXKcT7dJy)](https://codecov.io/gh/ar-io/ar-io-sdk)
 
@@ -67,19 +67,19 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 ## Installation
 
 ```shell
-npm install @ar-io/sdk
+npm install @ar.io/sdk
 ```
 
 or
 
 ```shell
-yarn add @ar-io/sdk
+yarn add @ar.io/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { ArIO } from '@ar-io/sdk';
+import { ArIO } from '@ar.io/sdk';
 
 const arIO = ArIO.init();
 const gateways = await arIO.getGateways();
@@ -135,7 +135,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-import { ArIO } from '@ar-io/sdk';
+import { ArIO } from '@ar.io/sdk';
 
 // set up client
 const arIO = ArIO.init();
@@ -147,7 +147,7 @@ const gateways = await arIO.getGateways();
 
 ```html
 <script type="module">
-  import { ArIO } from 'https://unpkg.com/@ar-io/sdk';
+  import { ArIO } from 'https://unpkg.com/@ar.io/sdk';
 
   // set up client
   const arIO = ArIO.init();
@@ -161,7 +161,7 @@ const gateways = await arIO.getGateways();
 #### ESM (NodeNext)
 
 ```javascript
-import { ArIO } from '@ar-io/sdk/node';
+import { ArIO } from '@ar.io/sdk/node';
 
 // set up client
 const arIO = ArIO.init();
@@ -172,7 +172,7 @@ const gateways = await arIO.getGateways();
 ##### CJS
 
 ```javascript
-import { ArIO } from '@ar-io/sdk';
+import { ArIO } from '@ar.io/sdk';
 
 // set up client
 const arIO = ArIO.init();
