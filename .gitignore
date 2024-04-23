@@ -8,7 +8,6 @@ dist
 cache
 
 # IDEs and editors
-.vscode
 .DS_Store
 yarn-error.log
 
