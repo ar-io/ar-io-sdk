@@ -101,7 +101,7 @@ const gateways = await arIO.getGateways();
       "port": 443,
       "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
       "protocol": "https"
-      },
+    },
     "start": 1256694,
     "stats": {
       "failedConsecutiveEpochs": 0,
@@ -109,7 +109,7 @@ const gateways = await arIO.getGateways();
       "submittedEpochCount": 30,
       "totalEpochParticipationCount": 31,
       "totalEpochsPrescribedCount": 31
-      },
+    },
     "status": "joined",
     "vaults": {},
     "weights": {
@@ -119,13 +119,8 @@ const gateways = await arIO.getGateways();
       "observerRewardRatioWeight": 0.96875,
       "compositeWeight": 21.189222170982834,
       "normalizedCompositeWeight": 0.27485583057217183
-      }
-  },
-  "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
-    "end": 0,
-    "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
-    "operatorStake": 11300,
-  ...
+    }
+  }
 }
 ```
 
@@ -338,12 +333,7 @@ const gateways = await arIO.getGateways();
       "compositeWeight": 21.189222170982834,
       "normalizedCompositeWeight": 0.27485583057217183
       }
-  },
-  "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
-    "end": 0,
-    "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
-    "operatorStake": 11300,
-  ...
+  }
 }
 ```
 
@@ -401,7 +391,6 @@ const records = await arIO.getArNSRecords();
     "type": "permabuy",
     "undernames": 10
   }
-  ...
 }
 ```
 
@@ -540,8 +529,7 @@ const observers = await arIO.getPrescribedObservers();
     "observerRewardRatioWeight": 1,
     "compositeWeight": 0.41453703703703704,
     "normalizedCompositeWeight": 0.0018972019546783507
-  },
-  ...
+  }
 ]
 ```
 
@@ -572,8 +560,7 @@ const previousEpochObservers= await arIO.getPrescribedObservers({
     "observerRewardRatioWeight": 1,
     "compositeWeight": 0.4494598765432099,
     "normalizedCompositeWeight": 0.002057032496835938
-  },
-  ...
+  }
 ]
 ```
 
@@ -609,10 +596,9 @@ const auction = await arIO.getAuction({ domain });
     "1384196": 89950,
     "1384226": 88930,
     "1384256": 87922,
-    ...
-    "1394216": 1921,
-    "1394246": 1899,
-    "1394276": 1877
+    "1394286": 1921,
+    "1394306": 1899,
+    "1394336": 1877
   }
 }
 ```
