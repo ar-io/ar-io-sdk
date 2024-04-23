@@ -216,6 +216,15 @@ const balance = await arIO.getBalance({
 });
 ```
 
+<details>
+  <summary>Output</summary>
+
+```json
+1000000
+```
+
+</details>
+
 #### `getBalances({ evaluationOptions })`
 
 Retrieves the balances of the ArIO contract.
@@ -235,7 +244,11 @@ const balances = await arIO.getBalances();
   <summary>Output</summary>
 
 ```json
-
+{
+  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000,
+  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000,
+  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000
+}
 ```
 
 </details>
@@ -300,7 +313,8 @@ const gateways = await arIO.getGateways();
 ```
 
 <details>
-<summary>Output</summary>
+  <summary>Output</summary>
+
 ```json
 {
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
@@ -314,7 +328,7 @@ const gateways = await arIO.getGateways();
       "port": 443,
       "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
       "protocol": "https"
-      },
+    },
     "start": 1256694,
     "stats": {
       "failedConsecutiveEpochs": 0,
@@ -322,7 +336,7 @@ const gateways = await arIO.getGateways();
       "submittedEpochCount": 30,
       "totalEpochParticipationCount": 31,
       "totalEpochsPrescribedCount": 31
-      },
+    },
     "status": "joined",
     "vaults": {},
     "weights": {
@@ -332,7 +346,7 @@ const gateways = await arIO.getGateways();
       "observerRewardRatioWeight": 0.96875,
       "compositeWeight": 21.189222170982834,
       "normalizedCompositeWeight": 0.27485583057217183
-      }
+    }
   }
 }
 ```
@@ -460,8 +474,6 @@ Returns the epoch data for the specified block height.
 ```typescript
 const arIO = ArIO.init();
 const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
-
-// output
 ```
 
 <details>
@@ -535,9 +547,11 @@ const observers = await arIO.getPrescribedObservers();
 
 </details>
  
+Fetch the prescribed observers for a previous epoch by setting the `evaluationOptions` to the desired epoch.
+
 ```typescript
 // observers from a previous epoch
-const previousEpochObservers= await arIO.getPrescribedObservers({
+const previousEpochObservers = await arIO.getPrescribedObservers({
   evaluationOptions: {
     evalTo: { blockHeight: 1296975 }, // some block height from a previous epoch
   },
@@ -851,7 +865,7 @@ const controllers = await ant.getControllers();
 ```
 
 <details>
-  <summary>Output<summary>
+  <summary>Output</summary>
 
 ```json
 ["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
@@ -1004,7 +1018,7 @@ const remoteANTContract = ANT.init({
 
 ### Requirements
 
-- `node>=v18.0.0`
+- `node` >= 18.0.0
 - `npm` or `yarn`
 - `docker` (recommended for testing)
 
