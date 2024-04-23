@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0...v1.0.1) (2024-04-23)
+
+
+### Bug Fixes
+
+* **docs:** improve README docs interface documentation for ArIO clients ([b0da48c](https://github.com/ar-io/ar-io-sdk/commit/b0da48c77718020f79dc56fe04ca49a11f018fa6))
+
 # 1.0.0 (2024-04-23)
 
 
