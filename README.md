@@ -82,7 +82,7 @@ yarn add @ar-io/sdk
 import { ArIO } from '@ar-io/sdk';
 
 const arIO = ArIO.init();
-const gateways = arIO.getGateways();
+const gateways = await arIO.getGateways();
 ```
 
 <details>
@@ -145,7 +145,7 @@ import { ArIO } from '@ar-io/sdk';
 // set up client
 const arIO = ArIO.init();
 // fetch gateways
-const gateways = arIO.getGateways();
+const gateways = await arIO.getGateways();
 ```
 
 #### Browser
@@ -216,11 +216,9 @@ Retrieves the balance of the specified wallet address.
 
 ```typescript
 const arIO = ArIO.init();
-const balance = arIO.getBalance({
+const balance = await arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
-
-// outputs: 0
 ```
 
 #### `getBalances({ evaluationOptions })`
@@ -235,17 +233,17 @@ Retrieves the balances of the ArIO contract.
 
 ```typescript
 const arIO = ArIO.init();
-const balances = arIO.getBalances();
-
-// outputs:
-
-// {
-//   "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000,
-//   "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000,
-//   "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000,
-//   ...
-// }
+const balances = await arIO.getBalances();
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+
+```
+
+</details>
 
 #### `getGateway({ address, evaluationOptions })`
 
@@ -253,44 +251,49 @@ Retrieves a gateway's info by its staking wallet address.
 
 ```typescript
 const arIO = ArIO.init();
-const gateway = arIO.getGateway({
+const gateway = await arIO.getGateway({
   address: 'INSERT_GATEWAY_ADDRESS',
 });
-
-// outputs:
-
-// {
-//   "end": 0,
-//   "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-//   "operatorStake": 250000,
-//   "settings": {
-//     "fqdn": "ar-io.dev",
-//     "label": "AR.IO Test",
-//     "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-//     "port": 443,
-//     "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-//     "protocol": "https"
-//     },
-//   "start": 1256694,
-//   "stats": {
-//     "failedConsecutiveEpochs": 0,
-//     "passedEpochCount": 30,
-//     "submittedEpochCount": 30,
-//     "totalEpochParticipationCount": 31,
-//     "totalEpochsPrescribedCount": 31
-//     },
-//   "status": "joined",
-//   "vaults": {},
-//   "weights": {
-//     "stakeWeight": 25,
-//     "tenureWeight": 0.9031327160493827,
-//     "gatewayRewardRatioWeight": 0.96875,
-//     "observerRewardRatioWeight": 0.96875,
-//     "compositeWeight": 21.189222170982834,
-//     "normalizedCompositeWeight": 0.27485583057217183
-//     }
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "end": 0,
+  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+  "operatorStake": 250000,
+  "settings": {
+    "fqdn": "ar-io.dev",
+    "label": "AR.IO Test",
+    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+    "port": 443,
+    "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+    "protocol": "https"
+  },
+  "start": 1256694,
+  "stats": {
+    "failedConsecutiveEpochs": 0,
+    "passedEpochCount": 30,
+    "submittedEpochCount": 30,
+    "totalEpochParticipationCount": 31,
+    "totalEpochsPrescribedCount": 31
+  },
+  "status": "joined",
+  "vaults": {},
+  "weights": {
+    "stakeWeight": 25,
+    "tenureWeight": 0.9031327160493827,
+    "gatewayRewardRatioWeight": 0.96875,
+    "observerRewardRatioWeight": 0.96875,
+    "compositeWeight": 21.189222170982834,
+    "normalizedCompositeWeight": 0.27485583057217183
+  }
+}
+```
+
+</details>
 
 #### `getGateways({ evaluationOptions })`
 
@@ -298,49 +301,53 @@ Retrieves the registered gateways of the ArIO contract.
 
 ```typescript
 const arIO = ArIO.init();
-const gateways = arIO.getGateways();
-
-// outputs:
-
-// {
-//   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-//     "end": 0,
-//     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-//     "operatorStake": 250000,
-//     "settings": {
-//       "fqdn": "ar-io.dev",
-//       "label": "AR.IO Test",
-//       "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-//       "port": 443,
-//       "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-//       "protocol": "https"
-//       },
-//     "start": 1256694,
-//     "stats": {
-//       "failedConsecutiveEpochs": 0,
-//       "passedEpochCount": 30,
-//       "submittedEpochCount": 30,
-//       "totalEpochParticipationCount": 31,
-//       "totalEpochsPrescribedCount": 31
-//       },
-//     "status": "joined",
-//     "vaults": {},
-//     "weights": {
-//       "stakeWeight": 25,
-//       "tenureWeight": 0.9031327160493827,
-//       "gatewayRewardRatioWeight": 0.96875,
-//       "observerRewardRatioWeight": 0.96875,
-//       "compositeWeight": 21.189222170982834,
-//       "normalizedCompositeWeight": 0.27485583057217183
-//       }
-// },
-// "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
-//   "end": 0,
-//   "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
-//   "operatorStake": 11300,
-// ...
-// }
+const gateways = await arIO.getGateways();
 ```
+
+<details>
+<summary>Output</summary>
+```json
+{
+  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
+    "end": 0,
+    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+    "operatorStake": 250000,
+    "settings": {
+      "fqdn": "ar-io.dev",
+      "label": "AR.IO Test",
+      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+      "port": 443,
+      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+      "protocol": "https"
+      },
+    "start": 1256694,
+    "stats": {
+      "failedConsecutiveEpochs": 0,
+      "passedEpochCount": 30,
+      "submittedEpochCount": 30,
+      "totalEpochParticipationCount": 31,
+      "totalEpochsPrescribedCount": 31
+      },
+    "status": "joined",
+    "vaults": {},
+    "weights": {
+      "stakeWeight": 25,
+      "tenureWeight": 0.9031327160493827,
+      "gatewayRewardRatioWeight": 0.96875,
+      "observerRewardRatioWeight": 0.96875,
+      "compositeWeight": 21.189222170982834,
+      "normalizedCompositeWeight": 0.27485583057217183
+      }
+  },
+  "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0": {
+    "end": 0,
+    "observerWallet": "-RlCrWmyn9OaJ86tsr5qhmFRc0h5ovT5xjKQwySGZy0",
+    "operatorStake": 11300,
+  ...
+}
+```
+
+</details>
 
 #### `getArNSRecord({ domain, evaluationOptions })`
 
@@ -348,18 +355,23 @@ Retrieves the record info of the specified ArNS name.
 
 ```typescript
 const arIO = ArIO.init();
-const record = arIO.getArNSRecord({ domain: 'ardrive' });
-
-// outputs
-
-// {
-//   "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-//   "endTimestamp": 1711122739,
-//   "startTimestamp": 1694101828,
-//   "type": "lease",
-//   "undernames": 100
-// }
+const record = await arIO.getArNSRecord({ domain: 'ardrive' });
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "endTimestamp": 1711122739,
+  "startTimestamp": 1694101828,
+  "type": "lease",
+  "undernames": 100
+}
+```
+
+</details>
 
 #### `getArNSRecords({ evaluationOptions })`
 
@@ -367,28 +379,33 @@ Retrieves all registered ArNS records of the ArIO contract.
 
 ```typescript
 const arIO = ArIO.init();
-const records = arIO.getArNSRecords();
-
-// outputs:
-
-// {
-//   "ardrive": {
-//     "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-//     "endTimestamp": 1711122739,
-//     "startTimestamp": 1694101828,
-//     "type": "lease",
-//     "undernames": 100
-//   },
-//   "ar-io": {
-//     "contractTxId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
-//     "purchasePrice": 17386.717520731843,
-//     "startTimestamp": 1706747215,
-//     "type": "permabuy",
-//     "undernames": 10
-//   }
-//   ...
-// }
+const records = await arIO.getArNSRecords();
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "ardrive": {
+    "contractTxId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+    "endTimestamp": 1711122739,
+    "startTimestamp": 1694101828,
+    "type": "lease",
+    "undernames": 100
+  },
+  "ar-io": {
+    "contractTxId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
+    "purchasePrice": 17386.717520731843,
+    "startTimestamp": 1706747215,
+    "type": "permabuy",
+    "undernames": 10
+  }
+  ...
+}
+```
+
+</details>
 
 #### `getObservations({ evaluationOptions })`
 
@@ -397,22 +414,31 @@ Returns the epoch-indexed observation list.
 ```typescript
 const arIO = ArIO.init();
 const observations = await arIO.getObservations();
-
-// output
-
-// {
-//     "1350700": {
-//       "failureSummaries": {
-//         "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
-//         ...
-//      "reports": {
-//         "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
-//         "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
-//         "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
-//         "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
-//       }
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "1350700": {
+    "failureSummaries": {
+      "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA",
+        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
+      ]
+    },
+    "reports": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
+      "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
+      "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
+      "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
+    }
+  }
+}
+```
+
+</details>
 
 #### `getDistributions({ evaluationOptions })`
 
@@ -421,17 +447,22 @@ Returns the current rewards distribution information. The resulting object is pr
 ```typescript
 const arIO = ArIO.init();
 const distributions = await arIO.getDistributions();
-
-// output
-
-// {
-//     epochEndHeight: 1382379,
-//     epochPeriod: 43,
-//     epochStartHeight: 1381660,
-//     epochZeroStartHeight: 1350700,
-//     nextDistributionHeight: 1382394
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "epochEndHeight": 1382379,
+  "epochPeriod": 43,
+  "epochStartHeight": 1381660,
+  "epochZeroStartHeight": 1350700,
+  "nextDistributionHeight": 1382394
+}
+```
+
+</details>
 
 #### `getEpoch({ evaluationOptions })`
 
@@ -442,16 +473,23 @@ const arIO = ArIO.init();
 const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
 
 // output
-
-// {
-//     epochStartHeight: 1381660,
-//     epochEndHeight: 1382379,
-//     epochZeroStartHeight: 1350700,
-//     epochDistributionHeight: 1382394,
-//     epochPeriod: 43,
-//     epochBlockLength: 720
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "epochStartHeight": 1381660,
+  "epochEndHeight": 1382379,
+  "epochZeroStartHeight": 1350700,
+  "epochDistributionHeight": 1382394,
+  "epochPeriod": 43,
+  "epochBlockLength": 720
+}
+```
+
+</details>
 
 #### `getCurrentEpoch({ evaluationOptions })`
 
@@ -460,18 +498,22 @@ Returns the current epoch data.
 ```typescript
 const arIO = ArIO.init();
 const epoch = await arIO.getCurrentEpoch();
-
-// output
-
-// {
-//     epochStartHeight: 1381660,
-//     epochEndHeight: 1382379,
-//     epochZeroStartHeight: 1350700,
-//     epochDistributionHeight: 1382394,
-//     epochPeriod: 43,
-//     epochBlockLength: 720
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "epochEndHeight": 1382379,
+  "epochPeriod": 43,
+  "epochStartHeight": 1381660,
+  "epochZeroStartHeight": 1350700,
+  "nextDistributionHeight": 1382394
+}
+```
+
+</details>
 
 #### `getPrescribedObservers({ evaluationOptions })`
 
@@ -479,49 +521,63 @@ Retrieves the prescribed observers of the ArIO contract. To fetch prescribed obs
 
 ```typescript
 const arIO = ArIO.init();
-const observers = arIO.getPrescribedObservers();
+const observers = await arIO.getPrescribedObservers();
+```
 
-// outputs:
+<details>
+<summary>Output</summary>
 
-// [
-//   {
-//     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
-//     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-//     "stake": 10000,
-//     "start": 1296976,
-//     "stakeWeight": 1,
-//     "tenureWeight": 0.41453703703703704,
-//     "gatewayRewardRatioWeight": 1,
-//     "observerRewardRatioWeight": 1,
-//     "compositeWeight": 0.41453703703703704,
-//     "normalizedCompositeWeight": 0.0018972019546783507
-//   },
-//   ...
-// ]
+```json
+[
+  {
+    "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
+    "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+    "stake": 10000,
+    "start": 1296976,
+    "stakeWeight": 1,
+    "tenureWeight": 0.41453703703703704,
+    "gatewayRewardRatioWeight": 1,
+    "observerRewardRatioWeight": 1,
+    "compositeWeight": 0.41453703703703704,
+    "normalizedCompositeWeight": 0.0018972019546783507
+  },
+  ...
+]
+```
 
+</details>
+ 
+```typescript
 // observers from a previous epoch
-const previousEpochObservers = arIO.getPrescribedObservers({
+const previousEpochObservers= await arIO.getPrescribedObservers({
   evaluationOptions: {
     evalTo: { blockHeight: 1296975 }, // some block height from a previous epoch
   },
 });
-
-// [
-//   {
-//     "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-//     "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-//     "stake": 10000,
-//     "start": 1292450,
-//     "stakeWeight": 1,
-//     "tenureWeight": 0.4494598765432099,
-//     "gatewayRewardRatioWeight": 1,
-//     "observerRewardRatioWeight": 1,
-//     "compositeWeight": 0.4494598765432099,
-//     "normalizedCompositeWeight": 0.002057032496835938
-//   },
-//   ...
-// ]
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+[
+  {
+    "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
+    "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
+    "stake": 10000,
+    "start": 1292450,
+    "stakeWeight": 1,
+    "tenureWeight": 0.4494598765432099,
+    "gatewayRewardRatioWeight": 1,
+    "observerRewardRatioWeight": 1,
+    "compositeWeight": 0.4494598765432099,
+    "normalizedCompositeWeight": 0.002057032496835938
+  },
+  ...
+]
+```
+
+</details>
 
 #### `getAuction({ domain, evaluationOptions })`
 
@@ -529,34 +585,39 @@ Return the auction info for the supplied domain, be it in auction, registered, o
 
 ```typescript
 const auction = await arIO.getAuction({ domain });
-
-// output
-
-// {
-//   "name": "ardrive",
-//   "initiator": "",
-//   "contractTxId": "",
-//   "startPrice": 89950,
-//   "floorPrice": 1799,
-//   "startHeight": 1384196,
-//   "endHeight": 1394276,
-//   "type": "lease",
-//   "years": 1,
-//   "isActive": false,
-//   "isAvailableForAuction": false,
-//   "isRequiredToBeAuctioned": false,
-//   "currentPrice": 1799,
-//   "prices": {
-//     "1384196": 89950,
-//     "1384226": 88930,
-//     "1384256": 87922,
-//     ...
-//     "1394216": 1921,
-//     "1394246": 1899,
-//     "1394276": 1877
-//   }
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "name": "ardrive",
+  "initiator": "",
+  "contractTxId": "",
+  "startPrice": 89950,
+  "floorPrice": 1799,
+  "startHeight": 1384196,
+  "endHeight": 1394276,
+  "type": "lease",
+  "years": 1,
+  "isActive": false,
+  "isAvailableForAuction": false,
+  "isRequiredToBeAuctioned": false,
+  "currentPrice": 1799,
+  "prices": {
+    "1384196": 89950,
+    "1384226": 88930,
+    "1384256": 87922,
+    ...
+    "1394216": 1921,
+    "1394246": 1899,
+    "1394276": 1877
+  }
+}
+```
+
+</details>
 
 #### `getAuctions({ evauluationOptions })`
 
@@ -564,30 +625,35 @@ Retrieves all active auctions.
 
 ```typescript
 const auctions = await arIO.getAuctions({ evaluationOptions });
-
-// output
-
-// {
-//   "cyprien": {
-//     "contractTxId": "Fmhdc4f1rWK6Zn1W__7GNvWvo4d1FSze7rLK5AOnO5E",
-//     "endHeight": 1386879,
-//     "floorPrice": 4758777913,
-//     "initiator": "UPJHTNsaKcC6baqLFHMAMI7daWPIG3NDDfFQ2s2h8T0",
-//     "startHeight": 1376799,
-//     "startPrice": 237938895627,
-//     "type": "permabuy"
-//   },
-//   "saktinaga": {
-//     "contractTxId": "nl8heYyDxKowujaDqbsPkjALzULYG8T0z3J91CdWDIM",
-//     "endHeight": 1386834,
-//     "floorPrice": 2379388956,
-//     "initiator": "TE0zVR32RF5qFAO8K50-pEivZpM_s35HK-dex-5d-IU",
-//     "startHeight": 1376754,
-//     "startPrice": 118969447813,
-//     "type": "permabuy"
-//   }
-// }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "cyprien": {
+    "contractTxId": "Fmhdc4f1rWK6Zn1W__7GNvWvo4d1FSze7rLK5AOnO5E",
+    "endHeight": 1386879,
+    "floorPrice": 4758777913,
+    "initiator": "UPJHTNsaKcC6baqLFHMAMI7daWPIG3NDDfFQ2s2h8T0",
+    "startHeight": 1376799,
+    "startPrice": 237938895627,
+    "type": "permabuy"
+  },
+  "saktinaga": {
+    "contractTxId": "nl8heYyDxKowujaDqbsPkjALzULYG8T0z3J91CdWDIM",
+    "endHeight": 1386834,
+    "floorPrice": 2379388956,
+    "initiator": "TE0zVR32RF5qFAO8K50-pEivZpM_s35HK-dex-5d-IU",
+    "startHeight": 1376754,
+    "startPrice": 118969447813,
+    "type": "permabuy"
+  }
+}
+```
+
+</details>
 
 #### `joinNetwork(params)`
 
@@ -614,12 +680,7 @@ const jointNetworkParams = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const joinNetworkTx = await authenticatedArIO.joinNetwork(joinNetworkParams);
-
-// joinNetworkTx is an Arweave transaction.
-// example:
-// joinNetworkTx.id
-// t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
+const { id: txId } = await authenticatedArIO.joinNetwork(joinNetworkParams);
 ```
 
 #### `updateGatewaySettings(gatewaySettings)`
@@ -634,14 +695,9 @@ const updateGatewaySettingsParams = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const updateGatewaySettingsTx = await authenticatedArIO.updateGatewaySettings(
+const { id: txId } = await authenticatedArIO.updateGatewaySettings(
   updateGatewaySettingsParams,
 );
-
-// updateGatewaySettingsTx is an Arweave transaction.
-// example:
-// updateGatewaySettingsTx.id
-// t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3
 ```
 
 #### `increaseDelegateStake({ target, qty })`
@@ -657,13 +713,7 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const increaseDelegateStakeTx =
-  await authenticatedArIO.increaseDelegateStake(params);
-
-// increaseDelegateStakeTx is an Arweave transaction.
-// example:
-// increaseDelegateStakeTx.id
-// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+const { id: txId } = await authenticatedArIO.increaseDelegateStake(params);
 ```
 
 #### `decreaseDelegateStake({ target, qty })`
@@ -679,13 +729,7 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const decreaseDelegateStakeTx =
-  await authenticatedArIO.decreaseDelegateStake(params);
-
-// decreaseDelegateStakeTx is an Arweave transaction.
-// example:
-// decreaseDelegateStakeTx.id
-// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+const { id: txId } = await authenticatedArIO.decreaseDelegateStake(params);
 ```
 
 #### `increaseOperatorStake({ qty })`
@@ -700,13 +744,7 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const increaseOperatorStakeTx =
-  await authenticatedArIO.increaseOperatorStake(params);
-
-// increaseOperatorStakeTx is an Arweave transaction.
-// example:
-// increaseOperatorStakeTx.id
-// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+const { id: txId } = await authenticatedArIO.increaseOperatorStake(params);
 ```
 
 #### `decreaseOperatorStake({ qty })`
@@ -721,13 +759,7 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const decreaseOperatorStakeTx =
-  await authenticatedArIO.decreaseOperatorStake(params);
-
-// decreaseOperatorStakeTx is an Arweave transaction.
-// example:
-// decreaseOperatorStakeTx.id
-// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+const { id: txId } = await authenticatedArIO.decreaseOperatorStake(params);
 ```
 
 #### `saveObservations({ reportTxId, failedGateways })`
@@ -743,12 +775,7 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const saveObservationsTx = await authenticatedArIO.saveObservations(params);
-
-// saveObservationsTx is an Arweave transaction.
-// example:
-// saveObservationsTx.id
-// fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3
+const { id: txId } = await authenticatedArIO.saveObservations(params);
 ```
 
 #### `transfer({ target, qty, denomination })`
@@ -816,9 +843,16 @@ Returns the owner of the configured ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const owner = await ant.getOwner();
-
-// output: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
+```
+
+</details>
 
 #### `getControllers({ evaluationOptions })`
 
@@ -828,9 +862,16 @@ Returns the controllers of the configured ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const controllers = await ant.getControllers();
-
-// output: ["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
 ```
+
+<details>
+  <summary>Output<summary>
+
+```json
+["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
+```
+
+</details>
 
 #### `getRecords({ evaluationOptions })`
 
@@ -840,19 +881,25 @@ Returns all records on the configured ANT contract, including the required `@` r
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const records = await ant.getRecords();
-
-// output
-// {
-//     "@": {
-//       "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
-//       "ttlSeconds": 3600
-//     },
-//     "cn": {
-//       "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
-//       "ttlSeconds": 3300
-//     }
-//   }
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "@": {
+    "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+    "ttlSeconds": 3600
+  },
+  "cn": {
+    "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
+    "ttlSeconds": 3300
+  }
+}
+```
+
+</details>
 
 #### `transfer({ target })`
 
@@ -862,7 +909,7 @@ Transfers ownership of the ANT to a new target address. Target MUST be an Arweav
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const recipient = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const result = await ant.transfer({ target: recipient });
+const { id: txId } = await ant.transfer({ target: recipient });
 ```
 
 #### `setController({ controller })`
@@ -873,7 +920,7 @@ Adds a new controller to the list of approved controllers on the ANT. Controller
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const result = await ant.setController({ controller });
+const { id: txId } = await ant.setController({ controller });
 ```
 
 #### `removeController({ controller })`
@@ -884,7 +931,7 @@ Removes a controller from the list of approved controllers on the ANT.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const result = await ant.removeController({ controller });
+const { id: txId } = await ant.removeController({ controller });
 ```
 
 #### `setRecord({ subDomain, transactionId, ttlSeconds })`
@@ -899,7 +946,11 @@ const ant = ANT.init({ contractTxId });
 const subDomain = 'test-domain';
 const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ttlSeconds = 900;
-const result = await ant.setRecord({ subDomain, transactionId, ttlSeconds });
+const { id: txId } = await ant.setRecord({
+  subDomain,
+  transactionId,
+  ttlSeconds,
+});
 ```
 
 #### `removeRecord({ subDomain })`
@@ -910,7 +961,7 @@ Removes a record from the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const subDomain = 'test-domain';
-const result = await ant.removeRecord({ subDomain });
+const { id: txId } = await ant.removeRecord({ subDomain });
 ```
 
 #### `setName({ name })`
@@ -921,7 +972,7 @@ Sets the name of the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const name = 'chumbawumba';
-const result = await ant.setName({ name });
+const { id: txId } = await ant.setName({ name });
 ```
 
 #### `setTicker({ ticker })`
@@ -932,7 +983,7 @@ Sets the ticker of the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const ticker = 'ANT-WUMBA';
-const result = await ant.setTicker({ ticker });
+const { id: txId } = await ant.setTicker({ ticker });
 ```
 
 ### Configuration
