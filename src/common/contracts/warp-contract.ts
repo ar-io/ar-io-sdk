@@ -56,7 +56,7 @@ export class WarpContract<T>
 
   constructor({
     contractTxId,
-    cacheUrl,
+    cacheUrl = 'https://api.arns.app',
     warp = defaultWarp,
     logger = new DefaultLogger({
       level: 'info',
