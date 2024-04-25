@@ -539,7 +539,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       }
     | { contractTxId?: string }
   >) {
-    if (!config) {
+    if (Object.keys(config).length === 0) {
       super({
         contract: new WarpContract<ArIOState>({
           contractTxId: ARNS_TESTNET_REGISTRY_TX,
