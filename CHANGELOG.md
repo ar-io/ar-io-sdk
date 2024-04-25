@@ -1,3 +1,10 @@
+## [1.0.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.2-alpha.1...v1.0.2-alpha.2) (2024-04-25)
+
+
+### Bug Fixes
+
+* **tsconfig:** modify some tsconfig settings to get isolated configs for web/cjs/esm ([46b7acc](https://github.com/ar-io/ar-io-sdk/commit/46b7acc9bbe7cf52ddf3ed7d7e9399332b463fe5))
+
 ## [1.0.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.1...v1.0.2-alpha.1) (2024-04-25)
 
 
