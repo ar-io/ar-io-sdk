@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import Arweave from 'arweave';
+import { default as Arweave } from 'arweave/node';
 import { EvaluationManifest } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from '../common/index.js';
