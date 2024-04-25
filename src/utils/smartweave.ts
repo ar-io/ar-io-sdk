@@ -17,9 +17,9 @@
 import Arweave from 'arweave';
 import { EvaluationManifest } from 'warp-contracts';
 
-import { ContractConfiguration, SortKey } from '../common.js';
 import { RemoteContract, WarpContract } from '../common/index.js';
 import { SORT_KEY_REGEX } from '../constants.js';
+import { SortKey } from '../types.js';
 import { tagsToObject, validateArweaveId } from './arweave.js';
 
 export function isSortKey(sortKey: string): sortKey is SortKey {
@@ -73,18 +73,20 @@ export async function getContractManifest({
   return contractManifest;
 }
 
-export function isContractConfiguration<T>(
-  config: ContractConfiguration,
-): config is {
+export function isContractConfiguration<T>(config: unknown): config is {
   contract: WarpContract<T> | RemoteContract<T>;
 } {
-  return 'contract' in config;
+  return typeof config === 'object' && config !== null && 'contract' in config;
 }
 
 export function isContractTxIdConfiguration(
-  config: ContractConfiguration,
+  config: unknown,
 ): config is { contractTxId: string } {
   return (
-    'contractTxId' in config && validateArweaveId(config.contractTxId) === true
+    typeof config === 'object' &&
+    config !== null &&
+    'contractTxId' in config &&
+    typeof config.contractTxId === 'string' &&
+    validateArweaveId(config.contractTxId) === true
   );
 }
