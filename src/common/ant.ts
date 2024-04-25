@@ -77,6 +77,17 @@ export class ANT {
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
+   *    * Signers:
+   * ```ts
+   * // node
+   * const nodeSigner = new ArweaveSigner(jwk);
+   * const writable = ANT.init({ signer: nodeSigner });
+   * // browser
+   * const arweave = Arweave.init({ ...arweave config params });
+   * const browserSigner = new ArconnectSigner(window.arweaveWallet, arweave);
+   * const writable = ANT.init({ signer: browserSigner });
+   * ```
+   *
    * Overload 1: When signer is provided
    * ```ts
    * const writable = ANT.init({ signer: mySigner, contract: myContract });

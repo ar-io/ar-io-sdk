@@ -94,6 +94,18 @@ export class ArIO {
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
+   * Signers:
+   * ```ts
+   * // node
+   * const nodeSigner = new ArweaveSigner(jwk);
+   * const writable = ArIO.init({ signer: nodeSigner });
+   * // browser
+   * const arweave = Arweave.init({ ...arweave config params });
+   * const browserSigner = new ArconnectSigner(window.arweaveWallet, arweave);
+   * const writable = ArIO.init({ signer: browserSigner });
+   * ```
+   *
+   *
    * Overload 1: When nothing is provide, ArIOReadable is returned.
    * ```ts
    * const readable = ArIO.init();

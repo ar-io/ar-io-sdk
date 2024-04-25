@@ -196,7 +196,12 @@ Factory function to that creates a read-only or writeable client. By providing a
 // read-only client that has access to all read APIs
 const arIOReadable = ArIO.init()
 
-const browserSigner = new ArConnectSigner(window.arweaveWallet);
+const arweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https'
+})
+const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
@@ -827,7 +832,12 @@ The ANT contract client class exposes APIs relevant to compliant Arweave Name To
 Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-const browserSigner = new ArConnectSigner(window.arweaveWallet);
+const arweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https'
+})
+const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const ant = ANT.init({signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
