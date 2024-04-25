@@ -1,9 +1,9 @@
 import { build } from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 
-const bundle = () => {
+const bundle = async () => {
   console.log('Building web bundle esm.');
-  const result = build({
+  await build({
     entryPoints: ['./src/web/index.ts'],
     bundle: true,
     platform: 'browser',
@@ -30,5 +30,3 @@ const bundle = () => {
 };
 
 bundle();
-
-export { bundle };
