@@ -61,53 +61,80 @@ export class ArIO {
    * ArIO.createContract({ contractTxId: 'myContractTxId' });
    * ```
    */
-  static createContract(
-    config: ContractConfiguration,
+  static createWriteableContract(
+    config?: ContractConfiguration<ArIOState>,
   ): WarpContract<ArIOState> {
-    if (isContractConfiguration<ArIOState>(config)) {
-      if (config.contract instanceof WarpContract) {
-        return config.contract;
-      }
+    if (!config || Object.keys(config).length === 0) {
+      return new WarpContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      });
+    } else if (isContractConfiguration<ArIOState>(config)) {
+      return config.contract instanceof WarpContract
+        ? config.contract
+        : new WarpContract<ArIOState>(config.contract.configuration());
     } else if (isContractTxIdConfiguration(config)) {
       return new WarpContract<ArIOState>({ contractTxId: config.contractTxId });
+    } else {
+      throw new InvalidContractConfigurationError();
     }
-    throw new InvalidContractConfigurationError();
   }
 
   /**
    * Initializes an ArIO instance.
    *
-   * There are two overloads for this function:
-   * 1. When a signer is provided in the configuration, it returns an instance of ArIOWritable.
-   * 2. When a signer is NOT provided in the configuration, it returns an instance of ArIOReadable.
+   * There are multiple overloads for this function:
+   * 1. When nothing is provided, it returns an instance of ArIOReadable.
+   * 1. When a signer is provided, it returns an instance of ArIOWritable.
+   * 2. When a signer is NOT provided, it returns an instance of ArIOReadable.
    *
-   *
-   * @param {ContractConfiguration & WithSigner} config - The configuration object.
+   * @param {WithSigner<ContractConfiguration<ArIOState>>} config - The configuration object.
    *    If a signer is provided, it should be an object that implements the ContractSigner interface.
    *
    * @returns {ArIOWritable | ArIOReadable} - An instance of ArIOWritable if a signer is provided, otherwise an instance of ArIOReadable.
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
-   * Overload 1: When signer is provided
+   * Overload 1: When nothing is provide, ArIOReadable is returned.
    * ```ts
-   * const writable = ArIO.init({ signer: mySigner, contract: myContract });
-   *```
-   * Overload 2: When signer is not provided
+   * const readable = ArIO.init();
+   * ```
+   * Overload 2: When signer is not provided with contract, ArIOReadable is returned.
    * ```ts
    * const readable = ArIO.init({ contract: myContract });
    * ```
+   * Overload 3: When signer is not provided with a contractTxId, ArIOReadable is returned.
+   * ```ts
+   * const readable = ArIO.init({ contractTxId: 'myContractTxId' });
+   * ```
+   * Overload 4: When signer is provided without any contract configuration, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner });
+   *```
+   * Overload 5: When signer is provided with a contract configuration, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner, contract: myContract });
+   * ```
+   * Overload 6: When signer is provided with a contractTxId, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner, contractTxId: 'myContractTxId' });
+   * ```
    */
+  static init(): ArIOReadable;
+  static init({ signer }: WithSigner): ArIOWritable;
   static init(
-    config: WithSigner<
-      { contract: WarpContract<ArIOState> } | { contractTxId: string }
-    >,
-  ): ArIOWritable;
-  static init(config?: ContractConfiguration): ArIOReadable;
-  static init(config?: OptionalSigner<ContractConfiguration>) {
-    if (config?.signer) {
-      const signer = config.signer;
-      const contract = this.createContract(config);
+    config?: Required<ContractConfiguration<ArIOState>>,
+  ): ArIOReadable;
+  static init({
+    signer,
+    ...config
+  }: WithSigner<
+    // must be a WarpContract to get a ArIOWriteable
+    { contract: WarpContract<ArIOState> } | { contractTxId: string }
+  >): ArIOWritable;
+  static init(config?: OptionalSigner<ContractConfiguration<ArIOState>>) {
+    if (config && config.signer) {
+      const { signer, ...rest } = config;
+      const contract = this.createWriteableContract(rest);
       return new ArIOWritable({ signer, contract });
     } else {
       return new ArIOReadable(config);
@@ -118,21 +145,19 @@ export class ArIO {
 export class ArIOReadable implements ArIOReadContract {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
 
-  constructor(
-    config: ContractConfiguration = {
-      contract: new RemoteContract<ArIOState>({
+  constructor(config?: ContractConfiguration<ArIOState>) {
+    if (!config) {
+      this.contract = new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
-      }),
-    },
-  ) {
-    if (isContractConfiguration<ArIOState>(config)) {
+      });
+    } else if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: config.contractTxId,
       });
     } else {
-      throw new Error('Invalid configuration.');
+      throw new InvalidContractConfigurationError();
     }
   }
 
@@ -506,13 +531,34 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   protected declare contract: WarpContract<ArIOState>;
   private signer: ContractSigner;
   constructor({
-    contract,
     signer,
-  }: {
-    contract: WarpContract<ArIOState>;
-  } & WithSigner) {
-    super({ contract });
-    this.signer = signer;
+    ...config
+  }: WithSigner<
+    | {
+        contract?: WarpContract<ArIOState>;
+      }
+    | { contractTxId?: string }
+  >) {
+    if (!config) {
+      super({
+        contract: new WarpContract<ArIOState>({
+          contractTxId: ARNS_TESTNET_REGISTRY_TX,
+        }),
+      });
+      this.signer = signer;
+    } else if (isContractConfiguration<ArIOState>(config)) {
+      super({ contract: config.contract });
+      this.signer = signer;
+    } else if (isContractTxIdConfiguration(config)) {
+      super({
+        contract: new WarpContract<ArIOState>({
+          contractTxId: config.contractTxId,
+        }),
+      });
+      this.signer = signer;
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
   }
 
   /**

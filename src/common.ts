@@ -50,12 +50,12 @@ export type WithSigner<T = NonNullable<unknown>> = {
 export type OptionalSigner<T = NonNullable<unknown>> = {
   signer?: ContractSigner;
 } & T;
-export type ContractConfiguration =
+export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
-      contract: WarpContract<unknown> | RemoteContract<unknown>;
+      contract?: WarpContract<T> | RemoteContract<T>;
     }
   | {
-      contractTxId: string;
+      contractTxId?: string;
     };
 
 export type EvaluationOptions = {

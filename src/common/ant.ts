@@ -48,15 +48,18 @@ export class ANT {
    * ANT.createContract({ contractTxId: 'myContractTxId' });
    * ```
    */
-  static createContract(config: ContractConfiguration): WarpContract<ANTState> {
+  static createWriteableContract(
+    config: Required<ContractConfiguration<ANTState>>,
+  ): WarpContract<ANTState> {
     if (isContractConfiguration<ANTState>(config)) {
-      if (config.contract instanceof WarpContract) {
-        return config.contract;
-      }
+      return config.contract instanceof WarpContract
+        ? config.contract
+        : new WarpContract<ANTState>(config.contract.configuration());
     } else if (isContractTxIdConfiguration(config)) {
       return new WarpContract<ANTState>({ contractTxId: config.contractTxId });
+    } else {
+      throw new InvalidContractConfigurationError();
     }
-    throw new InvalidContractConfigurationError();
   }
 
   /**
@@ -83,16 +86,20 @@ export class ANT {
    * const readable = ANT.init({ contract: myContract });
    * ```
    */
-  static init(
-    config: WithSigner<
-      { contract: WarpContract<ANTState> } | { contractTxId: string }
-    >,
-  ): ANTWritable;
-  static init(config?: ContractConfiguration): ANTReadable;
-  static init(config: OptionalSigner<ContractConfiguration>) {
-    if (config.signer) {
-      const signer = config.signer;
-      const contract = this.createContract(config);
+  static init(config: Required<ContractConfiguration<ANTState>>): ANTReadable;
+  static init({
+    signer,
+    ...config
+  }: WithSigner<
+    // must be a WarpContract to get a ArIOWriteable
+    { contract: WarpContract<ANTState> } | { contractTxId: string }
+  >): ANTWritable;
+  static init({
+    signer,
+    ...config
+  }: OptionalSigner<Required<ContractConfiguration<ANTState>>>) {
+    if (signer) {
+      const contract = this.createWriteableContract(config);
       return new ANTWritable({ signer, contract });
     } else {
       return new ANTReadable(config);
@@ -103,13 +110,15 @@ export class ANT {
 export class ANTReadable implements ANTReadContract {
   protected contract: RemoteContract<ANTState> | WarpContract<ANTState>;
 
-  constructor(config: ContractConfiguration) {
+  constructor(config: Required<ContractConfiguration<ANTState>>) {
     if (isContractConfiguration<ANTState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
       this.contract = new RemoteContract<ANTState>({
         contractTxId: config.contractTxId,
       });
+    } else {
+      throw new InvalidContractConfigurationError();
     }
   }
 
@@ -319,7 +328,7 @@ export class ANTReadable implements ANTReadContract {
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<number> {
     const balances = await this.getBalances({ evaluationOptions });
-    return balances[address];
+    return balances[address] || 0;
   }
 }
 
@@ -328,11 +337,24 @@ export class ANTWritable extends ANTReadable {
   private signer: ContractSigner;
 
   constructor({
-    contract,
     signer,
-  }: { contract: WarpContract<ANTState> } & WithSigner) {
-    super({ contract });
-    this.signer = signer;
+    ...config
+  }: WithSigner<
+    { contract: WarpContract<ANTState> } | { contractTxId: string }
+  >) {
+    if (isContractConfiguration<ANTState>(config)) {
+      super({ contract: config.contract });
+      this.signer = signer;
+    } else if (isContractTxIdConfiguration(config)) {
+      super({
+        contract: new WarpContract<ANTState>({
+          contractTxId: config.contractTxId,
+        }),
+      });
+      this.signer = signer;
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
   }
 
   /**
