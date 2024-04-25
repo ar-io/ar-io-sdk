@@ -1,3 +1,10 @@
+## [1.0.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.2-alpha.2...v1.0.2-alpha.3) (2024-04-25)
+
+
+### Bug Fixes
+
+* **utils:** add writeInteraction types and update base64url logic ([4f5476b](https://github.com/ar-io/ar-io-sdk/commit/4f5476b093a303ffb68a7c26dad7b413334556ce))
+
 ## [1.0.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.2-alpha.1...v1.0.2-alpha.2) (2024-04-25)
 
 
