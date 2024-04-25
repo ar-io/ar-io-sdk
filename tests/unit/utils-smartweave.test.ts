@@ -1,5 +1,6 @@
 import { RemoteContract, WarpContract } from '../../src/common/index.js';
 import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
+import { ArIOState } from '../../src/contract-state.js';
 import {
   isContractConfiguration,
   isContractTxIdConfiguration,
@@ -7,7 +8,7 @@ import {
 
 describe('smartweave', () => {
   const contractConfig = {
-    contract: new WarpContract({
+    contract: new WarpContract<ArIOState>({
       contractTxId: ARNS_DEVNET_REGISTRY_TX,
     }),
   };

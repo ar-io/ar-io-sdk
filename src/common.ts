@@ -44,13 +44,18 @@ export type TransactionId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
-export type WithSigner = { signer: ContractSigner }; // TODO: optionally allow JWK in place of signer
-export type ContractConfiguration =
+export type WithSigner<T = NonNullable<unknown>> = {
+  signer: ContractSigner;
+} & T; // TODO: optionally allow JWK in place of signer
+export type OptionalSigner<T = NonNullable<unknown>> = {
+  signer?: ContractSigner;
+} & T;
+export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
-      contract?: WarpContract<unknown> | RemoteContract<unknown>;
+      contract?: WarpContract<T> | RemoteContract<T>;
     }
   | {
-      contractTxId: string;
+      contractTxId?: string;
     };
 
 export type EvaluationOptions = {
@@ -63,12 +68,14 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
-export type WriteParameters<Input> = {
+export type ReadParameters<Input> = {
   functionName: string;
-  inputs: Input;
-  dryWrite?: boolean;
-  // TODO: add syncState and abortSignal options
+  inputs?: Input;
 };
+
+export type WriteParameters<Input> = WithSigner<
+  Required<ReadParameters<Input>>
+>;
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
@@ -79,10 +86,7 @@ export interface ReadContract {
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs?: Input;
-  }>): Promise<State>;
+  }: EvaluationParameters<ReadParameters<Input>>): Promise<State>;
 }
 
 export interface WriteContract {
@@ -93,15 +97,6 @@ export interface WriteContract {
   }: EvaluationParameters<
     WriteParameters<Input>
   >): Promise<WriteInteractionResult>;
-}
-
-export interface SmartWeaveContract<T> {
-  getContractState(params: EvaluationParameters): Promise<T>;
-  readInteraction<I, K>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K>;
 }
 
 // TODO: extend with additional methods
@@ -139,9 +134,9 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   getEpoch({
     blockHeight,
     evaluationOptions,
-  }: {
+  }: EvaluationParameters<{
     blockHeight: number;
-  } & EvaluationParameters): Promise<EpochDistributionData>;
+  }>): Promise<EpochDistributionData>;
   getCurrentEpoch({
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;

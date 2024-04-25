@@ -24,12 +24,12 @@ import {
   Warp,
 } from 'warp-contracts';
 
-import { defaultWarp } from '../../constants.js';
 import {
   BaseContract,
   ContractSigner,
   EvaluationParameters,
   Logger,
+  OptionalSigner,
   ReadContract,
   WriteContract,
   WriteInteractionResult,
@@ -39,6 +39,7 @@ import { sha256B64Url, toB64Url } from '../../utils/base64.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
+import { defaultWarp } from '../warp.js';
 
 LoggerFactory.INST.setOptions({
   logLevel: 'fatal',
@@ -55,7 +56,7 @@ export class WarpContract<T>
 
   constructor({
     contractTxId,
-    cacheUrl,
+    cacheUrl = 'https://api.arns.app',
     warp = defaultWarp,
     logger = new DefaultLogger({
       level: 'info',
@@ -99,8 +100,6 @@ export class WarpContract<T>
       },
       type: 'arweave',
     });
-    //this.contract = this.contract.connect(warpSigner);
-    //this.signer = warpSigner;
     return warpSigner;
   }
 
@@ -122,11 +121,7 @@ export class WarpContract<T>
     return evaluationResult.cachedValue.state as T;
   }
 
-  async ensureContractInit({
-    signer,
-  }: {
-    signer?: ContractSigner;
-  } = {}): Promise<void> {
+  async ensureContractInit({ signer }: OptionalSigner = {}): Promise<void> {
     this.logger.debug(`Checking contract initialized`, {
       contractTxId: this.contractTxId,
     });
@@ -190,9 +185,7 @@ export class WarpContract<T>
     inputs,
     signer,
     // TODO: support dryWrite
-  }: EvaluationParameters<WriteParameters<Input>> & {
-    signer: ContractSigner;
-  }): Promise<WriteInteractionResult> {
+  }: WriteParameters<Input>): Promise<WriteInteractionResult> {
     try {
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,

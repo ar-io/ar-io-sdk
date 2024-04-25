@@ -17,9 +17,9 @@
 import Arweave from 'arweave';
 import { EvaluationManifest } from 'warp-contracts';
 
-import { ContractConfiguration, SortKey } from '../common.js';
 import { RemoteContract, WarpContract } from '../common/index.js';
 import { SORT_KEY_REGEX } from '../constants.js';
+import { ContractConfiguration, SortKey } from '../types.js';
 import { tagsToObject, validateArweaveId } from './arweave.js';
 
 export function isSortKey(sortKey: string): sortKey is SortKey {
@@ -65,7 +65,9 @@ export async function getContractManifest({
   arweave: Arweave;
   contractTxId: string;
 }): Promise<EvaluationManifest> {
-  const { tags: encodedTags } = await arweave.transactions.get(contractTxId);
+  const { tags: encodedTags } = await arweave.transactions
+    .get(contractTxId)
+    .catch(() => ({ tags: [] }));
   const decodedTags = tagsToObject(encodedTags);
   const contractManifestString = decodedTags['Contract-Manifest'] ?? '{}';
   // TODO throw if manifest is missing
@@ -74,7 +76,7 @@ export async function getContractManifest({
 }
 
 export function isContractConfiguration<T>(
-  config: ContractConfiguration,
+  config: ContractConfiguration<T>,
 ): config is {
   contract: WarpContract<T> | RemoteContract<T>;
 } {
@@ -85,6 +87,8 @@ export function isContractTxIdConfiguration(
   config: ContractConfiguration,
 ): config is { contractTxId: string } {
   return (
-    'contractTxId' in config && validateArweaveId(config.contractTxId) === true
+    'contractTxId' in config &&
+    typeof config.contractTxId === 'string' &&
+    validateArweaveId(config.contractTxId) === true
   );
 }
