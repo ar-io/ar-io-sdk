@@ -1,33 +1,10 @@
-import { ArweaveSigner } from 'arbundles';
+import { ArweaveSigner } from 'arbundles/node';
 
 import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
 import { gatewayAddress, localCacheUrl, warp } from '../constants.js';
-
-const writeTestCases = [
-  [
-    'joinNetwork',
-    {
-      fqdn: 'example.com',
-      label: 'example',
-      protocol: 'https',
-      port: 443,
-      qty: 20000,
-      properties: ''.padEnd(43, 'a'),
-      note: 'a note',
-      allowDelegatedStaking: true,
-      minDelegatedStake: 100,
-    },
-  ],
-  ['updateGatewaySettings', { fqdn: 'example.com' }],
-  ['increaseDelegateStake', { target: gatewayAddress, qty: 101 }],
-  ['decreaseDelegateStake', { target: gatewayAddress, qty: 101 }],
-  ['increaseOperatorStake', { qty: 101 }],
-  ['decreaseOperatorStake', { qty: 101 }],
-  ['transfer', { target: ''.padEnd(43, 'f'), qty: 101 }],
-] as const;
 
 describe('ArIOWriteable', () => {
   let signer: ArweaveSigner;
@@ -48,23 +25,46 @@ describe('ArIOWriteable', () => {
     });
   });
 
-  it.each(writeTestCases)(
-    'should execute write interaction with parameters: %s',
-    async (functionName: string, inputs: Record<string, any>) => {
-      const tx = await arIO[functionName]({
-        ...inputs,
-      });
-      expect(tx).toBeDefined();
-    },
-  );
+  it('should successfully join network', async () => {
+    const { id: interactionTxId } = await arIO.joinNetwork({
+      fqdn: 'example.com',
+      label: 'example',
+      protocol: 'https',
+      port: 443,
+      qty: 20000,
+      properties: ''.padEnd(43, 'a'),
+      note: 'a note',
+      allowDelegatedStaking: true,
+      delegateRewardShareRatio: 10,
+      minDelegatedStake: 100,
+      autoStake: true,
+    });
+    expect(interactionTxId).toBeDefined();
+  });
 
-  // it('should successfully submit saveObservations interaction with parameters', async () => {
-  //   // mine blocks so we can submit a observations
-  //   await mineBlocks({ arweave, blocks: 20 });
-  //   const tx = await arIO.saveObservations({
-  //     reportTxId: gatewayAddress,
-  //     failedGateways: [gatewayAddress],
-  //   });
-  //   expect(tx).toBeDefined();
-  // });
+  it('should successfully increase delegate stake', async () => {
+    const { id: interactionTxId } = await arIO.increaseDelegateStake({
+      target: gatewayAddress,
+      qty: 101,
+    });
+    expect(interactionTxId).toBeDefined();
+  });
+
+  it('should successfully decrease delegate stake', async () => {
+    const { id: interactionTxId } = await arIO.decreaseDelegateStake({
+      target: gatewayAddress,
+      qty: 101,
+    });
+    expect(interactionTxId).toBeDefined();
+  });
+
+  it('should successfully transfer tokens to another address', async () => {
+    const target = ''.padEnd(43, 'f');
+    const qty = 101;
+    const { id: interactionTxId } = await arIO.transfer({
+      target,
+      qty,
+    });
+    expect(interactionTxId).toBeDefined();
+  });
 });

@@ -590,9 +590,13 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }: {
     target: string;
     qty: number;
-    denomination: DENOMINATIONS;
+    denomination?: DENOMINATIONS;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{
+      target: WalletAddress;
+      qty: number;
+      denomination?: DENOMINATIONS;
+    }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
       inputs: {
         target,
@@ -632,7 +636,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async joinNetwork(
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<JoinNetworkParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
       inputs: params,
       signer: this.signer,
@@ -651,7 +655,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<UpdateGatewaySettingsParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
       inputs: params,
       signer: this.signer,
@@ -672,7 +676,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
@@ -693,7 +697,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
@@ -712,7 +716,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
@@ -731,7 +735,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    const res = this.contract.writeInteraction({
+    const res = this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
@@ -756,7 +760,10 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{
+      observerReportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
       inputs: {
         observerReportTxId: params.reportTxId,

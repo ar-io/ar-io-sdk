@@ -41,9 +41,7 @@ import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
 import { defaultWarp } from '../warp.js';
 
-LoggerFactory.INST.setOptions({
-  logLevel: 'fatal',
-});
+LoggerFactory.INST.logLevel('fatal');
 
 export class WarpContract<T>
   implements BaseContract<T>, ReadContract, WriteContract
@@ -90,7 +88,8 @@ export class WarpContract<T>
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
         const dataToSign = await tx.getSignatureData();
-        const signatureBuffer = Buffer.from(await signer.sign(dataToSign));
+        const signatureUint8Array = await signer.sign(dataToSign);
+        const signatureBuffer = Buffer.from(signatureUint8Array);
         const id = sha256B64Url(signatureBuffer);
         tx.setSignature({
           id: id,
@@ -204,14 +203,26 @@ export class WarpContract<T>
         );
       }
 
-      const writeResult = await this.contract.writeInteraction<Input>({
-        function: functionName,
-        ...inputs,
-      });
+      const writeResult = await this.contract.writeInteraction<Input>(
+        {
+          function: functionName,
+          ...inputs,
+        },
+        {
+          disableBundling: true,
+        },
+      );
 
       if (!writeResult?.interactionTx) {
-        throw new Error(`Failed to write contract interaction ${functionName}`);
+        throw new Error(
+          `Failed to write contract interaction: ${functionName}`,
+        );
       }
+
+      this.logger.debug('Successfully wrote contract interaction', {
+        contractTxId: this.contractTxId,
+        interactionTxId: writeResult.originalTxId,
+      });
 
       return writeResult.interactionTx;
     } catch (error) {
