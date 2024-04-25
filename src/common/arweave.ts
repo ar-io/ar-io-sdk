@@ -17,7 +17,7 @@
 import Arweave from 'arweave';
 
 export const defaultArweave = Arweave.init({
-  host: 'arweave.net',
+  host: 'ar-io.dev',
   port: 443,
   protocol: 'https',
 });

@@ -14,22 +14,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { bufferTob64Url } from 'arweave/node/lib/utils.js';
 import { createHash } from 'crypto';
 
 export function fromB64Url(input: string): Buffer {
-  const paddingLength = input.length % 4 === 0 ? 0 : 4 - (input.length % 4);
-
-  const base64 = input
-    .replace(/-/g, '+')
-    .replace(/_/g, '/')
-    .concat('='.repeat(paddingLength));
-
-  return Buffer.from(base64, 'base64');
+  return Buffer.from(input, 'base64url');
 }
 
 export function toB64Url(buffer: Buffer): string {
-  return bufferTob64Url(buffer);
+  return buffer.toString('base64url');
 }
 
 export function sha256B64Url(input: Buffer): string {
