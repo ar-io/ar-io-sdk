@@ -2,7 +2,7 @@ import { ARNS_TESTNET_REGISTRY_TX, ArIO } from '@ar.io/sdk';
 
 (async () => {
   const arIO = ArIO.init({
-    ARNS_TESTNET_REGISTRY_TX,
+    contractTxId: ARNS_TESTNET_REGISTRY_TX,
   });
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
