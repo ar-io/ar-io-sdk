@@ -31,6 +31,7 @@ import {
   Gateway,
   JoinNetworkParams,
   Observations,
+  OptionalSigner,
   RegistrationType,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -98,19 +99,12 @@ export class ArIO {
    * ```
    */
   static init(
-    config: ContractConfiguration &
-      WithSigner &
-      ({ contract: WarpContract<ArIOState> } | { contractTxId: string }),
+    config: WithSigner<
+      { contract: WarpContract<ArIOState> } | { contractTxId: string }
+    >,
   ): ArIOWritable;
-  static init(
-    config?: ContractConfiguration &
-      ({ contract?: RemoteContract<ArIOState> } | { contractTxId: string }),
-  ): ArIOReadable;
-  static init(
-    config: ContractConfiguration & {
-      signer?: ContractSigner;
-    } = {},
-  ) {
+  static init(config?: ContractConfiguration): ArIOReadable;
+  static init(config?: OptionalSigner<ContractConfiguration>) {
     if (config?.signer) {
       const signer = config.signer;
       const contract = this.createContract(config);

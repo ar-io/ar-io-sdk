@@ -23,6 +23,7 @@ import {
   ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
+  OptionalSigner,
   WithSigner,
   WriteInteractionResult,
 } from '../types.js';
@@ -83,20 +84,13 @@ export class ANT {
    * ```
    */
   static init(
-    config: ContractConfiguration &
-      WithSigner &
-      ({ contract: WarpContract<ANTState> } | { contractTxId: string }),
+    config: WithSigner<
+      { contract: WarpContract<ANTState> } | { contractTxId: string }
+    >,
   ): ANTWritable;
-  static init(
-    config?: ContractConfiguration &
-      ({ contract?: RemoteContract<ANTState> } | { contractTxId: string }),
-  ): ANTReadable;
-  static init(
-    config: ContractConfiguration & {
-      signer?: ContractSigner;
-    } = {},
-  ) {
-    if (config?.signer) {
+  static init(config?: ContractConfiguration): ANTReadable;
+  static init(config: OptionalSigner<ContractConfiguration>) {
+    if (config.signer) {
       const signer = config.signer;
       const contract = this.createContract(config);
       return new ANTWritable({ signer, contract });
