@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "allowSyntheticDefaultImports": true,
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext"],
     "outDir": "./lib/esm",
     "listEmittedFiles": false,
     "listFiles": false,
