@@ -41,7 +41,7 @@ import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
 import { defaultWarp } from '../warp.js';
 
-LoggerFactory.INST.logLevel('debug');
+LoggerFactory.INST.logLevel('fatal');
 
 export class WarpContract<T>
   implements BaseContract<T>, ReadContract, WriteContract

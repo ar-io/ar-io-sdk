@@ -590,12 +590,12 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }: {
     target: string;
     qty: number;
-    denomination: DENOMINATIONS;
+    denomination?: DENOMINATIONS;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{
       target: WalletAddress;
       qty: number;
-      denomination: DENOMINATIONS;
+      denomination?: DENOMINATIONS;
     }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
       inputs: {
