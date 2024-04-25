@@ -87,14 +87,13 @@ export class WarpContract<T>
     }
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
-        const publicKey = await signer.publicKey;
         const dataToSign = await tx.getSignatureData();
         const signatureUint8Array = await signer.sign(dataToSign);
         const signatureBuffer = Buffer.from(signatureUint8Array);
         const id = sha256B64Url(signatureBuffer);
         tx.setSignature({
           id: id,
-          owner: toB64Url(publicKey),
+          owner: toB64Url(signer.publicKey),
           signature: toB64Url(signatureBuffer),
         });
       },
