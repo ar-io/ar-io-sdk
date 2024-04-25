@@ -14,7 +14,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { WarpFactory, defaultCacheOptions } from 'warp-contracts';
 
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
+import { defaultArweave } from './arweave.js';
 
-export const version = '1.0.2-alpha.3';
+export const defaultWarp = WarpFactory.forMainnet(
+  {
+    ...defaultCacheOptions,
+    inMemory: true,
+  },
+  true,
+  defaultArweave,
+);

@@ -14,7 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import Arweave from 'arweave';
 
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-
-export const version = '1.0.2-alpha.3';
+export const defaultArweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https',
+});

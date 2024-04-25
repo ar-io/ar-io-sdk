@@ -2,7 +2,7 @@ import Arweave from 'arweave';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import * as fs from 'fs';
 import path from 'path';
-import { ContractDeploy, Warp } from 'warp-contracts';
+import { ContractDeploy, SourceType, Warp } from 'warp-contracts';
 
 import { WeightedObserver } from '../src/contract-state';
 
@@ -29,11 +29,6 @@ export async function deployANTContract({
     ),
   );
   return await warp.deploy({
-    evaluationManifest: {
-      evaluationOptions: {
-        useKVStorage: true,
-      },
-    },
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
@@ -42,6 +37,11 @@ export async function deployANTContract({
       controllers: [address],
       balances: { [address]: 1000000 },
     }),
+    evaluationManifest: {
+      evaluationOptions: {
+        sourceType: SourceType.ARWEAVE,
+      },
+    },
   });
 }
 
@@ -93,6 +93,11 @@ export async function deployArIOContract({
         0: updatedPrescribedObservers,
       },
     }),
+    evaluationManifest: {
+      evaluationOptions: {
+        sourceType: SourceType.ARWEAVE,
+      },
+    },
   });
 }
 

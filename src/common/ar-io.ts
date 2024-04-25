@@ -31,6 +31,7 @@ import {
   Gateway,
   JoinNetworkParams,
   Observations,
+  OptionalSigner,
   RegistrationType,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -60,60 +61,80 @@ export class ArIO {
    * ArIO.createContract({ contractTxId: 'myContractTxId' });
    * ```
    */
-  static createContract(
-    config: ContractConfiguration,
+  static createWriteableContract(
+    config?: ContractConfiguration<ArIOState>,
   ): WarpContract<ArIOState> {
-    if (isContractConfiguration<ArIOState>(config)) {
-      if (config.contract instanceof WarpContract) {
-        return config.contract;
-      }
+    if (!config || Object.keys(config).length === 0) {
+      return new WarpContract<ArIOState>({
+        contractTxId: ARNS_TESTNET_REGISTRY_TX,
+      });
+    } else if (isContractConfiguration<ArIOState>(config)) {
+      return config.contract instanceof WarpContract
+        ? config.contract
+        : new WarpContract<ArIOState>(config.contract.configuration());
     } else if (isContractTxIdConfiguration(config)) {
       return new WarpContract<ArIOState>({ contractTxId: config.contractTxId });
+    } else {
+      throw new InvalidContractConfigurationError();
     }
-    throw new InvalidContractConfigurationError();
   }
 
   /**
    * Initializes an ArIO instance.
    *
-   * There are two overloads for this function:
-   * 1. When a signer is provided in the configuration, it returns an instance of ArIOWritable.
-   * 2. When a signer is NOT provided in the configuration, it returns an instance of ArIOReadable.
+   * There are multiple overloads for this function:
+   * 1. When nothing is provided, it returns an instance of ArIOReadable.
+   * 1. When a signer is provided, it returns an instance of ArIOWritable.
+   * 2. When a signer is NOT provided, it returns an instance of ArIOReadable.
    *
-   *
-   * @param {ContractConfiguration & WithSigner} config - The configuration object.
+   * @param {WithSigner<ContractConfiguration<ArIOState>>} config - The configuration object.
    *    If a signer is provided, it should be an object that implements the ContractSigner interface.
    *
    * @returns {ArIOWritable | ArIOReadable} - An instance of ArIOWritable if a signer is provided, otherwise an instance of ArIOReadable.
    * @throws {Error} - Throws an error if the configuration is invalid.
    *
    * @example
-   * Overload 1: When signer is provided
+   * Overload 1: When nothing is provide, ArIOReadable is returned.
    * ```ts
-   * const writable = ArIO.init({ signer: mySigner, contract: myContract });
-   *```
-   * Overload 2: When signer is not provided
+   * const readable = ArIO.init();
+   * ```
+   * Overload 2: When signer is not provided with contract, ArIOReadable is returned.
    * ```ts
    * const readable = ArIO.init({ contract: myContract });
    * ```
+   * Overload 3: When signer is not provided with a contractTxId, ArIOReadable is returned.
+   * ```ts
+   * const readable = ArIO.init({ contractTxId: 'myContractTxId' });
+   * ```
+   * Overload 4: When signer is provided without any contract configuration, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner });
+   *```
+   * Overload 5: When signer is provided with a contract configuration, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner, contract: myContract });
+   * ```
+   * Overload 6: When signer is provided with a contractTxId, ArIOWritable is returned.
+   * ```ts
+   * const writable = ArIO.init({ signer: mySigner, contractTxId: 'myContractTxId' });
+   * ```
    */
+  static init(): ArIOReadable;
+  static init({ signer }: WithSigner): ArIOWritable;
   static init(
-    config: ContractConfiguration &
-      WithSigner &
-      ({ contract: WarpContract<ArIOState> } | { contractTxId: string }),
-  ): ArIOWritable;
-  static init(
-    config?: ContractConfiguration &
-      ({ contract?: RemoteContract<ArIOState> } | { contractTxId: string }),
+    config?: Required<ContractConfiguration<ArIOState>>,
   ): ArIOReadable;
-  static init(
-    config: ContractConfiguration & {
-      signer?: ContractSigner;
-    } = {},
-  ) {
-    if (config?.signer) {
-      const signer = config.signer;
-      const contract = this.createContract(config);
+  static init({
+    signer,
+    ...config
+  }: WithSigner<
+    // must be a WarpContract to get a ArIOWriteable
+    { contract: WarpContract<ArIOState> } | { contractTxId: string }
+  >): ArIOWritable;
+  static init(config?: OptionalSigner<ContractConfiguration<ArIOState>>) {
+    if (config && config.signer) {
+      const { signer, ...rest } = config;
+      const contract = this.createWriteableContract(rest);
       return new ArIOWritable({ signer, contract });
     } else {
       return new ArIOReadable(config);
@@ -124,21 +145,19 @@ export class ArIO {
 export class ArIOReadable implements ArIOReadContract {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
 
-  constructor(
-    config: ContractConfiguration = {
-      contract: new RemoteContract<ArIOState>({
+  constructor(config?: ContractConfiguration<ArIOState>) {
+    if (!config) {
+      this.contract = new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
-      }),
-    },
-  ) {
-    if (isContractConfiguration<ArIOState>(config)) {
+      });
+    } else if (isContractConfiguration<ArIOState>(config)) {
       this.contract = config.contract;
     } else if (isContractTxIdConfiguration(config)) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: config.contractTxId,
       });
     } else {
-      throw new Error('Invalid configuration.');
+      throw new InvalidContractConfigurationError();
     }
   }
 
@@ -512,13 +531,34 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   protected declare contract: WarpContract<ArIOState>;
   private signer: ContractSigner;
   constructor({
-    contract,
     signer,
-  }: {
-    contract: WarpContract<ArIOState>;
-  } & WithSigner) {
-    super({ contract });
-    this.signer = signer;
+    ...config
+  }: WithSigner<
+    | {
+        contract?: WarpContract<ArIOState>;
+      }
+    | { contractTxId?: string }
+  >) {
+    if (Object.keys(config).length === 0) {
+      super({
+        contract: new WarpContract<ArIOState>({
+          contractTxId: ARNS_TESTNET_REGISTRY_TX,
+        }),
+      });
+      this.signer = signer;
+    } else if (isContractConfiguration<ArIOState>(config)) {
+      super({ contract: config.contract });
+      this.signer = signer;
+    } else if (isContractTxIdConfiguration(config)) {
+      super({
+        contract: new WarpContract<ArIOState>({
+          contractTxId: config.contractTxId,
+        }),
+      });
+      this.signer = signer;
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
   }
 
   /**
@@ -550,9 +590,13 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }: {
     target: string;
     qty: number;
-    denomination: DENOMINATIONS;
+    denomination?: DENOMINATIONS;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{
+      target: WalletAddress;
+      qty: number;
+      denomination?: DENOMINATIONS;
+    }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
       inputs: {
         target,
@@ -592,7 +636,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async joinNetwork(
     params: JoinNetworkParams,
   ): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<JoinNetworkParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
       inputs: params,
       signer: this.signer,
@@ -611,7 +655,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async updateGatewaySettings(
     params: UpdateGatewaySettingsParams,
   ): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<UpdateGatewaySettingsParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
       inputs: params,
       signer: this.signer,
@@ -632,7 +676,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
@@ -653,7 +697,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     target: string;
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
       inputs: params,
       signer: this.signer,
@@ -672,7 +716,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async increaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
@@ -691,7 +735,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   async decreaseOperatorStake(params: {
     qty: number;
   }): Promise<WriteInteractionResult> {
-    const res = this.contract.writeInteraction({
+    const res = this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
       inputs: params,
       signer: this.signer,
@@ -716,7 +760,10 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
+    return this.contract.writeInteraction<{
+      observerReportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
       inputs: {
         observerReportTxId: params.reportTxId,

@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "1.0.1",
+  "version": "1.0.2-alpha.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -73,7 +73,7 @@
     "prepare": "husky install",
     "example:mjs": "yarn build:esm && node examples/node/index.mjs",
     "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
-    "example:web": "yarn build:web && cp -r bundles/* examples/web && http-server --port 8080 --host -o examples/web"
+    "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",

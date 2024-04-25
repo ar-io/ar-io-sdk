@@ -21,6 +21,87 @@
         },
       };
     </script>
+
+    <script type="module" defer>
+      import { ArIO } from '../../bundles/web.bundle.min.js';
+
+      const arIO = ArIO.init();
+
+      // fetch data on page load
+      async function init() {
+        const gateways = await arIO.getGateways();
+        const balance = await arIO.getBalance({
+          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        });
+        const record = await arIO.getArNSRecord({ domain: 'ardrive' });
+        const records = await arIO.getArNSRecords();
+        const observations = await arIO.getObservations();
+        const distributions = await arIO.getDistributions();
+
+        //  update the UI
+
+        document.getElementById('table-body').innerHTML = Object.entries(
+          gateways,
+        )
+          .map(([gatewayOwner, gateway]) => {
+            return `
+              <tr>
+                <td class="border border-surface px-4 py-2 text-primary" style="width: fit-content"><a href="https://${gateway.settings.fqdn}" target="_blank">${gateway.settings.fqdn}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/address/${gatewayOwner}" target="_blank">${gatewayOwner}</a></td>
+                <td class="border border-surface px-4 py-2">${gateway.operatorStake} IO</td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        document.getElementById('balance-result').textContent =
+          `Balance: ${balance} IO`;
+
+        document.getElementById('record-result').textContent = JSON.stringify(
+          record,
+          null,
+          2,
+        );
+
+        document.getElementById('records-table-body').innerHTML =
+          Object.entries(records)
+            .map(([domain, record]) => {
+              return `
+              <tr>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://${domain}.arweave.dev" target="_blank">${domain}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/tx/${record.contractTxId}" target="_blank">${record.contractTxId}</a></td>
+                <td class="border border-surface px-4 py-2">${record.endTimestamp ? 'Lease' : 'Permanent'}</td>
+              </tr>
+            `;
+            })
+            .join('');
+
+        document.getElementById('observations-table-body').innerHTML =
+          Object.entries(observations)
+            .map(([epoch, observationData]) => {
+              return `
+              <tr>
+                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/block/${epoch}" target="_blank">${epoch}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary">${Object.keys(observationData.reports).length}</td>
+                <td class="border border-surface px-4 py-2">${Object.keys(observationData.failureSummaries).length}</td>
+              </tr>
+            `;
+            })
+            .join('');
+
+        document.getElementById('distributions-table-body').innerHTML = `
+              <tr>
+                <td class="border border-surface px-4 py-2 text-primary">${distributions.epochPeriod}</a></td>
+                <td class="border border-surface px-4 py-2 text-primary">${distributions.epochStartHeight}</td>
+                <td class="border border-surface px-4 py-2">${distributions.epochEndHeight}</td>
+                <td class="border border-surface px-4 py-2">${distributions.nextDistributionHeight}</td>
+              </tr>
+            `;
+        // end init
+      }
+
+      window.addEventListener('load', init);
+    </script>
   </head>
 
   <body class="bg-background flex flex-col items-center p-10 gap-10">
@@ -129,91 +210,5 @@
         </table>
       </div>
     </div>
-
-    <script type="module">
-      import { ArconnectSigner } from 'https://unpkg.com/arbundles@0.11.0/build/web/esm/webIndex.js';
-      import Arweave from 'https://unpkg.com/arweave@1.14.4/web/index.js';
-
-      import { ArIO } from './web.bundle.min.js';
-
-      const arweave = Arweave.init({});
-      const signer = new ArconnectSigner(window['arweaveWallet'], arweave);
-      const arIO = new ArIO({ signer });
-
-      // fetch data on page load
-      async function init() {
-        const gateways = await arIO.getGateways();
-        const balance = await arIO.getBalance({
-          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-        });
-        const record = await arIO.getArNSRecord({ domain: 'ardrive' });
-        const records = await arIO.getArNSRecords();
-        const observations = await arIO.getObservations();
-        const distributions = await arIO.getDistributions();
-
-        //  update the UI
-
-        document.getElementById('table-body').innerHTML = Object.entries(
-          gateways,
-        )
-          .map(([gatewayOwner, gateway]) => {
-            return `
-              <tr>
-                <td class="border border-surface px-4 py-2 text-primary" style="width: fit-content"><a href="https://${gateway.settings.fqdn}" target="_blank">${gateway.settings.fqdn}</a></td>
-                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/address/${gatewayOwner}" target="_blank">${gatewayOwner}</a></td>
-                <td class="border border-surface px-4 py-2">${gateway.operatorStake} IO</td>
-              </tr>
-            `;
-          })
-          .join('');
-
-        document.getElementById('balance-result').textContent =
-          `Balance: ${balance} IO`;
-
-        document.getElementById('record-result').textContent = JSON.stringify(
-          record,
-          null,
-          2,
-        );
-
-        document.getElementById('records-table-body').innerHTML =
-          Object.entries(records)
-            .map(([domain, record]) => {
-              return `
-              <tr>
-                <td class="border border-surface px-4 py-2 text-primary"><a href="https://${domain}.arweave.dev" target="_blank">${domain}</a></td>
-                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/tx/${record.contractTxId}" target="_blank">${record.contractTxId}</a></td>
-                <td class="border border-surface px-4 py-2">${record.endTimestamp ? 'Lease' : 'Permanent'}</td>
-              </tr>
-            `;
-            })
-            .join('');
-
-        document.getElementById('observations-table-body').innerHTML =
-          Object.entries(observations)
-            .map(([epoch, observationData]) => {
-              return `
-              <tr>
-                <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/block/${epoch}" target="_blank">${epoch}</a></td>
-                <td class="border border-surface px-4 py-2 text-primary">${Object.keys(observationData.reports).length}</td>
-                <td class="border border-surface px-4 py-2">${Object.keys(observationData.failureSummaries).length}</td>
-              </tr>
-            `;
-            })
-            .join('');
-
-        document.getElementById('distributions-table-body').innerHTML = `
-              <tr>
-                <td class="border border-surface px-4 py-2 text-primary">${distributions.epochPeriod}</a></td>
-                <td class="border border-surface px-4 py-2 text-primary">${distributions.epochStartHeight}</td>
-                <td class="border border-surface px-4 py-2">${distributions.epochEndHeight}</td>
-                <td class="border border-surface px-4 py-2">${distributions.nextDistributionHeight}</td>
-              </tr>
-            `;
-        // end init
-      }
-
-      window.addEventListener('load', init);
-    </script>
   </body>
 </html>

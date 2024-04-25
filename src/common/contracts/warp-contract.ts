@@ -24,12 +24,12 @@ import {
   Warp,
 } from 'warp-contracts';
 
-import { defaultWarp } from '../../constants.js';
 import {
   BaseContract,
   ContractSigner,
   EvaluationParameters,
   Logger,
+  OptionalSigner,
   ReadContract,
   WriteContract,
   WriteInteractionResult,
@@ -39,10 +39,9 @@ import { sha256B64Url, toB64Url } from '../../utils/base64.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
+import { defaultWarp } from '../warp.js';
 
-LoggerFactory.INST.setOptions({
-  logLevel: 'fatal',
-});
+LoggerFactory.INST.logLevel('fatal');
 
 export class WarpContract<T>
   implements BaseContract<T>, ReadContract, WriteContract
@@ -55,7 +54,7 @@ export class WarpContract<T>
 
   constructor({
     contractTxId,
-    cacheUrl,
+    cacheUrl = 'https://api.arns.app',
     warp = defaultWarp,
     logger = new DefaultLogger({
       level: 'info',
@@ -89,7 +88,8 @@ export class WarpContract<T>
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
         const dataToSign = await tx.getSignatureData();
-        const signatureBuffer = Buffer.from(await signer.sign(dataToSign));
+        const signatureUint8Array = await signer.sign(dataToSign);
+        const signatureBuffer = Buffer.from(signatureUint8Array);
         const id = sha256B64Url(signatureBuffer);
         tx.setSignature({
           id: id,
@@ -99,8 +99,6 @@ export class WarpContract<T>
       },
       type: 'arweave',
     });
-    //this.contract = this.contract.connect(warpSigner);
-    //this.signer = warpSigner;
     return warpSigner;
   }
 
@@ -122,11 +120,7 @@ export class WarpContract<T>
     return evaluationResult.cachedValue.state as T;
   }
 
-  async ensureContractInit({
-    signer,
-  }: {
-    signer?: ContractSigner;
-  } = {}): Promise<void> {
+  async ensureContractInit({ signer }: OptionalSigner = {}): Promise<void> {
     this.logger.debug(`Checking contract initialized`, {
       contractTxId: this.contractTxId,
     });
@@ -190,9 +184,7 @@ export class WarpContract<T>
     inputs,
     signer,
     // TODO: support dryWrite
-  }: EvaluationParameters<WriteParameters<Input>> & {
-    signer: ContractSigner;
-  }): Promise<WriteInteractionResult> {
+  }: WriteParameters<Input>): Promise<WriteInteractionResult> {
     try {
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
@@ -211,14 +203,26 @@ export class WarpContract<T>
         );
       }
 
-      const writeResult = await this.contract.writeInteraction<Input>({
-        function: functionName,
-        ...inputs,
-      });
+      const writeResult = await this.contract.writeInteraction<Input>(
+        {
+          function: functionName,
+          ...inputs,
+        },
+        {
+          disableBundling: true,
+        },
+      );
 
       if (!writeResult?.interactionTx) {
-        throw new Error(`Failed to write contract interaction ${functionName}`);
+        throw new Error(
+          `Failed to write contract interaction: ${functionName}`,
+        );
       }
+
+      this.logger.debug('Successfully wrote contract interaction', {
+        contractTxId: this.contractTxId,
+        interactionTxId: writeResult.originalTxId,
+      });
 
       return writeResult.interactionTx;
     } catch (error) {

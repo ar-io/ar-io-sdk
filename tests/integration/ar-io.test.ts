@@ -28,6 +28,18 @@ describe('ArIO Factory', () => {
     signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
   });
 
+  it('should return a readable without any configuration provided', () => {
+    const readable = ArIO.init();
+    expect(readable).toBeDefined();
+    expect(readable).toBeInstanceOf(ArIOReadable);
+  });
+
+  it('should return a writable without any configuration provided', () => {
+    const writable = ArIO.init({ signer });
+    expect(writable).toBeDefined();
+    expect(writable).toBeInstanceOf(ArIOWritable);
+  });
+
   it('should return a valid instance of ArIOWritable with contract config', async () => {
     const writeClient = ArIO.init({
       signer,
