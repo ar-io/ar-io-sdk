@@ -1,3 +1,15 @@
+## [1.0.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.1...v1.0.2-alpha.1) (2024-04-25)
+
+
+### Bug Fixes
+
+* **arweave:** default to the arweave node import to avoid issues with browser environments ([fc8c26e](https://github.com/ar-io/ar-io-sdk/commit/fc8c26e3c33b27054ad69d6a406139d73283344f))
+* **cacheurl:** use default cache url in warpcontract ([a676a3c](https://github.com/ar-io/ar-io-sdk/commit/a676a3c952e9416f89b703519fb13b2d8671b82a))
+* **init:** cleanup init overload methods and tests ([fa328d2](https://github.com/ar-io/ar-io-sdk/commit/fa328d26c7654221176dd57bda88ce56639048b6))
+* **lint:** address lint issue in ArIOWriteable ([4a3ee89](https://github.com/ar-io/ar-io-sdk/commit/4a3ee893bc1121c7ed84108fa476d5a4308e0283))
+* **typeguards:** make type guards accept unknowns ([7f285bb](https://github.com/ar-io/ar-io-sdk/commit/7f285bb73bebb384a0c20aafabc55e1fca76e34b))
+* **types:** use generic types and modify the requirements for init functions ([9350f78](https://github.com/ar-io/ar-io-sdk/commit/9350f781dcadf481ebce7558cdecd6d27d43cc0c))
+
 ## [1.0.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0...v1.0.1) (2024-04-23)
 
 
