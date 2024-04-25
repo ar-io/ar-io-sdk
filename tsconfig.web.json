@@ -2,6 +2,9 @@
   "extends": "./tsconfig.json",
   "include": ["src/web", "src/common", "src/utils"],
   "compilerOptions": {
-    "outDir": "./lib/web"
+    "outDir": "./lib/web",
+    "paths": {
+      "arweave": ["./node_modules/arweave/node/index.js"]
+    }
   }
 }
