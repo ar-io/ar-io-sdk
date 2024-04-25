@@ -2765,6 +2765,16 @@ arweave-stream-tx@^1.1.0:
   dependencies:
     exponential-backoff "^3.1.0"
 
+arweave@1.13.7:
+  version "1.13.7"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.13.7.tgz#cda8534c833baec372a7052c61f53b4e39a886d7"
+  integrity sha512-Hv+x2bSI6UyBHpuVbUDMMpMje1ETfpJWj52kKfz44O0IqDRi/LukOkkDUptup1p6OT6KP1/DdpnUnsNHoskFeA==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+
 arweave@1.14.4:
   version "1.14.4"
   resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.14.4.tgz#5ba22136aa0e7fd9495258a3931fb770c9d6bf21"
@@ -10215,13 +10225,13 @@ warp-contracts-plugin-deploy@^1.0.13:
     node-pre-gyp "^0.17.0"
     node-stdlib-browser "^1.2.0"
 
-warp-contracts@1.4.39:
-  version "1.4.39"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.39.tgz#b56f4baa61b633c04d8abba65ee5dfca333ffea5"
-  integrity sha512-Dyk9wjhYceLRSq+U5Ba8h2mTbMPeB1hjdnDhYJP825E7gcc3jGc12GTLynSBqx5eJscOtpGG5Z5SQNxcTOP7/A==
+warp-contracts@1.4.26:
+  version "1.4.26"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.26.tgz#d0535b9628f1913b8fa3c2678ed778830cb81810"
+  integrity sha512-m+e5TggjxUF1TtcuKlcAyuVvkTXUi1W0W788iFzfhr7x2hnnfbGkBTiGBxhLu6VVKfxxegMMukn5ztRDmaK34w==
   dependencies:
     archiver "^5.3.0"
-    arweave "1.14.4"
+    arweave "1.13.7"
     async-mutex "^0.4.0"
     bignumber.js "9.1.1"
     events "3.3.0"

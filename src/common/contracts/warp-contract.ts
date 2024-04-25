@@ -23,6 +23,7 @@ import {
   Transaction,
   Warp,
 } from 'warp-contracts';
+import { DeployPlugin } from 'warp-contracts-plugin-deploy';
 
 import { defaultWarp } from '../../constants.js';
 import {
@@ -67,7 +68,7 @@ export class WarpContract<T>
     logger?: Logger;
   }) {
     this.contractTxId = contractTxId;
-    this.contract = warp.contract(contractTxId);
+    this.contract = warp.use(new DeployPlugin()).contract(contractTxId);
     this.cacheUrl = cacheUrl;
     this.warp = warp;
     this.logger = logger;
@@ -137,7 +138,7 @@ export class WarpContract<T>
     });
 
     const { evaluationOptions = {} } = await getContractManifest({
-      arweave: this.warp.arweave,
+      arweave: this.warp.arweave as any,
       contractTxId: this.contractTxId,
     });
 

@@ -40,5 +40,5 @@ export const defaultWarp = WarpFactory.forMainnet(
     inMemory: true,
   },
   true,
-  defaultArweave,
+  defaultArweave as any,
 );
