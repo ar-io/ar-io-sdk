@@ -1,10 +1,11 @@
 import { ArweaveSigner } from 'arbundles/node';
+import Transaction from 'arweave/node/lib/transaction.js';
 
 import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
-import { gatewayAddress, localCacheUrl, warp } from '../constants.js';
+import { arweave, gatewayAddress, localCacheUrl, warp } from '../constants.js';
 
 describe('ArIOWriteable', () => {
   let signer: ArweaveSigner;
@@ -26,7 +27,7 @@ describe('ArIOWriteable', () => {
   });
 
   it('should successfully join network', async () => {
-    const { id: interactionTxId } = await arIO.joinNetwork({
+    const tx = await arIO.joinNetwork({
       fqdn: 'example.com',
       label: 'example',
       protocol: 'https',
@@ -39,32 +40,40 @@ describe('ArIOWriteable', () => {
       minDelegatedStake: 100,
       autoStake: true,
     });
-    expect(interactionTxId).toBeDefined();
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
   });
 
   it('should successfully increase delegate stake', async () => {
-    const { id: interactionTxId } = await arIO.increaseDelegateStake({
+    const tx = await arIO.increaseDelegateStake({
       target: gatewayAddress,
       qty: 101,
     });
-    expect(interactionTxId).toBeDefined();
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
   });
 
   it('should successfully decrease delegate stake', async () => {
-    const { id: interactionTxId } = await arIO.decreaseDelegateStake({
+    const tx = await arIO.decreaseDelegateStake({
       target: gatewayAddress,
       qty: 101,
     });
-    expect(interactionTxId).toBeDefined();
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
   });
 
   it('should successfully transfer tokens to another address', async () => {
     const target = ''.padEnd(43, 'f');
     const qty = 101;
-    const { id: interactionTxId } = await arIO.transfer({
+    const tx = await arIO.transfer({
       target,
       qty,
     });
-    expect(interactionTxId).toBeDefined();
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
   });
 });
