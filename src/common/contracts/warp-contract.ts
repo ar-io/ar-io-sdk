@@ -41,7 +41,7 @@ import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
 import { defaultWarp } from '../warp.js';
 
-LoggerFactory.INST.logLevel('fatal');
+LoggerFactory.INST.logLevel('error');
 
 export class WarpContract<T>
   implements BaseContract<T>, ReadContract, WriteContract
@@ -91,6 +91,7 @@ export class WarpContract<T>
         const signatureUint8Array = await signer.sign(dataToSign);
         const signatureBuffer = Buffer.from(signatureUint8Array);
         const id = sha256B64Url(signatureBuffer);
+        tx.setOwner(toB64Url(signer.publicKey));
         tx.setSignature({
           id: id,
           owner: toB64Url(signer.publicKey),
