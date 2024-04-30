@@ -71,6 +71,7 @@ export type GatewayMetadata = {
   label: string;
   note?: string;
   properties?: string;
+  observerWallet?: WalletAddress;
 };
 
 export type GatewayConnectionSettings = {
@@ -83,7 +84,7 @@ export type GatewaySettings = GatewayConnectionSettings &
   GatewayStakingSettings &
   GatewayMetadata;
 
-export type AllowedProtocols = 'http' | 'https';
+export type AllowedProtocols = 'https';
 
 export type GatewayStats = {
   failedConsecutiveEpochs: number;
