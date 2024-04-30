@@ -35,6 +35,7 @@ describe('ArIOWriteable', () => {
       qty: 20000,
       properties: ''.padEnd(43, 'a'),
       note: 'a note',
+      observerWallet: ''.padEnd(43, 'b'),
       allowDelegatedStaking: true,
       delegateRewardShareRatio: 10,
       minDelegatedStake: 100,
