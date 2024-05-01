@@ -8,9 +8,7 @@
   "main": "./lib/cjs/node/index.js",
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
-  "browser": {
-    "./lib/cjs/index.js": "./bundles/web.bundle.min.js"
-  },
+  "browser": "./bundles/web.bundle.min.js",
   "type": "module",
   "engines": {
     "node": ">=18"
