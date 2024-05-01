@@ -1,4 +1,4 @@
-import { ANT } from '@ar.io/sdk';
+import { WarpFactory } from 'warp-contracts';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -6,17 +6,19 @@ import remarkGfm from 'remark-gfm';
 import './App.css';
 
 const contractTxId = 'ilwT4ObFQ7cGPbW-8z-h7mvvWGt_yhWNlqxNjSUgiYY';
-const ant = ANT.init({
-  contractTxId,
-});
+const warp = WarpFactory.forMainnet();
+const antContract = warp.contract(contractTxId);
+
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
 
+  // NOTE: there is a bug in warp-contracts causing this to fail on `AbortError` import missing
   useEffect(() => {
-    ant
-      .getState()
-      .then((state) => {
-        setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
+    antContract.syncState(`https://api.arns.app/v1/contract/${contractTxId}`, {
+        validity: true
+      }).then(async (syncContract) => {
+        const { cachedValue } = await syncContract.readState();
+        setContract(`\`\`\`json\n${JSON.stringify(cachedValue.state, null, 2)}`);
       })
       .catch((error) => {
         console.error(error);

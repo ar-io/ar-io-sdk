@@ -1,6 +1,6 @@
-# Typescript React Example
+# Typescript React Example - Vite
 
-This example shows how to use the `@ar.io/sdk` within a Typescript/React project.
+This example shows how to use the `@ar.io/sdk` within a Typescript/React project using [Vite].
 
 ## Getting Started
 
@@ -35,16 +35,15 @@ The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 }
 ```
 
-The [webpack.config.js](./webpack.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
+The [vite.config.js](./vite.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
 
 ```javascript
-entry: {
-    resolve: {
-        fallback: {
-            fs: require.resolve('browserify-fs'), // not provided by NodePolyfills, so provide it here
-        },
-    },
-    polyfills: [new NodePolyfills()], // supports core node packages like `crypto`, `process`, etc.
+{
+  build: {},
+  plugins: [
+    react(),
+    nodePolyfills(),
+  ],
 }
 ```
 
