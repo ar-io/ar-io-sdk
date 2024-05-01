@@ -961,7 +961,7 @@ const ant = ANT.init({
 const state = await ant.getState();
 ```
 
-<detials>
+<details>
   <summary>Output</summary>
 
 ```json
