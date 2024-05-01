@@ -14,11 +14,14 @@ const bundle = async () => {
       polyfillNode({
         polyfills: {
           crypto: true,
+          process: true,
+          fs: true,
         },
       }),
     ],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
+    external: ['dtrace-provider'],
   })
     .catch((e) => {
       console.log(e);
