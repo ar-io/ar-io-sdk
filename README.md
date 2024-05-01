@@ -666,22 +666,18 @@ Joins a gateway to the ar.io network via its associated wallet. Requires `signer
 
 ```typescript
 const jointNetworkParams = {
-  /* initial operator stake */
-  qty: 4000,
-  /* delegated staking settings */
-  allowDelegatedStaking: true,
-  minDelegatedStake: 100,
-  delegateRewardShareRatio: 1,
-  autoStake: true,
-  /* gateway metadata info */
+  qty: 10_000, // minimum operator stake allowed
+  autoStake: true, // auto-stake operator rewards to the gateway
+  allowDelegatedStaking: true, // allows delegated staking
+  minDelegatedStake: 100, // minimum delegated stake allowed (in mIO)
+  delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
-  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway.
-  observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer
-  /* gateway info */
-  fqdn: 'example.com',
-  port: 443,
-  protocol: 'https',
+  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
+  observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
+  fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
+  port: 443, // port number
+  protocol: 'https', // only 'https' is supported
 };
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
