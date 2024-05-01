@@ -11,15 +11,7 @@
     "noFallthroughCasesInSwitch": true,
     "module": "esnext",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "warp-contracts": [
-        "./node_modules/warp-contracts/bundle/web.bundle.min.js"
-      ]
-    }
+    "jsx": "react-jsx"
   },
   "include": ["src"]
 }

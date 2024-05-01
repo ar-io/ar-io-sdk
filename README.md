@@ -950,6 +950,12 @@ const ant = ANT.init({
 
 ```
 
+# <<<<<<< Updated upstream
+
+# <<<<<<< Updated upstream
+
+> > > > > > > Stashed changes
+
 ### `getState({ evaluationOptions })`
 
 Retrieves the current state of the ANT contract.
@@ -961,7 +967,7 @@ const ant = ANT.init({
 const state = await ant.getState();
 ```
 
-<detials>
+<details>
   <summary>Output</summary>
 
 ```json
@@ -1065,6 +1071,12 @@ const state = await ant.getState({
   }
 }
 ```
+
+# <<<<<<< Updated upstream
+
+> > > > > > > Stashed changes
+
+> > > > > > > Stashed changes
 
 #### `getOwner({ evaluationOptions })`
 

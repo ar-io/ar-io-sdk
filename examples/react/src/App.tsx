@@ -1,3 +1,4 @@
+import { ANT } from '@ar.io/sdk';
 import { useEffect, useState } from 'react';
 import { WarpFactory } from 'warp-contracts';
 
@@ -5,6 +6,9 @@ import './App.css';
 
 const warp = WarpFactory.forMainnet();
 const contractTxId = 'ilwT4ObFQ7cGPbW-8z-h7mvvWGt_yhWNlqxNjSUgiYY';
+const ant = ANT.init({
+  contractTxId,
+});
 function App() {
   const [contract, setContract] = useState<any>({});
 
