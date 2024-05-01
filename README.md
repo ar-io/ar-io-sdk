@@ -1066,6 +1066,8 @@ const state = await ant.getState({
 }
 ```
 
+</details>
+
 #### `getOwner({ evaluationOptions })`
 
 Returns the owner of the configured ANT contract.
