@@ -11,8 +11,7 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     fallback: {
-      fs: false,
-      module: false,
+      fs: require.resolve('browserify-fs'), // not provided by NodePolyfillPlugin, so we need to provide it
     },
   },
   module: {
