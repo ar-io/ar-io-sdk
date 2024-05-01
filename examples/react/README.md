@@ -18,7 +18,7 @@ yarn start
 
 3. Open your browser and navigate to `http://localhost:3000`. You should see:
 
-![screenshot](./screenshot.png)
+![screenshot](./public/screenshot.png)
 
 ## Polyfills
 
