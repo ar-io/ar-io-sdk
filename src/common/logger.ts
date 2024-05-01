@@ -60,7 +60,10 @@ export class DefaultLogger implements Logger {
   }
 
   setLogLevel(level: string) {
-    if (level === 'none') this.silent = true;
-    this.logger.level = level;
+    if (level === 'none') {
+      this.silent = true;
+      return;
+    }
+    this.logger.level(level);
   }
 }
