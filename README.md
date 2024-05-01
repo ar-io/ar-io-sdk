@@ -952,11 +952,17 @@ const ant = ANT.init({
 
 ```
 
+<<<<<<< HEAD
+
 # <<<<<<< Updated upstream
 
 # <<<<<<< Updated upstream
 
 > > > > > > > Stashed changes
+
+=======
+
+> > > > > > > origin/alpha
 
 ### `getState({ evaluationOptions })`
 
@@ -1074,11 +1080,16 @@ const state = await ant.getState({
 }
 ```
 
+<<<<<<< HEAD
+
 # <<<<<<< Updated upstream
 
 > > > > > > > Stashed changes
 
-> > > > > > > Stashed changes
+> > > > > > > # Stashed changes
+
+</details>
+>>>>>>> origin/alpha
 
 #### `getOwner({ evaluationOptions })`
 

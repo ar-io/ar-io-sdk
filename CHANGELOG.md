@@ -1,3 +1,10 @@
+## [1.0.5-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.4...v1.0.5-alpha.1) (2024-05-01)
+
+
+### Bug Fixes
+
+* **logger:** replace winston with bunyan ([0488f75](https://github.com/ar-io/ar-io-sdk/commit/0488f7529e25046d902ac88b11485a55bb246854))
+
 ## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
 
 
