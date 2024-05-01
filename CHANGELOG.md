@@ -1,3 +1,17 @@
+## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
+
+
+### Bug Fixes
+
+* **ario:** update joinNetwork to accept observerWallet param ([6a32dd1](https://github.com/ar-io/ar-io-sdk/commit/6a32dd1d6291fc524a5c8ed88fc1bbe8c614a1e2))
+
+## [1.0.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.2...v1.0.3) (2024-04-26)
+
+
+### Bug Fixes
+
+* **signer:** set owner before signing data ([0b558f5](https://github.com/ar-io/ar-io-sdk/commit/0b558f53b4b38dfea00629fd733462654801693c))
+
 ## [1.0.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.1...v1.0.2) (2024-04-25)
 
 

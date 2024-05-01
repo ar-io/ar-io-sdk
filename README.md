@@ -196,7 +196,12 @@ Factory function to that creates a read-only or writeable client. By providing a
 // read-only client that has access to all read APIs
 const arIOReadable = ArIO.init()
 
-const browserSigner = new ArConnectSigner(window.arweaveWallet);
+const arweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https'
+})
+const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
@@ -661,21 +666,18 @@ Joins a gateway to the ar.io network via its associated wallet. Requires `signer
 
 ```typescript
 const jointNetworkParams = {
-  /* initial operator stake */
-  qty: 4000,
-  /* delegated staking settings */
-  allowDelegatedStaking: true,
-  minDelegatedStake: 100,
-  delegateRewardShareRatio: 1,
-  autoStake: true,
-  /* gateway metadata info */
+  qty: 10_000, // minimum operator stake allowed
+  autoStake: true, // auto-stake operator rewards to the gateway
+  allowDelegatedStaking: true, // allows delegated staking
+  minDelegatedStake: 100, // minimum delegated stake allowed (in mIO)
+  delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
-  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway.
-  /* gateway info */
-  fqdn: 'example.com',
-  port: 443,
-  protocol: 'https',
+  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
+  observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
+  fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
+  port: 443, // port number
+  protocol: 'https', // only 'https' is supported
 };
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
@@ -827,7 +829,12 @@ The ANT contract client class exposes APIs relevant to compliant Arweave Name To
 Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-const browserSigner = new ArConnectSigner(window.arweaveWallet);
+const arweave = Arweave.init({
+  host: 'ar-io.dev',
+  port: 443,
+  protocol: 'https'
+})
+const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const ant = ANT.init({signer: browserSigner});
 
 const nodeSigner = new ArweaveSigner(JWK);
