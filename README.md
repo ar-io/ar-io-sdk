@@ -260,7 +260,7 @@ const state = await arIO.getState();
 
 </details>
 
-Alternatively, you can get the contract at a specific block height or sort key by providign `evaluationOptions`:
+Alternatively, you can get the contract at a specific block height or sort key by providing `evaluationOptions`:
 
 ```typescript
 const arIO = ArIO.init();
@@ -1008,7 +1008,7 @@ const state = await ant.getState();
 
 </details>
 
-Alternatively, you can get the contract at a specific block height or sort key by providign `evaluationOptions`:
+Alternatively, you can get the contract at a specific block height or sort key by providing `evaluationOptions`:
 
 ```typescript
 const ant = ANT.init({
