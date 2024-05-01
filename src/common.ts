@@ -305,16 +305,14 @@ export interface ANTWriteContract {
   setName({ name }: { name: string }): Promise<WriteInteractionResult>;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Logger {
   setLogLevel: (level: string) => void;
-  setLogFormat: (logFormat: string) => void;
-  info: (message: string, ...args: any[]) => void;
-  warn: (message: string, ...args: any[]) => void;
-  error: (message: string, ...args: any[]) => void;
-  debug: (message: string, ...args: any[]) => void;
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug: (message: string, ...args: unknown[]) => void;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export interface HTTPClient {
   get<I, K>({
     endpoint,

@@ -14,68 +14,56 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-// small polyfill for winston
-import 'setimmediate';
-import winston, { createLogger, format, transports } from 'winston';
+import bunyan from 'bunyan';
 
 import { Logger } from '../types.js';
 import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {
-  private logger: winston.Logger;
+  private logger: bunyan.Logger;
+  private silent = false;
   constructor({
     level = 'info',
-    logFormat = 'simple',
   }: {
-    level?: 'info' | 'debug' | 'error' | 'none' | undefined;
-    logFormat?: 'simple' | 'json' | undefined;
+    level?: 'info' | 'debug' | 'error' | 'warn' | 'none';
   } = {}) {
-    this.logger = createLogger({
+    if (level === 'none') {
+      this.silent = true;
+      return;
+    }
+    this.logger = bunyan.createLogger({
       level,
-      defaultMeta: { client: 'ar-io-sdk', version },
-      silent: level === 'none',
-      format: getLogFormat(logFormat),
-      transports: [new transports.Console()],
+      name: 'ar-io-sdk',
+      version,
+      serializers: bunyan.stdSerializers,
     });
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  info(message: string, ...args: any[]) {
-    this.logger.info(message, ...args);
+  info(message: string, ...args: unknown[]) {
+    if (this.silent) return;
+    this.logger.info(...args, message);
   }
 
-  warn(message: string, ...args: any[]) {
-    this.logger.warn(message, ...args);
+  warn(message: string, ...args: unknown[]) {
+    if (this.silent) return;
+    this.logger.warn(...args, message);
   }
 
-  error(message: string, ...args: any[]) {
-    this.logger.error(message, ...args);
+  error(message: string, ...args: unknown[]) {
+    if (this.silent) return;
+    this.logger.error(...args, message);
   }
 
-  debug(message: string, ...args: any[]) {
-    this.logger.debug(message, ...args);
+  debug(message: string, ...args: unknown[]) {
+    if (this.silent) return;
+    this.logger.debug(...args, message);
   }
 
   setLogLevel(level: string) {
-    this.logger.level = level;
+    if (level === 'none') {
+      this.silent = true;
+      return;
+    }
+    this.logger.level(level);
   }
-
-  setLogFormat(logFormat: string) {
-    this.logger.format = getLogFormat(logFormat);
-  }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
-}
-
-function getLogFormat(logFormat: string) {
-  return format.combine(
-    format((info) => {
-      if (info.stack && info.level !== 'error') {
-        delete info.stack;
-      }
-      return info;
-    })(),
-    format.errors({ stack: true }), // Ensure errors show a stack trace
-    format.timestamp(),
-    logFormat === 'json' ? format.json() : format.simple(),
-  );
 }

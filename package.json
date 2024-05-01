@@ -117,10 +117,9 @@
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
     "axios": "1.4.0",
-    "setimmediate": "^1.0.5",
+    "bunyan": "^1.8.15",
     "warp-arbundles": "^1.0.4",
-    "warp-contracts": "1.4.39",
-    "winston": "^3.11.0"
+    "warp-contracts": "1.4.39"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
