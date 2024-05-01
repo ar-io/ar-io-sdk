@@ -1,4 +1,7 @@
 CHANGELOG.md
-examples/react/static
-examples/react/build
-examples/react/node_modules
+examples/webpack/dist
+examples/webpack/build
+examples/webpack/node_modules
+examples/vite/node_modules
+examples/vite/dist
+examples/vite/build
