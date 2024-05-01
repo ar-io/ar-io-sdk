@@ -1,51 +1,32 @@
 import { ANT } from '@ar.io/sdk';
 import { useEffect, useState } from 'react';
-import { WarpFactory } from 'warp-contracts';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import './App.css';
 
-const warp = WarpFactory.forMainnet();
 const contractTxId = 'ilwT4ObFQ7cGPbW-8z-h7mvvWGt_yhWNlqxNjSUgiYY';
 const ant = ANT.init({
   contractTxId,
 });
 function App() {
-  const [contract, setContract] = useState<any>({});
+  const [contract, setContract] = useState<string>('Loading...');
 
   useEffect(() => {
-    warp
-      .contract(contractTxId)
-      .syncState(`https://api.arns.app/v1/contract/${contractTxId}`, {
-        validity: true,
+    ant
+      .getState()
+      .then((state) => {
+        setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
       })
-      .then((syncedContract) => {
-        syncedContract
-          .readState()
-          .then((state) => {
-            setContract(state);
-          })
-          .catch((error) => {
-            console.error(error);
-          });
+      .catch((error) => {
+        console.error(error);
+        setContract('Error loading contract state');
       });
   }, []);
 
-  // useEffect(() => {
-  //   ant
-  //     .getState()
-  //     .then((contract) => {
-  //       console.log(contract);
-  //     })
-  //     .catch((error) => {
-  //       console.error(error);
-  //     });
-  // }, []);
-
   return (
     <div className="App">
-      <header className="App-header">
-        <p>{JSON.stringify(contract)}</p>
-      </header>
+        <Markdown className="markdown" remarkPlugins={[remarkGfm]}>{contract}</Markdown>
     </div>
   );
 }
