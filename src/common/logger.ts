@@ -23,10 +23,8 @@ export class DefaultLogger implements Logger {
   private logger: bunyan.Logger;
   constructor({
     level = 'info',
-    // logFormat = 'simple',
   }: {
     level?: 'info' | 'debug' | 'error' | 'none' | undefined;
-    // logFormat?: 'simple' | 'json' | undefined;
   } = {}) {
     this.logger = bunyan.createLogger({
       level,
