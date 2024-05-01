@@ -16,6 +16,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [ArIO Contract](#ario-contract)
   - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
+    - [`getState({ evaluationOptions })`](#getstate-evaluationoptions-)
     - [`getBalance({ address, evaluationOptions })`](#getbalance-address-evaluationoptions-)
     - [`getBalances({ evaluationOptions })`](#getbalances-evaluationoptions-)
     - [`getGateway({ address, evaluationOptions })`](#getgateway-address-evaluationoptions-)
@@ -41,6 +42,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
     - [`init({ signer })`](#init-signer-)
+    - [`getState({ evaluationOptions })`](#getstate-evaluationoptions-)
     - [`getOwner({ evaluationOptions })`](#getowner-evaluationoptions-)
     - [`getControllers({ evaluationOptions })`](#getcontrollers-evaluationoptions-)
     - [`getRecords({ evaluationOptions })`](#getrecords-evaluationoptions-)
@@ -209,6 +211,104 @@ const nodeSigner = new ArweaveSigner(JWK);
 const arIOWriteable = ArIO.init({ signer: nodeSigner});
 
 ```
+
+### `getState({ evaluationOptions })`
+
+Retrieves the current state of the ArIO contract.
+
+```typescript
+const arIO = ArIO.init();
+const state = await arIO.getState();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "lastTickedHeight": 1415568, // current block height
+  "evolve": "92MCDWn0LihmWXKVnOeMDEQxPbiV4Y3bRjnTet7J3eg",
+  "auctions": {
+    // auctions
+  },
+  "balances": {
+    // balances
+  },
+  "distributions": {
+    // epoch distribution info
+  },
+  "gateways": {
+    // gateways
+  },
+  "observations": {
+    // observations
+  },
+  "prescribedObservers": {
+    // prescribedObservers
+  },
+  "records": {
+    // records
+  },
+  "demandFactoring": {
+    // demandFactoring
+  },
+  "vaults": {
+    // vaults
+  }
+}
+```
+
+</details>
+
+Alternatively, you can get the contract at a specific block height or sort key by providign `evaluationOptions`:
+
+```typescript
+const arIO = ArIO.init();
+const state = await arIO.getState({
+  evaluationOptions: {
+    evalTo: { blockHeight: 1382230 }, // alternatively, use evalTo: { sortKey: 'SORT_KEY' }
+  },
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "lastTickedHeight": 1382230, // evaluated block height
+  "evolve": "92MCDWn0LihmWXKVnOeMDEQxPbiV4Y3bRjnTet7J3eg",
+  "auctions": {
+    // auctions
+  },
+  "balances": {
+    // balances
+  },
+  "distributions": {
+    // epoch distribution info
+  },
+  "gateways": {
+    // gateways
+  },
+  "observations": {
+    // observations
+  },
+  "prescribedObservers": {
+    // prescribedObservers
+  },
+  "records": {
+    // records
+  },
+  "demandFactoring": {
+    // demandFactoring
+  },
+  "vaults": {
+    // vaults
+  }
+}
+```
+
+</details>
 
 #### `getBalance({ address, evaluationOptions })`
 
@@ -826,7 +926,7 @@ The ANT contract client class exposes APIs relevant to compliant Arweave Name To
 
 #### `init({ signer })`
 
-Factory function to that creates a read-only or writeabe client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
+Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
 const arweave = Arweave.init({
@@ -834,12 +934,136 @@ const arweave = Arweave.init({
   port: 443,
   protocol: 'https'
 })
+// in a browser environment with ArConnect
 const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
-const ant = ANT.init({signer: browserSigner});
+const ant = ANT.init({
+  signer: browserSigner,
+  contractTxId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
+});
 
+// in a node environment
 const nodeSigner = new ArweaveSigner(JWK);
-const ant = ANT.init({signer: nodeSigner});
+const ant = ANT.init({
+  signer: nodeSigner,
+  contractTxId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
+});
 
+```
+
+### `getState({ evaluationOptions })`
+
+Retrieves the current state of the ANT contract.
+
+```typescript
+const ant = ANT.init({
+  contractTxId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
+const state = await ant.getState();
+```
+
+<detials>
+  <summary>Output</summary>
+
+```json
+{
+  "balances": {
+    "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4": 1
+  },
+  "controller": "6Z-ifqgVi1jOwMvSNwKWs6ewUEQ0gU9eo4aHYC3rN1M",
+  "evolve": null,
+  "name": "ArDrive.io",
+  "owner": "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4",
+  "records": {
+    "@": {
+      "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+      "ttlSeconds": 3600
+    },
+    "cn": {
+      "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
+      "ttlSeconds": 3300
+    },
+    "dapp": {
+      "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
+      "ttlSeconds": 3600
+    },
+    "logo": {
+      "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
+      "ttlSeconds": 3600
+    },
+    "og": {
+      "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
+      "ttlSeconds": 3600
+    },
+    "og_dapp": {
+      "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
+      "ttlSeconds": 3600
+    },
+    "og_logo": {
+      "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
+      "ttlSeconds": 3600
+    }
+  }
+}
+```
+
+</details>
+
+Alternatively, you can get the contract at a specific block height or sort key by providign `evaluationOptions`:
+
+```typescript
+const ant = ANT.init({
+  contractTxId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
+const state = await ant.getState({
+  evaluationOptions: {
+    evalTo: { blockHeight: 1382230 },
+  },
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "balances": {
+    "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4": 1
+  },
+  "controller": "6Z-ifqgVi1jOwMvSNwKWs6ewUEQ0gU9eo4aHYC3rN1M",
+  "evolve": null,
+  "name": "ArDrive.io",
+  "owner": "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4",
+  "records": {
+    "@": {
+      "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+      "ttlSeconds": 3600
+    },
+    "cn": {
+      "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
+      "ttlSeconds": 3300
+    },
+    "dapp": {
+      "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
+      "ttlSeconds": 3600
+    },
+    "logo": {
+      "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
+      "ttlSeconds": 3600
+    },
+    "og": {
+      "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
+      "ttlSeconds": 3600
+    },
+    "og_dapp": {
+      "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
+      "ttlSeconds": 3600
+    },
+    "og_logo": {
+      "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
+      "ttlSeconds": 3600
+    }
+  }
+}
 ```
 
 #### `getOwner({ evaluationOptions })`
@@ -856,7 +1080,7 @@ const owner = await ant.getOwner();
   <summary>Output</summary>
 
 ```json
-"bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"
+"ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4"
 ```
 
 </details>
@@ -875,7 +1099,7 @@ const controllers = await ant.getControllers();
   <summary>Output</summary>
 
 ```json
-["bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM"]
+["ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4"]
 ```
 
 </details>
@@ -902,6 +1126,26 @@ const records = await ant.getRecords();
   "cn": {
     "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
     "ttlSeconds": 3300
+  },
+  "dapp": {
+    "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
+    "ttlSeconds": 3600
+  },
+  "logo": {
+    "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
+    "ttlSeconds": 3600
+  },
+  "og": {
+    "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
+    "ttlSeconds": 3600
+  },
+  "og_dapp": {
+    "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
+    "ttlSeconds": 3600
+  },
+  "og_logo": {
+    "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
+    "ttlSeconds": 3600
   }
 }
 ```
