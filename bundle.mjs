@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 
 const bundle = async () => {
-  console.log('Building web bundle esm.');
+  console.log('Building minified web bundle file.');
   await build({
     entryPoints: ['./src/web/index.ts'],
     bundle: true,

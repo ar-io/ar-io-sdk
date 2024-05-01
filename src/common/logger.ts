@@ -21,11 +21,16 @@ import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {
   private logger: bunyan.Logger;
+  private silent = false;
   constructor({
     level = 'info',
   }: {
-    level?: 'info' | 'debug' | 'error' | 'none' | undefined;
+    level?: 'info' | 'debug' | 'error' | 'warn' | 'none';
   } = {}) {
+    if (level === 'none') {
+      this.silent = true;
+      return;
+    }
     this.logger = bunyan.createLogger({
       level,
       name: 'ar-io-sdk',
@@ -34,25 +39,28 @@ export class DefaultLogger implements Logger {
     });
   }
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  info(message: string, ...args: any[]) {
+  info(message: string, ...args: unknown[]) {
+    if (this.silent) return;
     this.logger.info(...args, message);
   }
 
-  warn(message: string, ...args: any[]) {
+  warn(message: string, ...args: unknown[]) {
+    if (this.silent) return;
     this.logger.warn(...args, message);
   }
 
-  error(message: string, ...args: any[]) {
+  error(message: string, ...args: unknown[]) {
+    if (this.silent) return;
     this.logger.error(...args, message);
   }
 
-  debug(message: string, ...args: any[]) {
+  debug(message: string, ...args: unknown[]) {
+    if (this.silent) return;
     this.logger.debug(...args, message);
   }
 
   setLogLevel(level: string) {
+    if (level === 'none') this.silent = true;
     this.logger.level = level;
   }
-  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
