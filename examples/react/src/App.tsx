@@ -26,7 +26,9 @@ function App() {
 
   return (
     <div className="App">
-        <Markdown className="markdown" remarkPlugins={[remarkGfm]}>{contract}</Markdown>
+      <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
+        {contract}
+      </Markdown>
     </div>
   );
 }
