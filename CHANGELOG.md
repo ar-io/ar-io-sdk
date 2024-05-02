@@ -1,3 +1,10 @@
+## [1.0.5-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.3...v1.0.5-alpha.4) (2024-05-02)
+
+
+### Bug Fixes
+
+* **utils:** manally conver from b64 to b64url to avoid web polyfill issues ([766035c](https://github.com/ar-io/ar-io-sdk/commit/766035c1a319e2c2567cf2a47bda3a48f5294d2c))
+
 ## [1.0.5-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.2...v1.0.5-alpha.3) (2024-05-02)
 
 
