@@ -1,7 +1,3 @@
-### Bug Fixes
-
-* **logger:** replace winston with bunyan ([0488f75](https://github.com/ar-io/ar-io-sdk/commit/0488f7529e25046d902ac88b11485a55bb246854))
-
 ## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
 
 
@@ -44,7 +40,7 @@
 
 * **actions:** bump node setup action ([4eb49cd](https://github.com/ar-io/ar-io-sdk/commit/4eb49cda331cfef516639435e73dde2e90f2e05c))
 * **actions:** freeze lockfile ([dba7313](https://github.com/ar-io/ar-io-sdk/commit/dba7313f42c8cf0053f90327ad2c14ec5bd4d4d7))
-* add cache config in ario constructor ([1f3c0ba](https://github.com/ar-io/ar-io-sdk/commit/1f3c0baef2831d12d14d20e1ac16d9b0e8f0c978))
+* **contract**add cache config in ario constructor ([1f3c0ba](https://github.com/ar-io/ar-io-sdk/commit/1f3c0baef2831d12d14d20e1ac16d9b0e8f0c978))
 * **ant:** add ant contract to exports ([a2ff57b](https://github.com/ar-io/ar-io-sdk/commit/a2ff57bc1b6f77dcf9f3ace1fd3b346069aec6b4))
 * **ant:** add signer to ant test ([4581b8d](https://github.com/ar-io/ar-io-sdk/commit/4581b8d461e57f4769befe5f650e5fe4e94bbc09))
 * **ant:** default evaluation options for ant apis that do not take an… ([#25](https://github.com/ar-io/ar-io-sdk/issues/25)) ([0c8b55d](https://github.com/ar-io/ar-io-sdk/commit/0c8b55ddbc5019f365af43389524af5bd733d0c9))
