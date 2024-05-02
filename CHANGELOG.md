@@ -1,3 +1,10 @@
+## [1.0.5-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.1...v1.0.5-alpha.2) (2024-05-02)
+
+
+### Bug Fixes
+
+* **cjs:** provide path alias for warp in cjs export ([7f9bf9a](https://github.com/ar-io/ar-io-sdk/commit/7f9bf9a6c8937e855d6b56f81f367b596dfca166))
+
 ## [1.0.5-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.4...v1.0.5-alpha.1) (2024-05-01)
 
 
