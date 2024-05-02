@@ -233,7 +233,7 @@ export class WarpContract<T>
           contractTxId: this.contractTxId,
         },
       );
-      throw new WriteInteractionError(error.message);
+      throw new WriteInteractionError(error);
     }
   }
 }
