@@ -38,13 +38,15 @@ The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 The [vite.config.js](./vite.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
 
 ```javascript
-{
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
+
+export default defineConfig({
   build: {},
-  plugins: [
-    react(),
-    nodePolyfills(),
-  ],
-}
+  base: '/',
+  plugins: [react(), nodePolyfills()],
+});
 ```
 
 If you're project is using `moduleResolution: "nodenext"`, you can remove the polyfills from the webpack configuration and use named export for web - `@ar.io/sdk/web` - which includes the necessary polyfills.

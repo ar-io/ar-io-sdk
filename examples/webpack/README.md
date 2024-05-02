@@ -38,14 +38,17 @@ The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 The [webpack.config.js](./webpack.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
 
 ```javascript
-entry: {
-    resolve: {
-        fallback: {
-            fs: require.resolve('browserify-fs'), // not provided by NodePolyfills, so provide it here
-        },
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+
+module.exports = {
+  // other webpack configuration
+  resolve: {
+    fallback: {
+      fs: require.resolve('browserify-fs'), // not provided by NodePolyfills, so provide it here
     },
-    polyfills: [new NodePolyfills()], // supports core node packages like `crypto`, `process`, etc.
-}
+  },
+  polyfills: [new NodePolyfills()], // supports core node packages like `crypto`, `process`, etc.
+};
 ```
 
 If you're project is using `moduleResolution: "nodenext"`, you can remove the polyfills from the webpack configuration and use named export for web - `@ar.io/sdk/web` - which includes the necessary polyfills.
