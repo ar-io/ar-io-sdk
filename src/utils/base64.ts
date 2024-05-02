@@ -16,12 +16,39 @@
  */
 import { createHash } from 'crypto';
 
-export function fromB64Url(input: string): Buffer {
-  return Buffer.from(input, 'base64');
+// safely encodes and decodes base64url strings to and from buffers
+const BASE64_CHAR_62 = '+';
+const BASE64_CHAR_63 = '/';
+const BASE64URL_CHAR_62 = '-';
+const BASE64URL_CHAR_63 = '_';
+const BASE64_PADDING = '=';
+
+function base64urlToBase64(str: string): string {
+  const padLength = str.length % 4;
+  if (padLength) {
+    str += BASE64_PADDING.repeat(4 - padLength);
+  }
+
+  return str
+    .replaceAll(BASE64URL_CHAR_62, BASE64_CHAR_62)
+    .replaceAll(BASE64URL_CHAR_63, BASE64_CHAR_63);
+}
+
+function base64urlFromBase64(str: string) {
+  return str
+    .replaceAll(BASE64_CHAR_62, BASE64URL_CHAR_62)
+    .replaceAll(BASE64_CHAR_63, BASE64URL_CHAR_63)
+    .replaceAll(BASE64_PADDING, '');
+}
+
+export function fromB64Url(str: string): Buffer {
+  const b64Str = base64urlToBase64(str);
+  return Buffer.from(b64Str, 'base64');
 }
 
 export function toB64Url(buffer: Buffer): string {
-  return buffer.toString('base64url');
+  const b64Str = buffer.toString('base64');
+  return base64urlFromBase64(b64Str);
 }
 
 export function sha256B64Url(input: Buffer): string {
