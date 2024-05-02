@@ -34,15 +34,15 @@ function base64urlToBase64(str: string): string {
     .replaceAll(BASE64URL_CHAR_63, BASE64_CHAR_63);
 }
 
-function base64urlFromBase64(str) {
+function base64urlFromBase64(str: string) {
   return str
     .replaceAll(BASE64_CHAR_62, BASE64URL_CHAR_62)
     .replaceAll(BASE64_CHAR_63, BASE64URL_CHAR_63)
     .replaceAll(BASE64_PADDING, '');
 }
 
-export function fromB64Url(input: string): Buffer {
-  const b64Str = base64urlToBase64(input);
+export function fromB64Url(str: string): Buffer {
+  const b64Str = base64urlToBase64(str);
   return Buffer.from(b64Str, 'base64');
 }
 
