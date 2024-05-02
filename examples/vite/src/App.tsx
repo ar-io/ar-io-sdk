@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { WarpFactory, Contract } from 'warp-contracts';
+import { Contract, WarpFactory } from 'warp-contracts';
 
 import './App.css';
 
