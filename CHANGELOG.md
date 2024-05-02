@@ -1,3 +1,10 @@
+## [1.0.5-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.2...v1.0.5-alpha.3) (2024-05-02)
+
+
+### Bug Fixes
+
+* **utils:** use base64 for fromB64url util ([42302ef](https://github.com/ar-io/ar-io-sdk/commit/42302ef5124aa28fc438a9b865fd901f2ed3df4d))
+
 ## [1.0.5-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.1...v1.0.5-alpha.2) (2024-05-02)
 
 
