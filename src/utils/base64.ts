@@ -14,14 +14,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import Arweave from 'arweave';
 import { createHash } from 'crypto';
 
 export function fromB64Url(input: string): Buffer {
-  return Buffer.from(input, 'base64url');
+  // actually returns a uint8array, not a buffer
+  return Buffer.from(Arweave.utils.b64UrlToBuffer(input));
 }
 
 export function toB64Url(buffer: Buffer): string {
-  return buffer.toString('base64url');
+  return Arweave.utils.bufferTob64Url(buffer);
 }
 
 export function sha256B64Url(input: Buffer): string {
