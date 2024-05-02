@@ -1,3 +1,10 @@
+## [1.0.5-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.5...v1.0.5-alpha.6) (2024-05-02)
+
+
+### Bug Fixes
+
+* **util:** add FQDN regex that matches ArNS contract ([e6d7396](https://github.com/ar-io/ar-io-sdk/commit/e6d7396decdb4997aa121f31ae7ad87455747191))
+
 ## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
 
 
