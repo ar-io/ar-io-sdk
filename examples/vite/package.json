@@ -3,12 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@ar.io/sdk": "^1.0.5-alpha.1",
+    "@ar.io/sdk": "^1.0.5-alpha.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
-    "remark-gfm": "^4.0.0",
-    "warp-contracts": "^1.4.41"
+    "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -23,6 +22,9 @@
     "vite": "^5.2.10",
     "vite-plugin-html": "^3.2.2",
     "vite-plugin-node-polyfills": "^0.21.0"
+  },
+  "resolutions": {
+    "warp-contracts": "1.4.29"
   },
   "scripts": {
     "start": "vite --config vite.config.js",
