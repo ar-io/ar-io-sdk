@@ -2,7 +2,7 @@ export default {
   preset: 'ts-jest',
   clearMocks: true,
   moduleFileExtensions: ['ts', 'js', 'mjs'],
-  testMatch: ['**/src/**/*.test.ts'],
+  testMatch: ['**/tests/unit/**.test.ts'],
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts'],
   testEnvironment: 'node',

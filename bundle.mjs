@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 
 const bundle = async () => {
-  console.log('Building web bundle esm.');
+  console.log('Building minified web bundle file.');
   await build({
     entryPoints: ['./src/web/index.ts'],
     bundle: true,
@@ -14,11 +14,14 @@ const bundle = async () => {
       polyfillNode({
         polyfills: {
           crypto: true,
+          process: true,
+          fs: true,
         },
       }),
     ],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
+    external: ['dtrace-provider'],
   })
     .catch((e) => {
       console.log(e);

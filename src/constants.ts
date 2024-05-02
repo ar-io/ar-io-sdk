@@ -15,6 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
+
+/** FQDN regex that matches the one used in the ArNS contract. */
+export const FQDN_REGEX = new RegExp(
+  '^(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{1,63}$',
+);
+
 // sortkey: padded blockheight to 12, JS timestamp, hash of transactionID + block hash. Timestamp only applicable to L2 and normally is all zeros.
 export const SORT_KEY_REGEX = new RegExp(
   '^[0-9]{12},[0-9]{13},[a-fA-F0-9]{64}$',

@@ -145,6 +145,8 @@ const arIO = ArIO.init();
 const gateways = await arIO.getGateways();
 ```
 
+> _**Note**: polyfills are only provided when using the named `@ar.io/sdk/web` export (which requires `moduleResolution: nodenext` in `tsconfig.json`). If you are using the default export within a Typescript project (e.g. `moduleResolution: node`), you will need to provide your own polyfills - specifically `crypto`, `fs` and `buffer`. Refer to [examples/webpack] and [examples/vite] for references in how to properly provide those polyfills. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills._
+
 #### Browser
 
 ```html
@@ -1309,5 +1311,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [ar.io]: https://ar.io
 [package.json]: ./package.json
 [examples]: ./examples
+[examples/webpack]: ./examples/webpack
+[examples/vite]: ./examples/vite
 [arns-service]: https://github.com/ar-io/arns-service
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
