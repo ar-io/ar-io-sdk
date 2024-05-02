@@ -3,11 +3,6 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "outDir": "./lib/cjs",
-    "paths": {
-      "warp-contracts/lib/mjs/index.js": [
-        "./node_modules/warp-contracts/bundles/web.bundle.min.js"
-      ]
-    }
+    "outDir": "./lib/cjs"
   }
 }

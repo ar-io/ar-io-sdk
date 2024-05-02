@@ -15,10 +15,10 @@
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
 
-"@ar.io/sdk@^1.0.5-alpha.1":
-  version "1.0.5-alpha.1"
-  resolved "https://registry.yarnpkg.com/@ar.io/sdk/-/sdk-1.0.5-alpha.1.tgz#f859718a48793863e23dfc6c300eaf4d53f4ad11"
-  integrity sha512-eqGN/ckMoVp97q48/n/Z2pZpV1Qc6iXd+MIOyIf6ynEMKPHEDwoq4CaJTDlKSDi95o9vPwUykNpS2HcuHkSXlA==
+"@ar.io/sdk@^1.0.5-alpha.4":
+  version "1.0.5-alpha.4"
+  resolved "https://registry.yarnpkg.com/@ar.io/sdk/-/sdk-1.0.5-alpha.4.tgz#a4295f6d8e92a6eb2f98c93dd84124023fb76103"
+  integrity sha512-q2WaPABjJoenbbNiK2YoBnNRRTVmBE9DYVMWinLuNQRxlAanG6RT6RW71OClreN4KAmn8XwPxP3gFilHpWXocQ==
   dependencies:
     arbundles "0.11.0"
     arweave "1.14.4"
@@ -1279,6 +1279,16 @@ arweave-stream-tx@^1.1.0:
   integrity sha512-bNt9rj0hbAEzoUZEF2s6WJbIz8nasZlZpxIw03Xm8fzb9gRiiZlZGW3lxQLjfc9Z0VRUWDzwtqoYeEoB/JDToQ==
   dependencies:
     exponential-backoff "^3.1.0"
+
+arweave@1.13.7:
+  version "1.13.7"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.13.7.tgz#cda8534c833baec372a7052c61f53b4e39a886d7"
+  integrity sha512-Hv+x2bSI6UyBHpuVbUDMMpMje1ETfpJWj52kKfz44O0IqDRi/LukOkkDUptup1p6OT6KP1/DdpnUnsNHoskFeA==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
 
 arweave@1.14.4:
   version "1.14.4"
@@ -4724,33 +4734,13 @@ warp-arbundles@^1.0.4:
     buffer "^6.0.3"
     warp-isomorphic "^1.0.7"
 
-warp-contracts@1.4.39:
-  version "1.4.39"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.39.tgz#b56f4baa61b633c04d8abba65ee5dfca333ffea5"
-  integrity sha512-Dyk9wjhYceLRSq+U5Ba8h2mTbMPeB1hjdnDhYJP825E7gcc3jGc12GTLynSBqx5eJscOtpGG5Z5SQNxcTOP7/A==
+warp-contracts@1.4.29, warp-contracts@1.4.39:
+  version "1.4.29"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.29.tgz#fbab7b64ad055f7245229d9bfab992161fda2f33"
+  integrity sha512-cwNgKmKl5vMd5ptLeyPqMug5IPCyQIJZMalQ7FBFZjLMC7atlMcNYDKgaBHi14vXjtTtw1g+V6BRETwQhqCfzA==
   dependencies:
     archiver "^5.3.0"
-    arweave "1.14.4"
-    async-mutex "^0.4.0"
-    bignumber.js "9.1.1"
-    events "3.3.0"
-    fast-copy "^3.0.0"
-    level "^8.0.0"
-    memory-level "^1.0.0"
-    safe-stable-stringify "2.4.1"
-    stream-buffers "^3.0.2"
-    unzipit "^1.4.0"
-    warp-arbundles "^1.0.4"
-    warp-isomorphic "^1.0.7"
-    warp-wasm-metering "1.0.1"
-
-warp-contracts@^1.4.41:
-  version "1.4.41"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.41.tgz#49d9678002acef546a8350ed81e505178f84cefe"
-  integrity sha512-nrdLGGBzxujiWkZCDxSOfIvdnKmL+XCoF+amNdFLo22RVmYbsmIW4D0BQPDK9I/wZtlZLGZHFne9xa7bl2whJg==
-  dependencies:
-    archiver "^5.3.0"
-    arweave "1.14.4"
+    arweave "1.13.7"
     async-mutex "^0.4.0"
     bignumber.js "9.1.1"
     events "3.3.0"
