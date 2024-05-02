@@ -1,27 +1,3 @@
-## [1.0.5-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.3...v1.0.5-alpha.4) (2024-05-02)
-
-
-### Bug Fixes
-
-* **utils:** manally conver from b64 to b64url to avoid web polyfill issues ([766035c](https://github.com/ar-io/ar-io-sdk/commit/766035c1a319e2c2567cf2a47bda3a48f5294d2c))
-
-## [1.0.5-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.2...v1.0.5-alpha.3) (2024-05-02)
-
-
-### Bug Fixes
-
-* **utils:** use base64 for fromB64url util ([42302ef](https://github.com/ar-io/ar-io-sdk/commit/42302ef5124aa28fc438a9b865fd901f2ed3df4d))
-
-## [1.0.5-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.1...v1.0.5-alpha.2) (2024-05-02)
-
-
-### Bug Fixes
-
-* **cjs:** provide path alias for warp in cjs export ([7f9bf9a](https://github.com/ar-io/ar-io-sdk/commit/7f9bf9a6c8937e855d6b56f81f367b596dfca166))
-
-## [1.0.5-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.4...v1.0.5-alpha.1) (2024-05-01)
-
-
 ### Bug Fixes
 
 * **logger:** replace winston with bunyan ([0488f75](https://github.com/ar-io/ar-io-sdk/commit/0488f7529e25046d902ac88b11485a55bb246854))
