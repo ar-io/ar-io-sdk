@@ -71,8 +71,8 @@
     "test:unit": "yarn clean && jest --config=jest.config.mjs",
     "test:integration": "yarn clean && docker compose up -d && jest --config=jest.integration.config.mjs --runInBand && docker compose down -v",
     "prepare": "husky install",
-    "example:mjs": "yarn build:esm && node examples/node/index.mjs",
-    "example:cjs": "yarn build:cjs && node examples/node/index.cjs",
+    "example:esm": "cd examples/esm && yarn && node index.mjs",
+    "example:cjs": "cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web"
   },
   "devDependencies": {
