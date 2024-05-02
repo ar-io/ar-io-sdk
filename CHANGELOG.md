@@ -1,10 +1,3 @@
-## [1.0.5-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.4...v1.0.5-alpha.5) (2024-05-02)
-
-
-### Bug Fixes
-
-* **warp-contract:** correctly throw error in write interaction ([c2368dd](https://github.com/ar-io/ar-io-sdk/commit/c2368dd5ef1c78fa52ef1eef3198a4a035411bea))
-
 ## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
 
 
