@@ -187,6 +187,7 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: JoinNetworkParams): Promise<WriteInteractionResult>;
   updateGatewaySettings({
     allowDelegatedStaking,
@@ -199,6 +200,7 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
   increaseOperatorStake(params: {
     qty: number;
@@ -222,9 +224,13 @@ export interface ArIOWriteContract {
 
 export type WriteInteractionResult = Transaction | DataItem;
 
-export type JoinNetworkParams = GatewayConnectionSettings &
-  GatewayStakingSettings &
-  GatewayMetadata & { qty: number };
+// Utility type for dev experience: shows all fields of a type rather than the composed type names
+export type VisibleTypes<T> = { [P in keyof T]: T[P] };
+export type JoinNetworkParams = VisibleTypes<
+  GatewayConnectionSettings &
+    GatewayStakingSettings &
+    GatewayMetadata & { qty: number; observerWallet?: WalletAddress }
+>;
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
@@ -238,6 +244,7 @@ export type UpdateGatewaySettingsParamsBase = {
   properties?: string;
   protocol?: AllowedProtocols;
   autoStake?: boolean;
+  observerWallet?: WalletAddress;
 };
 
 // Utility type to require at least one of the fields
