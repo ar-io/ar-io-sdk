@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { WalletAddress } from './common.js';
+import { VisibleTypes, WalletAddress } from './common.js';
 
 export const AR_IO_CONTRACT_FUNCTIONS = {
   GATEWAY: 'gateway',
@@ -69,9 +69,8 @@ export type GatewayStakingSettings = {
 
 export type GatewayMetadata = {
   label: string;
-  note?: string;
-  properties?: string;
-  observerWallet?: WalletAddress;
+  note: string;
+  properties: string;
 };
 
 export type GatewayConnectionSettings = {
@@ -80,9 +79,9 @@ export type GatewayConnectionSettings = {
   protocol: AllowedProtocols;
 };
 
-export type GatewaySettings = GatewayConnectionSettings &
-  GatewayStakingSettings &
-  GatewayMetadata;
+export type GatewaySettings = VisibleTypes<
+  GatewayConnectionSettings & GatewayStakingSettings & GatewayMetadata
+>;
 
 export type AllowedProtocols = 'https';
 
