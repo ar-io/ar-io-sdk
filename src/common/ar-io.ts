@@ -634,12 +634,36 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     * arIO.joinNetwork(jointNetworkParams);
    * ```
    */
-  async joinNetwork(
-    params: JoinNetworkParams,
-  ): Promise<WriteInteractionResult> {
+  async joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: JoinNetworkParams): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<JoinNetworkParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
-      inputs: params,
+      inputs: {
+        qty,
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake,
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
       signer: this.signer,
     });
   }
