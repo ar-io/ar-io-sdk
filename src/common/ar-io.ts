@@ -677,12 +677,34 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.updateGatewaySettings({ autoStake: true });
    * ```
    */
-  async updateGatewaySettings(
-    params: UpdateGatewaySettingsParams,
-  ): Promise<WriteInteractionResult> {
+  async updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<UpdateGatewaySettingsParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
-      inputs: params,
+      inputs: {
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake,
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
       signer: this.signer,
     });
   }
