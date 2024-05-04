@@ -248,8 +248,10 @@ export type UpdateGatewaySettingsParamsBase = {
 };
 
 // Utility type to require at least one of the fields
-export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
-  { [K in keyof U]: Required<Pick<U, K>> }[keyof U];
+export type AtLeastOne<
+  T,
+  U = { [K in keyof T]-?: Record<K, T[K]> },
+> = Partial<T> & U[keyof U];
 
 // Define the type used for function parameters
 export type UpdateGatewaySettingsParams =
