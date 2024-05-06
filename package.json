@@ -119,7 +119,7 @@
     "axios": "1.4.0",
     "bunyan": "^1.8.15",
     "warp-arbundles": "^1.0.4",
-    "warp-contracts": "1.4.39"
+    "warp-contracts": "^1.4.42"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
