@@ -1,37 +1,40 @@
-import { ArweaveSigner } from 'arbundles';
-
-import { ANT } from '../../src/common/ant';
+import { ANT, ANTReadable } from '../../src/common/ant';
 import { RemoteContract } from '../../src/common/contracts/remote-contract';
+import { WarpContract } from '../../src/common/contracts/warp-contract';
 import { DefaultLogger } from '../../src/common/logger';
 import { ANTState } from '../../src/contract-state';
 import {
-  arweave,
   evaluateToBlockHeight,
   evaluateToSortKey,
+  localCacheUrl,
+  warp,
 } from '../constants';
-
-const contractTxId = 'UC2zwawQoTnh0TNd9mYLQS4wObBBeaOU5LPQTNETqA4';
-const localCacheUrl = `https://api.arns.app`;
 
 const testCases = [
   [{ sortKey: evaluateToSortKey.toString() }],
   [{ blockHeight: evaluateToBlockHeight }],
   [undefined],
 ] as const;
+
 describe('ANT contract apis', () => {
-  const ant = new ANT({
-    contract: new RemoteContract<ANTState>({
-      cacheUrl: localCacheUrl,
-      contractTxId,
-      logger: new DefaultLogger({ level: 'none' }),
-    }),
+  let ant: ANTReadable;
+  let contractTxId: string;
+  let ownerAddress: string;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_ANT_CONTRACT_TX_ID!;
+    ownerAddress = process.env.PRIMARY_WALLET_ADDRESS!;
+    ant = ANT.init({
+      contract: new RemoteContract<ANTState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+      }),
+    });
   });
 
   it('should connect and return a valid instance', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    expect(ant.connect(signer)).toBeDefined();
-    expect(ant).toBeInstanceOf(ANT);
+    expect(ant).toBeInstanceOf(ANTReadable);
   });
 
   it.each(testCases)(
@@ -82,42 +85,47 @@ describe('ANT contract apis', () => {
   it.each(testCases)(
     `should get name with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
-      const state = await ant.getName({ evaluationOptions: { evalTo } });
-      expect(state).toBeDefined();
+      const name = await ant.getName({ evaluationOptions: { evalTo } });
+      expect(name).toBeDefined();
     },
   );
 
   it.each(testCases)(
     `should get ticker with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
-      const state = await ant.getTicker({ evaluationOptions: { evalTo } });
-      expect(state).toBeDefined();
+      const ticker = await ant.getTicker({ evaluationOptions: { evalTo } });
+      expect(ticker).toBeDefined();
     },
   );
 
   it.each(testCases)(
     `should get balances with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
-      const state = await ant.getBalances({ evaluationOptions: { evalTo } });
-      expect(state).toBeDefined();
+      const balances = await ant.getBalances({ evaluationOptions: { evalTo } });
+      expect(balances).toBeDefined();
     },
   );
 
   it.each(testCases)(
     `should get balance with evaluation options: ${JSON.stringify('%s')}`,
     async (evalTo) => {
-      const state = await ant.getBalance({
-        address: 'TRVCopHzzO1VSwRUUS8umkiO2MpAL53XtVGlLaJuI94',
+      const balance = await ant.getBalance({
+        address: ownerAddress,
         evaluationOptions: { evalTo },
       });
-      expect(state).toBeDefined();
+      expect(balance).toBeDefined();
     },
   );
 
   it('should get state with warp contract', async () => {
-    const jwk = await arweave.wallets.generate();
-    const signer = new ArweaveSigner(jwk);
-    ant.connect(signer);
+    const ant = ANT.init({
+      contract: new WarpContract<ANTState>({
+        cacheUrl: localCacheUrl,
+        contractTxId,
+        logger: new DefaultLogger({ level: 'none' }),
+        warp,
+      }),
+    });
     const state = await ant.getState();
     expect(state).toBeDefined();
   });

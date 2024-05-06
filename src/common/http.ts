@@ -61,6 +61,8 @@ export class AxiosHTTPService implements HTTPClient {
       signal,
       params,
     });
+    this.logger.debug(`Response status: ${status} ${statusText}`);
+
     if (!allowedStatuses.includes(status)) {
       switch (status) {
         case 404:

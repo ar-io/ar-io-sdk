@@ -16,7 +16,7 @@
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
-import { InteractionResult, Transaction } from 'warp-contracts';
+import { Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
 import {
@@ -26,6 +26,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  DENOMINATIONS,
   EpochDistributionData,
   Gateway,
   GatewayConnectionSettings,
@@ -39,16 +40,22 @@ import {
 export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
+export type TransactionId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
-export type WithSigner = { signer: ContractSigner }; // TODO: optionally allow JWK in place of signer
-export type ContractConfiguration =
+export type WithSigner<T = NonNullable<unknown>> = {
+  signer: ContractSigner;
+} & T; // TODO: optionally allow JWK in place of signer
+export type OptionalSigner<T = NonNullable<unknown>> = {
+  signer?: ContractSigner;
+} & T;
+export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
-      contract?: WarpContract<unknown> | RemoteContract<unknown>;
+      contract?: WarpContract<T> | RemoteContract<T>;
     }
   | {
-      contractTxId: string;
+      contractTxId?: string;
     };
 
 export type EvaluationOptions = {
@@ -61,12 +68,14 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
   evaluationOptions?: EvaluationOptions | Record<string, never> | undefined;
 } & T;
 
-export type WriteParameters<Input> = {
+export type ReadParameters<Input> = {
   functionName: string;
-  inputs: Input;
-  dryWrite?: boolean;
-  // TODO: add syncState and abortSignal options
+  inputs?: Input;
 };
+
+export type WriteParameters<Input> = WithSigner<
+  Required<ReadParameters<Input>>
+>;
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
@@ -77,10 +86,7 @@ export interface ReadContract {
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<{
-    functionName: string;
-    inputs?: Input;
-  }>): Promise<State>;
+  }: EvaluationParameters<ReadParameters<Input>>): Promise<State>;
 }
 
 export interface WriteContract {
@@ -88,20 +94,9 @@ export interface WriteContract {
     functionName,
     inputs,
     evaluationOptions,
-  }: EvaluationParameters<WriteParameters<Input>>): Promise<
-    Transaction | DataItem | InteractionResult<unknown, unknown>
-  >;
-}
-
-export interface ReadWriteContract extends ReadContract, WriteContract {}
-
-export interface SmartWeaveContract<T> {
-  getContractState(params: EvaluationParameters): Promise<T>;
-  readInteraction<I, K>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K>;
+  }: EvaluationParameters<
+    WriteParameters<Input>
+  >): Promise<WriteInteractionResult>;
 }
 
 // TODO: extend with additional methods
@@ -139,9 +134,9 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   getEpoch({
     blockHeight,
     evaluationOptions,
-  }: {
+  }: EvaluationParameters<{
     blockHeight: number;
-  } & EvaluationParameters): Promise<EpochDistributionData>;
+  }>): Promise<EpochDistributionData>;
   getCurrentEpoch({
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;
@@ -172,6 +167,15 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
 
 export interface ArIOWriteContract {
   // write interactions
+  transfer({
+    target,
+    qty,
+    denomination,
+  }: {
+    target: WalletAddress;
+    qty: number;
+    denomination: DENOMINATIONS;
+  }): Promise<WriteInteractionResult>;
   joinNetwork({
     qty,
     allowDelegatedStaking,
@@ -211,12 +215,13 @@ export interface ArIOWriteContract {
     target: WalletAddress;
     qty: number;
   }): Promise<WriteInteractionResult>;
+  saveObservations(params: {
+    reportTxId: TransactionId;
+    failedGateways: WalletAddress[];
+  }): Promise<WriteInteractionResult>;
 }
 
-export type WriteInteractionResult =
-  | Transaction
-  | DataItem
-  | InteractionResult<unknown, unknown>;
+export type WriteInteractionResult = Transaction | DataItem;
 
 export type JoinNetworkParams = GatewayConnectionSettings &
   GatewayStakingSettings &
@@ -244,7 +249,7 @@ export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
 export type UpdateGatewaySettingsParams =
   AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
-export interface ANTContract extends BaseContract<ANTState> {
+export interface ANTReadContract extends BaseContract<ANTState> {
   getRecord({
     domain,
     evaluationOptions,
@@ -267,16 +272,48 @@ export interface ANTContract extends BaseContract<ANTState> {
   }: EvaluationParameters): Promise<Record<string, number>>;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+export interface ANTWriteContract {
+  transfer({
+    target,
+  }: {
+    target: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  setController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  removeController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<WriteInteractionResult>;
+  setRecord({
+    subDomain,
+    transactionId,
+    ttlSeconds,
+  }: {
+    subDomain: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<WriteInteractionResult>;
+  removeRecord({
+    subDomain,
+  }: {
+    subDomain: string;
+  }): Promise<WriteInteractionResult>;
+  setTicker({ ticker }: { ticker: string }): Promise<WriteInteractionResult>;
+  setName({ name }: { name: string }): Promise<WriteInteractionResult>;
+}
+
 export interface Logger {
   setLogLevel: (level: string) => void;
-  setLogFormat: (logFormat: string) => void;
-  info: (message: string, ...args: any[]) => void;
-  warn: (message: string, ...args: any[]) => void;
-  error: (message: string, ...args: any[]) => void;
-  debug: (message: string, ...args: any[]) => void;
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug: (message: string, ...args: unknown[]) => void;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
+
 export interface HTTPClient {
   get<I, K>({
     endpoint,

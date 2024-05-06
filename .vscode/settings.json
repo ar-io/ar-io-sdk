@@ -1,0 +1,25 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSaveMode": "file",
+  "prettier.configPath": ".prettierrc",
+  "prettier.prettierPath": "./node_modules/prettier/index.cjs",
+  "[typescript]": {
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.formatOnSave": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/lib": true,
+    "**/dist": true,
+    "**/coverage": true
+  },
+  "markdownlint.config": {
+    "MD033": {
+      "allowed_elements": ["details", "summary"]
+    }
+  }
+}

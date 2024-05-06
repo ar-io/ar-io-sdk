@@ -1,7 +1,12 @@
 {
   "extends": "./tsconfig.json",
+  "lib": ["esnext", "dom"],
   "include": ["src/web", "src/common", "src/utils"],
   "compilerOptions": {
-    "outDir": "./lib/web"
+    "outDir": "./lib/web",
+    "moduleResolution": "bundler",
+    "paths": {
+      "arweave": ["./node_modules/arweave/node/index.js"]
+    }
   }
 }

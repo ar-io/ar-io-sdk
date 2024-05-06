@@ -4,31 +4,40 @@ import { ArIO, ArIOReadable, ArIOWritable } from '../../src/common/ar-io.js';
 import { RemoteContract } from '../../src/common/contracts/remote-contract.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
-import { ARNS_DEVNET_REGISTRY_TX } from '../../src/constants.js';
 import { ArIOState } from '../../src/contract-state.js';
 import {
   evaluateToBlockHeight,
   evaluateToSortKey,
   gatewayAddress,
+  localCacheUrl,
   testDomain,
 } from '../constants.js';
 
-const contractTxId = ARNS_DEVNET_REGISTRY_TX;
-const localCacheUrl = `https://api.arns.app`;
 const testCases = [
   [{ sortKey: evaluateToSortKey.toString() }],
   [{ blockHeight: evaluateToBlockHeight }],
   [undefined],
 ] as const;
-describe('ArIO Client', () => {
-  const signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
-  const arIO = ArIO.init({
-    signer,
-    contract: new WarpContract<ArIOState>({
-      cacheUrl: localCacheUrl,
-      contractTxId,
-      logger: new DefaultLogger({ level: 'none' }),
-    }),
+
+describe('ArIO Factory', () => {
+  let signer: ArweaveSigner;
+  let contractTxId: string;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
+    signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
+  });
+
+  it('should return a readable without any configuration provided', () => {
+    const readable = ArIO.init();
+    expect(readable).toBeDefined();
+    expect(readable).toBeInstanceOf(ArIOReadable);
+  });
+
+  it('should return a writable without any configuration provided', () => {
+    const writable = ArIO.init({ signer });
+    expect(writable).toBeDefined();
+    expect(writable).toBeInstanceOf(ArIOWritable);
   });
 
   it('should return a valid instance of ArIOWritable with contract config', async () => {
@@ -70,6 +79,20 @@ describe('ArIO Client', () => {
 
     expect(readClient).toBeDefined();
     expect(readClient).toBeInstanceOf(ArIOReadable);
+  });
+});
+describe('ArIOReadable Client', () => {
+  let contractTxId: string;
+  let arIO: ArIOReadable;
+
+  beforeAll(() => {
+    contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
+    arIO = ArIO.init({
+      contract: new RemoteContract<ArIOState>({
+        contractTxId,
+        cacheUrl: localCacheUrl,
+      }),
+    });
   });
 
   it('should getState successfully', async () => {
@@ -115,13 +138,6 @@ describe('ArIO Client', () => {
   it('should return gateways at a given block height', async () => {
     const gateways = await arIO.getGateways({
       evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
-    });
-    expect(gateways[gatewayAddress]).toBeDefined();
-  });
-
-  it('should return gateways at a given sort key', async () => {
-    const gateways = await arIO.getGateways({
-      evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
     });
     expect(gateways[gatewayAddress]).toBeDefined();
   });
@@ -285,13 +301,13 @@ describe('ArIO Client', () => {
     expect(distributions).toBeDefined();
   });
 
-  it('should return distributions at a blockheight', async () => {
+  it('should return distributions at a block height', async () => {
     const distributions = await arIO.getDistributions({
       evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
     });
     expect(distributions).toBeDefined();
   });
-  it('should return distributions at a sortkey', async () => {
+  it('should return distributions at a sortKey', async () => {
     const distributions = await arIO.getDistributions({
       evaluationOptions: { evalTo: { sortKey: evaluateToSortKey.toString() } },
     });

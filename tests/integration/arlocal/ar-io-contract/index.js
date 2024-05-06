@@ -128,7 +128,7 @@ var mIOToken = class extends PositiveFiniteInteger {
 var TOTAL_IO_SUPPLY = new IOToken(1e9).toMIO();
 var SECONDS_IN_A_YEAR = 31536e3;
 var BLOCKS_PER_DAY = 720;
-var GATEWAY_LEAVE_BLOCK_LENGTH = new BlockHeight(90 * BLOCKS_PER_DAY);
+var GATEWAY_LEAVE_BLOCK_LENGTH = new BlockHeight(21 * BLOCKS_PER_DAY);
 var GATEWAY_REDUCE_STAKE_BLOCK_LENGTH = 30 * BLOCKS_PER_DAY;
 var MAX_TOKEN_LOCK_BLOCK_LENGTH = 12 * 365 * BLOCKS_PER_DAY;
 var MIN_TOKEN_LOCK_BLOCK_LENGTH = 14 * BLOCKS_PER_DAY;
@@ -2866,6 +2866,18 @@ function validate14(
   return errors === 0;
 }
 var validateTransferToken = validate15;
+var schema16 = {
+  $id: '#/definitions/transferTokens',
+  type: 'object',
+  properties: {
+    function: { type: 'string', const: 'transfer' },
+    target: { type: 'string', pattern: '^[a-zA-Z0-9-_]{43}$' },
+    qty: { type: 'number', minimum: 1 },
+    denomination: { type: 'string', enum: ['IO', 'mIO'], default: 'mIO' },
+  },
+  required: ['target', 'qty'],
+  additionalProperties: false,
+};
 function validate15(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
@@ -2904,7 +2916,14 @@ function validate15(
       errors++;
     }
     for (const key0 in data) {
-      if (!(key0 === 'function' || key0 === 'target' || key0 === 'qty')) {
+      if (
+        !(
+          key0 === 'function' ||
+          key0 === 'target' ||
+          key0 === 'qty' ||
+          key0 === 'denomination'
+        )
+      ) {
         const err2 = {
           instancePath,
           schemaPath: '#/additionalProperties',
@@ -3021,8 +3040,41 @@ function validate15(
         errors++;
       }
     }
+    if (data.denomination !== void 0) {
+      let data3 = data.denomination;
+      if (typeof data3 !== 'string') {
+        const err9 = {
+          instancePath: instancePath + '/denomination',
+          schemaPath: '#/properties/denomination/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err9];
+        } else {
+          vErrors.push(err9);
+        }
+        errors++;
+      }
+      if (!(data3 === 'IO' || data3 === 'mIO')) {
+        const err10 = {
+          instancePath: instancePath + '/denomination',
+          schemaPath: '#/properties/denomination/enum',
+          keyword: 'enum',
+          params: { allowedValues: schema16.properties.denomination.enum },
+          message: 'must be equal to one of the allowed values',
+        };
+        if (vErrors === null) {
+          vErrors = [err10];
+        } else {
+          vErrors.push(err10);
+        }
+        errors++;
+      }
+    }
   } else {
-    const err9 = {
+    const err11 = {
       instancePath,
       schemaPath: '#/type',
       keyword: 'type',
@@ -3030,9 +3082,9 @@ function validate15(
       message: 'must be object',
     };
     if (vErrors === null) {
-      vErrors = [err9];
+      vErrors = [err11];
     } else {
-      vErrors.push(err9);
+      vErrors.push(err11);
     }
     errors++;
   }
@@ -5643,7 +5695,11 @@ function getPriceForInteraction(state, { caller, input }) {
         currentBlockTimestamp: interactionTimestamp,
         years,
       });
-      fee = calculateAnnualRenewalFee({ name, years, fees: state.fees });
+      fee = calculateAnnualRenewalFee({
+        name,
+        years,
+        fees: state.fees,
+      }).multiply(state.demandFactoring.demandFactor);
       break;
     }
     case 'increaseUndernameCount': {
@@ -6023,12 +6079,15 @@ var evolveState = async (state, { caller }) => {
   if (caller !== owner) {
     throw new ContractError(NON_CONTRACT_OWNER_MESSAGE);
   }
-  const updatedFees = Object.keys(state.fees).reduce((acc, key) => {
-    const existingFee = new IOToken(state.fees[key]);
-    acc[key] = existingFee.toMIO().valueOf();
-    return acc;
-  }, {});
-  state.fees = updatedFees;
+  for (const [address, gateway] of Object.entries(state.gateways)) {
+    if (gateway.status === 'leaving') {
+      const currentEndFor90Days = gateway.end;
+      const correctEndFor21Days =
+        currentEndFor90Days - 69 * BLOCKS_PER_DAY + 4 * BLOCKS_PER_DAY;
+      state.gateways[address].end = correctEndFor21Days;
+      state.gateways[address].vaults[address].end = correctEndFor21Days;
+    }
+  }
   return { state };
 };
 
@@ -7160,9 +7219,10 @@ var TransferToken = class {
         getInvalidAjvMessage(validateTransferToken, input, 'transferToken'),
       );
     }
-    const { target, qty } = input;
+    const { target, qty, denomination = 'mIO' } = input;
     this.target = target;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty =
+      denomination === 'mIO' ? new mIOToken(qty) : new IOToken(qty).toMIO();
   }
 };
 var transferTokens = async (state, { caller, input }) => {
