@@ -1,3 +1,10 @@
+## [1.0.5-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5-alpha.6...v1.0.5-alpha.7) (2024-05-07)
+
+
+### Bug Fixes
+
+* **warp:** bump warp to fix AbortError issue on warp imports for web ([c9a5613](https://github.com/ar-io/ar-io-sdk/commit/c9a561395da9cd0e04cc9320979c68f93ee99c0a))
+
 ## [1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)
 
 
