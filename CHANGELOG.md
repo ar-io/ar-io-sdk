@@ -1,10 +1,3 @@
-## [1.0.6-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5...v1.0.6-alpha.1) (2024-05-07)
-
-
-### Bug Fixes
-
-* **warp:** bump warp to fix AbortError issue on warp imports for web ([c9a5613](https://github.com/ar-io/ar-io-sdk/commit/c9a561395da9cd0e04cc9320979c68f93ee99c0a))
-
 ## [1.0.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.4...v1.0.5) (2024-05-02)
 
 
@@ -13,7 +6,7 @@
 * **cjs:** provide path alias for warp in cjs export ([7f9bf9a](https://github.com/ar-io/ar-io-sdk/commit/7f9bf9a6c8937e855d6b56f81f367b596dfca166))
 * **logger:** replace winston with bunyan ([0488f75](https://github.com/ar-io/ar-io-sdk/commit/0488f7529e25046d902ac88b11485a55bb246854))
 * **util:** add FQDN regex that matches ArNS contract ([e6d7396](https://github.com/ar-io/ar-io-sdk/commit/e6d7396decdb4997aa121f31ae7ad87455747191))
-* **utils:** manally conver from b64 to b64url to avoid web polyfill issues ([766035c](https://github.com/ar-io/ar-io-sdk/commit/766035c1a319e2c2567cf2a47bda3a48f5294d2c))
+* **utils:** manually convert from b64 to b64url to avoid web polyfill issues ([766035c](https://github.com/ar-io/ar-io-sdk/commit/766035c1a319e2c2567cf2a47bda3a48f5294d2c))
 * **utils:** use base64 for fromB64url util ([42302ef](https://github.com/ar-io/ar-io-sdk/commit/42302ef5124aa28fc438a9b865fd901f2ed3df4d))
 * **warp-contract:** correctly throw error in write interaction ([c2368dd](https://github.com/ar-io/ar-io-sdk/commit/c2368dd5ef1c78fa52ef1eef3198a4a035411bea))
 
