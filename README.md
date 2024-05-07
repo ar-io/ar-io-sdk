@@ -889,7 +889,7 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 ```typescript
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const decreaseOperatorStakeTx = await authenticatedArIO.transfer({
+const { id: txId } = await authenticatedArIO.transfer({
   target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
   qty: 1000,
 });
