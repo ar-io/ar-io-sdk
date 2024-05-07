@@ -10165,10 +10165,10 @@ warp-contracts-plugin-deploy@^1.0.13:
     node-pre-gyp "^0.17.0"
     node-stdlib-browser "^1.2.0"
 
-warp-contracts@1.4.42:
-  version "1.4.42"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.42.tgz#d3aa891d87ea77c2d2939cc47d59b77df86f2b23"
-  integrity sha512-qS21L+mZ9bYfUiBmuVX2pUMvHzsE8Bp/MDk8m2Pvol/va1TUytxrv/GtAJir4Zc04YPWDn1QrXL//KUmUQIXAA==
+warp-contracts@1.4.43:
+  version "1.4.43"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.43.tgz#070023842f11501aa9e4787a267db213505ef3e1"
+  integrity sha512-72mbYH7opfPoreTOLIWqOqOw8chhvd3iR4cAztaz+JawV7enY3SnpVyAW+erlu+/OoEb2TX2Ap4xNeShdp/paw==
   dependencies:
     archiver "^5.3.0"
     arweave "1.14.4"
