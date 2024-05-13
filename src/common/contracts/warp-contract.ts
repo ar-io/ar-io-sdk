@@ -31,15 +31,20 @@ import {
   Logger,
   OptionalSigner,
   ReadContract,
+  WalletAddress,
   WriteContract,
   WriteInteractionResult,
   WriteParameters,
 } from '../../types.js';
 import { sha256B64Url, toB64Url } from '../../utils/base64.js';
 import { getContractManifest } from '../../utils/smartweave.js';
+import { getAllPages } from '../api/graphql.js';
+import { buildDeployedSmartweaveContractsQuery } from '../api/queries/smartweave-deployed-contracts.js';
+import { buildControlledOrOwnedByQuery } from '../api/queries/smartweave-transferred-or-controlled-by.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
 import { defaultWarp } from '../warp.js';
+import { RemoteContract } from './remote-contract.js';
 
 LoggerFactory.INST.logLevel('error');
 
@@ -235,5 +240,65 @@ export class WarpContract<T>
       );
       throw new WriteInteractionError(error);
     }
+  }
+
+  /**
+   * Get all the contracts that are possibly owned or controlled by the owner
+   * NOTE: this requires validation of the contract state to ensure that the provided address is still the owner.
+   * This a best effort to get the contracts that are owned by the provided address.
+   * Results of this can be cached to improve performance client-side.
+   * @param address {@type string} the address of the owner to get the contracts for
+   * @returns {@type string[]}
+   * @example
+   * ```typescript
+   * const contracts = await warpContract.getContractsForOwner({ address: 'address' });
+   * ```
+   */
+  async getContractsForOwner({
+    address,
+    // TODO: add blockheight filter to allow for querying after a certain block height (optimizes performance cache implementations)
+  }: {
+    address: WalletAddress;
+  }): Promise<string[]> {
+    const ids: Set<string> = new Set();
+    // if cacheUrl is set, we can use the remote cache to get the contracts - assumes the cache url complies with the /wallet/:address/contracts endpoint
+    if (this.cacheUrl !== undefined) {
+      const removeProvider = new RemoteContract<T>(this.configuration());
+      const res = await removeProvider.getContractsForOwner({
+        address,
+      });
+      res.forEach((id) => ids.add(id));
+    }
+
+    if (ids.size === 0) {
+      // if cacheUrl is not set, we need to query the transactions from graphql
+
+      await Promise.all([
+        // Get all the transactions where the deployer
+        getAllPages({
+          queryBuilder: (cursor) =>
+            buildDeployedSmartweaveContractsQuery({ address, cursor }),
+          pageCallback: (response) => {
+            response.data.data.transactions.edges.forEach((edge) => {
+              ids.add(edge.node.id);
+            });
+          },
+          arweave: this.warp.arweave,
+        }),
+        // get all ants that were transfered to the owner or where the owner was set as a controller
+        getAllPages({
+          queryBuilder: (cursor) =>
+            buildControlledOrOwnedByQuery({ address, cursor }),
+          pageCallback: (response) => {
+            response.data.data.transactions.edges.forEach((edge) => {
+              ids.add(edge.node.id);
+            });
+          },
+          arweave: this.warp.arweave,
+        }),
+      ]);
+    }
+
+    return [...ids];
   }
 }

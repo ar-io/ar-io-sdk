@@ -24,6 +24,7 @@ import {
   EvaluationOptions,
   EvaluationParameters,
   OptionalSigner,
+  WalletAddress,
   WithSigner,
   WriteInteractionResult,
 } from '../types.js';
@@ -329,6 +330,14 @@ export class ANTReadable implements ANTReadContract {
   }: EvaluationParameters<{ address: string }>): Promise<number> {
     const balances = await this.getBalances({ evaluationOptions });
     return balances[address] || 0;
+  }
+
+  async getContractsForOwner({
+    address,
+  }: {
+    address: WalletAddress;
+  }): Promise<string[]> {
+    return await this.contract.getContractsForOwner({ address });
   }
 }
 

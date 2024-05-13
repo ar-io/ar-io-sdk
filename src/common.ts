@@ -87,6 +87,7 @@ export interface ReadContract {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<ReadParameters<Input>>): Promise<State>;
+  getContractsForOwner({ address }: { address: string }): Promise<string[]>;
 }
 
 export interface WriteContract {

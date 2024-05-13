@@ -20,6 +20,7 @@ import {
   HTTPClient,
   Logger,
   ReadContract,
+  WalletAddress,
 } from '../../types.js';
 import { AxiosHTTPService } from '../http.js';
 import { DefaultLogger } from '../logger.js';
@@ -90,5 +91,22 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       },
     });
     return result;
+  }
+
+  async getContractsForOwner({
+    address,
+  }: {
+    address: WalletAddress;
+  }): Promise<string[]> {
+    const { contractTxIds } = await this.http.get<
+      unknown,
+      {
+        address: string;
+        contractTxIds: string[];
+      }
+    >({
+      endpoint: `/wallet/${address}/contracts`,
+    });
+    return contractTxIds;
   }
 }
