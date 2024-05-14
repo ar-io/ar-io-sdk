@@ -224,13 +224,9 @@ export interface ArIOWriteContract {
 
 export type WriteInteractionResult = Transaction | DataItem;
 
-// Utility type for dev experience: shows all fields of a type rather than the composed type names
-export type VisibleTypes<T> = { [P in keyof T]: T[P] };
-export type JoinNetworkParams = VisibleTypes<
-  GatewayConnectionSettings &
-    GatewayStakingSettings &
-    GatewayMetadata & { qty: number; observerWallet?: WalletAddress }
->;
+export type JoinNetworkParams = GatewayConnectionSettings &
+  GatewayStakingSettings &
+  GatewayMetadata & { qty: number; observerWallet?: WalletAddress };
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
