@@ -1,3 +1,12 @@
+## [1.0.7-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7-alpha.1) (2024-05-14)
+
+
+### Bug Fixes
+
+* **atleastOne:** fix the AtLeastOne type ([ffd0869](https://github.com/ar-io/ar-io-sdk/commit/ffd0869949814196817d0ffb14fe0cf2be2ad298))
+* **joinnetwork:** make params required - properties and note ([89db674](https://github.com/ar-io/ar-io-sdk/commit/89db674a187dffc83413ac1ac3922ca78ae3f88d))
+* **types:** remove visible types ([6ab1fc3](https://github.com/ar-io/ar-io-sdk/commit/6ab1fc3284d35fdd8f70a1fa1ac5cb7965878a51))
+
 ## [1.0.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5...v1.0.6) (2024-05-07)
 
 
