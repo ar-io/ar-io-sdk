@@ -897,6 +897,7 @@ const authenticatedArIO = ArIO.init({ signer });
 const { id: txId } = await authenticatedArIO.transfer({
   target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
   qty: new IOToken(1000).valueOf(),
+  denomination: 'IO',
 });
 ```
 
