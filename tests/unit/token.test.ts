@@ -47,13 +47,13 @@ describe('mIOToken', () => {
     expect(() => token.divide(0)).toThrow();
   });
 
-  it('should round down on multiplication', () => {
+  it('should round down on multiplication of a number', () => {
     const token = new mIOToken(1);
     const result = token.multiply(1.5);
     expect(result.valueOf()).toBe(1);
   });
 
-  it('should round down on division', () => {
+  it('should round down on division with a number', () => {
     const token = new mIOToken(2);
     const result = token.divide(3);
     expect(result.valueOf()).toBe(0);
@@ -64,15 +64,22 @@ describe('mIOToken', () => {
     const result = token.divide(new mIOToken(3));
     expect(result.valueOf()).toBe(0);
   });
-  it('should multiply', () => {
+
+  it('should add', () => {
     const token = new mIOToken(1);
-    const result = token.multiply(2);
+    const result = token.plus(new mIOToken(1));
     expect(result.valueOf()).toBe(2);
   });
 
-  it('should divide', () => {
+  it('should subtract', () => {
     const token = new mIOToken(2);
-    const result = token.divide(2);
+    const result = token.minus(new mIOToken(1));
+    expect(result.valueOf()).toBe(1);
+  });
+
+  it('should convert to IO', () => {
+    const token = new mIOToken(1000000);
+    const result = token.toIO();
     expect(result.valueOf()).toBe(1);
   });
 });
