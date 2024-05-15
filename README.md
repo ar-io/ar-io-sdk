@@ -95,7 +95,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000000000
+    "operatorStake": 250000000000, // value in mIO
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -383,7 +383,7 @@ const gateway = await arIO.getGateway({
 {
   "end": 0,
   "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000000000 // value in mIO
+  "operatorStake": 250000000000, // value in mIO
   "settings": {
     "fqdn": "ar-io.dev",
     "label": "AR.IO Test",
@@ -432,7 +432,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000000000 // value in mIO
+    "operatorStake": 250000000000, // value in mIO
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
