@@ -95,7 +95,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000,
+    "operatorStake": 250000000000
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -383,7 +383,7 @@ const gateway = await arIO.getGateway({
 {
   "end": 0,
   "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000, // value in mIO
+  "operatorStake": 250000000000 // value in mIO
   "settings": {
     "fqdn": "ar-io.dev",
     "label": "AR.IO Test",
@@ -432,7 +432,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000, // value in mIO
+    "operatorStake": 250000000000 // value in mIO
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -512,7 +512,7 @@ const records = await arIO.getArNSRecords();
   },
   "ar-io": {
     "contractTxId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
-    "purchasePrice": 17386.717520731843, // value in mIO
+    "purchasePrice": 75541282285, // value in mIO
     "startTimestamp": 1706747215,
     "type": "permabuy",
     "undernames": 10
@@ -645,7 +645,7 @@ const observers = await arIO.getPrescribedObservers();
   {
     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-    "stake": 10000, // value in mIO
+    "stake": 10000000000, // value in mIO
     "start": 1296976,
     "stakeWeight": 1,
     "tenureWeight": 0.41453703703703704,
@@ -678,7 +678,7 @@ const previousEpochObservers = await arIO.getPrescribedObservers({
   {
     "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
     "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-    "stake": 10000, // vault in mIO
+    "stake": 10000000000, // vault in mIO
     "start": 1292450,
     "stakeWeight": 1,
     "tenureWeight": 0.4494598765432099,
