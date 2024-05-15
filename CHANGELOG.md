@@ -1,3 +1,11 @@
+## [1.0.7-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7-alpha.1...v1.0.7-alpha.2) (2024-05-15)
+
+
+### Bug Fixes
+
+* **token:** add mIO and IO token classes to exports ([f47f7d5](https://github.com/ar-io/ar-io-sdk/commit/f47f7d5c251973058866340a6bc2baddbf973ecf))
+* **types:** export the token types ([dfc83ae](https://github.com/ar-io/ar-io-sdk/commit/dfc83ae74a110dd06ddab16d5f88d192e4c0c5ad))
+
 ## [1.0.7-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7-alpha.1) (2024-05-14)
 
 
