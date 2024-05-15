@@ -319,6 +319,7 @@ Retrieves the balance of the specified wallet address.
 
 ```typescript
 const arIO = ArIO.init();
+// the balance will be returned in mIO as a value
 const balance = await arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
