@@ -4,8 +4,9 @@ import * as fs from 'fs';
 import path from 'path';
 import { ContractDeploy, SourceType, Warp } from 'warp-contracts';
 
-import { WeightedObserver } from '../src/contract-state';
-import { oneYearMs } from './constants';
+import { WeightedObserver } from '../src/contract-state.js';
+
+const oneYearSeconds = 60 * 60 * 24 * 365;
 
 export async function deployANTContract({
   jwk,
@@ -85,6 +86,7 @@ export async function deployArIOContract({
     ...prescribedObservers,
     newPrescribedObserver,
   ];
+
   return await warp.deploy({
     wallet: jwk,
     src: src,
@@ -94,7 +96,7 @@ export async function deployArIOContract({
         ...state.records,
         'test-record': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs,
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
           purchasePrice: 0,
           startTimestamp: currentBlockTimestamp,
           type: 'lease',
@@ -102,7 +104,7 @@ export async function deployArIOContract({
         },
         'test-extend': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs,
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
           purchasePrice: 0,
           startTimestamp: currentBlockTimestamp,
           type: 'lease',
@@ -110,9 +112,9 @@ export async function deployArIOContract({
         },
         'test-undername': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs,
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
           purchasePrice: 0,
-          startTimestamp: currentBlockTimestamp + oneYearMs,
+          startTimestamp: currentBlockTimestamp,
           type: 'lease',
           undernames: 10,
         },
