@@ -773,10 +773,10 @@ Joins a gateway to the ar.io network via its associated wallet. Requires `signer
 
 ```typescript
 const joinNetworkParams = {
-  qty: new IOToken(10_000).valueOf(), // minimum operator stake allowed
+  qty: new IOToken(10_000).toMIO().valueOf(), // minimum operator stake allowed
   autoStake: true, // auto-stake operator rewards to the gateway
   allowDelegatedStaking: true, // allows delegated staking
-  minDelegatedStake: new IOToken(100).valueOf(), // minimum delegated stake allowed (in IO)
+  minDelegatedStake: new IOToken(100).toMIO().valueOf(), // minimum delegated stake allowed (in IO)
   delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
@@ -798,7 +798,7 @@ Writes new gateway settings to the callers gateway configuration. Requires `sign
 
 ```typescript
 const updateGatewaySettingsParams = {
-  minDelegatedStake: new IOToken(100).valueOf(),
+  minDelegatedStake: new IOToken(100).toMIO().valueOf(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -816,7 +816,7 @@ Increases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).valueOf(),
+  qty: new IOToken(100).toMIO().valueOf(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -832,7 +832,7 @@ Decreases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).valueOf(),
+  qty: new IOToken(100).toMIO().valueOf(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -847,7 +847,7 @@ Increases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: new IOToken(100).valueOf(),
+  qty: new IOToken(100).toMIO().valueOf(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -862,7 +862,7 @@ Decreases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: new IOToken(100).valueOf(),
+  qty: new IOToken(100).toMIO().valueOf(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -896,7 +896,7 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 const authenticatedArIO = ArIO.init({ signer });
 const { id: txId } = await authenticatedArIO.transfer({
   target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-  qty: new IOToken(1000).valueOf(),
+  qty: new IOToken(1000).toMIO().valueOf(),
   denomination: 'IO',
 });
 ```
