@@ -79,8 +79,8 @@ describe('ArIOWriteable', () => {
   });
 
   it('should successfully extend a domain', async () => {
-    const domain = 'test';
-    const years = 1;
+    const domain = 'test-extend';
+    const years = 2;
     const tx = await arIO.extendLease({
       domain,
       years,
@@ -91,9 +91,9 @@ describe('ArIOWriteable', () => {
   });
 
   it('should successfully increase the undername support on a domain', async () => {
-    const domain = 'test';
+    const domain = 'test-undername';
     const qty = 1;
-    const tx = await arIO.increaseUndernameSupport({
+    const tx = await arIO.increaseUndernameLimit({
       domain,
       qty,
     });

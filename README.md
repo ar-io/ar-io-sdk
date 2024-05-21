@@ -901,13 +901,13 @@ const { id: txId } = await authenticatedArIO.transfer({
 });
 ```
 
-#### `increaseUndernameSupport({ domain, qty })`
+#### `increaseUndernameLimit({ domain, qty })`
 
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
 
 ```typescript
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseUndernameSupport({
+const { id: txId } = await authenticatedArIO.increaseUndernameLimit({
   domain: 'ar-io',
   qty: 420,
 });
