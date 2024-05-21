@@ -48,7 +48,7 @@ export const AR_IO_CONTRACT_FUNCTIONS = {
 // Gateways
 
 export type Gateway = {
-  delegates: Record<string, unknown>;
+  delegates: Record<WalletAddress, GatewayDelegate>;
   end: number;
   observerWallet: WalletAddress;
   operatorStake: number;
