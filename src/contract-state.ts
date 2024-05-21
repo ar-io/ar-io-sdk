@@ -44,6 +44,7 @@ export const AR_IO_CONTRACT_FUNCTIONS = {
   PRICE_FOR_INTERACTION: 'priceForInteraction',
   EPOCH: 'epoch',
 };
+
 // Gateways
 
 export type Gateway = {
@@ -58,6 +59,12 @@ export type Gateway = {
   totalDelegatedStake: number;
   vaults: Record<WalletAddress, VaultData>;
   weights: ObserverWeights;
+};
+
+export type GatewayDelegate = {
+  delegatedStake: number;
+  start: number;
+  vaults: Record<WalletAddress, VaultData>;
 };
 
 export type GatewayStakingSettings = {
