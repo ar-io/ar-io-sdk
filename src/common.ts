@@ -218,6 +218,14 @@ export interface ArIOWriteContract {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult>;
+  extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult>;
+  increaseUndernameSupport(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
 }
 
 export type WriteInteractionResult = Transaction | DataItem;

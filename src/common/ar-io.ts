@@ -773,4 +773,37 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       signer: this.signer,
     });
   }
+
+  async extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{
+      name: string;
+      years: number;
+    }>({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.EXTEND_RECORD,
+      inputs: {
+        name: params.domain,
+        years: params.years,
+      },
+      signer: this.signer,
+    });
+  }
+  async increaseUndernameSupport(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{
+      name: string;
+      qty: number;
+    }>({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
+      inputs: {
+        name: params.domain,
+        qty: params.qty,
+      },
+      signer: this.signer,
+    });
+  }
 }
