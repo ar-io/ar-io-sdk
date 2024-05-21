@@ -836,7 +836,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       signer: this.signer,
     });
   }
-  async increaseUndernameSupport(params: {
+  async increaseUndernameLimit(params: {
     domain: string;
     qty: number;
   }): Promise<WriteInteractionResult> {

@@ -224,7 +224,7 @@ export interface ArIOWriteContract {
     domain: string;
     years: number;
   }): Promise<WriteInteractionResult>;
-  increaseUndernameSupport(params: {
+  increaseUndernameLimit(params: {
     domain: string;
     qty: number;
   }): Promise<WriteInteractionResult>;
