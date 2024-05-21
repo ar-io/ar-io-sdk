@@ -77,4 +77,28 @@ describe('ArIOWriteable', () => {
     const verified = await arweave.transactions.verify(tx as Transaction);
     expect(verified).toBe(true);
   });
+
+  it('should successfully extend a domain', async () => {
+    const domain = 'test-extend';
+    const years = 1;
+    const tx = await arIO.extendLease({
+      domain,
+      years,
+    });
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
+  });
+
+  it('should successfully increase the undername support on a domain', async () => {
+    const domain = 'test-undername';
+    const qty = 1;
+    const tx = await arIO.increaseUndernameSupport({
+      domain,
+      qty,
+    });
+    expect(tx.id).toBeDefined();
+    const verified = await arweave.transactions.verify(tx as Transaction);
+    expect(verified).toBe(true);
+  });
 });

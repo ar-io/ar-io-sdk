@@ -17,3 +17,4 @@
 export * from './arns-service.js';
 export * from './contract-state.js';
 export * from './common.js';
+export * from './token.js';

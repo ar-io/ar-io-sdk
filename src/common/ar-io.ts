@@ -634,12 +634,36 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     * arIO.joinNetwork(jointNetworkParams);
    * ```
    */
-  async joinNetwork(
-    params: JoinNetworkParams,
-  ): Promise<WriteInteractionResult> {
+  async joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: JoinNetworkParams): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<JoinNetworkParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
-      inputs: params,
+      inputs: {
+        qty,
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake,
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
       signer: this.signer,
     });
   }
@@ -653,12 +677,34 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.updateGatewaySettings({ autoStake: true });
    * ```
    */
-  async updateGatewaySettings(
-    params: UpdateGatewaySettingsParams,
-  ): Promise<WriteInteractionResult> {
+  async updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<UpdateGatewaySettingsParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
-      inputs: params,
+      inputs: {
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake,
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
       signer: this.signer,
     });
   }
@@ -769,6 +815,39 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       inputs: {
         observerReportTxId: params.reportTxId,
         failedGateways: params.failedGateways,
+      },
+      signer: this.signer,
+    });
+  }
+
+  async extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{
+      name: string;
+      years: number;
+    }>({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.EXTEND_RECORD,
+      inputs: {
+        name: params.domain,
+        years: params.years,
+      },
+      signer: this.signer,
+    });
+  }
+  async increaseUndernameSupport(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{
+      name: string;
+      qty: number;
+    }>({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
+      inputs: {
+        name: params.domain,
+        qty: params.qty,
       },
       signer: this.signer,
     });

@@ -187,6 +187,7 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: JoinNetworkParams): Promise<WriteInteractionResult>;
   updateGatewaySettings({
     allowDelegatedStaking,
@@ -199,6 +200,7 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
   increaseOperatorStake(params: {
     qty: number;
@@ -218,13 +220,21 @@ export interface ArIOWriteContract {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult>;
+  extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult>;
+  increaseUndernameSupport(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
 }
 
 export type WriteInteractionResult = Transaction | DataItem;
 
 export type JoinNetworkParams = GatewayConnectionSettings &
   GatewayStakingSettings &
-  GatewayMetadata & { qty: number };
+  GatewayMetadata & { qty: number; observerWallet?: WalletAddress };
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
@@ -238,11 +248,14 @@ export type UpdateGatewaySettingsParamsBase = {
   properties?: string;
   protocol?: AllowedProtocols;
   autoStake?: boolean;
+  observerWallet?: WalletAddress;
 };
 
 // Utility type to require at least one of the fields
-export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
-  { [K in keyof U]: Required<Pick<U, K>> }[keyof U];
+export type AtLeastOne<
+  T,
+  U = { [K in keyof T]-?: Record<K, T[K]> },
+> = Partial<T> & U[keyof U];
 
 // Define the type used for function parameters
 export type UpdateGatewaySettingsParams =
