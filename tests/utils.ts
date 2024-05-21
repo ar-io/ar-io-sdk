@@ -87,6 +87,17 @@ export async function deployArIOContract({
     src: src,
     initState: JSON.stringify({
       ...state,
+      records: {
+        ...state.records,
+        test: {
+          contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
+          endTimestamp: 1711122739,
+          purchasePrice: 0,
+          startTimestamp: 1695161366,
+          type: 'lease',
+          undernames: 10,
+        },
+      },
       owner: address,
       balances: { [address]: 100_000_000_000_000 },
       prescribedObservers: {

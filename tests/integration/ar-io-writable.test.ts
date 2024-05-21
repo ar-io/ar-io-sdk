@@ -1,4 +1,4 @@
-import { ArweaveSigner } from 'arbundles/node';
+import { ArweaveSigner } from 'arbundles';
 import Transaction from 'arweave/node/lib/transaction.js';
 
 import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
