@@ -94,7 +94,7 @@ export async function deployArIOContract({
         ...state.records,
         'test-record': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
+          endTimestamp: currentBlockTimestamp + oneYearMs,
           purchasePrice: 0,
           startTimestamp: currentBlockTimestamp,
           type: 'lease',
@@ -102,7 +102,7 @@ export async function deployArIOContract({
         },
         'test-extend': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
+          endTimestamp: currentBlockTimestamp + oneYearMs,
           purchasePrice: 0,
           startTimestamp: currentBlockTimestamp,
           type: 'lease',
@@ -110,7 +110,7 @@ export async function deployArIOContract({
         },
         'test-undername': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
+          endTimestamp: currentBlockTimestamp + oneYearMs,
           purchasePrice: 0,
           startTimestamp: currentBlockTimestamp + oneYearMs,
           type: 'lease',
