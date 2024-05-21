@@ -5,6 +5,7 @@ import path from 'path';
 import { ContractDeploy, SourceType, Warp } from 'warp-contracts';
 
 import { WeightedObserver } from '../src/contract-state';
+import { oneYearMs } from './constants';
 
 export async function deployANTContract({
   jwk,
@@ -54,10 +55,8 @@ export async function deployArIOContract({
   address: string;
   warp: Warp;
 }): Promise<ContractDeploy> {
-  const currentBlock = parseInt(
-    (await warp.arweave.network.getInfo()).height.toString(),
-  );
-  console.log(currentBlock);
+  const currentBlockTimestamp = (await warp.arweave.blocks.getCurrent())
+    .timestamp;
   const src = fs.readFileSync(
     path.join(__dirname, '/integration/arlocal/ar-io-contract/index.js'),
     'utf8',
@@ -93,19 +92,27 @@ export async function deployArIOContract({
       ...state,
       records: {
         ...state.records,
+        'test-record': {
+          contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
+          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
+          purchasePrice: 0,
+          startTimestamp: currentBlockTimestamp,
+          type: 'lease',
+          undernames: 10,
+        },
         'test-extend': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlock + 262800, // 1 year in blocks
+          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
           purchasePrice: 0,
-          startTimestamp: currentBlock,
+          startTimestamp: currentBlockTimestamp,
           type: 'lease',
           undernames: 10,
         },
         'test-undername': {
           contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
-          endTimestamp: currentBlock + 262800, // 1 year in blocks
+          endTimestamp: currentBlockTimestamp + oneYearMs, // 1 year in blocks
           purchasePrice: 0,
-          startTimestamp: currentBlock,
+          startTimestamp: currentBlockTimestamp + oneYearMs,
           type: 'lease',
           undernames: 10,
         },

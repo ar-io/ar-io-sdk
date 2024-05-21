@@ -17,8 +17,9 @@ export const arweave = new Arweave({
 LoggerFactory.INST.logLevel('fatal');
 export const warp = WarpFactory.forLocal(1984, arweave).use(new DeployPlugin());
 
+export const oneYearMs = 1000 * 60 * 60 * 24 * 356;
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
-export const testDomain = 'angela';
+export const testDomain = 'test-record';
 export const evaluateToBlockHeight = 1;
 export const evaluateToSortKey = new SmartWeaveSortKey(
   '000000000000,0000000000000,0000000000000000000000000000000000000000000000000000000000000000',
