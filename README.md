@@ -772,11 +772,11 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
-const jointNetworkParams = {
+const joinNetworkParams = {
   qty: new IOToken(10_000).valueOf(), // minimum operator stake allowed
   autoStake: true, // auto-stake operator rewards to the gateway
   allowDelegatedStaking: true, // allows delegated staking
-  minDelegatedStake: new IOToken(100).valueOf(), // minimum delegated stake allowed (in mIO)
+  minDelegatedStake: new IOToken(100).valueOf(), // minimum delegated stake allowed (in IO)
   delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
