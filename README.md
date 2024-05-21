@@ -895,6 +895,30 @@ const { id: txId } = await authenticatedArIO.transfer({
 });
 ```
 
+#### `increaseUndernameSupport({ domain, qty })`
+
+Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
+
+```typescript
+const authenticatedArIO = ArIO.init({ signer });
+const { id: txId } = await authenticatedArIO.increaseUndernameSupport({
+  domain: 'ar-io',
+  qty: 420,
+});
+```
+
+#### `extendLease({ domain, years })`
+
+Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permenantly registered domains cannot be extended.
+
+```typescript
+const authenticatedArIO = ArIO.init({ signer });
+const { id: txId } = await authenticatedArIO.extendLease({
+  domain: 'ar-io',
+  years: 1,
+});
+```
+
 ### Custom Contracts
 
 The ArIO contract client class exposes APIs relevant to the ar.io contract. It can be configured to use any contract ID that adheres to the spec of the ar.io contract. In the default case, it will automatically build and utilize a contract data provider interface that is configured to point the the known mainnet contract ID at construction time. You can provide custom contract data provider or, alternatively, a `contractTxId` to the ArIO constructor to use a different, ar.io-spec-compatible contract.
