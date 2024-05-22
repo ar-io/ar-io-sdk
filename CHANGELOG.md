@@ -1,3 +1,10 @@
+## [1.0.7-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7-alpha.3...v1.0.7-alpha.4) (2024-05-22)
+
+
+### Bug Fixes
+
+* **mIO:** update tests and use overwrite type to allow mIOtoken for certain paramaters ([badcece](https://github.com/ar-io/ar-io-sdk/commit/badcece5ba33b3e26448988ae1aee88e706c9da5))
+
 ## [1.0.7-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7-alpha.2...v1.0.7-alpha.3) (2024-05-21)
 
 
