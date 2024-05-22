@@ -13,7 +13,10 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Web](#web)
   - [Node](#node)
   - [Typescript](#typescript)
+- [IOToken & mIOToken](#iotoken--miotoken)
+  - [Converting IO to mIO](#converting-io-to-mio)
 - [ArIO Contract](#ario-contract)
+
   - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getState({ evaluationOptions })`](#getstate-evaluationoptions-)
@@ -39,6 +42,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
   - [Custom Contracts](#custom-contracts)
+
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
     - [`init({ signer })`](#init-signer-)
@@ -188,6 +192,26 @@ const gateways = await arIO.getGateways();
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
+## IOToken & mIOToken
+
+The ArIO contract stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO. Each provide methods to convert between the two denominations, along with rounding logic for precision.
+
+**All contract interactions expect values in mIO. If numbers are provided as inputs, they are automatically converted to mIO.**
+
+### Converting IO to mIO
+
+```typescript
+import { IOToken, mIOToken } from '@ar.io/sdk';
+
+const ioValue = 1;
+const mIOValue = new IOToken(ioValue).toMIO();
+console.log(mIOValue); // 1000000 (mIO)
+
+const mIOValue = 1_000_000;
+const ioValue = new mIOToken(mIOValue).toIO();
+console.log(ioValue); // 1 (IO)
+```
+
 ## ArIO Contract
 
 ### APIs
@@ -323,8 +347,6 @@ const arIO = ArIO.init();
 const balance = await arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
-// convert to IO token using helper class
-const balanceIO = new mIO(balance).toIO();
 ```
 
 <details>
@@ -773,10 +795,10 @@ Joins a gateway to the ar.io network via its associated wallet. Requires `signer
 
 ```typescript
 const joinNetworkParams = {
-  qty: new IOToken(10_000).toMIO().valueOf(), // minimum operator stake allowed
+  qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
   autoStake: true, // auto-stake operator rewards to the gateway
   allowDelegatedStaking: true, // allows delegated staking
-  minDelegatedStake: new IOToken(100).toMIO().valueOf(), // minimum delegated stake allowed (in IO)
+  minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
   delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
@@ -798,7 +820,7 @@ Writes new gateway settings to the callers gateway configuration. Requires `sign
 
 ```typescript
 const updateGatewaySettingsParams = {
-  minDelegatedStake: new IOToken(100).toMIO().valueOf(),
+  minDelegatedStake: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -816,7 +838,7 @@ Increases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO().valueOf(),
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -832,7 +854,7 @@ Decreases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO().valueOf(),
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -847,7 +869,7 @@ Increases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: new IOToken(100).toMIO().valueOf(),
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -862,7 +884,7 @@ Decreases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: new IOToken(100).toMIO().valueOf(),
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -896,7 +918,7 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 const authenticatedArIO = ArIO.init({ signer });
 const { id: txId } = await authenticatedArIO.transfer({
   target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-  qty: new IOToken(1000).toMIO().valueOf(),
+  qty: new IOToken(1000).toMIO(),
   denomination: 'IO',
 });
 ```
