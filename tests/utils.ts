@@ -1,4 +1,5 @@
 import Arweave from 'arweave';
+import { BlockData } from 'arweave/node/blocks.js';
 import { JWKInterface } from 'arweave/node/lib/wallet';
 import * as fs from 'fs';
 import path from 'path';
@@ -47,6 +48,22 @@ export async function deployANTContract({
   });
 }
 
+export async function getCurrentBlock(
+  arweave,
+  retries = 3,
+): Promise<BlockData> {
+  try {
+    const block = await arweave.blocks.getCurrent();
+    return block;
+  } catch (e) {
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return getCurrentBlock(arweave, retries - 1);
+    }
+    throw e;
+  }
+}
+
 export async function deployArIOContract({
   jwk,
   address,
@@ -58,7 +75,7 @@ export async function deployArIOContract({
   warp: Warp;
   arweave: Arweave;
 }): Promise<ContractDeploy> {
-  const currentBlockTimestamp = (await arweave.blocks.getCurrent()).timestamp;
+  const currentBlockTimestamp = (await getCurrentBlock(arweave)).timestamp;
   const src = fs.readFileSync(
     path.join(__dirname, '/integration/arlocal/ar-io-contract/index.js'),
     'utf8',
