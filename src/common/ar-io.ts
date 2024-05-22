@@ -593,7 +593,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }: {
     target: string;
     qty: number | mIOToken;
-    // @deprecated - the contract will no longer support denominations
+    // @deprecated - the contract will no longer support denominations - all values will be in mIO
     denomination?: DENOMINATIONS;
   }): Promise<WriteInteractionResult> {
     let convertedQty = qty;
@@ -610,7 +610,6 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       inputs: {
         target,
         qty: convertedQty.valueOf(), // convert to number if mIO is provided
-        denomination,
       },
       signer: this.signer,
     });
