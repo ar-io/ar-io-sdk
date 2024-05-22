@@ -29,6 +29,7 @@ import {
   EvaluationOptions,
   EvaluationParameters,
   Gateway,
+  IOToken,
   JoinNetworkParams,
   Observations,
   OptionalSigner,
@@ -39,6 +40,7 @@ import {
   WeightedObserver,
   WithSigner,
   WriteInteractionResult,
+  mIOToken,
 } from '../types.js';
 import {
   isContractConfiguration,
@@ -563,7 +565,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
 
   /**
    * @param target @type {string} The address of the account you want to transfer IO tokens to.
-   * @param qty @type {number} The amount of IO or mIO to transfer.
+   * @param qty @type {number | mIOToken} The amount of IO or mIO to transfer.
    * @param denomination @type {DENOMINATIONS} The denomination of the amount to transfer (io or mio).
    * @returns {Promise<WriteInteractionResult>} The result of the interaction.
    * @example
@@ -578,9 +580,10 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * IO transfer
    * ```ts
    * arIO.transfer({
-   * target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk",
-   * qty: 1,
-   * denomination: DENOMINATIONS.IO
+        target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk",
+        qty: new IOToken(100).toMIO(),
+        denomination: DENOMINATIONS.IO
+   });
    * ```
    */
   async transfer({
@@ -589,9 +592,15 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     denomination = DENOMINATIONS.IO,
   }: {
     target: string;
-    qty: number;
+    qty: number | mIOToken;
+    // @deprecated - the contract will no longer support denominations
     denomination?: DENOMINATIONS;
   }): Promise<WriteInteractionResult> {
+    let convertedQty = qty;
+    // the contract will no longer support denominations
+    if (denomination === DENOMINATIONS.IO && typeof qty === 'number') {
+      convertedQty = new IOToken(qty).toMIO();
+    }
     return this.contract.writeInteraction<{
       target: WalletAddress;
       qty: number;
@@ -600,7 +609,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
       inputs: {
         target,
-        qty,
+        qty: convertedQty.valueOf(), // convert to number if mIO is provided
         denomination,
       },
       signer: this.signer,
@@ -614,23 +623,19 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * Join the network with the your configuration.
    * ```ts
    *   const jointNetworkParams = {
-    // initial operator stake 
-    qty: 4000,
-    // delegated staking settings 
-    allowDelegatedStaking: true,
-    minDelegatedStake: 100,
-    delegateRewardShareRatio: 1,
-    autoStake: true,
-    // gateway metadata info
-    label: 'john smith', // min 1, max 64 characters
-    note: 'The example gateway', // max 256 characters
-    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway.
-    observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer
-    // gateway info
-    fqdn: 'example.com',
-    port: 443,
-    protocol: 'https',
-  };
+          qty: new IOToken(10000).toMIO(),              // initial operator stake 
+          allowDelegatedStaking: true,                  // delegated staking settings 
+          minDelegatedStake: new IOToken(100).toMIO(),  // min delegated stake                  
+          delegateRewardShareRatio: 1,                  // delegate reward share ratio
+          autoStake: true,                              // auto stake operator tokens 
+          label: 'john smith',                          // min 1, max 64 characters
+          note: 'The example gateway',                  // max 256 characters
+          properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44',     // Arweave transaction ID containing additional properties of the Gateway.
+          observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer
+          fqdn: 'example.com',                     // fully qualified domain name
+          port: 443,                               // port number
+          protocol: 'https',                       // protocol
+        };
     * arIO.joinNetwork(jointNetworkParams);
    * ```
    */
@@ -651,12 +656,12 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     return this.contract.writeInteraction<JoinNetworkParams>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
       inputs: {
-        qty,
+        qty: qty.valueOf(), // convert to number if mIO is provided
         allowDelegatedStaking,
         delegateRewardShareRatio,
         fqdn,
         label,
-        minDelegatedStake,
+        minDelegatedStake: minDelegatedStake.valueOf(), // convert to number if mIO is provided
         note,
         port,
         properties,
@@ -674,7 +679,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * @example
    * Update a setting of the gateway.
    * ```ts
-   * arIO.updateGatewaySettings({ autoStake: true });
+   * arIO.updateGatewaySettings({ autoStake: true, minDelegatedStake: new IOToken(100).toMIO()});
    * ```
    */
   async updateGatewaySettings({
@@ -697,7 +702,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
         delegateRewardShareRatio,
         fqdn,
         label,
-        minDelegatedStake,
+        minDelegatedStake: minDelegatedStake?.valueOf(), // convert to number if mIO is provided
         note,
         port,
         properties,
@@ -711,7 +716,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
 
   /**
    * @param target @type {string} The gateway you wish to delegate stake to.
-   * @param qty @type {number} The amount of stake to delegate.
+   * @param qty @type {number | mIOToken} The amount of stake to delegate represented in mIO.
    * @returns {Promise<WriteInteractionResult>} The result of the interaction.
    * @example
    * Delegate stake to a gateway.
@@ -721,51 +726,59 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    */
   async increaseDelegateStake(params: {
     target: string;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
-      inputs: params,
+      inputs: {
+        target: params.target,
+        qty: params.qty.valueOf(), // convert to number if mIO is provided
+      },
       signer: this.signer,
     });
   }
 
   /**
    * @param target @type {string} The gateway you wish to decrease stake at.
-   * @param qty @type {number} The amount of stake to decrease.
+   * @param qty @type {number | mIOToken} The amount of stake to decrease represented in mIO.
    * @returns {Promise<WriteInteractionResult>} The result of the interaction.
    * @example
    * Decrease your delegated staked tokens at a gateway.
    * ```ts
-   * arIO.decreaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: 1000 });
+   * arIO.decreaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: new IOToken(1000).toMIO() });
    * ```
    */
   async decreaseDelegateStake(params: {
     target: string;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{ target: string; qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
-      inputs: params,
+      inputs: {
+        target: params.target,
+        qty: params.qty.valueOf(), // convert to number if mIO is provided
+      },
       signer: this.signer,
     });
   }
 
   /**
-   * @param qty @type {number} The amount of stake to increase by.
+   * @param qty @type {number | mIOToken} The amount of stake to increase by represented in mIO.
    * @returns {Promise<WriteInteractionResult>} The result of the interaction.
    * @example
-   * Increase your staked tokens as an operater
-   * ```ts
-   * arIO.increaseOperatorStake({ qty: 1000 });
+   * Increase your staked tokens as an operator
+   * ```new IOToken(1000).toMIO()
+   * arIO.increaseOperatorStake({ qty: new IOToken(1000).toMIO() });
    * ```
    */
   async increaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
-      inputs: params,
+      inputs: {
+        qty: params.qty.valueOf(), // convert to number if mIO is provided
+      },
       signer: this.signer,
     });
   }
@@ -780,11 +793,13 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * ```
    */
   async decreaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult> {
     const res = this.contract.writeInteraction<{ qty: number }>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
-      inputs: params,
+      inputs: {
+        qty: params.qty.valueOf(), // convert to number if mIO is provided
+      },
       signer: this.signer,
     });
     return res;

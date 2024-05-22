@@ -5,6 +5,7 @@ import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
 import { ArIOState } from '../../src/contract-state.js';
+import { IOToken } from '../../src/token.js';
 import { arweave, gatewayAddress, localCacheUrl, warp } from '../constants.js';
 
 describe('ArIOWriteable', () => {
@@ -32,13 +33,13 @@ describe('ArIOWriteable', () => {
       label: 'example',
       protocol: 'https',
       port: 443,
-      qty: 20000,
+      qty: new IOToken(20000).toMIO(),
       properties: ''.padEnd(43, 'a'),
       note: 'a note',
       observerWallet: ''.padEnd(43, 'b'),
       allowDelegatedStaking: true,
       delegateRewardShareRatio: 10,
-      minDelegatedStake: 100,
+      minDelegatedStake: new IOToken(100).toMIO(),
       autoStake: true,
     });
     expect(tx.id).toBeDefined();
@@ -49,7 +50,7 @@ describe('ArIOWriteable', () => {
   it('should successfully increase delegate stake', async () => {
     const tx = await arIO.increaseDelegateStake({
       target: gatewayAddress,
-      qty: 101,
+      qty: new IOToken(100).toMIO(),
     });
     expect(tx.id).toBeDefined();
     const verified = await arweave.transactions.verify(tx as Transaction);
@@ -59,7 +60,7 @@ describe('ArIOWriteable', () => {
   it('should successfully decrease delegate stake', async () => {
     const tx = await arIO.decreaseDelegateStake({
       target: gatewayAddress,
-      qty: 101,
+      qty: new IOToken(100).toMIO(),
     });
     expect(tx.id).toBeDefined();
     const verified = await arweave.transactions.verify(tx as Transaction);
@@ -68,10 +69,9 @@ describe('ArIOWriteable', () => {
 
   it('should successfully transfer tokens to another address', async () => {
     const target = ''.padEnd(43, 'f');
-    const qty = 101;
     const tx = await arIO.transfer({
       target,
-      qty,
+      qty: new IOToken(10).toMIO(),
     });
     expect(tx.id).toBeDefined();
     const verified = await arweave.transactions.verify(tx as Transaction);
