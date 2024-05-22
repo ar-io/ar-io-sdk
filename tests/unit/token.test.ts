@@ -15,6 +15,11 @@ describe('IOToken', () => {
     const mToken = token.toMIO();
     expect(mToken.valueOf()).toBe(1000000);
   });
+
+  it('should print as a string', () => {
+    const token = new IOToken(1);
+    expect(`${token}`).toBe('1');
+  });
 });
 
 describe('mIOToken', () => {
@@ -81,5 +86,10 @@ describe('mIOToken', () => {
     const token = new mIOToken(1000000);
     const result = token.toIO();
     expect(result.valueOf()).toBe(1);
+  });
+
+  it('should print as a string', () => {
+    const token = new mIOToken(1);
+    expect(`${token}`).toBe('1');
   });
 });

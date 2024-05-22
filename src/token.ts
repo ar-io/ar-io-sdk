@@ -112,6 +112,10 @@ export class IOToken {
   toMIO(): mIOToken {
     return new mIOToken(Math.floor(this.value * MIO_PER_IO));
   }
+
+  toString(): string {
+    return `${this.value}`;
+  }
 }
 
 export class mIOToken extends PositiveFiniteInteger {
