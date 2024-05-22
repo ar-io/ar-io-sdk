@@ -177,7 +177,7 @@ const arIO = ArIO.init();
 const gateways = await arIO.getGateways();
 ```
 
-##### CJS
+#### CJS
 
 ```javascript
 import { ArIO } from '@ar.io/sdk';
@@ -194,9 +194,9 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 ## IOToken & mIOToken
 
-The ArIO contract stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO. Each provide methods to convert between the two denominations, along with rounding logic for precision.
+The ArIO contract stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
 
-**All contract interactions expect values in mIO. If numbers are provided as inputs, they are automatically converted to mIO.**
+**All contract interactions expect values in mIO. If numbers are provided as inputs, they are assumed to be in raw mIO values.**
 
 ### Converting IO to mIO
 
@@ -937,7 +937,7 @@ const { id: txId } = await authenticatedArIO.increaseUndernameLimit({
 
 #### `extendLease({ domain, years })`
 
-Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permenantly registered domains cannot be extended.
+Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
 
 ```typescript
 const authenticatedArIO = ArIO.init({ signer });
