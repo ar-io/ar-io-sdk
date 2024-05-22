@@ -514,7 +514,8 @@ function isActiveReservedName({ caller, reservedName, currentBlockTimestamp }) {
   }
   const isCallerTarget = caller !== void 0 && target === caller;
   const isActiveReservation =
-    endTimestamp && endTimestamp > currentBlockTimestamp.valueOf();
+    endTimestamp === void 0 ||
+    (endTimestamp !== void 0 && endTimestamp > currentBlockTimestamp.valueOf());
   if (!isCallerTarget && isActiveReservation) {
     return true;
   }
@@ -688,7 +689,7 @@ function calculateExistingAuctionBidForCaller({
 }) {
   if (submittedBid && submittedBid.isLessThan(requiredMinimumBid)) {
     throw new ContractError(
-      `The bid (${submittedBid.toIO().valueOf()} IO) is less than the current required minimum bid of ${requiredMinimumBid.toIO().valueOf()} IO.`,
+      `The bid (${submittedBid.valueOf()} mIO) is less than the current required minimum bid of ${requiredMinimumBid.valueOf()} mIO.`,
     );
   }
   if (caller === auction.initiator) {
@@ -5374,7 +5375,7 @@ var AuctionBid = class {
       contractTxId = RESERVED_ATOMIC_TX_ID,
     } = input;
     this.name = name.trim().toLowerCase();
-    this.qty = qty ? new IOToken(qty).toMIO() : void 0;
+    this.qty = qty ? new mIOToken(qty) : void 0;
     this.type = type;
     this.contractTxId =
       contractTxId === RESERVED_ATOMIC_TX_ID
@@ -6106,7 +6107,7 @@ var CreateVault = class {
       );
     }
     const { qty, lockLength } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.lockLength = new BlockHeight(lockLength);
   }
 };
@@ -6263,7 +6264,7 @@ var DecreaseOperatorStake = class {
       );
     }
     const { qty } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var decreaseOperatorStake = async (state, { caller, input }) => {
@@ -6281,7 +6282,7 @@ var decreaseOperatorStake = async (state, { caller, input }) => {
   const maxWithdraw = existingStake.minus(MIN_OPERATOR_STAKE);
   if (qty.isGreaterThan(maxWithdraw)) {
     throw new ContractError(
-      `Resulting stake is not enough maintain the minimum operator stake of ${MIN_OPERATOR_STAKE.toIO().valueOf()} IO`,
+      `Resulting stake is not enough maintain the minimum operator stake of ${MIN_OPERATOR_STAKE.valueOf()} mIO`,
     );
   }
   const interactionHeight = new BlockHeight(+SmartWeave.block.height);
@@ -6315,7 +6316,7 @@ var DelegateStake = class {
     }
     const { target, qty } = input;
     this.target = target;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var delegateStake = async (state, { caller, input }) => {
@@ -6385,7 +6386,7 @@ var increaseOperatorStake = async (state, { caller, input }) => {
   if (isNaN(input.qty) || input.qty <= 0) {
     throw new ContractError(INVALID_INPUT_MESSAGE);
   }
-  const qty = new IOToken(input.qty).toMIO();
+  const qty = new mIOToken(input.qty);
   if (!(caller in gateways)) {
     throw new ContractError(INVALID_GATEWAY_EXISTS_MESSAGE);
   }
@@ -6414,7 +6415,7 @@ var IncreaseVault = class {
     }
     const { id, qty } = input;
     this.id = id;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var increaseVault = async (state, { caller, input }) => {
@@ -6464,7 +6465,7 @@ var JoinNetwork = class {
       delegateRewardShareRatio = 0,
       minDelegatedStake = MIN_DELEGATED_STAKE,
     } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.label = label;
     this.port = port;
     this.protocol = protocol;
@@ -7485,10 +7486,9 @@ var TransferToken = class {
         getInvalidAjvMessage(validateTransferToken, input, 'transferToken'),
       );
     }
-    const { target, qty, denomination = 'mIO' } = input;
+    const { target, qty } = input;
     this.target = target;
-    this.qty =
-      denomination === 'mIO' ? new mIOToken(qty) : new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var transferTokens = async (state, { caller, input }) => {
@@ -7539,7 +7539,7 @@ var GatewaySettings = class {
         delegateRewardShareRatio,
       }),
       ...(minDelegatedStake !== void 0 && {
-        minDelegatedStake: new IOToken(minDelegatedStake).toMIO(),
+        minDelegatedStake: new mIOToken(minDelegatedStake),
       }),
     };
     this.observerWallet = observerWallet;
@@ -7630,7 +7630,7 @@ var TransferTokensLocked = class {
     }
     const { target, qty, lockLength } = input;
     this.target = target;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.lockLength = new BlockHeight(lockLength);
   }
 };

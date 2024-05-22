@@ -51,13 +51,14 @@ export async function deployArIOContract({
   jwk,
   address,
   warp,
+  arweave,
 }: {
   jwk: JWKInterface;
   address: string;
   warp: Warp;
+  arweave: Arweave;
 }): Promise<ContractDeploy> {
-  const currentBlockTimestamp = (await warp.arweave.blocks.getCurrent())
-    .timestamp;
+  const currentBlockTimestamp = (await arweave.blocks.getCurrent()).timestamp;
   const src = fs.readFileSync(
     path.join(__dirname, '/integration/arlocal/ar-io-contract/index.js'),
     'utf8',

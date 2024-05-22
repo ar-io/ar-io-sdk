@@ -36,6 +36,7 @@ import {
   RegistrationType,
   WeightedObserver,
 } from './contract-state.js';
+import { mIOToken } from './token.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -203,18 +204,18 @@ export interface ArIOWriteContract {
     observerWallet,
   }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
   increaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   decreaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   increaseDelegateStake(params: {
     target: WalletAddress;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   decreaseDelegateStake(params: {
     target: WalletAddress;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   saveObservations(params: {
     reportTxId: TransactionId;
@@ -232,9 +233,20 @@ export interface ArIOWriteContract {
 
 export type WriteInteractionResult = Transaction | DataItem;
 
-export type JoinNetworkParams = GatewayConnectionSettings &
-  GatewayStakingSettings &
-  GatewayMetadata & { qty: number; observerWallet?: WalletAddress };
+// Helper type to overwrite properties of A with B
+type Overwrite<T, U> = {
+  [K in keyof T]: K extends keyof U ? U[K] : T[K];
+};
+
+export type JoinNetworkParams = Overwrite<
+  GatewayConnectionSettings & GatewayStakingSettings & GatewayMetadata,
+  {
+    minDelegatedStake: number | mIOToken; // TODO: this is for backwards compatibility
+  }
+> & {
+  qty: number | mIOToken; // TODO: this is for backwards compatibility
+  observerWallet?: WalletAddress;
+};
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
@@ -242,7 +254,7 @@ export type UpdateGatewaySettingsParamsBase = {
   delegateRewardShareRatio?: number;
   fqdn?: string;
   label?: string;
-  minDelegatedStake?: number;
+  minDelegatedStake?: number | mIOToken; // TODO: this is for backwards compatibility - eventually we'll drop number
   note?: string;
   port?: number;
   properties?: string;
