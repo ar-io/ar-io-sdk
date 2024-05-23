@@ -1,3 +1,23 @@
+## [1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)
+
+
+### Bug Fixes
+
+* **ario:** add extendLease and increaseUndernameSupport apis ([1b13b5e](https://github.com/ar-io/ar-io-sdk/commit/1b13b5e7e24259fbd2762848e6066822af51cecd))
+* **atleastOne:** fix the AtLeastOne type ([ffd0869](https://github.com/ar-io/ar-io-sdk/commit/ffd0869949814196817d0ffb14fe0cf2be2ad298))
+* **deps:** force arweavve to 1.15.1 ([2448598](https://github.com/ar-io/ar-io-sdk/commit/244859865b986a4c48b6446fc41230039cc5fcc0))
+* **joinnetwork:** make params required - properties and note ([89db674](https://github.com/ar-io/ar-io-sdk/commit/89db674a187dffc83413ac1ac3922ca78ae3f88d))
+* **mIO:** update tests and use overwrite type to allow mIOtoken for certain paramaters ([badcece](https://github.com/ar-io/ar-io-sdk/commit/badcece5ba33b3e26448988ae1aee88e706c9da5))
+* **naming:** change to increaseUndernameLimit ([9b72c1e](https://github.com/ar-io/ar-io-sdk/commit/9b72c1ed261ecae43fa4c0cd3e00ddb61e6e7ee5))
+* **readme:** update ario apis ([4af0862](https://github.com/ar-io/ar-io-sdk/commit/4af08626abfe4cd16f6c4b56696e19c7803e7dc6))
+* **tests:** update extend test util to include a test domain ([e959b7c](https://github.com/ar-io/ar-io-sdk/commit/e959b7cc3d642651c0313529ad47343e3ff2c69d))
+* **token:** add mIO and IO token classes to exports ([f47f7d5](https://github.com/ar-io/ar-io-sdk/commit/f47f7d5c251973058866340a6bc2baddbf973ecf))
+* **types:** add delegated gateway type ([c877496](https://github.com/ar-io/ar-io-sdk/commit/c87749660d2da62e6b996a9f034ce12fb702d93b))
+* **types:** export the token types ([dfc83ae](https://github.com/ar-io/ar-io-sdk/commit/dfc83ae74a110dd06ddab16d5f88d192e4c0c5ad))
+* **types:** remove visible types ([6ab1fc3](https://github.com/ar-io/ar-io-sdk/commit/6ab1fc3284d35fdd8f70a1fa1ac5cb7965878a51))
+* **types:** update Gateway `delegates` type to use the new `GatewayDelegate` ([ac7e924](https://github.com/ar-io/ar-io-sdk/commit/ac7e924f24ba6133b2917de8416c37bf6560cdd4))
+* **warp:** bump warp version ([db7344d](https://github.com/ar-io/ar-io-sdk/commit/db7344d269968a1f4a287eb2c2d503e0045fcf5e))
+
 ## [1.0.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5...v1.0.6) (2024-05-07)
 
 
