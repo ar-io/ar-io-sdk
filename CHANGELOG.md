@@ -1,11 +1,3 @@
-## [1.0.7-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7-alpha.4...v1.0.7-alpha.5) (2024-05-23)
-
-
-### Bug Fixes
-
-* **deps:** force arweavve to 1.15.1 ([2448598](https://github.com/ar-io/ar-io-sdk/commit/244859865b986a4c48b6446fc41230039cc5fcc0))
-* **warp:** bump warp version ([db7344d](https://github.com/ar-io/ar-io-sdk/commit/db7344d269968a1f4a287eb2c2d503e0045fcf5e))
-
 ## [1.0.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5...v1.0.6) (2024-05-07)
 
 
