@@ -121,6 +121,9 @@
     "warp-arbundles": "^1.0.4",
     "warp-contracts": "1.4.45"
   },
+  "resolutions": {
+    "arweave": "1.15.1"
+  },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."
