@@ -1,7 +1,6 @@
 export default {
   preset: 'ts-jest',
-  // TODO: this should be using globalSetup once this is resolved: https://github.com/kulshekhar/ts-jest/issues/4127
-  setupFiles: ['./tests/integration/jest.setup.ts'],
+  globalSetup: './tests/integration/jest.setup.ts',
   globalTeardown: './tests/integration/jest.teardown.ts',
   clearMocks: true,
   moduleFileExtensions: ['ts', 'js', 'mjs'],
@@ -12,7 +11,7 @@ export default {
   testTimeout: 120_000,
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
-    '^.+\\.(ts|js)$': ['ts-jest', { useESM: true }],
+    '^.+\\.(ts|js)$': ['ts-jest', { useESM: true, tsconfig: 'tsconfig.json' }],
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
