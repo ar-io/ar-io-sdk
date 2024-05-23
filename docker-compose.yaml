@@ -14,7 +14,6 @@ services:
 
   arns-service:
     image: ghcr.io/ar-io/arns-service:latest
-    build: .
     ports:
       - '3000:3000'
     environment:

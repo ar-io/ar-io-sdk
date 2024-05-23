@@ -165,7 +165,7 @@ export class WarpContract<T>
       ...inputs,
     });
 
-    if (!evaluationResult.result) {
+    if (evaluationResult.result === undefined) {
       throw new FailedRequestError(
         502,
         'Failed to evaluate contract read interaction: ' +

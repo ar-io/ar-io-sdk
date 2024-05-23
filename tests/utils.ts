@@ -30,7 +30,7 @@ export async function deployANTContract({
       'utf8',
     ),
   );
-  return await warp.deploy({
+  return warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
@@ -88,7 +88,7 @@ export async function deployArIOContract({
     newPrescribedObserver,
   ];
 
-  return await warp.deploy({
+  return warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
