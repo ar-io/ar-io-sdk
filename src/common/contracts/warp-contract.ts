@@ -82,8 +82,9 @@ export class WarpContract<T>
   // TODO: could abstract into our own interface that constructs different signers
   async createWarpSigner(signer: ContractSigner): Promise<CustomSignature> {
     // ensure appropriate permissions are granted with injected signers.
-    if (signer.publicKey === undefined && signer instanceof ArconnectSigner) {
-      await signer.setPublicKey();
+    if (signer.publicKey === undefined) {
+      // ArweaveSigner will always have a public key - for some reason runtime cannot read the ArconnectSigner type, so we assume if no public key is present, it is an ArconnectSigner
+      await (signer as ArconnectSigner).setPublicKey();
     }
     const warpSigner = new Signature(this.warp, {
       signer: async (tx: Transaction) => {
