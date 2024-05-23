@@ -13,7 +13,10 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Web](#web)
   - [Node](#node)
   - [Typescript](#typescript)
+- [IOToken & mIOToken](#iotoken--miotoken)
+  - [Converting IO to mIO](#converting-io-to-mio)
 - [ArIO Contract](#ario-contract)
+
   - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getState({ evaluationOptions })`](#getstate-evaluationoptions-)
@@ -39,6 +42,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
   - [Custom Contracts](#custom-contracts)
+
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
     - [`init({ signer })`](#init-signer-)
@@ -95,7 +99,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000,
+    "operatorStake": 250000000000, // value in mIO
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -173,7 +177,7 @@ const arIO = ArIO.init();
 const gateways = await arIO.getGateways();
 ```
 
-##### CJS
+#### CJS
 
 ```javascript
 import { ArIO } from '@ar.io/sdk';
@@ -187,6 +191,26 @@ const gateways = await arIO.getGateways();
 ### Typescript
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
+
+## IOToken & mIOToken
+
+The ArIO contract stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
+
+**All contract interactions expect values in mIO. If numbers are provided as inputs, they are assumed to be in raw mIO values.**
+
+### Converting IO to mIO
+
+```typescript
+import { IOToken, mIOToken } from '@ar.io/sdk';
+
+const ioValue = 1;
+const mIOValue = new IOToken(ioValue).toMIO();
+console.log(mIOValue); // 1000000 (mIO)
+
+const mIOValue = 1_000_000;
+const ioValue = new mIOToken(mIOValue).toIO();
+console.log(ioValue); // 1 (IO)
+```
 
 ## ArIO Contract
 
@@ -205,11 +229,12 @@ const arweave = Arweave.init({
   port: 443,
   protocol: 'https'
 })
+// for browser environments
 const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const arIOWriteable = ArIO.init({ signer: browserSigner});
 
+// for node environments
 const nodeSigner = new ArweaveSigner(JWK);
-// read and write client that has access to all APIs
 const arIOWriteable = ArIO.init({ signer: nodeSigner});
 
 ```
@@ -318,6 +343,7 @@ Retrieves the balance of the specified wallet address.
 
 ```typescript
 const arIO = ArIO.init();
+// the balance will be returned in mIO as a value
 const balance = await arIO.getBalance({
   address: 'INSERT_WALLET_ADDRESS',
 });
@@ -327,14 +353,15 @@ const balance = await arIO.getBalance({
   <summary>Output</summary>
 
 ```json
-1000000
+// value in mIO
+1000000000000
 ```
 
 </details>
 
 #### `getBalances({ evaluationOptions })`
 
-Retrieves the balances of the ArIO contract.
+Retrieves the balances of the ArIO contract in `mIO`
 
 <!--
 // ALM - A part of me wonders whether streaming JSON might be beneficial in the future
@@ -352,9 +379,9 @@ const balances = await arIO.getBalances();
 
 ```json
 {
-  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000,
-  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000,
-  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000
+  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000000000, // value in mIO
+  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000000000, // value in mIO
+  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000000000 // value in mIO
 }
 ```
 
@@ -378,7 +405,7 @@ const gateway = await arIO.getGateway({
 {
   "end": 0,
   "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000,
+  "operatorStake": 250000000000, // value in mIO
   "settings": {
     "fqdn": "ar-io.dev",
     "label": "AR.IO Test",
@@ -427,7 +454,7 @@ const gateways = await arIO.getGateways();
   "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
     "end": 0,
     "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000,
+    "operatorStake": 250000000000, // value in mIO
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -507,7 +534,7 @@ const records = await arIO.getArNSRecords();
   },
   "ar-io": {
     "contractTxId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
-    "purchasePrice": 17386.717520731843,
+    "purchasePrice": 75541282285, // value in mIO
     "startTimestamp": 1706747215,
     "type": "permabuy",
     "undernames": 10
@@ -640,7 +667,7 @@ const observers = await arIO.getPrescribedObservers();
   {
     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-    "stake": 10000,
+    "stake": 10000000000, // value in mIO
     "start": 1296976,
     "stakeWeight": 1,
     "tenureWeight": 0.41453703703703704,
@@ -673,7 +700,7 @@ const previousEpochObservers = await arIO.getPrescribedObservers({
   {
     "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
     "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-    "stake": 10000,
+    "stake": 10000000000, // vault in mIO
     "start": 1292450,
     "stakeWeight": 1,
     "tenureWeight": 0.4494598765432099,
@@ -767,11 +794,11 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `ArIO.init` to sign the transaction.
 
 ```typescript
-const jointNetworkParams = {
-  qty: 10_000, // minimum operator stake allowed
+const joinNetworkParams = {
+  qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
   autoStake: true, // auto-stake operator rewards to the gateway
   allowDelegatedStaking: true, // allows delegated staking
-  minDelegatedStake: 100, // minimum delegated stake allowed (in mIO)
+  minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
   delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
   label: 'john smith', // min 1, max 64 characters
   note: 'The example gateway', // max 256 characters
@@ -793,7 +820,7 @@ Writes new gateway settings to the callers gateway configuration. Requires `sign
 
 ```typescript
 const updateGatewaySettingsParams = {
-  minDelegatedStake: 100,
+  minDelegatedStake: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -811,7 +838,7 @@ Increases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: 100,
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -827,7 +854,7 @@ Decreases the callers stake on the target gateway. Requires `signer` to be provi
 ```typescript
 const params = {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: 100,
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -842,7 +869,7 @@ Increases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: 100,
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -857,7 +884,7 @@ Decreases the callers operator stake. Must be executed with a wallet registered 
 
 ```typescript
 const params = {
-  qty: 100,
+  qty: new IOToken(100).toMIO(),
 };
 
 const signer = new ArweaveSigner(jwk);
@@ -891,7 +918,32 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 const authenticatedArIO = ArIO.init({ signer });
 const { id: txId } = await authenticatedArIO.transfer({
   target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-  qty: 1000,
+  qty: new IOToken(1000).toMIO(),
+  denomination: 'IO',
+});
+```
+
+#### `increaseUndernameLimit({ domain, qty })`
+
+Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
+
+```typescript
+const authenticatedArIO = ArIO.init({ signer });
+const { id: txId } = await authenticatedArIO.increaseUndernameLimit({
+  domain: 'ar-io',
+  qty: 420,
+});
+```
+
+#### `extendLease({ domain, years })`
+
+Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
+
+```typescript
+const authenticatedArIO = ArIO.init({ signer });
+const { id: txId } = await authenticatedArIO.extendLease({
+  domain: 'ar-io',
+  years: 1,
 });
 ```
 

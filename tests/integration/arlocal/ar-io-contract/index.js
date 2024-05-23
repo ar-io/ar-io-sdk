@@ -514,7 +514,8 @@ function isActiveReservedName({ caller, reservedName, currentBlockTimestamp }) {
   }
   const isCallerTarget = caller !== void 0 && target === caller;
   const isActiveReservation =
-    endTimestamp && endTimestamp > currentBlockTimestamp.valueOf();
+    endTimestamp === void 0 ||
+    (endTimestamp !== void 0 && endTimestamp > currentBlockTimestamp.valueOf());
   if (!isCallerTarget && isActiveReservation) {
     return true;
   }
@@ -547,6 +548,9 @@ function assertAvailableRecord({
     throw new ContractError(ARNS_NON_EXPIRED_NAME_MESSAGE);
   }
   if (reserved[name]?.target === caller) {
+    return;
+  }
+  if (!caller) {
     return;
   }
   if (isReserved) {
@@ -685,7 +689,7 @@ function calculateExistingAuctionBidForCaller({
 }) {
   if (submittedBid && submittedBid.isLessThan(requiredMinimumBid)) {
     throw new ContractError(
-      `The bid (${submittedBid.toIO().valueOf()} IO) is less than the current required minimum bid of ${requiredMinimumBid.toIO().valueOf()} IO.`,
+      `The bid (${submittedBid.valueOf()} mIO) is less than the current required minimum bid of ${requiredMinimumBid.valueOf()} mIO.`,
     );
   }
   if (caller === auction.initiator) {
@@ -1695,8 +1699,236 @@ function validate11(
   validate11.errors = vErrors;
   return errors === 0;
 }
-var validateExtendRecord = validate12;
+var validateCreateReservedName = validate12;
+var pattern8 = new RegExp('^[a-zA-Z0-9-_]{43}$', 'u');
 function validate12(
+  data,
+  { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
+) {
+  let vErrors = null;
+  let errors = 0;
+  if (data && typeof data == 'object' && !Array.isArray(data)) {
+    if (data.name === void 0) {
+      const err0 = {
+        instancePath,
+        schemaPath: '#/required',
+        keyword: 'required',
+        params: { missingProperty: 'name' },
+        message: "must have required property 'name'",
+      };
+      if (vErrors === null) {
+        vErrors = [err0];
+      } else {
+        vErrors.push(err0);
+      }
+      errors++;
+    }
+    if (data.target === void 0) {
+      const err1 = {
+        instancePath,
+        schemaPath: '#/required',
+        keyword: 'required',
+        params: { missingProperty: 'target' },
+        message: "must have required property 'target'",
+      };
+      if (vErrors === null) {
+        vErrors = [err1];
+      } else {
+        vErrors.push(err1);
+      }
+      errors++;
+    }
+    for (const key0 in data) {
+      if (
+        !(
+          key0 === 'function' ||
+          key0 === 'name' ||
+          key0 === 'target' ||
+          key0 === 'endTimestamp'
+        )
+      ) {
+        const err2 = {
+          instancePath,
+          schemaPath: '#/additionalProperties',
+          keyword: 'additionalProperties',
+          params: { additionalProperty: key0 },
+          message: 'must NOT have additional properties',
+        };
+        if (vErrors === null) {
+          vErrors = [err2];
+        } else {
+          vErrors.push(err2);
+        }
+        errors++;
+      }
+    }
+    if (data.function !== void 0) {
+      let data0 = data.function;
+      if (typeof data0 !== 'string') {
+        const err3 = {
+          instancePath: instancePath + '/function',
+          schemaPath: '#/properties/function/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      }
+      if ('createReservedName' !== data0) {
+        const err4 = {
+          instancePath: instancePath + '/function',
+          schemaPath: '#/properties/function/const',
+          keyword: 'const',
+          params: { allowedValue: 'createReservedName' },
+          message: 'must be equal to constant',
+        };
+        if (vErrors === null) {
+          vErrors = [err4];
+        } else {
+          vErrors.push(err4);
+        }
+        errors++;
+      }
+    }
+    if (data.name !== void 0) {
+      let data1 = data.name;
+      if (typeof data1 === 'string') {
+        if (!pattern1.test(data1)) {
+          const err5 = {
+            instancePath: instancePath + '/name',
+            schemaPath: '#/properties/name/pattern',
+            keyword: 'pattern',
+            params: {
+              pattern:
+                '^([a-zA-Z0-9][a-zA-Z0-9-]{0,49}[a-zA-Z0-9]|[a-zA-Z0-9]{1})$',
+            },
+            message:
+              'must match pattern "^([a-zA-Z0-9][a-zA-Z0-9-]{0,49}[a-zA-Z0-9]|[a-zA-Z0-9]{1})$"',
+          };
+          if (vErrors === null) {
+            vErrors = [err5];
+          } else {
+            vErrors.push(err5);
+          }
+          errors++;
+        }
+      } else {
+        const err6 = {
+          instancePath: instancePath + '/name',
+          schemaPath: '#/properties/name/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err6];
+        } else {
+          vErrors.push(err6);
+        }
+        errors++;
+      }
+    }
+    if (data.target !== void 0) {
+      let data2 = data.target;
+      if (typeof data2 === 'string') {
+        if (!pattern8.test(data2)) {
+          const err7 = {
+            instancePath: instancePath + '/target',
+            schemaPath: '#/properties/target/pattern',
+            keyword: 'pattern',
+            params: { pattern: '^[a-zA-Z0-9-_]{43}$' },
+            message: 'must match pattern "^[a-zA-Z0-9-_]{43}$"',
+          };
+          if (vErrors === null) {
+            vErrors = [err7];
+          } else {
+            vErrors.push(err7);
+          }
+          errors++;
+        }
+      } else {
+        const err8 = {
+          instancePath: instancePath + '/target',
+          schemaPath: '#/properties/target/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err8];
+        } else {
+          vErrors.push(err8);
+        }
+        errors++;
+      }
+    }
+    if (data.endTimestamp !== void 0) {
+      let data3 = data.endTimestamp;
+      if (
+        !(
+          typeof data3 == 'number' &&
+          !(data3 % 1) &&
+          !isNaN(data3) &&
+          isFinite(data3)
+        )
+      ) {
+        const err9 = {
+          instancePath: instancePath + '/endTimestamp',
+          schemaPath: '#/properties/endTimestamp/type',
+          keyword: 'type',
+          params: { type: 'integer' },
+          message: 'must be integer',
+        };
+        if (vErrors === null) {
+          vErrors = [err9];
+        } else {
+          vErrors.push(err9);
+        }
+        errors++;
+      }
+      if (typeof data3 == 'number' && isFinite(data3)) {
+        if (data3 < 1 || isNaN(data3)) {
+          const err10 = {
+            instancePath: instancePath + '/endTimestamp',
+            schemaPath: '#/properties/endTimestamp/minimum',
+            keyword: 'minimum',
+            params: { comparison: '>=', limit: 1 },
+            message: 'must be >= 1',
+          };
+          if (vErrors === null) {
+            vErrors = [err10];
+          } else {
+            vErrors.push(err10);
+          }
+          errors++;
+        }
+      }
+    }
+  } else {
+    const err11 = {
+      instancePath,
+      schemaPath: '#/type',
+      keyword: 'type',
+      params: { type: 'object' },
+      message: 'must be object',
+    };
+    if (vErrors === null) {
+      vErrors = [err11];
+    } else {
+      vErrors.push(err11);
+    }
+    errors++;
+  }
+  validate12.errors = vErrors;
+  return errors === 0;
+}
+var validateExtendRecord = validate13;
+function validate13(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -1893,11 +2125,11 @@ function validate12(
     }
     errors++;
   }
-  validate12.errors = vErrors;
+  validate13.errors = vErrors;
   return errors === 0;
 }
-var validateIncreaseUndernameCount = validate13;
-function validate13(
+var validateIncreaseUndernameCount = validate14;
+function validate14(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -2086,11 +2318,11 @@ function validate13(
     }
     errors++;
   }
-  validate13.errors = vErrors;
+  validate14.errors = vErrors;
   return errors === 0;
 }
-var validateJoinNetwork = validate14;
-var schema15 = {
+var validateJoinNetwork = validate15;
+var schema16 = {
   $id: '#/definitions/joinNetwork',
   type: 'object',
   properties: {
@@ -2127,16 +2359,15 @@ var schema15 = {
   additionalProperties: false,
 };
 var func2 = Object.prototype.hasOwnProperty;
-var pattern9 = new RegExp(
+var pattern11 = new RegExp(
   '^(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{1,63}$',
   'u',
 );
-var pattern10 = new RegExp('^(http|https)$', 'u');
-var pattern11 = new RegExp('^[a-zA-Z0-9_-]{43}$', 'u');
-var pattern12 = new RegExp('^.{1,256}$', 'u');
-var pattern13 = new RegExp('^.{1,64}$', 'u');
-var pattern15 = new RegExp('^[a-zA-Z0-9-_]{43}$', 'u');
-function validate14(
+var pattern12 = new RegExp('^(http|https)$', 'u');
+var pattern13 = new RegExp('^[a-zA-Z0-9_-]{43}$', 'u');
+var pattern14 = new RegExp('^.{1,256}$', 'u');
+var pattern15 = new RegExp('^.{1,64}$', 'u');
+function validate15(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -2249,7 +2480,7 @@ function validate14(
       errors++;
     }
     for (const key0 in data) {
-      if (!func2.call(schema15.properties, key0)) {
+      if (!func2.call(schema16.properties, key0)) {
         const err7 = {
           instancePath,
           schemaPath: '#/additionalProperties',
@@ -2335,7 +2566,7 @@ function validate14(
     if (data.fqdn !== void 0) {
       let data2 = data.fqdn;
       if (typeof data2 === 'string') {
-        if (!pattern9.test(data2)) {
+        if (!pattern11.test(data2)) {
           const err12 = {
             instancePath: instancePath + '/fqdn',
             schemaPath: '#/properties/fqdn/pattern',
@@ -2429,7 +2660,7 @@ function validate14(
     if (data.protocol !== void 0) {
       let data4 = data.protocol;
       if (typeof data4 === 'string') {
-        if (!pattern10.test(data4)) {
+        if (!pattern12.test(data4)) {
           const err17 = {
             instancePath: instancePath + '/protocol',
             schemaPath: '#/properties/protocol/pattern',
@@ -2463,7 +2694,7 @@ function validate14(
     if (data.properties !== void 0) {
       let data5 = data.properties;
       if (typeof data5 === 'string') {
-        if (!pattern11.test(data5)) {
+        if (!pattern13.test(data5)) {
           const err19 = {
             instancePath: instancePath + '/properties',
             schemaPath: '#/properties/properties/pattern',
@@ -2497,7 +2728,7 @@ function validate14(
     if (data.note !== void 0) {
       let data6 = data.note;
       if (typeof data6 === 'string') {
-        if (!pattern12.test(data6)) {
+        if (!pattern14.test(data6)) {
           const err21 = {
             instancePath: instancePath + '/note',
             schemaPath: '#/properties/note/pattern',
@@ -2531,7 +2762,7 @@ function validate14(
     if (data.label !== void 0) {
       let data7 = data.label;
       if (typeof data7 === 'string') {
-        if (!pattern13.test(data7)) {
+        if (!pattern15.test(data7)) {
           const err23 = {
             instancePath: instancePath + '/label',
             schemaPath: '#/properties/label/pattern',
@@ -2565,7 +2796,7 @@ function validate14(
     if (data.observerWallet !== void 0) {
       let data8 = data.observerWallet;
       if (typeof data8 === 'string') {
-        if (!pattern11.test(data8)) {
+        if (!pattern13.test(data8)) {
           const err25 = {
             instancePath: instancePath + '/observerWallet',
             schemaPath: '#/properties/observerWallet/pattern',
@@ -2724,7 +2955,7 @@ function validate14(
         for (let i0 = 0; i0 < len0; i0++) {
           let data13 = data12[i0];
           if (typeof data13 === 'string') {
-            if (!pattern15.test(data13)) {
+            if (!pattern8.test(data13)) {
               const err34 = {
                 instancePath: instancePath + '/allowedDelegates/' + i0,
                 schemaPath: '#/properties/allowedDelegates/items/pattern',
@@ -2862,11 +3093,11 @@ function validate14(
     }
     errors++;
   }
-  validate14.errors = vErrors;
+  validate15.errors = vErrors;
   return errors === 0;
 }
-var validateTransferToken = validate15;
-var schema16 = {
+var validateTransferToken = validate16;
+var schema17 = {
   $id: '#/definitions/transferTokens',
   type: 'object',
   properties: {
@@ -2878,7 +3109,7 @@ var schema16 = {
   required: ['target', 'qty'],
   additionalProperties: false,
 };
-function validate15(
+function validate16(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -2975,7 +3206,7 @@ function validate15(
     if (data.target !== void 0) {
       let data1 = data.target;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err5 = {
             instancePath: instancePath + '/target',
             schemaPath: '#/properties/target/pattern',
@@ -3062,7 +3293,7 @@ function validate15(
           instancePath: instancePath + '/denomination',
           schemaPath: '#/properties/denomination/enum',
           keyword: 'enum',
-          params: { allowedValues: schema16.properties.denomination.enum },
+          params: { allowedValues: schema17.properties.denomination.enum },
           message: 'must be equal to one of the allowed values',
         };
         if (vErrors === null) {
@@ -3088,11 +3319,11 @@ function validate15(
     }
     errors++;
   }
-  validate15.errors = vErrors;
+  validate16.errors = vErrors;
   return errors === 0;
 }
-var validateTransferTokensLocked = validate16;
-function validate16(
+var validateTransferTokensLocked = validate17;
+function validate17(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -3204,7 +3435,7 @@ function validate16(
     if (data.target !== void 0) {
       let data1 = data.target;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err6 = {
             instancePath: instancePath + '/target',
             schemaPath: '#/properties/target/pattern',
@@ -3333,11 +3564,11 @@ function validate16(
     }
     errors++;
   }
-  validate16.errors = vErrors;
+  validate17.errors = vErrors;
   return errors === 0;
 }
-var validateCreateVault = validate17;
-function validate17(
+var validateCreateVault = validate18;
+function validate18(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -3522,11 +3753,11 @@ function validate17(
     }
     errors++;
   }
-  validate17.errors = vErrors;
+  validate18.errors = vErrors;
   return errors === 0;
 }
-var validateExtendVault = validate18;
-function validate18(
+var validateExtendVault = validate19;
+function validate19(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -3616,7 +3847,7 @@ function validate18(
     if (data.id !== void 0) {
       let data1 = data.id;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err5 = {
             instancePath: instancePath + '/id',
             schemaPath: '#/properties/id/pattern',
@@ -3711,11 +3942,11 @@ function validate18(
     }
     errors++;
   }
-  validate18.errors = vErrors;
+  validate19.errors = vErrors;
   return errors === 0;
 }
-var validateIncreaseVault = validate19;
-function validate19(
+var validateIncreaseVault = validate20;
+function validate20(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -3805,7 +4036,7 @@ function validate19(
     if (data.id !== void 0) {
       let data1 = data.id;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err5 = {
             instancePath: instancePath + '/id',
             schemaPath: '#/properties/id/pattern',
@@ -3885,11 +4116,11 @@ function validate19(
     }
     errors++;
   }
-  validate19.errors = vErrors;
+  validate20.errors = vErrors;
   return errors === 0;
 }
-var validateSaveObservations = validate20;
-function validate20(
+var validateSaveObservations = validate21;
+function validate21(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -3985,7 +4216,7 @@ function validate20(
     if (data.observerReportTxId !== void 0) {
       let data1 = data.observerReportTxId;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err5 = {
             instancePath: instancePath + '/observerReportTxId',
             schemaPath: '#/properties/observerReportTxId/pattern',
@@ -4038,7 +4269,7 @@ function validate20(
         for (let i0 = 0; i0 < len0; i0++) {
           let data3 = data2[i0];
           if (typeof data3 === 'string') {
-            if (!pattern15.test(data3)) {
+            if (!pattern8.test(data3)) {
               const err8 = {
                 instancePath: instancePath + '/failedGateways/' + i0,
                 schemaPath: '#/properties/failedGateways/items/pattern',
@@ -4134,11 +4365,11 @@ function validate20(
     }
     errors++;
   }
-  validate20.errors = vErrors;
+  validate21.errors = vErrors;
   return errors === 0;
 }
-var validateUpdateGateway = validate21;
-var schema22 = {
+var validateUpdateGateway = validate22;
+var schema23 = {
   $id: '#/definitions/updateGateway',
   type: 'object',
   properties: {
@@ -4161,8 +4392,8 @@ var schema22 = {
   required: [],
   additionalProperties: false,
 };
-var pattern27 = new RegExp('^(|[a-zA-Z0-9_-]{43})$', 'u');
-function validate21(
+var pattern29 = new RegExp('^(|[a-zA-Z0-9_-]{43})$', 'u');
+function validate22(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -4170,7 +4401,7 @@ function validate21(
   let errors = 0;
   if (data && typeof data == 'object' && !Array.isArray(data)) {
     for (const key0 in data) {
-      if (!func2.call(schema22.properties, key0)) {
+      if (!func2.call(schema23.properties, key0)) {
         const err0 = {
           instancePath,
           schemaPath: '#/additionalProperties',
@@ -4222,7 +4453,7 @@ function validate21(
     if (data.fqdn !== void 0) {
       let data1 = data.fqdn;
       if (typeof data1 === 'string') {
-        if (!pattern9.test(data1)) {
+        if (!pattern11.test(data1)) {
           const err3 = {
             instancePath: instancePath + '/fqdn',
             schemaPath: '#/properties/fqdn/pattern',
@@ -4308,7 +4539,7 @@ function validate21(
     if (data.protocol !== void 0) {
       let data3 = data.protocol;
       if (typeof data3 === 'string') {
-        if (!pattern10.test(data3)) {
+        if (!pattern12.test(data3)) {
           const err8 = {
             instancePath: instancePath + '/protocol',
             schemaPath: '#/properties/protocol/pattern',
@@ -4342,7 +4573,7 @@ function validate21(
     if (data.properties !== void 0) {
       let data4 = data.properties;
       if (typeof data4 === 'string') {
-        if (!pattern11.test(data4)) {
+        if (!pattern13.test(data4)) {
           const err10 = {
             instancePath: instancePath + '/properties',
             schemaPath: '#/properties/properties/pattern',
@@ -4376,7 +4607,7 @@ function validate21(
     if (data.note !== void 0) {
       let data5 = data.note;
       if (typeof data5 === 'string') {
-        if (!pattern12.test(data5)) {
+        if (!pattern14.test(data5)) {
           const err12 = {
             instancePath: instancePath + '/note',
             schemaPath: '#/properties/note/pattern',
@@ -4410,7 +4641,7 @@ function validate21(
     if (data.label !== void 0) {
       let data6 = data.label;
       if (typeof data6 === 'string') {
-        if (!pattern13.test(data6)) {
+        if (!pattern15.test(data6)) {
           const err14 = {
             instancePath: instancePath + '/label',
             schemaPath: '#/properties/label/pattern',
@@ -4444,7 +4675,7 @@ function validate21(
     if (data.observerWallet !== void 0) {
       let data7 = data.observerWallet;
       if (typeof data7 === 'string') {
-        if (!pattern27.test(data7)) {
+        if (!pattern29.test(data7)) {
           const err16 = {
             instancePath: instancePath + '/observerWallet',
             schemaPath: '#/properties/observerWallet/pattern',
@@ -4623,11 +4854,11 @@ function validate21(
     }
     errors++;
   }
-  validate21.errors = vErrors;
+  validate22.errors = vErrors;
   return errors === 0;
 }
-var validateDelegateStake = validate22;
-function validate22(
+var validateDelegateStake = validate23;
+function validate23(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -4717,189 +4948,7 @@ function validate22(
     if (data.target !== void 0) {
       let data1 = data.target;
       if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
-          const err5 = {
-            instancePath: instancePath + '/target',
-            schemaPath: '#/properties/target/pattern',
-            keyword: 'pattern',
-            params: { pattern: '^[a-zA-Z0-9-_]{43}$' },
-            message: 'must match pattern "^[a-zA-Z0-9-_]{43}$"',
-          };
-          if (vErrors === null) {
-            vErrors = [err5];
-          } else {
-            vErrors.push(err5);
-          }
-          errors++;
-        }
-      } else {
-        const err6 = {
-          instancePath: instancePath + '/target',
-          schemaPath: '#/properties/target/type',
-          keyword: 'type',
-          params: { type: 'string' },
-          message: 'must be string',
-        };
-        if (vErrors === null) {
-          vErrors = [err6];
-        } else {
-          vErrors.push(err6);
-        }
-        errors++;
-      }
-    }
-    if (data.qty !== void 0) {
-      let data2 = data.qty;
-      if (
-        !(
-          typeof data2 == 'number' &&
-          !(data2 % 1) &&
-          !isNaN(data2) &&
-          isFinite(data2)
-        )
-      ) {
-        const err7 = {
-          instancePath: instancePath + '/qty',
-          schemaPath: '#/properties/qty/type',
-          keyword: 'type',
-          params: { type: 'integer' },
-          message: 'must be integer',
-        };
-        if (vErrors === null) {
-          vErrors = [err7];
-        } else {
-          vErrors.push(err7);
-        }
-        errors++;
-      }
-      if (typeof data2 == 'number' && isFinite(data2)) {
-        if (data2 < 1 || isNaN(data2)) {
-          const err8 = {
-            instancePath: instancePath + '/qty',
-            schemaPath: '#/properties/qty/minimum',
-            keyword: 'minimum',
-            params: { comparison: '>=', limit: 1 },
-            message: 'must be >= 1',
-          };
-          if (vErrors === null) {
-            vErrors = [err8];
-          } else {
-            vErrors.push(err8);
-          }
-          errors++;
-        }
-      }
-    }
-  } else {
-    const err9 = {
-      instancePath,
-      schemaPath: '#/type',
-      keyword: 'type',
-      params: { type: 'object' },
-      message: 'must be object',
-    };
-    if (vErrors === null) {
-      vErrors = [err9];
-    } else {
-      vErrors.push(err9);
-    }
-    errors++;
-  }
-  validate22.errors = vErrors;
-  return errors === 0;
-}
-var validateDecreaseDelegateStake = validate23;
-function validate23(
-  data,
-  { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
-) {
-  let vErrors = null;
-  let errors = 0;
-  if (data && typeof data == 'object' && !Array.isArray(data)) {
-    if (data.target === void 0) {
-      const err0 = {
-        instancePath,
-        schemaPath: '#/required',
-        keyword: 'required',
-        params: { missingProperty: 'target' },
-        message: "must have required property 'target'",
-      };
-      if (vErrors === null) {
-        vErrors = [err0];
-      } else {
-        vErrors.push(err0);
-      }
-      errors++;
-    }
-    if (data.qty === void 0) {
-      const err1 = {
-        instancePath,
-        schemaPath: '#/required',
-        keyword: 'required',
-        params: { missingProperty: 'qty' },
-        message: "must have required property 'qty'",
-      };
-      if (vErrors === null) {
-        vErrors = [err1];
-      } else {
-        vErrors.push(err1);
-      }
-      errors++;
-    }
-    for (const key0 in data) {
-      if (!(key0 === 'function' || key0 === 'target' || key0 === 'qty')) {
-        const err2 = {
-          instancePath,
-          schemaPath: '#/additionalProperties',
-          keyword: 'additionalProperties',
-          params: { additionalProperty: key0 },
-          message: 'must NOT have additional properties',
-        };
-        if (vErrors === null) {
-          vErrors = [err2];
-        } else {
-          vErrors.push(err2);
-        }
-        errors++;
-      }
-    }
-    if (data.function !== void 0) {
-      let data0 = data.function;
-      if (typeof data0 !== 'string') {
-        const err3 = {
-          instancePath: instancePath + '/function',
-          schemaPath: '#/properties/function/type',
-          keyword: 'type',
-          params: { type: 'string' },
-          message: 'must be string',
-        };
-        if (vErrors === null) {
-          vErrors = [err3];
-        } else {
-          vErrors.push(err3);
-        }
-        errors++;
-      }
-      if ('decreaseDelegateStake' !== data0) {
-        const err4 = {
-          instancePath: instancePath + '/function',
-          schemaPath: '#/properties/function/const',
-          keyword: 'const',
-          params: { allowedValue: 'decreaseDelegateStake' },
-          message: 'must be equal to constant',
-        };
-        if (vErrors === null) {
-          vErrors = [err4];
-        } else {
-          vErrors.push(err4);
-        }
-        errors++;
-      }
-    }
-    if (data.target !== void 0) {
-      let data1 = data.target;
-      if (typeof data1 === 'string') {
-        if (!pattern15.test(data1)) {
+        if (!pattern8.test(data1)) {
           const err5 = {
             instancePath: instancePath + '/target',
             schemaPath: '#/properties/target/pattern',
@@ -4990,8 +5039,190 @@ function validate23(
   validate23.errors = vErrors;
   return errors === 0;
 }
-var validateDecreaseOperatorStake = validate24;
+var validateDecreaseDelegateStake = validate24;
 function validate24(
+  data,
+  { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
+) {
+  let vErrors = null;
+  let errors = 0;
+  if (data && typeof data == 'object' && !Array.isArray(data)) {
+    if (data.target === void 0) {
+      const err0 = {
+        instancePath,
+        schemaPath: '#/required',
+        keyword: 'required',
+        params: { missingProperty: 'target' },
+        message: "must have required property 'target'",
+      };
+      if (vErrors === null) {
+        vErrors = [err0];
+      } else {
+        vErrors.push(err0);
+      }
+      errors++;
+    }
+    if (data.qty === void 0) {
+      const err1 = {
+        instancePath,
+        schemaPath: '#/required',
+        keyword: 'required',
+        params: { missingProperty: 'qty' },
+        message: "must have required property 'qty'",
+      };
+      if (vErrors === null) {
+        vErrors = [err1];
+      } else {
+        vErrors.push(err1);
+      }
+      errors++;
+    }
+    for (const key0 in data) {
+      if (!(key0 === 'function' || key0 === 'target' || key0 === 'qty')) {
+        const err2 = {
+          instancePath,
+          schemaPath: '#/additionalProperties',
+          keyword: 'additionalProperties',
+          params: { additionalProperty: key0 },
+          message: 'must NOT have additional properties',
+        };
+        if (vErrors === null) {
+          vErrors = [err2];
+        } else {
+          vErrors.push(err2);
+        }
+        errors++;
+      }
+    }
+    if (data.function !== void 0) {
+      let data0 = data.function;
+      if (typeof data0 !== 'string') {
+        const err3 = {
+          instancePath: instancePath + '/function',
+          schemaPath: '#/properties/function/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err3];
+        } else {
+          vErrors.push(err3);
+        }
+        errors++;
+      }
+      if ('decreaseDelegateStake' !== data0) {
+        const err4 = {
+          instancePath: instancePath + '/function',
+          schemaPath: '#/properties/function/const',
+          keyword: 'const',
+          params: { allowedValue: 'decreaseDelegateStake' },
+          message: 'must be equal to constant',
+        };
+        if (vErrors === null) {
+          vErrors = [err4];
+        } else {
+          vErrors.push(err4);
+        }
+        errors++;
+      }
+    }
+    if (data.target !== void 0) {
+      let data1 = data.target;
+      if (typeof data1 === 'string') {
+        if (!pattern8.test(data1)) {
+          const err5 = {
+            instancePath: instancePath + '/target',
+            schemaPath: '#/properties/target/pattern',
+            keyword: 'pattern',
+            params: { pattern: '^[a-zA-Z0-9-_]{43}$' },
+            message: 'must match pattern "^[a-zA-Z0-9-_]{43}$"',
+          };
+          if (vErrors === null) {
+            vErrors = [err5];
+          } else {
+            vErrors.push(err5);
+          }
+          errors++;
+        }
+      } else {
+        const err6 = {
+          instancePath: instancePath + '/target',
+          schemaPath: '#/properties/target/type',
+          keyword: 'type',
+          params: { type: 'string' },
+          message: 'must be string',
+        };
+        if (vErrors === null) {
+          vErrors = [err6];
+        } else {
+          vErrors.push(err6);
+        }
+        errors++;
+      }
+    }
+    if (data.qty !== void 0) {
+      let data2 = data.qty;
+      if (
+        !(
+          typeof data2 == 'number' &&
+          !(data2 % 1) &&
+          !isNaN(data2) &&
+          isFinite(data2)
+        )
+      ) {
+        const err7 = {
+          instancePath: instancePath + '/qty',
+          schemaPath: '#/properties/qty/type',
+          keyword: 'type',
+          params: { type: 'integer' },
+          message: 'must be integer',
+        };
+        if (vErrors === null) {
+          vErrors = [err7];
+        } else {
+          vErrors.push(err7);
+        }
+        errors++;
+      }
+      if (typeof data2 == 'number' && isFinite(data2)) {
+        if (data2 < 1 || isNaN(data2)) {
+          const err8 = {
+            instancePath: instancePath + '/qty',
+            schemaPath: '#/properties/qty/minimum',
+            keyword: 'minimum',
+            params: { comparison: '>=', limit: 1 },
+            message: 'must be >= 1',
+          };
+          if (vErrors === null) {
+            vErrors = [err8];
+          } else {
+            vErrors.push(err8);
+          }
+          errors++;
+        }
+      }
+    }
+  } else {
+    const err9 = {
+      instancePath,
+      schemaPath: '#/type',
+      keyword: 'type',
+      params: { type: 'object' },
+      message: 'must be object',
+    };
+    if (vErrors === null) {
+      vErrors = [err9];
+    } else {
+      vErrors.push(err9);
+    }
+    errors++;
+  }
+  validate24.errors = vErrors;
+  return errors === 0;
+}
+var validateDecreaseOperatorStake = validate25;
+function validate25(
   data,
   { instancePath = '', parentData, parentDataProperty, rootData = data } = {},
 ) {
@@ -5120,7 +5351,7 @@ function validate24(
     }
     errors++;
   }
-  validate24.errors = vErrors;
+  validate25.errors = vErrors;
   return errors === 0;
 }
 
@@ -5144,7 +5375,7 @@ var AuctionBid = class {
       contractTxId = RESERVED_ATOMIC_TX_ID,
     } = input;
     this.name = name.trim().toLowerCase();
-    this.qty = qty ? new IOToken(qty).toMIO() : void 0;
+    this.qty = qty ? new mIOToken(qty) : void 0;
     this.type = type;
     this.contractTxId =
       contractTxId === RESERVED_ATOMIC_TX_ID
@@ -5513,7 +5744,7 @@ function assertRecordCanBeExtended({ record, currentBlockTimestamp, years }) {
     })
   ) {
     throw new ContractError(
-      `This name has expired and must renewed before its undername support can be extended.`,
+      `This name has expired and must renewed before it can be extended.`,
     );
   }
   if (!isLeaseRecord(record)) {
@@ -5633,7 +5864,8 @@ function getPriceForInteraction(state, { caller, input }) {
         });
       }
       assertAvailableRecord({
-        caller,
+        caller: void 0,
+        // stub the caller so we still get the price
         name,
         records: state.records,
         reserved: state.reserved,
@@ -5655,7 +5887,8 @@ function getPriceForInteraction(state, { caller, input }) {
       const { name, type } = new AuctionBid(parsedInput);
       const auction = state.auctions[name];
       assertAvailableRecord({
-        caller,
+        caller: void 0,
+        // stub the caller so we still get the price
         name,
         records: state.records,
         reserved: state.reserved,
@@ -5759,6 +5992,43 @@ var getRecord = async (state, { input: { name } }) => {
   };
 };
 
+// src/actions/write/createReservedName.ts
+var ReservedName = class {
+  name;
+  target;
+  endTimestamp;
+  constructor(input) {
+    if (!validateCreateReservedName(input)) {
+      throw new ContractError(
+        getInvalidAjvMessage(
+          validateCreateReservedName,
+          input,
+          'createReservedName',
+        ),
+      );
+    }
+    const { name, target, endTimestamp } = input;
+    this.endTimestamp = endTimestamp;
+    this.target = target;
+    this.name = name;
+  }
+};
+var createReservedName = async (state, { caller, input }) => {
+  const owner = state.owner;
+  if (caller !== owner) {
+    throw new ContractError(NON_CONTRACT_OWNER_MESSAGE);
+  }
+  const reservedName = new ReservedName(input);
+  if (reservedName.endTimestamp < +SmartWeave.block.timestamp) {
+    throw new ContractError('End timestamp is in the past');
+  }
+  state.reserved[reservedName.name] = {
+    target: reservedName.target,
+    endTimestamp: reservedName.endTimestamp,
+  };
+  return { state };
+};
+
 // src/vaults.ts
 function safeCreateVault({
   balances,
@@ -5837,7 +6107,7 @@ var CreateVault = class {
       );
     }
     const { qty, lockLength } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.lockLength = new BlockHeight(lockLength);
   }
 };
@@ -5994,7 +6264,7 @@ var DecreaseOperatorStake = class {
       );
     }
     const { qty } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var decreaseOperatorStake = async (state, { caller, input }) => {
@@ -6012,7 +6282,7 @@ var decreaseOperatorStake = async (state, { caller, input }) => {
   const maxWithdraw = existingStake.minus(MIN_OPERATOR_STAKE);
   if (qty.isGreaterThan(maxWithdraw)) {
     throw new ContractError(
-      `Resulting stake is not enough maintain the minimum operator stake of ${MIN_OPERATOR_STAKE.toIO().valueOf()} IO`,
+      `Resulting stake is not enough maintain the minimum operator stake of ${MIN_OPERATOR_STAKE.valueOf()} mIO`,
     );
   }
   const interactionHeight = new BlockHeight(+SmartWeave.block.height);
@@ -6046,7 +6316,7 @@ var DelegateStake = class {
     }
     const { target, qty } = input;
     this.target = target;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var delegateStake = async (state, { caller, input }) => {
@@ -6079,15 +6349,12 @@ var evolveState = async (state, { caller }) => {
   if (caller !== owner) {
     throw new ContractError(NON_CONTRACT_OWNER_MESSAGE);
   }
-  for (const [address, gateway] of Object.entries(state.gateways)) {
-    if (gateway.status === 'leaving') {
-      const currentEndFor90Days = gateway.end;
-      const correctEndFor21Days =
-        currentEndFor90Days - 69 * BLOCKS_PER_DAY + 4 * BLOCKS_PER_DAY;
-      state.gateways[address].end = correctEndFor21Days;
-      state.gateways[address].vaults[address].end = correctEndFor21Days;
-    }
-  }
+  const updatedFees = Object.keys(state.fees).reduce((acc, key) => {
+    const existingFee = state.fees[key];
+    acc[key] = existingFee / 1e6;
+    return acc;
+  }, {});
+  state.fees = updatedFees;
   return { state };
 };
 
@@ -6119,7 +6386,7 @@ var increaseOperatorStake = async (state, { caller, input }) => {
   if (isNaN(input.qty) || input.qty <= 0) {
     throw new ContractError(INVALID_INPUT_MESSAGE);
   }
-  const qty = new IOToken(input.qty).toMIO();
+  const qty = new mIOToken(input.qty);
   if (!(caller in gateways)) {
     throw new ContractError(INVALID_GATEWAY_EXISTS_MESSAGE);
   }
@@ -6148,7 +6415,7 @@ var IncreaseVault = class {
     }
     const { id, qty } = input;
     this.id = id;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var increaseVault = async (state, { caller, input }) => {
@@ -6198,7 +6465,7 @@ var JoinNetwork = class {
       delegateRewardShareRatio = 0,
       minDelegatedStake = MIN_DELEGATED_STAKE,
     } = input;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.label = label;
     this.port = port;
     this.protocol = protocol;
@@ -7219,10 +7486,9 @@ var TransferToken = class {
         getInvalidAjvMessage(validateTransferToken, input, 'transferToken'),
       );
     }
-    const { target, qty, denomination = 'mIO' } = input;
+    const { target, qty } = input;
     this.target = target;
-    this.qty =
-      denomination === 'mIO' ? new mIOToken(qty) : new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
   }
 };
 var transferTokens = async (state, { caller, input }) => {
@@ -7273,7 +7539,7 @@ var GatewaySettings = class {
         delegateRewardShareRatio,
       }),
       ...(minDelegatedStake !== void 0 && {
-        minDelegatedStake: new IOToken(minDelegatedStake).toMIO(),
+        minDelegatedStake: new mIOToken(minDelegatedStake),
       }),
     };
     this.observerWallet = observerWallet;
@@ -7364,7 +7630,7 @@ var TransferTokensLocked = class {
     }
     const { target, qty, lockLength } = input;
     this.target = target;
-    this.qty = new IOToken(qty).toMIO();
+    this.qty = new mIOToken(qty);
     this.lockLength = new BlockHeight(lockLength);
   }
 };
@@ -7398,6 +7664,8 @@ async function handle(state, action) {
   }
   const { state: tickedState } = await tick(state);
   switch (input.function) {
+    case 'createReservedName':
+      return createReservedName(tickedState, action);
     case 'gateway':
       return getGateway(tickedState, action);
     case 'gateways':

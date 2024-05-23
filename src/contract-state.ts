@@ -44,10 +44,11 @@ export const AR_IO_CONTRACT_FUNCTIONS = {
   PRICE_FOR_INTERACTION: 'priceForInteraction',
   EPOCH: 'epoch',
 };
+
 // Gateways
 
 export type Gateway = {
-  delegates: Record<string, unknown>;
+  delegates: Record<WalletAddress, GatewayDelegate>;
   end: number;
   observerWallet: WalletAddress;
   operatorStake: number;
@@ -60,6 +61,12 @@ export type Gateway = {
   weights: ObserverWeights;
 };
 
+export type GatewayDelegate = {
+  delegatedStake: number;
+  start: number;
+  vaults: Record<WalletAddress, VaultData>;
+};
+
 export type GatewayStakingSettings = {
   allowDelegatedStaking: boolean;
   delegateRewardShareRatio: number;
@@ -69,9 +76,8 @@ export type GatewayStakingSettings = {
 
 export type GatewayMetadata = {
   label: string;
-  note?: string;
-  properties?: string;
-  observerWallet?: WalletAddress;
+  note: string;
+  properties: string;
 };
 
 export type GatewayConnectionSettings = {

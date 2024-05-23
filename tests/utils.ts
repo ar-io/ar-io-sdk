@@ -4,7 +4,9 @@ import * as fs from 'fs';
 import path from 'path';
 import { ContractDeploy, SourceType, Warp } from 'warp-contracts';
 
-import { WeightedObserver } from '../src/contract-state';
+import { WeightedObserver } from '../src/contract-state.js';
+
+const oneYearSeconds = 60 * 60 * 24 * 365;
 
 export async function deployANTContract({
   jwk,
@@ -28,7 +30,7 @@ export async function deployANTContract({
       'utf8',
     ),
   );
-  return await warp.deploy({
+  return warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
@@ -49,11 +51,14 @@ export async function deployArIOContract({
   jwk,
   address,
   warp,
+  arweave,
 }: {
   jwk: JWKInterface;
   address: string;
   warp: Warp;
+  arweave: Arweave;
 }): Promise<ContractDeploy> {
+  const currentBlockTimestamp = (await arweave.blocks.getCurrent()).timestamp;
   const src = fs.readFileSync(
     path.join(__dirname, '/integration/arlocal/ar-io-contract/index.js'),
     'utf8',
@@ -82,11 +87,39 @@ export async function deployArIOContract({
     ...prescribedObservers,
     newPrescribedObserver,
   ];
-  return await warp.deploy({
+
+  return warp.deploy({
     wallet: jwk,
     src: src,
     initState: JSON.stringify({
       ...state,
+      records: {
+        ...state.records,
+        'test-record': {
+          contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
+          purchasePrice: 0,
+          startTimestamp: currentBlockTimestamp,
+          type: 'lease',
+          undernames: 10,
+        },
+        'test-extend': {
+          contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
+          purchasePrice: 0,
+          startTimestamp: currentBlockTimestamp,
+          type: 'lease',
+          undernames: 10,
+        },
+        'test-undername': {
+          contractTxId: 'I-cxQhfh0Zb9UqQNizC9PiLC41KpUeA9hjiVV02rQRw',
+          endTimestamp: currentBlockTimestamp + oneYearSeconds,
+          purchasePrice: 0,
+          startTimestamp: currentBlockTimestamp,
+          type: 'lease',
+          undernames: 10,
+        },
+      },
       owner: address,
       balances: { [address]: 100_000_000_000_000 },
       prescribedObservers: {

@@ -36,6 +36,7 @@ import {
   RegistrationType,
   WeightedObserver,
 } from './contract-state.js';
+import { mIOToken } from './token.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -187,6 +188,7 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: JoinNetworkParams): Promise<WriteInteractionResult>;
   updateGatewaySettings({
     allowDelegatedStaking,
@@ -199,32 +201,52 @@ export interface ArIOWriteContract {
     properties,
     protocol,
     autoStake,
+    observerWallet,
   }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
   increaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   decreaseOperatorStake(params: {
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   increaseDelegateStake(params: {
     target: WalletAddress;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   decreaseDelegateStake(params: {
     target: WalletAddress;
-    qty: number;
+    qty: number | mIOToken;
   }): Promise<WriteInteractionResult>;
   saveObservations(params: {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<WriteInteractionResult>;
+  extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult>;
+  increaseUndernameLimit(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult>;
 }
 
 export type WriteInteractionResult = Transaction | DataItem;
 
-export type JoinNetworkParams = GatewayConnectionSettings &
-  GatewayStakingSettings &
-  GatewayMetadata & { qty: number };
+// Helper type to overwrite properties of A with B
+type Overwrite<T, U> = {
+  [K in keyof T]: K extends keyof U ? U[K] : T[K];
+};
+
+export type JoinNetworkParams = Overwrite<
+  GatewayConnectionSettings & GatewayStakingSettings & GatewayMetadata,
+  {
+    minDelegatedStake: number | mIOToken; // TODO: this is for backwards compatibility
+  }
+> & {
+  qty: number | mIOToken; // TODO: this is for backwards compatibility
+  observerWallet?: WalletAddress;
+};
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
@@ -232,17 +254,20 @@ export type UpdateGatewaySettingsParamsBase = {
   delegateRewardShareRatio?: number;
   fqdn?: string;
   label?: string;
-  minDelegatedStake?: number;
+  minDelegatedStake?: number | mIOToken; // TODO: this is for backwards compatibility - eventually we'll drop number
   note?: string;
   port?: number;
   properties?: string;
   protocol?: AllowedProtocols;
   autoStake?: boolean;
+  observerWallet?: WalletAddress;
 };
 
 // Utility type to require at least one of the fields
-export type AtLeastOne<T, U = { [K in keyof T]-?: T[K] }> = Partial<U> &
-  { [K in keyof U]: Required<Pick<U, K>> }[keyof U];
+export type AtLeastOne<
+  T,
+  U = { [K in keyof T]-?: Record<K, T[K]> },
+> = Partial<T> & U[keyof U];
 
 // Define the type used for function parameters
 export type UpdateGatewaySettingsParams =

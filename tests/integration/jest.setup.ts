@@ -22,7 +22,7 @@ async function jestGlobalSetup() {
 
   // deploy example any contract
   const [arIOContractDeploy, antContractDeploy] = await Promise.all([
-    deployArIOContract({ jwk: wallet, address, warp }),
+    deployArIOContract({ jwk: wallet, address, warp, arweave }),
     deployANTContract({ jwk: wallet, address, warp }),
   ]);
 
