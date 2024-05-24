@@ -29,7 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node_version: [18.x, 20.x]
+        # pinning versions due to https://github.com/nodejs/node/issues/51165
+        node_version: [18.20.3, 20.8.1]
     steps:
       - uses: actions/checkout@v4
 
