@@ -1,7 +1,9 @@
-FROM node:22-alpine as build
+FROM node:18-alpine as build
 WORKDIR /app
 
 COPY . .
 
+RUN apk add --no-cache curl
+
 RUN yarn clean && yarn install
-RUN yarn test:integration:local
+CMD yarn test:integration:local

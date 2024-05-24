@@ -1,6 +1,11 @@
 services:
   arlocal:
     image: textury/arlocal:v1.1.66
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:1984']
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - '1984:1984'
 

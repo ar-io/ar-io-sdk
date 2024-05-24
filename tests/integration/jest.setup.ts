@@ -10,12 +10,15 @@ import {
 // start arlocal
 async function jestGlobalSetup() {
   console.log('Setting up Warp, Arlocal and Arweave clients!');
-  // create directories used for tests
 
+  // create directories used for tests
   createDirectories();
 
   // create a wallet and add some funds
-  const { wallet, address } = await createLocalWallet(arweave);
+  const { wallet, address } = await createLocalWallet(arweave).catch((e) => {
+    console.error('Error creating wallet', e);
+    process.exit(1);
+  });
 
   // Used in tests
   process.env.PRIMARY_WALLET_ADDRESS = address;

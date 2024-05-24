@@ -69,7 +69,7 @@
     "format:fix": "prettier --write .",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "yarn clean && jest --config=jest.config.mjs",
-    "test:integration": "yarn clean && docker compose up -d && jest --config=jest.integration.config.mjs --runInBand && docker compose down -v",
+    "test:integration": "./run-tests.sh",
     "test:integration:local": "yarn clean && jest --config=jest.integration.config.mjs --runInBand",
     "prepare": "husky install",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
@@ -86,10 +86,11 @@
     "@semantic-release/npm": "^11.0.3",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.4.8",
+    "@types/node": "^20.12.12",
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
+    "dotenv": "^16.4.5",
     "esbuild": "^0.19.2",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "eslint": "^8.47.0",
@@ -119,11 +120,9 @@
     "arweave": "1.14.4",
     "axios": "1.4.0",
     "bunyan": "^1.8.15",
+    "dotenv-cli": "^7.4.2",
     "warp-arbundles": "^1.0.4",
     "warp-contracts": "1.4.45"
-  },
-  "resolutions": {
-    "arweave": "1.15.1"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [

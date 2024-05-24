@@ -22,4 +22,4 @@ export const evaluateToBlockHeight = 1;
 export const evaluateToSortKey =
   '000000000000,0000000000000,0000000000000000000000000000000000000000000000000000000000000000';
 export const localCacheUrl =
-  process.env.REMOTE_CACHE_URL || 'http://127.0.0.1:3000';
+  process.env.REMOTE_CACHE_URL || 'http://arns-service:3000';
