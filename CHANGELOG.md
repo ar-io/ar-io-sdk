@@ -1,3 +1,10 @@
+## [1.0.8-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.1...v1.0.8-alpha.2) (2024-05-24)
+
+
+### Bug Fixes
+
+* **exports:** fix web exports so esm and cjs do not return the bundle ([8cff845](https://github.com/ar-io/ar-io-sdk/commit/8cff845f6c0db7a6beac25724b4d23f60a318ae2))
+
 ## [1.0.8-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8-alpha.1) (2024-05-24)
 
 
