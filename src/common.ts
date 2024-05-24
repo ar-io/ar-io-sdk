@@ -44,6 +44,12 @@ export type SortKey = string;
 export type WalletAddress = string;
 export type TransactionId = string;
 
+export type DataProtocolTransaction = {
+  id: string;
+  tags: { name: string; value: string }[];
+  data: number;
+};
+
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
@@ -84,6 +90,8 @@ export interface BaseContract<T> {
 }
 
 export interface ReadContract {
+  // Expectation of this method is to return a list of the contracts owned by the user on the specific protocol (eg smartweave)
+  getContracts(params: { address: string }): Promise<DataProtocolTransaction[]>;
   readInteraction<Input, State>({
     functionName,
     inputs,
