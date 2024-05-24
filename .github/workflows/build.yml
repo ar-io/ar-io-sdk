@@ -29,8 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # related issue in node20 causing test setup failures: https://github.com/nodejs/undici/issues/1923
-        node_version: [18.x]
+        # pinning versions due to https://github.com/nodejs/undici/issues/1923
+        node_version: [18.20.3, 20.7.0]
     steps:
       - uses: actions/checkout@v4
 
