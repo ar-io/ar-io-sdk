@@ -1,16 +1,8 @@
-version: '3.8'
-
 services:
   arlocal:
     image: textury/arlocal:v1.1.66
     ports:
       - '1984:1984'
-
-  arlocal-setup:
-    image: curlimages/curl:latest
-    command: /bin/sh -c "while ! curl -f http://arlocal:1984/ >/dev/null 2>&1; do sleep 1; done; curl http://arlocal:1984/mine"
-    depends_on:
-      - arlocal
 
   arns-service:
     image: ghcr.io/ar-io/arns-service:latest
@@ -30,4 +22,3 @@ services:
       retries: 5
     depends_on:
       - arlocal
-      - arlocal-setup

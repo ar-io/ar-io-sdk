@@ -4,6 +4,7 @@ import {
   createLocalWallet,
   deployANTContract,
   deployArIOContract,
+  mineBlocks,
 } from '../utils';
 
 // start arlocal
@@ -25,6 +26,9 @@ async function jestGlobalSetup() {
     deployArIOContract({ jwk: wallet, address, warp, arweave }),
     deployANTContract({ jwk: wallet, address, warp }),
   ]);
+
+  // mine a block to ensure the contracts are deployed
+  await mineBlocks({ arweave, blocks: 1 });
 
   // set in the environment
   process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID =
