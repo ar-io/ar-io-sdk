@@ -70,6 +70,7 @@
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "yarn clean && jest --config=jest.config.mjs",
     "test:integration": "yarn clean && docker compose up -d && jest --config=jest.integration.config.mjs --runInBand && docker compose down -v",
+    "test:integration:local": "yarn clean && jest --config=jest.integration.config.mjs --runInBand",
     "prepare": "husky install",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
     "example:cjs": "cd examples/cjs && yarn && node index.cjs",
@@ -115,7 +116,7 @@
   },
   "dependencies": {
     "arbundles": "0.11.0",
-    "arweave": "1.15.1",
+    "arweave": "1.14.4",
     "axios": "1.4.0",
     "bunyan": "^1.8.15",
     "warp-arbundles": "^1.0.4",
