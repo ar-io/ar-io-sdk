@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import Arweave from 'arweave';
-import { GQLNodeInterface } from 'warp-contracts/web';
+import { GQLNodeInterface } from 'warp-contracts';
 
 import { EvaluationTimeoutError } from '../../common/error.js';
 import { DataProtocolTransaction } from '../../types.js';
