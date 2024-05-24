@@ -6,6 +6,7 @@ const bundle = async () => {
   await build({
     entryPoints: ['./src/web/index.ts'],
     bundle: true,
+    minify: true,
     platform: 'browser',
     target: ['esnext'],
     format: 'esm',
