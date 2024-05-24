@@ -37,3 +37,5 @@ services:
       - GATEWAY_HOST=arlocal
       - GATEWAY_PORT=1984
       - GATEWAY_PROTOCOL=http
+    volumes:
+      - .:/app
