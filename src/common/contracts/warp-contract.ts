@@ -26,6 +26,7 @@ import {
 import {
   BaseContract,
   ContractSigner,
+  DataProtocolTransaction,
   EvaluationParameters,
   Logger,
   OptionalSigner,
@@ -35,10 +36,12 @@ import {
   WriteParameters,
 } from '../../types.js';
 import { sha256B64Url, toB64Url } from '../../utils/base64.js';
+import { getSmartweaveContractsFromGQL } from '../../utils/graphql/common.js';
 import { getContractManifest } from '../../utils/smartweave.js';
 import { FailedRequestError, WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
 import { defaultWarp } from '../warp.js';
+import { RemoteContract } from './remote-contract.js';
 
 LoggerFactory.INST.logLevel('error');
 
@@ -118,6 +121,20 @@ export class WarpContract<T>
       throw new FailedRequestError(502, 'Failed to evaluate contract state');
     }
     return evaluationResult.cachedValue.state as T;
+  }
+
+  async getContracts(params: {
+    address: string;
+  }): Promise<DataProtocolTransaction[]> {
+    this.logger.debug(`Fetching Contracts`, {
+      address: params.address,
+    });
+    return this.cacheUrl !== undefined
+      ? new RemoteContract(this.configuration()).getContracts(params)
+      : getSmartweaveContractsFromGQL({
+          address: params.address,
+          arweave: this.warp.arweave,
+        });
   }
 
   async ensureContractInit({ signer }: OptionalSigner = {}): Promise<void> {
