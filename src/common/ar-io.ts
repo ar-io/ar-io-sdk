@@ -22,6 +22,7 @@ import {
   ArIOWriteContract,
   ArNSAuctionData,
   ArNSNameData,
+  ArNSReservedNameData,
   ContractConfiguration,
   ContractSigner,
   DENOMINATIONS,
@@ -225,6 +226,56 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
     const state = await this.contract.getState({ evaluationOptions });
     return state.records;
+  }
+
+  /**
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<Record<string, ArNSReservedNameData>>} The reserved names.
+   * @example
+   * Get the current reserved names
+   * ```ts
+   * arIO.getArNSReservedNames();
+   * ```
+   * Get the reserved names at a specific block height or sortkey
+   * ```ts
+   *  arIO.getArNSReservedNames({ evaluationOptions: { evalTo: { blockHeight: 1000 } });
+   *  arIO.getArNSReservedNames({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } });
+   * ```
+   */
+  async getArNSReservedNames({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<string, ArNSReservedNameData> | Record<string, never>
+  > {
+    const state = await this.contract.getState({ evaluationOptions });
+    return state.reserved;
+  }
+
+  /**
+   * @param domain @type {string} The domain name.
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<ArNSReservedNameData | undefined>} The reserved name data.
+   * @example
+   * Get the current reserved name
+   * ```ts
+   * arIO.getArNSReservedName({ domain: "myDomain" });
+   * ```
+   * Get the reserved name at a specific block height or sortkey
+   * ```ts
+   *  arIO.getArNSReservedName({ domain: "myDomain", evaluationOptions: { evalTo: { blockHeight: 1000 } });
+   *  arIO.getArNSReservedName({ domain: "myDomain", evaluationOptions: { evalTo: { sortKey: 'mySortKey' } });
+   * ```
+   */
+  async getArNSReservedName({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSReservedNameData | undefined
+  > {
+    const reservedNames = await this.getArNSReservedNames({
+      evaluationOptions,
+    });
+    return reservedNames[domain];
   }
 
   /**

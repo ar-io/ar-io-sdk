@@ -26,6 +26,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  ArNSReservedNameData,
   DENOMINATIONS,
   EpochDistributionData,
   Gateway,
@@ -131,6 +132,17 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
     evaluationOptions,
   }: EvaluationParameters): Promise<
     Record<string, ArNSNameData> | Record<string, never>
+  >;
+  getArNSReservedNames({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<string, ArNSReservedNameData> | Record<string, never>
+  >;
+  getArNSReservedName({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSReservedNameData | undefined
   >;
   getEpoch({
     blockHeight,
