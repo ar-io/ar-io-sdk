@@ -22,15 +22,6 @@ import { DataProtocolTransaction } from '../../types.js';
 
 export const MAX_REQUEST_SIZE = 100;
 
-// TODO: add ao contract tags
-
-export const SMARTWEAVE_CONTRACT_TAGS = [
-  {
-    name: 'App-Name',
-    values: ['SmartWeaveContract'],
-  },
-];
-
 /**
  * @param arweave - arweave instance to perform gql request
  * @param address - address of the wallet to get transactions for
@@ -38,15 +29,13 @@ export const SMARTWEAVE_CONTRACT_TAGS = [
  * @param signal - signal to abort the request
  * @returns @type {Promise<DataProtocolTransaction[]>} - returns the list of data protocol txs, for e.g smartweave contracts
  */
-export async function getDataProtocolTransactionsByOwner({
+export async function getSmartweaveContractsFromGQL({
   address,
   arweave,
-  protocolTags,
   signal,
 }: {
   arweave: Arweave;
   address: string;
-  protocolTags: { name: string; values: string[] }[];
   signal?: AbortSignal;
 }): Promise<DataProtocolTransaction[]> {
   let hasNextPage = false;
@@ -58,7 +47,12 @@ export async function getDataProtocolTransactionsByOwner({
       { 
           transactions (
               owners:["${address}"]
-              tags: ${protocolTags},
+              tags: [
+                      {
+                        name: 'App-Name',
+                        values: ['SmartWeaveContract'],
+                      },
+                    ],
               sort: HEIGHT_DESC,
               first: ${MAX_REQUEST_SIZE},
               bundledIn: null,
@@ -127,15 +121,4 @@ export async function getDataProtocolTransactionsByOwner({
   } while (hasNextPage);
 
   return [...protocolTxs];
-}
-
-export async function getSmartweaveContractsFromGQL(params: {
-  arweave: Arweave;
-  address: string;
-  signal?: AbortSignal;
-}) {
-  return getDataProtocolTransactionsByOwner({
-    ...params,
-    protocolTags: SMARTWEAVE_CONTRACT_TAGS,
-  });
 }
