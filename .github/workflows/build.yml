@@ -47,7 +47,7 @@ jobs:
         run: yarn --immutable --immutable-cache
 
       - name: Run tests
-        run: yarn test
+        run: yarn test:docker
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4.0.1
