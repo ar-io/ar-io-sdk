@@ -27,3 +27,13 @@ services:
       retries: 5
     depends_on:
       - arlocal
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - REMOTE_CACHE_URL=http://arns-service:3000
+      - GATEWAY_HOST=arlocal
+      - GATEWAY_PORT=1984
+      - GATEWAY_PROTOCOL=http
