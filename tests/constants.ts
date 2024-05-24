@@ -2,7 +2,7 @@ import Arweave from 'arweave';
 import { LoggerFactory, WarpFactory } from 'warp-contracts';
 import { DeployPlugin } from 'warp-contracts-plugin-deploy';
 
-export const GATEWAY_PORT = process.env.GATEWAY_PORT ?? 1984;
+export const GATEWAY_PORT = +(process.env.GATEWAY_PORT ?? 1984);
 export const GATEWAY_HOST = process.env.GATEWAY_HOST ?? 'localhost';
 export const GATEWAY_PROTOCOL = process.env.GATEWAY_PROTOCOL ?? 'http';
 
