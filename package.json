@@ -71,7 +71,7 @@
     "test:unit": "yarn clean && jest --config=jest.config.mjs",
     "test:integration": "yarn clean && jest --config=jest.integration.config.mjs",
     "test:integration:local": "yarn clean && jest --config=jest.integration.config.mjs --runInBand",
-    "test:docker": "docker-compose up --exit-code-from test-runner --build",
+    "test:docker": "mkdir -p coverage && docker-compose up --exit-code-from test-runner --build",
     "prepare": "husky install",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
     "example:cjs": "cd examples/cjs && yarn && node index.cjs",

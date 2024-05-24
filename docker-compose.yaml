@@ -38,4 +38,4 @@ services:
       - GATEWAY_PORT=1984
       - GATEWAY_PROTOCOL=http
     volumes:
-      - .:/app
+      - ./coverage:/app/coverage
