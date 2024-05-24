@@ -69,7 +69,7 @@
     "format:fix": "prettier --write .",
     "test": "yarn test:unit && yarn test:integration",
     "test:unit": "yarn clean && jest --config=jest.config.mjs",
-    "test:integration": "./run-tests.sh",
+    "test:integration": "./run-integration-tests.sh",
     "test:integration:local": "yarn clean && jest --config=jest.integration.config.mjs --runInBand",
     "prepare": "husky install",
     "example:esm": "cd examples/esm && yarn && node index.mjs",

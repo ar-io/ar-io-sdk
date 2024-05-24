@@ -6,4 +6,4 @@ COPY . .
 RUN apk add --no-cache curl
 
 RUN yarn clean && yarn install
-CMD yarn test:integration:local
+CMD yarn test
