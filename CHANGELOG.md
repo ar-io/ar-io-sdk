@@ -1,3 +1,12 @@
+## [1.0.8-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.1...v1.0.8-alpha.2) (2024-05-24)
+
+
+### Bug Fixes
+
+* **bundle:** minify web bundle ([9266676](https://github.com/ar-io/ar-io-sdk/commit/9266676cc6cc26cc6829ef902329879e6f179fc4))
+* **release:** push a commit to release v1.0.8.alpha-3 ([2cf0d9e](https://github.com/ar-io/ar-io-sdk/commit/2cf0d9e444d74c75cd18f4577c2ecb33ed84cc5e))
+* **reserved:** add reserved arns name get methods ([ad203ef](https://github.com/ar-io/ar-io-sdk/commit/ad203ef22402851d28643630243716465b2ce030))
+
 ## [1.0.8-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8-alpha.1) (2024-05-24)
 
 
