@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 
 RUN mkdir -p coverage
-RUN chmod -R 777 coverage
+RUN chmod -R 755 coverage
 
-RUN yarn clean && yarn install
+RUN yarn install
 CMD yarn test
