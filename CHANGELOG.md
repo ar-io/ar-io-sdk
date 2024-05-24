@@ -1,3 +1,11 @@
+## [1.0.8-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8-alpha.1) (2024-05-24)
+
+
+### Bug Fixes
+
+* **signer:** check if method is property of signer before using ([c52783c](https://github.com/ar-io/ar-io-sdk/commit/c52783c86bfa4019bc565dd457d7f14defdd1129))
+* **signing:** modify signer to assume the signer type based on public key being undefined ([b775c96](https://github.com/ar-io/ar-io-sdk/commit/b775c9672ad68ac987bf37ec1cf0d7c625c9c426))
+
 ## [1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)
 
 
