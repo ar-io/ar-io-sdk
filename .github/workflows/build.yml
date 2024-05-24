@@ -1,5 +1,9 @@
 name: Build and Test
 
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: true
+
 on:
   pull_request:
   workflow_call:
@@ -29,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node_version: [18.20.3, 20.7]
+        node_version: [18.17.1]
     steps:
       - uses: actions/checkout@v4
 
