@@ -18,7 +18,7 @@ export const warp = WarpFactory.forLocal(1984, arweave).use(new DeployPlugin());
 
 export const gatewayAddress = '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo';
 export const testDomain = 'test-record';
-export const evaluateToBlockHeight = 0;
+export const evaluateToBlockHeight = 1;
 export const evaluateToSortKey =
   '000000000000,0000000000000,0000000000000000000000000000000000000000000000000000000000000000';
 export const localCacheUrl =
