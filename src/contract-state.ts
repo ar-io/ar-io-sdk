@@ -137,6 +137,12 @@ export type ArNSLeaseData = ArNSBaseNameData & {
   endTimestamp: number; // At what unix time (seconds since epoch) the lease ends
 };
 
+// TODO: break this up into union types to account for names that are permanently reserved
+export type ArNSReservedNameData = {
+  target?: string;
+  endTimestamp?: number;
+};
+
 export type ArNSNameData = ArNSPermabuyData | ArNSLeaseData;
 
 // Vaults
