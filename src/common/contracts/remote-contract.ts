@@ -16,7 +16,6 @@
  */
 import {
   BaseContract,
-  DataProtocolTransaction,
   EvaluationParameters,
   HTTPClient,
   Logger,
@@ -54,31 +53,6 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
       contractTxId: this.contractTxId,
       cacheUrl: this.cacheUrl,
     };
-  }
-  async getContracts(params: {
-    address: string;
-  }): Promise<DataProtocolTransaction[]> {
-    this.logger.debug(`Fetching Contracts`, {
-      address: params.address,
-    });
-    const { contractTxIds } = await this.http.get<
-      { address: string },
-      { contractTxIds: string[] }
-    >({
-      endpoint: `/wallet/${params.address}/contracts`,
-    });
-
-    return contractTxIds.reduce(
-      (acc: DataProtocolTransaction[], tx: string) => {
-        acc.push({
-          id: tx,
-          tags: [],
-          data: 0,
-        });
-        return acc;
-      },
-      [],
-    );
   }
 
   async getState({ evaluationOptions }: EvaluationParameters = {}): Promise<T> {

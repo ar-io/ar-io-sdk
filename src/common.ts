@@ -90,8 +90,6 @@ export interface BaseContract<T> {
 }
 
 export interface ReadContract {
-  // Expectation of this method is to return a list of the contracts owned by the user on the specific protocol (eg smartweave)
-  getContracts(params: { address: string }): Promise<DataProtocolTransaction[]>;
   readInteraction<Input, State>({
     functionName,
     inputs,
