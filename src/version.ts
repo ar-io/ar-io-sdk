@@ -17,4 +17,4 @@
 
 // AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
 
-export const version = '1.0.8-alpha.2';
+export const version = '1.0.8-alpha.3';

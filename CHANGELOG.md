@@ -1,3 +1,10 @@
+## [1.0.8-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.2...v1.0.8-alpha.3) (2024-05-25)
+
+
+### Bug Fixes
+
+* **test:** add dockerfile for running tests in certain node environments ([86cf2ad](https://github.com/ar-io/ar-io-sdk/commit/86cf2ad51d09e88c13bdd0ba0e8a3a2b23b9d395))
+
 ## [1.0.8-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.1...v1.0.8-alpha.2) (2024-05-24)
 
 
