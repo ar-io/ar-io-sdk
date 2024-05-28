@@ -15,9 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import Arweave from 'arweave';
-import { GQLNodeInterface } from 'warp-contracts';
+import { AbortError, GQLNodeInterface } from 'warp-contracts';
 
-import { EvaluationTimeoutError } from '../../common/error.js';
 import { DataProtocolTransaction } from '../../types.js';
 import { MAX_REQUEST_SIZE } from './common.js';
 
@@ -78,7 +77,7 @@ export async function getSmartweaveContractsFromGQL({
     };
 
     if (signal?.aborted) {
-      throw new EvaluationTimeoutError('GraphQL request was aborted.');
+      throw new AbortError('GraphQL request was aborted.');
     }
 
     const { status, ...response } = await arweave.api.post(
@@ -186,7 +185,7 @@ export async function getSmartweaveTransactionsFromGQL({
     };
 
     if (signal?.aborted) {
-      throw new EvaluationTimeoutError('GraphQL request was aborted.');
+      throw new AbortError('GraphQL request was aborted.');
     }
 
     const { status, ...response } = await arweave.api.post(
@@ -332,7 +331,7 @@ export async function getContractsTransferredToOrControlledByWallet(
     };
 
     if (signal?.aborted) {
-      throw new EvaluationTimeoutError('GraphQL request was aborted.');
+      throw new AbortError('GraphQL request was aborted.');
     }
 
     const { status, ...response } = await arweave.api.post(
