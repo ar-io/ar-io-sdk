@@ -19,7 +19,7 @@ import { DataItem } from 'warp-arbundles';
 import { Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
-import { ArIOContractFunctionsWithFees } from './contract-state.js';
+import { IOContractInteractionsWithIOFees } from './contract-state.js';
 import {
   ANTRecord,
   ANTState,
@@ -181,7 +181,7 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
     payload,
     evaluationOptions,
   }: EvaluationParameters<{
-    interactionName: ArIOContractFunctionsWithFees;
+    interactionName: IOContractInteractionsWithIOFees;
     payload: object;
   }>): Promise<number>;
 }
