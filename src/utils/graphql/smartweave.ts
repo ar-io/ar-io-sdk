@@ -31,7 +31,7 @@ export const MAX_REQUEST_SIZE = 100;
 export async function getSmartweaveContractsFromGQL({
   address,
   arweave,
-  signal,
+  signal = AbortSignal.timeout(10_000),
   // TODO: add retry provider - eg pass in fetcher for the query
 }: {
   arweave: Arweave;
@@ -133,7 +133,7 @@ export async function getSmartweaveTransactionsFromGQL({
   address,
   contractTxId,
   arweave,
-  signal,
+  signal = AbortSignal.timeout(10_000),
   // TODO: add retry provider - eg pass in fetcher for the query
 }: {
   arweave: Arweave;
