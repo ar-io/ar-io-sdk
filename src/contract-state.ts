@@ -36,6 +36,7 @@ export const ioContractWriteInteractions = [
   'updateGatewaySettings',
   'saveObservations',
   'extendRecord',
+  'buyRecord',
   'increaseUndernameCount',
   'transfer',
 ] as const;
@@ -51,10 +52,10 @@ export type IOContractWriteInteractions =
   (typeof ioContractWriteInteractions)[number];
 export type IOContractInteractions = (typeof ioContractInteractions)[number];
 
-export type IOContractInteractionsWithIOFees =
-  | 'buyRecord'
-  | 'extendRecord'
-  | 'increaseUndernameCount';
+export type IOContractInteractionsWithIOFees = Extract<
+  IOContractInteractions,
+  'buyRecord' | 'extendRecord' | 'increaseUndernameCount'
+>;
 
 export const AR_IO_CONTRACT_FUNCTIONS: Record<string, IOContractInteractions> =
   {
