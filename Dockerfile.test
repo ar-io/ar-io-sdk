@@ -3,5 +3,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN yarn clean && yarn install
+RUN mkdir -p coverage
+RUN chmod -R 755 coverage
+
+RUN yarn install
 CMD yarn test

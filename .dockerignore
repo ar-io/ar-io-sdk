@@ -1,0 +1,9 @@
+dist
+lib
+bundles
+tests/wallets
+tests/contracts
+examples
+.github
+.husky
+.vscode

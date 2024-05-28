@@ -2,7 +2,7 @@
 docker compose up -d
 
 # Run tests and capture the exit code
-yarn dotenv -e .env.test yarn test:integration:local
+yarn dotenv -e .env.test yarn test:integration
 exit_code=$?
 
 # Tear down the docker-compose setup
