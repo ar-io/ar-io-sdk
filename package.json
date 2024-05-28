@@ -91,6 +91,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
     "dotenv": "^16.4.5",
+    "dotenv-cli": "^7.4.2",
     "esbuild": "^0.19.2",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "eslint": "^8.47.0",
@@ -120,7 +121,6 @@
     "arweave": "1.14.4",
     "axios": "1.4.0",
     "bunyan": "^1.8.15",
-    "dotenv-cli": "^7.4.2",
     "warp-arbundles": "^1.0.4",
     "warp-contracts": "1.4.45"
   },
