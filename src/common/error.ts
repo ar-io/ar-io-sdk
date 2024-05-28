@@ -50,3 +50,5 @@ export class InvalidContractConfigurationError extends BaseError {
     super(INVALID_CONTRACT_CONFIGURATION_ERROR);
   }
 }
+
+export class AbortError extends BaseError {}

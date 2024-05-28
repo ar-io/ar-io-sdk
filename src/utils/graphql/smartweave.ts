@@ -15,8 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import Arweave from 'arweave';
-import { AbortError, GQLNodeInterface } from 'warp-contracts';
+import { GQLNodeInterface } from 'warp-contracts';
 
+import { AbortError } from '../../common/error.js';
 import { DataProtocolTransaction } from '../../types.js';
 import { MAX_REQUEST_SIZE } from './common.js';
 
