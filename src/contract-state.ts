@@ -45,6 +45,12 @@ export const AR_IO_CONTRACT_FUNCTIONS = {
   EPOCH: 'epoch',
 };
 
+export type ArIOContractFunctionsWithFees =
+  | 'buyRecord'
+  | 'submitAuctionBid'
+  | 'extendRecord'
+  | 'increaseUndernameCount';
+
 // Gateways
 
 export type Gateway = {

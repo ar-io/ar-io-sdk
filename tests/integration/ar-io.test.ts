@@ -354,4 +354,20 @@ describe('ArIOReadable Client', () => {
       expect(reserved).toBeDefined();
     },
   );
+
+  it.each(testCases)(
+    `should return the price to purchase a name for provided evaluation options: ${JSON.stringify('%s')}`,
+    async () => {
+      const purchasePrice = await arIO.getPriceForInteraction({
+        interactionName: 'buyRecord',
+        payload: {
+          name: 'ardrive',
+          type: 'lease',
+        },
+        evaluationOptions: { evalTo: { blockHeight: evaluateToBlockHeight } },
+      });
+      expect(purchasePrice).toBeDefined();
+      expect(typeof purchasePrice).toEqual('number');
+    },
+  );
 });
