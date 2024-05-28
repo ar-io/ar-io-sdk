@@ -21,6 +21,7 @@ export type IOContractReadInteractions =
   | 'gateways'
   | 'prescribedObservers'
   | 'record'
+  | 'auction'
   | 'balance'
   | 'epoch'
   | 'priceForInteraction';
@@ -60,6 +61,7 @@ export const AR_IO_CONTRACT_FUNCTIONS: Record<string, IOContractInteractions> =
     EXTEND_RECORD: 'extendRecord',
     INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
     RECORD: 'record',
+    AUCTION: 'auction',
     TRANSFER: 'transfer',
     BALANCE: 'balance',
     PRICE_FOR_INTERACTION: 'priceForInteraction',

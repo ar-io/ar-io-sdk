@@ -541,7 +541,7 @@ export class ArIOReadable implements ArIOReadContract {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData> {
     return this.contract.readInteraction({
-      functionName: 'auction',
+      functionName: AR_IO_CONTRACT_FUNCTIONS.AUCTION,
       inputs: {
         name: domain,
         type,
@@ -620,7 +620,7 @@ export class ArIOReadable implements ArIOReadContract {
       unknown,
       { price: number }
     >({
-      functionName: 'priceForInteraction',
+      functionName: AR_IO_CONTRACT_FUNCTIONS.PRICE_FOR_INTERACTION,
       inputs: {
         interactionName,
         ...payload,
