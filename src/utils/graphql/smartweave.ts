@@ -90,7 +90,6 @@ export async function getSmartweaveContractsFromGQL({
     );
 
     if (status == 429) {
-      // Rate limited, wait for 10 seconds and retry
       await new Promise((resolve) => setTimeout(resolve, 10_000));
       continue;
     }
@@ -198,7 +197,6 @@ export async function getSmartweaveTransactionsFromGQL({
     );
 
     if (status == 429) {
-      // Rate limited, wait for 10 seconds and retry
       await new Promise((resolve) => setTimeout(resolve, 10_000));
       continue;
     }
@@ -344,7 +342,6 @@ export async function getContractsTransferredToOrControlledByWallet(
     );
 
     if (status == 429) {
-      // Rate limited, wait for 10 seconds and retry
       await new Promise((resolve) => setTimeout(resolve, 10_000));
       continue;
     }
@@ -361,7 +358,6 @@ export async function getContractsTransferredToOrControlledByWallet(
 
     response.data.data.transactions.edges
       .map((e: { node: GQLNodeInterface }) => {
-        // get the contract id of the interaction
         const contractTag = e.node.tags.find(
           (t: { name: string; value: string }) => t.name === 'Contract',
         );
