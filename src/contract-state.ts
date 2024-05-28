@@ -21,7 +21,6 @@ export type IOContractReadInteractions =
   | 'gateways'
   | 'prescribedObservers'
   | 'record'
-  | 'auction'
   | 'balance'
   | 'epoch'
   | 'priceForInteraction';
@@ -30,29 +29,19 @@ export type IOContractWriteInteractions =
   | 'delegateStake'
   | 'decreaseDelegateStake'
   | 'joinNetwork'
-  | 'leaveNetwork'
   | 'increaseOperatorStake'
   | 'decreaseOperatorStake'
   | 'updateGatewaySettings'
   | 'saveObservations'
-  | 'submitAuctionBid'
-  | 'buyRecord'
   | 'extendRecord'
   | 'increaseUndernameCount'
-  | 'transfer'
-  | 'vaultedTransfer'
-  | 'createVault'
-  | 'extendVault'
-  | 'increaseVault'
-  | 'tick';
+  | 'transfer';
 
 export type IOContractInteractions =
   | IOContractReadInteractions
   | IOContractWriteInteractions;
 
 export type IOContractInteractionsWithIOFees =
-  | 'buyRecord'
-  | 'submitAuctionBid'
   | 'extendRecord'
   | 'increaseUndernameCount';
 
@@ -64,24 +53,15 @@ export const AR_IO_CONTRACT_FUNCTIONS: Record<string, IOContractInteractions> =
     DELEGATE_STAKE: 'delegateStake',
     DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
     JOIN_NETWORK: 'joinNetwork',
-    LEAVE_NETWORK: 'leaveNetwork',
     INCREASE_OPERATOR_STAKE: 'increaseOperatorStake',
     DECREASE_OPERATOR_STAKE: 'decreaseOperatorStake',
     UPDATE_GATEWAY_SETTINGS: 'updateGatewaySettings',
     SAVE_OBSERVATIONS: 'saveObservations',
-    SUBMIT_AUCTION_BID: 'submitAuctionBid',
-    BUY_RECORD: 'buyRecord',
     EXTEND_RECORD: 'extendRecord',
     INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
     RECORD: 'record',
-    AUCTION: 'auction',
     TRANSFER: 'transfer',
-    VAULTED_TRANSFER: 'vaultedTransfer',
-    CREATE_VAULT: 'createVault',
-    EXTEND_VAULT: 'extendVault',
-    INCREASE_VAULT: 'increaseVault',
     BALANCE: 'balance',
-    TICK: 'tick',
     PRICE_FOR_INTERACTION: 'priceForInteraction',
     EPOCH: 'epoch',
   };

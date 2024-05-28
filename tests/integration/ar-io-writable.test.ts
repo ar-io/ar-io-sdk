@@ -18,7 +18,6 @@ describe('ArIOWriteable', () => {
     contractTxId = process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID!;
     signer = new ArweaveSigner(JSON.parse(process.env.PRIMARY_WALLET_JWK!));
     interactingAddress = process.env.PRIMARY_WALLET_ADDRESS!;
-    interactingAddress = process.env.PRIMARY_WALLET_ADDRESS!;
     arIO = ArIO.init({
       signer,
       contract: new WarpContract<ArIOState>({
