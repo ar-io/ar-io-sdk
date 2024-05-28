@@ -44,12 +44,6 @@ export type SortKey = string;
 export type WalletAddress = string;
 export type TransactionId = string;
 
-// export type DataProtocolTransaction = {
-//   id: string;
-//   tags: { name: string; value: string }[];
-//   data: number;
-// };
-
 export type DataProtocolTransaction = Pick<
   GQLNodeInterface,
   'id' | 'tags' | 'data'

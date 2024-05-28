@@ -19,7 +19,8 @@ import { GQLNodeInterface } from 'warp-contracts';
 
 import { AbortError } from '../../common/error.js';
 import { DataProtocolTransaction } from '../../types.js';
-import { MAX_REQUEST_SIZE } from './common.js';
+
+export const MAX_REQUEST_SIZE = 100;
 
 /**
  * @param arweave - arweave instance to perform gql request
