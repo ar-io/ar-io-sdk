@@ -16,33 +16,43 @@
  */
 import { WalletAddress } from './common.js';
 
+export const ioContractReadInteractions = [
+  'gateway',
+  'gateways',
+  'prescribedObservers',
+  'record',
+  'auction',
+  'balance',
+  'epoch',
+  'priceForInteraction',
+] as const;
+
+export const ioContractWriteInteractions = [
+  'delegateStake',
+  'decreaseDelegateStake',
+  'joinNetwork',
+  'increaseOperatorStake',
+  'decreaseOperatorStake',
+  'updateGatewaySettings',
+  'saveObservations',
+  'extendRecord',
+  'increaseUndernameCount',
+  'transfer',
+] as const;
+
+export const ioContractInteractions = [
+  ...ioContractReadInteractions,
+  ...ioContractWriteInteractions,
+] as const;
+
 export type IOContractReadInteractions =
-  | 'gateway'
-  | 'gateways'
-  | 'prescribedObservers'
-  | 'record'
-  | 'auction'
-  | 'balance'
-  | 'epoch'
-  | 'priceForInteraction';
-
+  (typeof ioContractReadInteractions)[number];
 export type IOContractWriteInteractions =
-  | 'delegateStake'
-  | 'decreaseDelegateStake'
-  | 'joinNetwork'
-  | 'increaseOperatorStake'
-  | 'decreaseOperatorStake'
-  | 'updateGatewaySettings'
-  | 'saveObservations'
-  | 'extendRecord'
-  | 'increaseUndernameCount'
-  | 'transfer';
-
-export type IOContractInteractions =
-  | IOContractReadInteractions
-  | IOContractWriteInteractions;
+  (typeof ioContractWriteInteractions)[number];
+export type IOContractInteractions = (typeof ioContractInteractions)[number];
 
 export type IOContractInteractionsWithIOFees =
+  | 'buyRecord'
   | 'extendRecord'
   | 'increaseUndernameCount';
 
