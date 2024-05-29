@@ -1,3 +1,17 @@
+## [1.0.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8) (2024-05-29)
+
+
+### Bug Fixes
+
+* **api:** add getPriceForInteration api to ario contract ([3b8083c](https://github.com/ar-io/ar-io-sdk/commit/3b8083c173bd35f7332c68dc094b092adedaf8e7))
+* **bundle:** minify web bundle ([9266676](https://github.com/ar-io/ar-io-sdk/commit/9266676cc6cc26cc6829ef902329879e6f179fc4))
+* **method:** use function map for method name ([439ec1f](https://github.com/ar-io/ar-io-sdk/commit/439ec1f649c2f54d6e1516ec4e7af5e8a080c2ed))
+* **release:** push a commit to release v1.0.8.alpha-3 ([2cf0d9e](https://github.com/ar-io/ar-io-sdk/commit/2cf0d9e444d74c75cd18f4577c2ecb33ed84cc5e))
+* **reserved:** add reserved arns name get methods ([ad203ef](https://github.com/ar-io/ar-io-sdk/commit/ad203ef22402851d28643630243716465b2ce030))
+* **signer:** check if method is property of signer before using ([c52783c](https://github.com/ar-io/ar-io-sdk/commit/c52783c86bfa4019bc565dd457d7f14defdd1129))
+* **signing:** modify signer to assume the signer type based on public key being undefined ([b775c96](https://github.com/ar-io/ar-io-sdk/commit/b775c9672ad68ac987bf37ec1cf0d7c625c9c426))
+* **test:** add dockerfile for running tests in certain node environments ([86cf2ad](https://github.com/ar-io/ar-io-sdk/commit/86cf2ad51d09e88c13bdd0ba0e8a3a2b23b9d395))
+
 ## [1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)
 
 
