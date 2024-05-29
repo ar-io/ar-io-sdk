@@ -1,11 +1,3 @@
-## [1.0.8-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.3...v1.0.8-alpha.4) (2024-05-29)
-
-
-### Bug Fixes
-
-* **api:** add getPriceForInteration api to ario contract ([3b8083c](https://github.com/ar-io/ar-io-sdk/commit/3b8083c173bd35f7332c68dc094b092adedaf8e7))
-* **method:** use function map for method name ([439ec1f](https://github.com/ar-io/ar-io-sdk/commit/439ec1f649c2f54d6e1516ec4e7af5e8a080c2ed))
-
 ## [1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)
 
 
