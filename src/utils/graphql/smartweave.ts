@@ -49,8 +49,8 @@ export async function getSmartweaveContractsFromGQL({
               owners:["${address}"]
               tags: [
                       {
-                        name: 'App-Name',
-                        values: ['SmartWeaveContract'],
+                        name: "App-Name",
+                        values: ["SmartWeaveContract"],
                       },
                     ],
               sort: HEIGHT_DESC,
@@ -58,7 +58,7 @@ export async function getSmartweaveContractsFromGQL({
               bundledIn: null,
               ${cursor !== undefined ? `after: "${cursor}"` : ''}
           ) {
-              pageInfo {z
+              pageInfo {
                   hasNextPage
               }
               edges {
@@ -96,6 +96,7 @@ export async function getSmartweaveContractsFromGQL({
     }
 
     if (status !== 200) {
+      console.dir(response, { depth: null });
       throw Error(
         `Failed to fetch contracts for wallet. Status code: ${status}`,
       );
@@ -152,12 +153,12 @@ export async function getSmartweaveTransactionsFromGQL({
               owners:["${address}"]
               tags: [
                       {
-                        name: 'App-Name',
-                        values: ['SmartWeaveAction'],
+                        name: "App-Name",
+                        values: ["SmartWeaveAction"],
                       },
                       {
-                        name: 'Contract',
-                        values: ['${contractTxId}'],
+                        name: "Contract",
+                        values: ["${contractTxId}"],
                       },
                     ],
               sort: HEIGHT_DESC,
@@ -375,7 +376,9 @@ export async function getContractsTransferredToOrControlledByWallet(
           cursor: string;
           hasNextPage: boolean;
         }) => {
-          protocolTxs.add(c.tx);
+          if (c.tx?.id) {
+            protocolTxs.add(c.tx);
+          }
         },
       );
     cursor =
