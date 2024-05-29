@@ -16,7 +16,7 @@
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
-import { Transaction } from 'warp-contracts';
+import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
 import { IOContractInteractionsWithIOFees } from './contract-state.js';
@@ -44,6 +44,11 @@ export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
 export type TransactionId = string;
+
+export type DataProtocolTransaction = Pick<
+  GQLNodeInterface,
+  'id' | 'tags' | 'data'
+>;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
