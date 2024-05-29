@@ -4,17 +4,21 @@ import {
   createLocalWallet,
   deployANTContract,
   deployArIOContract,
+  mineBlocks,
 } from '../utils';
 
 // start arlocal
 async function jestGlobalSetup() {
   console.log('Setting up Warp, Arlocal and Arweave clients!');
-  // create directories used for tests
 
+  // create directories used for tests
   createDirectories();
 
   // create a wallet and add some funds
-  const { wallet, address } = await createLocalWallet(arweave);
+  const { wallet, address } = await createLocalWallet(arweave).catch((e) => {
+    console.error('Error creating wallet', e);
+    process.exit(1);
+  });
 
   // Used in tests
   process.env.PRIMARY_WALLET_ADDRESS = address;
@@ -25,6 +29,9 @@ async function jestGlobalSetup() {
     deployArIOContract({ jwk: wallet, address, warp, arweave }),
     deployANTContract({ jwk: wallet, address, warp }),
   ]);
+
+  // mine a block to ensure the contracts are deployed
+  await mineBlocks({ arweave, blocks: 1 });
 
   // set in the environment
   process.env.DEPLOYED_REGISTRY_CONTRACT_TX_ID =

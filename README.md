@@ -344,17 +344,21 @@ Retrieves the balance of the specified wallet address.
 ```typescript
 const arIO = ArIO.init();
 // the balance will be returned in mIO as a value
-const balance = await arIO.getBalance({
-  address: 'INSERT_WALLET_ADDRESS',
-});
+const balance = await arIO
+  .getBalance({
+    address: 'INSERT_WALLET_ADDRESS',
+  })
+  .then((balance) => new mIOToken().toIO());
+
+console.log(balance.valueOf());
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-// value in mIO
-1000000000000
+// value in IO
+1_000_000
 ```
 
 </details>
@@ -785,6 +789,30 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
     "type": "permabuy"
   }
 }
+```
+
+</details>
+
+#### `getPriceForInteraction({ interactionName, payload })`
+
+Calculates the price in mIO to perform the interaction in question, eg a 'buyRecord' interaction, where payload is the specific params for that interaction.
+
+```typescript
+const price = await arIO
+  .getPriceForInteraction({
+    interactionName: 'buyRecord',
+    payload: { name: 'ardrive', years: 1, type: 'lease' },
+  })
+  .then((p) => new mIOToken(p).toIO());
+// Price is returned as mio, convert to IO and log it out
+console.log({ price: price.valueOf() });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{ "price": 1642.62 }
 ```
 
 </details>

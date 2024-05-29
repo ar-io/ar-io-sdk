@@ -19,6 +19,7 @@ import { DataItem } from 'warp-arbundles';
 import { Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
+import { IOContractInteractionsWithIOFees } from './contract-state.js';
 import {
   ANTRecord,
   ANTState,
@@ -26,6 +27,7 @@ import {
   ArIOState,
   ArNSAuctionData,
   ArNSNameData,
+  ArNSReservedNameData,
   DENOMINATIONS,
   EpochDistributionData,
   Gateway,
@@ -132,6 +134,17 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters): Promise<
     Record<string, ArNSNameData> | Record<string, never>
   >;
+  getArNSReservedNames({
+    evaluationOptions,
+  }: EvaluationParameters): Promise<
+    Record<string, ArNSReservedNameData> | Record<string, never>
+  >;
+  getArNSReservedName({
+    domain,
+    evaluationOptions,
+  }: EvaluationParameters<{ domain: string }>): Promise<
+    ArNSReservedNameData | undefined
+  >;
   getEpoch({
     blockHeight,
     evaluationOptions,
@@ -163,6 +176,14 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+  getPriceForInteraction({
+    interactionName,
+    payload,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    interactionName: IOContractInteractionsWithIOFees;
+    payload: object;
+  }>): Promise<number>;
 }
 
 export interface ArIOWriteContract {

@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ArconnectSigner } from 'arbundles';
 import {
   Contract,
   CustomSignature,
@@ -82,7 +81,7 @@ export class WarpContract<T>
   // TODO: could abstract into our own interface that constructs different signers
   async createWarpSigner(signer: ContractSigner): Promise<CustomSignature> {
     // ensure appropriate permissions are granted with injected signers.
-    if (signer.publicKey === undefined && signer instanceof ArconnectSigner) {
+    if (signer.publicKey === undefined && 'setPublicKey' in signer) {
       await signer.setPublicKey();
     }
     const warpSigner = new Signature(this.warp, {
