@@ -1,3 +1,20 @@
+# [1.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.4...v1.1.0-alpha.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* **errors:** throw AbortError on signal aborted ([63bd395](https://github.com/ar-io/ar-io-sdk/commit/63bd39566bc4ee08504b98b82c62dd22e100bc7f))
+* **getContracts:** only implement util for now ([6b29c2f](https://github.com/ar-io/ar-io-sdk/commit/6b29c2ff7773320c2b6d16677826d59bd515332c))
+* **gql query:** dont abstract the data protocol query ([f0b8f77](https://github.com/ar-io/ar-io-sdk/commit/f0b8f7718b777358d6b6946159f57551ea76c1e7))
+* **imports:** import type from base route warp-contracts ([bf99a85](https://github.com/ar-io/ar-io-sdk/commit/bf99a85d0d099cf20db9b70db1bf84f9908b51e5))
+* **types:** use gql node interface for dataProtocolTransaction ([79cebd9](https://github.com/ar-io/ar-io-sdk/commit/79cebd90b930829b740bed058f7cfe0da3b7799e))
+
+
+### Features
+
+* **getContracts:** add get contracts on network specific providers like WarpContract ([603d36e](https://github.com/ar-io/ar-io-sdk/commit/603d36edd130d6b0410fa7199450ec91d7b4c821))
+* **gql util:** add smartweave gql utils ([5ea3aab](https://github.com/ar-io/ar-io-sdk/commit/5ea3aaba1a5466741faa6e3b39d5908d25d37d49))
+
 ## [1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)
 
 
