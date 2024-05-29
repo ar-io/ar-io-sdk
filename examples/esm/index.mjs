@@ -40,4 +40,7 @@ import { ArIO } from '@ar.io/sdk';
   });
   const state = await process.getState();
   console.log({ state });
+
+  const prescribedObservers = await process.getPrescribedObservers();
+  console.log({ prescribedObservers });
 })();

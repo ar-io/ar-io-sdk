@@ -66,7 +66,7 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       throw new Error('Process does not support provided action.');
     }
 
-    this.logger.info(`Read interaction result`, {
+    this.logger.debug(`Read interaction result`, {
       result: result.Messages[0].Data,
     });
 

@@ -472,6 +472,11 @@ export class ArIOReadable implements ArIOReadContract {
   async getCurrentEpoch({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<EpochDistributionData>({
+        tags: [{ name: 'Action', value: 'Epoch' }],
+      });
+    }
     return this.contract.readInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.EPOCH,
       evaluationOptions,
@@ -500,6 +505,12 @@ export class ArIOReadable implements ArIOReadContract {
   }: {
     blockHeight: number;
   } & EvaluationParameters): Promise<EpochDistributionData> {
+    if (this.process instanceof AOProcess) {
+      // TODO: handle tag set as epoch number
+      return this.process.read<EpochDistributionData>({
+        tags: [{ name: 'Action', value: 'Epoch' }],
+      });
+    }
     return this.contract.readInteraction<
       { height: number },
       EpochDistributionData
@@ -530,6 +541,11 @@ export class ArIOReadable implements ArIOReadContract {
   async getPrescribedObservers({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<WeightedObserver[]>({
+        tags: [{ name: 'Action', value: 'PrescribedObservers' }],
+      });
+    }
     return this.contract.readInteraction<never, WeightedObserver[]>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
       evaluationOptions,
