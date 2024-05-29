@@ -130,7 +130,7 @@ describe('ArIOWriteable', () => {
   });
 
   it('should successfully increase the undername support on a domain', async () => {
-    const domain = 'test-undername';
+    const domain = 'test-record';
     const qty = 1;
     const tx = await arIO.increaseUndernameLimit({
       domain,

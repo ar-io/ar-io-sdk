@@ -793,6 +793,30 @@ const auctions = await arIO.getAuctions({ evaluationOptions });
 
 </details>
 
+#### `getPriceForInteraction({ interactionName, payload })`
+
+Calculates the price in mIO to perform the interaction in question, eg a 'buyRecord' interaction, where payload is the specific params for that interaction.
+
+```typescript
+const price = await arIO
+  .getPriceForInteraction({
+    interactionName: 'buyRecord',
+    payload: { name: 'ardrive', years: 1, type: 'lease' },
+  })
+  .then((p) => new mIOToken(p).toIO());
+// Price is returned as mio, convert to IO and log it out
+console.log({ price: price.valueOf() });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{ "price": 1642.62 }
+```
+
+</details>
+
 #### `joinNetwork(params)`
 
 Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `ArIO.init` to sign the transaction.

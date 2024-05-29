@@ -541,7 +541,7 @@ export class ArIOReadable implements ArIOReadContract {
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData> {
     return this.contract.readInteraction({
-      functionName: 'auction',
+      functionName: AR_IO_CONTRACT_FUNCTIONS.AUCTION,
       inputs: {
         name: domain,
         type,
@@ -577,6 +577,58 @@ export class ArIOReadable implements ArIOReadContract {
     });
 
     return auctions;
+  }
+
+  /**
+   * Fetches the price for an interaction
+   *
+   * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
+   * @returns {Promise<number>} The price to perform the interaction - eg the registration cost.
+   * @example
+   * Get the current auction data
+   * ```ts
+   * arIO.getPriceForInteraction({
+   * interactionName: 'buyRecord',
+   * payload: { name: 'ardrive', years: 1, type: 'lease', auction: false},
+   * });
+   * ```
+   * @example
+   * Get the auction data at a given block height or sortkey
+   * ```ts
+   *  arIO.getPriceForInteraction({
+   * interactionName: 'buyRecord',
+   * payload: { name: 'ardrive', years: 1, type: 'lease', auction: false},
+   * evaluationOptions: { evalTo: { blockHeight: 1000 } }
+   * });
+   *
+   * arIO.getPriceForInteraction({
+   * interactionName: 'buyRecord',
+   * payload: { name: 'ardrive', years: 1, type: 'lease', auction: false},
+   * evaluationOptions: { evalTo: { sortKey: 'mySortKey' } }
+   * });
+   * ```
+   */
+  async getPriceForInteraction({
+    interactionName,
+    payload,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    interactionName: string;
+    payload: object;
+  }>): Promise<number> {
+    const { price } = await this.contract.readInteraction<
+      unknown,
+      { price: number }
+    >({
+      functionName: AR_IO_CONTRACT_FUNCTIONS.PRICE_FOR_INTERACTION,
+      inputs: {
+        interactionName,
+        ...payload,
+      },
+      evaluationOptions,
+    });
+
+    return price;
   }
 }
 

@@ -19,6 +19,7 @@ import { DataItem } from 'warp-arbundles';
 import { Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
+import { IOContractInteractionsWithIOFees } from './contract-state.js';
 import {
   ANTRecord,
   ANTState,
@@ -175,6 +176,14 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
     domain: string;
     type?: RegistrationType;
   }>): Promise<ArNSAuctionData>;
+  getPriceForInteraction({
+    interactionName,
+    payload,
+    evaluationOptions,
+  }: EvaluationParameters<{
+    interactionName: IOContractInteractionsWithIOFees;
+    payload: object;
+  }>): Promise<number>;
 }
 
 export interface ArIOWriteContract {
