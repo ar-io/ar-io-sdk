@@ -18,7 +18,7 @@ import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { DataItem } from 'warp-arbundles';
 import { Transaction } from 'warp-contracts';
 
-import { RemoteContract, WarpContract } from './common/index.js';
+import { AOProcess, RemoteContract, WarpContract } from './common/index.js';
 import {
   ANTRecord,
   ANTState,
@@ -59,6 +59,13 @@ export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
       contractTxId?: string;
     };
+export type ProcessConfiguration<T = NonNullable<unknown>> =
+  | {
+      process: AOProcess<T>;
+    }
+  | {
+      processId: string;
+    };
 
 export type EvaluationOptions = {
   evalTo?: { sortKey: SortKey } | { blockHeight: BlockHeight };
@@ -71,12 +78,13 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
 } & T;
 
 export type ReadParameters<Input> = {
-  functionName: string;
+  functionName?: string;
   inputs?: Input;
+  tags?: Array<{ name: string; value: string }>;
 };
 
 export type WriteParameters<Input> = WithSigner<
-  Required<ReadParameters<Input>>
+  Required<Omit<ReadParameters<Input>, 'tags'>>
 >;
 
 export interface BaseContract<T> {
@@ -89,6 +97,10 @@ export interface ReadContract {
     inputs,
     evaluationOptions,
   }: EvaluationParameters<ReadParameters<Input>>): Promise<State>;
+}
+
+export interface AOContract {
+  read<K>({ tags }): Promise<K>;
 }
 
 export interface WriteContract {

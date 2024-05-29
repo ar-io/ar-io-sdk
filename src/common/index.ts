@@ -22,3 +22,6 @@ export * from './ant.js';
 // contracts
 export * from './contracts/remote-contract.js';
 export * from './contracts/warp-contract.js';
+
+// ao
+export * from './contracts/ao-contract.js';

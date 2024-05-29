@@ -239,6 +239,26 @@ export interface ArIOState {
   prescribedObservers: PrescribedObservers;
 }
 
+export interface AoIOState {
+  GatewayRegistry: Record<string, Gateway>;
+  Epochs: Record<
+    number,
+    {
+      // TODO: distributions
+      observations: EpochObservations;
+      prescribedObservers: WeightedObserver[];
+      startTimestamp: number;
+      endTimestamp: number;
+      distributionTimestamp: number;
+    }
+  >;
+  NameRegistry: Record<string, ArNSNameData>;
+  Balances: Record<WalletAddress, number>;
+  Vaults: Record<WalletAddress, VaultData>;
+  Ticker: string;
+  Name: string;
+}
+
 // ANT
 
 export type ANTRecord = {

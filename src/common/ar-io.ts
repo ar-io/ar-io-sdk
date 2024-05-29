@@ -17,6 +17,7 @@
 import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
 import {
   AR_IO_CONTRACT_FUNCTIONS,
+  AoIOState,
   ArIOReadContract,
   ArIOState,
   ArIOWriteContract,
@@ -34,6 +35,7 @@ import {
   JoinNetworkParams,
   Observations,
   OptionalSigner,
+  ProcessConfiguration,
   RegistrationType,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -46,9 +48,15 @@ import {
 import {
   isContractConfiguration,
   isContractTxIdConfiguration,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
 } from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { InvalidContractConfigurationError, WarpContract } from './index.js';
+import {
+  AOProcess,
+  InvalidContractConfigurationError,
+  WarpContract,
+} from './index.js';
 
 export class ArIO {
   /**
@@ -147,8 +155,11 @@ export class ArIO {
 
 export class ArIOReadable implements ArIOReadContract {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
+  protected process: AOProcess<AoIOState>;
 
-  constructor(config?: ContractConfiguration<ArIOState>) {
+  constructor(
+    config?: ContractConfiguration<ArIOState> | ProcessConfiguration<AoIOState>,
+  ) {
     if (!config) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
@@ -158,6 +169,12 @@ export class ArIOReadable implements ArIOReadContract {
     } else if (isContractTxIdConfiguration(config)) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: config.contractTxId,
+      });
+    } else if (isProcessConfiguration<AoIOState>(config)) {
+      this.process = config.process;
+    } else if (isProcessIdConfiguration(config)) {
+      this.process = new AOProcess<AoIOState>({
+        processId: config.processId,
       });
     } else {
       throw new InvalidContractConfigurationError();
@@ -178,10 +195,16 @@ export class ArIOReadable implements ArIOReadContract {
    *  arIO.getState({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
    * ```
    */
-  async getState(params: EvaluationParameters = {}): Promise<ArIOState> {
+  async getState<T = ArIOState | AoIOState>(
+    params: EvaluationParameters = {},
+  ): Promise<T> {
+    if (this.process instanceof AOProcess) {
+      return this.process.getState() as T;
+    }
     const state = await this.contract.getState(params);
-    return state;
+    return state as T;
   }
+
   /**
    * @param domain @type {string} The domain name.
    * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
@@ -203,6 +226,12 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSNameData | undefined
   > {
+    // handle ao by sending tags
+    if (this.process instanceof AOProcess) {
+      return this.process.read<ArNSNameData>({
+        tags: [{ name: 'Action', value: 'Record' }],
+      });
+    }
     const records = await this.getArNSRecords({ evaluationOptions });
     return records[domain];
   }
@@ -224,6 +253,11 @@ export class ArIOReadable implements ArIOReadContract {
   async getArNSRecords({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Record<string, ArNSNameData>>({
+        tags: [{ name: 'Action', value: 'Records' }],
+      });
+    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
@@ -247,6 +281,11 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters): Promise<
     Record<string, ArNSReservedNameData> | Record<string, never>
   > {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Record<string, ArNSReservedNameData>>({
+        tags: [{ name: 'Action', value: 'ReservedNames' }],
+      });
+    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.reserved;
   }
@@ -272,6 +311,14 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSReservedNameData | undefined
   > {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Record<string, ArNSReservedNameData>>({
+        tags: [
+          { name: 'Action', value: 'ReservedName' },
+          { name: 'Name', value: domain },
+        ],
+      });
+    }
     const reservedNames = await this.getArNSReservedNames({
       evaluationOptions,
     });
@@ -298,6 +345,14 @@ export class ArIOReadable implements ArIOReadContract {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<number> {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<number>({
+        tags: [
+          { name: 'Action', value: 'Balance' },
+          { name: 'Address', value: address },
+        ],
+      });
+    }
     const balances = await this.getBalances({ evaluationOptions });
     return balances[address] || 0;
   }
@@ -320,6 +375,11 @@ export class ArIOReadable implements ArIOReadContract {
   async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<string, number>
   > {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Record<WalletAddress, number>>({
+        tags: [{ name: 'Action', value: 'Balances' }],
+      });
+    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }
@@ -344,6 +404,14 @@ export class ArIOReadable implements ArIOReadContract {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Gateway | undefined>({
+        tags: [
+          { name: 'Action', value: 'Gateway' },
+          { name: 'Address', value: address },
+        ],
+      });
+    }
     return this.contract
       .readInteraction<{ target: string }, Gateway>({
         functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAY,
@@ -373,8 +441,13 @@ export class ArIOReadable implements ArIOReadContract {
    * ```
    */
   async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
-    Record<string, Gateway> | Record<string, never>
+    Record<WalletAddress, Gateway> | Record<string, never>
   > {
+    if (this.process instanceof AOProcess) {
+      return this.process.read<Record<WalletAddress, Gateway>>({
+        tags: [{ name: 'Action', value: 'Gateways' }],
+      });
+    }
     return this.contract.readInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAYS,
       evaluationOptions,
