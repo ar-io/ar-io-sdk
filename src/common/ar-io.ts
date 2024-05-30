@@ -763,7 +763,7 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       autoStake,
       observerWallet,
     }: JoinNetworkParams,
-    options: WriteOptions,
+    options?: WriteOptions,
   ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<JoinNetworkParams>(
       {
