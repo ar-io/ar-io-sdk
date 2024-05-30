@@ -81,9 +81,18 @@ export type ReadParameters<Input> = {
   inputs?: Input;
 };
 
+export type WriteOptions = {
+  tags?: { name: string; value: string }[];
+};
+
 export type WriteParameters<Input> = WithSigner<
   Required<ReadParameters<Input>>
 >;
+
+export type WriteArguments<T> = [
+  EvaluationParameters<WriteParameters<T>>,
+  WriteOptions?,
+];
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
@@ -98,13 +107,12 @@ export interface ReadContract {
 }
 
 export interface WriteContract {
-  writeInteraction<Input>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<
-    WriteParameters<Input>
-  >): Promise<WriteInteractionResult>;
+  writeInteraction<Input>(
+    ...[
+      { functionName, inputs, evaluationOptions },
+      options,
+    ]: WriteArguments<Input>
+  ): Promise<WriteInteractionResult>;
 }
 
 // TODO: extend with additional methods
@@ -193,68 +201,98 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
 
 export interface ArIOWriteContract {
   // write interactions
-  transfer({
-    target,
-    qty,
-    denomination,
-  }: {
-    target: WalletAddress;
-    qty: number;
-    denomination: DENOMINATIONS;
-  }): Promise<WriteInteractionResult>;
-  joinNetwork({
-    qty,
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: JoinNetworkParams): Promise<WriteInteractionResult>;
-  updateGatewaySettings({
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
-  increaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  decreaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  increaseDelegateStake(params: {
-    target: WalletAddress;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  decreaseDelegateStake(params: {
-    target: WalletAddress;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  saveObservations(params: {
-    reportTxId: TransactionId;
-    failedGateways: WalletAddress[];
-  }): Promise<WriteInteractionResult>;
-  extendLease(params: {
-    domain: string;
-    years: number;
-  }): Promise<WriteInteractionResult>;
-  increaseUndernameLimit(params: {
-    domain: string;
-    qty: number;
-  }): Promise<WriteInteractionResult>;
+  transfer(
+    {
+      target,
+      qty,
+      denomination,
+    }: {
+      target: WalletAddress;
+      qty: number;
+      denomination: DENOMINATIONS;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  joinNetwork(
+    {
+      qty,
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: JoinNetworkParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  updateGatewaySettings(
+    {
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: UpdateGatewaySettingsParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  decreaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseDelegateStake(
+    params: {
+      target: WalletAddress;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  decreaseDelegateStake(
+    params: {
+      target: WalletAddress;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  saveObservations(
+    params: {
+      reportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  extendLease(
+    params: {
+      domain: string;
+      years: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseUndernameLimit(
+    params: {
+      domain: string;
+      qty: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
 }
 
 export type WriteInteractionResult = Transaction | DataItem;
@@ -323,37 +361,58 @@ export interface ANTReadContract extends BaseContract<ANTState> {
 }
 
 export interface ANTWriteContract {
-  transfer({
-    target,
-  }: {
-    target: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  setController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  removeController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  setRecord({
-    subDomain,
-    transactionId,
-    ttlSeconds,
-  }: {
-    subDomain: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<WriteInteractionResult>;
-  removeRecord({
-    subDomain,
-  }: {
-    subDomain: string;
-  }): Promise<WriteInteractionResult>;
-  setTicker({ ticker }: { ticker: string }): Promise<WriteInteractionResult>;
-  setName({ name }: { name: string }): Promise<WriteInteractionResult>;
+  transfer(
+    {
+      target,
+    }: {
+      target: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  removeController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setRecord(
+    {
+      subDomain,
+      transactionId,
+      ttlSeconds,
+    }: {
+      subDomain: string;
+      transactionId: string;
+      ttlSeconds: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  removeRecord(
+    {
+      subDomain,
+    }: {
+      subDomain: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setTicker(
+    { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
 }
 
 export interface Logger {

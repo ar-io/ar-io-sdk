@@ -212,6 +212,34 @@ const ioValue = new mIOToken(mIOValue).toIO();
 console.log(ioValue); // 1 (IO)
 ```
 
+## Write APIs
+
+All write APIs come with an `options` argument that allows for extra properties to be passed in on the transaction.
+
+### Supported properties
+
+#### `tags`
+
+An array of tags (`{name: string, value: string}`) to add to the transaction.
+
+<details>
+ <summary>Example</summary>
+Add tags to a `setName` ANT contract interaction.
+
+```typescript
+const ant = ANT.init({
+  contractTxId: '8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk8v4S',
+});
+const res = await ant.setName({
+  name: 'My awesome new name'
+  evaluationOptions: {
+    evalTo: { blockHeight: 1382230 }, // alternatively, use evalTo: { sortKey: 'SORT_KEY' }
+  },
+}, { tags: [{ name: "App-Name", value: "My-Awesome-App"}] });
+```
+
+</details>
+
 ## ArIO Contract
 
 ### APIs
