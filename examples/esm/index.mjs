@@ -38,9 +38,6 @@ import { ArIO } from '@ar.io/sdk';
   const process = ArIO.init({
     processId: 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc',
   });
-  const state = await process.getState();
-  console.log({ state });
-
-  const prescribedObservers = await process.getPrescribedObservers();
-  console.log({ prescribedObservers });
+  const records = await process.getArNSRecords();
+  console.log(records);
 })();

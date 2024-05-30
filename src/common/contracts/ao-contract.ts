@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { dryrun } from '@permaweb/aoconnect';
+import { connect } from '@permaweb/aoconnect';
 
 import { AOContract, BaseContract, Logger } from '../../types.js';
 import { DefaultLogger } from '../logger.js';
@@ -22,16 +22,38 @@ import { DefaultLogger } from '../logger.js';
 export class AOProcess<T> implements BaseContract<T>, AOContract {
   private logger: Logger;
   private processId: string;
+  // private scheduler: string;
+  private ao: {
+    result: any;
+    results: any;
+    message: any;
+    spawn: any;
+    monitor: any;
+    unmonitor: any;
+    dryrun: any;
+    assign: any;
+  };
 
   constructor({
     processId,
+    // scheduler = 'default-scheduler-tx-id',
+    connectionConfig,
     logger = new DefaultLogger(),
   }: {
     processId: string;
+    // scheduler?: string;
+    connectionConfig?: {
+      CU_URL: string;
+      MU_URL: string;
+      GATEWAY_URL: string;
+      GRAPHQL_URL: string;
+    };
     logger?: DefaultLogger;
   }) {
     this.processId = processId;
+    // this.scheduler = scheduler;
     this.logger = logger;
+    this.ao = connect(connectionConfig);
   }
 
   async getState(): Promise<T> {
@@ -53,7 +75,7 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       tags,
     });
     // map tags to inputs
-    const result = await dryrun({
+    const result = await this.ao.dryrun({
       process: this.processId,
       tags,
     });
@@ -70,8 +92,37 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       result: result.Messages[0].Data,
     });
 
-    const data = JSON.parse(result.Messages[0].Data);
+    const data: K = JSON.parse(result.Messages[0].Data);
+    return data;
+  }
 
-    return data as K;
+  async send<K>({
+    tags,
+    data,
+  }: {
+    tags: Array<{ name: string; value: string }>;
+    data: K;
+  }): Promise<K> {
+    this.logger.debug(`Evaluating send interaction on contract`, {
+      tags,
+      data,
+    });
+
+    const result = await this.ao.message({
+      process: this.processId,
+      tags,
+      data: JSON.stringify(data),
+    });
+
+    if (result.Error !== undefined) {
+      throw new Error(result.Error);
+    }
+
+    this.logger.debug(`Send interaction result`, {
+      result,
+    });
+
+    const res: K = JSON.parse(result.Messages[0].Data);
+    return res;
   }
 }
