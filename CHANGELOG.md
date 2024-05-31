@@ -1,3 +1,10 @@
+# [1.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.3...v1.1.0-alpha.4) (2024-05-31)
+
+
+### Bug Fixes
+
+* **init:** allow signer to be undefined and if so return readable ([b6a05e2](https://github.com/ar-io/ar-io-sdk/commit/b6a05e205c60c6b8623fbac6795a1e96a7a19590))
+
 # [1.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.2...v1.1.0-alpha.3) (2024-05-31)
 
 
