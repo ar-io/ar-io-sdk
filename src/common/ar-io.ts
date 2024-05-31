@@ -169,7 +169,7 @@ export class ArIOReadable implements ArIOReadContract {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
 
   constructor(config?: ContractConfiguration<ArIOState>) {
-    if (!config) {
+    if (!config || config === undefined) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: ARNS_TESTNET_REGISTRY_TX,
       });
