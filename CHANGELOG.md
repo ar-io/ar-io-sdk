@@ -1,3 +1,10 @@
+# [1.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.5...v1.1.0-alpha.6) (2024-05-31)
+
+
+### Bug Fixes
+
+* **api:** remove unused variable for epochBlockHeight ([98c5ebc](https://github.com/ar-io/ar-io-sdk/commit/98c5ebc447b1b6d0249e0602ce7e4af97e424cc1))
+
 # [1.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.4...v1.1.0-alpha.5) (2024-05-31)
 
 
