@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect } from '@permaweb/aoconnect';
+import { connect, dryrun } from '@permaweb/aoconnect';
 
 import {
   AOContract,
@@ -27,6 +27,7 @@ import { DefaultLogger } from '../logger.js';
 export class AOProcess<T> implements BaseContract<T>, AOContract {
   private logger: Logger;
   private processId: string;
+  // private scheduler: string;
   private ao: {
     result: any;
     results: any;
@@ -40,10 +41,12 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
 
   constructor({
     processId,
-    connectionConfig,
+    // connectionConfig,
+    // scheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
     logger = new DefaultLogger(),
   }: {
     processId: string;
+    scheduler?: string;
     connectionConfig?: {
       CU_URL: string;
       MU_URL: string;
@@ -54,7 +57,8 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
   }) {
     this.processId = processId;
     this.logger = logger;
-    this.ao = connect(connectionConfig);
+    // this.scheduler = scheduler;
+    this.ao = connect();
   }
 
   async getState(): Promise<T> {

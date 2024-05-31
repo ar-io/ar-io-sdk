@@ -17,6 +17,8 @@
 import { ARNS_TESTNET_REGISTRY_TX, ioDevnetProcessId } from '../constants.js';
 import {
   AR_IO_CONTRACT_FUNCTIONS,
+  AoEpochData,
+  AoGateway,
   AoIOState,
   ArIOReadContract,
   ArIOState,
@@ -427,7 +429,7 @@ export class ArIOReadable implements ArIOReadContract<ArIOState> {
    * @example
    * The current epoch
    * ```ts
-   * arIO.getEpoch({ blockeHeight: 1000 });
+   * arIO.getEpoch({ blockHeight: 1000 });
    * ```
    * @example
    * Get the epoch at a given block height or sortkey
@@ -1022,8 +1024,8 @@ export class IOReadable
     address,
   }: {
     address: WalletAddress;
-  }): Promise<Gateway | undefined> {
-    return this.process.read<Gateway | undefined>({
+  }): Promise<AoGateway | undefined> {
+    return this.process.read<AoGateway | undefined>({
       tags: [
         { name: 'Action', value: 'Gateway' },
         { name: 'Address', value: address },
@@ -1032,16 +1034,19 @@ export class IOReadable
   }
 
   async getGateways(): Promise<
-    Record<string, Gateway> | Record<string, never>
+    Record<string, AoGateway> | Record<string, never>
   > {
-    return this.process.read<Record<string, Gateway>>({
+    return this.process.read<Record<string, AoGateway>>({
       tags: [{ name: 'Action', value: 'Gateways' }],
     });
   }
 
-  async getCurrentEpoch(): Promise<EpochDistributionData> {
-    return this.process.read<EpochDistributionData>({
-      tags: [{ name: 'Action', value: 'Epoch' }],
+  async getCurrentEpoch(): Promise<AoEpochData> {
+    return this.process.read<AoEpochData>({
+      tags: [
+        { name: 'Action', value: 'Epoch' },
+        { name: 'Timestamp', value: `${Date.now()}` },
+      ],
     });
   }
 
@@ -1064,43 +1069,21 @@ export class IOReadable
   }
 }
 
-export class IO {
-  static init({ processId }: { processId: string }): IOReadable;
-  static init({ process }: { process: AOProcess<AoIOState> }): IOReadable;
-  static init(
-    config: WithSigner<
-      { process: AOProcess<AoIOState> } | { processId: string }
-    >,
-  ): IOWriteable;
-  static init(
-    config?: OptionalSigner<ProcessConfiguration<AoIOState>>,
-  ): IOReadable {
-    if (config && config.signer) {
-      const { signer, ...rest } = config;
-      return new IOWriteable({
-        ...rest,
-        signer,
-      });
-    }
-    return new IOReadable(config);
-  }
-}
-
 export class IOWriteable extends IOReadable implements ArIOWriteContract {
-  protected declare process: AOProcess<AoIOState>;
+  protected declare process: AOProcess;
   private signer: ContractSigner;
   constructor({
     signer,
     ...config
   }: WithSigner<
     | {
-        process?: AOProcess<AoIOState>;
+        process?: AOProcess;
       }
     | { processId?: string }
   >) {
     if (Object.keys(config).length === 0) {
       super({
-        process: new AOProcess<AoIOState>({
+        process: new AOProcess({
           processId: ioDevnetProcessId,
         }),
       });
@@ -1110,7 +1093,7 @@ export class IOWriteable extends IOReadable implements ArIOWriteContract {
       this.signer = signer;
     } else if (isProcessIdConfiguration(config)) {
       super({
-        process: new AOProcess<AoIOState>({
+        process: new AOProcess({
           processId: config.processId,
         }),
       });

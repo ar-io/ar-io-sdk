@@ -23,6 +23,8 @@ import {
   ANTRecord,
   ANTState,
   AllowedProtocols,
+  AoEpochData,
+  AoGateway,
   ArNSAuctionData,
   ArNSNameData,
   ArNSReservedNameData,
@@ -120,12 +122,12 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: WalletAddress }>): Promise<
-    Gateway | undefined
+    Gateway | AoGateway | undefined
   >;
   getGateways({
     evaluationOptions,
   }: EvaluationParameters): Promise<
-    Record<WalletAddress, Gateway> | Record<string, never>
+    Record<WalletAddress, Gateway | AoGateway> | Record<string, never>
   >;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
@@ -165,7 +167,7 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
   }>): Promise<EpochDistributionData>;
   getCurrentEpoch({
     evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
+  }: EvaluationParameters): Promise<EpochDistributionData | AoEpochData>;
   getPrescribedObservers({
     evaluationOptions,
   }: EvaluationParameters): Promise<WeightedObserver[]>;

@@ -239,26 +239,6 @@ export interface ArIOState {
   prescribedObservers: PrescribedObservers;
 }
 
-export interface AoIOState {
-  GatewayRegistry: Record<string, Gateway>;
-  Epochs: Record<
-    number,
-    {
-      // TODO: distributions
-      observations: EpochObservations;
-      prescribedObservers: WeightedObserver[];
-      startTimestamp: number;
-      endTimestamp: number;
-      distributionTimestamp: number;
-    }
-  >;
-  NameRegistry: Record<string, ArNSNameData>;
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, VaultData>;
-  Ticker: string;
-  Name: string;
-}
-
 // ANT
 
 export type ANTRecord = {
@@ -288,3 +268,48 @@ export const ANT_CONTRACT_FUNCTIONS = {
   BALANCE: 'balance',
   EVOLVE: 'evolve',
 };
+
+// AO Contract types
+export type AoEpochData = {
+  epochIndex: number;
+  observations: EpochObservations;
+  prescribedObservers: WeightedObserver[];
+  startTimestamp: number;
+  endTimestamp: number;
+  distributionTimestamp: number;
+  distributions: Record<WalletAddress, number>;
+};
+
+export type AoGatewayStats = {
+  passedConsecutiveEpochs: number;
+  failedConsecutiveEpochs: number;
+  totalEpochParticipationCount: number;
+  passedEpochCount: number;
+  failedEpochCount: number;
+  observedEpochCount: number;
+  prescribedEpochCount: number;
+};
+
+export type AoGateway = {
+  settings: GatewaySettings;
+  stats: AoGatewayStats;
+  delegates: Record<WalletAddress, GatewayDelegate>;
+  totalDelegatedStake: number;
+  vaults: Record<WalletAddress, VaultData>;
+  startTimestamp: number;
+  endTimestamp: number;
+  observerAddress: WalletAddress;
+  operatorStake: number;
+  status: 'joined' | 'leaving';
+  // TODO: add weights
+};
+
+export interface AoIOState {
+  GatewayRegistry: Record<string, AoGateway>;
+  Epochs: Record<number, AoEpochData>;
+  NameRegistry: Record<string, ArNSNameData>;
+  Balances: Record<WalletAddress, number>;
+  Vaults: Record<WalletAddress, VaultData>;
+  Ticker: string;
+  Name: string;
+}
