@@ -125,9 +125,10 @@ export class ArIO {
    */
   static init(): ArIOReadable;
   static init({ signer }: WithSigner): ArIOWritable;
-  static init(
-    config?: Required<ContractConfiguration<ArIOState>>,
-  ): ArIOReadable;
+  static init({
+    signer,
+    ...config
+  }: OptionalSigner<Required<ContractConfiguration<ArIOState>>>): ArIOReadable;
   static init({
     signer,
     ...config
