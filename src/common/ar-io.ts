@@ -128,7 +128,9 @@ export class ArIO {
   static init({
     signer,
     ...config
-  }: OptionalSigner<Required<ContractConfiguration<ArIOState>>>): ArIOReadable;
+  }: { signer?: undefined } & Required<
+    ContractConfiguration<ArIOState>
+  >): ArIOReadable;
   static init({
     signer,
     ...config
