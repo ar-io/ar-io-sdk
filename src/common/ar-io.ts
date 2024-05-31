@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ARNS_TESTNET_REGISTRY_TX } from '../constants.js';
+import { ARNS_TESTNET_REGISTRY_TX, ioDevnetProcessId } from '../constants.js';
 import {
   AR_IO_CONTRACT_FUNCTIONS,
   AoIOState,
@@ -142,7 +142,9 @@ export class ArIO {
     // must be a WarpContract to get a ArIOWriteable
     { contract: WarpContract<ArIOState> } | { contractTxId: string }
   >): ArIOWritable;
-  static init(config?: OptionalSigner<ContractConfiguration<ArIOState>>) {
+  static init(
+    config?: OptionalSigner<ContractConfiguration<ArIOState>>,
+  ): ArIOReadable | ArIOWritable {
     if (config && config.signer) {
       const { signer, ...rest } = config;
       const contract = this.createWriteableContract(rest);
@@ -153,9 +155,8 @@ export class ArIO {
   }
 }
 
-export class ArIOReadable implements ArIOReadContract {
+export class ArIOReadable implements ArIOReadContract<ArIOState> {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
-  protected process: AOProcess<AoIOState>;
 
   constructor(
     config?: ContractConfiguration<ArIOState> | ProcessConfiguration<AoIOState>,
@@ -169,12 +170,6 @@ export class ArIOReadable implements ArIOReadContract {
     } else if (isContractTxIdConfiguration(config)) {
       this.contract = new RemoteContract<ArIOState>({
         contractTxId: config.contractTxId,
-      });
-    } else if (isProcessConfiguration<AoIOState>(config)) {
-      this.process = config.process;
-    } else if (isProcessIdConfiguration(config)) {
-      this.process = new AOProcess<AoIOState>({
-        processId: config.processId,
       });
     } else {
       throw new InvalidContractConfigurationError();
@@ -198,9 +193,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getState<T = ArIOState | AoIOState>(
     params: EvaluationParameters = {},
   ): Promise<T> {
-    if (this.process instanceof AOProcess) {
-      return this.process.getState() as T;
-    }
     const state = await this.contract.getState(params);
     return state as T;
   }
@@ -226,12 +218,6 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSNameData | undefined
   > {
-    // handle ao by sending tags
-    if (this.process instanceof AOProcess) {
-      return this.process.read<ArNSNameData>({
-        tags: [{ name: 'Action', value: 'Record' }],
-      });
-    }
     const records = await this.getArNSRecords({ evaluationOptions });
     return records[domain];
   }
@@ -253,11 +239,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getArNSRecords({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<Record<string, ArNSNameData>> {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Record<string, ArNSNameData>>({
-        tags: [{ name: 'Action', value: 'Records' }],
-      });
-    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.records;
   }
@@ -281,11 +262,6 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters): Promise<
     Record<string, ArNSReservedNameData> | Record<string, never>
   > {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Record<string, ArNSReservedNameData>>({
-        tags: [{ name: 'Action', value: 'ReservedNames' }],
-      });
-    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.reserved;
   }
@@ -311,14 +287,6 @@ export class ArIOReadable implements ArIOReadContract {
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSReservedNameData | undefined
   > {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Record<string, ArNSReservedNameData>>({
-        tags: [
-          { name: 'Action', value: 'ReservedName' },
-          { name: 'Name', value: domain },
-        ],
-      });
-    }
     const reservedNames = await this.getArNSReservedNames({
       evaluationOptions,
     });
@@ -345,14 +313,6 @@ export class ArIOReadable implements ArIOReadContract {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<number> {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<number>({
-        tags: [
-          { name: 'Action', value: 'Balance' },
-          { name: 'Address', value: address },
-        ],
-      });
-    }
     const balances = await this.getBalances({ evaluationOptions });
     return balances[address] || 0;
   }
@@ -375,11 +335,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getBalances({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<string, number>
   > {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Record<WalletAddress, number>>({
-        tags: [{ name: 'Action', value: 'Balances' }],
-      });
-    }
     const state = await this.contract.getState({ evaluationOptions });
     return state.balances;
   }
@@ -404,14 +359,6 @@ export class ArIOReadable implements ArIOReadContract {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<Gateway | undefined> {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Gateway | undefined>({
-        tags: [
-          { name: 'Action', value: 'Gateway' },
-          { name: 'Address', value: address },
-        ],
-      });
-    }
     return this.contract
       .readInteraction<{ target: string }, Gateway>({
         functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAY,
@@ -443,11 +390,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
     Record<WalletAddress, Gateway> | Record<string, never>
   > {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<Record<WalletAddress, Gateway>>({
-        tags: [{ name: 'Action', value: 'Gateways' }],
-      });
-    }
     return this.contract.readInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAYS,
       evaluationOptions,
@@ -472,11 +414,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getCurrentEpoch({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<EpochDistributionData> {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<EpochDistributionData>({
-        tags: [{ name: 'Action', value: 'Epoch' }],
-      });
-    }
     return this.contract.readInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.EPOCH,
       evaluationOptions,
@@ -505,12 +442,6 @@ export class ArIOReadable implements ArIOReadContract {
   }: {
     blockHeight: number;
   } & EvaluationParameters): Promise<EpochDistributionData> {
-    if (this.process instanceof AOProcess) {
-      // TODO: handle tag set as epoch number
-      return this.process.read<EpochDistributionData>({
-        tags: [{ name: 'Action', value: 'Epoch' }],
-      });
-    }
     return this.contract.readInteraction<
       { height: number },
       EpochDistributionData
@@ -541,11 +472,6 @@ export class ArIOReadable implements ArIOReadContract {
   async getPrescribedObservers({
     evaluationOptions,
   }: EvaluationParameters = {}): Promise<WeightedObserver[]> {
-    if (this.process instanceof AOProcess) {
-      return this.process.read<WeightedObserver[]>({
-        tags: [{ name: 'Action', value: 'PrescribedObservers' }],
-      });
-    }
     return this.contract.readInteraction<never, WeightedObserver[]>({
       functionName: AR_IO_CONTRACT_FUNCTIONS.PRESCRIBED_OBSERVERS,
       evaluationOptions,
@@ -1004,6 +930,377 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
         qty: params.qty,
       },
       signer: this.signer,
+    });
+  }
+}
+
+export class IOReadable
+  implements
+    Omit<
+      ArIOReadContract<AoIOState>,
+      'getAuction' | 'getAuctions' | 'getEpoch'
+    >
+{
+  protected process: AOProcess<AoIOState>;
+
+  constructor(config?: ProcessConfiguration<AoIOState>) {
+    if (!config) {
+      this.process = new AOProcess<AoIOState>({
+        processId: ioDevnetProcessId,
+      });
+    } else if (isProcessConfiguration<AoIOState>(config)) {
+      this.process = config.process;
+    } else if (isProcessIdConfiguration(config)) {
+      this.process = new AOProcess<AoIOState>({
+        processId: config.processId,
+      });
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
+  }
+
+  async getState(): Promise<AoIOState> {
+    return this.process.getState();
+  }
+
+  async getArNSRecord({
+    domain,
+  }: {
+    domain: string;
+  }): Promise<ArNSNameData | undefined> {
+    return this.process.read<ArNSNameData>({
+      tags: [
+        { name: 'Action', value: 'Record' },
+        { name: 'Name', value: domain },
+      ],
+    });
+  }
+
+  async getArNSRecords(): Promise<Record<string, ArNSNameData>> {
+    return this.process.read<Record<string, ArNSNameData>>({
+      tags: [{ name: 'Action', value: 'Records' }],
+    });
+  }
+
+  async getArNSReservedNames(): Promise<
+    Record<string, ArNSReservedNameData> | Record<string, never>
+  > {
+    return this.process.read<Record<string, ArNSReservedNameData>>({
+      tags: [{ name: 'Action', value: 'ReservedNames' }],
+    });
+  }
+
+  async getArNSReservedName({
+    domain,
+  }: {
+    domain: string;
+  }): Promise<ArNSReservedNameData | undefined> {
+    return this.process.read<ArNSReservedNameData>({
+      tags: [
+        { name: 'Action', value: 'ReservedName' },
+        { name: 'Name', value: domain },
+      ],
+    });
+  }
+
+  async getBalance({ address }: { address: WalletAddress }): Promise<number> {
+    return this.process.read<number>({
+      tags: [
+        { name: 'Action', value: 'Balance' },
+        { name: 'Address', value: address },
+      ],
+    });
+  }
+
+  async getBalances(): Promise<Record<WalletAddress, number>> {
+    return this.process.read<Record<string, number>>({
+      tags: [{ name: 'Action', value: 'Balances' }],
+    });
+  }
+
+  async getGateway({
+    address,
+  }: {
+    address: WalletAddress;
+  }): Promise<Gateway | undefined> {
+    return this.process.read<Gateway | undefined>({
+      tags: [
+        { name: 'Action', value: 'Gateway' },
+        { name: 'Address', value: address },
+      ],
+    });
+  }
+
+  async getGateways(): Promise<
+    Record<string, Gateway> | Record<string, never>
+  > {
+    return this.process.read<Record<string, Gateway>>({
+      tags: [{ name: 'Action', value: 'Gateways' }],
+    });
+  }
+
+  async getCurrentEpoch(): Promise<EpochDistributionData> {
+    return this.process.read<EpochDistributionData>({
+      tags: [{ name: 'Action', value: 'Epoch' }],
+    });
+  }
+
+  async getPrescribedObservers(): Promise<WeightedObserver[]> {
+    return this.process.read<WeightedObserver[]>({
+      tags: [{ name: 'Action', value: 'PrescribedObservers' }],
+    });
+  }
+
+  async getObservations(): Promise<Observations> {
+    return this.process.read<Observations>({
+      tags: [{ name: 'Action', value: 'Observations' }],
+    });
+  }
+
+  async getDistributions(): Promise<EpochDistributionData> {
+    return this.process.read<EpochDistributionData>({
+      tags: [{ name: 'Action', value: 'Distributions' }],
+    });
+  }
+}
+
+export class IO {
+  static init({ processId }: { processId: string }): IOReadable;
+  static init({ process }: { process: AOProcess<AoIOState> }): IOReadable;
+  static init(
+    config: WithSigner<
+      { process: AOProcess<AoIOState> } | { processId: string }
+    >,
+  ): IOWriteable;
+  static init(
+    config?: OptionalSigner<ProcessConfiguration<AoIOState>>,
+  ): IOReadable {
+    if (config && config.signer) {
+      const { signer, ...rest } = config;
+      return new IOWriteable({
+        ...rest,
+        signer,
+      });
+    }
+    return new IOReadable(config);
+  }
+}
+
+export class IOWriteable extends IOReadable implements ArIOWriteContract {
+  protected declare process: AOProcess<AoIOState>;
+  private signer: ContractSigner;
+  constructor({
+    signer,
+    ...config
+  }: WithSigner<
+    | {
+        process?: AOProcess<AoIOState>;
+      }
+    | { processId?: string }
+  >) {
+    if (Object.keys(config).length === 0) {
+      super({
+        process: new AOProcess<AoIOState>({
+          processId: ioDevnetProcessId,
+        }),
+      });
+      this.signer = signer;
+    } else if (isProcessConfiguration<AoIOState>(config)) {
+      super({ process: config.process });
+      this.signer = signer;
+    } else if (isProcessIdConfiguration(config)) {
+      super({
+        process: new AOProcess<AoIOState>({
+          processId: config.processId,
+        }),
+      });
+      this.signer = signer;
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
+  }
+
+  async transfer({
+    target,
+    qty,
+  }: {
+    target: string;
+    qty: number | mIOToken;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{
+      target: WalletAddress;
+      qty: number;
+      denomination?: DENOMINATIONS;
+    }>({
+      tags: [{ name: 'Action', value: 'Transfer' }],
+      data: {
+        target,
+        qty: qty.valueOf(),
+      },
+      signer: this.signer,
+    });
+  }
+
+  async joinNetwork({
+    qty,
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: JoinNetworkParams): Promise<WriteInteractionResult> {
+    return this.process.send<JoinNetworkParams>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'JoinNetwork' }],
+      data: {
+        qty: qty.valueOf(),
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake: minDelegatedStake.valueOf(),
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
+    });
+  }
+
+  async updateGatewaySettings({
+    allowDelegatedStaking,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    port,
+    properties,
+    protocol,
+    autoStake,
+    observerWallet,
+  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult> {
+    return this.process.send<UpdateGatewaySettingsParams>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'UpdateGatewaySettings' }],
+      data: {
+        allowDelegatedStaking,
+        delegateRewardShareRatio,
+        fqdn,
+        label,
+        minDelegatedStake: minDelegatedStake?.valueOf(),
+        note,
+        port,
+        properties,
+        protocol,
+        autoStake,
+        observerWallet,
+      },
+    });
+  }
+
+  async increaseDelegateStake(params: {
+    target: string;
+    qty: number | mIOToken;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ target: string; qty: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'IncreaseDelegateStake' }],
+      data: {
+        target: params.target,
+        qty: params.qty.valueOf(),
+      },
+    });
+  }
+
+  async decreaseDelegateStake(params: {
+    target: string;
+    qty: number | mIOToken;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ target: string; qty: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'DecreaseDelegateStake' }],
+      data: {
+        target: params.target,
+        qty: params.qty.valueOf(),
+      },
+    });
+  }
+
+  async increaseOperatorStake(params: {
+    qty: number | mIOToken;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ qty: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'IncreaseOperatorStake' }],
+      data: {
+        qty: params.qty.valueOf(),
+      },
+    });
+  }
+
+  async decreaseOperatorStake(params: {
+    qty: number | mIOToken;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ qty: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'DecreaseOperatorStake' }],
+      data: {
+        qty: params.qty.valueOf(),
+      },
+    });
+  }
+
+  async saveObservations(params: {
+    reportTxId: TransactionId;
+    failedGateways: WalletAddress[];
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{
+      observerReportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'SaveObservations' }],
+      data: {
+        observerReportTxId: params.reportTxId,
+        failedGateways: params.failedGateways,
+      },
+    });
+  }
+
+  async extendLease(params: {
+    domain: string;
+    years: number;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ name: string; years: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'ExtendLease' }],
+      data: {
+        name: params.domain,
+        years: params.years,
+      },
+    });
+  }
+
+  async increaseUndernameLimit(params: {
+    domain: string;
+    qty: number;
+  }): Promise<WriteInteractionResult> {
+    return this.process.send<{ name: string; qty: number }>({
+      signer: this.signer,
+      tags: [{ name: 'Action', value: 'IncreaseUndernameLimit' }],
+      data: {
+        name: params.domain,
+        qty: params.qty,
+      },
     });
   }
 }

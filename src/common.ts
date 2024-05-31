@@ -23,7 +23,6 @@ import {
   ANTRecord,
   ANTState,
   AllowedProtocols,
-  ArIOState,
   ArNSAuctionData,
   ArNSNameData,
   ArNSReservedNameData,
@@ -59,6 +58,7 @@ export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
       contractTxId?: string;
     };
+
 export type ProcessConfiguration<T = NonNullable<unknown>> =
   | {
       process: AOProcess<T>;
@@ -101,6 +101,7 @@ export interface ReadContract {
 
 export interface AOContract {
   read<K>({ tags }): Promise<K>;
+  send({ tags, data }): Promise<{ id: string }>;
 }
 
 export interface WriteContract {
@@ -114,7 +115,7 @@ export interface WriteContract {
 }
 
 // TODO: extend with additional methods
-export interface ArIOReadContract extends BaseContract<ArIOState> {
+export interface ArIOReadContract<T> extends BaseContract<T> {
   getGateway({
     address,
     evaluationOptions,
@@ -255,7 +256,11 @@ export interface ArIOWriteContract {
   }): Promise<WriteInteractionResult>;
 }
 
-export type WriteInteractionResult = Transaction | DataItem;
+export type AOMessageResult = { id: string };
+export type SmartWeaveInteractionResult = Transaction | DataItem;
+export type WriteInteractionResult =
+  | SmartWeaveInteractionResult
+  | AOMessageResult;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {

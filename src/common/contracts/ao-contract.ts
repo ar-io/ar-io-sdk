@@ -16,13 +16,17 @@
  */
 import { connect } from '@permaweb/aoconnect';
 
-import { AOContract, BaseContract, Logger } from '../../types.js';
+import {
+  AOContract,
+  BaseContract,
+  ContractSigner,
+  Logger,
+} from '../../types.js';
 import { DefaultLogger } from '../logger.js';
 
 export class AOProcess<T> implements BaseContract<T>, AOContract {
   private logger: Logger;
   private processId: string;
-  // private scheduler: string;
   private ao: {
     result: any;
     results: any;
@@ -36,12 +40,10 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
 
   constructor({
     processId,
-    // scheduler = 'default-scheduler-tx-id',
     connectionConfig,
     logger = new DefaultLogger(),
   }: {
     processId: string;
-    // scheduler?: string;
     connectionConfig?: {
       CU_URL: string;
       MU_URL: string;
@@ -51,7 +53,6 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
     logger?: DefaultLogger;
   }) {
     this.processId = processId;
-    // this.scheduler = scheduler;
     this.logger = logger;
     this.ao = connect(connectionConfig);
   }
@@ -99,10 +100,12 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
   async send<K>({
     tags,
     data,
+    signer,
   }: {
     tags: Array<{ name: string; value: string }>;
     data: K;
-  }): Promise<K> {
+    signer: ContractSigner;
+  }): Promise<{ id: string }> {
     this.logger.debug(`Evaluating send interaction on contract`, {
       tags,
       data,
@@ -112,6 +115,7 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       process: this.processId,
       tags,
       data: JSON.stringify(data),
+      signer,
     });
 
     if (result.Error !== undefined) {
@@ -122,7 +126,7 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       result,
     });
 
-    const res: K = JSON.parse(result.Messages[0].Data);
-    return res;
+    const id: string = JSON.parse(result.Messages[0].Id);
+    return { id };
   }
 }

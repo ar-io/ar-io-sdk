@@ -35,18 +35,22 @@ export class UnknownError extends BaseError {}
 
 export class WriteInteractionError extends BaseError {}
 
-export const INVALID_SIGNER_ERROR =
-  'Invalid signer. Please provide a valid signer to interact with the contract.';
-
 export class InvalidSignerError extends BaseError {
   constructor() {
-    super(INVALID_SIGNER_ERROR);
+    super(
+      'Invalid signer. Please provide a valid signer to interact with the contract.',
+    );
   }
 }
-export const INVALID_CONTRACT_CONFIGURATION_ERROR =
-  'Invalid contract configuration';
+
 export class InvalidContractConfigurationError extends BaseError {
   constructor() {
-    super(INVALID_CONTRACT_CONFIGURATION_ERROR);
+    super('Invalid contract configuration');
+  }
+}
+
+export class InvalidProcessConfigurationError extends BaseError {
+  constructor() {
+    super('Invalid process configuration');
   }
 }
