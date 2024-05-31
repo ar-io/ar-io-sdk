@@ -89,10 +89,7 @@ export type WriteParameters<Input> = WithSigner<
   Required<ReadParameters<Input>>
 >;
 
-export type WriteArguments<T> = [
-  EvaluationParameters<WriteParameters<T>>,
-  WriteOptions?,
-];
+export type WriteArguments<T> = [WriteParameters<T>, WriteOptions?];
 
 export interface BaseContract<T> {
   getState(params: EvaluationParameters): Promise<T>;
@@ -108,10 +105,7 @@ export interface ReadContract {
 
 export interface WriteContract {
   writeInteraction<Input>(
-    ...[
-      { functionName, inputs, evaluationOptions },
-      options,
-    ]: WriteArguments<Input>
+    ...[{ functionName, inputs }, options]: WriteArguments<Input>
   ): Promise<WriteInteractionResult>;
 }
 

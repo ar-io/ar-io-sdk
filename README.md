@@ -230,12 +230,12 @@ Add tags to a `setName` ANT contract interaction.
 const ant = ANT.init({
   contractTxId: '8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk8v4S',
 });
-const res = await ant.setName({
-  name: 'My awesome new name'
-  evaluationOptions: {
-    evalTo: { blockHeight: 1382230 }, // alternatively, use evalTo: { sortKey: 'SORT_KEY' }
+const res = await ant.setName(
+  {
+    name: 'My awesome new name',
   },
-}, { tags: [{ name: "App-Name", value: "My-Awesome-App"}] });
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 </details>
