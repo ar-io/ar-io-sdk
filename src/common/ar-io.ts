@@ -158,9 +158,7 @@ export class ArIO {
       const contract = this.createWriteableContract(rest);
       return new ArIOWritable({ signer, contract });
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { signer, ...rest } = config || {}; // remove any undefined signers
-      return new ArIOReadable(rest);
+      return new ArIOReadable(config);
     }
   }
 }

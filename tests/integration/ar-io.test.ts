@@ -112,7 +112,7 @@ describe('ArIOReadable Client', () => {
     expect(balances).toBeDefined();
   });
 
-  it('should should return undefined for non existent gateway', async () => {
+  it('should return undefined for non existent gateway', async () => {
     const nonExistent = await arIO.getGateway({
       address: 'some-address',
     });
