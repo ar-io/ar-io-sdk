@@ -1,3 +1,10 @@
+# [1.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.1...v1.1.0-alpha.2) (2024-05-31)
+
+
+### Features
+
+* **write:** add tags support to write interactions on warp-contract and saveObservations ([46eb4c9](https://github.com/ar-io/ar-io-sdk/commit/46eb4c91ba7c56cbeefde3b4fc2a522fda5fda1d))
+
 # [1.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8-alpha.4...v1.1.0-alpha.1) (2024-05-29)
 
 ### Bug Fixes
