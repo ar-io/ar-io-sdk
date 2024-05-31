@@ -212,34 +212,6 @@ const ioValue = new mIOToken(mIOValue).toIO();
 console.log(ioValue); // 1 (IO)
 ```
 
-## Write APIs
-
-All write APIs come with an `options` argument that allows for extra properties to be passed in on the transaction.
-
-### Supported properties
-
-#### `tags`
-
-An array of tags (`{name: string, value: string}`) to add to the transaction.
-
-<details>
- <summary>Example</summary>
-Add tags to a `setName` ANT contract interaction.
-
-```typescript
-const ant = ANT.init({
-  contractTxId: '8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk8v4S',
-});
-const res = await ant.setName(
-  {
-    name: 'My awesome new name',
-  },
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-</details>
-
 ## ArIO Contract
 
 ### APIs
@@ -867,7 +839,11 @@ const joinNetworkParams = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.joinNetwork(joinNetworkParams);
+const { id: txId } = await authenticatedArIO.joinNetwork(
+  joinNetworkParams,
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `updateGatewaySettings(gatewaySettings)`
@@ -884,6 +860,8 @@ const signer = new ArweaveSigner(jwk);
 const authenticatedArIO = ArIO.init({ signer });
 const { id: txId } = await authenticatedArIO.updateGatewaySettings(
   updateGatewaySettingsParams,
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
 
@@ -900,7 +878,11 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseDelegateStake(params);
+const { id: txId } = await authenticatedArIO.increaseDelegateStake(
+  params,
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `decreaseDelegateStake({ target, qty })`
@@ -916,7 +898,9 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.decreaseDelegateStake(params);
+const { id: txId } = await authenticatedArIO.decreaseDelegateStake(params, {
+  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+});
 ```
 
 #### `increaseOperatorStake({ qty })`
@@ -931,7 +915,9 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseOperatorStake(params);
+const { id: txId } = await authenticatedArIO.increaseOperatorStake(params, {
+  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+});
 ```
 
 #### `decreaseOperatorStake({ qty })`
@@ -946,7 +932,9 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.decreaseOperatorStake(params);
+const { id: txId } = await authenticatedArIO.decreaseOperatorStake(params, {
+  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+});
 ```
 
 #### `saveObservations({ reportTxId, failedGateways })`
@@ -962,7 +950,9 @@ const params = {
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.saveObservations(params);
+const { id: txId } = await authenticatedArIO.saveObservations(params, {
+  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+});
 ```
 
 #### `transfer({ target, qty, denomination })`
@@ -972,11 +962,15 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 ```typescript
 // signer required for write interactions APIs
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.transfer({
-  target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-  qty: new IOToken(1000).toMIO(),
-  denomination: 'IO',
-});
+const { id: txId } = await authenticatedArIO.transfer(
+  {
+    target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    qty: new IOToken(1000).toMIO(),
+    denomination: 'IO',
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `increaseUndernameLimit({ domain, qty })`
@@ -985,10 +979,14 @@ Increases the undername support of a domain up to a maximum of 10k. Domains, by 
 
 ```typescript
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseUndernameLimit({
-  domain: 'ar-io',
-  qty: 420,
-});
+const { id: txId } = await authenticatedArIO.increaseUndernameLimit(
+  {
+    domain: 'ar-io',
+    qty: 420,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `extendLease({ domain, years })`
@@ -997,10 +995,14 @@ Extends the lease of a registered ArNS domain, with an extension of 1-5 years de
 
 ```typescript
 const authenticatedArIO = ArIO.init({ signer });
-const { id: txId } = await authenticatedArIO.extendLease({
-  domain: 'ar-io',
-  years: 1,
-});
+const { id: txId } = await authenticatedArIO.extendLease(
+  {
+    domain: 'ar-io',
+    years: 1,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 ### Custom Contracts
@@ -1272,7 +1274,11 @@ Transfers ownership of the ANT to a new target address. Target MUST be an Arweav
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const recipient = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const { id: txId } = await ant.transfer({ target: recipient });
+const { id: txId } = await ant.transfer(
+  { target: recipient },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `setController({ controller })`
@@ -1283,7 +1289,11 @@ Adds a new controller to the list of approved controllers on the ANT. Controller
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const { id: txId } = await ant.setController({ controller });
+const { id: txId } = await ant.setController(
+  { controller },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `removeController({ controller })`
@@ -1294,7 +1304,11 @@ Removes a controller from the list of approved controllers on the ANT.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
-const { id: txId } = await ant.removeController({ controller });
+const { id: txId } = await ant.removeController(
+  { controller },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `setRecord({ subDomain, transactionId, ttlSeconds })`
@@ -1309,11 +1323,15 @@ const ant = ANT.init({ contractTxId });
 const subDomain = 'test-domain';
 const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ttlSeconds = 900;
-const { id: txId } = await ant.setRecord({
-  subDomain,
-  transactionId,
-  ttlSeconds,
-});
+const { id: txId } = await ant.setRecord(
+  {
+    subDomain,
+    transactionId,
+    ttlSeconds,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `removeRecord({ subDomain })`
@@ -1324,7 +1342,11 @@ Removes a record from the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const subDomain = 'test-domain';
-const { id: txId } = await ant.removeRecord({ subDomain });
+const { id: txId } = await ant.removeRecord(
+  { subDomain },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `setName({ name })`
@@ -1335,7 +1357,11 @@ Sets the name of the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const name = 'chumbawumba';
-const { id: txId } = await ant.setName({ name });
+const { id: txId } = await ant.setName(
+  { name },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 #### `setTicker({ ticker })`
@@ -1346,7 +1372,10 @@ Sets the ticker of the ANT contract.
 const contractTxId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ contractTxId });
 const ticker = 'ANT-WUMBA';
-const { id: txId } = await ant.setTicker({ ticker });
+const { id: txId } = await ant.setTicker(
+  { ticker },
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
 ```
 
 ### Configuration
