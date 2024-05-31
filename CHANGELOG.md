@@ -1,3 +1,11 @@
+# [1.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.4...v1.1.0-alpha.5) (2024-05-31)
+
+
+### Bug Fixes
+
+* **init:** fix type for init to allow undefined signer ([0a64ea9](https://github.com/ar-io/ar-io-sdk/commit/0a64ea9006571c93b4e9a26803b04d7da8ddcb9f))
+* **init:** rmeove unnecessary destructuring ([81af1af](https://github.com/ar-io/ar-io-sdk/commit/81af1af7190f18726a20ebaaaa5712a4e815bb35))
+
 # [1.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.3...v1.1.0-alpha.4) (2024-05-31)
 
 
