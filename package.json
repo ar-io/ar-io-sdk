@@ -121,7 +121,6 @@
     "arweave": "1.14.4",
     "axios": "1.6.0",
     "bunyan": "^1.8.15",
-    "warp-arbundles": "^1.0.4",
     "warp-contracts": "1.4.45"
   },
   "lint-staged": {

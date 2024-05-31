@@ -86,7 +86,7 @@ describe('ANT Writable', () => {
         ],
       },
     );
-    const tx = await arweave.transactions.get(await res.id);
+    const tx = await arweave.transactions.get(res.id);
     const tags = tx.tags as Tag[];
     const customTag = tags.find(
       (tag) =>

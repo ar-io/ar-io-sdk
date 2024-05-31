@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
-import { DataItem } from 'warp-arbundles';
 import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
@@ -56,7 +55,7 @@ export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
 export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner;
+  signer?: ContractSigner | undefined;
 } & T;
 export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
@@ -288,7 +287,8 @@ export interface ArIOWriteContract {
   ): Promise<WriteInteractionResult>;
 }
 
-export type WriteInteractionResult = Transaction | DataItem;
+// we only support L1 smartweave interactions
+export type WriteInteractionResult = Transaction;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {

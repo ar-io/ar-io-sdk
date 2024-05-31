@@ -230,7 +230,8 @@ export class WarpContract<T>
         interactionTxId: writeResult.originalTxId,
       });
 
-      return writeResult.interactionTx;
+      // hack - we only support L1 for interactions so they should always be transactions
+      return writeResult.interactionTx as Transaction;
     } catch (error) {
       this.logger.error(
         `Failed to write contract interaction: ${error.message}`,

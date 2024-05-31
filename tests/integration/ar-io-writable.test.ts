@@ -1,5 +1,5 @@
 import { ArweaveSigner } from 'arbundles';
-import Transaction, { Tag } from 'arweave/node/lib/transaction.js';
+import { Tag } from 'arweave/node/lib/transaction.js';
 
 import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
@@ -49,7 +49,7 @@ describe('ArIOWriteable', () => {
       autoStake: true,
     });
     expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const verified = await arweave.transactions.verify(tx);
     expect(verified).toBe(true);
   });
 
@@ -59,7 +59,7 @@ describe('ArIOWriteable', () => {
       qty: new IOToken(100).toMIO(),
     });
     expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const verified = await arweave.transactions.verify(tx);
     expect(verified).toBe(true);
     const gateway = await arIO.getGateway({ address: gatewayAddress });
     expect(gateway?.delegates[interactingAddress]).toEqual({
@@ -75,7 +75,7 @@ describe('ArIOWriteable', () => {
       qty: new IOToken(100).toMIO(),
     });
     expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const verified = await arweave.transactions.verify(tx);
     expect(verified).toBe(true);
     const gateway = await arIO.getGateway({ address: gatewayAddress });
     expect(gateway?.delegates[interactingAddress]).toEqual({
@@ -101,7 +101,7 @@ describe('ArIOWriteable', () => {
       qty: new IOToken(10).toMIO(),
     });
     expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const verified = await arweave.transactions.verify(tx);
     expect(verified).toBe(true);
     const targetBalance = await arIO.getBalance({ address: target });
     expect(targetBalance).toEqual(new IOToken(10).toMIO().valueOf());
@@ -125,7 +125,7 @@ describe('ArIOWriteable', () => {
       years,
     });
     expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const verified = await arweave.transactions.verify(tx);
     expect(verified).toBe(true);
     const record = (await arIO.getArNSRecord({ domain })) as ArNSLeaseData;
     expect(record?.endTimestamp).toBe(
@@ -151,8 +151,7 @@ describe('ArIOWriteable', () => {
       },
     );
 
-    const tx = await arweave.transactions.get(await res.id);
-    console.dir(tx, { depth: null });
+    const tx = await arweave.transactions.get(res.id);
     const tags = tx.tags as Tag[];
     const arIOFunctionTag = tags.find(
       (tag) =>
@@ -164,7 +163,7 @@ describe('ArIOWriteable', () => {
     );
 
     expect(res.id).toBeDefined();
-    const verified = await arweave.transactions.verify(res as Transaction);
+    const verified = await arweave.transactions.verify(res);
     expect(verified).toBe(true);
     const record = await arIO.getArNSRecord({ domain });
     expect(record?.undernames).toBe(11);
