@@ -1,3 +1,10 @@
+# [1.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.2...v1.1.0-alpha.3) (2024-05-31)
+
+
+### Bug Fixes
+
+* **types:** remove DataItem from WriteInteractionResult ([eadb1a1](https://github.com/ar-io/ar-io-sdk/commit/eadb1a1d61985caf1326c32d1205d3e8db309374))
+
 # [1.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.1...v1.1.0-alpha.2) (2024-05-31)
 
 
