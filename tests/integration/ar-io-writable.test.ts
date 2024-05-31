@@ -145,13 +145,14 @@ describe('ArIOWriteable', () => {
         tags: [
           {
             name: 'ar-io-sdk-write',
-            value: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_LIMIT,
+            value: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
           },
         ],
       },
     );
 
     const tx = await arweave.transactions.get(await res.id);
+    console.dir(tx, { depth: null });
     const tags = tx.tags as Tag[];
     const arIOFunctionTag = tags.find(
       (tag) =>
@@ -159,7 +160,7 @@ describe('ArIOWriteable', () => {
     );
 
     expect(arIOFunctionTag?.get('value', { decode: true, string: true })).toBe(
-      AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_LIMIT,
+      AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
     );
 
     expect(res.id).toBeDefined();
