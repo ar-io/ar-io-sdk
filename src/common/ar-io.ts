@@ -41,6 +41,7 @@ import {
   WeightedObserver,
   WithSigner,
   WriteInteractionResult,
+  WriteOptions,
   mIOToken,
 } from '../types.js';
 import {
@@ -689,16 +690,19 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    });
    * ```
    */
-  async transfer({
-    target,
-    qty,
-    denomination = DENOMINATIONS.IO,
-  }: {
-    target: string;
-    qty: number | mIOToken;
-    // @deprecated - the contract will no longer support denominations - all values will be in mIO
-    denomination?: DENOMINATIONS;
-  }): Promise<WriteInteractionResult> {
+  async transfer(
+    {
+      target,
+      qty,
+      denomination = DENOMINATIONS.IO,
+    }: {
+      target: string;
+      qty: number | mIOToken;
+      // @deprecated - the contract will no longer support denominations - all values will be in mIO
+      denomination?: DENOMINATIONS;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     let convertedQty = qty;
     // the contract will no longer support denominations
     if (denomination === DENOMINATIONS.IO && typeof qty === 'number') {
@@ -708,14 +712,17 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
       target: WalletAddress;
       qty: number;
       denomination?: DENOMINATIONS;
-    }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
-      inputs: {
-        target,
-        qty: convertedQty.valueOf(), // convert to number if mIO is provided
+    }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.TRANSFER,
+        inputs: {
+          target,
+          qty: convertedQty.valueOf(), // convert to number if mIO is provided
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -741,38 +748,44 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
     * arIO.joinNetwork(jointNetworkParams);
    * ```
    */
-  async joinNetwork({
-    qty,
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: JoinNetworkParams): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction<JoinNetworkParams>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
-      inputs: {
-        qty: qty.valueOf(), // convert to number if mIO is provided
-        allowDelegatedStaking,
-        delegateRewardShareRatio,
-        fqdn,
-        label,
-        minDelegatedStake: minDelegatedStake.valueOf(), // convert to number if mIO is provided
-        note,
-        port,
-        properties,
-        protocol,
-        autoStake,
-        observerWallet,
+  async joinNetwork(
+    {
+      qty,
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: JoinNetworkParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<JoinNetworkParams>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.JOIN_NETWORK,
+        inputs: {
+          qty: qty.valueOf(), // convert to number if mIO is provided
+          allowDelegatedStaking,
+          delegateRewardShareRatio,
+          fqdn,
+          label,
+          minDelegatedStake: minDelegatedStake.valueOf(), // convert to number if mIO is provided
+          note,
+          port,
+          properties,
+          protocol,
+          autoStake,
+          observerWallet,
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -784,36 +797,42 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.updateGatewaySettings({ autoStake: true, minDelegatedStake: new IOToken(100).toMIO()});
    * ```
    */
-  async updateGatewaySettings({
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction<UpdateGatewaySettingsParams>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
-      inputs: {
-        allowDelegatedStaking,
-        delegateRewardShareRatio,
-        fqdn,
-        label,
-        minDelegatedStake: minDelegatedStake?.valueOf(), // convert to number if mIO is provided
-        note,
-        port,
-        properties,
-        protocol,
-        autoStake,
-        observerWallet,
+  async updateGatewaySettings(
+    {
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: UpdateGatewaySettingsParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<UpdateGatewaySettingsParams>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.UPDATE_GATEWAY_SETTINGS,
+        inputs: {
+          allowDelegatedStaking,
+          delegateRewardShareRatio,
+          fqdn,
+          label,
+          minDelegatedStake: minDelegatedStake?.valueOf(), // convert to number if mIO is provided
+          note,
+          port,
+          properties,
+          protocol,
+          autoStake,
+          observerWallet,
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -826,18 +845,24 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.increaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: 1000 });
    * ```
    */
-  async increaseDelegateStake(params: {
-    target: string;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction<{ target: string; qty: number }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
-      inputs: {
-        target: params.target,
-        qty: params.qty.valueOf(), // convert to number if mIO is provided
+  async increaseDelegateStake(
+    params: {
+      target: string;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{ target: string; qty: number }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.DELEGATE_STAKE,
+        inputs: {
+          target: params.target,
+          qty: params.qty.valueOf(), // convert to number if mIO is provided
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -850,18 +875,24 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.decreaseDelegateStake({ target: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", qty: new IOToken(1000).toMIO() });
    * ```
    */
-  async decreaseDelegateStake(params: {
-    target: string;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction<{ target: string; qty: number }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
-      inputs: {
-        target: params.target,
-        qty: params.qty.valueOf(), // convert to number if mIO is provided
+  async decreaseDelegateStake(
+    params: {
+      target: string;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{ target: string; qty: number }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_DELEGATE_STAKE,
+        inputs: {
+          target: params.target,
+          qty: params.qty.valueOf(), // convert to number if mIO is provided
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -873,16 +904,22 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.increaseOperatorStake({ qty: new IOToken(1000).toMIO() });
    * ```
    */
-  async increaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction<{ qty: number }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
-      inputs: {
-        qty: params.qty.valueOf(), // convert to number if mIO is provided
+  async increaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction<{ qty: number }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_OPERATOR_STAKE,
+        inputs: {
+          qty: params.qty.valueOf(), // convert to number if mIO is provided
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
   /**
@@ -894,16 +931,22 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    * arIO.decreaseOperatorStake({ qty: 1000 });
    * ```
    */
-  async decreaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult> {
-    const res = this.contract.writeInteraction<{ qty: number }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
-      inputs: {
-        qty: params.qty.valueOf(), // convert to number if mIO is provided
+  async decreaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    const res = this.contract.writeInteraction<{ qty: number }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.DECREASE_OPERATOR_STAKE,
+        inputs: {
+          qty: params.qty.valueOf(), // convert to number if mIO is provided
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
     return res;
   }
 
@@ -920,53 +963,71 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
    *  });
    * ```
    */
-  async saveObservations(params: {
-    reportTxId: TransactionId;
-    failedGateways: WalletAddress[];
-  }): Promise<WriteInteractionResult> {
+  async saveObservations(
+    params: {
+      reportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{
       observerReportTxId: TransactionId;
       failedGateways: WalletAddress[];
-    }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
-      inputs: {
-        observerReportTxId: params.reportTxId,
-        failedGateways: params.failedGateways,
+    }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.SAVE_OBSERVATIONS,
+        inputs: {
+          observerReportTxId: params.reportTxId,
+          failedGateways: params.failedGateways,
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 
-  async extendLease(params: {
-    domain: string;
-    years: number;
-  }): Promise<WriteInteractionResult> {
+  async extendLease(
+    params: {
+      domain: string;
+      years: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{
       name: string;
       years: number;
-    }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.EXTEND_RECORD,
-      inputs: {
-        name: params.domain,
-        years: params.years,
+    }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.EXTEND_RECORD,
+        inputs: {
+          name: params.domain,
+          years: params.years,
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
-  async increaseUndernameLimit(params: {
-    domain: string;
-    qty: number;
-  }): Promise<WriteInteractionResult> {
+  async increaseUndernameLimit(
+    params: {
+      domain: string;
+      qty: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     return this.contract.writeInteraction<{
       name: string;
       qty: number;
-    }>({
-      functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
-      inputs: {
-        name: params.domain,
-        qty: params.qty,
+    }>(
+      {
+        functionName: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
+        inputs: {
+          name: params.domain,
+          qty: params.qty,
+        },
+        signer: this.signer,
       },
-      signer: this.signer,
-    });
+      options,
+    );
   }
 }

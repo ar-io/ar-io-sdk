@@ -19,6 +19,7 @@ import {
   CustomSignature,
   LoggerFactory,
   Signature,
+  Tag,
   Transaction,
   Warp,
 } from 'warp-contracts';
@@ -32,6 +33,7 @@ import {
   ReadContract,
   WriteContract,
   WriteInteractionResult,
+  WriteOptions,
   WriteParameters,
 } from '../../types.js';
 import { sha256B64Url, toB64Url } from '../../utils/base64.js';
@@ -179,12 +181,15 @@ export class WarpContract<T>
     return evaluationResult.result;
   }
 
-  async writeInteraction<Input>({
-    functionName,
-    inputs,
-    signer,
-    // TODO: support dryWrite
-  }: WriteParameters<Input>): Promise<WriteInteractionResult> {
+  async writeInteraction<Input>(
+    {
+      functionName,
+      inputs,
+      signer,
+      // TODO: support dryWrite
+    }: WriteParameters<Input>,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     try {
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
@@ -210,6 +215,7 @@ export class WarpContract<T>
         },
         {
           disableBundling: true,
+          tags: options?.tags?.map((tag) => new Tag(tag.name, tag.value)),
         },
       );
 

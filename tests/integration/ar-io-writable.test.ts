@@ -1,10 +1,14 @@
 import { ArweaveSigner } from 'arbundles';
-import Transaction from 'arweave/node/lib/transaction.js';
+import Transaction, { Tag } from 'arweave/node/lib/transaction.js';
 
 import { ArIO, ArIOWritable } from '../../src/common/ar-io.js';
 import { WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
-import { ArIOState, ArNSLeaseData } from '../../src/contract-state.js';
+import {
+  AR_IO_CONTRACT_FUNCTIONS,
+  ArIOState,
+  ArNSLeaseData,
+} from '../../src/contract-state.js';
 import { IOToken, mIOToken } from '../../src/token.js';
 import { arweave, gatewayAddress, localCacheUrl, warp } from '../constants.js';
 
@@ -132,12 +136,35 @@ describe('ArIOWriteable', () => {
   it('should successfully increase the undername support on a domain', async () => {
     const domain = 'test-record';
     const qty = 1;
-    const tx = await arIO.increaseUndernameLimit({
-      domain,
-      qty,
-    });
-    expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+    const res = await arIO.increaseUndernameLimit(
+      {
+        domain,
+        qty,
+      },
+      {
+        tags: [
+          {
+            name: 'ar-io-sdk-write',
+            value: AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
+          },
+        ],
+      },
+    );
+
+    const tx = await arweave.transactions.get(await res.id);
+    console.dir(tx, { depth: null });
+    const tags = tx.tags as Tag[];
+    const arIOFunctionTag = tags.find(
+      (tag) =>
+        tag.get('name', { decode: true, string: true }) === 'ar-io-sdk-write',
+    );
+
+    expect(arIOFunctionTag?.get('value', { decode: true, string: true })).toBe(
+      AR_IO_CONTRACT_FUNCTIONS.INCREASE_UNDERNAME_COUNT,
+    );
+
+    expect(res.id).toBeDefined();
+    const verified = await arweave.transactions.verify(res as Transaction);
     expect(verified).toBe(true);
     const record = await arIO.getArNSRecord({ domain });
     expect(record?.undernames).toBe(11);
