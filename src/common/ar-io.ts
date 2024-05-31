@@ -936,6 +936,29 @@ export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   }
 }
 
+// AO/IO Contract
+export class IO {
+  static init({ processId }: { processId: string }): IOReadable;
+  static init({ process }: { process: AOProcess<AoIOState> }): IOReadable;
+  static init(
+    config: WithSigner<
+      { process: AOProcess<AoIOState> } | { processId: string }
+    >,
+  ): IOWriteable;
+  static init(
+    config?: OptionalSigner<ProcessConfiguration<AoIOState>>,
+  ): IOReadable {
+    if (config && config.signer) {
+      const { signer, ...rest } = config;
+      return new IOWriteable({
+        ...rest,
+        signer,
+      });
+    }
+    return new IOReadable(config);
+  }
+}
+
 export class IOReadable
   implements
     Omit<
@@ -1070,20 +1093,20 @@ export class IOReadable
 }
 
 export class IOWriteable extends IOReadable implements ArIOWriteContract {
-  protected declare process: AOProcess;
+  protected declare process: AOProcess<AoIOState>;
   private signer: ContractSigner;
   constructor({
     signer,
     ...config
   }: WithSigner<
     | {
-        process?: AOProcess;
+        process?: AOProcess<AoIOState>;
       }
     | { processId?: string }
   >) {
     if (Object.keys(config).length === 0) {
       super({
-        process: new AOProcess({
+        process: new AOProcess<AoIOState>({
           processId: ioDevnetProcessId,
         }),
       });
@@ -1093,7 +1116,7 @@ export class IOWriteable extends IOReadable implements ArIOWriteContract {
       this.signer = signer;
     } else if (isProcessIdConfiguration(config)) {
       super({
-        process: new AOProcess({
+        process: new AOProcess<AoIOState>({
           processId: config.processId,
         }),
       });
