@@ -12,8 +12,6 @@ services:
 
   arns-service:
     image: ghcr.io/ar-io/arns-service:latest
-    logging:
-      driver: none
     ports:
       - '3000:3000'
     environment:
