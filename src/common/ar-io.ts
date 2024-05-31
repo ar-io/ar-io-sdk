@@ -498,9 +498,7 @@ export class ArIOReadable implements ArIOReadContract {
    */
   async getObservations({
     evaluationOptions,
-  }: EvaluationParameters<{
-    epochStartHeight?: number;
-  }> = {}): Promise<Observations> {
+  }: EvaluationParameters = {}): Promise<Observations> {
     const { observations } = await this.contract.getState({
       evaluationOptions,
     });
