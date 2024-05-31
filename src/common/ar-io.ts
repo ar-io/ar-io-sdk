@@ -110,15 +110,19 @@ export class ArIO {
    * ```ts
    * const readable = ArIO.init({ contractTxId: 'myContractTxId' });
    * ```
-   * Overload 4: When signer is provided without any contract configuration, ArIOWritable is returned.
+   * Overload 4: When a signer is provided but is undefined, ArIOReadable is returned.
+   * ```ts
+   * const readable = ArIO.init({ signer: undefined });
+   * ```
+   * Overload 5: When signer is provided without any contract configuration, ArIOWritable is returned.
    * ```ts
    * const writable = ArIO.init({ signer: mySigner });
    *```
-   * Overload 5: When signer is provided with a contract configuration, ArIOWritable is returned.
+   * Overload 6: When signer is provided with a contract configuration, ArIOWritable is returned.
    * ```ts
    * const writable = ArIO.init({ signer: mySigner, contract: myContract });
    * ```
-   * Overload 6: When signer is provided with a contractTxId, ArIOWritable is returned.
+   * Overload 7: When signer is provided with a contractTxId, ArIOWritable is returned.
    * ```ts
    * const writable = ArIO.init({ signer: mySigner, contractTxId: 'myContractTxId' });
    * ```
@@ -127,24 +131,36 @@ export class ArIO {
   static init({ signer }: WithSigner): ArIOWritable;
   static init({
     signer,
-    ...config
-  }: { signer?: undefined } & Required<
-    ContractConfiguration<ArIOState>
-  >): ArIOReadable;
+    contractTxId,
+  }: WithSigner<{ contractTxId: string }>): ArIOWritable;
   static init({
+    contract,
     signer,
-    ...config
-  }: WithSigner<
-    // must be a WarpContract to get a ArIOWriteable
-    { contract: WarpContract<ArIOState> } | { contractTxId: string }
-  >): ArIOWritable;
+  }: WithSigner<{ contract: WarpContract<ArIOState> }>): ArIOWritable;
+  static init({
+    contractTxId,
+    signer,
+  }: {
+    contractTxId: string;
+    signer?: ContractSigner | undefined;
+  }): ArIOReadable;
+  static init({
+    contract,
+    signer,
+  }: {
+    contract: WarpContract<ArIOState>;
+    signer?: ContractSigner | undefined;
+  }): ArIOReadable;
+  static init(config?: ContractConfiguration<ArIOState>): ArIOReadable;
   static init(config?: OptionalSigner<ContractConfiguration<ArIOState>>) {
-    if (config && config.signer) {
+    if (config && config.signer !== undefined) {
       const { signer, ...rest } = config;
       const contract = this.createWriteableContract(rest);
       return new ArIOWritable({ signer, contract });
     } else {
-      return new ArIOReadable(config);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { signer, ...rest } = config || {}; // remove any undefined signers
+      return new ArIOReadable(rest);
     }
   }
 }

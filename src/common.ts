@@ -55,7 +55,7 @@ export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
 export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner | undefined;
+  signer?: ContractSigner;
 } & T;
 export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
