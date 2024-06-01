@@ -115,35 +115,27 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters<{ address: WalletAddress }>): Promise<
     Gateway | undefined
   >;
-  getGateways({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<WalletAddress, Gateway> | Record<string, never>
-  >;
+  getGateways(
+    params?: EvaluationParameters,
+  ): Promise<Record<WalletAddress, Gateway> | Record<string, never>>;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<number>;
-  getBalances({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<WalletAddress, number> | Record<string, never>
-  >;
+  getBalances(
+    params?: EvaluationParameters,
+  ): Promise<Record<WalletAddress, number> | Record<string, never>>;
   getArNSRecord({
     domain,
     evaluationOptions,
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSNameData | undefined
   >;
-  getArNSRecords({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<string, ArNSNameData> | Record<string, never>
-  >;
-  getArNSReservedNames({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<string, ArNSReservedNameData> | Record<string, never>
-  >;
+  getArNSRecords(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSNameData> | Record<string, never>>;
+  getArNSReservedNames(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSReservedNameData> | Record<string, never>>;
   getArNSReservedName({
     domain,
     evaluationOptions,
@@ -156,21 +148,19 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters<{
     blockHeight: number;
   }>): Promise<EpochDistributionData>;
-  getCurrentEpoch({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getPrescribedObservers({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<WeightedObserver[]>;
-  getObservations({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Observations>;
-  getDistributions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getAuctions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, ArNSAuctionData>>;
+  getCurrentEpoch(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getPrescribedObservers(
+    params?: EvaluationParameters,
+  ): Promise<WeightedObserver[]>;
+  getObservations(params?: EvaluationParameters): Promise<Observations>;
+  getDistributions(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getAuctions(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSAuctionData>>;
   getAuction({
     domain,
     type,
@@ -333,22 +323,16 @@ export interface ANTReadContract extends BaseContract<ANTState> {
     domain,
     evaluationOptions,
   }: EvaluationParameters<{ domain: string }>): Promise<ANTRecord>;
-  getRecords({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, ANTRecord>>;
-  getOwner({ evaluationOptions }: EvaluationParameters): Promise<string>;
-  getControllers({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<string[]>;
-  getTicker({ evaluationOptions }: EvaluationParameters): Promise<string>;
-  getName({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getRecords(params?: EvaluationParameters): Promise<Record<string, ANTRecord>>;
+  getOwner(params?: EvaluationParameters): Promise<string>;
+  getControllers(params?: EvaluationParameters): Promise<string[]>;
+  getTicker(params?: EvaluationParameters): Promise<string>;
+  getName(params?: EvaluationParameters): Promise<string>;
   getBalance({
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<number>;
-  getBalances({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, number>>;
+  getBalances(params?: EvaluationParameters): Promise<Record<string, number>>;
 }
 
 export interface ANTWriteContract {
