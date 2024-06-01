@@ -1,3 +1,10 @@
+# [1.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.6...v1.1.0-alpha.7) (2024-06-01)
+
+
+### Bug Fixes
+
+* remove epochBlockHeight from interface ([b646f08](https://github.com/ar-io/ar-io-sdk/commit/b646f08e795635e4597d48d7c56419849c352a88))
+
 # [1.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.5...v1.1.0-alpha.6) (2024-05-31)
 
 
