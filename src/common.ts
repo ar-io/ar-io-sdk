@@ -189,7 +189,7 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }>): Promise<number>;
 }
 
-export interface ArIOWriteContract {
+export interface ArIOWriteContract extends ArIOReadContract {
   // write interactions
   transfer(
     {
