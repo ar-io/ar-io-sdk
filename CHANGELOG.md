@@ -1,3 +1,10 @@
+# [1.1.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.7...v1.1.0-alpha.8) (2024-06-01)
+
+
+### Bug Fixes
+
+* **api:** make evaluation options optional on the interface ([9e5a1c0](https://github.com/ar-io/ar-io-sdk/commit/9e5a1c0572486f9c1e417453fb9c54dd102cbdb4))
+
 # [1.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.6...v1.1.0-alpha.7) (2024-06-01)
 
 
