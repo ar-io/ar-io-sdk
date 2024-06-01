@@ -164,9 +164,7 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters): Promise<WeightedObserver[]>;
   getObservations({
     evaluationOptions,
-  }: EvaluationParameters<{
-    epochStartHeight?: number;
-  }>): Promise<Observations>;
+  }: EvaluationParameters): Promise<Observations>;
   getDistributions({
     evaluationOptions,
   }: EvaluationParameters): Promise<EpochDistributionData>;
