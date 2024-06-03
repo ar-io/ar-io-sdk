@@ -15,16 +15,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axiosRetry, { IAxiosRetryConfig } from 'axios-retry';
 
+import { DefaultLogger } from '../common/logger.js';
+import { Logger } from '../types.js';
 import { version } from '../version.js';
 
-// TODO: re-implement axios-retry. Currently latest version of axios-retry is broken for node-next builds on v4.0.0
 export interface AxiosInstanceParameters {
   axiosConfig?: Omit<AxiosRequestConfig, 'validateStatus'>;
+  retryConfig?: IAxiosRetryConfig;
+  logger?: Logger;
 }
 
 export const createAxiosInstance = ({
   axiosConfig = {},
+  logger = new DefaultLogger(),
+  retryConfig = {
+    retries: 5,
+    retryDelay: axiosRetry.exponentialDelay,
+    retryCondition: (error) => axiosRetry.isRetryableError(error),
+    onRetry(retryCount, error, requestConfig) {
+      logger.error(
+        `Retrying request ${requestConfig.url} attempt ${retryCount}`,
+        error,
+      );
+    },
+  },
 }: AxiosInstanceParameters = {}): AxiosInstance => {
   const axiosInstance = axios.create({
     ...axiosConfig,
@@ -36,6 +52,7 @@ export const createAxiosInstance = ({
     },
     validateStatus: () => true, // don't throw on non-200 status codes
   });
-
+  // add retries
+  axiosRetry(axiosInstance, retryConfig);
   return axiosInstance;
 };

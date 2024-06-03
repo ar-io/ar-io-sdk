@@ -54,3 +54,5 @@ export class InvalidProcessConfigurationError extends BaseError {
     super('Invalid process configuration');
   }
 }
+
+export class AbortError extends BaseError {}

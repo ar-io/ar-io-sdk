@@ -19,6 +19,7 @@ import {
   CustomSignature,
   LoggerFactory,
   Signature,
+  Tag,
   Transaction,
   Warp,
 } from 'warp-contracts';
@@ -32,6 +33,7 @@ import {
   ReadContract,
   WriteContract,
   WriteInteractionResult,
+  WriteOptions,
   WriteParameters,
 } from '../../types.js';
 import { sha256B64Url, toB64Url } from '../../utils/base64.js';
@@ -159,6 +161,12 @@ export class WarpContract<T>
     inputs,
     // TODO: view state only supports sort key so we won't be able to use block height
   }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K> {
+    await this.ensureContractInit();
+    this.logger.debug(`Read interaction: ${functionName}`, {
+      contractTxId: this.contractTxId,
+      inputs,
+    });
+
     const evaluationResult = await this.contract.viewState<unknown, K>({
       function: functionName,
       ...inputs,
@@ -176,15 +184,23 @@ export class WarpContract<T>
       );
     }
 
+    this.logger.debug('Successfully evaluated contract read interaction', {
+      contractTxId: this.contractTxId,
+      result: evaluationResult.result,
+    });
+
     return evaluationResult.result;
   }
 
-  async writeInteraction<Input>({
-    functionName,
-    inputs,
-    signer,
-    // TODO: support dryWrite
-  }: WriteParameters<Input>): Promise<WriteInteractionResult> {
+  async writeInteraction<Input>(
+    {
+      functionName,
+      inputs,
+      signer,
+      // TODO: support dryWrite
+    }: WriteParameters<Input>,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
     try {
       this.logger.debug(`Write interaction: ${functionName}`, {
         contractTxId: this.contractTxId,
@@ -210,6 +226,7 @@ export class WarpContract<T>
         },
         {
           disableBundling: true,
+          tags: options?.tags?.map((tag) => new Tag(tag.name, tag.value)),
         },
       );
 
@@ -224,7 +241,8 @@ export class WarpContract<T>
         interactionTxId: writeResult.originalTxId,
       });
 
-      return writeResult.interactionTx;
+      // hack - we only support L1 for interactions so they should always be transactions
+      return writeResult.interactionTx as Transaction;
     } catch (error) {
       this.logger.error(
         `Failed to write contract interaction: ${error.message}`,

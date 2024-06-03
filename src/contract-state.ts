@@ -16,34 +16,68 @@
  */
 import { WalletAddress } from './common.js';
 
-export const AR_IO_CONTRACT_FUNCTIONS = {
-  GATEWAY: 'gateway',
-  GATEWAYS: 'gateways',
-  PRESCRIBED_OBSERVERS: 'prescribedObservers',
-  DELEGATE_STAKE: 'delegateStake',
-  DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
-  JOIN_NETWORK: 'joinNetwork',
-  LEAVE_NETWORK: 'leaveNetwork',
-  INCREASE_OPERATOR_STAKE: 'increaseOperatorStake',
-  DECREASE_OPERATOR_STAKE: 'decreaseOperatorStake',
-  UPDATE_GATEWAY_SETTINGS: 'updateGatewaySettings',
-  SAVE_OBSERVATIONS: 'saveObservations',
-  SUBMIT_AUCTION_BID: 'submitAuctionBid',
-  BUY_RECORD: 'buyRecord',
-  EXTEND_RECORD: 'extendRecord',
-  INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
-  RECORD: 'record',
-  AUCTION: 'auction',
-  TRANSFER: 'transfer',
-  VAULTED_TRANSFER: 'vaultedTransfer',
-  CREATE_VAULT: 'createVault',
-  EXTEND_VAULT: 'extendVault',
-  INCREASE_VAULT: 'increaseVault',
-  BALANCE: 'balance',
-  TICK: 'tick',
-  PRICE_FOR_INTERACTION: 'priceForInteraction',
-  EPOCH: 'epoch',
-};
+export const ioContractReadInteractions = [
+  'gateway',
+  'gateways',
+  'prescribedObservers',
+  'record',
+  'auction',
+  'balance',
+  'epoch',
+  'priceForInteraction',
+] as const;
+
+export const ioContractWriteInteractions = [
+  'delegateStake',
+  'decreaseDelegateStake',
+  'joinNetwork',
+  'increaseOperatorStake',
+  'decreaseOperatorStake',
+  'updateGatewaySettings',
+  'saveObservations',
+  'extendRecord',
+  'buyRecord',
+  'increaseUndernameCount',
+  'transfer',
+] as const;
+
+export const ioContractInteractions = [
+  ...ioContractReadInteractions,
+  ...ioContractWriteInteractions,
+] as const;
+
+export type IOContractReadInteractions =
+  (typeof ioContractReadInteractions)[number];
+export type IOContractWriteInteractions =
+  (typeof ioContractWriteInteractions)[number];
+export type IOContractInteractions = (typeof ioContractInteractions)[number];
+
+export type IOContractInteractionsWithIOFees = Extract<
+  IOContractInteractions,
+  'buyRecord' | 'extendRecord' | 'increaseUndernameCount'
+>;
+
+export const AR_IO_CONTRACT_FUNCTIONS: Record<string, IOContractInteractions> =
+  {
+    GATEWAY: 'gateway',
+    GATEWAYS: 'gateways',
+    PRESCRIBED_OBSERVERS: 'prescribedObservers',
+    DELEGATE_STAKE: 'delegateStake',
+    DECREASE_DELEGATE_STAKE: 'decreaseDelegateStake',
+    JOIN_NETWORK: 'joinNetwork',
+    INCREASE_OPERATOR_STAKE: 'increaseOperatorStake',
+    DECREASE_OPERATOR_STAKE: 'decreaseOperatorStake',
+    UPDATE_GATEWAY_SETTINGS: 'updateGatewaySettings',
+    SAVE_OBSERVATIONS: 'saveObservations',
+    EXTEND_RECORD: 'extendRecord',
+    INCREASE_UNDERNAME_COUNT: 'increaseUndernameCount',
+    RECORD: 'record',
+    AUCTION: 'auction',
+    TRANSFER: 'transfer',
+    BALANCE: 'balance',
+    PRICE_FOR_INTERACTION: 'priceForInteraction',
+    EPOCH: 'epoch',
+  };
 
 // Gateways
 
