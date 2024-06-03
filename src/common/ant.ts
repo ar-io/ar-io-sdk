@@ -26,6 +26,7 @@ import {
   OptionalSigner,
   WithSigner,
   WriteInteractionResult,
+  WriteOptions,
 } from '../types.js';
 import {
   isContractConfiguration,
@@ -365,16 +366,22 @@ export class ANTWritable extends ANTReadable {
    * ant.transfer({ target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async transfer({
-    target,
-  }: {
-    target: string;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.TRANSFER,
-      inputs: { target },
-      signer: this.signer,
-    });
+  async transfer(
+    {
+      target,
+    }: {
+      target: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.TRANSFER,
+        inputs: { target },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 
   /**
@@ -385,16 +392,22 @@ export class ANTWritable extends ANTReadable {
    * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async setController({
-    controller,
-  }: {
-    controller: string;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.SET_CONTROLLER,
-      inputs: { target: controller },
-      signer: this.signer,
-    });
+  async setController(
+    {
+      controller,
+    }: {
+      controller: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.SET_CONTROLLER,
+        inputs: { target: controller },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 
   /**
@@ -405,16 +418,22 @@ export class ANTWritable extends ANTReadable {
    * ant.removeController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async removeController({
-    controller,
-  }: {
-    controller: string;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.REMOVE_CONTROLLER,
-      inputs: { target: controller },
-      signer: this.signer,
-    });
+  async removeController(
+    {
+      controller,
+    }: {
+      controller: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.REMOVE_CONTROLLER,
+        inputs: { target: controller },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 
   /**
@@ -427,20 +446,26 @@ export class ANTWritable extends ANTReadable {
    * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async setRecord({
-    subDomain,
-    transactionId,
-    ttlSeconds,
-  }: {
-    subDomain: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.SET_RECORD,
-      inputs: { subDomain, transactionId, ttlSeconds },
-      signer: this.signer,
-    });
+  async setRecord(
+    {
+      subDomain,
+      transactionId,
+      ttlSeconds,
+    }: {
+      subDomain: string;
+      transactionId: string;
+      ttlSeconds: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.SET_RECORD,
+        inputs: { subDomain, transactionId, ttlSeconds },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 
   /**
@@ -451,16 +476,22 @@ export class ANTWritable extends ANTReadable {
    * ant.removeRecord({ subDomain: "shorts" });
    * ```
    */
-  async removeRecord({
-    subDomain,
-  }: {
-    subDomain: string;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.REMOVE_RECORD,
-      inputs: { subDomain },
-      signer: this.signer,
-    });
+  async removeRecord(
+    {
+      subDomain,
+    }: {
+      subDomain: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.REMOVE_RECORD,
+        inputs: { subDomain },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 
   /**
@@ -471,16 +502,22 @@ export class ANTWritable extends ANTReadable {
    * ant.setTicker({ ticker: "KAPOW" });
    * ```
    */
-  async setTicker({
-    ticker,
-  }: {
-    ticker: string;
-  }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.SET_TICKER,
-      inputs: { ticker },
-      signer: this.signer,
-    });
+  async setTicker(
+    {
+      ticker,
+    }: {
+      ticker: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.SET_TICKER,
+        inputs: { ticker },
+        signer: this.signer,
+      },
+      options,
+    );
   }
   /**
    * @param name @type {string} Sets the Name of the ANT.
@@ -490,11 +527,17 @@ export class ANTWritable extends ANTReadable {
    * ant.setName({ name: "ships at sea" });
    * ```
    */
-  async setName({ name }: { name: string }): Promise<WriteInteractionResult> {
-    return this.contract.writeInteraction({
-      functionName: ANT_CONTRACT_FUNCTIONS.SET_NAME,
-      inputs: { name },
-      signer: this.signer,
-    });
+  async setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult> {
+    return this.contract.writeInteraction(
+      {
+        functionName: ANT_CONTRACT_FUNCTIONS.SET_NAME,
+        inputs: { name },
+        signer: this.signer,
+      },
+      options,
+    );
   }
 }

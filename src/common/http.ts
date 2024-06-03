@@ -38,6 +38,7 @@ export class AxiosHTTPService implements HTTPClient {
       axiosConfig: {
         baseURL: url,
       },
+      logger: this.logger,
     });
   }
   async get<I, K>({

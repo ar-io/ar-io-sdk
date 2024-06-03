@@ -1,9 +1,9 @@
 import { ArweaveSigner } from 'arbundles';
-import Transaction from 'arweave/node/lib/transaction.js';
+import Transaction, { Tag } from 'arweave/node/lib/transaction.js';
 
 import { ANT, ANTWritable, WarpContract } from '../../src/common/index.js';
 import { DefaultLogger } from '../../src/common/logger.js';
-import { ANTState } from '../../src/contract-state.js';
+import { ANTState, ANT_CONTRACT_FUNCTIONS } from '../../src/contract-state.js';
 import { arweave, localCacheUrl, warp } from '../constants.js';
 
 describe('ANT Writable', () => {
@@ -75,12 +75,29 @@ describe('ANT Writable', () => {
     expect(verified).toBe(true);
   });
 
-  it('should successfully transfer tokens to another address', async () => {
-    const tx = await antWritable.transfer({
-      target: ''.padEnd(43, 'a'),
-    });
-    expect(tx.id).toBeDefined();
-    const verified = await arweave.transactions.verify(tx as Transaction);
+  it('should successfully transfer tokens to another address with tags', async () => {
+    const res = await antWritable.transfer(
+      {
+        target: ''.padEnd(43, 'a'),
+      },
+      {
+        tags: [
+          { name: 'ar-io-sdk-write', value: ANT_CONTRACT_FUNCTIONS.TRANSFER },
+        ],
+      },
+    );
+    const tx = await arweave.transactions.get(res.id);
+    const tags = tx.tags as Tag[];
+    const customTag = tags.find(
+      (tag) =>
+        tag.get('name', { decode: true, string: true }) === 'ar-io-sdk-write',
+    );
+    expect(customTag).toBeDefined();
+    expect(customTag?.get('value', { decode: true, string: true })).toBe(
+      ANT_CONTRACT_FUNCTIONS.TRANSFER,
+    );
+    expect(res.id).toBeDefined();
+    const verified = await arweave.transactions.verify(res as Transaction);
     expect(verified).toBe(true);
   });
 });

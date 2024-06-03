@@ -15,8 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
-import { DataItem } from 'warp-arbundles';
-import { Transaction } from 'warp-contracts';
+import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
 import { IOContractInteractionsWithIOFees } from './contract-state.js';
@@ -44,6 +43,11 @@ export type BlockHeight = number;
 export type SortKey = string;
 export type WalletAddress = string;
 export type TransactionId = string;
+
+export type DataProtocolTransaction = Pick<
+  GQLNodeInterface,
+  'id' | 'tags' | 'data'
+>;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
 export type ContractSigner = ArweaveSigner | ArconnectSigner;
@@ -76,6 +80,10 @@ export type ReadParameters<Input> = {
   inputs?: Input;
 };
 
+export type WriteOptions = {
+  tags?: { name: string; value: string }[];
+};
+
 export type WriteParameters<Input> = WithSigner<
   Required<ReadParameters<Input>>
 >;
@@ -93,13 +101,10 @@ export interface ReadContract {
 }
 
 export interface WriteContract {
-  writeInteraction<Input>({
-    functionName,
-    inputs,
-    evaluationOptions,
-  }: EvaluationParameters<
-    WriteParameters<Input>
-  >): Promise<WriteInteractionResult>;
+  writeInteraction<Input>(
+    { functionName, inputs }: WriteParameters<Input>,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
 }
 
 // TODO: extend with additional methods
@@ -110,35 +115,27 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters<{ address: WalletAddress }>): Promise<
     Gateway | undefined
   >;
-  getGateways({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<WalletAddress, Gateway> | Record<string, never>
-  >;
+  getGateways(
+    params?: EvaluationParameters,
+  ): Promise<Record<WalletAddress, Gateway> | Record<string, never>>;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<number>;
-  getBalances({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<WalletAddress, number> | Record<string, never>
-  >;
+  getBalances(
+    params?: EvaluationParameters,
+  ): Promise<Record<WalletAddress, number> | Record<string, never>>;
   getArNSRecord({
     domain,
     evaluationOptions,
   }: EvaluationParameters<{ domain: string }>): Promise<
     ArNSNameData | undefined
   >;
-  getArNSRecords({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<string, ArNSNameData> | Record<string, never>
-  >;
-  getArNSReservedNames({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<string, ArNSReservedNameData> | Record<string, never>
-  >;
+  getArNSRecords(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSNameData> | Record<string, never>>;
+  getArNSReservedNames(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSReservedNameData> | Record<string, never>>;
   getArNSReservedName({
     domain,
     evaluationOptions,
@@ -151,23 +148,19 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters<{
     blockHeight: number;
   }>): Promise<EpochDistributionData>;
-  getCurrentEpoch({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getPrescribedObservers({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<WeightedObserver[]>;
-  getObservations({
-    evaluationOptions,
-  }: EvaluationParameters<{
-    epochStartHeight?: number;
-  }>): Promise<Observations>;
-  getDistributions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getAuctions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, ArNSAuctionData>>;
+  getCurrentEpoch(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getPrescribedObservers(
+    params?: EvaluationParameters,
+  ): Promise<WeightedObserver[]>;
+  getObservations(params?: EvaluationParameters): Promise<Observations>;
+  getDistributions(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getAuctions(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSAuctionData>>;
   getAuction({
     domain,
     type,
@@ -186,73 +179,104 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }>): Promise<number>;
 }
 
-export interface ArIOWriteContract {
+export interface ArIOWriteContract extends ArIOReadContract {
   // write interactions
-  transfer({
-    target,
-    qty,
-    denomination,
-  }: {
-    target: WalletAddress;
-    qty: number;
-    denomination: DENOMINATIONS;
-  }): Promise<WriteInteractionResult>;
-  joinNetwork({
-    qty,
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: JoinNetworkParams): Promise<WriteInteractionResult>;
-  updateGatewaySettings({
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerWallet,
-  }: UpdateGatewaySettingsParams): Promise<WriteInteractionResult>;
-  increaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  decreaseOperatorStake(params: {
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  increaseDelegateStake(params: {
-    target: WalletAddress;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  decreaseDelegateStake(params: {
-    target: WalletAddress;
-    qty: number | mIOToken;
-  }): Promise<WriteInteractionResult>;
-  saveObservations(params: {
-    reportTxId: TransactionId;
-    failedGateways: WalletAddress[];
-  }): Promise<WriteInteractionResult>;
-  extendLease(params: {
-    domain: string;
-    years: number;
-  }): Promise<WriteInteractionResult>;
-  increaseUndernameLimit(params: {
-    domain: string;
-    qty: number;
-  }): Promise<WriteInteractionResult>;
+  transfer(
+    {
+      target,
+      qty,
+      denomination,
+    }: {
+      target: WalletAddress;
+      qty: number;
+      denomination: DENOMINATIONS;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  joinNetwork(
+    {
+      qty,
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: JoinNetworkParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  updateGatewaySettings(
+    {
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerWallet,
+    }: UpdateGatewaySettingsParams,
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  decreaseOperatorStake(
+    params: {
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseDelegateStake(
+    params: {
+      target: WalletAddress;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  decreaseDelegateStake(
+    params: {
+      target: WalletAddress;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  saveObservations(
+    params: {
+      reportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  extendLease(
+    params: {
+      domain: string;
+      years: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  increaseUndernameLimit(
+    params: {
+      domain: string;
+      qty: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
 }
 
-export type WriteInteractionResult = Transaction | DataItem;
+// we only support L1 smartweave interactions
+export type WriteInteractionResult = Transaction;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {
@@ -299,56 +323,71 @@ export interface ANTReadContract extends BaseContract<ANTState> {
     domain,
     evaluationOptions,
   }: EvaluationParameters<{ domain: string }>): Promise<ANTRecord>;
-  getRecords({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, ANTRecord>>;
-  getOwner({ evaluationOptions }: EvaluationParameters): Promise<string>;
-  getControllers({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<string[]>;
-  getTicker({ evaluationOptions }: EvaluationParameters): Promise<string>;
-  getName({ evaluationOptions }: EvaluationParameters): Promise<string>;
+  getRecords(params?: EvaluationParameters): Promise<Record<string, ANTRecord>>;
+  getOwner(params?: EvaluationParameters): Promise<string>;
+  getControllers(params?: EvaluationParameters): Promise<string[]>;
+  getTicker(params?: EvaluationParameters): Promise<string>;
+  getName(params?: EvaluationParameters): Promise<string>;
   getBalance({
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: string }>): Promise<number>;
-  getBalances({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, number>>;
+  getBalances(params?: EvaluationParameters): Promise<Record<string, number>>;
 }
 
 export interface ANTWriteContract {
-  transfer({
-    target,
-  }: {
-    target: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  setController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  removeController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<WriteInteractionResult>;
-  setRecord({
-    subDomain,
-    transactionId,
-    ttlSeconds,
-  }: {
-    subDomain: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<WriteInteractionResult>;
-  removeRecord({
-    subDomain,
-  }: {
-    subDomain: string;
-  }): Promise<WriteInteractionResult>;
-  setTicker({ ticker }: { ticker: string }): Promise<WriteInteractionResult>;
-  setName({ name }: { name: string }): Promise<WriteInteractionResult>;
+  transfer(
+    {
+      target,
+    }: {
+      target: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  removeController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setRecord(
+    {
+      subDomain,
+      transactionId,
+      ttlSeconds,
+    }: {
+      subDomain: string;
+      transactionId: string;
+      ttlSeconds: number;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  removeRecord(
+    {
+      subDomain,
+    }: {
+      subDomain: string;
+    },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setTicker(
+    { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
+  setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<WriteInteractionResult>;
 }
 
 export interface Logger {

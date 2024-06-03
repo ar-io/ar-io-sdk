@@ -112,7 +112,7 @@ describe('ArIOReadable Client', () => {
     expect(balances).toBeDefined();
   });
 
-  it('should should return undefined for non existent gateway', async () => {
+  it('should return undefined for non existent gateway', async () => {
     const nonExistent = await arIO.getGateway({
       address: 'some-address',
     });
@@ -275,9 +275,7 @@ describe('ArIOReadable Client', () => {
 
   it('should return observation information', async () => {
     const observations = await arIO.getObservations();
-    const observation = await arIO.getObservations({
-      epochStartHeight: parseInt(Object.keys(observations)[0]),
-    });
+    const observation = await arIO.getObservations({});
     expect(observations).toBeDefined();
     expect(observation).toBeDefined();
   });
