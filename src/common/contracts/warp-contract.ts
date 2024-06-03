@@ -161,6 +161,11 @@ export class WarpContract<T>
     inputs,
     // TODO: view state only supports sort key so we won't be able to use block height
   }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K> {
+    this.logger.debug(`Read interaction: ${functionName}`, {
+      contractTxId: this.contractTxId,
+      inputs,
+    });
+
     const evaluationResult = await this.contract.viewState<unknown, K>({
       function: functionName,
       ...inputs,
@@ -177,6 +182,11 @@ export class WarpContract<T>
           ),
       );
     }
+
+    this.logger.debug('Successfully evaluated contract read interaction', {
+      contractTxId: this.contractTxId,
+      result: evaluationResult.result,
+    });
 
     return evaluationResult.result;
   }
