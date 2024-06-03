@@ -17,19 +17,29 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry';
 
+import { DefaultLogger } from '../common/logger.js';
+import { Logger } from '../types.js';
 import { version } from '../version.js';
 
 export interface AxiosInstanceParameters {
   axiosConfig?: Omit<AxiosRequestConfig, 'validateStatus'>;
   retryConfig?: IAxiosRetryConfig;
+  logger?: Logger;
 }
 
 export const createAxiosInstance = ({
   axiosConfig = {},
+  logger = new DefaultLogger(),
   retryConfig = {
-    retries: 3,
+    retries: 5,
     retryDelay: axiosRetry.exponentialDelay,
     retryCondition: (error) => axiosRetry.isRetryableError(error),
+    onRetry(retryCount, error, requestConfig) {
+      logger.error(
+        `Retrying request ${requestConfig.url} attempt ${retryCount}`,
+        error,
+      );
+    },
   },
 }: AxiosInstanceParameters = {}): AxiosInstance => {
   const axiosInstance = axios.create({
