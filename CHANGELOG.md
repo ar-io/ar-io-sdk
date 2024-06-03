@@ -1,3 +1,10 @@
+# [1.1.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.9...v1.1.0-alpha.10) (2024-06-03)
+
+
+### Bug Fixes
+
+* **arweave:** default to arweave.net ([84c9653](https://github.com/ar-io/ar-io-sdk/commit/84c9653be1fb92f8ed15da689d65ff19e5733ba4))
+
 ## [1.0.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8) (2024-05-29)
 
 
