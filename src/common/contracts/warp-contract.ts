@@ -161,6 +161,7 @@ export class WarpContract<T>
     inputs,
     // TODO: view state only supports sort key so we won't be able to use block height
   }: EvaluationParameters<{ functionName: string; inputs?: I }>): Promise<K> {
+    await this.ensureContractInit();
     this.logger.debug(`Read interaction: ${functionName}`, {
       contractTxId: this.contractTxId,
       inputs,
