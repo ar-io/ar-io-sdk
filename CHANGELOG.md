@@ -1,3 +1,10 @@
+# [1.1.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0-alpha.10...v1.1.0-alpha.11) (2024-06-03)
+
+
+### Bug Fixes
+
+* **warp:** ensure contract init on read interactions ([bc3d1b8](https://github.com/ar-io/ar-io-sdk/commit/bc3d1b84f99cf3341cea42641b58b792434ac405))
+
 ## [1.0.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8) (2024-05-29)
 
 
