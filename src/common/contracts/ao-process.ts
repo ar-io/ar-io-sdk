@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect, message, result } from '@permaweb/aoconnect';
+import { connect } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
 
 import { AOContract, ContractSigner, Logger } from '../../types.js';
@@ -130,7 +130,7 @@ export class AOProcess implements AOContract {
       processId: this.processId,
     });
 
-    const messageId = await message({
+    const messageId = await this.ao.message({
       process: this.processId,
       tags,
       data: JSON.stringify(data),
@@ -143,7 +143,7 @@ export class AOProcess implements AOContract {
     });
 
     // check the result of the send interaction
-    const output = await result({
+    const output = await this.ao.result({
       message: messageId,
       process: this.processId,
     });
@@ -161,24 +161,19 @@ export class AOProcess implements AOContract {
 
     const tagsOutput = output.Messages[0].Tags;
     const error = tagsOutput.find((tag) => tag.name === 'Error');
-    // if there's an Error tag
+    // if there's an Error tag, throw an error related to it
     if (error) {
-      // parse the data
       const result = output.Messages[0].Data;
       throw new Error(`${error.Value}: ${result}`);
     }
 
     const resultData: K = JSON.parse(output.Messages[0].Data);
 
-    // console.log(result);
-
-    // if (result.Error !== undefined) {
-    //   throw new Error(result.Error);
-    // }
-
-    // this.logger.debug(`Send interaction result`, {
-    //   result,
-    // });
+    this.logger.debug('Message result data', {
+      resultData,
+      messageId,
+      processId: this.processId,
+    });
 
     return { id: messageId, result: resultData };
   }
