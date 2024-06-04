@@ -43,7 +43,7 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
     processId,
     // connectionConfig,
     // scheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
-    logger = new DefaultLogger(),
+    logger = new DefaultLogger({ level: 'debug' }),
   }: {
     processId: string;
     scheduler?: string;
@@ -121,6 +121,8 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
       data: JSON.stringify(data),
       signer,
     });
+
+    console.log(result);
 
     if (result.Error !== undefined) {
       throw new Error(result.Error);

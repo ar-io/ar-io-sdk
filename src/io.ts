@@ -14,6 +14,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import {
+  ArNSNameData,
+  ArNSReservedNameData,
+  EpochDistributionData,
+  EpochObservations,
+  GatewayDelegate,
+  GatewaySettings,
+  Observations,
+  VaultData,
+  WeightedObserver,
+} from './contract-state.js';
+import { mIOToken } from './token.js';
+import {
+  AoMessageResult,
+  JoinNetworkParams,
+  TransactionId,
+  UpdateGatewaySettingsParams,
+  WalletAddress,
+  WriteOptions,
+} from './types.js';
+
 export interface AoIORead {
   getGateway({
     address,
@@ -101,7 +122,7 @@ export interface AoIOWrite extends AoIORead {
       properties,
       protocol,
       autoStake,
-      observerWallet,
+      observerAddress,
     }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
       observerAddress?: WalletAddress;
     },

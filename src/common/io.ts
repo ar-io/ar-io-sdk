@@ -339,7 +339,11 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }): Promise<AoMessageResult> {
     return this.process.send<{ target: string; qty: number }>({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'IncreaseDelegateStake' }],
+      tags: [
+        { name: 'Action', value: 'DelegateStake' },
+        { name: 'Target', value: params.target },
+        { name: 'Quantity', value: params.qty.valueOf().toString() },
+      ],
       data: {
         target: params.target,
         qty: params.qty.valueOf(),
