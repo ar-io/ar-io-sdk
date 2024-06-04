@@ -46,11 +46,7 @@ export interface AoIORead {
   >;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number> | Record<string, never>>;
-  getArNSRecord({
-    domain,
-  }: {
-    domain: string;
-  }): Promise<ArNSNameData | undefined>;
+  getArNSRecord({ name }: { name: string }): Promise<ArNSNameData | undefined>;
   getArNSRecords(): Promise<
     Record<string, ArNSNameData> | Record<string, never>
   >;
@@ -58,9 +54,9 @@ export interface AoIORead {
     Record<string, ArNSReservedNameData> | Record<string, never>
   >;
   getArNSReservedName({
-    domain,
+    name,
   }: {
-    domain: string;
+    name: string;
   }): Promise<ArNSReservedNameData | undefined>;
   getEpoch({
     blockHeight,
@@ -93,7 +89,7 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   joinNetwork(
     {
-      qty,
+      operatorStake,
       allowDelegatedStaking,
       delegateRewardShareRatio,
       fqdn,
@@ -105,8 +101,9 @@ export interface AoIOWrite extends AoIORead {
       protocol,
       autoStake,
       observerAddress,
-    }: Omit<JoinNetworkParams, 'observerWallet'> & {
-      observerAddress?: WalletAddress;
+    }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
+      observerAddress: string;
+      operatorStake: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
@@ -130,7 +127,7 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   increaseOperatorStake(
     params: {
-      qty: number | mIOToken;
+      increaseQty: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
@@ -143,14 +140,14 @@ export interface AoIOWrite extends AoIORead {
   increaseDelegateStake(
     params: {
       target: WalletAddress;
-      qty: number | mIOToken;
+      increaseQty: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   decreaseDelegateStake(
     params: {
       target: WalletAddress;
-      qty: number | mIOToken;
+      decreaseQty: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
@@ -163,15 +160,15 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   extendLease(
     params: {
-      domain: string;
+      name: string;
       years: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   increaseUndernameLimit(
     params: {
-      domain: string;
-      qty: number;
+      name: string;
+      increaseCount: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

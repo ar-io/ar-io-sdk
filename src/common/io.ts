@@ -102,14 +102,14 @@ export class IOReadable implements AoIORead {
   }
 
   async getArNSRecord({
-    domain,
+    name,
   }: {
-    domain: string;
+    name: string;
   }): Promise<ArNSNameData | undefined> {
     return this.process.read<ArNSNameData>({
       tags: [
         { name: 'Action', value: 'Record' },
-        { name: 'Name', value: domain },
+        { name: 'Name', value: name },
       ],
     });
   }
@@ -129,14 +129,14 @@ export class IOReadable implements AoIORead {
   }
 
   async getArNSReservedName({
-    domain,
+    name,
   }: {
-    domain: string;
+    name: string;
   }): Promise<ArNSReservedNameData | undefined> {
     return this.process.read<ArNSReservedNameData>({
       tags: [
         { name: 'Action', value: 'ReservedName' },
-        { name: 'Name', value: domain },
+        { name: 'Name', value: name },
       ],
     });
   }
@@ -263,7 +263,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }
 
   async joinNetwork({
-    qty,
+    operatorStake,
     allowDelegatedStaking,
     delegateRewardShareRatio,
     fqdn,
@@ -274,25 +274,64 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     properties,
     protocol,
     autoStake,
-    observerWallet,
-  }: JoinNetworkParams): Promise<AoMessageResult> {
+    observerAddress,
+  }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
+    observerAddress: string;
+    operatorStake: number | mIOToken;
+  }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'JoinNetwork' }],
-      data: {
-        qty: qty.valueOf(),
-        allowDelegatedStaking,
-        delegateRewardShareRatio,
-        fqdn,
-        label,
-        minDelegatedStake: minDelegatedStake.valueOf(),
-        note,
-        port,
-        properties,
-        protocol,
-        autoStake,
-        observerWallet,
-      },
+      tags: [
+        { name: 'Action', value: 'JoinNetwork' },
+        {
+          name: 'Quantity',
+          value: operatorStake.valueOf().toString(),
+        },
+        {
+          name: 'AllowDelegatedStaking',
+          value: allowDelegatedStaking.toString(),
+        },
+        {
+          name: 'DelegateRewardShareRatio',
+          value: delegateRewardShareRatio.toString(),
+        },
+        {
+          name: 'FQDN',
+          value: fqdn,
+        },
+        {
+          name: 'Label',
+          value: label,
+        },
+        {
+          name: 'MinDelegatedStake',
+          value: minDelegatedStake.valueOf().toString(),
+        },
+        {
+          name: 'Note',
+          value: note,
+        },
+        {
+          name: 'Port',
+          value: port.toString(),
+        },
+        {
+          name: 'Properties',
+          value: properties,
+        },
+        {
+          name: 'Protocol',
+          value: protocol,
+        },
+        {
+          name: 'AutoStake',
+          value: autoStake.toString(),
+        },
+        {
+          name: 'ObserverAddress',
+          value: observerAddress,
+        },
+      ],
     });
   }
 
@@ -307,68 +346,85 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     properties,
     protocol,
     autoStake,
-    observerWallet,
-  }: UpdateGatewaySettingsParams): Promise<AoMessageResult> {
+    observerAddress,
+  }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
+    observerAddress: string;
+  }): Promise<AoMessageResult> {
+    // only include the tag if the value is not undefined
+    const allTags = [
+      { name: 'Action', value: 'UpdateGatewaySettings' },
+      { name: 'Label', value: label },
+      { name: 'Note', value: note },
+      { name: 'FQDN', value: fqdn },
+      { name: 'Port', value: port?.toString() },
+      { name: 'Properties', value: properties },
+      { name: 'Protocol', value: protocol },
+      { name: 'ObserverAddress', value: observerAddress },
+      {
+        name: 'AllowDelegatedStaking',
+        value: allowDelegatedStaking?.toString(),
+      },
+      {
+        name: 'DelegateRewardShareRatio',
+        value: delegateRewardShareRatio?.toString(),
+      },
+      {
+        name: 'MinDelegatedStake',
+        value: minDelegatedStake?.valueOf().toString(),
+      },
+      { name: 'AutoStake', value: autoStake?.toString() },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'UpdateGatewaySettings' }],
-      data: {
-        allowDelegatedStaking,
-        delegateRewardShareRatio,
-        fqdn,
-        label,
-        minDelegatedStake: minDelegatedStake?.valueOf(),
-        note,
-        port,
-        properties,
-        protocol,
-        autoStake,
-        observerWallet,
-      },
+      tags: prunedTags,
     });
   }
 
   async increaseDelegateStake(params: {
     target: string;
-    qty: number | mIOToken;
+    increaseQty: number | mIOToken;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
       tags: [
         { name: 'Action', value: 'DelegateStake' },
         { name: 'Target', value: params.target },
-        { name: 'Quantity', value: params.qty.valueOf().toString() },
+        { name: 'Quantity', value: params.increaseQty.valueOf().toString() },
       ],
-      data: {
-        target: params.target,
-        qty: params.qty.valueOf(),
-      },
     });
   }
 
   async decreaseDelegateStake(params: {
     target: string;
-    qty: number | mIOToken;
+    decreaseQty: number | mIOToken;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'DecreaseDelegateStake' }],
-      data: {
-        target: params.target,
-        qty: params.qty.valueOf(),
-      },
+      tags: [
+        { name: 'Action', value: 'DecreaseDelegateStake' },
+        { name: 'Target', value: params.target },
+        { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+      ],
     });
   }
 
   async increaseOperatorStake(params: {
-    qty: number | mIOToken;
+    increaseQty: number | mIOToken;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'IncreaseOperatorStake' }],
-      data: {
-        qty: params.qty.valueOf(),
-      },
+      tags: [
+        { name: 'Action', value: 'IncreaseOperatorStake' },
+        { name: 'Quantity', value: params.increaseQty.valueOf().toString() },
+      ],
     });
   }
 
@@ -377,10 +433,10 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'DecreaseOperatorStake' }],
-      data: {
-        qty: params.qty.valueOf(),
-      },
+      tags: [
+        { name: 'Action', value: 'DecreaseOperatorStake' },
+        { name: 'Quantity', value: params.qty.valueOf().toString() },
+      ],
     });
   }
 
@@ -405,30 +461,30 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }
 
   async extendLease(params: {
-    domain: string;
+    name: string;
     years: number;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'ExtendLease' }],
-      data: {
-        name: params.domain,
-        years: params.years,
-      },
+      tags: [
+        { name: 'Action', value: 'ExtendLease' },
+        { name: 'Name', value: params.name },
+        { name: 'Years', value: params.years.toString() },
+      ],
     });
   }
 
   async increaseUndernameLimit(params: {
-    domain: string;
-    qty: number;
+    name: string;
+    increaseCount: number;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'IncreaseUndernameLimit' }],
-      data: {
-        name: params.domain,
-        qty: params.qty,
-      },
+      tags: [
+        { name: 'Action', value: 'IncreaseUndernameLimit' },
+        { name: 'Name', value: params.name },
+        { name: 'Quantity', value: params.increaseCount.toString() },
+      ],
     });
   }
 }
