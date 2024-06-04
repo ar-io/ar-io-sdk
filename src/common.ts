@@ -163,23 +163,19 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
   }: EvaluationParameters<{
     blockHeight: number;
   }>): Promise<EpochDistributionData>;
-  getCurrentEpoch({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getPrescribedObservers({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<WeightedObserver[]>;
-  getObservations({
-    evaluationOptions,
-  }: EvaluationParameters<{
-    epochStartHeight?: number;
-  }>): Promise<Observations>;
-  getDistributions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData>;
-  getAuctions({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<Record<string, ArNSAuctionData>>;
+  getCurrentEpoch(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getPrescribedObservers(
+    params?: EvaluationParameters,
+  ): Promise<WeightedObserver[]>;
+  getObservations(params?: EvaluationParameters): Promise<Observations>;
+  getDistributions(
+    params?: EvaluationParameters,
+  ): Promise<EpochDistributionData>;
+  getAuctions(
+    params?: EvaluationParameters,
+  ): Promise<Record<string, ArNSAuctionData>>;
   getAuction({
     domain,
     type,
