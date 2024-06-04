@@ -18,6 +18,7 @@ import { connect } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
 
 import { AOContract, ContractSigner, Logger } from '../../types.js';
+import { version } from '../../version.js';
 import { DefaultLogger } from '../logger.js';
 
 export class AOProcess implements AOContract {
@@ -130,9 +131,12 @@ export class AOProcess implements AOContract {
       processId: this.processId,
     });
 
+    // append ar-io-sdk tags
+
     const messageId = await this.ao.message({
       process: this.processId,
-      tags,
+      // TODO: any other default tags we want to add?
+      tags: [...tags, { name: 'AR-IO-SDK', value: version }],
       data: JSON.stringify(data),
       signer: await this.createAoSigner(signer),
     });
