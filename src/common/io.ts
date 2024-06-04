@@ -18,18 +18,11 @@ import { ioDevnetProcessId } from '../constants.js';
 import {
   ArNSNameData,
   ArNSReservedNameData,
-  DENOMINATIONS,
   EpochDistributionData,
   Observations,
   WeightedObserver,
 } from '../contract-state.js';
-import {
-  AoEpochData,
-  AoGateway,
-  AoIORead,
-  AoIOState,
-  AoIOWrite,
-} from '../io.js';
+import { AoEpochData, AoGateway, AoIORead, AoIOWrite } from '../io.js';
 import { mIOToken } from '../token.js';
 import {
   AoMessageResult,
@@ -54,7 +47,7 @@ export class IO {
   static init({
     process,
     signer,
-  }: WithSigner<{ process: AOProcess<AoIOState> }>): AoIOWrite;
+  }: WithSigner<{ process: AOProcess }>): AoIOWrite;
   static init({
     processId,
     signer,
@@ -63,7 +56,7 @@ export class IO {
   }>): AoIOWrite;
   static init({ processId }: { processId: string }): AoIORead;
   static init(
-    config?: OptionalSigner<ProcessConfiguration<AoIOState>>,
+    config?: OptionalSigner<ProcessConfiguration>,
   ): AoIORead | AoIOWrite {
     if (config && config.signer) {
       const { signer, ...rest } = config;
@@ -77,17 +70,17 @@ export class IO {
 }
 
 export class IOReadable implements AoIORead {
-  protected process: AOProcess<AoIOState>;
+  protected process: AOProcess;
 
-  constructor(config?: ProcessConfiguration<AoIOState>) {
+  constructor(config?: ProcessConfiguration) {
     if (!config) {
-      this.process = new AOProcess<AoIOState>({
+      this.process = new AOProcess({
         processId: ioDevnetProcessId,
       });
-    } else if (isProcessConfiguration<AoIOState>(config)) {
+    } else if (isProcessConfiguration(config)) {
       this.process = config.process;
     } else if (isProcessIdConfiguration(config)) {
-      this.process = new AOProcess<AoIOState>({
+      this.process = new AOProcess({
         processId: config.processId,
       });
     } else {
@@ -213,30 +206,30 @@ export class IOReadable implements AoIORead {
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
-  protected declare process: AOProcess<AoIOState>;
+  protected declare process: AOProcess;
   private signer: ContractSigner;
   constructor({
     signer,
     ...config
   }: WithSigner<
     | {
-        process?: AOProcess<AoIOState>;
+        process?: AOProcess;
       }
     | { processId?: string }
   >) {
     if (Object.keys(config).length === 0) {
       super({
-        process: new AOProcess<AoIOState>({
+        process: new AOProcess({
           processId: ioDevnetProcessId,
         }),
       });
       this.signer = signer;
-    } else if (isProcessConfiguration<AoIOState>(config)) {
+    } else if (isProcessConfiguration(config)) {
       super({ process: config.process });
       this.signer = signer;
     } else if (isProcessIdConfiguration(config)) {
       super({
-        process: new AOProcess<AoIOState>({
+        process: new AOProcess({
           processId: config.processId,
         }),
       });
@@ -253,16 +246,18 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     target: string;
     qty: number | mIOToken;
   }): Promise<AoMessageResult> {
-    return this.process.send<{
-      target: WalletAddress;
-      qty: number;
-      denomination?: DENOMINATIONS;
-    }>({
-      tags: [{ name: 'Action', value: 'Transfer' }],
-      data: {
-        target,
-        qty: qty.valueOf(),
-      },
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Transfer' },
+        {
+          name: 'Recipient',
+          value: target,
+        },
+        {
+          name: 'Quantity',
+          value: qty.valueOf().toString(),
+        },
+      ],
       signer: this.signer,
     });
   }
@@ -281,7 +276,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     autoStake,
     observerWallet,
   }: JoinNetworkParams): Promise<AoMessageResult> {
-    return this.process.send<JoinNetworkParams>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'JoinNetwork' }],
       data: {
@@ -314,7 +309,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     autoStake,
     observerWallet,
   }: UpdateGatewaySettingsParams): Promise<AoMessageResult> {
-    return this.process.send<UpdateGatewaySettingsParams>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'UpdateGatewaySettings' }],
       data: {
@@ -337,7 +332,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     target: string;
     qty: number | mIOToken;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ target: string; qty: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [
         { name: 'Action', value: 'DelegateStake' },
@@ -355,7 +350,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     target: string;
     qty: number | mIOToken;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ target: string; qty: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'DecreaseDelegateStake' }],
       data: {
@@ -368,7 +363,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async increaseOperatorStake(params: {
     qty: number | mIOToken;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ qty: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'IncreaseOperatorStake' }],
       data: {
@@ -380,7 +375,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async decreaseOperatorStake(params: {
     qty: number | mIOToken;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ qty: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'DecreaseOperatorStake' }],
       data: {
@@ -393,10 +388,13 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     reportTxId: TransactionId;
     failedGateways: WalletAddress[];
   }): Promise<AoMessageResult> {
-    return this.process.send<{
-      observerReportTxId: TransactionId;
-      failedGateways: WalletAddress[];
-    }>({
+    return this.process.send<
+      {
+        observerReportTxId: TransactionId;
+        failedGateways: WalletAddress[];
+      },
+      never
+    >({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'SaveObservations' }],
       data: {
@@ -410,7 +408,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     domain: string;
     years: number;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ name: string; years: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'ExtendLease' }],
       data: {
@@ -424,7 +422,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     domain: string;
     qty: number;
   }): Promise<AoMessageResult> {
-    return this.process.send<{ name: string; qty: number }>({
+    return this.process.send({
       signer: this.signer,
       tags: [{ name: 'Action', value: 'IncreaseUndernameLimit' }],
       data: {

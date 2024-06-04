@@ -64,9 +64,9 @@ export type ContractConfiguration<T = NonNullable<unknown>> =
       contractTxId?: string;
     };
 
-export type ProcessConfiguration<T = NonNullable<unknown>> =
+export type ProcessConfiguration =
   | {
-      process?: AOProcess<T>;
+      process?: AOProcess;
     }
   | {
       processId?: string;
@@ -110,7 +110,15 @@ export interface ReadContract {
 
 export interface AOContract {
   read<K>({ tags }): Promise<K>;
-  send({ tags, data }): Promise<{ id: string }>;
+  send<I, K>({
+    tags,
+    data,
+    signer,
+  }: {
+    tags: { name: string; value: string }[];
+    data: I;
+    signer: ContractSigner;
+  }): Promise<{ id: string; result?: K }>;
 }
 
 export interface WriteContract {

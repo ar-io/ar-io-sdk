@@ -81,9 +81,9 @@ export function isContractConfiguration<T>(config: object): config is {
   return 'contract' in config;
 }
 
-export function isProcessConfiguration<T>(
+export function isProcessConfiguration(
   config: object,
-): config is { process: AOProcess<T> } {
+): config is { process: AOProcess } {
   return 'process' in config;
 }
 

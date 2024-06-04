@@ -14,17 +14,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect } from '@permaweb/aoconnect';
+import { connect, message, result } from '@permaweb/aoconnect';
+import { createData } from 'arbundles';
 
-import {
-  AOContract,
-  BaseContract,
-  ContractSigner,
-  Logger,
-} from '../../types.js';
+import { AOContract, ContractSigner, Logger } from '../../types.js';
 import { DefaultLogger } from '../logger.js';
 
-export class AOProcess<T> implements BaseContract<T>, AOContract {
+export class AOProcess implements AOContract {
   private logger: Logger;
   private processId: string;
   // private scheduler: string;
@@ -61,14 +57,32 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
     this.ao = connect();
   }
 
-  async getState(): Promise<T> {
-    this.logger.info(`Fetching process state`, {
-      process: this.processId,
-    });
-    const state = await this.read<T>({
-      tags: [{ name: 'Action', value: 'State' }],
-    });
-    return state;
+  // TODO: could abstract into our own interface that constructs different signers
+  async createAoSigner(
+    signer: ContractSigner,
+  ): Promise<
+    (args: {
+      data: string | Buffer;
+      tags?: { name: string; value: string }[];
+      target?: string;
+      anchor?: string;
+    }) => Promise<{ id: string; raw: ArrayBuffer }>
+  > {
+    // ensure appropriate permissions are granted with injected signers.
+    if (signer.publicKey === undefined && 'setPublicKey' in signer) {
+      await signer.setPublicKey();
+    }
+
+    const aoSigner = async ({ data, tags, target, anchor }) => {
+      const dataItem = createData(data, signer, { tags, target, anchor });
+      const signedData = dataItem.sign(signer).then(async () => ({
+        id: await dataItem.id,
+        raw: await dataItem.getRaw(),
+      }));
+      return signedData;
+    };
+
+    return aoSigner;
   }
 
   async read<K>({
@@ -101,38 +115,71 @@ export class AOProcess<T> implements BaseContract<T>, AOContract {
     return data;
   }
 
-  async send<K>({
+  async send<I, K>({
     tags,
     data,
     signer,
   }: {
     tags: Array<{ name: string; value: string }>;
-    data: K;
+    data?: I;
     signer: ContractSigner;
-  }): Promise<{ id: string }> {
+  }): Promise<{ id: string; result?: K }> {
     this.logger.debug(`Evaluating send interaction on contract`, {
       tags,
       data,
+      processId: this.processId,
     });
 
-    const result = await this.ao.message({
+    const messageId = await message({
       process: this.processId,
       tags,
       data: JSON.stringify(data),
-      signer,
+      signer: await this.createAoSigner(signer),
     });
 
-    console.log(result);
+    this.logger.debug(`Sent message to process`, {
+      messageId,
+      proceessId: this.processId,
+    });
 
-    if (result.Error !== undefined) {
-      throw new Error(result.Error);
+    // check the result of the send interaction
+    const output = await result({
+      message: messageId,
+      process: this.processId,
+    });
+
+    this.logger.debug('Message result', {
+      output,
+      messageId,
+      processId: this.processId,
+    });
+
+    // check if there are any Messages in the output
+    if (output.Messages.length === 0) {
+      return { id: messageId };
     }
 
-    this.logger.debug(`Send interaction result`, {
-      result,
-    });
+    const tagsOutput = output.Messages[0].Tags;
+    const error = tagsOutput.find((tag) => tag.name === 'Error');
+    // if there's an Error tag
+    if (error) {
+      // parse the data
+      const result = output.Messages[0].Data;
+      throw new Error(`${error.Value}: ${result}`);
+    }
 
-    const id: string = JSON.parse(result.Messages[0].Id);
-    return { id };
+    const resultData: K = JSON.parse(output.Messages[0].Data);
+
+    // console.log(result);
+
+    // if (result.Error !== undefined) {
+    //   throw new Error(result.Error);
+    // }
+
+    // this.logger.debug(`Send interaction result`, {
+    //   result,
+    // });
+
+    return { id: messageId, result: resultData };
   }
 }
