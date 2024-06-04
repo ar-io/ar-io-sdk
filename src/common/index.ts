@@ -24,4 +24,4 @@ export * from './contracts/remote-contract.js';
 export * from './contracts/warp-contract.js';
 
 // ao
-export * from './contracts/ao-contract.js';
+export * from './contracts/ao-process.js';

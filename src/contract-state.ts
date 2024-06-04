@@ -16,6 +16,10 @@
  */
 import { WalletAddress } from './common.js';
 
+export type Balances = Record<WalletAddress, number>;
+export type Fees = Record<string, number>;
+export type Observations = Record<number, EpochObservations>;
+
 export const ioContractReadInteractions = [
   'gateway',
   'gateways',
@@ -194,10 +198,6 @@ export enum DENOMINATIONS {
   MIO = 'mIO',
 }
 
-export type Balances = Record<WalletAddress, number>;
-
-export type Fees = Record<string, number>;
-
 export type ReservedNameData = {
   target?: string; // The target wallet address this name is reserved for
   endTimestamp?: number; // At what unix time (seconds since epoch) this reserved name becomes available
@@ -239,8 +239,6 @@ export type EpochObservations = {
   failureSummaries: Record<string, string[]>; // an observers summary of all failed gateways in the epoch
   reports: Record<string, string>; // a reference point for the report submitted by this observer
 };
-
-export type Observations = Record<number, EpochObservations>;
 
 export type EpochDistributionData = {
   epochZeroStartHeight: number;
@@ -302,48 +300,3 @@ export const ANT_CONTRACT_FUNCTIONS = {
   BALANCE: 'balance',
   EVOLVE: 'evolve',
 };
-
-// AO Contract types
-export type AoEpochData = {
-  epochIndex: number;
-  observations: EpochObservations;
-  prescribedObservers: WeightedObserver[];
-  startTimestamp: number;
-  endTimestamp: number;
-  distributionTimestamp: number;
-  distributions: Record<WalletAddress, number>;
-};
-
-export type AoGatewayStats = {
-  passedConsecutiveEpochs: number;
-  failedConsecutiveEpochs: number;
-  totalEpochParticipationCount: number;
-  passedEpochCount: number;
-  failedEpochCount: number;
-  observedEpochCount: number;
-  prescribedEpochCount: number;
-};
-
-export type AoGateway = {
-  settings: GatewaySettings;
-  stats: AoGatewayStats;
-  delegates: Record<WalletAddress, GatewayDelegate>;
-  totalDelegatedStake: number;
-  vaults: Record<WalletAddress, VaultData>;
-  startTimestamp: number;
-  endTimestamp: number;
-  observerAddress: WalletAddress;
-  operatorStake: number;
-  status: 'joined' | 'leaving';
-  // TODO: add weights
-};
-
-export interface AoIOState {
-  GatewayRegistry: Record<string, AoGateway>;
-  Epochs: Record<number, AoEpochData>;
-  NameRegistry: Record<string, ArNSNameData>;
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, VaultData>;
-  Ticker: string;
-  Name: string;
-}

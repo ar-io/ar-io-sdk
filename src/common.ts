@@ -22,8 +22,6 @@ import {
   ANTRecord,
   ANTState,
   AllowedProtocols,
-  AoEpochData,
-  AoGateway,
   ArNSAuctionData,
   ArNSNameData,
   ArNSReservedNameData,
@@ -68,10 +66,10 @@ export type ContractConfiguration<T = NonNullable<unknown>> =
 
 export type ProcessConfiguration<T = NonNullable<unknown>> =
   | {
-      process: AOProcess<T>;
+      process?: AOProcess<T>;
     }
   | {
-      processId: string;
+      processId?: string;
     };
 
 export type EvaluationOptions = {
@@ -128,12 +126,12 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
     address,
     evaluationOptions,
   }: EvaluationParameters<{ address: WalletAddress }>): Promise<
-    Gateway | AoGateway | undefined
+    Gateway | undefined
   >;
   getGateways({
     evaluationOptions,
   }: EvaluationParameters): Promise<
-    Record<WalletAddress, Gateway | AoGateway> | Record<string, never>
+    Record<WalletAddress, Gateway> | Record<string, never>
   >;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
@@ -167,7 +165,7 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
   }>): Promise<EpochDistributionData>;
   getCurrentEpoch({
     evaluationOptions,
-  }: EvaluationParameters): Promise<EpochDistributionData | AoEpochData>;
+  }: EvaluationParameters): Promise<EpochDistributionData>;
   getPrescribedObservers({
     evaluationOptions,
   }: EvaluationParameters): Promise<WeightedObserver[]>;
@@ -296,11 +294,9 @@ export interface ArIOWriteContract<T> extends ArIOReadContract<T> {
   ): Promise<WriteInteractionResult>;
 }
 
-export type AOMessageResult = { id: string };
+export type AoMessageResult = { id: string };
 export type SmartWeaveInteractionResult = Transaction;
-export type WriteInteractionResult =
-  | SmartWeaveInteractionResult
-  | AOMessageResult;
+export type WriteInteractionResult = SmartWeaveInteractionResult;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {
