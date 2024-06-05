@@ -14,12 +14,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import Arweave from 'arweave';
+
 import { ioDevnetProcessId } from '../constants.js';
 import {
   ArNSNameData,
   ArNSReservedNameData,
   EpochDistributionData,
-  Observations,
+  EpochObservations,
   WeightedObserver,
 } from '../contract-state.js';
 import {
@@ -60,6 +62,13 @@ export class IO {
   }: WithSigner<{
     processId: string;
   }>): AoIOWrite;
+  static init({
+    processId,
+    signer,
+  }: {
+    signer?: ContractSigner | undefined;
+    processId: string;
+  });
   static init({ processId }: { processId: string }): AoIORead;
   static init(
     config?: OptionalSigner<ProcessConfiguration>,
@@ -77,8 +86,9 @@ export class IO {
 
 export class IOReadable implements AoIORead {
   protected process: AOProcess;
+  private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration) {
+  constructor(config?: ProcessConfiguration, arweave = Arweave.init({})) {
     if (!config) {
       this.process = new AOProcess({
         processId: ioDevnetProcessId,
@@ -92,12 +102,14 @@ export class IOReadable implements AoIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+    this.arweave = arweave;
   }
 
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const allTags = [
       { name: 'Action', value: 'Epoch' },
       {
+        // TODO: default this to the current network time
         name: 'Timestamp',
         value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
       },
@@ -117,6 +129,14 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
+
+    // if it only contains the action, add default timestamp
+    if (prunedTags.length === 1) {
+      prunedTags.push({
+        name: 'Timestamp',
+        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+      });
+    }
 
     return this.process.read<AoEpochData>({
       tags: prunedTags,
@@ -200,10 +220,12 @@ export class IOReadable implements AoIORead {
   }
 
   async getCurrentEpoch(): Promise<AoEpochData> {
+    const block = await this.arweave.blocks.getCurrent();
+    const networkTimestamp = block.timestamp;
     return this.process.read<AoEpochData>({
       tags: [
         { name: 'Action', value: 'Epoch' },
-        { name: 'Timestamp', value: `${Date.now()}` },
+        { name: 'Timestamp', value: `${networkTimestamp}` },
       ],
     });
   }
@@ -234,6 +256,14 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
+    // if it only contains the action, add default timestamp
+    if (prunedTags.length === 1) {
+      prunedTags.push({
+        name: 'Timestamp',
+        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+      });
+    }
+
     return this.process.read<WeightedObserver[]>({
       tags: prunedTags,
     });
@@ -263,12 +293,20 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
+    // if it only contains the action, add default timestamp
+    if (prunedTags.length === 1) {
+      prunedTags.push({
+        name: 'Timestamp',
+        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+      });
+    }
+
     return this.process.read<string[]>({
       tags: prunedTags,
     });
   }
 
-  async getObservations(epoch?: EpochInput): Promise<Observations> {
+  async getObservations(epoch?: EpochInput): Promise<EpochObservations> {
     const allTags = [
       { name: 'Action', value: 'EpochObservations' },
       {
@@ -292,7 +330,15 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<Observations>({
+    // if it only contains the action, add default timestamp
+    if (prunedTags.length === 1) {
+      prunedTags.push({
+        name: 'Timestamp',
+        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+      });
+    }
+
+    return this.process.read<EpochObservations>({
       tags: prunedTags,
     });
   }
@@ -320,6 +366,14 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
+
+    // if it only contains the action, add default timestamp
+    if (prunedTags.length === 1) {
+      prunedTags.push({
+        name: 'Timestamp',
+        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+      });
+    }
     return this.process.read<EpochDistributionData>({
       tags: prunedTags,
     });
@@ -403,7 +457,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     const allTags = [
       { name: 'Action', value: 'JoinNetwork' },
       {
-        name: 'Quantity',
+        name: 'OperatorStake',
         value: operatorStake.valueOf().toString(),
       },
       {

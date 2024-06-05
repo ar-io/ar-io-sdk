@@ -21,7 +21,6 @@ import {
   EpochObservations,
   GatewayDelegate,
   GatewaySettings,
-  Observations,
   VaultData,
   WeightedObserver,
 } from './contract-state.js';
@@ -88,7 +87,7 @@ export interface AoIORead {
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<WeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
-  getObservations(epoch?: EpochInput): Promise<Observations>;
+  getObservations(epoch?: EpochInput): Promise<EpochObservations>;
   getDistributions(epoch?: EpochInput): Promise<EpochDistributionData>;
 }
 
