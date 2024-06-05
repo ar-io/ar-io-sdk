@@ -35,6 +35,18 @@ import {
   WriteOptions,
 } from './types.js';
 
+export type EpochInput =
+  | {
+      blockHeight: number;
+    }
+  | {
+      epochIndex: number;
+    }
+  | {
+      timestamp: number;
+    }
+  | undefined;
+
 export interface AoIORead {
   getGateway({
     address,
@@ -58,21 +70,11 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<ArNSReservedNameData | undefined>;
-  getEpoch({
-    blockHeight,
-  }: {
-    blockHeight: number;
-  }): Promise<EpochDistributionData>;
+  getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(): Promise<WeightedObserver[]>;
-  // TODO: allow timestamp or empty
-  getObservations({ blockHeight }): Promise<Observations>;
-  // TODO: allow timestamp or empty
-  getDistributions({
-    blockHeight,
-  }: {
-    blockHeight: number;
-  }): Promise<EpochDistributionData>;
+  getPrescribedObservers(epoch?: EpochInput): Promise<WeightedObserver[]>;
+  getObservations(epoch?: EpochInput): Promise<Observations>;
+  getDistributions(epoch?: EpochInput): Promise<EpochDistributionData>;
 }
 
 export interface AoIOWrite extends AoIORead {

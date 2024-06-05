@@ -22,7 +22,13 @@ import {
   Observations,
   WeightedObserver,
 } from '../contract-state.js';
-import { AoEpochData, AoGateway, AoIORead, AoIOWrite } from '../io.js';
+import {
+  AoEpochData,
+  AoGateway,
+  AoIORead,
+  AoIOWrite,
+  EpochInput,
+} from '../io.js';
 import { mIOToken } from '../token.js';
 import {
   AoMessageResult,
@@ -88,16 +94,32 @@ export class IOReadable implements AoIORead {
     }
   }
 
-  async getEpoch({
-    blockHeight,
-  }: {
-    blockHeight: number;
-  }): Promise<EpochDistributionData> {
-    return this.process.read<EpochDistributionData>({
-      tags: [
-        { name: 'Action', value: 'Epoch' },
-        { name: 'BlockHeight', value: blockHeight.toString() },
-      ],
+  async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
+    const allTags = [
+      { name: 'Action', value: 'Epoch' },
+      {
+        name: 'Timestamp',
+        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+      },
+      {
+        name: 'BlockHeight',
+        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
+      },
+      {
+        name: 'EpochIndex',
+        value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<AoEpochData>({
+      tags: prunedTags,
     });
   }
 
@@ -186,21 +208,91 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getPrescribedObservers(): Promise<WeightedObserver[]> {
+  async getPrescribedObservers(
+    epoch?: EpochInput,
+  ): Promise<WeightedObserver[]> {
+    const allTags = [
+      { name: 'Action', value: 'EpochPrescribedObservers' },
+      {
+        name: 'Timestamp',
+        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+      },
+      {
+        name: 'BlockHeight',
+        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
+      },
+      {
+        name: 'EpochIndex',
+        value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.read<WeightedObserver[]>({
-      tags: [{ name: 'Action', value: 'PrescribedObservers' }],
+      tags: prunedTags,
     });
   }
 
-  async getObservations(): Promise<Observations> {
+  async getObservations(epoch?: EpochInput): Promise<Observations> {
+    const allTags = [
+      { name: 'Action', value: 'EpochObservations' },
+      {
+        name: 'Timestamp',
+        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+      },
+      {
+        name: 'BlockHeight',
+        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
+      },
+      {
+        name: 'EpochIndex',
+        value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.read<Observations>({
-      tags: [{ name: 'Action', value: 'Observations' }],
+      tags: prunedTags,
     });
   }
 
-  async getDistributions(): Promise<EpochDistributionData> {
+  async getDistributions(epoch?: EpochInput): Promise<EpochDistributionData> {
+    const allTags = [
+      { name: 'Action', value: 'EpochDistributions' },
+      {
+        name: 'Timestamp',
+        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+      },
+      {
+        name: 'BlockHeight',
+        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
+      },
+      {
+        name: 'EpochIndex',
+        value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
     return this.process.read<EpochDistributionData>({
-      tags: [{ name: 'Action', value: 'Distributions' }],
+      tags: prunedTags,
     });
   }
 }
