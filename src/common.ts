@@ -115,11 +115,9 @@ export interface ArIOReadContract extends BaseContract<ArIOState> {
   }: EvaluationParameters<{ address: WalletAddress }>): Promise<
     Gateway | undefined
   >;
-  getGateways({
-    evaluationOptions,
-  }: EvaluationParameters): Promise<
-    Record<WalletAddress, Gateway> | Record<string, never>
-  >;
+  getGateways(
+    params?: EvaluationParameters,
+  ): Promise<Record<WalletAddress, Gateway> | Record<string, never>>;
   getBalance(
     params: { address: WalletAddress } & EvaluationOptions,
   ): Promise<number>;
