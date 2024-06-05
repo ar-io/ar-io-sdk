@@ -73,6 +73,7 @@ export interface AoIORead {
   getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<WeightedObserver[]>;
+  getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
   getObservations(epoch?: EpochInput): Promise<Observations>;
   getDistributions(epoch?: EpochInput): Promise<EpochDistributionData>;
 }

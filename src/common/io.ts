@@ -239,6 +239,35 @@ export class IOReadable implements AoIORead {
     });
   }
 
+  async getPrescribedNames(epoch?: EpochInput): Promise<string[]> {
+    const allTags = [
+      { name: 'Action', value: 'EpochPrescribedNames' },
+      {
+        name: 'Timestamp',
+        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+      },
+      {
+        name: 'BlockHeight',
+        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
+      },
+      {
+        name: 'EpochIndex',
+        value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<string[]>({
+      tags: prunedTags,
+    });
+  }
+
   async getObservations(epoch?: EpochInput): Promise<Observations> {
     const allTags = [
       { name: 'Action', value: 'EpochObservations' },
