@@ -161,6 +161,14 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  buyRecord(
+    params: {
+      name: string;
+      years?: number;
+      type: 'lease' | 'permabuy';
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   extendLease(
     params: {
       name: string;

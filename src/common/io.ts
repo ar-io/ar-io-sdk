@@ -581,6 +581,31 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
+  async buyRecord(params: {
+    name: string;
+    years?: number;
+    type: 'lease' | 'permabuy';
+  }): Promise<AoMessageResult> {
+    const allTags = [
+      { name: 'Action', value: 'BuyRecord' },
+      { name: 'Name', value: params.name },
+      { name: 'Type', value: params.type },
+      { name: 'Years', value: params.years?.toString() },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send({
+      signer: this.signer,
+      tags: prunedTags,
+    });
+  }
+
   async extendLease(params: {
     name: string;
     years: number;
