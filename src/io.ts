@@ -139,10 +139,10 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  increaseDelegateStake(
+  delegateStake(
     params: {
       target: WalletAddress;
-      increaseQty: number | mIOToken;
+      stakeQty: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

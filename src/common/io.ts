@@ -480,16 +480,16 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async increaseDelegateStake(params: {
+  async delegateStake(params: {
     target: string;
-    increaseQty: number | mIOToken;
+    stakeQty: number | mIOToken;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
       tags: [
         { name: 'Action', value: 'DelegateStake' },
         { name: 'Target', value: params.target },
-        { name: 'Quantity', value: params.increaseQty.valueOf().toString() },
+        { name: 'Quantity', value: params.stakeQty.valueOf().toString() },
       ],
     });
   }
