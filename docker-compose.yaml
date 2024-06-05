@@ -19,6 +19,9 @@ services:
       - GATEWAY_HOST=arlocal
       - GATEWAY_PORT=1984
       - GATEWAY_PROTOCOL=http
+      - WARP_GATEWAY_HOST=arlocal
+      - WARP_GATEWAY_PORT=1984
+      - WARP_GATEWAY_PROTOCOL=http
       - PREFETCH_CONTRACTS=false
       - BOOTSTRAP_CONTRACTS=false
     healthcheck:
