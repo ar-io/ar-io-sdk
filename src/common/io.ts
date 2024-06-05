@@ -521,13 +521,13 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }
 
   async decreaseOperatorStake(params: {
-    qty: number | mIOToken;
+    decreaseQty: number | mIOToken;
   }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
       tags: [
         { name: 'Action', value: 'DecreaseOperatorStake' },
-        { name: 'Quantity', value: params.qty.valueOf().toString() },
+        { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
       ],
     });
   }

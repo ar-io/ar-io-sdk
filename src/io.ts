@@ -135,7 +135,7 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   decreaseOperatorStake(
     params: {
-      qty: number | mIOToken;
+      decreaseQty: number | mIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
