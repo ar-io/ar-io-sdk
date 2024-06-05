@@ -400,59 +400,68 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     observerAddress: string;
     operatorStake: number | mIOToken;
   }): Promise<AoMessageResult> {
+    const allTags = [
+      { name: 'Action', value: 'JoinNetwork' },
+      {
+        name: 'Quantity',
+        value: operatorStake.valueOf().toString(),
+      },
+      {
+        name: 'AllowDelegatedStaking',
+        value: allowDelegatedStaking.toString(),
+      },
+      {
+        name: 'DelegateRewardShareRatio',
+        value: delegateRewardShareRatio.toString(),
+      },
+      {
+        name: 'FQDN',
+        value: fqdn,
+      },
+      {
+        name: 'Label',
+        value: label,
+      },
+      {
+        name: 'MinDelegatedStake',
+        value: minDelegatedStake.valueOf().toString(),
+      },
+      {
+        name: 'Note',
+        value: note,
+      },
+      {
+        name: 'Port',
+        value: port.toString(),
+      },
+      {
+        name: 'Properties',
+        value: properties,
+      },
+      {
+        name: 'Protocol',
+        value: protocol,
+      },
+      {
+        name: 'AutoStake',
+        value: autoStake.toString(),
+      },
+      {
+        name: 'ObserverAddress',
+        value: observerAddress,
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.send({
       signer: this.signer,
-      tags: [
-        { name: 'Action', value: 'JoinNetwork' },
-        {
-          name: 'Quantity',
-          value: operatorStake.valueOf().toString(),
-        },
-        {
-          name: 'AllowDelegatedStaking',
-          value: allowDelegatedStaking.toString(),
-        },
-        {
-          name: 'DelegateRewardShareRatio',
-          value: delegateRewardShareRatio.toString(),
-        },
-        {
-          name: 'FQDN',
-          value: fqdn,
-        },
-        {
-          name: 'Label',
-          value: label,
-        },
-        {
-          name: 'MinDelegatedStake',
-          value: minDelegatedStake.valueOf().toString(),
-        },
-        {
-          name: 'Note',
-          value: note,
-        },
-        {
-          name: 'Port',
-          value: port.toString(),
-        },
-        {
-          name: 'Properties',
-          value: properties,
-        },
-        {
-          name: 'Protocol',
-          value: protocol,
-        },
-        {
-          name: 'AutoStake',
-          value: autoStake.toString(),
-        },
-        {
-          name: 'ObserverAddress',
-          value: observerAddress,
-        },
-      ],
+      tags: prunedTags,
     });
   }
 
