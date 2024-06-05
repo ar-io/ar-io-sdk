@@ -22,6 +22,7 @@ import {
   ANTRecord,
   ANTState,
   AllowedProtocols,
+  ArIOState,
   ArNSAuctionData,
   ArNSNameData,
   ArNSReservedNameData,
@@ -83,9 +84,8 @@ export type EvaluationParameters<T = NonNullable<unknown>> = {
 } & T;
 
 export type ReadParameters<Input> = {
-  functionName?: string;
+  functionName: string;
   inputs?: Input;
-  tags?: Array<{ name: string; value: string }>;
 };
 
 export type WriteOptions = {
@@ -93,7 +93,7 @@ export type WriteOptions = {
 };
 
 export type WriteParameters<Input> = WithSigner<
-  Required<Omit<ReadParameters<Input>, 'tags'>>
+  Required<ReadParameters<Input>>
 >;
 
 export interface BaseContract<T> {
@@ -108,19 +108,6 @@ export interface ReadContract {
   }: EvaluationParameters<ReadParameters<Input>>): Promise<State>;
 }
 
-export interface AOContract {
-  read<K>({ tags }): Promise<K>;
-  send<I, K>({
-    tags,
-    data,
-    signer,
-  }: {
-    tags: { name: string; value: string }[];
-    data: I;
-    signer: ContractSigner;
-  }): Promise<{ id: string; result?: K }>;
-}
-
 export interface WriteContract {
   writeInteraction<Input>(
     { functionName, inputs }: WriteParameters<Input>,
@@ -129,7 +116,7 @@ export interface WriteContract {
 }
 
 // TODO: extend with additional methods
-export interface ArIOReadContract<T> extends BaseContract<T> {
+export interface ArIOReadContract extends BaseContract<ArIOState> {
   getGateway({
     address,
     evaluationOptions,
@@ -202,7 +189,7 @@ export interface ArIOReadContract<T> extends BaseContract<T> {
   }>): Promise<number>;
 }
 
-export interface ArIOWriteContract<T> extends ArIOReadContract<T> {
+export interface ArIOWriteContract extends ArIOReadContract {
   // write interactions
   transfer(
     {

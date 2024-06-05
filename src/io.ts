@@ -28,6 +28,7 @@ import {
 import { mIOToken } from './token.js';
 import {
   AoMessageResult,
+  ContractSigner,
   JoinNetworkParams,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -46,6 +47,19 @@ export type EpochInput =
       timestamp: number;
     }
   | undefined;
+
+export interface AOContract {
+  read<K>({ tags }): Promise<K>;
+  send<I, K>({
+    tags,
+    data,
+    signer,
+  }: {
+    tags: { name: string; value: string }[];
+    data: I;
+    signer: ContractSigner;
+  }): Promise<{ id: string; result?: K }>;
+}
 
 export interface AoIORead {
   getGateway({

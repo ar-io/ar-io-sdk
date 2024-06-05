@@ -163,7 +163,7 @@ export class ArIO {
   }
 }
 
-export class ArIOReadable implements ArIOReadContract<ArIOState> {
+export class ArIOReadable implements ArIOReadContract {
   protected contract: RemoteContract<ArIOState> | WarpContract<ArIOState>;
 
   constructor(config?: ContractConfiguration<ArIOState>) {
@@ -196,9 +196,9 @@ export class ArIOReadable implements ArIOReadContract<ArIOState> {
    *  arIO.getState({ evaluationOptions: { evalTo: { sortKey: 'mySortKey' } } });
    * ```
    */
-  async getState<T = ArIOState>(params: EvaluationParameters = {}): Promise<T> {
+  async getState(params: EvaluationParameters = {}): Promise<ArIOState> {
     const state = await this.contract.getState(params);
-    return state as T;
+    return state;
   }
 
   /**
@@ -649,10 +649,7 @@ export class ArIOReadable implements ArIOReadContract<ArIOState> {
   }
 }
 
-export class ArIOWritable
-  extends ArIOReadable
-  implements ArIOWriteContract<ArIOState>
-{
+export class ArIOWritable extends ArIOReadable implements ArIOWriteContract {
   protected declare contract: WarpContract<ArIOState>;
   private signer: ContractSigner;
   constructor({
