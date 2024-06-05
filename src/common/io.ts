@@ -30,6 +30,8 @@ import {
   AoIORead,
   AoIOWrite,
   EpochInput,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
 } from '../io.js';
 import { mIOToken } from '../token.js';
 import {
@@ -43,12 +45,9 @@ import {
   WalletAddress,
   WithSigner,
 } from '../types.js';
-import {
-  isProcessConfiguration,
-  isProcessIdConfiguration,
-} from '../utils/smartweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { DefaultLogger } from './logger.js';
 
 export class IO {
   static init(): AoIORead;
@@ -98,6 +97,9 @@ export class IOReadable implements AoIORead {
     } else if (isProcessIdConfiguration(config)) {
       this.process = new AOProcess({
         processId: config.processId,
+        logger: new DefaultLogger({
+          level: 'info',
+        }),
       });
     } else {
       throw new InvalidContractConfigurationError();
@@ -220,12 +222,10 @@ export class IOReadable implements AoIORead {
   }
 
   async getCurrentEpoch(): Promise<AoEpochData> {
-    const block = await this.arweave.blocks.getCurrent();
-    const networkTimestamp = block.timestamp;
     return this.process.read<AoEpochData>({
       tags: [
         { name: 'Action', value: 'Epoch' },
-        { name: 'Timestamp', value: `${networkTimestamp}` },
+        { name: 'Timestamp', value: `${Date.now()}` },
       ],
     });
   }
@@ -237,7 +237,7 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'EpochPrescribedObservers' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+        value: (epoch as { timestamp?: number }).timestamp?.toString(),
       },
       {
         name: 'BlockHeight',
@@ -260,7 +260,7 @@ export class IOReadable implements AoIORead {
     if (prunedTags.length === 1) {
       prunedTags.push({
         name: 'Timestamp',
-        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+        value: `${Date.now()}`,
       });
     }
 
@@ -274,7 +274,7 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'EpochPrescribedNames' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+        value: (epoch as { timestamp?: number }).timestamp?.toString(),
       },
       {
         name: 'BlockHeight',
@@ -297,7 +297,7 @@ export class IOReadable implements AoIORead {
     if (prunedTags.length === 1) {
       prunedTags.push({
         name: 'Timestamp',
-        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
+        value: `${Date.now()}`, // TODO; replace with fetch the current network time
       });
     }
 

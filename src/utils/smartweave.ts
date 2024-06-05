@@ -17,7 +17,7 @@
 import Arweave from 'arweave';
 import { EvaluationManifest } from 'warp-contracts';
 
-import { AOProcess, RemoteContract, WarpContract } from '../common/index.js';
+import { RemoteContract, WarpContract } from '../common/index.js';
 import { SORT_KEY_REGEX } from '../constants.js';
 import { SortKey } from '../types.js';
 import { tagsToObject, validateArweaveId } from './arweave.js';
@@ -79,22 +79,6 @@ export function isContractConfiguration<T>(config: object): config is {
   contract: WarpContract<T> | RemoteContract<T>;
 } {
   return 'contract' in config;
-}
-
-export function isProcessConfiguration(
-  config: object,
-): config is { process: AOProcess } {
-  return 'process' in config;
-}
-
-export function isProcessIdConfiguration(
-  config: object,
-): config is { processId: string } {
-  return (
-    'processId' in config &&
-    typeof config.processId === 'string' &&
-    validateArweaveId(config.processId) === true
-  );
 }
 
 export function isContractTxIdConfiguration(

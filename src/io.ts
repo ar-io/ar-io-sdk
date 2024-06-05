@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { AOProcess } from './common/index.js';
 import {
   ArNSNameData,
   ArNSReservedNameData,
@@ -34,6 +35,31 @@ import {
   WalletAddress,
   WriteOptions,
 } from './types.js';
+import { validateArweaveId } from './utils/arweave.js';
+
+export function isProcessConfiguration(
+  config: object,
+): config is { process: AOProcess } {
+  return 'process' in config;
+}
+
+export function isProcessIdConfiguration(
+  config: object,
+): config is { processId: string } {
+  return (
+    'processId' in config &&
+    typeof config.processId === 'string' &&
+    validateArweaveId(config.processId) === true
+  );
+}
+
+export type ProcessConfiguration =
+  | {
+      process?: AOProcess;
+    }
+  | {
+      processId?: string;
+    };
 
 export type EpochInput =
   | {

@@ -17,7 +17,7 @@
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
-import { AOProcess, RemoteContract, WarpContract } from './common/index.js';
+import { RemoteContract, WarpContract } from './common/index.js';
 import {
   ANTRecord,
   ANTState,
@@ -63,14 +63,6 @@ export type ContractConfiguration<T = NonNullable<unknown>> =
     }
   | {
       contractTxId?: string;
-    };
-
-export type ProcessConfiguration =
-  | {
-      process?: AOProcess;
-    }
-  | {
-      processId?: string;
     };
 
 export type EvaluationOptions = {
