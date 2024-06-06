@@ -52,6 +52,7 @@ import { DefaultLogger } from './logger.js';
 
 export class IO {
   static init(): AoIORead;
+  static init({ process }: { process: AOProcess }): AoIORead;
   static init({
     process,
     signer,
@@ -549,7 +550,6 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
-    // only include the tag if the value is not undefined
     const allTags = [
       ...tags,
       { name: 'Action', value: 'UpdateGatewaySettings' },
