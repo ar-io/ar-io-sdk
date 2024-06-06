@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "1.1.0",
+  "version": "1.1.1-alpha.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -119,7 +119,7 @@
   "dependencies": {
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
-    "axios": "1.6.0",
+    "axios": "1.7.2",
     "axios-retry": "^4.3.0",
     "bunyan": "^1.8.15",
     "warp-contracts": "1.4.45"
