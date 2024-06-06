@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1) (2024-06-06)
+
+
+### Bug Fixes
+
+* **api:** default evalution options on getArNSReservedNames api ([0a1f22e](https://github.com/ar-io/ar-io-sdk/commit/0a1f22ebe7fccd6d7f77a5255d2b639d670492fb))
+
 ## [1.1.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1-alpha.1) (2024-06-04)
 
 
