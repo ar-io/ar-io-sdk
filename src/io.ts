@@ -237,12 +237,18 @@ export interface AoIOState {
 
 export type AoEpochData = {
   epochIndex: number;
+  startHeight: number;
   observations: EpochObservations;
   prescribedObservers: WeightedObserver[];
   startTimestamp: number;
   endTimestamp: number;
   distributionTimestamp: number;
-  distributions: Record<WalletAddress, number>;
+  distributions: {
+    rewards: Record<WalletAddress, number>;
+    distributedTimestamp: number;
+    totalDistributedRewards: number;
+    totalEligibleRewards: number;
+  };
 };
 
 export type AoGatewayStats = {

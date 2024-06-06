@@ -44,6 +44,7 @@ import {
   UpdateGatewaySettingsParams,
   WalletAddress,
   WithSigner,
+  WriteOptions,
 } from '../types.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -311,7 +312,7 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'EpochObservations' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+        value: (epoch as { timestamp?: number }).timestamp?.toString(),
       },
       {
         name: 'BlockHeight',
@@ -414,15 +415,20 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     }
   }
 
-  async transfer({
-    target,
-    qty,
-  }: {
-    target: string;
-    qty: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async transfer(
+    {
+      target,
+      qty,
+    }: {
+      target: string;
+      qty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       tags: [
+        ...tags,
         { name: 'Action', value: 'Transfer' },
         {
           name: 'Recipient',
@@ -437,24 +443,29 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async joinNetwork({
-    operatorStake,
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerAddress,
-  }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
-    observerAddress: string;
-    operatorStake: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async joinNetwork(
+    {
+      operatorStake,
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerAddress,
+    }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
+      observerAddress: string;
+      operatorStake: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     const allTags = [
+      ...tags,
       { name: 'Action', value: 'JoinNetwork' },
       {
         name: 'OperatorStake',
@@ -519,23 +530,28 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async updateGatewaySettings({
-    allowDelegatedStaking,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    port,
-    properties,
-    protocol,
-    autoStake,
-    observerAddress,
-  }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
-    observerAddress: string;
-  }): Promise<AoMessageResult> {
+  async updateGatewaySettings(
+    {
+      allowDelegatedStaking,
+      delegateRewardShareRatio,
+      fqdn,
+      label,
+      minDelegatedStake,
+      note,
+      port,
+      properties,
+      protocol,
+      autoStake,
+      observerAddress,
+    }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
+      observerAddress: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     // only include the tag if the value is not undefined
     const allTags = [
+      ...tags,
       { name: 'Action', value: 'UpdateGatewaySettings' },
       { name: 'Label', value: label },
       { name: 'Note', value: note },
@@ -572,13 +588,18 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async delegateStake(params: {
-    target: string;
-    stakeQty: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async delegateStake(
+    params: {
+      target: string;
+      stakeQty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'DelegateStake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.stakeQty.valueOf().toString() },
@@ -586,13 +607,18 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async decreaseDelegateStake(params: {
-    target: string;
-    decreaseQty: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async decreaseDelegateStake(
+    params: {
+      target: string;
+      decreaseQty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'DecreaseDelegateStake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
@@ -600,56 +626,86 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async increaseOperatorStake(params: {
-    increaseQty: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async increaseOperatorStake(
+    params: {
+      increaseQty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'IncreaseOperatorStake' },
         { name: 'Quantity', value: params.increaseQty.valueOf().toString() },
       ],
     });
   }
 
-  async decreaseOperatorStake(params: {
-    decreaseQty: number | mIOToken;
-  }): Promise<AoMessageResult> {
+  async decreaseOperatorStake(
+    params: {
+      decreaseQty: number | mIOToken;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'DecreaseOperatorStake' },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
       ],
     });
   }
 
-  async saveObservations(params: {
-    reportTxId: TransactionId;
-    failedGateways: WalletAddress[];
-  }): Promise<AoMessageResult> {
+  async saveObservations(
+    params: {
+      reportTxId: TransactionId;
+      failedGateways: WalletAddress[];
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send<
       {
-        observerReportTxId: TransactionId;
+        reportTxId: TransactionId;
         failedGateways: WalletAddress[];
       },
       never
     >({
       signer: this.signer,
-      tags: [{ name: 'Action', value: 'SaveObservations' }],
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'SaveObservations' },
+        {
+          name: 'ReportTxId',
+          value: params.reportTxId,
+        },
+        {
+          name: 'FailedGateways',
+          value: params.failedGateways.join(','),
+        },
+      ],
       data: {
-        observerReportTxId: params.reportTxId,
+        reportTxId: params.reportTxId,
         failedGateways: params.failedGateways,
       },
     });
   }
 
-  async buyRecord(params: {
-    name: string;
-    years?: number;
-    type: 'lease' | 'permabuy';
-  }): Promise<AoMessageResult> {
+  async buyRecord(
+    params: {
+      name: string;
+      years?: number;
+      type: 'lease' | 'permabuy';
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     const allTags = [
+      ...tags,
       { name: 'Action', value: 'BuyRecord' },
       { name: 'Name', value: params.name },
       { name: 'Type', value: params.type },
@@ -669,13 +725,18 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async extendLease(params: {
-    name: string;
-    years: number;
-  }): Promise<AoMessageResult> {
+  async extendLease(
+    params: {
+      name: string;
+      years: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'ExtendLease' },
         { name: 'Name', value: params.name },
         { name: 'Years', value: params.years.toString() },
@@ -683,13 +744,18 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async increaseUndernameLimit(params: {
-    name: string;
-    increaseCount: number;
-  }): Promise<AoMessageResult> {
+  async increaseUndernameLimit(
+    params: {
+      name: string;
+      increaseCount: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
     return this.process.send({
       signer: this.signer,
       tags: [
+        ...tags,
         { name: 'Action', value: 'IncreaseUndernameLimit' },
         { name: 'Name', value: params.name },
         { name: 'Quantity', value: params.increaseCount.toString() },

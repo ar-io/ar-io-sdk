@@ -143,7 +143,7 @@ export class AOProcess implements AOContract {
 
     this.logger.debug(`Sent message to process`, {
       messageId,
-      proceessId: this.processId,
+      processId: this.processId,
     });
 
     // check the result of the send interaction
