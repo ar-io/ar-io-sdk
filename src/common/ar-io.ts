@@ -263,7 +263,7 @@ export class ArIOReadable implements ArIOReadContract {
    */
   async getArNSReservedNames({
     evaluationOptions,
-  }: EvaluationParameters): Promise<
+  }: EvaluationParameters = {}): Promise<
     Record<string, ArNSReservedNameData> | Record<string, never>
   > {
     const state = await this.contract.getState({ evaluationOptions });
