@@ -40,7 +40,7 @@ export class AOProcess implements AOContract {
     processId,
     // connectionConfig,
     // scheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
-    logger = new DefaultLogger({ level: 'debug' }),
+    logger = new DefaultLogger({ level: 'info' }),
   }: {
     processId: string;
     scheduler?: string;
