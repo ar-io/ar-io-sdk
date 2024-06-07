@@ -18,13 +18,13 @@ import Arweave from 'arweave';
 
 import { ioDevnetProcessId } from '../constants.js';
 import {
-  ArNSNameData,
   ArNSReservedNameData,
   EpochDistributionData,
   EpochObservations,
   WeightedObserver,
 } from '../contract-state.js';
 import {
+  AoArNSNameData,
   AoEpochData,
   AoGateway,
   AoIORead,
@@ -151,8 +151,8 @@ export class IOReadable implements AoIORead {
     name,
   }: {
     name: string;
-  }): Promise<ArNSNameData | undefined> {
-    return this.process.read<ArNSNameData>({
+  }): Promise<AoArNSNameData | undefined> {
+    return this.process.read<AoArNSNameData>({
       tags: [
         { name: 'Action', value: 'Record' },
         { name: 'Name', value: name },
@@ -160,8 +160,8 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getArNSRecords(): Promise<Record<string, ArNSNameData>> {
-    return this.process.read<Record<string, ArNSNameData>>({
+  async getArNSRecords(): Promise<Record<string, AoArNSNameData>> {
+    return this.process.read<Record<string, AoArNSNameData>>({
       tags: [{ name: 'Action', value: 'Records' }],
     });
   }

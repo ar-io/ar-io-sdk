@@ -28,8 +28,10 @@ import {
 import { mIOToken } from './token.js';
 import {
   AoMessageResult,
+  BlockHeight,
   ContractSigner,
   JoinNetworkParams,
+  Timestamp,
   TransactionId,
   UpdateGatewaySettingsParams,
   WalletAddress,
@@ -63,13 +65,13 @@ export type ProcessConfiguration =
 
 export type EpochInput =
   | {
-      blockHeight: number;
+      blockHeight: BlockHeight;
     }
   | {
-      epochIndex: number;
+      epochIndex: AoEpochIndex;
     }
   | {
-      timestamp: number;
+      timestamp: Timestamp;
     }
   | undefined;
 
@@ -97,12 +99,16 @@ export interface AoIORead {
   >;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number> | Record<string, never>>;
-  getArNSRecord({ name }: { name: string }): Promise<ArNSNameData | undefined>;
+  getArNSRecord({
+    name,
+  }: {
+    name: string;
+  }): Promise<AoArNSNameData | undefined>;
   getArNSRecords(): Promise<
-    Record<string, ArNSNameData> | Record<string, never>
+    Record<string, AoArNSNameData> | Record<string, never>
   >;
   getArNSReservedNames(): Promise<
-    Record<string, ArNSReservedNameData> | Record<string, never>
+    Record<string, AoArNSReservedNameData> | Record<string, never>
   >;
   getArNSReservedName({
     name,
@@ -226,26 +232,36 @@ export interface AoIOWrite extends AoIORead {
 
 // AO Contract types
 export interface AoIOState {
-  GatewayRegistry: Record<string, AoGateway>;
-  Epochs: Record<number, AoEpochData>;
-  NameRegistry: Record<string, ArNSNameData>;
+  GatewayRegistry: Record<WalletAddress, AoGateway>;
+  Epochs: Record<AoEpochIndex, AoEpochData>;
+  NameRegistry: {
+    records: Record<string, AoArNSNameData>;
+    reserved: Record<string, AoArNSReservedNameData>;
+  };
   Balances: Record<WalletAddress, number>;
   Vaults: Record<WalletAddress, VaultData>;
   Ticker: string;
   Name: string;
+  Logo: string;
 }
 
+export type AoEpochIndex = number;
+export type AoArNSReservedNameData = ArNSReservedNameData;
+export type AoArNSNameData = Omit<ArNSNameData, 'contractTxId'> & {
+  processId: string;
+};
+
 export type AoEpochData = {
-  epochIndex: number;
-  startHeight: number;
+  epochIndex: AoEpochIndex;
+  startHeight: BlockHeight;
   observations: EpochObservations;
   prescribedObservers: WeightedObserver[];
-  startTimestamp: number;
-  endTimestamp: number;
-  distributionTimestamp: number;
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+  distributionTimestamp: Timestamp;
   distributions: {
     rewards: Record<WalletAddress, number>;
-    distributedTimestamp: number;
+    distributedTimestamp: Timestamp;
     totalDistributedRewards: number;
     totalEligibleRewards: number;
   };
@@ -267,8 +283,8 @@ export type AoGateway = {
   delegates: Record<WalletAddress, GatewayDelegate>;
   totalDelegatedStake: number;
   vaults: Record<WalletAddress, VaultData>;
-  startTimestamp: number;
-  endTimestamp: number;
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
   observerAddress: WalletAddress;
   operatorStake: number;
   status: 'joined' | 'leaving';

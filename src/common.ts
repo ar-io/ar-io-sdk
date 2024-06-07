@@ -41,6 +41,7 @@ import { mIOToken } from './token.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
+export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
 
