@@ -28,8 +28,10 @@ import {
 import { mIOToken } from './token.js';
 import {
   AoMessageResult,
+  BlockHeight,
   ContractSigner,
   JoinNetworkParams,
+  Timestamp,
   TransactionId,
   UpdateGatewaySettingsParams,
   WalletAddress,
@@ -244,8 +246,6 @@ export interface AoIOState {
 }
 
 export type AoEpochIndex = number;
-export type BlockHeight = number;
-export type Timestamp = number;
 export type AoArNSReservedNameData = ArNSReservedNameData;
 export type AoArNSNameData = Omit<ArNSNameData, 'contractTxId'> & {
   processId: string;
