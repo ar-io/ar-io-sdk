@@ -1,3 +1,10 @@
+# [1.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.1...v1.2.0-alpha.2) (2024-06-07)
+
+
+### Bug Fixes
+
+* **types:** update some types for arns names and contract state ([2d23241](https://github.com/ar-io/ar-io-sdk/commit/2d23241cd632ec2931521b98804e8cf536a92af7))
+
 # [1.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.1-alpha.1...v1.2.0-alpha.1) (2024-06-07)
 
 
