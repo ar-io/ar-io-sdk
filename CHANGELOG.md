@@ -1,3 +1,28 @@
+# [1.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.1-alpha.1...v1.2.0-alpha.1) (2024-06-07)
+
+
+### Bug Fixes
+
+* **ao:** add AR-IO-SDK tag to process interaction ([e5b5603](https://github.com/ar-io/ar-io-sdk/commit/e5b5603ed9b6eaae3e6cc0b4f6407f91081ea272))
+* **ao:** add getPrescribedNames for epoch api ([747fad2](https://github.com/ar-io/ar-io-sdk/commit/747fad28b64edbed288511a895af6b930c93f762))
+* **ao:** fix tag for join network, update observation response ([556f5d5](https://github.com/ar-io/ar-io-sdk/commit/556f5d5d957a07944f3655f3ed1be026de51102e))
+* **ao:** prune tags on joinNetwork ([31978f9](https://github.com/ar-io/ar-io-sdk/commit/31978f9788f67a488ddd1d0804c90809a10ac90c))
+* **ao:** support tags for all write interactions ([67f8da9](https://github.com/ar-io/ar-io-sdk/commit/67f8da987aa280e1648d4b65fa305f643ab42535))
+* **ao:** update APIs for ao interface to be more descriptive ([f07ac36](https://github.com/ar-io/ar-io-sdk/commit/f07ac369045a0c71db50e9864f4b513d18a671b1))
+* **ao:** update epoch interfaces to support various inputs ([ddc4c10](https://github.com/ar-io/ar-io-sdk/commit/ddc4c1041ecbb316ff555e354b8c28782e859c3b))
+* **ao:** update send on process to use proper signer and evalute result ([4e2f65d](https://github.com/ar-io/ar-io-sdk/commit/4e2f65d79770fee48f5288307cfd7b50048e6d58))
+* **ao:** update stake interface ([427e8ba](https://github.com/ar-io/ar-io-sdk/commit/427e8baf8c8e58dffbfb5632ddb3c5d9c51d66e8))
+* **ao:** use types and connect config in ao process to wrap connect from ao ([05b07cf](https://github.com/ar-io/ar-io-sdk/commit/05b07cfbb1d974e708108c8239d8214d6c50b418))
+* **io:** add buyRecord API ([30d5e74](https://github.com/ar-io/ar-io-sdk/commit/30d5e74384d6af25805fc5d1c35f30486ea204a2))
+* **io:** add init to provide custom process ([8811016](https://github.com/ar-io/ar-io-sdk/commit/8811016a9049102a0c5c3d9c82d473ccbe4e2d10))
+* **io:** separate out io/ao contract interfaces ([d96fa59](https://github.com/ar-io/ar-io-sdk/commit/d96fa5928a1cc45639fe3e0f687726eba059a762))
+
+
+### Features
+
+* **ao:** experiment with initial implementation of ao contract ([6118cea](https://github.com/ar-io/ar-io-sdk/commit/6118cea0b1d5aa027f97e81b34849bd56107a396))
+* **IO:** implement io/ao classes that call process apis ([aab8967](https://github.com/ar-io/ar-io-sdk/commit/aab8967c83e69fafe1258b768b1e33cb3920aeb8))
+
 ## [1.1.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1-alpha.1) (2024-06-04)
 
 
