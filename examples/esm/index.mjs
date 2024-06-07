@@ -1,38 +1,28 @@
-import { ARNS_TESTNET_REGISTRY_TX, ArIO } from '@ar.io/sdk';
+import { IO, ioDevnetProcessId } from '@ar.io/sdk';
 
 (async () => {
-  const arIO = ArIO.init({
-    contractTxId: ARNS_TESTNET_REGISTRY_TX,
+  const arIO = IO.init({
+    processId: ioDevnetProcessId,
   });
-  // testnet gateways
+  // devnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: ARNS_TESTNET_REGISTRY_TX,
+    address: ioDevnetProcessId,
   });
-  const ardriveRecord = await arIO.getArNSRecord({ domain: 'ardrive' });
+  const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
   const allRecords = await arIO.getArNSRecords();
-  const oldEpoch = await arIO.getEpoch({
-    blockHeight: 1382230,
-  });
   const epoch = await arIO.getCurrentEpoch();
-  const observations = await arIO.getObservations();
-  const observation = await arIO.getObservations({ epochStartHeight: 1350700 });
-  const distributions = await arIO.getDistributions();
-
+  const observations = await arIO.getObservations({ epochIndex: 19879 });
+  const distributions = await arIO.getDistributions({ epochIndex: 19879 });
   console.dir(
     {
       testnetGateways,
       ardriveRecord,
-      protocolBalance,
-      arnsStats: {
-        'registered domains': Object.keys(allRecords).length,
-        ardrive: allRecords.ardrive,
-      },
-      oldEpoch,
       epoch,
       observations,
-      observation,
       distributions,
+      protocolBalance,
+      names: Object.keys(allRecords),
     },
     { depth: 2 },
   );

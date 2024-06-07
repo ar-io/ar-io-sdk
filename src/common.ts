@@ -18,7 +18,6 @@ import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
-import { IOContractInteractionsWithIOFees } from './contract-state.js';
 import {
   ANTRecord,
   ANTState,
@@ -33,6 +32,7 @@ import {
   GatewayConnectionSettings,
   GatewayMetadata,
   GatewayStakingSettings,
+  IOContractInteractionsWithIOFees,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -275,8 +275,9 @@ export interface ArIOWriteContract extends ArIOReadContract {
   ): Promise<WriteInteractionResult>;
 }
 
-// we only support L1 smartweave interactions
-export type WriteInteractionResult = Transaction;
+export type AoMessageResult = { id: string };
+export type SmartWeaveInteractionResult = Transaction;
+export type WriteInteractionResult = SmartWeaveInteractionResult;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {

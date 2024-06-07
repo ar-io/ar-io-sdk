@@ -200,6 +200,7 @@ export class ArIOReadable implements ArIOReadContract {
     const state = await this.contract.getState(params);
     return state;
   }
+
   /**
    * @param domain @type {string} The domain name.
    * @param evaluationOptions @type {EvaluationOptions} The evaluation options.
@@ -391,7 +392,7 @@ export class ArIOReadable implements ArIOReadContract {
    * ```
    */
   async getGateways({ evaluationOptions }: EvaluationParameters = {}): Promise<
-    Record<string, Gateway> | Record<string, never>
+    Record<WalletAddress, Gateway> | Record<string, never>
   > {
     return this.contract.readInteraction({
       functionName: AR_IO_CONTRACT_FUNCTIONS.GATEWAYS,
@@ -430,7 +431,7 @@ export class ArIOReadable implements ArIOReadContract {
    * @example
    * The current epoch
    * ```ts
-   * arIO.getEpoch({ blockeHeight: 1000 });
+   * arIO.getEpoch({ blockHeight: 1000 });
    * ```
    * @example
    * Get the epoch at a given block height or sortkey

@@ -18,7 +18,11 @@ export * from './ar-io.js';
 export * from './error.js';
 export * from './logger.js';
 export * from './ant.js';
+export * from './io.js';
 
 // contracts
 export * from './contracts/remote-contract.js';
 export * from './contracts/warp-contract.js';
+
+// ao
+export * from './contracts/ao-process.js';

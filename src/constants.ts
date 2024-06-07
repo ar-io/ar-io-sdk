@@ -31,4 +31,6 @@ export const ARNS_TESTNET_REGISTRY_TX =
 export const ARNS_DEVNET_REGISTRY_TX =
   '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
 
+export const ioDevnetProcessId = 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
+
 export const MIO_PER_IO = 1_000_000;
