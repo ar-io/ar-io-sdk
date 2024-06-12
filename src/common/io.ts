@@ -700,6 +700,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       name: string;
       years?: number;
       type: 'lease' | 'permabuy';
+      processId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -710,6 +711,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Name', value: params.name },
       { name: 'Type', value: params.type },
       { name: 'Years', value: params.years?.toString() },
+      { name: 'ProcessId', value: params.processId },
     ];
 
     const prunedTags: { name: string; value: string }[] = allTags.filter(

@@ -89,6 +89,7 @@ export interface AOContract {
 }
 
 export interface AoIORead {
+  // read interactions
   getGateway({
     address,
   }: {
@@ -211,6 +212,7 @@ export interface AoIOWrite extends AoIORead {
       name: string;
       years?: number;
       type: 'lease' | 'permabuy';
+      processId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
