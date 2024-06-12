@@ -1,3 +1,10 @@
+# [1.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.2...v1.2.0-alpha.3) (2024-06-12)
+
+
+### Bug Fixes
+
+* **buy:** require processId on buyRecord ([cc5859f](https://github.com/ar-io/ar-io-sdk/commit/cc5859fcc4e7ecb09f687a2ad02a59aa4763be13))
+
 # [1.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.1...v1.2.0-alpha.2) (2024-06-07)
 
 
