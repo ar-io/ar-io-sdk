@@ -1,3 +1,10 @@
+# [1.2.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.3...v1.2.0-alpha.4) (2024-06-13)
+
+
+### Bug Fixes
+
+* **ao:** add retries to read interactions ([67d59e2](https://github.com/ar-io/ar-io-sdk/commit/67d59e2cbdef917bc9a776409a8040565434aeaa))
+
 # [1.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.2...v1.2.0-alpha.3) (2024-06-12)
 
 
