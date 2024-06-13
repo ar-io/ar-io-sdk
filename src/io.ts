@@ -76,7 +76,13 @@ export type EpochInput =
   | undefined;
 
 export interface AOContract {
-  read<K>({ tags }): Promise<K>;
+  read<K>({
+    tags,
+    retries,
+  }: {
+    tags?: { name: string; value: string }[];
+    retries?: number;
+  }): Promise<K>;
   send<I, K>({
     tags,
     data,

@@ -88,32 +88,52 @@ export class AOProcess implements AOContract {
 
   async read<K>({
     tags,
+    retries = 3,
   }: {
     tags?: Array<{ name: string; value: string }>;
+    retries?: number;
   }): Promise<K> {
-    this.logger.debug(`Evaluating read interaction on contract`, {
-      tags,
-    });
-    // map tags to inputs
-    const result = await this.ao.dryrun({
-      process: this.processId,
-      tags,
-    });
+    let attempts = 0;
+    let lastError: Error | undefined;
+    while (attempts < retries) {
+      try {
+        this.logger.debug(`Evaluating read interaction on contract`, {
+          tags,
+        });
+        // map tags to inputs
+        const result = await this.ao.dryrun({
+          process: this.processId,
+          tags,
+        });
 
-    if (result.Error !== undefined) {
-      throw new Error(result.Error);
+        if (result.Error !== undefined) {
+          throw new Error(result.Error);
+        }
+
+        if (result.Messages.length === 0) {
+          throw new Error('Process does not support provided action.');
+        }
+
+        this.logger.debug(`Read interaction result`, {
+          result: result.Messages[0].Data,
+        });
+
+        const data: K = JSON.parse(result.Messages[0].Data);
+        return data;
+      } catch (e) {
+        attempts++;
+        this.logger.debug(`Read attempt ${attempts} failed`, {
+          error: e,
+          tags,
+        });
+        lastError = e;
+        // exponential backoff
+        await new Promise((resolve) =>
+          setTimeout(resolve, 2 ** attempts * 1000),
+        );
+      }
     }
-
-    if (result.Messages.length === 0) {
-      throw new Error('Process does not support provided action.');
-    }
-
-    this.logger.debug(`Read interaction result`, {
-      result: result.Messages[0].Data,
-    });
-
-    const data: K = JSON.parse(result.Messages[0].Data);
-    return data;
+    throw lastError;
   }
 
   async send<I, K>({
