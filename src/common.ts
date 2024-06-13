@@ -337,6 +337,30 @@ export interface ANTReadContract extends BaseContract<ANTState> {
   getBalances(params?: EvaluationParameters): Promise<Record<string, number>>;
 }
 
+export interface ArweaveNameTokenRead {
+  getInfo(): Promise<any>;
+  getRecord({ name }): Promise<any>;
+  getRecords(): Promise<any>;
+  getOwner(): Promise<any>;
+  getControllers(): Promise<any>;
+  getTicker(): Promise<any>;
+  getName(): Promise<any>;
+  getBalance({ address }): Promise<any>;
+  getBalances(): Promise<any>;
+}
+
+export interface ArweaveNameTokenWrite {
+  transfer({ target, qty }): Promise<any>;
+  addController({ controller }): Promise<any>;
+  removeController({ controller }): Promise<any>;
+  addRecord({ subDomain, transactionId, ttlSeconds }): Promise<any>;
+  updateRecord({ subDomain, transactionId, ttlSeconds }): Promise<any>;
+  removeRecord({ subDomain }): Promise<any>;
+  setTicker({ ticker }): Promise<any>;
+  setName({ name }): Promise<any>;
+  // TODO: don't support global reset but ANTs support it via `Initialize-State
+}
+
 export interface ANTWriteContract {
   transfer(
     {

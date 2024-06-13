@@ -91,6 +91,7 @@ export class AOProcess implements AOContract {
     retries = 3,
   }: {
     tags?: Array<{ name: string; value: string }>;
+    data?: I;
     retries?: number;
   }): Promise<K> {
     let attempts = 0;
@@ -106,8 +107,10 @@ export class AOProcess implements AOContract {
           tags,
         });
 
-        if (result.Error !== undefined) {
-          throw new Error(result.Error);
+        const tagsOutput = result.Messages[0].Tags;
+        const error = tagsOutput.find((tag) => tag.name === 'Error');
+        if (error) {
+          throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
         }
 
         if (result.Messages.length === 0) {
@@ -118,8 +121,8 @@ export class AOProcess implements AOContract {
           result: result.Messages[0].Data,
         });
 
-        const data: K = JSON.parse(result.Messages[0].Data);
-        return data;
+        const response: K = JSON.parse(result.Messages[0].Data);
+        return response;
       } catch (e) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
@@ -151,7 +154,8 @@ export class AOProcess implements AOContract {
       processId: this.processId,
     });
 
-    // append ar-io-sdk tags
+    // do a read on the message to check confirm it is a valid message
+    await this.read({ tags }); // TODO: allow sending data
 
     const messageId = await this.ao.message({
       process: this.processId,
