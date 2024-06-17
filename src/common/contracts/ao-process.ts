@@ -24,7 +24,6 @@ import { DefaultLogger } from '../logger.js';
 export class AOProcess implements AOContract {
   private logger: Logger;
   private processId: string;
-  // private scheduler: string;
   private ao: {
     result: any;
     results: any;
@@ -38,12 +37,10 @@ export class AOProcess implements AOContract {
 
   constructor({
     processId,
-    // connectionConfig,
-    // scheduler = '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA',
+    connectionConfig,
     logger = new DefaultLogger({ level: 'info' }),
   }: {
     processId: string;
-    scheduler?: string;
     connectionConfig?: {
       CU_URL: string;
       MU_URL: string;
@@ -54,8 +51,12 @@ export class AOProcess implements AOContract {
   }) {
     this.processId = processId;
     this.logger = logger;
-    // this.scheduler = scheduler;
-    this.ao = connect();
+    this.ao = connect({
+      MU_URL: connectionConfig?.MU_URL,
+      CU_URL: connectionConfig?.CU_URL,
+      GATEWAY_URL: connectionConfig?.GATEWAY_URL,
+      GRAPHQL_URL: connectionConfig?.GRAPHQL_URL,
+    });
   }
 
   // TODO: could abstract into our own interface that constructs different signers
