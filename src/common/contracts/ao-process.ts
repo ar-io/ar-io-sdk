@@ -91,7 +91,6 @@ export class AOProcess implements AOContract {
     retries = 3,
   }: {
     tags?: Array<{ name: string; value: string }>;
-    data?: I;
     retries?: number;
   }): Promise<K> {
     let attempts = 0;
