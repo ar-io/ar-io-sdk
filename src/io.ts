@@ -16,6 +16,7 @@
  */
 import { AOProcess } from './common/index.js';
 import {
+  ANTRecord,
   ArNSNameData,
   ArNSReservedNameData,
   EpochDistributionData,
@@ -236,6 +237,36 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+}
+
+export interface AoANTRead {
+  getInfo(): Promise<{
+    Name: string;
+    Ticker: string;
+    Denomination: number;
+    Owner: string;
+  }>;
+  getRecord({ name }): Promise<ANTRecord | undefined>;
+  getRecords(): Promise<Record<string, ANTRecord>>;
+  getOwner(): Promise<WalletAddress>;
+  getControllers(): Promise<WalletAddress[]>;
+  getTicker(): Promise<string>;
+  getName(): Promise<string>;
+}
+
+export interface AoANTWrite {
+  transfer({ target, qty }): Promise<AoMessageResult>;
+  addController({ controller }): Promise<AoMessageResult>;
+  removeController({ controller }): Promise<AoMessageResult>;
+  addRecord({ subDomain, transactionId, ttlSeconds }): Promise<AoMessageResult>;
+  updateRecord({
+    subDomain,
+    transactionId,
+    ttlSeconds,
+  }): Promise<AoMessageResult>;
+  removeRecord({ subDomain }): Promise<AoMessageResult>;
+  setTicker({ ticker }): Promise<AoMessageResult>;
+  setName({ name }): Promise<AoMessageResult>;
 }
 
 // AO Contract types

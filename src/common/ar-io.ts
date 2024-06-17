@@ -51,6 +51,15 @@ import {
 import { RemoteContract } from './contracts/remote-contract.js';
 import { InvalidContractConfigurationError, WarpContract } from './index.js';
 
+/**
+ * The ArIO class provides an interface to interact with the Arweave Interoperability Contract.
+ * @deprecated - This class will be removed in the next major release.
+ * @example
+ * ```ts
+ * import { ArIO } from '@permaweb/ar-io';
+ * const arIO = ArIO.init();
+ * ```
+ */
 export class ArIO {
   /**
    * @param config - @type {ContractConfiguration} The configuration object.
