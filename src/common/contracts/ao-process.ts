@@ -154,8 +154,7 @@ export class AOProcess implements AOContract {
       processId: this.processId,
     });
 
-    // do a read on the message to check confirm it is a valid message
-    await this.read({ tags }); // TODO: allow sending data
+    // TODO: do a read as a dry run to check if the process supports the action
 
     const messageId = await this.ao.message({
       process: this.processId,
