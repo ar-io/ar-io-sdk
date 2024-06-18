@@ -259,7 +259,8 @@ export interface AoANTRead {
   getControllers(): Promise<WalletAddress[]>;
   getTicker(): Promise<string>;
   getName(): Promise<string>;
-  // TODO: balance apis necessary?
+  getBalance({ address }: { address: WalletAddress }): Promise<number>;
+  getBalances(): Promise<Record<WalletAddress, number>>;
 }
 
 export interface AoANTWrite extends AoANTRead {

@@ -156,9 +156,8 @@ export class AoANTReadable implements AoANTRead {
     return info.Ticker;
   }
 
-  // TODO: are balances needed to comply with Token spec
   /**
-   * @returns {Promise<Record<string, number>>} The balances of the ANT
+   * @returns {Promise<Record<WalletAddress, number>>} The balances of the ANT
    * @example
    * The current balances of the ANT.
    * ```ts
