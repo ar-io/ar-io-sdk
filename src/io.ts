@@ -17,12 +17,12 @@
 import { AOProcess } from './common/index.js';
 import {
   ANTRecord,
-  ArNSNameData,
   ArNSReservedNameData,
   EpochDistributionData,
   EpochObservations,
   GatewayDelegate,
   GatewaySettings,
+  RegistrationType,
   VaultData,
   WeightedObserver,
 } from './contract-state.js';
@@ -32,6 +32,7 @@ import {
   BlockHeight,
   ContractSigner,
   JoinNetworkParams,
+  ProcessId,
   Timestamp,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -54,6 +55,12 @@ export function isProcessIdConfiguration(
     typeof config.processId === 'string' &&
     validateArweaveId(config.processId) === true
   );
+}
+
+export function isLeasedArNSRecord(
+  record: AoArNSNameData,
+): record is AoArNSLeaseData {
+  return record.type === 'lease' && record.endTimestamp !== undefined;
 }
 
 export type ProcessConfiguration =
@@ -298,8 +305,22 @@ export interface AoIOState {
 
 export type AoEpochIndex = number;
 export type AoArNSReservedNameData = ArNSReservedNameData;
-export type AoArNSNameData = Omit<ArNSNameData, 'contractTxId'> & {
-  processId: string;
+export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
+export type AoArNSBaseNameData = {
+  processId: ProcessId;
+  startTimestamp: number;
+  type: RegistrationType;
+  undernameLimit: number;
+  purchasePrice: number;
+};
+
+export type AoArNSPermabuyData = AoArNSBaseNameData & {
+  type: 'permabuy';
+};
+
+export type AoArNSLeaseData = AoArNSBaseNameData & {
+  type: 'lease';
+  endTimestamp: number; // At what unix time (seconds since epoch) the lease ends
 };
 
 export type AoEpochData = {
