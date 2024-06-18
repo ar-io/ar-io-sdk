@@ -246,7 +246,7 @@ export interface AoANTRead {
     Denomination: number;
     Owner: string;
   }>;
-  getRecord({ name }): Promise<ANTRecord | undefined>;
+  getRecord({ undername }): Promise<ANTRecord | undefined>;
   getRecords(): Promise<Record<string, ANTRecord>>;
   getOwner(): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
@@ -268,15 +268,15 @@ export interface AoANTWrite extends AoANTRead {
     controller: WalletAddress;
   }): Promise<AoMessageResult>;
   setRecord({
-    subDomain,
+    undername,
     transactionId,
     ttlSeconds,
   }: {
-    subDomain: string;
+    undername: string;
     transactionId: string;
     ttlSeconds: number;
   }): Promise<AoMessageResult>;
-  removeRecord({ subDomain }: { subDomain: string }): Promise<AoMessageResult>;
+  removeRecord({ undername }: { undername: string }): Promise<AoMessageResult>;
   setTicker({ ticker }): Promise<AoMessageResult>;
   setName({ name }): Promise<AoMessageResult>;
 }

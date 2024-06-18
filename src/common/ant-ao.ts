@@ -65,17 +65,17 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
-   * @param name @type {string} The domain name.
+   * @param undername @type {string} The domain name.
    * @returns {Promise<ANTRecord>} The record of the undername domain.
    * @example
    * Get the current record
    * ```ts
-   * ant.getRecord({ name: "john" });
+   * ant.getRecord({ undername: "john" });
    * ```
    */
-  async getRecord({ name }: { name: string }): Promise<ANTRecord> {
+  async getRecord({ undername }: { undername: string }): Promise<ANTRecord> {
     const tags = [
-      { name: 'Sub-Domain', value: name },
+      { name: 'Sub-Domain', value: undername },
       { name: 'Action', value: 'Get-Record' },
     ];
 
@@ -277,7 +277,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * @param subDomain @type {string} The record you want to set the transactionId and ttlSeconds of.
+   * @param undername @type {string} The record you want to set the transactionId and ttlSeconds of.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
@@ -287,18 +287,18 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async setRecord({
-    subDomain,
+    undername,
     transactionId,
     ttlSeconds,
   }: {
-    subDomain: string;
+    undername: string;
     transactionId: string;
     ttlSeconds: number;
   }): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
         { name: 'Action', value: 'Set-Record' },
-        { name: 'Sub-Domain', value: subDomain },
+        { name: 'Sub-Domain', value: undername },
         { name: 'Transaction-ID', value: transactionId },
         { name: 'TTL-Seconds', value: ttlSeconds.toString() },
       ],
@@ -308,7 +308,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * @param subDomain @type {string} The record you want to remove.
+   * @param undername @type {string} The record you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
@@ -316,16 +316,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async removeRecord({
-    subDomain,
+    undername,
   }: {
-    subDomain: string;
+    undername: string;
   }): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
         { name: 'Action', value: 'Remove-Record' },
-        { name: 'Sub-Domain', value: subDomain },
+        { name: 'Sub-Domain', value: undername },
       ],
-      data: { subDomain },
+      data: { undername },
       signer: this.signer,
     });
   }

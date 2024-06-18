@@ -32,7 +32,7 @@ import { ANT, IO, ioDevnetProcessId } from '@ar.io/sdk';
     processId: 'LGN8MUAMvTvr6i-WGdXBu1z9jz01LZVnVwklp9z7D6U',
   });
   const antRecords = await ant.getRecords();
-  const rootRecord = await ant.getRecord({ name: '@' });
+  const rootRecord = await ant.getRecord({ undername: '@' });
   const owner = await ant.getOwner();
   const controllers = await ant.getControllers();
   const info = await ant.getInfo();
