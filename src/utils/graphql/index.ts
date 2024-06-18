@@ -15,3 +15,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 export * from './smartweave.js';
+export * from './processes.js';

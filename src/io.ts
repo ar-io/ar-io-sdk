@@ -254,8 +254,8 @@ export interface AoANTRead {
   getName(): Promise<string>;
 }
 
-export interface AoANTWrite {
-  transfer({ target, qty }): Promise<AoMessageResult>;
+export interface AoANTWrite extends AoANTRead {
+  transfer({ target }): Promise<AoMessageResult>;
   addController({ controller }): Promise<AoMessageResult>;
   removeController({ controller }): Promise<AoMessageResult>;
   addRecord({ subDomain, transactionId, ttlSeconds }): Promise<AoMessageResult>;

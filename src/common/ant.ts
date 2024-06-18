@@ -105,23 +105,18 @@ export class ANT {
     // must be a WarpContract to get a ArIOWriteable
     { contract: WarpContract<ANTState> } | { contractTxId: string }
   >): ANTWritable;
+  static init(
+    config: Required<ProcessConfiguration> & { signer?: undefined },
+  ): AoANTRead;
   static init({
     signer,
     ...config
-  }: OptionalSigner<ProcessConfiguration>): AoANTRead;
-  static init({
-    signer,
-    ...config
-  }: WithSigner<ProcessConfiguration>): AoANTWrite;
-  static init({
-    signer,
-    ...config
-  }: WithSigner<ProcessConfiguration>): AoANTRead;
+  }: WithSigner<Required<ProcessConfiguration>>): AoANTWrite;
   static init({
     signer,
     ...config
   }: OptionalSigner<
-    Required<ContractConfiguration<ANTState>> | ProcessConfiguration
+    Required<ContractConfiguration<ANTState>> | Required<ProcessConfiguration>
   >): ANTReadable | ANTWritable | AoANTRead | AoANTWrite {
     // TODO: these will be deprecated in the future
     if (
