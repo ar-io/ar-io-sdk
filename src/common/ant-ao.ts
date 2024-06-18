@@ -17,6 +17,7 @@
 import { ANTRecord } from '../contract-state.js';
 import {
   AoANTRead,
+  AoANTWrite,
   ProcessConfiguration,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -193,7 +194,7 @@ export class AoANTReadable implements AoANTRead {
   }
 }
 
-export class AoANTWriteable extends AoANTReadable {
+export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   private signer: ContractSigner;
 
   constructor({
@@ -233,7 +234,7 @@ export class AoANTWriteable extends AoANTReadable {
    * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async setController({
+  async addController({
     controller,
   }: {
     controller: string;

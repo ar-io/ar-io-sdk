@@ -252,19 +252,31 @@ export interface AoANTRead {
   getControllers(): Promise<WalletAddress[]>;
   getTicker(): Promise<string>;
   getName(): Promise<string>;
+  // TODO: balance apis necessary?
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer({ target }): Promise<AoMessageResult>;
-  addController({ controller }): Promise<AoMessageResult>;
-  removeController({ controller }): Promise<AoMessageResult>;
-  addRecord({ subDomain, transactionId, ttlSeconds }): Promise<AoMessageResult>;
-  updateRecord({
+  transfer({ target }: { target: WalletAddress }): Promise<AoMessageResult>;
+  addController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<AoMessageResult>;
+  removeController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<AoMessageResult>;
+  setRecord({
     subDomain,
     transactionId,
     ttlSeconds,
+  }: {
+    subDomain: string;
+    transactionId: string;
+    ttlSeconds: number;
   }): Promise<AoMessageResult>;
-  removeRecord({ subDomain }): Promise<AoMessageResult>;
+  removeRecord({ subDomain }: { subDomain: string }): Promise<AoMessageResult>;
   setTicker({ ticker }): Promise<AoMessageResult>;
   setName({ name }): Promise<AoMessageResult>;
 }
