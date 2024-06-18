@@ -34,3 +34,7 @@ export const ARNS_DEVNET_REGISTRY_TX =
 export const ioDevnetProcessId = 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
 
 export const MIO_PER_IO = 1_000_000;
+
+export const AOS_MODULE_ID = '9afQ1PLf2mrshqCTZEzzJTR2gWaC9zNPnYgYEqg1Pt4';
+export const DEFAULT_SCHEDULER_ID =
+  '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';

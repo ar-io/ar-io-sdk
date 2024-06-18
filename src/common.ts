@@ -14,6 +14,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import {
+  dryrun,
+  message,
+  monitor,
+  result,
+  results,
+  spawn,
+  unmonitor,
+} from '@permaweb/aoconnect';
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
@@ -415,4 +424,14 @@ export interface HTTPClient {
     allowedStatuses?: number[];
     params?: object | I;
   }): Promise<K>;
+}
+
+export interface AoClient {
+  result: typeof result;
+  results: typeof results;
+  message: typeof message;
+  spawn: typeof spawn;
+  monitor: typeof monitor;
+  unmonitor: typeof unmonitor;
+  dryrun: typeof dryrun;
 }
