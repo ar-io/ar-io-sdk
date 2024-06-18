@@ -1,3 +1,21 @@
+# [1.2.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.4...v1.2.0-alpha.5) (2024-06-18)
+
+
+### Bug Fixes
+
+* **ant:** fix read api and update types ([977e0e3](https://github.com/ar-io/ar-io-sdk/commit/977e0e3e46bbc6e324f545f28b6fb6d93d9e2d08))
+* **ants:** separate out interfaces ([60fd593](https://github.com/ar-io/ar-io-sdk/commit/60fd59321960ee61e487295800d3fc72c1a139b5))
+* **ant:** update apis to implement interface ([9c54db0](https://github.com/ar-io/ar-io-sdk/commit/9c54db09cc896bae17943597532fa08df3f40e74))
+* **ant:** update interface to expect `undername` instead of `name` for ant records ([416cb3d](https://github.com/ar-io/ar-io-sdk/commit/416cb3dfde20d46cca19e439fddace455db1f03e))
+* **ao:** support connection config params in AO ([3e6a246](https://github.com/ar-io/ar-io-sdk/commit/3e6a2469c73a1889d89c4a90fc0d43ec8f3d8a39))
+
+
+### Features
+
+* **ant:** add balance APIs to ant interface ([ec67440](https://github.com/ar-io/ar-io-sdk/commit/ec67440b7189c95ce4c2fcc933ef63ca9c1732b6))
+* **ant:** add utility for fetchint ant modules owned by wallet ([01f7ec9](https://github.com/ar-io/ar-io-sdk/commit/01f7ec95d4de88b3a098a2ab59fa811c9820b279))
+* **ants:** support ANT apis in SDK ([b187aeb](https://github.com/ar-io/ar-io-sdk/commit/b187aebc34fd5afc237d5a68aa091d4fe14d0bce))
+
 # [1.2.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.3...v1.2.0-alpha.4) (2024-06-13)
 
 
