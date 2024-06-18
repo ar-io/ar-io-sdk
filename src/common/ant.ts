@@ -19,21 +19,31 @@ import {
   ANTRecord,
   ANTState,
   ANT_CONTRACT_FUNCTIONS,
+  AoANTRead,
+  AoANTWrite,
   ContractConfiguration,
   ContractSigner,
   EvaluationOptions,
   EvaluationParameters,
   OptionalSigner,
+  ProcessConfiguration,
   WithSigner,
   WriteInteractionResult,
   WriteOptions,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
 } from '../types.js';
 import {
   isContractConfiguration,
   isContractTxIdConfiguration,
 } from '../utils/smartweave.js';
 import { RemoteContract } from './contracts/remote-contract.js';
-import { InvalidContractConfigurationError, WarpContract } from './index.js';
+import {
+  AoANTReadable,
+  AoANTWriteable,
+  InvalidContractConfigurationError,
+  WarpContract,
+} from './index.js';
 
 export class ANT {
   /**
@@ -95,16 +105,40 @@ export class ANT {
     // must be a WarpContract to get a ArIOWriteable
     { contract: WarpContract<ANTState> } | { contractTxId: string }
   >): ANTWritable;
+  static init(
+    config: Required<ProcessConfiguration> & { signer?: undefined },
+  ): AoANTRead;
   static init({
     signer,
     ...config
-  }: OptionalSigner<Required<ContractConfiguration<ANTState>>>) {
-    if (signer) {
+  }: WithSigner<Required<ProcessConfiguration>>): AoANTWrite;
+  static init({
+    signer,
+    ...config
+  }: OptionalSigner<
+    Required<ContractConfiguration<ANTState>> | Required<ProcessConfiguration>
+  >): ANTReadable | ANTWritable | AoANTRead | AoANTWrite {
+    // TODO: these will be deprecated in the future
+    if (
+      isContractConfiguration<ANTState>(config) ||
+      isContractTxIdConfiguration(config)
+    ) {
+      if (!signer) {
+        return new ANTReadable(config);
+      }
       const contract = this.createWriteableContract(config);
       return new ANTWritable({ signer, contract });
-    } else {
-      return new ANTReadable(config);
     }
+
+    // ao supported implementation
+    if (isProcessConfiguration(config) || isProcessIdConfiguration(config)) {
+      if (!signer) {
+        return new AoANTReadable(config);
+      }
+      return new AoANTWriteable({ signer, ...config });
+    }
+
+    throw new InvalidContractConfigurationError();
   }
 }
 

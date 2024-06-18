@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export * from './ar-io.js';
-export * from './error.js';
-export * from './logger.js';
-export * from './ant.js';
+import { ProcessId, WalletAddress } from '../../types.js';
 
-// contracts - deprecated
-export * from './contracts/remote-contract.js';
-export * from './contracts/warp-contract.js';
-
-// ao
-export * from './io.js';
-export * from './ant-ao.js';
-export * from './contracts/ao-process.js';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+// @ts-ignore
+export const getANTProcessesOwnedByWallet = async ({
+  address,
+}: {
+  address: WalletAddress;
+}): Promise<ProcessId[]> => {
+  // TODO: insert gql query to find ANT processes owned by wallet given wallet, this may involve dry runs to evaluate ownership and controllership
+  return ['LGN8MUAMvTvr6i-WGdXBu1z9jz01LZVnVwklp9z7D6U'];
+};

@@ -16,12 +16,13 @@
  */
 import { AOProcess } from './common/index.js';
 import {
-  ArNSNameData,
+  ANTRecord,
   ArNSReservedNameData,
   EpochDistributionData,
   EpochObservations,
   GatewayDelegate,
   GatewaySettings,
+  RegistrationType,
   VaultData,
   WeightedObserver,
 } from './contract-state.js';
@@ -31,6 +32,7 @@ import {
   BlockHeight,
   ContractSigner,
   JoinNetworkParams,
+  ProcessId,
   Timestamp,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -53,6 +55,12 @@ export function isProcessIdConfiguration(
     typeof config.processId === 'string' &&
     validateArweaveId(config.processId) === true
   );
+}
+
+export function isLeasedArNSRecord(
+  record: AoArNSNameData,
+): record is AoArNSLeaseData {
+  return record.type === 'lease' && record.endTimestamp !== undefined;
 }
 
 export type ProcessConfiguration =
@@ -238,6 +246,49 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
 }
 
+export interface AoANTRead {
+  getInfo(): Promise<{
+    Name: string;
+    Ticker: string;
+    Denomination: number;
+    Owner: string;
+  }>;
+  getRecord({ undername }): Promise<ANTRecord | undefined>;
+  getRecords(): Promise<Record<string, ANTRecord>>;
+  getOwner(): Promise<WalletAddress>;
+  getControllers(): Promise<WalletAddress[]>;
+  getTicker(): Promise<string>;
+  getName(): Promise<string>;
+  getBalance({ address }: { address: WalletAddress }): Promise<number>;
+  getBalances(): Promise<Record<WalletAddress, number>>;
+}
+
+export interface AoANTWrite extends AoANTRead {
+  transfer({ target }: { target: WalletAddress }): Promise<AoMessageResult>;
+  addController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<AoMessageResult>;
+  removeController({
+    controller,
+  }: {
+    controller: WalletAddress;
+  }): Promise<AoMessageResult>;
+  setRecord({
+    undername,
+    transactionId,
+    ttlSeconds,
+  }: {
+    undername: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult>;
+  removeRecord({ undername }: { undername: string }): Promise<AoMessageResult>;
+  setTicker({ ticker }): Promise<AoMessageResult>;
+  setName({ name }): Promise<AoMessageResult>;
+}
+
 // AO Contract types
 export interface AoIOState {
   GatewayRegistry: Record<WalletAddress, AoGateway>;
@@ -255,8 +306,22 @@ export interface AoIOState {
 
 export type AoEpochIndex = number;
 export type AoArNSReservedNameData = ArNSReservedNameData;
-export type AoArNSNameData = Omit<ArNSNameData, 'contractTxId'> & {
-  processId: string;
+export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
+export type AoArNSBaseNameData = {
+  processId: ProcessId;
+  startTimestamp: number;
+  type: RegistrationType;
+  undernameLimit: number;
+  purchasePrice: number;
+};
+
+export type AoArNSPermabuyData = AoArNSBaseNameData & {
+  type: 'permabuy';
+};
+
+export type AoArNSLeaseData = AoArNSBaseNameData & {
+  type: 'lease';
+  endTimestamp: number; // At what unix time (seconds since epoch) the lease ends
 };
 
 export type AoEpochData = {

@@ -44,6 +44,7 @@ export type SortKey = string;
 export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
+export type ProcessId = string;
 
 export type DataProtocolTransaction = Pick<
   GQLNodeInterface,
@@ -56,7 +57,7 @@ export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
 export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner;
+  signer?: ContractSigner | undefined;
 } & T;
 export type ContractConfiguration<T = NonNullable<unknown>> =
   | {

@@ -1,4 +1,4 @@
-import { IO, ioDevnetProcessId } from '@ar.io/sdk';
+import { ANT, IO, ioDevnetProcessId } from '@ar.io/sdk';
 
 (async () => {
   const arIO = IO.init({
@@ -23,6 +23,26 @@ import { IO, ioDevnetProcessId } from '@ar.io/sdk';
       distributions,
       protocolBalance,
       names: Object.keys(allRecords),
+    },
+    { depth: 2 },
+  );
+
+  // io ant
+  const ant = ANT.init({
+    processId: 'LGN8MUAMvTvr6i-WGdXBu1z9jz01LZVnVwklp9z7D6U',
+  });
+  const antRecords = await ant.getRecords();
+  const rootRecord = await ant.getRecord({ undername: '@' });
+  const owner = await ant.getOwner();
+  const controllers = await ant.getControllers();
+  const info = await ant.getInfo();
+  console.dir(
+    {
+      antRecords,
+      rootRecord,
+      controllers,
+      info,
+      owner,
     },
     { depth: 2 },
   );
