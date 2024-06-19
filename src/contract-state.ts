@@ -81,6 +81,7 @@ export const AR_IO_CONTRACT_FUNCTIONS: Record<string, IOContractInteractions> =
     BALANCE: 'balance',
     PRICE_FOR_INTERACTION: 'priceForInteraction',
     EPOCH: 'epoch',
+    BUY_RECORD: 'buyRecord',
   };
 
 // Gateways
