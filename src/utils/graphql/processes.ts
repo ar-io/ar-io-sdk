@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import pLimit from 'p-limit';
+import { pLimit } from 'plimit-lit';
 
 import { ANT } from '../../common/ant.js';
 import { IO } from '../../common/io.js';

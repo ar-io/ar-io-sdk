@@ -123,7 +123,7 @@
     "axios": "1.7.2",
     "axios-retry": "^4.3.0",
     "bunyan": "^1.8.15",
-    "p-limit": "^5.0.0",
+    "plimit-lit": "^3.0.1",
     "warp-contracts": "1.4.45"
   },
   "lint-staged": {
