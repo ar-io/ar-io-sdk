@@ -709,9 +709,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       ...tags,
       { name: 'Action', value: 'BuyRecord' },
       { name: 'Name', value: params.name },
-      { name: 'Type', value: params.type },
-      { name: 'Years', value: params.years?.toString() },
+      { name: 'Years', value: params.years?.toString() ?? '1' },
       { name: 'ProcessId', value: params.processId },
+      { name: 'PurchaseType', value: params.type || 'lease' },
     ];
 
     const prunedTags: { name: string; value: string }[] = allTags.filter(

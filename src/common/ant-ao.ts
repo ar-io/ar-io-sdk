@@ -298,7 +298,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       tags: [
         { name: 'Action', value: 'Set-Record' },
         { name: 'Sub-Domain', value: undername },
-        { name: 'Transaction-ID', value: transactionId },
+        { name: 'Transaction-Id', value: transactionId },
         { name: 'TTL-Seconds', value: ttlSeconds.toString() },
       ],
       data: { transactionId, ttlSeconds },
