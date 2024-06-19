@@ -1,3 +1,10 @@
+# [1.2.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.5...v1.2.0-alpha.6) (2024-06-19)
+
+
+### Bug Fixes
+
+* **io:** update arns interactions on registry contract ([9befe2a](https://github.com/ar-io/ar-io-sdk/commit/9befe2a1823f580821f5175ebc97fa24f481e1fe))
+
 # [1.2.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.4...v1.2.0-alpha.5) (2024-06-18)
 
 
