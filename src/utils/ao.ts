@@ -73,7 +73,11 @@ export async function spawnANT(
   });
 
   await aosClient.send({
-    tags: [{ name: 'Action', value: 'Eval' }],
+    tags: [
+      { name: 'Action', value: 'Eval' },
+      { name: 'App-Name', value: 'ArNS-ANT' },
+      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
+    ],
     data: luaString,
     signer,
   });
