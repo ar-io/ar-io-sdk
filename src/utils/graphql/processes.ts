@@ -14,16 +14,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ProcessId, WalletAddress } from '../../types.js';
+import { ANT } from '../../common/ant.js';
+import { IO } from '../../common/io.js';
+import { ioDevnetProcessId } from '../../constants.js';
+import { AoIORead, ProcessId, WalletAddress } from '../../types.js';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-ignore
 export const getANTProcessesOwnedByWallet = async ({
   address,
+  contract = IO.init({
+    processId: ioDevnetProcessId,
+  }),
 }: {
   address: WalletAddress;
+  contract?: AoIORead;
 }): Promise<ProcessId[]> => {
-  // TODO: insert gql query to find ANT processes owned by wallet given wallet, this may involve dry runs to evaluate ownership and controllership
-  return ['LGN8MUAMvTvr6i-WGdXBu1z9jz01LZVnVwklp9z7D6U'];
+  // get the record names of the registry - TODO: this may need to be paginated
+  const uniqueContractProcessIds = await contract
+    .getArNSRecords()
+    .then((records) =>
+      Object.values(records).map((record) => record.processId),
+    );
+
+  // check the contract owner and controllers
+  const ownedOrControlledByWallet: ProcessId[] = await Promise.all(
+    uniqueContractProcessIds.filter(async (processId) => {
+      const ant = ANT.init({
+        processId,
+      });
+      const owner = await ant.getOwner();
+      const controllers = await ant.getControllers();
+      return owner === address || controllers.includes(address);
+    }),
+  );
+
+  // TODO: insert gql query to find ANT processes owned by wallet given wallet not currently in the registry
+  return [...new Set(ownedOrControlledByWallet)];
 };
