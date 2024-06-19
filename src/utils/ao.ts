@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import { connect } from '@permaweb/aoconnect';
+
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess } from '../common/index.js';
 import {
@@ -22,55 +24,38 @@ import {
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { ANTState } from '../contract-state.js';
-import { ContractSigner } from '../types.js';
+import { AoClient, ContractSigner } from '../types.js';
 
-/**
- *
- * @param param0 spawn and message args
- * @param connectionConfig
- * @returns @type {Promise<string>} processId
- */
-export async function spawnANT(
-  {
-    module = AOS_MODULE_ID,
-    luaCodeTxId = ANT_LUA_ID,
-    scheduler = DEFAULT_SCHEDULER_ID,
-    signer,
-    state,
-  }: {
-    module: string;
-    luaCodeTxId: string;
-    aoClient: AOProcess;
-    scheduler: string;
-    signer: ContractSigner;
-    state?: ANTState;
-  },
-  connectionConfig?: {
-    CU_URL: string;
-    MU_URL: string;
-    GATEWAY_URL: string;
-    GRAPHQL_URL: string;
-  },
-): Promise<string> {
-  const aoClient = new AOProcess({
-    processId: ''.padEnd(43, '0'),
-    connectionConfig,
-  });
+export async function spawnANT({
+  module = AOS_MODULE_ID,
+  luaCodeTxId = ANT_LUA_ID,
+  scheduler = DEFAULT_SCHEDULER_ID,
+  ao = connect(),
+  signer,
+  state,
+}: {
+  module: string;
+  luaCodeTxId: string;
+  ao: AoClient;
+  scheduler: string;
+  signer: ContractSigner;
+  state?: ANTState;
+}): Promise<string> {
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
     decode: true,
     string: true,
   })) as string;
 
-  const processId = await aoClient.spawn({
+  const processId = await ao.spawn({
     module,
     scheduler,
-    signer,
+    signer: await AOProcess.createAoSigner(signer),
   });
 
   const aosClient = new AOProcess({
     processId,
-    connectionConfig,
+    ao,
   });
 
   await aosClient.send({

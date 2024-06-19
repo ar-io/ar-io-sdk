@@ -29,30 +29,20 @@ export class AOProcess implements AOContract {
 
   constructor({
     processId,
-    connectionConfig,
+    ao = connect(),
     logger = new DefaultLogger({ level: 'info' }),
   }: {
     processId: string;
-    connectionConfig?: {
-      CU_URL: string;
-      MU_URL: string;
-      GATEWAY_URL: string;
-      GRAPHQL_URL: string;
-    };
+    ao?: AoClient;
     logger?: DefaultLogger;
   }) {
     this.processId = processId;
     this.logger = logger;
-    this.ao = connect({
-      MU_URL: connectionConfig?.MU_URL,
-      CU_URL: connectionConfig?.CU_URL,
-      GATEWAY_URL: connectionConfig?.GATEWAY_URL,
-      GRAPHQL_URL: connectionConfig?.GRAPHQL_URL,
-    });
+    this.ao = ao;
   }
 
   // TODO: could abstract into our own interface that constructs different signers
-  async createAoSigner(
+  static async createAoSigner(
     signer: ContractSigner,
   ): Promise<
     (args: {
@@ -160,7 +150,7 @@ export class AOProcess implements AOContract {
           // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
           data: typeof data !== 'string' ? JSON.stringify(data) : data,
-          signer: await this.createAoSigner(signer),
+          signer: await AOProcess.createAoSigner(signer),
         });
 
         this.logger.debug(`Sent message to process`, {
@@ -208,7 +198,7 @@ export class AOProcess implements AOContract {
           processId: this.processId,
           tags,
         });
-        // throw on write interaction errors. No point retrying write interactions, waste of gas.
+        // throw on write interaction errors. No point retrying wr ite interactions, waste of gas.
         if (error.message.includes('500')) {
           this.logger.debug('Retrying send interaction', {
             attempts,
@@ -226,33 +216,5 @@ export class AOProcess implements AOContract {
       }
     }
     throw lastError;
-  }
-
-  async spawn({
-    module,
-    scheduler,
-    signer,
-  }: {
-    module: string;
-    scheduler: string;
-    signer: ContractSigner;
-  }): Promise<string> {
-    // TODO: add error handling for non existent module/scheduler
-    this.logger.debug('Spawning process', {
-      module,
-      scheduler,
-    });
-    const spawnResult = await this.ao.spawn({
-      module,
-      scheduler,
-      signer: await this.createAoSigner(signer),
-    });
-
-    this.logger.debug('Spawned process', {
-      processId: spawnResult,
-      spawnResult,
-    });
-
-    return spawnResult;
   }
 }
