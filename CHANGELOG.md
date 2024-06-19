@@ -1,3 +1,12 @@
+# [1.2.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.6...v1.2.0-alpha.7) (2024-06-19)
+
+
+### Bug Fixes
+
+* **deps:** use p-limit-lit to avoid jest issues ([05e0673](https://github.com/ar-io/ar-io-sdk/commit/05e0673873490180e71974b90448561cacd21662))
+* **pLimit:** add pLimit for util to avoid ao throttlling ([5b13560](https://github.com/ar-io/ar-io-sdk/commit/5b1356079153f4cc637596bb75b3f916d77a69e3))
+* **util:** initial implementation of get ant process for wallet ([885fa31](https://github.com/ar-io/ar-io-sdk/commit/885fa31531725e396a94a53bfff200a6e3258395))
+
 # [1.2.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.5...v1.2.0-alpha.6) (2024-06-19)
 
 
