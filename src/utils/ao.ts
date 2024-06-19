@@ -56,6 +56,7 @@ export async function spawnANT(
     processId: ''.padEnd(43, '0'),
     connectionConfig,
   });
+  //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
     decode: true,
     string: true,
