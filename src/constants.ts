@@ -36,5 +36,6 @@ export const ioDevnetProcessId = 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
 export const MIO_PER_IO = 1_000_000;
 
 export const AOS_MODULE_ID = '9afQ1PLf2mrshqCTZEzzJTR2gWaC9zNPnYgYEqg1Pt4';
+export const ANT_LUA_ID = 'J8h6J-_rIOWJ7lT5DZO63PRHB6dgGMxpn9ubkI1OJnY';
 export const DEFAULT_SCHEDULER_ID =
   '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';

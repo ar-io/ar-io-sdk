@@ -1,4 +1,13 @@
-import { ANT, IO, ioDevnetProcessId } from '@ar.io/sdk';
+import {
+  ANT,
+  ANT_LUA_ID,
+  AOS_MODULE_ID,
+  ArweaveSigner,
+  IO,
+  ioDevnetProcessId,
+  spawnANT,
+} from '@ar.io/sdk';
+import Arweave from 'arweave';
 
 (async () => {
   const arIO = IO.init({
@@ -28,8 +37,20 @@ import { ANT, IO, ioDevnetProcessId } from '@ar.io/sdk';
   );
 
   // io ant
+  const arweave = Arweave.init({
+    host: 'arweave.net',
+    port: 443,
+    protocol: 'https',
+  });
+
+  const jwk = await arweave.wallets.generate();
+
+  const processId = await spawnANT({
+    signer: new ArweaveSigner(jwk),
+  });
+
   const ant = ANT.init({
-    processId: 'LGN8MUAMvTvr6i-WGdXBu1z9jz01LZVnVwklp9z7D6U',
+    processId,
   });
   const antRecords = await ant.getRecords();
   const rootRecord = await ant.getRecord({ undername: '@' });

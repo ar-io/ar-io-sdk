@@ -18,3 +18,4 @@ export * from './arweave.js';
 export * from './http-client.js';
 export * from './smartweave.js';
 export * from './graphql/index.js';
+export * from './ao.js';

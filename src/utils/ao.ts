@@ -14,138 +14,77 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect } from '@permaweb/aoconnect';
-
-import ANT_LUA from '../ant-lua-code.js';
-import { AOS_MODULE_ID, DEFAULT_SCHEDULER_ID } from '../constants.js';
+import { defaultArweave } from '../common/arweave.js';
+import { AOProcess } from '../common/index.js';
+import {
+  ANT_LUA_ID,
+  AOS_MODULE_ID,
+  DEFAULT_SCHEDULER_ID,
+} from '../constants.js';
 import { ANTState } from '../contract-state.js';
-import { AoClient, Logger } from '../types.js';
+import { ContractSigner } from '../types.js';
 
 /**
- * Spawns an aos process and loads the ANT code. Optionally initializes state.
- * @param param0 configuration for the spawn and eval process.
- * @param options - logger, tags, data - optional, applied to the spawn message.
- * @returns @type {Promise<string | undefined>} - processId or undefined
  *
- * @example
- * Basic usage:
- * ```typescript
- * import { createDataItemSigner } from '@permaweb/aoconnect';
- * const antId = await spawnANT({
- *  signer: createDataItemSigner(window.arweaveWallet)
- * })
- * ```
+ * @param param0 spawn and message args
+ * @param connectionConfig
+ * @returns @type {Promise<string>} processId
  */
 export async function spawnANT(
   {
     module = AOS_MODULE_ID,
-    luaString = ANT_LUA,
-    ao = connect(),
+    luaCodeTxId = ANT_LUA_ID,
     scheduler = DEFAULT_SCHEDULER_ID,
     signer,
     state,
   }: {
     module: string;
-    luaString: string;
-    ao: AoClient;
+    luaCodeTxId: string;
+    aoClient: AOProcess;
     scheduler: string;
-    signer: (...args: any) => any;
+    signer: ContractSigner;
     state?: ANTState;
   },
-  options: {
-    logger?: Logger;
-    tags?: { name: string; value: string }[];
-    data?: string;
-  } = {},
-): Promise<string | undefined> {
-  let processId: string | undefined = undefined;
-  try {
-    /**
-     * 1. spawn aos process
-     * 2. call eval with lua source code to load the ANT code
-     * 3. Initialize state if provided
-     */
+  connectionConfig?: {
+    CU_URL: string;
+    MU_URL: string;
+    GATEWAY_URL: string;
+    GRAPHQL_URL: string;
+  },
+): Promise<string> {
+  const aoClient = new AOProcess({
+    processId: ''.padEnd(43, '0'),
+    connectionConfig,
+  });
+  const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
+    decode: true,
+    string: true,
+  })) as string;
 
-    // 1. spawn
-    options.logger?.info('Spawning ANT process.', {
-      module,
-      scheduler,
-    });
-    processId = await ao.spawn({
-      module,
-      scheduler,
+  const processId = await aoClient.spawn({
+    module,
+    scheduler,
+    signer,
+  });
+
+  const aosClient = new AOProcess({
+    processId,
+    connectionConfig,
+  });
+
+  await aosClient.send({
+    tags: [{ name: 'Action', value: 'Eval' }],
+    data: luaString,
+    signer,
+  });
+
+  if (state) {
+    await aosClient.send({
+      tags: [{ name: 'Action', value: 'Initialize-State' }],
+      data: JSON.stringify(state),
       signer,
-      data: options?.data,
-      tags: [
-        ...(options?.tags ?? []),
-        { name: 'App-Name', value: 'ArNS-AO-ANT' },
-      ],
-    });
-
-    let antCodeLoaded = false;
-    let retries = 0;
-    const retryDelay = 5000;
-    const maxRetries = 5;
-    // retry is necessary since the process may not be ready to receive messages immediately
-    while (antCodeLoaded === false) {
-      // 2. call eval with lua source code
-      const evalResult = await ao
-        .message({
-          process: processId,
-          tags: [{ name: 'Action', value: 'Eval' }],
-          data: luaString,
-          signer,
-        })
-        .catch((error) => new Error(error));
-
-      if (evalResult instanceof Error && retries < maxRetries) {
-        options.logger?.error(
-          `Error messaging process: ${evalResult.message}. Retrying in 2 seconds.`,
-          {
-            processId,
-            error: evalResult,
-          },
-        );
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        retries++;
-        continue;
-      } else if (evalResult instanceof Error && retries >= maxRetries) {
-        throw new Error(
-          `Error messaging process: ${evalResult.message}. Max retries reached. Unable to load lua code.`,
-        );
-      } else {
-        options.logger?.info('ANT code loaded.', {
-          processId,
-          evalId: evalResult,
-        });
-        antCodeLoaded = true;
-      }
-    }
-    if (state) {
-      // 3. Initialize state if provided
-      const stateResult = await ao
-        .message({
-          process: processId,
-          tags: [{ name: 'Action', value: 'Initialize-State' }],
-          data: JSON.stringify(state),
-          signer,
-        })
-        .catch((error) => new Error(error));
-      if (stateResult instanceof Error) {
-        throw new Error(
-          `Error messaging process: ${stateResult.message}. Unable to initialize state.`,
-        );
-      }
-      options.logger?.info('State initialized.', {
-        processId,
-        stateMessageId: stateResult,
-      });
-    }
-  } catch (error) {
-    options.logger?.error('Error spawning ANT process.', {
-      error: error.message,
-      processId,
     });
   }
+
   return processId;
 }
