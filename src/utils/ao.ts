@@ -33,6 +33,7 @@ export async function spawnANT({
   ao = connect(),
   signer,
   state,
+  stateContractTxId,
 }: {
   module: string;
   luaCodeTxId: string;
@@ -40,6 +41,7 @@ export async function spawnANT({
   scheduler: string;
   signer: ContractSigner;
   state?: ANTState;
+  stateContractTxId?: string;
 }): Promise<string> {
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
@@ -70,7 +72,12 @@ export async function spawnANT({
 
   if (state) {
     await aosClient.send({
-      tags: [{ name: 'Action', value: 'Initialize-State' }],
+      tags: [
+        { name: 'Action', value: 'Initialize-State' },
+        ...(stateContractTxId !== undefined
+          ? [{ name: 'State-Contract-TX-ID', value: stateContractTxId }]
+          : []),
+      ],
       data: JSON.stringify(state),
       signer,
     });
