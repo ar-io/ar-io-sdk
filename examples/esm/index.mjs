@@ -23,6 +23,23 @@ import Arweave from 'arweave';
   const epoch = await arIO.getCurrentEpoch();
   const observations = await arIO.getObservations({ epochIndex: 19879 });
   const distributions = await arIO.getDistributions({ epochIndex: 19879 });
+  const buyRecordCost = await arIO.getTokenCost({
+    intent: 'BuyRecord',
+    purchaseType: 'lease',
+    name: 'adriaaaaan',
+    years: 1,
+  });
+  const extendLeaseCost = await arIO.getTokenCost({
+    intent: 'ExtendLease',
+    name: 'ardrive',
+    years: 1,
+  });
+  const increaseUndernameCost = await arIO.getTokenCost({
+    intent: 'IncreaseUndernameLimit',
+    name: 'vilenario',
+    quantity: 1,
+  });
+
   console.dir(
     {
       testnetGateways,
@@ -32,6 +49,9 @@ import Arweave from 'arweave';
       distributions,
       protocolBalance,
       names: Object.keys(allRecords),
+      buyRecordCost,
+      extendLeaseCost,
+      increaseUndernameCost,
     },
     { depth: 2 },
   );
