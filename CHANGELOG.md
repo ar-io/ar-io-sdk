@@ -1,3 +1,10 @@
+# [1.2.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.8...v1.2.0-alpha.9) (2024-06-20)
+
+
+### Bug Fixes
+
+* updates to use IO class and process terminology ([ec45d66](https://github.com/ar-io/ar-io-sdk/commit/ec45d666747a31734ae93cc8b5a4b29af1e7cd3e))
+
 # [1.2.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.7...v1.2.0-alpha.8) (2024-06-20)
 
 
