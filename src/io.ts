@@ -136,6 +136,19 @@ export interface AoIORead {
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
   getObservations(epoch?: EpochInput): Promise<EpochObservations>;
   getDistributions(epoch?: EpochInput): Promise<EpochDistributionData>;
+  getTokenCost({
+    intent,
+    purchaseType,
+    years,
+    name,
+    quantity,
+  }: {
+    intent: 'BuyRecord' | 'ExtendLease' | 'IncreaseUndernameLimit';
+    purchaseType?: 'permabuy' | 'lease';
+    years?: number;
+    name?: string;
+    quantity?: number;
+  }): Promise<number>;
 }
 
 export interface AoIOWrite extends AoIORead {

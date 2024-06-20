@@ -380,6 +380,71 @@ export class IOReadable implements AoIORead {
       tags: prunedTags,
     });
   }
+
+  async getTokenCost(params: {
+    intent: 'BuyRecord';
+    purchaseType: 'permabuy' | 'lease';
+    years: number;
+    name: string;
+  }): Promise<number>;
+  async getTokenCost(params: {
+    intent: 'ExtendLease';
+    years: number;
+    name: string;
+  }): Promise<number>;
+  async getTokenCost(params: {
+    intent: 'IncreaseUndernameLimit';
+    quantity: number;
+    name: string;
+  }): Promise<number>;
+  async getTokenCost({
+    intent,
+    purchaseType,
+    years,
+    name,
+    quantity,
+  }: {
+    intent: 'BuyRecord' | 'ExtendLease' | 'IncreaseUndernameLimit';
+    purchaseType?: 'permabuy' | 'lease';
+    years?: number;
+    name?: string;
+    quantity?: number;
+  }): Promise<number> {
+    const allTags = [
+      { name: 'Action', value: 'TokenCost' },
+      {
+        name: 'Intent',
+        value: intent,
+      },
+      {
+        name: 'Name',
+        value: name,
+      },
+      {
+        name: 'Years',
+        value: years?.toString(),
+      },
+      {
+        name: 'Quantity',
+        value: quantity?.toString(),
+      },
+      {
+        name: 'PurchaseType',
+        value: purchaseType,
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<number>({
+      tags: prunedTags,
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
