@@ -2,17 +2,17 @@
 # yarn lockfile v1
 
 
-"@ar.io/sdk@alpha":
-  version "1.0.5-alpha.4"
-  resolved "https://registry.yarnpkg.com/@ar.io/sdk/-/sdk-1.0.5-alpha.4.tgz#a4295f6d8e92a6eb2f98c93dd84124023fb76103"
-  integrity sha512-q2WaPABjJoenbbNiK2YoBnNRRTVmBE9DYVMWinLuNQRxlAanG6RT6RW71OClreN4KAmn8XwPxP3gFilHpWXocQ==
+"@ar.io/sdk@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@ar.io/sdk/-/sdk-1.1.1.tgz#8fbb675b447b056913028314224238203a375365"
+  integrity sha512-4IJFD22pYGY/HE3nehZOV5b/kImIlZXEp02ccwJAbGVJOGQRfFqFxQ0f1P0hPOu7UzjxaLGvn0huH8/LPRFQow==
   dependencies:
     arbundles "0.11.0"
     arweave "1.14.4"
-    axios "1.4.0"
+    axios "1.7.2"
+    axios-retry "^4.3.0"
     bunyan "^1.8.15"
-    warp-arbundles "^1.0.4"
-    warp-contracts "1.4.39"
+    warp-contracts "1.4.45"
 
 "@ethersproject/abstract-provider@^5.7.0":
   version "5.7.0"
@@ -479,6 +479,16 @@ arweave@^1.10.13, arweave@^1.13.7:
     base64-js "^1.5.1"
     bignumber.js "^9.0.2"
 
+arweave@^1.15.1:
+  version "1.15.1"
+  resolved "https://registry.yarnpkg.com/arweave/-/arweave-1.15.1.tgz#c6183136b20980c81a8cb77ce6fd9fb333e1a174"
+  integrity sha512-rT7FOwqdudd5npqp4xOYdDT2035LtpcqePjwirh4wjRiEtVsz1FZkRiM2Yj+fOAwYzOm/hNG0GDOipDSaiEGGQ==
+  dependencies:
+    arconnect "^0.4.2"
+    asn1.js "^5.4.1"
+    base64-js "^1.5.1"
+    bignumber.js "^9.0.2"
+
 asn1.js@^5.4.1:
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/asn1.js/-/asn1.js-5.4.1.tgz#11a980b84ebb91781ce35b0fdc2ee294e3783f07"
@@ -513,12 +523,19 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-axios@1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.4.0.tgz#38a7bf1224cd308de271146038b551d725f0be1f"
-  integrity sha512-S4XCWMEmzvo64T9GfvQDOXgYRDJ/wsSZc7Jvdgx5u1sd0JwsuPLqb3SYmusag+edF6ziyMensPVqLTSc1PiSEA==
+axios-retry@^4.3.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/axios-retry/-/axios-retry-4.4.0.tgz#2df4b9647652e3a4032891001d97bb493607e4aa"
+  integrity sha512-yewTKjzl6jSgc+2M7FCJ3LxRGgL1iiXHcj+E6h6xie6H1mTHr7yqaUroWIvVXG1UKSPwGDXxV05YxtGvrD6Paw==
   dependencies:
-    follow-redirects "^1.15.0"
+    is-retry-allowed "^2.2.0"
+
+axios@1.7.2:
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.7.2.tgz#b625db8a7051fbea61c35a3cbb3a1daa7b9c7621"
+  integrity sha512-2A8QhOMrbomlDuiLeK9XibIBzuHeRcqqNOHp0Cyp5EoJ1IFDh+XZH3A6BkXtv0K4gFGCI0Y4BM7B1wOEi0Rmgw==
+  dependencies:
+    follow-redirects "^1.15.6"
     form-data "^4.0.0"
     proxy-from-env "^1.1.0"
 
@@ -792,7 +809,7 @@ fast-copy@^3.0.0:
   resolved "https://registry.yarnpkg.com/fast-copy/-/fast-copy-3.0.2.tgz#59c68f59ccbcac82050ba992e0d5c389097c9d35"
   integrity sha512-dl0O9Vhju8IrcLndv2eU4ldt1ftXMqqfgN4H1cpmGV7P6jeB9FwpN9a2c8DPGE1Ys88rNUJVYDHq73CGAGOPfQ==
 
-follow-redirects@^1.15.0, follow-redirects@^1.15.6:
+follow-redirects@^1.15.6:
   version "1.15.6"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.6.tgz#7f815c0cda4249c74ff09e95ef97c23b5fd0399b"
   integrity sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==
@@ -893,6 +910,11 @@ is-buffer@^2.0.5:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/is-buffer/-/is-buffer-2.0.5.tgz#ebc252e400d22ff8d77fa09888821a24a658c191"
   integrity sha512-i2R6zNFDwgEHJyQUtJEk0XFi1i0dPFn/oqjK3/vPCcDeJvW5NQ83V8QbicfF1SupOaB0h8ntgBC2YiE7dfyctQ==
+
+is-retry-allowed@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/is-retry-allowed/-/is-retry-allowed-2.2.0.tgz#88f34cbd236e043e71b6932d09b0c65fb7b4d71d"
+  integrity sha512-XVm7LOeLpTW4jV19QSH38vkswxoLud8sQ57YwJVTPWdiaI9I8keEhGFpBlslyVsgdQy4Opg8QOLb8YRgsyZiQg==
 
 isarray@~1.0.0:
   version "1.0.0"
@@ -1328,10 +1350,10 @@ warp-arbundles@^1.0.4:
     buffer "^6.0.3"
     warp-isomorphic "^1.0.7"
 
-warp-contracts@1.4.39:
-  version "1.4.39"
-  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.39.tgz#b56f4baa61b633c04d8abba65ee5dfca333ffea5"
-  integrity sha512-Dyk9wjhYceLRSq+U5Ba8h2mTbMPeB1hjdnDhYJP825E7gcc3jGc12GTLynSBqx5eJscOtpGG5Z5SQNxcTOP7/A==
+warp-contracts@1.4.45:
+  version "1.4.45"
+  resolved "https://registry.yarnpkg.com/warp-contracts/-/warp-contracts-1.4.45.tgz#918ede8cdc272bb6c0e9d9334a31107071b8b894"
+  integrity sha512-v4asbKIofCmQjH+1Q+yTyJmGUFwaL11zNnfaipRsxQ488MB7lGfQGNeadMfYhhc2yvUDhcVok1UcSfvfgugPaQ==
   dependencies:
     archiver "^5.3.0"
     arweave "1.14.4"
