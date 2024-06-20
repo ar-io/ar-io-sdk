@@ -1,3 +1,15 @@
+# [1.2.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.7...v1.2.0-alpha.8) (2024-06-20)
+
+
+### Bug Fixes
+
+* **spawn:** add option state contractTxID to track where init state is from ([1745766](https://github.com/ar-io/ar-io-sdk/commit/1745766efbaf39dab3d848febf320fc6a78a0fed))
+
+
+### Features
+
+* **ao utils:** add spawn ant util ([d02566e](https://github.com/ar-io/ar-io-sdk/commit/d02566eac7385b5a25fb1851fa4aeb4906616328))
+
 # [1.2.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.6...v1.2.0-alpha.7) (2024-06-19)
 
 
