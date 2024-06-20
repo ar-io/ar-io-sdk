@@ -27,19 +27,19 @@ import { ANTState } from '../contract-state.js';
 import { AoClient, ContractSigner } from '../types.js';
 
 export async function spawnANT({
+  signer,
   module = AOS_MODULE_ID,
   luaCodeTxId = ANT_LUA_ID,
-  scheduler = DEFAULT_SCHEDULER_ID,
   ao = connect(),
-  signer,
+  scheduler = DEFAULT_SCHEDULER_ID,
   state,
   stateContractTxId,
 }: {
-  module: string;
-  luaCodeTxId: string;
-  ao: AoClient;
-  scheduler: string;
   signer: ContractSigner;
+  module?: string;
+  luaCodeTxId?: string;
+  ao?: AoClient;
+  scheduler?: string;
   state?: ANTState;
   stateContractTxId?: string;
 }): Promise<string> {
