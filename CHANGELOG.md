@@ -1,3 +1,13 @@
+# [1.2.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.11...v1.2.0-alpha.12) (2024-06-24)
+
+
+### Bug Fixes
+
+* **handlers:** update handler names ([720b178](https://github.com/ar-io/ar-io-sdk/commit/720b178eca08570b7beff02445d82b5c7366e220))
+* revert purchasetype tag ([2dc08df](https://github.com/ar-io/ar-io-sdk/commit/2dc08dfb946cd8e7002dde80458e44e739693627))
+* **tags:** make remaining tags ans-116 compliant ([d034c8c](https://github.com/ar-io/ar-io-sdk/commit/d034c8c694f4558aa807beeef36217868f50c8e8))
+* **tags:** use updated ans-116 tag format for actions ([261b788](https://github.com/ar-io/ar-io-sdk/commit/261b7888c6c84d94261ea59499e65854ddf11e31))
+
 # [1.2.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.10...v1.2.0-alpha.11) (2024-06-24)
 
 
