@@ -429,7 +429,7 @@ export class IOReadable implements AoIORead {
         value: quantity?.toString(),
       },
       {
-        name: 'Purchase-Type',
+        name: 'PurchaseType',
         value: purchaseType,
       },
     ];
