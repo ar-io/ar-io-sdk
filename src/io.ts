@@ -143,7 +143,7 @@ export interface AoIORead {
     name,
     quantity,
   }: {
-    intent: 'BuyRecord' | 'ExtendLease' | 'IncreaseUndernameLimit';
+    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
     purchaseType?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
