@@ -1,3 +1,10 @@
+# [1.2.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.10...v1.2.0-alpha.11) (2024-06-24)
+
+
+### Bug Fixes
+
+* **aos:** update aos module id and lua id ([e19139e](https://github.com/ar-io/ar-io-sdk/commit/e19139e1391656e7eb4038a479e620535f3671c4))
+
 # [1.2.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.9...v1.2.0-alpha.10) (2024-06-24)
 
 
