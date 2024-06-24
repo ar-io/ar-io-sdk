@@ -89,8 +89,8 @@ export class AOProcess implements AOContract {
           tags,
         });
 
-        const tagsOutput = result.Messages[0].Tags;
-        const error = tagsOutput.find((tag) => tag.name === 'Error');
+        const tagsOutput = result.Messages[0]?.Tags;
+        const error = tagsOutput?.find((tag) => tag.name === 'Error');
         if (error) {
           throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
         }
@@ -102,8 +102,8 @@ export class AOProcess implements AOContract {
         this.logger.debug(`Read interaction result`, {
           result: result.Messages[0].Data,
         });
-
-        const response: K = JSON.parse(result.Messages[0].Data);
+        const data = result.Messages[0]?.Data;
+        const response: K = data ? JSON.parse(data) : ({} as K);
         return response;
       } catch (e) {
         attempts++;

@@ -43,15 +43,16 @@ export const getANTProcessesOwnedByWallet = async ({
 
   // check the contract owner and controllers
   const ownedOrControlledByWallet: ProcessId[] = await Promise.all(
-    uniqueContractProcessIds.filter(async (processId) =>
-      throttle(async () => {
-        const ant = ANT.init({
-          processId,
-        });
-        const owner = await ant.getOwner();
-        const controllers = await ant.getControllers();
-        return owner === address || controllers.includes(address);
-      }),
+    uniqueContractProcessIds.filter(
+      async (processId) =>
+        await throttle(async () => {
+          const ant = ANT.init({
+            processId,
+          });
+          const owner = await ant.getOwner();
+          const controllers = await ant.getControllers();
+          return owner === address || controllers.includes(address);
+        }),
     ),
   );
 
