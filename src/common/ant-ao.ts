@@ -76,7 +76,7 @@ export class AoANTReadable implements AoANTRead {
   async getRecord({ undername }: { undername: string }): Promise<ANTRecord> {
     const tags = [
       { name: 'Sub-Domain', value: undername },
-      { name: 'Action', value: 'Get-Record' },
+      { name: 'Action', value: 'Record' },
     ];
 
     const record = await this.process.read<ANTRecord>({
@@ -94,7 +94,7 @@ export class AoANTReadable implements AoANTRead {
    * ````
    */
   async getRecords(): Promise<Record<string, ANTRecord>> {
-    const tags = [{ name: 'Action', value: 'Get-Records' }];
+    const tags = [{ name: 'Action', value: 'Records' }];
     const records = await this.process.read<Record<string, ANTRecord>>({
       tags,
     });
@@ -123,7 +123,7 @@ export class AoANTReadable implements AoANTRead {
    * ```
    */
   async getControllers(): Promise<WalletAddress[]> {
-    const tags = [{ name: 'Action', value: 'Get-Controllers' }];
+    const tags = [{ name: 'Action', value: 'Controllers' }];
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
@@ -239,7 +239,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     controller: string;
   }): Promise<AoMessageResult> {
     const tags = [
-      { name: 'Action', value: 'Set-Controller' },
+      { name: 'Action', value: 'Add-Controller' },
       { name: 'Controller', value: controller },
     ];
 
