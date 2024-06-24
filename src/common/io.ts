@@ -236,7 +236,7 @@ export class IOReadable implements AoIORead {
     epoch?: EpochInput,
   ): Promise<WeightedObserver[]> {
     const allTags = [
-      { name: 'Action', value: 'EpochPrescribedObservers' },
+      { name: 'Action', value: 'Epoch-Prescribed-Observers' },
       {
         name: 'Timestamp',
         value: (epoch as { timestamp?: number }).timestamp?.toString(),
@@ -273,7 +273,7 @@ export class IOReadable implements AoIORead {
 
   async getPrescribedNames(epoch?: EpochInput): Promise<string[]> {
     const allTags = [
-      { name: 'Action', value: 'EpochPrescribedNames' },
+      { name: 'Action', value: 'Epoch-Prescribed-Names' },
       {
         name: 'Timestamp',
         value: (epoch as { timestamp?: number }).timestamp?.toString(),
@@ -310,7 +310,7 @@ export class IOReadable implements AoIORead {
 
   async getObservations(epoch?: EpochInput): Promise<EpochObservations> {
     const allTags = [
-      { name: 'Action', value: 'EpochObservations' },
+      { name: 'Action', value: 'Epoch-Observations' },
       {
         name: 'Timestamp',
         value: (epoch as { timestamp?: number }).timestamp?.toString(),
@@ -347,7 +347,7 @@ export class IOReadable implements AoIORead {
 
   async getDistributions(epoch?: EpochInput): Promise<EpochDistributionData> {
     const allTags = [
-      { name: 'Action', value: 'EpochDistributions' },
+      { name: 'Action', value: 'Epoch-Distributions' },
       {
         name: 'Timestamp',
         value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
@@ -382,18 +382,18 @@ export class IOReadable implements AoIORead {
   }
 
   async getTokenCost(params: {
-    intent: 'BuyRecord';
+    intent: 'Buy-Record';
     purchaseType: 'permabuy' | 'lease';
     years: number;
     name: string;
   }): Promise<number>;
   async getTokenCost(params: {
-    intent: 'ExtendLease';
+    intent: 'Extend-Lease';
     years: number;
     name: string;
   }): Promise<number>;
   async getTokenCost(params: {
-    intent: 'IncreaseUndernameLimit';
+    intent: 'Increase-Undername-Limit';
     quantity: number;
     name: string;
   }): Promise<number>;
@@ -404,14 +404,14 @@ export class IOReadable implements AoIORead {
     name,
     quantity,
   }: {
-    intent: 'BuyRecord' | 'ExtendLease' | 'IncreaseUndernameLimit';
+    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
     purchaseType?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
   }): Promise<number> {
     const allTags = [
-      { name: 'Action', value: 'TokenCost' },
+      { name: 'Action', value: 'Token-Cost' },
       {
         name: 'Intent',
         value: intent,
@@ -429,7 +429,7 @@ export class IOReadable implements AoIORead {
         value: quantity?.toString(),
       },
       {
-        name: 'PurchaseType',
+        name: 'Purchase-Type',
         value: purchaseType,
       },
     ];
@@ -532,7 +532,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'JoinNetwork' },
+      { name: 'Action', value: 'Join-Network' },
       {
         name: 'OperatorStake',
         value: operatorStake.valueOf().toString(),
@@ -617,7 +617,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'UpdateGatewaySettings' },
+      { name: 'Action', value: 'Update-Gateway-Settings' },
       { name: 'Label', value: label },
       { name: 'Note', value: note },
       { name: 'FQDN', value: fqdn },
@@ -665,7 +665,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'DelegateStake' },
+        { name: 'Action', value: 'Delegate-Stake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.stakeQty.valueOf().toString() },
       ],
@@ -684,7 +684,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'DecreaseDelegateStake' },
+        { name: 'Action', value: 'Decrease-Delegate-Stake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
       ],
@@ -702,7 +702,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'IncreaseOperatorStake' },
+        { name: 'Action', value: 'Increase-Operator-Stake' },
         { name: 'Quantity', value: params.increaseQty.valueOf().toString() },
       ],
     });
@@ -719,7 +719,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'DecreaseOperatorStake' },
+        { name: 'Action', value: 'Decrease-Operator-Stake' },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
       ],
     });
@@ -743,7 +743,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'SaveObservations' },
+        { name: 'Action', value: 'Save-Observations' },
         {
           name: 'ReportTxId',
           value: params.reportTxId,
@@ -772,7 +772,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'BuyRecord' },
+      { name: 'Action', value: 'Buy-Record' },
       { name: 'Name', value: params.name },
       { name: 'Years', value: params.years?.toString() ?? '1' },
       { name: 'ProcessId', value: params.processId },
@@ -804,7 +804,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'ExtendLease' },
+        { name: 'Action', value: 'Extend-Lease' },
         { name: 'Name', value: params.name },
         { name: 'Years', value: params.years.toString() },
       ],
@@ -823,7 +823,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       signer: this.signer,
       tags: [
         ...tags,
-        { name: 'Action', value: 'IncreaseUndernameLimit' },
+        { name: 'Action', value: 'Increase-Undername-Limit' },
         { name: 'Name', value: params.name },
         { name: 'Quantity', value: params.increaseCount.toString() },
       ],
