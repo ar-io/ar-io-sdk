@@ -1,3 +1,10 @@
+# [1.2.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.9...v1.2.0-alpha.10) (2024-06-24)
+
+
+### Bug Fixes
+
+* readds incorrectly removed descriptions ([c77217a](https://github.com/ar-io/ar-io-sdk/commit/c77217a9baa28f5397a81ae46e3618b4730e49c0))
+
 # [1.2.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.8...v1.2.0-alpha.9) (2024-06-20)
 
 
