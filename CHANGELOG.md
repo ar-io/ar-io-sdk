@@ -1,3 +1,11 @@
+# [1.2.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.12...v1.2.0-alpha.13) (2024-06-25)
+
+
+### Bug Fixes
+
+* **ao ant:** add handler for get state ([fd20aa7](https://github.com/ar-io/ar-io-sdk/commit/fd20aa761fabac4e98b9bedb546d23aa915b4309))
+* **types:** add ao ant state type ([02dbacd](https://github.com/ar-io/ar-io-sdk/commit/02dbacd71f5b5aabc8eb7a539a908c7fabebe27a))
+
 # [1.2.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.11...v1.2.0-alpha.12) (2024-06-24)
 
 
