@@ -376,3 +376,16 @@ export type AoGateway = {
   status: 'joined' | 'leaving';
   // TODO: add weights
 };
+
+export type AoANTState = {
+  Name: string;
+  Ticker: string;
+  Denomination: number;
+  Owner: WalletAddress;
+  Controllers: WalletAddress[];
+  Records: Record<string, ANTRecord>;
+  Balances: Record<WalletAddress, number>;
+  Logo: string;
+  TotalSupply: number;
+  Initialized: boolean;
+};

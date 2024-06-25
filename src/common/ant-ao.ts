@@ -14,9 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { ANTRecord, ANTState } from '../contract-state.js';
+import { ANTRecord } from '../contract-state.js';
 import {
   AoANTRead,
+  AoANTState,
   AoANTWrite,
   ProcessConfiguration,
   isProcessConfiguration,
@@ -46,9 +47,9 @@ export class AoANTReadable implements AoANTRead {
     }
   }
 
-  async getState(): Promise<ANTState> {
+  async getState(): Promise<AoANTState> {
     const tags = [{ name: 'Action', value: 'State' }];
-    const res = await this.process.read<ANTState>({
+    const res = await this.process.read<AoANTState>({
       tags,
     });
     return res;
