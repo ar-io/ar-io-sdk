@@ -1,3 +1,10 @@
+# [1.2.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.14...v1.2.0-alpha.15) (2024-06-25)
+
+
+### Bug Fixes
+
+* **aoread:** fix interface to have ant getState api ([4e95bbd](https://github.com/ar-io/ar-io-sdk/commit/4e95bbdedc5cc6a448a860d48b30a7502fbbf179))
+
 # [1.2.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.13...v1.2.0-alpha.14) (2024-06-25)
 
 
