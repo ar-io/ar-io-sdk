@@ -260,6 +260,7 @@ export interface AoIOWrite extends AoIORead {
 }
 
 export interface AoANTRead {
+  getState(): Promise<AoANTState>;
   getInfo(): Promise<{
     Name: string;
     Ticker: string;
