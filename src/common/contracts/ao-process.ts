@@ -89,21 +89,23 @@ export class AOProcess implements AOContract {
           tags,
         });
 
+        if (result.Messages.length === 0) {
+          throw new Error(
+            `Process ${this.processId} does not support provided action.`,
+          );
+        }
+
         const tagsOutput = result.Messages[0].Tags;
         const error = tagsOutput.find((tag) => tag.name === 'Error');
         if (error) {
           throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
         }
 
-        if (result.Messages.length === 0) {
-          throw new Error('Process does not support provided action.');
-        }
-
         this.logger.debug(`Read interaction result`, {
-          result: result.Messages[0].Data,
+          result: result.Messages[0]?.Data,
         });
 
-        const response: K = JSON.parse(result.Messages[0].Data);
+        const response: K = JSON.parse(result.Messages[0]?.Data);
         return response;
       } catch (e) {
         attempts++;

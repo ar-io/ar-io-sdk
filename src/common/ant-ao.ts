@@ -17,6 +17,7 @@
 import { ANTRecord } from '../contract-state.js';
 import {
   AoANTRead,
+  AoANTState,
   AoANTWrite,
   ProcessConfiguration,
   isProcessConfiguration,
@@ -44,6 +45,14 @@ export class AoANTReadable implements AoANTRead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+  }
+
+  async getState(): Promise<AoANTState> {
+    const tags = [{ name: 'Action', value: 'State' }];
+    const res = await this.process.read<AoANTState>({
+      tags,
+    });
+    return res;
   }
 
   async getInfo(): Promise<{
