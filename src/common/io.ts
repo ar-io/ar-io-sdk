@@ -432,6 +432,10 @@ export class IOReadable implements AoIORead {
         name: 'Purchase-Type',
         value: purchaseType,
       },
+      {
+        name: 'Timestamp',
+        value: `${Date.now()}`,
+      },
     ];
 
     const prunedTags: { name: string; value: string }[] = allTags.filter(
