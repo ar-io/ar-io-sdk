@@ -34,7 +34,9 @@ export class RemoteContract<T> implements BaseContract<T>, ReadContract {
   constructor({
     cacheUrl = 'https://api.arns.app',
     contractTxId,
-    logger = new DefaultLogger(),
+    logger = new DefaultLogger({
+      level: 'info',
+    }),
   }: {
     contractTxId: string;
     cacheUrl?: string;

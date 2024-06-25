@@ -55,6 +55,9 @@ export async function spawnANT({
     signer: await AOProcess.createAoSigner(signer),
   });
 
+  // wait 15 seconds before we send any messages to the process
+  await new Promise((resolve) => setTimeout(resolve, 10000));
+
   const aosClient = new AOProcess({
     processId,
     ao,
@@ -68,7 +71,10 @@ export async function spawnANT({
     ],
     data: luaString,
     signer,
+    retries: 10,
   });
+
+  await new Promise((resolve) => setTimeout(resolve, 10000));
 
   if (state) {
     await aosClient.send({
@@ -77,9 +83,18 @@ export async function spawnANT({
         ...(stateContractTxId !== undefined
           ? [{ name: 'State-Contract-TX-ID', value: stateContractTxId }]
           : []),
+        {
+          name: 'Process-Id',
+          value: processId,
+        },
+        {
+          name: 'Source-Code-TX-ID',
+          value: luaCodeTxId,
+        },
       ],
       data: JSON.stringify(state),
       signer,
+      retries: 10,
     });
   }
 

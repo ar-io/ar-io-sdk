@@ -31,6 +31,7 @@ import {
 } from '../types.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { DefaultLogger } from './logger.js';
 
 export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
@@ -41,6 +42,7 @@ export class AoANTReadable implements AoANTRead {
     } else if (isProcessIdConfiguration(config)) {
       this.process = new AOProcess({
         processId: config.processId,
+        logger: new DefaultLogger({ level: 'info' }),
       });
     } else {
       throw new InvalidContractConfigurationError();
