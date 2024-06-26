@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import EventEmitter from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
 
 import { ANT } from '../../common/ant.js';
@@ -42,19 +43,78 @@ export const getANTProcessesOwnedByWallet = async ({
     );
 
   // check the contract owner and controllers
-  const ownedOrControlledByWallet: ProcessId[] = await Promise.all(
-    uniqueContractProcessIds.filter(async (processId) =>
+  const ownedOrControlledByWallet = await Promise.all(
+    uniqueContractProcessIds.map(async (processId) =>
       throttle(async () => {
         const ant = ANT.init({
           processId,
         });
-        const owner = await ant.getOwner();
-        const controllers = await ant.getControllers();
-        return owner === address || controllers.includes(address);
+        const [owner, controllers = []] = await Promise.all([
+          ant.getOwner().catch(() => undefined),
+          ant.getControllers().catch(() => []),
+        ]);
+        if (owner === address || controllers.includes(address)) {
+          return processId;
+        }
+        return;
       }),
     ),
   );
 
+  if (ownedOrControlledByWallet.length === 0) {
+    return [];
+  }
+
   // TODO: insert gql query to find ANT processes owned by wallet given wallet not currently in the registry
-  return [...new Set(ownedOrControlledByWallet)];
+  return [...new Set(ownedOrControlledByWallet)] as string[];
 };
+
+export class ArNSNameEmitter extends EventEmitter {
+  protected contract: AoIORead;
+  constructor() {
+    super();
+    this.contract = IO.init({
+      processId: ioDevnetProcessId,
+    });
+  }
+
+  async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
+    const uniqueContractProcessIds = await this.contract
+      .getArNSRecords()
+      .then((records) =>
+        Object.values(records)
+          .filter((record) => record.processId !== undefined)
+          .map((record) => record.processId),
+      );
+
+    // check the contract owner and controllers
+    await Promise.all(
+      uniqueContractProcessIds.map(async (processId) =>
+        throttle(async () => {
+          const ant = ANT.init({
+            processId,
+          });
+          const [owner, controllers = []] = await Promise.all([
+            ant.getOwner().catch(() => {
+              this.emit(
+                'error',
+                `Error getting owner for process ${processId}`,
+              );
+              return undefined;
+            }),
+            ant.getControllers().catch(() => {
+              this.emit(
+                'error',
+                `Error getting controllers for process ${processId}`,
+              );
+              return [];
+            }),
+          ]);
+          if (owner === address || controllers.includes(address)) {
+            this.emit('process', processId);
+          }
+        }),
+      ),
+    );
+  }
+}
