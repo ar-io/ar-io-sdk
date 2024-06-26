@@ -89,14 +89,20 @@ function timeout(ms, promise) {
 
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
-  constructor() {
-    super();
-    this.contract = IO.init({
+  private timeoutMs = 3000; // timeout for each request to 3 seconds
+  constructor({
+    contract = IO.init({
       processId: ioDevnetProcessId,
-    });
+    }),
+  }: {
+    contract?: AoIORead;
+  }) {
+    super();
+    this.contract = contract;
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
+    // TODO: we can add a timeout here as well
     const uniqueContractProcessIds = await this.contract
       .getArNSRecords()
       .then((records) =>
@@ -114,14 +120,14 @@ export class ArNSNameEmitter extends EventEmitter {
             processId,
           });
           const [owner, controllers = []] = await Promise.all([
-            timeout(3000, ant.getOwner()).catch(() => {
+            timeout(this.timeoutMs, ant.getOwner()).catch(() => {
               this.emit(
                 'error',
                 `Error getting owner for process ${processId}`,
               );
               return undefined;
             }),
-            timeout(3000, ant.getControllers()).catch(() => {
+            timeout(this.timeoutMs, ant.getControllers()).catch(() => {
               this.emit(
                 'error',
                 `Error getting controllers for process ${processId}`,
