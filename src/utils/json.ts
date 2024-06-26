@@ -14,9 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export * from './arweave.js';
-export * from './http-client.js';
-export * from './smartweave.js';
-export * from './graphql/index.js';
-export * from './ao.js';
-export * from './json.js';
+export function safeDecode<R = unknown>(data: any): R {
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return data as R;
+  }
+}
