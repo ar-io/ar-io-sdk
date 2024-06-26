@@ -106,6 +106,11 @@ export class AOProcess implements AOContract {
           result: result.Messages[0].Data,
         });
 
+        // return empty object if no data is returned
+        if (result.Messages[0].Data === undefined) {
+          return {} as K;
+        }
+
         const response: K = safeDecode<K>(result.Messages[0].Data);
         return response;
       } catch (e) {
@@ -184,6 +189,16 @@ export class AOProcess implements AOContract {
         if (error) {
           const result = output.Messages[0].Data;
           throw new WriteInteractionError(`${error.Value}: ${result}`);
+        }
+
+        if (output.Messages.length === 0) {
+          throw new Error(
+            `Process ${this.processId} does not support provided action.`,
+          );
+        }
+
+        if (output.Messages[0].Data === undefined) {
+          return { id: messageId };
         }
 
         const resultData: K = safeDecode<K>(output.Messages[0].Data);
