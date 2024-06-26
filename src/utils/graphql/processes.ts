@@ -67,16 +67,40 @@ export const getANTProcessesOwnedByWallet = async ({
   return [...new Set(ownedOrControlledByWallet)] as string[];
 };
 
+function timeout(ms, promise) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Timeout'));
+    }, ms);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
-  constructor() {
-    super();
-    this.contract = IO.init({
+  private timeoutMs = 3000; // timeout for each request to 3 seconds
+  constructor({
+    contract = IO.init({
       processId: ioDevnetProcessId,
-    });
+    }),
+  }: {
+    contract?: AoIORead;
+  }) {
+    super();
+    this.contract = contract;
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
+    // TODO: we can add a timeout here as well
     const uniqueContractProcessIds = [
       ...new Set(
         await this.contract
@@ -95,6 +119,7 @@ export class ArNSNameEmitter extends EventEmitter {
     const idCount = uniqueContractProcessIds.length;
 
     // check the contract owner and controllers
+    const discovered: string[] = [];
     await Promise.all(
       uniqueContractProcessIds.map(async (processId, i) =>
         throttle(async () => {

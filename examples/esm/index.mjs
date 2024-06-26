@@ -1,9 +1,4 @@
-import {
-  ArNSNameEmitter,
-  IO,
-  getANTProcessesOwnedByWallet,
-  ioDevnetProcessId,
-} from '@ar.io/sdk';
+import { ArNSNameEmitter } from '@ar.io/sdk';
 
 (async () => {
   const arIO = IO.init({
