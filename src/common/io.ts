@@ -525,7 +525,14 @@ export class IOReadable implements AoIORead {
     pageSize?: number;
     sortBy?: keyof (AoArNSNameData & { name: string });
     sortOrder?: 'asc' | 'desc';
-  }): Promise<(AoArNSNameData & { name: string })[]> {
+  }): Promise<{
+    records: (AoArNSNameData & { name: string })[];
+    hasNextPage: boolean;
+    totalItems: number;
+    totalPages: number;
+    sortBy: 'string';
+    sortOrder: 'asc' | 'desc';
+  }> {
     const alTags = [
       { name: 'Action', value: 'Sorted-Records' },
       { name: 'Page', value: page.toString() },
@@ -541,7 +548,14 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<(AoArNSNameData & { name: string })[]>({
+    return this.process.read<{
+      records: (AoArNSNameData & { name: string })[];
+      hasNextPage: boolean;
+      totalItems: number;
+      totalPages: number;
+      sortBy: 'string';
+      sortOrder: 'asc' | 'desc';
+    }>({
       tags: prunedTags,
     });
   }
