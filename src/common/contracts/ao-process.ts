@@ -18,6 +18,7 @@ import { connect } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
 
 import { AOContract, AoClient, ContractSigner, Logger } from '../../types.js';
+import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
 import { DefaultLogger } from '../logger.js';
@@ -102,10 +103,10 @@ export class AOProcess implements AOContract {
         }
 
         this.logger.debug(`Read interaction result`, {
-          result: result.Messages[0]?.Data,
+          result: result.Messages[0].Data,
         });
 
-        const response: K = JSON.parse(result.Messages[0]?.Data);
+        const response: K = safeDecode<K>(result.Messages[0].Data);
         return response;
       } catch (e) {
         attempts++;
@@ -185,7 +186,7 @@ export class AOProcess implements AOContract {
           throw new WriteInteractionError(`${error.Value}: ${result}`);
         }
 
-        const resultData: K = JSON.parse(output.Messages[0].Data);
+        const resultData: K = safeDecode<K>(output.Messages[0].Data);
 
         this.logger.debug('Message result data', {
           resultData,
