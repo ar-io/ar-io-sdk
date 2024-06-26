@@ -69,6 +69,24 @@ export const getANTProcessesOwnedByWallet = async ({
   return [...new Set(ownedOrControlledByWallet)] as string[];
 };
 
+function timeout(ms, promise) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Timeout'));
+    }, ms);
+
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
   constructor() {
@@ -88,6 +106,7 @@ export class ArNSNameEmitter extends EventEmitter {
       );
 
     // check the contract owner and controllers
+    const discovered: string[] = [];
     await Promise.all(
       uniqueContractProcessIds.map(async (processId) =>
         throttle(async () => {
@@ -95,14 +114,14 @@ export class ArNSNameEmitter extends EventEmitter {
             processId,
           });
           const [owner, controllers = []] = await Promise.all([
-            ant.getOwner().catch(() => {
+            timeout(3000, ant.getOwner()).catch(() => {
               this.emit(
                 'error',
                 `Error getting owner for process ${processId}`,
               );
               return undefined;
             }),
-            ant.getControllers().catch(() => {
+            timeout(3000, ant.getControllers()).catch(() => {
               this.emit(
                 'error',
                 `Error getting controllers for process ${processId}`,
@@ -110,11 +129,16 @@ export class ArNSNameEmitter extends EventEmitter {
               return [];
             }),
           ]);
-          if (owner === address || controllers.includes(address)) {
+          if (
+            owner === address ||
+            (Array.isArray(controllers) && controllers.includes(address))
+          ) {
             this.emit('process', processId);
+            // discovered.push(processId);
           }
         }),
       ),
     );
+    this.emit('end', discovered.length);
   }
 }
