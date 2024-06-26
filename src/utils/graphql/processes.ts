@@ -67,7 +67,7 @@ export const getANTProcessesOwnedByWallet = async ({
   return [...new Set(ownedOrControlledByWallet)] as string[];
 };
 
-function timeout(ms, promise) {
+function timeout(ms: number, promise) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Timeout'));
@@ -87,16 +87,19 @@ function timeout(ms, promise) {
 
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
-  private timeoutMs = 60_000; // timeout for each request to 3 seconds
+  private timeoutMs: number; // timeout for each request to 3 seconds
   constructor({
     contract = IO.init({
       processId: ioDevnetProcessId,
     }),
+    timeoutMs = 60_000,
   }: {
     contract?: AoIORead;
+    timeoutMs?: number;
   }) {
     super();
     this.contract = contract;
+    this.timeoutMs = timeoutMs;
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
@@ -117,7 +120,7 @@ export class ArNSNameEmitter extends EventEmitter {
       ),
     ];
     const idCount = uniqueContractProcessIds.length;
-
+    const foundIds: string[] = [];
     // check the contract owner and controllers
     await Promise.all(
       uniqueContractProcessIds.map(async (processId, i) =>
@@ -125,26 +128,28 @@ export class ArNSNameEmitter extends EventEmitter {
           const ant = ANT.init({
             processId,
           });
-          const state = (await timeout(this.timeoutMs, ant.getState()).catch(
-            (e) => {
-              this.emit(
-                'error',
-                `Error getting state for process ${processId}: ${e}`,
-              );
-              return undefined;
-            },
-          )) as AoANTState | undefined;
+          const state: AoANTState | undefined = (await timeout(
+            this.timeoutMs,
+            ant.getState(),
+          ).catch((e) => {
+            this.emit(
+              'error',
+              `Error getting state for process ${processId}: ${e}`,
+            );
+            return undefined;
+          })) as AoANTState | undefined;
 
           if (
             state?.Owner === address ||
             state?.Controllers.includes(address)
           ) {
             this.emit('process', processId, state);
+            foundIds.push(processId);
           }
           this.emit('progress', i + 1, idCount);
         }),
       ),
     );
-    this.emit('end');
+    this.emit('end', foundIds);
   }
 }
