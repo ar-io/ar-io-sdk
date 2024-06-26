@@ -20,7 +20,7 @@ import { pLimit } from 'plimit-lit';
 import { ANT } from '../../common/ant.js';
 import { IO } from '../../common/io.js';
 import { ioDevnetProcessId } from '../../constants.js';
-import { AoIORead, ProcessId, WalletAddress } from '../../types.js';
+import { AoANTState, AoIORead, ProcessId, WalletAddress } from '../../types.js';
 
 // throttle the requests to avoid rate limiting
 const throttle = pLimit(50);
@@ -87,7 +87,7 @@ function timeout(ms, promise) {
 
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
-  private timeoutMs = 3000; // timeout for each request to 3 seconds
+  private timeoutMs = 60_000; // timeout for each request to 3 seconds
   constructor({
     contract = IO.init({
       processId: ioDevnetProcessId,
@@ -119,17 +119,21 @@ export class ArNSNameEmitter extends EventEmitter {
     const idCount = uniqueContractProcessIds.length;
 
     // check the contract owner and controllers
-    const discovered: string[] = [];
     await Promise.all(
       uniqueContractProcessIds.map(async (processId, i) =>
         throttle(async () => {
           const ant = ANT.init({
             processId,
           });
-          const state = await ant.getState().catch(() => {
-            this.emit('error', `Error getting state for process ${processId}`);
-            return undefined;
-          });
+          const state = (await timeout(this.timeoutMs, ant.getState()).catch(
+            (e) => {
+              this.emit(
+                'error',
+                `Error getting state for process ${processId}: ${e}`,
+              );
+              return undefined;
+            },
+          )) as AoANTState | undefined;
 
           if (
             state?.Owner === address ||
@@ -141,6 +145,6 @@ export class ArNSNameEmitter extends EventEmitter {
         }),
       ),
     );
-    this.emit('complete');
+    this.emit('end');
   }
 }
