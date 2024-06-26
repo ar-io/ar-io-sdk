@@ -126,12 +126,14 @@ export interface AoIORead {
   getArNSRecords(): Promise<
     Record<string, AoArNSNameData> | Record<string, never>
   >;
-  getSortedArNSRecords({
-    page,
-    pageSize,
-    sortBy,
-    sortOrder,
-  }): Promise<(AoArNSNameData & { name: string })[]>;
+  getSortedArNSRecords({ page, pageSize, sortBy, sortOrder }): Promise<{
+    records: (AoArNSNameData & { name: string })[];
+    hasNextPage: boolean;
+    totalItems: number;
+    totalPages: number;
+    sortBy: 'string';
+    sortOrder: 'asc' | 'desc';
+  }>;
   getArNSReservedNames(): Promise<
     Record<string, AoArNSReservedNameData> | Record<string, never>
   >;
