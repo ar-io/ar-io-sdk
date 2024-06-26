@@ -20,7 +20,7 @@ import { pLimit } from 'plimit-lit';
 import { ANT } from '../../common/ant.js';
 import { IO } from '../../common/io.js';
 import { ioDevnetProcessId } from '../../constants.js';
-import { AoIORead, ProcessId, WalletAddress } from '../../types.js';
+import { AoANTState, AoIORead, ProcessId, WalletAddress } from '../../types.js';
 
 // throttle the requests to avoid rate limiting
 const throttle = pLimit(50);
@@ -49,11 +49,9 @@ export const getANTProcessesOwnedByWallet = async ({
         const ant = ANT.init({
           processId,
         });
-        const [owner, controllers = []] = await Promise.all([
-          ant.getOwner().catch(() => undefined),
-          ant.getControllers().catch(() => []),
-        ]);
-        if (owner === address || controllers.includes(address)) {
+        const { Owner, Controllers } = await ant.getState();
+
+        if (Owner === address || Controllers.includes(address)) {
           return processId;
         }
         return;
@@ -69,7 +67,7 @@ export const getANTProcessesOwnedByWallet = async ({
   return [...new Set(ownedOrControlledByWallet)] as string[];
 };
 
-function timeout(ms, promise) {
+function timeout(ms: number, promise) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Timeout'));
@@ -89,62 +87,69 @@ function timeout(ms, promise) {
 
 export class ArNSNameEmitter extends EventEmitter {
   protected contract: AoIORead;
-  private timeoutMs = 3000; // timeout for each request to 3 seconds
+  private timeoutMs: number; // timeout for each request to 3 seconds
   constructor({
     contract = IO.init({
       processId: ioDevnetProcessId,
     }),
+    timeoutMs = 60_000,
   }: {
     contract?: AoIORead;
+    timeoutMs?: number;
   }) {
     super();
     this.contract = contract;
+    this.timeoutMs = timeoutMs;
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
     // TODO: we can add a timeout here as well
-    const uniqueContractProcessIds = await this.contract
-      .getArNSRecords()
-      .then((records) =>
-        Object.values(records)
-          .filter((record) => record.processId !== undefined)
-          .map((record) => record.processId),
-      );
-
+    const uniqueContractProcessIds = [
+      ...new Set(
+        await this.contract
+          .getArNSRecords()
+          .catch((e) => {
+            this.emit('error', `Error getting ArNS records: ${e}`);
+            return {};
+          })
+          .then((records) =>
+            Object.values(records)
+              .filter((record) => record.processId !== undefined)
+              .map((record) => record.processId),
+          ),
+      ),
+    ];
+    const idCount = uniqueContractProcessIds.length;
+    const foundIds: string[] = [];
     // check the contract owner and controllers
-    const discovered: string[] = [];
     await Promise.all(
-      uniqueContractProcessIds.map(async (processId) =>
+      uniqueContractProcessIds.map(async (processId, i) =>
         throttle(async () => {
           const ant = ANT.init({
             processId,
           });
-          const [owner, controllers = []] = await Promise.all([
-            timeout(this.timeoutMs, ant.getOwner()).catch(() => {
-              this.emit(
-                'error',
-                `Error getting owner for process ${processId}`,
-              );
-              return undefined;
-            }),
-            timeout(this.timeoutMs, ant.getControllers()).catch(() => {
-              this.emit(
-                'error',
-                `Error getting controllers for process ${processId}`,
-              );
-              return [];
-            }),
-          ]);
+          const state: AoANTState | undefined = (await timeout(
+            this.timeoutMs,
+            ant.getState(),
+          ).catch((e) => {
+            this.emit(
+              'error',
+              `Error getting state for process ${processId}: ${e}`,
+            );
+            return undefined;
+          })) as AoANTState | undefined;
+
           if (
-            owner === address ||
-            (Array.isArray(controllers) && controllers.includes(address))
+            state?.Owner === address ||
+            state?.Controllers.includes(address)
           ) {
-            this.emit('process', processId);
-            // discovered.push(processId);
+            this.emit('process', processId, state);
+            foundIds.push(processId);
           }
+          this.emit('progress', i + 1, idCount);
         }),
       ),
     );
-    this.emit('end', discovered.length);
+    this.emit('end', foundIds);
   }
 }
