@@ -514,6 +514,37 @@ export class IOReadable implements AoIORead {
       tags: prunedTags,
     });
   }
+
+  async getSortedArNSRecords({
+    page = 1,
+    pageSize = 100,
+    sortBy = 'name',
+    sortOrder = 'desc',
+  }: {
+    page?: number;
+    pageSize?: number;
+    sortBy?: keyof (AoArNSNameData & { name: string });
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<(AoArNSNameData & { name: string })[]> {
+    const alTags = [
+      { name: 'Action', value: 'Sorted-Records' },
+      { name: 'Page', value: page.toString() },
+      { name: 'Page-Size', value: pageSize.toString() },
+      { name: 'Sort-By', value: sortBy },
+      { name: 'Sort-Order', value: sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = alTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<(AoArNSNameData & { name: string })[]>({
+      tags: prunedTags,
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
