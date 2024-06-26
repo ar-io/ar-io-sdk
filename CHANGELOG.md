@@ -1,3 +1,12 @@
+# [1.2.0-alpha.16](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.15...v1.2.0-alpha.16) (2024-06-26)
+
+
+### Bug Fixes
+
+* **ant:** handle when no data is returned ([1de6610](https://github.com/ar-io/ar-io-sdk/commit/1de66101e0a4fd2b9366b95085ede218292e36f9))
+* **ao reads:** safely parse json ([1ff5410](https://github.com/ar-io/ar-io-sdk/commit/1ff54104526d1850b4f2dba0c119a33818d76f56))
+* **type:** default to unknown return type for json ([0bddce0](https://github.com/ar-io/ar-io-sdk/commit/0bddce0870c96dfbb2175a0eeb98bd86d65c1e84))
+
 # [1.2.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.14...v1.2.0-alpha.15) (2024-06-25)
 
 
