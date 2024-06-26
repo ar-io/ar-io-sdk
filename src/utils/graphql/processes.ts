@@ -49,11 +49,9 @@ export const getANTProcessesOwnedByWallet = async ({
         const ant = ANT.init({
           processId,
         });
-        const [owner, controllers = []] = await Promise.all([
-          ant.getOwner().catch(() => undefined),
-          ant.getControllers().catch(() => []),
-        ]);
-        if (owner === address || controllers.includes(address)) {
+        const { Owner, Controllers } = await ant.getState();
+
+        if (Owner === address || Controllers.includes(address)) {
           return processId;
         }
         return;
@@ -79,42 +77,45 @@ export class ArNSNameEmitter extends EventEmitter {
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
-    const uniqueContractProcessIds = await this.contract
-      .getArNSRecords()
-      .then((records) =>
-        Object.values(records)
-          .filter((record) => record.processId !== undefined)
-          .map((record) => record.processId),
-      );
+    const uniqueContractProcessIds = [
+      ...new Set(
+        await this.contract
+          .getArNSRecords()
+          .catch((e) => {
+            this.emit('error', `Error getting ArNS records: ${e}`);
+            return {};
+          })
+          .then((records) =>
+            Object.values(records)
+              .filter((record) => record.processId !== undefined)
+              .map((record) => record.processId),
+          ),
+      ),
+    ];
+    const idCount = uniqueContractProcessIds.length;
 
     // check the contract owner and controllers
     await Promise.all(
-      uniqueContractProcessIds.map(async (processId) =>
+      uniqueContractProcessIds.map(async (processId, i) =>
         throttle(async () => {
           const ant = ANT.init({
             processId,
           });
-          const [owner, controllers = []] = await Promise.all([
-            ant.getOwner().catch(() => {
-              this.emit(
-                'error',
-                `Error getting owner for process ${processId}`,
-              );
-              return undefined;
-            }),
-            ant.getControllers().catch(() => {
-              this.emit(
-                'error',
-                `Error getting controllers for process ${processId}`,
-              );
-              return [];
-            }),
-          ]);
-          if (owner === address || controllers.includes(address)) {
-            this.emit('process', processId);
+          const state = await ant.getState().catch(() => {
+            this.emit('error', `Error getting state for process ${processId}`);
+            return undefined;
+          });
+
+          if (
+            state?.Owner === address ||
+            state?.Controllers.includes(address)
+          ) {
+            this.emit('process', processId, state);
           }
+          this.emit('progress', i + 1, idCount);
         }),
       ),
     );
+    this.emit('complete');
   }
 }
