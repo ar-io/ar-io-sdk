@@ -87,4 +87,26 @@ import Arweave from 'arweave';
     },
     { depth: 2 },
   );
+
+  // fetching ants owned by a wallet using an event emitter
+  const address = 'ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo';
+  const processEmitter = new ArNSNameEmitter({ contract: arIO });
+  processEmitter.on('error', (e) => {
+    console.error(e);
+  });
+  processEmitter.on('process', (processId, antState) =>
+    console.log(
+      `Discovered process owned by wallet called "${antState.names}": `,
+      processId,
+    ),
+  );
+  processEmitter.on('end', (res) => {
+    console.log(
+      'Complete',
+      `${Object.keys(res).length} ids checked with ${antsInError} ants in error.`,
+    );
+  });
+
+  // kick off the retrieval of ants owned by a process
+  processEmitter.fetchProcessesOwnedByWallet({ address });
 })();
