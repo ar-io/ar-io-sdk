@@ -28,8 +28,6 @@ import {
   WalletAddress,
 } from '../../types.js';
 
-// throttle the requests to avoid rate limiting
-const throttle = pLimit(30);
 export const getANTProcessesOwnedByWallet = async ({
   address,
   contract = IO.init({
@@ -39,6 +37,7 @@ export const getANTProcessesOwnedByWallet = async ({
   address: WalletAddress;
   contract?: AoIORead;
 }): Promise<ProcessId[]> => {
+  const throttle = pLimit(50);
   // get the record names of the registry - TODO: this may need to be paginated
   const uniqueContractProcessIds = await contract
     .getArNSRecords()
@@ -91,21 +90,25 @@ function timeout(ms: number, promise) {
   });
 }
 
-export class ArNSNameEmitter extends EventEmitter {
+export class ArNSEventEmitter extends EventEmitter {
   protected contract: AoIORead;
   private timeoutMs: number; // timeout for each request to 3 seconds
+  private throttle;
   constructor({
     contract = IO.init({
       processId: ioDevnetProcessId,
     }),
     timeoutMs = 60_000,
+    concurrency = 30,
   }: {
     contract?: AoIORead;
     timeoutMs?: number;
+    concurrency?: number;
   }) {
     super();
     this.contract = contract;
     this.timeoutMs = timeoutMs;
+    this.throttle = pLimit(concurrency);
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
@@ -141,7 +144,7 @@ export class ArNSNameEmitter extends EventEmitter {
     this.emit('progress', 0, idCount);
     await Promise.all(
       Object.keys(uniqueContractProcessIds).map(async (processId, i) =>
-        throttle(async () => {
+        this.throttle(async () => {
           if (uniqueContractProcessIds[processId].state !== undefined) {
             this.emit('progress', i + 1, idCount);
             return;
