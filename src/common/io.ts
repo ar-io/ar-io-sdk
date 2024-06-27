@@ -196,9 +196,69 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getArNSRecords(): Promise<Record<string, AoArNSNameData>> {
-    return this.process.read<Record<string, AoArNSNameData>>({
-      tags: [{ name: 'Action', value: 'Records' }],
+  // @deprecated - use call with pagination
+  async getArNSRecords(): Promise<Record<string, AoArNSNameData>>;
+  async getArNSRecords(pageParams: {
+    page: number;
+    pageSize: number;
+    sortBy?: keyof (AoArNSNameData & { name: string });
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    records: (AoArNSNameData & { name: string })[];
+    hasNextPage: boolean;
+    totalItems: number;
+    totalPages: number;
+    sortBy: 'string';
+    sortOrder: 'asc' | 'desc';
+  }>;
+  async getArNSRecords(pageParams?: {
+    page?: number;
+    pageSize?: number;
+    sortBy?: keyof (AoArNSNameData & { name: string });
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<
+    | Record<string, AoArNSNameData>
+    | { records: (AoArNSNameData & { name: string })[] }
+  > {
+    if (!pageParams) {
+      // Deprecated call without pagination
+      return this.process.read<Record<string, AoArNSNameData>>({
+        tags: [{ name: 'Action', value: 'Records' }],
+      });
+    }
+
+    // Call with pagination
+    const {
+      page = 1,
+      pageSize = 100,
+      sortBy = 'name',
+      sortOrder = 'desc',
+    } = pageParams;
+
+    const alTags = [
+      { name: 'Action', value: 'Paginated-Records' },
+      { name: 'Page', value: page.toString() },
+      { name: 'Page-Size', value: pageSize.toString() },
+      { name: 'Sort-By', value: sortBy },
+      { name: 'Sort-Order', value: sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = alTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<{
+      records: (AoArNSNameData & { name: string })[];
+      hasNextPage: boolean;
+      totalItems: number;
+      totalPages: number;
+      sortBy: 'string';
+      sortOrder: 'asc' | 'desc';
+    }>({
+      tags: prunedTags,
     });
   }
 
@@ -470,51 +530,6 @@ export class IOReadable implements AoIORead {
     );
 
     return this.process.read<number>({
-      tags: prunedTags,
-    });
-  }
-
-  async getSortedArNSRecords({
-    page = 1,
-    pageSize = 100,
-    sortBy = 'name',
-    sortOrder = 'desc',
-  }: {
-    page?: number;
-    pageSize?: number;
-    sortBy?: keyof (AoArNSNameData & { name: string });
-    sortOrder?: 'asc' | 'desc';
-  }): Promise<{
-    records: (AoArNSNameData & { name: string })[];
-    hasNextPage: boolean;
-    totalItems: number;
-    totalPages: number;
-    sortBy: 'string';
-    sortOrder: 'asc' | 'desc';
-  }> {
-    const alTags = [
-      { name: 'Action', value: 'Sorted-Records' },
-      { name: 'Page', value: page.toString() },
-      { name: 'Page-Size', value: pageSize.toString() },
-      { name: 'Sort-By', value: sortBy },
-      { name: 'Sort-Order', value: sortOrder },
-    ];
-
-    const prunedTags: { name: string; value: string }[] = alTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
-    return this.process.read<{
-      records: (AoArNSNameData & { name: string })[];
-      hasNextPage: boolean;
-      totalItems: number;
-      totalPages: number;
-      sortBy: 'string';
-      sortOrder: 'asc' | 'desc';
-    }>({
       tags: prunedTags,
     });
   }

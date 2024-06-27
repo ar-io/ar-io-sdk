@@ -123,10 +123,11 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
+  // @deprecated - use getArNSRecord with pagination parameters
   getArNSRecords(): Promise<
     Record<string, AoArNSNameData> | Record<string, never>
   >;
-  getSortedArNSRecords({ page, pageSize, sortBy, sortOrder }): Promise<{
+  getArNSRecords({ page, pageSize, sortBy, sortOrder }): Promise<{
     records: (AoArNSNameData & { name: string })[];
     hasNextPage: boolean;
     totalItems: number;
