@@ -1,3 +1,14 @@
+# [1.2.0-alpha.17](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.16...v1.2.0-alpha.17) (2024-06-27)
+
+
+### Bug Fixes
+
+* **ant:** add event emitter util for fetching ants ([ee5287b](https://github.com/ar-io/ar-io-sdk/commit/ee5287b985aa6ef4b41f6e67ec0119dabcff3b3f))
+* **emitter:** add a `end` and some console logs in the example ([bc4e6b8](https://github.com/ar-io/ar-io-sdk/commit/bc4e6b8f3c252e3d79033e25f5de6cd8fa7f087a))
+* **emmiter:** rename and move throttle to be variable powered ([f9cf40d](https://github.com/ar-io/ar-io-sdk/commit/f9cf40d547e353005501188aa73d4f9cd3203f7b))
+* **events:** return process ids on end of fetching ([15e3f44](https://github.com/ar-io/ar-io-sdk/commit/15e3f44f20deea1c29d8d67aa4973c39e9182072))
+* **timeout:** increase timeout period on arns emitter ([b5ddb5f](https://github.com/ar-io/ar-io-sdk/commit/b5ddb5f0e79aeabeac6a5a55855436abd6cc9199))
+
 # [1.2.0-alpha.16](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.15...v1.2.0-alpha.16) (2024-06-26)
 
 
