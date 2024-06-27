@@ -29,7 +29,7 @@ import {
 } from '../../types.js';
 
 // throttle the requests to avoid rate limiting
-const throttle = pLimit(10);
+const throttle = pLimit(30);
 export const getANTProcessesOwnedByWallet = async ({
   address,
   contract = IO.init({
