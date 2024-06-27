@@ -20,10 +20,16 @@ import { pLimit } from 'plimit-lit';
 import { ANT } from '../../common/ant.js';
 import { IO } from '../../common/io.js';
 import { ioDevnetProcessId } from '../../constants.js';
-import { AoANTState, AoIORead, ProcessId, WalletAddress } from '../../types.js';
+import {
+  AoANTState,
+  AoArNSNameData,
+  AoIORead,
+  ProcessId,
+  WalletAddress,
+} from '../../types.js';
 
 // throttle the requests to avoid rate limiting
-const throttle = pLimit(50);
+const throttle = pLimit(10);
 export const getANTProcessesOwnedByWallet = async ({
   address,
   contract = IO.init({
@@ -103,28 +109,43 @@ export class ArNSNameEmitter extends EventEmitter {
   }
 
   async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
-    // TODO: we can add a timeout here as well
-    const uniqueContractProcessIds = [
-      ...new Set(
-        await this.contract
-          .getArNSRecords()
-          .catch((e) => {
-            this.emit('error', `Error getting ArNS records: ${e}`);
-            return {};
-          })
-          .then((records) =>
-            Object.values(records)
-              .filter((record) => record.processId !== undefined)
-              .map((record) => record.processId),
-          ),
-      ),
-    ];
-    const idCount = uniqueContractProcessIds.length;
-    const foundIds: string[] = [];
+    const uniqueContractProcessIds: Record<
+      string,
+      { state: AoANTState | undefined; names: Record<string, AoArNSNameData> }
+    > = {};
+
+    await timeout(
+      this.timeoutMs,
+      this.contract.getArNSRecords().catch((e) => {
+        this.emit('error', `Error getting ArNS records: ${e}`);
+        return {};
+      }),
+    ).then((records) => {
+      if (!records) return;
+      Object.entries(records).forEach(([name, record]) => {
+        if (record.processId === undefined) {
+          return;
+        }
+        if (uniqueContractProcessIds[record.processId] === undefined) {
+          uniqueContractProcessIds[record.processId] = {
+            state: undefined,
+            names: {},
+          };
+        }
+        uniqueContractProcessIds[record.processId].names[name] = record;
+      });
+    });
+
+    const idCount = Object.keys(uniqueContractProcessIds).length;
     // check the contract owner and controllers
+    this.emit('progress', 0, idCount);
     await Promise.all(
-      uniqueContractProcessIds.map(async (processId, i) =>
+      Object.keys(uniqueContractProcessIds).map(async (processId, i) =>
         throttle(async () => {
+          if (uniqueContractProcessIds[processId].state !== undefined) {
+            this.emit('progress', i + 1, idCount);
+            return;
+          }
           const ant = ANT.init({
             processId,
           });
@@ -143,13 +164,17 @@ export class ArNSNameEmitter extends EventEmitter {
             state?.Owner === address ||
             state?.Controllers.includes(address)
           ) {
-            this.emit('process', processId, state);
-            foundIds.push(processId);
+            uniqueContractProcessIds[processId].state = state;
+            this.emit(
+              'process',
+              processId,
+              uniqueContractProcessIds[processId],
+            );
           }
           this.emit('progress', i + 1, idCount);
         }),
       ),
     );
-    this.emit('end', foundIds);
+    this.emit('end', uniqueContractProcessIds);
   }
 }
