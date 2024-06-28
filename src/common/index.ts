@@ -27,3 +27,4 @@ export * from './contracts/warp-contract.js';
 export * from './io.js';
 export * from './ant-ao.js';
 export * from './contracts/ao-process.js';
+export * from './resolver-ao.js';

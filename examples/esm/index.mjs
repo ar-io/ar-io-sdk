@@ -2,6 +2,7 @@ import {
   ANT,
   ANT_LUA_ID,
   AOS_MODULE_ID,
+  ArNSResolver,
   ArweaveSigner,
   IO,
   ioDevnetProcessId,
@@ -56,6 +57,16 @@ import Arweave from 'arweave';
     { depth: 2 },
   );
 
+  const resolver = new ArNSResolver({
+    processId: 'GUZmltlen5c4KDsE9V82s8LGm-0R8ldCbk4w2pq4vSs',
+  });
+
+  const resolvedRecords = await resolver.getACL(
+    '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+  );
+
+  console.dir(resolvedRecords, { depth: 2 });
+
   // io ant
   const arweave = Arweave.init({
     host: 'arweave.net',
@@ -77,6 +88,7 @@ import Arweave from 'arweave';
   const owner = await ant.getOwner();
   const controllers = await ant.getControllers();
   const info = await ant.getInfo();
+
   console.dir(
     {
       antRecords,
