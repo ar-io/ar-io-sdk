@@ -104,6 +104,12 @@ export interface AOContract {
 
 export interface AoIORead {
   // read interactions
+  getInfo(): Promise<{
+    Ticker: string;
+    Name: string;
+    Logo: string;
+    Denomination: number;
+  }>;
   getGateway({
     address,
   }: {

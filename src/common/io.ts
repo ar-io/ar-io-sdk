@@ -109,6 +109,21 @@ export class IOReadable implements AoIORead {
     this.arweave = arweave;
   }
 
+  async getInfo(): Promise<{
+    Name: string;
+    Ticker: string;
+    Logo: string;
+    Denomination: number;
+  }> {
+    return this.process.read<{
+      Name: string;
+      Ticker: string;
+      Logo: string;
+      Denomination: number;
+    }>({
+      tags: [{ name: 'Action', value: 'Info' }],
+    });
+  }
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const allTags = [
       { name: 'Action', value: 'Epoch' },
