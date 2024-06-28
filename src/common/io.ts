@@ -128,9 +128,14 @@ export class IOReadable implements AoIORead {
     const allTags = [
       { name: 'Action', value: 'Epoch' },
       {
-        // TODO: default this to the current network time
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+        value:
+          (epoch as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
       },
       {
         name: 'Block-Height',
@@ -148,14 +153,6 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
-
-    // if it only contains the action, add default timestamp
-    if (prunedTags.length === 1) {
-      prunedTags.push({
-        name: 'Timestamp',
-        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
-      });
-    }
 
     return this.process.read<AoEpochData>({
       tags: prunedTags,
@@ -242,7 +239,14 @@ export class IOReadable implements AoIORead {
     return this.process.read<AoEpochData>({
       tags: [
         { name: 'Action', value: 'Epoch' },
-        { name: 'Timestamp', value: `${Date.now()}` },
+        {
+          name: 'Timestamp',
+          value: (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
+        },
       ],
     });
   }
@@ -254,7 +258,13 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString(),
+        value:
+          (epoch as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
       },
       {
         name: 'Block-Height',
@@ -272,14 +282,6 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
-
-    // if it only contains the action, add default timestamp
-    if (prunedTags.length === 1) {
-      prunedTags.push({
-        name: 'Timestamp',
-        value: `${Date.now()}`,
-      });
-    }
 
     return this.process.read<WeightedObserver[]>({
       tags: prunedTags,
@@ -291,7 +293,13 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'Epoch-Prescribed-Names' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString(),
+        value:
+          (epoch as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
       },
       {
         name: 'Block-Height',
@@ -309,14 +317,6 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
-
-    // if it only contains the action, add default timestamp
-    if (prunedTags.length === 1) {
-      prunedTags.push({
-        name: 'Timestamp',
-        value: `${Date.now()}`, // TODO; replace with fetch the current network time
-      });
-    }
 
     return this.process.read<string[]>({
       tags: prunedTags,
@@ -328,7 +328,13 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'Epoch-Observations' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString(),
+        value:
+          (epoch as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: `${Date.now()}` }; // fallback to current time
+            })
+          ).timestamp.toString(),
       },
       {
         name: 'Block-Height',
@@ -346,14 +352,6 @@ export class IOReadable implements AoIORead {
         value: string | undefined;
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
-
-    // if it only contains the action, add default timestamp
-    if (prunedTags.length === 1) {
-      prunedTags.push({
-        name: 'Timestamp',
-        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
-      });
-    }
 
     return this.process.read<EpochObservations>({
       tags: prunedTags,
@@ -365,7 +363,13 @@ export class IOReadable implements AoIORead {
       { name: 'Action', value: 'Epoch-Distributions' },
       {
         name: 'Timestamp',
-        value: (epoch as { timestamp?: number }).timestamp?.toString() ?? '',
+        value:
+          (epoch as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
       },
       {
         name: 'Block-Height',
@@ -384,13 +388,6 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    // if it only contains the action, add default timestamp
-    if (prunedTags.length === 1) {
-      prunedTags.push({
-        name: 'Timestamp',
-        value: (await this.arweave.blocks.getCurrent()).timestamp.toString(),
-      });
-    }
     return this.process.read<EpochDistributionData>({
       tags: prunedTags,
     });
@@ -449,7 +446,11 @@ export class IOReadable implements AoIORead {
       },
       {
         name: 'Timestamp',
-        value: `${Date.now()}`,
+        value: (
+          await this.arweave.blocks.getCurrent().catch(() => {
+            return { timestamp: Date.now() }; // fallback to current time
+          })
+        ).timestamp.toString(),
       },
     ];
 
