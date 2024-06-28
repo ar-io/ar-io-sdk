@@ -1,3 +1,10 @@
+# [1.2.0-alpha.19](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.18...v1.2.0-alpha.19) (2024-06-28)
+
+
+### Bug Fixes
+
+* **epochs:** fix epoch default timestamp ([ffb9df7](https://github.com/ar-io/ar-io-sdk/commit/ffb9df7acafd5378073537fe1f71835663e00231))
+
 # [1.2.0-alpha.18](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.17...v1.2.0-alpha.18) (2024-06-28)
 
 
