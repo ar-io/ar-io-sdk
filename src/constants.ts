@@ -31,10 +31,13 @@ export const ARNS_TESTNET_REGISTRY_TX =
 export const ARNS_DEVNET_REGISTRY_TX =
   '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
 
-export const ioDevnetProcessId = 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
-
+export const IO_DEVNET_PROCESS_ID =
+  'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
+// backwards compatibility - TODO: remove in v2.0.0
+export const ioDevnetProcessId = IO_DEVNET_PROCESS_ID;
+export const IO_TESTNET_PROCESS_ID =
+  'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
 export const MIO_PER_IO = 1_000_000;
-
 export const AOS_MODULE_ID = 'cbn0KKrBZH7hdNkNokuXLtGryrWM--PjSTBqIzw9Kkk';
 export const ANT_LUA_ID = '3OlGzE5mrsN2GsxCYM0Tae1KzWepGOr5a94deOWmApM';
 export const DEFAULT_SCHEDULER_ID =

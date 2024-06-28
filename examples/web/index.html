@@ -23,17 +23,22 @@
     </script>
 
     <script type="module" defer>
-      import { ArIO } from 'https://unpkg.com/@ar.io/sdk@1.0.6/bundles/web.bundle.min.js';
+      import {
+        IO,
+        mIOToken,
+      } from 'https://unpkg.com/@ar.io/sdk@1.2.0-alpha.17/bundles/web.bundle.min.js';
 
-      const arIO = ArIO.init();
+      const arIO = IO.init();
 
       // fetch data on page load
       async function init() {
         const gateways = await arIO.getGateways();
-        const balance = await arIO.getBalance({
-          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-        });
-        const record = await arIO.getArNSRecord({ domain: 'ardrive' });
+        const balance = await arIO
+          .getBalance({
+            address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+          })
+          .then((mIO) => new mIOToken(mIO).toIO());
+        const record = await arIO.getArNSRecord({ name: 'ardrive' });
         const records = await arIO.getArNSRecords();
         const observations = await arIO.getObservations();
         const distributions = await arIO.getDistributions();

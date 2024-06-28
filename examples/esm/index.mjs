@@ -11,40 +11,44 @@ import Arweave from 'arweave';
 
 (async () => {
   const arIO = IO.init({
-    processId: ioDevnetProcessId,
+    processId: 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc',
   });
   // devnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
     address: ioDevnetProcessId,
   });
+  const contractInfo = await arIO.getInfo();
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
   const allRecords = await arIO.getArNSRecords();
   const epoch = await arIO.getCurrentEpoch();
+  const currentObservations = await arIO.getObservations();
   const observations = await arIO.getObservations({ epochIndex: 19879 });
   const distributions = await arIO.getDistributions({ epochIndex: 19879 });
   const buyRecordCost = await arIO.getTokenCost({
-    intent: 'BuyRecord',
+    intent: 'Buy-Record',
     purchaseType: 'lease',
     name: 'adriaaaaan',
     years: 1,
   });
   const extendLeaseCost = await arIO.getTokenCost({
-    intent: 'ExtendLease',
+    intent: 'Extend-Lease',
     name: 'ardrive',
     years: 1,
   });
   const increaseUndernameCost = await arIO.getTokenCost({
-    intent: 'IncreaseUndernameLimit',
+    intent: 'Increase-Undername-Limit',
     name: 'vilenario',
     quantity: 1,
   });
 
   console.dir(
     {
+      contractInfo,
       testnetGateways,
       ardriveRecord,
       epoch,
+      currentObservations,
       observations,
       distributions,
       protocolBalance,
