@@ -25,6 +25,7 @@
     <script type="module" defer>
       import {
         IO,
+        ioDevnetProcessId,
         mIOToken,
       } from 'https://unpkg.com/@ar.io/sdk@1.2.0-alpha.17/bundles/web.bundle.min.js';
 
@@ -35,7 +36,7 @@
         const gateways = await arIO.getGateways();
         const balance = await arIO
           .getBalance({
-            address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            address: ioDevnetProcessId,
           })
           .then((mIO) => new mIOToken(mIO).toIO());
         const record = await arIO.getArNSRecord({ name: 'ardrive' });

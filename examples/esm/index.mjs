@@ -1,7 +1,5 @@
 import {
   ANT,
-  ANT_LUA_ID,
-  AOS_MODULE_ID,
   ArweaveSigner,
   IO,
   ioDevnetProcessId,
@@ -11,7 +9,7 @@ import Arweave from 'arweave';
 
 (async () => {
   const arIO = IO.init({
-    processId: 'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc',
+    processId: ioDevnetProcessId,
   });
   // devnet gateways
   const testnetGateways = await arIO.getGateways();
