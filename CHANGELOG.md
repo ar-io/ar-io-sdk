@@ -1,3 +1,10 @@
+# [1.2.0-alpha.18](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.17...v1.2.0-alpha.18) (2024-06-28)
+
+
+### Features
+
+* **getInfo io:** add getInfo method to io class ([4ef25ec](https://github.com/ar-io/ar-io-sdk/commit/4ef25ec37f60a5155e68047f2cffa2c49ecaa093))
+
 # [1.2.0-alpha.17](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.16...v1.2.0-alpha.17) (2024-06-27)
 
 
