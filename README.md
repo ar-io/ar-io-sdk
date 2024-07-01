@@ -19,17 +19,18 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
   - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
-    - [`getBalance({ address, evaluationOptions })`](#getbalance-address-evaluationoptions-)
-    - [`getBalances()`](#getbalances-evaluationoptions-)
-    - [`getGateway({ address, evaluationOptions })`](#getgateway-address-evaluationoptions-)
-    - [`getGateways()`](#getgateways-evaluationoptions-)
-    - [`getArNSRecord({ domain, evaluationOptions })`](#getarnsrecord-domain-evaluationoptions-)
-    - [`getArNSRecords()`](#getarnsrecords-evaluationoptions-)
-    - [`getObservations()`](#getobservations-evaluationoptions-)
-    - [`getDistributions()`](#getdistributions-evaluationoptions-)
-    - [`getEpoch()`](#getepoch-evaluationoptions-)
-    - [`getCurrentEpoch()`](#getcurrentepoch-evaluationoptions-)
-    - [`getPrescribedObservers()`](#getprescribedobservers-evaluationoptions-)
+    - [`getInfo()`](#getinfo)
+    - [`getBalance({ address })`](#getbalance-address-)
+    - [`getBalances()`](#getbalances)
+    - [`getGateway({ address })`](#getgateway-address-)
+    - [`getGateways()`](#getgateways)
+    - [`getArNSRecord({ name })`](#getarnsrecord-name-)
+    - [`getArNSRecords()`](#getarnsrecords)
+    - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
+    - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
+    - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
+    - [`getCurrentEpoch()`](#getcurrentepoch)
+    - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
@@ -42,15 +43,16 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
-    - [`init({ signer })`](#init-signer-)
-    - [`getOwner()`](#getowner-evaluationoptions-)
-    - [`getControllers()`](#getcontrollers-evaluationoptions-)
-    - [`getRecords()`](#getrecords-evaluationoptions-)
+    - [`init({ signer: new ArweaveSigner(jwk) })`](#init-signer-)
+    - [`getInfo()`](#getinfo)
+    - [`getOwner()`](#getowner)
+    - [`getControllers()`](#getcontrollers)
+    - [`getRecords()`](#getrecords)
     - [`transfer({ target })`](#transfer-target-)
     - [`setController({ controller })`](#setcontroller-controller-)
     - [`removeController({ controller })`](#removecontroller-controller-)
-    - [`setRecord({ subDomain, transactionId, ttlSeconds })`](#setrecord-subdomain-transactionid-ttlseconds-)
-    - [`removeRecord({ subDomain })`](#removerecord-subdomain-)
+    - [`setRecord({ undername, transactionId, ttlSeconds })`](#setrecord-undername-transactionid-ttlseconds-)
+    - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
   - [Configuration](#configuration)
@@ -235,7 +237,30 @@ const ioWriteable = IO.init({ signer: nodeSigner});
 
 ```
 
-#### `getBalance({ address, evaluationOptions })`
+#### `getInfo()`
+
+Retrieves the information of the ArIO process.
+
+```typescript
+const io = IO.init();
+const info = await io.getInfo();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "name": "Testnet IO",
+  "ticker": "tIO",
+  "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "denomination": "IO"
+}
+```
+
+</details>
+
+#### `getBalance({ address })`
 
 Retrieves the balance of the specified wallet address.
 
@@ -289,7 +314,7 @@ const balances = await io.getBalances();
 
 </details>
 
-#### `getGateway({ address, evaluationOptions })`
+#### `getGateway({ address })`
 
 Retrieves a gateway's info by its staking wallet address.
 
@@ -674,9 +699,8 @@ const joinNetworkParams = {
   port: 443, // port number
   protocol: 'https', // only 'https' is supported
 };
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
+
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.joinNetwork(
   joinNetworkParams,
   // optional additional tags
@@ -693,9 +717,7 @@ const updateGatewaySettingsParams = {
   minDelegatedStake: new IOToken(100).toMIO(),
 };
 
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.updateGatewaySettings(
   updateGatewaySettingsParams,
   // optional additional tags
@@ -713,9 +735,7 @@ const params = {
   qty: new IOToken(100).toMIO(),
 };
 
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.increaseDelegateStake(
   params,
   // optional additional tags
@@ -728,15 +748,14 @@ const { id: txId } = await io.increaseDelegateStake(
 Decreases the callers stake on the target gateway. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const params = {
+
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseDelegateStake({
+  {
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   qty: new IOToken(100).toMIO(),
 };
-
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
-const { id: txId } = await io.decreaseDelegateStake(params, {
+}, {
   tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
 });
 ```
@@ -746,16 +765,15 @@ const { id: txId } = await io.decreaseDelegateStake(params, {
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const params = {
-  qty: new IOToken(100).toMIO(),
-};
-
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
-const { id: txId } = await io.increaseOperatorStake(params, {
-  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-});
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.increaseOperatorStake(
+  {
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
 ```
 
 #### `decreaseOperatorStake({ qty })`
@@ -763,16 +781,15 @@ const { id: txId } = await io.increaseOperatorStake(params, {
 Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const params = {
-  qty: new IOToken(100).toMIO(),
-};
-
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
-const { id: txId } = await io.decreaseOperatorStake(params, {
-  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-});
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseOperatorStake(
+  {
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
 ```
 
 #### `saveObservations({ reportTxId, failedGateways })`
@@ -780,17 +797,16 @@ const { id: txId } = await io.decreaseOperatorStake(params, {
 Saves the observations of the current epoch. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const params = {
-  reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
-};
-
-const signer = new ArweaveSigner(jwk);
-// signer required for write interactions APIs
-const io = IO.init({ signer });
-const { id: txId } = await io.saveObservations(params, {
-  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-});
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.saveObservations(
+  {
+    reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+    failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
 ```
 
 #### `transfer({ target, qty, denomination })`
@@ -798,8 +814,7 @@ const { id: txId } = await io.saveObservations(params, {
 Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as `IO`, to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-// signer required for write interactions APIs
-const io = IO.init({ signer });
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.transfer(
   {
     target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
@@ -816,7 +831,7 @@ const { id: txId } = await io.transfer(
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
 
 ```typescript
-const io = IO.init({ signer });
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.increaseUndernameLimit(
   {
     name: 'ar-io',
@@ -832,7 +847,7 @@ const { id: txId } = await io.increaseUndernameLimit(
 Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
 
 ```typescript
-const io = IO.init({ signer });
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.extendLease(
   {
     name: 'ar-io',
@@ -860,7 +875,7 @@ The ANT client class exposes APIs relevant to compliant Arweave Name Token proce
 
 ### APIs
 
-#### `init({ signer })`
+#### `init({ signer: new ArweaveSigner(jwk) })`
 
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
@@ -886,13 +901,38 @@ const ant = ANT.init({
 
 ```
 
+#### `getInfo()`
+
+Retrieves the information of the ANT process.
+
+```typescript
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
+const info = await ant.getInfo();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "name": "Ardrive",
+  "ticker": "ANT-ARDRIVE",
+  "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
+}
+```
+
+</details>
+
 #### `getOwner()`
 
 Returns the owner of the configured ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const owner = await ant.getOwner();
 ```
 
@@ -910,8 +950,9 @@ const owner = await ant.getOwner();
 Returns the controllers of the configured ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const controllers = await ant.getControllers();
 ```
 
@@ -929,8 +970,9 @@ const controllers = await ant.getControllers();
 Returns all records on the configured ANT process, including the required `@` record that resolve connected ArNS names.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const records = await ant.getRecords();
 ```
 
@@ -977,8 +1019,9 @@ const records = await ant.getRecords();
 Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const recipient = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.transfer(
   { target: recipient },
@@ -992,8 +1035,9 @@ const { id: txId } = await ant.transfer(
 Adds a new controller to the list of approved controllers on the ANT. Controllers can set records and change the ticker and name of the ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.setController(
   { controller },
@@ -1007,8 +1051,9 @@ const { id: txId } = await ant.setController(
 Removes a controller from the list of approved controllers on the ANT.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.removeController(
   { controller },
@@ -1024,8 +1069,9 @@ Updates or creates a record in the ANT process.
 > Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const undername = '@'; // the root record
 const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ttlSeconds = 900;
@@ -1045,8 +1091,9 @@ const { id: txId } = await ant.setRecord(
 Removes a record from the ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const undername = 'test-domain';
 const { id: txId } = await ant.removeRecord(
   { undername },
@@ -1060,8 +1107,9 @@ const { id: txId } = await ant.removeRecord(
 Sets the name of the ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const name = 'chumbawumba';
 const { id: txId } = await ant.setName(
   { name },
@@ -1075,8 +1123,9 @@ const { id: txId } = await ant.setName(
 Sets the ticker of the ANT process.
 
 ```typescript
-const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ant = ANT.init({ processId });
+const ant = ANT.init({
+  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+});
 const ticker = 'ANT-WUMBA';
 const { id: txId } = await ant.setTicker(
   { ticker },
@@ -1086,12 +1135,20 @@ const { id: txId } = await ant.setTicker(
 
 ### Configuration
 
-ANT clients can be configured to use custom process evaluator. By default they will use the AO Testnet located at ao-testnet.xyz
+ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the client.
 
 ```typescript
-// provide a processId to the client and default to remote evaluation
-const remoteANT = ANT.init({
-  processId: 'ANT_PROCESS_ID',
+
+const ant = ANT.init({
+  process: new AoProcess({
+    processId: 'ANT_PROCESS_ID'
+    ao: connect({
+      MU_URL: 'https://mu-testnet.xyz',
+      CU_URL: 'https://cu-testnet.xyz',
+      GRAPHQL_URL: 'https://arweave.net/graphql',
+      GATEWAY_URL: 'https://arweave.net',
+    })
+  })
 });
 ```
 
@@ -1140,3 +1197,4 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples/webpack]: ./examples/webpack
 [examples/vite]: ./examples/vite
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
+[AO Connect]: https://github.com/permaweb/ao/tree/main/connect
