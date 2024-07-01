@@ -483,7 +483,7 @@ const observations = await io.getObservations();
 
 #### `getDistributions({ epochIndex })`
 
-Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
+Returns the current rewards distribution information.
 
 ```typescript
 const io = IO.init();
@@ -619,7 +619,7 @@ const epoch = await io.getCurrentEpoch();
 
 #### `getPrescribedObservers({ epochIndex })`
 
-Retrieves the prescribed observers of the IO process. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
+Retrieves the prescribed observers of the IO process. To fetch prescribed observers for a previous epoch set the `epochIndex` to the desired epoch index.
 
 ```typescript
 const io = IO.init();
@@ -650,7 +650,7 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 
 #### `getTokenCost({ intent, ...args })`
 
-Calculates the price in mIO to perform the interaction in question, eg a 'buyRecord' interaction, where payload is the specific params for that interaction.
+Calculates the price in mIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
 
 ```typescript
 const price = await io
@@ -675,7 +675,9 @@ console.log({ price: price.valueOf() });
 
 #### `joinNetwork(params)`
 
-Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Joins a gateway to the ar.io network via its associated wallet.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
@@ -701,7 +703,9 @@ const { id: txId } = await io.joinNetwork(
 
 #### `updateGatewaySettings(gatewaySettings)`
 
-Writes new gateway settings to the callers gateway configuration. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Writes new gateway settings to the callers gateway configuration.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
@@ -717,7 +721,9 @@ const { id: txId } = await io.updateGatewaySettings(
 
 #### `increaseDelegateStake({ target, qty })`
 
-Increases the callers stake on the target gateway. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Increases the callers stake on the target gateway.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const params = {
@@ -735,7 +741,9 @@ const { id: txId } = await io.increaseDelegateStake(
 
 #### `decreaseDelegateStake({ target, qty })`
 
-Decreases the callers stake on the target gateway. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Decreases the callers stake on the target gateway.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 
@@ -752,7 +760,9 @@ const { id: txId } = await io.decreaseDelegateStake({
 
 #### `increaseOperatorStake({ qty })`
 
-Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
@@ -770,6 +780,8 @@ const { id: txId } = await io.increaseOperatorStake(
 
 Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.decreaseOperatorStake(
@@ -785,6 +797,8 @@ const { id: txId } = await io.decreaseOperatorStake(
 #### `saveObservations({ reportTxId, failedGateways })`
 
 Saves the observations of the current epoch. Requires `signer` to be provided on `IO.init` to sign the transaction.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
@@ -803,6 +817,8 @@ const { id: txId } = await io.saveObservations(
 
 Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as `IO`, to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.transfer(
@@ -819,6 +835,8 @@ const { id: txId } = await io.transfer(
 #### `increaseUndernameLimit({ name, qty })`
 
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
@@ -850,7 +868,7 @@ const { id: txId } = await io.extendLease(
 
 ### Configuration
 
-The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the spec of the ar.io process. In the default case, it will automatically build and utilize a process data provider interface that is configured to point the the known ar.io mainnet process ID at construction time. You can provide custom process data provider or, alternatively, a `processId` to the IO constructor to use a different, ar.io-spec-compatible process.
+The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO testnet process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
 
 ```typescript
 // provide a custom ao infrastructure and process id
@@ -897,9 +915,6 @@ const ant = ANT.init({
 Retrieves the information of the ANT process.
 
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const info = await ant.getInfo();
 ```
 
@@ -921,9 +936,6 @@ const info = await ant.getInfo();
 Returns the owner of the configured ANT process.
 
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const owner = await ant.getOwner();
 ```
 
@@ -941,9 +953,6 @@ const owner = await ant.getOwner();
 Returns the controllers of the configured ANT process.
 
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const controllers = await ant.getControllers();
 ```
 
@@ -961,9 +970,6 @@ const controllers = await ant.getControllers();
 Returns all records on the configured ANT process, including the required `@` record that resolve connected ArNS names.
 
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const records = await ant.getRecords();
 ```
 
@@ -1009,10 +1015,9 @@ const records = await ant.getRecords();
 
 Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.transfer(
   { target: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
@@ -1024,10 +1029,9 @@ const { id: txId } = await ant.transfer(
 
 Adds a new controller to the list of approved controllers on the ANT. Controllers can set records and change the ticker and name of the ANT process.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.setController(
   { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
@@ -1039,13 +1043,11 @@ const { id: txId } = await ant.setController(
 
 Removes a controller from the list of approved controllers on the ANT.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
-const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.removeController(
-  { controller },
+  { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1055,12 +1057,11 @@ const { id: txId } = await ant.removeController(
 
 Updates or creates a record in the ANT process.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 > Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
 
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.setRecord(
   {
     undername: '@',
@@ -1076,10 +1077,9 @@ const { id: txId } = await ant.setRecord(
 
 Removes a record from the ANT process.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.removeRecord(
   { undername: 'remove-domemain' },
   // optional additional tags
@@ -1091,10 +1091,9 @@ const { id: txId } = await ant.removeRecord(
 
 Sets the name of the ANT process.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.setName(
   { name: 'My ANT' },
   // optional additional tags
@@ -1106,10 +1105,9 @@ const { id: txId } = await ant.setName(
 
 Sets the ticker of the ANT process.
 
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
 ```typescript
-const ant = ANT.init({
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-});
 const { id: txId } = await ant.setTicker(
   { ticker: 'ANT-NEW-TICKER' },
   // optional tags
@@ -1119,7 +1117,7 @@ const { id: txId } = await ant.setTicker(
 
 ### Configuration
 
-ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the client.
+ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
 
 ```typescript
 
@@ -1182,3 +1180,5 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples/vite]: ./examples/vite
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
 [AO Connect]: https://github.com/permaweb/ao/tree/main/connect
+[IO testnet process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
+[IO Network spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
