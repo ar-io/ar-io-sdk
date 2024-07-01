@@ -20,16 +20,16 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getBalance({ address, evaluationOptions })`](#getbalance-address-evaluationoptions-)
-    - [`getBalances({ evaluationOptions })`](#getbalances-evaluationoptions-)
+    - [`getBalances()`](#getbalances-evaluationoptions-)
     - [`getGateway({ address, evaluationOptions })`](#getgateway-address-evaluationoptions-)
-    - [`getGateways({ evaluationOptions })`](#getgateways-evaluationoptions-)
+    - [`getGateways()`](#getgateways-evaluationoptions-)
     - [`getArNSRecord({ domain, evaluationOptions })`](#getarnsrecord-domain-evaluationoptions-)
-    - [`getArNSRecords({ evaluationOptions })`](#getarnsrecords-evaluationoptions-)
-    - [`getObservations({ evaluationOptions })`](#getobservations-evaluationoptions-)
-    - [`getDistributions({ evaluationOptions })`](#getdistributions-evaluationoptions-)
-    - [`getEpoch({ evaluationOptions })`](#getepoch-evaluationoptions-)
-    - [`getCurrentEpoch({ evaluationOptions })`](#getcurrentepoch-evaluationoptions-)
-    - [`getPrescribedObservers({ evaluationOptions })`](#getprescribedobservers-evaluationoptions-)
+    - [`getArNSRecords()`](#getarnsrecords-evaluationoptions-)
+    - [`getObservations()`](#getobservations-evaluationoptions-)
+    - [`getDistributions()`](#getdistributions-evaluationoptions-)
+    - [`getEpoch()`](#getepoch-evaluationoptions-)
+    - [`getCurrentEpoch()`](#getcurrentepoch-evaluationoptions-)
+    - [`getPrescribedObservers()`](#getprescribedobservers-evaluationoptions-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
@@ -43,9 +43,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
     - [`init({ signer })`](#init-signer-)
-    - [`getOwner({ evaluationOptions })`](#getowner-evaluationoptions-)
-    - [`getControllers({ evaluationOptions })`](#getcontrollers-evaluationoptions-)
-    - [`getRecords({ evaluationOptions })`](#getrecords-evaluationoptions-)
+    - [`getOwner()`](#getowner-evaluationoptions-)
+    - [`getControllers()`](#getcontrollers-evaluationoptions-)
+    - [`getRecords()`](#getrecords-evaluationoptions-)
     - [`transfer({ target })`](#transfer-target-)
     - [`setController({ controller })`](#setcontroller-controller-)
     - [`removeController({ controller })`](#removecontroller-controller-)
@@ -83,8 +83,8 @@ yarn add @ar.io/sdk
 ```typescript
 import { IO } from '@ar.io/sdk';
 
-const arIO = IO.init();
-const gateways = await arIO.getGateways();
+const io = IO.init();
+const gateways = await io.getGateways();
 ```
 
 <details>
@@ -140,9 +140,9 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 import { IO } from '@ar.io/sdk';
 
 // set up client
-const arIO = IO.init();
+const io = IO.init();
 // fetch gateways
-const gateways = await arIO.getGateways();
+const gateways = await io.getGateways();
 ```
 
 > _**Note**: polyfills are only provided when using the named `@ar.io/sdk/web` export (which requires `moduleResolution: nodenext` in `tsconfig.json`). If you are using the default export within a Typescript project (e.g. `moduleResolution: node`), you will need to provide your own polyfills - specifically `crypto`, `fs` and `buffer`. Refer to [examples/webpack] and [examples/vite] for references in how to properly provide those polyfills. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills._
@@ -154,9 +154,9 @@ const gateways = await arIO.getGateways();
   import { IO } from 'https://unpkg.com/@ar.io/sdk';
 
   // set up client
-  const arIO = IO.init();
+  const io = IO.init();
   // fetch gateways
-  const gateways = await arIO.getGateways();
+  const gateways = await io.getGateways();
 </script>
 ```
 
@@ -168,9 +168,9 @@ const gateways = await arIO.getGateways();
 import { IO } from '@ar.io/sdk/node';
 
 // set up client
-const arIO = IO.init();
+const io = IO.init();
 // fetch gateways
-const gateways = await arIO.getGateways();
+const gateways = await io.getGateways();
 ```
 
 #### CJS
@@ -179,9 +179,9 @@ const gateways = await arIO.getGateways();
 import { IO } from '@ar.io/sdk';
 
 // set up client
-const arIO = IO.init();
+const io = IO.init();
 // fetch gateways
-const gateways = await arIO.getGateways();
+const gateways = await io.getGateways();
 ```
 
 ### Typescript
@@ -218,7 +218,7 @@ Factory function to that creates a read-only or writeable client. By providing a
 
 ```typescript
 // read-only client that has access to all read APIs
-const arIOReadable = IO.init()
+const ioReadable = IO.init()
 
 const arweave = Arweave.init({
   host: 'ar-io.dev',
@@ -227,11 +227,11 @@ const arweave = Arweave.init({
 })
 // for browser environments
 const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
-const arIOWriteable = IO.init({ signer: browserSigner});
+const ioWriteable = IO.init({ signer: browserSigner});
 
 // for node environments
 const nodeSigner = new ArweaveSigner(JWK);
-const arIOWriteable = IO.init({ signer: nodeSigner});
+const ioWriteable = IO.init({ signer: nodeSigner});
 
 ```
 
@@ -240,9 +240,9 @@ const arIOWriteable = IO.init({ signer: nodeSigner});
 Retrieves the balance of the specified wallet address.
 
 ```typescript
-const arIO = IO.init();
+const io = IO.init();
 // the balance will be returned in mIO as a value
-const balance = await arIO
+const balance = await io
   .getBalance({
     address: 'INSERT_WALLET_ADDRESS',
   })
@@ -261,19 +261,19 @@ console.log(balance.valueOf());
 
 </details>
 
-#### `getBalances({ evaluationOptions })`
+#### `getBalances()`
 
 Retrieves the balances of the ArIO process in `mIO`
 
 <!--
 // ALM - A part of me wonders whether streaming JSON might be beneficial in the future
 // and if providing streaming versions of these APIs will scale nicely longer term, e.g.
-// arIO.streamBalances({ sortingCriteria: BALANCE_DESC });
+// io.streamBalances({ sortingCriteria: BALANCE_DESC });
  -->
 
 ```typescript
-const arIO = IO.init();
-const balances = await arIO.getBalances();
+const io = IO.init();
+const balances = await io.getBalances();
 ```
 
 <details>
@@ -294,8 +294,8 @@ const balances = await arIO.getBalances();
 Retrieves a gateway's info by its staking wallet address.
 
 ```typescript
-const arIO = IO.init();
-const gateway = await arIO.getGateway({
+const io = IO.init();
+const gateway = await io.getGateway({
   address: 'INSERT_GATEWAY_ADDRESS',
 });
 ```
@@ -325,27 +325,19 @@ const gateway = await arIO.getGateway({
     "totalEpochsPrescribedCount": 31
   },
   "status": "joined",
-  "vaults": {},
-  "weights": {
-    "stakeWeight": 25,
-    "tenureWeight": 0.9031327160493827,
-    "gatewayRewardRatioWeight": 0.96875,
-    "observerRewardRatioWeight": 0.96875,
-    "compositeWeight": 21.189222170982834,
-    "normalizedCompositeWeight": 0.27485583057217183
-  }
+  "vaults": {}
 }
 ```
 
 </details>
 
-#### `getGateways({ evaluationOptions })`
+#### `getGateways()`
 
 Retrieves the registered gateways of the ArIO process.
 
 ```typescript
-const arIO = IO.init();
-const gateways = await arIO.getGateways();
+const io = IO.init();
+const gateways = await io.getGateways();
 ```
 
 <details>
@@ -374,28 +366,20 @@ const gateways = await arIO.getGateways();
       "totalEpochsPrescribedCount": 31
     },
     "status": "joined",
-    "vaults": {},
-    "weights": {
-      "stakeWeight": 25,
-      "tenureWeight": 0.9031327160493827,
-      "gatewayRewardRatioWeight": 0.96875,
-      "observerRewardRatioWeight": 0.96875,
-      "compositeWeight": 21.189222170982834,
-      "normalizedCompositeWeight": 0.27485583057217183
-    }
+    "vaults": {}
   }
 }
 ```
 
 </details>
 
-#### `getArNSRecord({ domain, evaluationOptions })`
+#### `getArNSRecord({ name })`
 
 Retrieves the record info of the specified ArNS name.
 
 ```typescript
-const arIO = IO.init();
-const record = await arIO.getArNSRecord({ domain: 'ardrive' });
+const io = IO.init();
+const record = await io.getArNSRecord({ name: 'ardrive' });
 ```
 
 <details>
@@ -413,13 +397,13 @@ const record = await arIO.getArNSRecord({ domain: 'ardrive' });
 
 </details>
 
-#### `getArNSRecords({ evaluationOptions })`
+#### `getArNSRecords()`
 
 Retrieves all registered ArNS records of the ArIO process.
 
 ```typescript
-const arIO = IO.init();
-const records = await arIO.getArNSRecords();
+const io = IO.init();
+const records = await io.getArNSRecords();
 ```
 
 <details>
@@ -446,13 +430,13 @@ const records = await arIO.getArNSRecords();
 
 </details>
 
-#### `getObservations({ evaluationOptions })`
+#### `getObservations({ epochIndex })`
 
 Returns the epoch-indexed observation list.
 
 ```typescript
-const arIO = IO.init();
-const observations = await arIO.getObservations();
+const io = IO.init();
+const observations = await io.getObservations();
 ```
 
 <details>
@@ -460,7 +444,7 @@ const observations = await arIO.getObservations();
 
 ```json
 {
-  "1350700": {
+  "0": {
     "failureSummaries": {
       "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
         "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA",
@@ -479,13 +463,13 @@ const observations = await arIO.getObservations();
 
 </details>
 
-#### `getDistributions({ evaluationOptions })`
+#### `getDistributions({ epochIndex })`
 
 Returns the current rewards distribution information. The resulting object is pruned, to get older distributions use the `evaluationOptions` to `evalTo` a previous state.
 
 ```typescript
-const arIO = IO.init();
-const distributions = await arIO.getDistributions();
+const io = IO.init();
+const distributions = await io.getDistributions();
 ```
 
 <details>
@@ -503,13 +487,13 @@ const distributions = await arIO.getDistributions();
 
 </details>
 
-#### `getEpoch({ evaluationOptions })`
+#### `getEpoch({ epochIndex })`
 
 Returns the epoch data for the specified block height.
 
 ```typescript
-const arIO = IO.init();
-const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
+const io = IO.init();
+const epoch = await io.getEpoch({ epochIndex: 0 });
 ```
 
 <details>
@@ -517,24 +501,55 @@ const epoch = await arIO.getEpoch({ blockHeight: 1382230 });
 
 ```json
 {
-  "epochStartHeight": 1381660,
-  "epochEndHeight": 1382379,
-  "epochZeroStartHeight": 1350700,
-  "epochDistributionHeight": 1382394,
-  "epochPeriod": 43,
-  "epochBlockLength": 720
+  "epochIndex": 0,
+  "startTimestamp": 1694101828,
+  "endTimestamp": 1711122739,
+  "startHeight": 1350700,
+  "distributionTimestamp": 1711122739,
+  "observations": {
+    "failureSummaries": {
+      "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
+      ]
+    },
+    "reports": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4"
+    }
+  },
+  "prescribedNames": ["ardrive", "ar-io", "arweave", "fwd", "ao"],
+  "prescribedObservers": [
+    {
+      "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "stake": 10000000000, // value in mIO
+      "start": 1292450,
+      "stakeWeight": 1,
+      "tenureWeight": 0.4494598765432099,
+      "gatewayRewardRatioWeight": 1,
+      "observerRewardRatioWeight": 1,
+      "compositeWeight": 0.4494598765432099,
+      "normalizedCompositeWeight": 0.002057032496835938
+    }
+  ],
+  "distributions": {
+    "distributedTimestamp": 1711122739,
+    "totalEligibleRewards": 100000000,
+    "rewards": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    }
+  }
 }
 ```
 
 </details>
 
-#### `getCurrentEpoch({ evaluationOptions })`
+#### `getCurrentEpoch()`
 
 Returns the current epoch data.
 
 ```typescript
-const arIO = IO.init();
-const epoch = await arIO.getCurrentEpoch();
+const io = IO.init();
+const epoch = await io.getCurrentEpoch();
 ```
 
 <details>
@@ -542,23 +557,55 @@ const epoch = await arIO.getCurrentEpoch();
 
 ```json
 {
-  "epochEndHeight": 1382379,
-  "epochPeriod": 43,
-  "epochStartHeight": 1381660,
-  "epochZeroStartHeight": 1350700,
-  "nextDistributionHeight": 1382394
+  "epochIndex": 0,
+  "startTimestamp": 1694101828,
+  "endTimestamp": 1711122739,
+  "startHeight": 1350700,
+  "distributionTimestamp": 1711122739,
+  "observations": {
+    "failureSummaries": {
+      "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
+      ]
+    },
+    "reports": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4"
+    }
+  },
+  "prescribedNames": ["ardrive", "ar-io", "arweave", "fwd", "ao"],
+  "prescribedObservers": [
+    {
+      "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "stake": 10000000000, // value in mIO
+      "start": 1292450,
+      "stakeWeight": 1,
+      "tenureWeight": 0.4494598765432099,
+      "gatewayRewardRatioWeight": 1,
+      "observerRewardRatioWeight": 1,
+      "compositeWeight": 0.4494598765432099,
+      "normalizedCompositeWeight": 0.002057032496835938
+    }
+  ],
+  "distributions": {
+    "distributedTimestamp": 1711122739,
+    "totalEligibleRewards": 100000000,
+    "rewards": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    }
+  }
 }
 ```
 
 </details>
 
-#### `getPrescribedObservers({ evaluationOptions })`
+#### `getPrescribedObservers({ epochIndex })`
 
 Retrieves the prescribed observers of the ArIO process. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
 
 ```typescript
-const arIO = IO.init();
-const observers = await arIO.getPrescribedObservers();
+const io = IO.init();
+const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 ```
 
 <details>
@@ -583,48 +630,16 @@ const observers = await arIO.getPrescribedObservers();
 
 </details>
 
-Fetch the prescribed observers for a previous epoch by setting the `evaluationOptions` to the desired epoch.
-
-```typescript
-// observers from a previous epoch
-const previousEpochObservers = await arIO.getPrescribedObservers({
-  evaluationOptions: {
-    evalTo: { blockHeight: 1296975 }, // some block height from a previous epoch
-  },
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-[
-  {
-    "gatewayAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-    "observerAddress": "2Ic0ZIpt85tjiVRaD_qoTSo9jgT7w0rbf4puSTRidcU",
-    "stake": 10000000000, // vault in mIO
-    "start": 1292450,
-    "stakeWeight": 1,
-    "tenureWeight": 0.4494598765432099,
-    "gatewayRewardRatioWeight": 1,
-    "observerRewardRatioWeight": 1,
-    "compositeWeight": 0.4494598765432099,
-    "normalizedCompositeWeight": 0.002057032496835938
-  }
-]
-```
-
-</details>
-
-#### `getPriceForInteraction({ interactionName, payload })`
+#### `getTokenCost({ intent, ...args })`
 
 Calculates the price in mIO to perform the interaction in question, eg a 'buyRecord' interaction, where payload is the specific params for that interaction.
 
 ```typescript
-const price = await arIO
-  .getPriceForInteraction({
-    interactionName: 'buyRecord',
-    payload: { name: 'ardrive', years: 1, type: 'lease' },
+const price = await io
+  .getTokenCost({
+    intent: 'Buy-Record',
+    name: 'ar-io',
+    type: 'permabuy',
   })
   .then((p) => new mIOToken(p).toIO());
 // Price is returned as mio, convert to IO and log it out
@@ -661,8 +676,8 @@ const joinNetworkParams = {
 };
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.joinNetwork(
+const io = IO.init({ signer });
+const { id: txId } = await io.joinNetwork(
   joinNetworkParams,
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -680,8 +695,8 @@ const updateGatewaySettingsParams = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.updateGatewaySettings(
+const io = IO.init({ signer });
+const { id: txId } = await io.updateGatewaySettings(
   updateGatewaySettingsParams,
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -700,8 +715,8 @@ const params = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseDelegateStake(
+const io = IO.init({ signer });
+const { id: txId } = await io.increaseDelegateStake(
   params,
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -720,8 +735,8 @@ const params = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.decreaseDelegateStake(params, {
+const io = IO.init({ signer });
+const { id: txId } = await io.decreaseDelegateStake(params, {
   tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
 });
 ```
@@ -737,8 +752,8 @@ const params = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseOperatorStake(params, {
+const io = IO.init({ signer });
+const { id: txId } = await io.increaseOperatorStake(params, {
   tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
 });
 ```
@@ -754,8 +769,8 @@ const params = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.decreaseOperatorStake(params, {
+const io = IO.init({ signer });
+const { id: txId } = await io.decreaseOperatorStake(params, {
   tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
 });
 ```
@@ -772,8 +787,8 @@ const params = {
 
 const signer = new ArweaveSigner(jwk);
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.saveObservations(params, {
+const io = IO.init({ signer });
+const { id: txId } = await io.saveObservations(params, {
   tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
 });
 ```
@@ -784,8 +799,8 @@ Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as 
 
 ```typescript
 // signer required for write interactions APIs
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.transfer(
+const io = IO.init({ signer });
+const { id: txId } = await io.transfer(
   {
     target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
     qty: new IOToken(1000).toMIO(),
@@ -796,15 +811,15 @@ const { id: txId } = await authenticatedArIO.transfer(
 );
 ```
 
-#### `increaseUndernameLimit({ domain, qty })`
+#### `increaseUndernameLimit({ name, qty })`
 
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
 
 ```typescript
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.increaseUndernameLimit(
+const io = IO.init({ signer });
+const { id: txId } = await io.increaseUndernameLimit(
   {
-    domain: 'ar-io',
+    name: 'ar-io',
     qty: 420,
   },
   // optional additional tags
@@ -812,15 +827,15 @@ const { id: txId } = await authenticatedArIO.increaseUndernameLimit(
 );
 ```
 
-#### `extendLease({ domain, years })`
+#### `extendLease({ name, years })`
 
 Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
 
 ```typescript
-const authenticatedArIO = IO.init({ signer });
-const { id: txId } = await authenticatedArIO.extendLease(
+const io = IO.init({ signer });
+const { id: txId } = await io.extendLease(
   {
-    domain: 'ar-io',
+    name: 'ar-io',
     years: 1,
   },
   // optional additional tags
@@ -871,7 +886,7 @@ const ant = ANT.init({
 
 ```
 
-#### `getOwner({ evaluationOptions })`
+#### `getOwner()`
 
 Returns the owner of the configured ANT process.
 
@@ -890,7 +905,7 @@ const owner = await ant.getOwner();
 
 </details>
 
-#### `getControllers({ evaluationOptions })`
+#### `getControllers()`
 
 Returns the controllers of the configured ANT process.
 
@@ -909,7 +924,7 @@ const controllers = await ant.getControllers();
 
 </details>
 
-#### `getRecords({ evaluationOptions })`
+#### `getRecords()`
 
 Returns all records on the configured ANT process, including the required `@` record that resolve connected ArNS names.
 
@@ -1002,7 +1017,7 @@ const { id: txId } = await ant.removeController(
 );
 ```
 
-#### `setRecord({ subDomain, transactionId, ttlSeconds })`
+#### `setRecord({ undername, transactionId, ttlSeconds })`
 
 Updates or creates a record in the ANT process.
 
@@ -1011,12 +1026,12 @@ Updates or creates a record in the ANT process.
 ```typescript
 const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ processId });
-const subDomain = 'test-domain';
+const undername = '@'; // the root record
 const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ttlSeconds = 900;
 const { id: txId } = await ant.setRecord(
   {
-    subDomain,
+    undername: subDomain,
     transactionId,
     ttlSeconds,
   },
@@ -1025,16 +1040,16 @@ const { id: txId } = await ant.setRecord(
 );
 ```
 
-#### `removeRecord({ subDomain })`
+#### `removeRecord({ undername })`
 
 Removes a record from the ANT process.
 
 ```typescript
 const processId = 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
 const ant = ANT.init({ processId });
-const subDomain = 'test-domain';
+const undername = 'test-domain';
 const { id: txId } = await ant.removeRecord(
-  { subDomain },
+  { undername },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
