@@ -219,21 +219,14 @@ console.log(ioValue); // 1 (IO)
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `joinNetwork` and `delegateStake` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-// read-only client that has access to all read APIs
-const ioReadable = IO.init()
+// read-only client
+const io = IO.init()
 
-const arweave = Arweave.init({
-  host: 'ar-io.dev',
-  port: 443,
-  protocol: 'https'
-})
-// for browser environments
-const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
-const ioWriteable = IO.init({ signer: browserSigner});
+// read-write client for browser environments
+const io = IO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}) ) });
 
-// for node environments
-const nodeSigner = new ArweaveSigner(JWK);
-const ioWriteable = IO.init({ signer: nodeSigner});
+// read-write client for node environments
+const io = IO.init({ signer: new ArweaveSigner(JWK) });
 
 ```
 
