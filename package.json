@@ -71,7 +71,7 @@
     "test:cjs": "cd ./tests/e2e/cjs && yarn && yarn start",
     "test:esm": "cd ./tests/e2e/esm && yarn && yarn start",
     "test:unit": "jest --config=jest.config.mjs",
-    "test:link": "yarn link @ar.io/sdk",
+    "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:link && yarn test:cjs && yarn test:esm",
     "test:integration": "jest --config=jest.integration.config.mjs --runInBand",
     "test:docker": "docker-compose up --exit-code-from test-runner --build",
