@@ -73,9 +73,6 @@ export type ProcessConfiguration =
 
 export type EpochInput =
   | {
-      blockHeight: BlockHeight;
-    }
-  | {
       epochIndex: AoEpochIndex;
     }
   | {
@@ -110,6 +107,7 @@ export interface AoIORead {
     Logo: string;
     Denomination: number;
   }>;
+  getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
   getGateway({
     address,
   }: {
@@ -342,6 +340,15 @@ export type AoArNSPermabuyData = AoArNSBaseNameData & {
 export type AoArNSLeaseData = AoArNSBaseNameData & {
   type: 'lease';
   endTimestamp: number; // At what unix time (seconds since epoch) the lease ends
+};
+
+export type AoEpochSettings = {
+  epochZeroStartTimestamp: Timestamp;
+  durationMs: number;
+  prescribedNameCount: number;
+  rewardPercentage: number;
+  maxObservers: number;
+  distributionDelayMs: number;
 };
 
 export type AoEpochData = {
