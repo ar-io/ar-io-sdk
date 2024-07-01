@@ -15,9 +15,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Typescript](#typescript)
 - [IOToken & mIOToken](#iotoken--miotoken)
   - [Converting IO to mIO](#converting-io-to-mio)
-- [ArIO Process](#ario-process)
+- [IO Process](#io-process)
 
-  - [APIs](#apis)
+  - [IO APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getBalance({ address })`](#getbalance-address-)
@@ -42,8 +42,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Configuration](#custom-configuration)
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
-  - [APIs](#apis-1)
-    - [`init({ signer: new ArweaveSigner(jwk) })`](#init-signer-)
+  - [ANT APIs](#ant-apis)
+    - [`init({ signer})`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -192,7 +192,7 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 
 ## IOToken & mIOToken
 
-The ArIO process stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
+The IO process stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
 
 **All process interactions expect values in mIO. If numbers are provided as inputs, they are assumed to be in raw mIO values.**
 
@@ -210,7 +210,7 @@ const ioValue = new mIOToken(mIOValue).toIO();
 console.log(ioValue); // 1 (IO)
 ```
 
-## ArIO Process
+## IO Process
 
 ### APIs
 
@@ -232,7 +232,7 @@ const io = IO.init({ signer: new ArweaveSigner(JWK) });
 
 #### `getInfo()`
 
-Retrieves the information of the ArIO process.
+Retrieves the information of the IO process.
 
 ```typescript
 const io = IO.init();
@@ -281,7 +281,7 @@ console.log(balance.valueOf());
 
 #### `getBalances()`
 
-Retrieves the balances of the ArIO process in `mIO`
+Retrieves the balances of the IO process in `mIO`
 
 <!--
 // ALM - A part of me wonders whether streaming JSON might be beneficial in the future
@@ -351,7 +351,7 @@ const gateway = await io.getGateway({
 
 #### `getGateways()`
 
-Retrieves the registered gateways of the ArIO process.
+Retrieves the registered gateways of the IO process.
 
 ```typescript
 const io = IO.init();
@@ -417,7 +417,7 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 #### `getArNSRecords()`
 
-Retrieves all registered ArNS records of the ArIO process.
+Retrieves all registered ArNS records of the IO process.
 
 ```typescript
 const io = IO.init();
@@ -619,7 +619,7 @@ const epoch = await io.getCurrentEpoch();
 
 #### `getPrescribedObservers({ epochIndex })`
 
-Retrieves the prescribed observers of the ArIO process. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
+Retrieves the prescribed observers of the IO process. To fetch prescribed observers for a previous epoch set the `evaluationOptions` to the desired epoch.
 
 ```typescript
 const io = IO.init();
@@ -853,7 +853,7 @@ const { id: txId } = await io.extendLease(
 
 ### Configuration
 
-The ArIO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the spec of the ar.io process. In the default case, it will automatically build and utilize a process data provider interface that is configured to point the the known ar.io mainnet process ID at construction time. You can provide custom process data provider or, alternatively, a `processId` to the ArIO constructor to use a different, ar.io-spec-compatible process.
+The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the spec of the ar.io process. In the default case, it will automatically build and utilize a process data provider interface that is configured to point the the known ar.io mainnet process ID at construction time. You can provide custom process data provider or, alternatively, a `processId` to the IO constructor to use a different, ar.io-spec-compatible process.
 
 ```typescript
 // provide a custom ao infrastructure and process id
@@ -874,29 +874,22 @@ const io = IO.init({
 
 The ANT client class exposes APIs relevant to compliant Arweave Name Token processes. It can be configured to use any process ID that adheres to the ANT process spec. You must provide either a custom process data provider or a processId to the ANT class constructor to use.
 
-### APIs
+### ANT APIs
 
-#### `init({ signer: new ArweaveSigner(jwk) })`
+#### `init({ signer )`
 
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
 ```typescript
-const arweave = Arweave.init({
-  host: 'ar-io.dev',
-  port: 443,
-  protocol: 'https'
-})
 // in a browser environment with ArConnect
-const browserSigner = new ArConnectSigner(window.arweaveWallet, arweave);
 const ant = ANT.init({
-  signer: browserSigner,
+  signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({})),
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
 });
 
 // in a node environment
-const nodeSigner = new ArweaveSigner(JWK);
 const ant = ANT.init({
-  signer: nodeSigner,
+  signer: new ArweaveSigner(JWK),
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
 });
 
