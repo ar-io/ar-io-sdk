@@ -223,7 +223,7 @@ Factory function to that creates a read-only or writeable client. By providing a
 const io = IO.init()
 
 // read-write client for browser environments
-const io = IO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}) ) });
+const io = IO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
 
 // read-write client for node environments
 const io = IO.init({ signer: new ArweaveSigner(JWK) });
@@ -726,14 +726,12 @@ Increases the callers stake on the target gateway.
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
-const params = {
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO(),
-};
-
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.increaseDelegateStake(
-  params,
+  {
+    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    qty: new IOToken(100).toMIO(),
+  },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -746,16 +744,16 @@ Decreases the callers stake on the target gateway.
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
-
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseDelegateStake({
+const { id: txId } = await io.decreaseDelegateStake(
   {
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO(),
-};
-}, {
-  tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-});
+    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
 ```
 
 #### `increaseOperatorStake({ qty })`
