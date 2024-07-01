@@ -678,24 +678,22 @@ console.log({ price: price.valueOf() });
 Joins a gateway to the ar.io network via its associated wallet. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const joinNetworkParams = {
-  qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
-  autoStake: true, // auto-stake operator rewards to the gateway
-  allowDelegatedStaking: true, // allows delegated staking
-  minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
-  delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
-  label: 'john smith', // min 1, max 64 characters
-  note: 'The example gateway', // max 256 characters
-  properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
-  observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
-  fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
-  port: 443, // port number
-  protocol: 'https', // only 'https' is supported
-};
-
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.joinNetwork(
-  joinNetworkParams,
+  {
+    qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
+    autoStake: true, // auto-stake operator rewards to the gateway
+    allowDelegatedStaking: true, // allows delegated staking
+    minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
+    delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
+    label: 'john smith', // min 1, max 64 characters
+    note: 'The example gateway', // max 256 characters
+    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
+    observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
+    fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
+    port: 443, // port number
+    protocol: 'https', // only 'https' is supported
+  },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -706,13 +704,12 @@ const { id: txId } = await io.joinNetwork(
 Writes new gateway settings to the callers gateway configuration. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 ```typescript
-const updateGatewaySettingsParams = {
-  minDelegatedStake: new IOToken(100).toMIO(),
-};
-
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await io.updateGatewaySettings(
-  updateGatewaySettingsParams,
+  {
+    // any other settings you want to update
+    minDelegatedStake: new IOToken(100).toMIO(),
+  },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1016,9 +1013,8 @@ Transfers ownership of the ANT to a new target address. Target MUST be an Arweav
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const recipient = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.transfer(
-  { target: recipient },
+  { target: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1032,9 +1028,8 @@ Adds a new controller to the list of approved controllers on the ANT. Controller
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const controller = 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f';
 const { id: txId } = await ant.setController(
-  { controller },
+  { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1066,14 +1061,11 @@ Updates or creates a record in the ANT process.
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const undername = '@'; // the root record
-const transactionId = '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM';
-const ttlSeconds = 900;
 const { id: txId } = await ant.setRecord(
   {
-    undername: subDomain,
-    transactionId,
-    ttlSeconds,
+    undername: '@',
+    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
+    ttlSeconds: 3600
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -1088,9 +1080,8 @@ Removes a record from the ANT process.
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const undername = 'test-domain';
 const { id: txId } = await ant.removeRecord(
-  { undername },
+  { undername: 'remove-domemain' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1104,9 +1095,8 @@ Sets the name of the ANT process.
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const name = 'chumbawumba';
 const { id: txId } = await ant.setName(
-  { name },
+  { name: 'My ANT' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -1120,9 +1110,9 @@ Sets the ticker of the ANT process.
 const ant = ANT.init({
   processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
 });
-const ticker = 'ANT-WUMBA';
 const { id: txId } = await ant.setTicker(
-  { ticker },
+  { ticker: 'ANT-NEW-TICKER' },
+  // optional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
