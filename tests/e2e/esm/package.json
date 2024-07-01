@@ -1,0 +1,13 @@
+{
+  "name": "node-esm-harness",
+  "version": "1.0.0",
+  "description": "A test harness for testing the ar-io-sdk in ESM project'",
+  "type": "module",
+  "scripts": {
+    "postinstall": "yarn link @ar.io/sdk",
+    "start": "node --enable-source-maps index.test.js && echo '\nNode ESM Integration ✅'"
+  },
+  "dependencies": {
+    "@ar.io/sdk": "*"
+  }
+}

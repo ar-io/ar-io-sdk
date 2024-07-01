@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
-    "@ar.io/sdk": "alpha"
+    "@ar.io/sdk": "^1.1.1",
+    "arweave": "^1.15.1"
   }
 }

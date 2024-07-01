@@ -14,8 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export * from './arns-service.js';
-export * from './contract-state.js';
-export * from './common.js';
-export * from './token.js';
-export * from './io.js';
+export function safeDecode<R = unknown>(data: any): R {
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return data as R;
+  }
+}

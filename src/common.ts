@@ -14,11 +14,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+import {
+  dryrun,
+  message,
+  monitor,
+  result,
+  results,
+  spawn,
+  unmonitor,
+} from '@permaweb/aoconnect';
 import { ArconnectSigner, ArweaveSigner } from 'arbundles';
 import { GQLNodeInterface, Transaction } from 'warp-contracts';
 
 import { RemoteContract, WarpContract } from './common/index.js';
-import { IOContractInteractionsWithIOFees } from './contract-state.js';
 import {
   ANTRecord,
   ANTState,
@@ -33,6 +41,7 @@ import {
   GatewayConnectionSettings,
   GatewayMetadata,
   GatewayStakingSettings,
+  IOContractInteractionsWithIOFees,
   Observations,
   RegistrationType,
   WeightedObserver,
@@ -41,8 +50,10 @@ import { mIOToken } from './token.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
+export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
+export type ProcessId = string;
 
 export type DataProtocolTransaction = Pick<
   GQLNodeInterface,
@@ -55,7 +66,7 @@ export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
 export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner;
+  signer?: ContractSigner | undefined;
 } & T;
 export type ContractConfiguration<T = NonNullable<unknown>> =
   | {
@@ -275,8 +286,9 @@ export interface ArIOWriteContract extends ArIOReadContract {
   ): Promise<WriteInteractionResult>;
 }
 
-// we only support L1 smartweave interactions
-export type WriteInteractionResult = Transaction;
+export type AoMessageResult = { id: string };
+export type SmartWeaveInteractionResult = Transaction;
+export type WriteInteractionResult = SmartWeaveInteractionResult;
 
 // Helper type to overwrite properties of A with B
 type Overwrite<T, U> = {
@@ -412,4 +424,14 @@ export interface HTTPClient {
     allowedStatuses?: number[];
     params?: object | I;
   }): Promise<K>;
+}
+
+export interface AoClient {
+  result: typeof result;
+  results: typeof results;
+  message: typeof message;
+  spawn: typeof spawn;
+  monitor: typeof monitor;
+  unmonitor: typeof unmonitor;
+  dryrun: typeof dryrun;
 }

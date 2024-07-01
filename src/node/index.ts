@@ -19,3 +19,4 @@ export { ArweaveSigner, ArconnectSigner } from 'arbundles';
 export * from '../types.js';
 export * from '../common/index.js';
 export * from '../constants.js';
+export * from '../utils/index.js';

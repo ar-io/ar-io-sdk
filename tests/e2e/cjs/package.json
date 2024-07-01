@@ -1,0 +1,12 @@
+{
+  "name": "node-cjs-harness",
+  "version": "1.0.0",
+  "description": "A test harness for testing the ar-io-sdk in CJS project'",
+  "scripts": {
+    "postinstall": "yarn link @ar.io/sdk",
+    "start": "node --enable-source-maps index.test.js && echo '\nNode CJS Integration ✅'"
+  },
+  "dependencies": {
+    "@ar.io/sdk": "*"
+  }
+}

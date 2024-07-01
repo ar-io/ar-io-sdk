@@ -1,6 +1,6 @@
 {
   "type": "commonjs",
   "dependencies": {
-    "@ar.io/sdk": "alpha"
+    "@ar.io/sdk": "1.2.0-alpha.17"
   }
 }
