@@ -26,6 +26,7 @@ import {
 import {
   AoArNSNameData,
   AoEpochData,
+  AoEpochSettings,
   AoGateway,
   AoIORead,
   AoIOWrite,
@@ -124,6 +125,37 @@ export class IOReadable implements AoIORead {
       tags: [{ name: 'Action', value: 'Info' }],
     });
   }
+
+  async getEpochSettings(params?: EpochInput): Promise<AoEpochSettings> {
+    const allTags = [
+      { name: 'Action', value: 'Epoch-Settings' },
+      {
+        name: 'Timestamp',
+        value:
+          (params as { timestamp?: number })?.timestamp?.toString() ??
+          (
+            await this.arweave.blocks.getCurrent().catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+          ).timestamp.toString(),
+      },
+      {
+        name: 'Epoch-Index',
+        value: (params as { epochIndex?: number })?.epochIndex?.toString(),
+      },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<AoEpochSettings>({
+      tags: prunedTags,
+    });
+  }
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const allTags = [
       { name: 'Action', value: 'Epoch' },
@@ -136,10 +168,6 @@ export class IOReadable implements AoIORead {
               return { timestamp: Date.now() }; // fallback to current time
             })
           ).timestamp.toString(),
-      },
-      {
-        name: 'Block-Height',
-        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
       },
       {
         name: 'Epoch-Index',
@@ -267,10 +295,6 @@ export class IOReadable implements AoIORead {
           ).timestamp.toString(),
       },
       {
-        name: 'Block-Height',
-        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
-      },
-      {
         name: 'Epoch-Index',
         value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
       },
@@ -300,10 +324,6 @@ export class IOReadable implements AoIORead {
               return { timestamp: Date.now() }; // fallback to current time
             })
           ).timestamp.toString(),
-      },
-      {
-        name: 'Block-Height',
-        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
       },
       {
         name: 'Epoch-Index',
@@ -337,10 +357,6 @@ export class IOReadable implements AoIORead {
           ).timestamp.toString(),
       },
       {
-        name: 'Block-Height',
-        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
-      },
-      {
         name: 'Epoch-Index',
         value: (epoch as { epochIndex?: number })?.epochIndex?.toString(),
       },
@@ -370,10 +386,6 @@ export class IOReadable implements AoIORead {
               return { timestamp: Date.now() }; // fallback to current time
             })
           ).timestamp.toString(),
-      },
-      {
-        name: 'Block-Height',
-        value: (epoch as { blockHeight?: number })?.blockHeight?.toString(),
       },
       {
         name: 'Epoch-Index',
