@@ -39,7 +39,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
-  - [Custom Processes](#custom-processes)
+  - [Configuration](#custom-configuration)
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [APIs](#apis-1)
@@ -139,7 +139,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-import { IO } from '@ar.io/sdk';
+import { IO } from '@ar.io/sdk/web';
 
 // set up client
 const io = IO.init();
@@ -858,14 +858,22 @@ const { id: txId } = await io.extendLease(
 );
 ```
 
-### Custom Processes
+### Configuration
 
 The ArIO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the spec of the ar.io process. In the default case, it will automatically build and utilize a process data provider interface that is configured to point the the known ar.io mainnet process ID at construction time. You can provide custom process data provider or, alternatively, a `processId` to the ArIO constructor to use a different, ar.io-spec-compatible process.
 
 ```typescript
-// provide a custom processId to the client and default to remote evaluation
-const remoteCustomArIO = IO.init({
-  processId: 'TESTNET_PROCESS_ID',
+// provide a custom ao infrastructure and process id
+const io = IO.init({
+  process: new AoProcess({
+    processId: 'IO_PROCESS_ID'
+    ao: connect({
+      MU_URL: 'https://mu-testnet.xyz',
+      CU_URL: 'https://cu-testnet.xyz',
+      GRAPHQL_URL: 'https://arweave.net/graphql',
+      GATEWAY_URL: 'https://arweave.net',
+    })
+  })
 });
 ```
 
