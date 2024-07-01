@@ -1,3 +1,10 @@
+# [1.2.0-alpha.20](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.19...v1.2.0-alpha.20) (2024-07-01)
+
+
+### Bug Fixes
+
+* **io:** add epoch-settings api and tests ([56555ea](https://github.com/ar-io/ar-io-sdk/commit/56555eac9ff627ff9d5762965477e5895e43ded5))
+
 # [1.2.0-alpha.19](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.18...v1.2.0-alpha.19) (2024-06-28)
 
 
