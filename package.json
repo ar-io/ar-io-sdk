@@ -128,6 +128,7 @@
     "axios": "1.7.2",
     "axios-retry": "^4.3.0",
     "bunyan": "^1.8.15",
+    "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
     "warp-contracts": "1.4.45"
   },
