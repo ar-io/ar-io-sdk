@@ -1,0 +1,33 @@
+{
+  "name": "react-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@ar.io/sdk": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "remark-gfm": "^4.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.3.0",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "jsdom": "^24.1.0",
+    "typescript": "^4.9.5",
+    "vite": "^5.2.10",
+    "vitest": "^1.6.0"
+  },
+  "scripts": {
+    "start": "vite --config vite.config.js",
+    "build": "vite build --config vite.config.js",
+    "postinstall": "yarn link @ar.io/sdk",
+    "preview": "vite preview",
+    "test": "CI=true vitest && echo '\nBrowser ESM Integration ✅'"
+  }
+}

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "postinstall": "yarn link @ar.io/sdk",
-    "start": "node --enable-source-maps index.test.js && echo '\nNode ESM Integration ✅'"
+    "test": "node --enable-source-maps index.test.js && echo '\nNode ESM Integration ✅'"
   },
   "dependencies": {
     "@ar.io/sdk": "*"
