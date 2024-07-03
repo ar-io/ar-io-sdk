@@ -14,13 +14,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import bunyan from 'bunyan';
-
 import { Logger } from '../types.js';
-import { version } from '../version.js';
+
+// import { version } from '../version.js';
 
 export class DefaultLogger implements Logger {
-  private logger: bunyan.Logger;
+  private logger: typeof console;
   private silent = false;
   constructor({
     level = 'info',
@@ -31,12 +30,7 @@ export class DefaultLogger implements Logger {
       this.silent = true;
       return;
     }
-    this.logger = bunyan.createLogger({
-      level,
-      name: 'ar-io-sdk',
-      version,
-      serializers: bunyan.stdSerializers,
-    });
+    this.logger = console;
   }
 
   info(message: string, ...args: unknown[]) {
@@ -64,6 +58,6 @@ export class DefaultLogger implements Logger {
       this.silent = true;
       return;
     }
-    this.logger.level(level);
+    // this.logger.level(level);
   }
 }

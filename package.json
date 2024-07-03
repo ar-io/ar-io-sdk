@@ -119,6 +119,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
+    "vite-plugin-node-polyfills": "^0.22.0",
     "warp-contracts-plugin-deploy": "^1.0.13"
   },
   "dependencies": {
@@ -127,7 +128,6 @@
     "arweave": "1.14.4",
     "axios": "1.7.2",
     "axios-retry": "^4.3.0",
-    "bunyan": "^1.8.15",
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
     "warp-contracts": "1.4.45"
