@@ -1,16 +1,16 @@
+# [1.2.0-alpha.21](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.20...v1.2.0-alpha.21) (2024-07-02)
+
+
+### Bug Fixes
+
+* **deps:** add eventemitter3 dep ([1d50cd1](https://github.com/ar-io/ar-io-sdk/commit/1d50cd12a3ffd37bbf23a368c590b74aaa040b93))
+
 ## [1.1.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1) (2024-06-06)
 
 
 ### Bug Fixes
 
-* **api:** default evalution options on getArNSReservedNames api ([0a1f22e](https://github.com/ar-io/ar-io-sdk/commit/0a1f22ebe7fccd6d7f77a5255d2b639d670492fb))
-
-## [1.1.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1-alpha.1) (2024-06-04)
-
-
-### Bug Fixes
-
-* **api:** default evalution options on getArNSReservedNames api ([0a1f22e](https://github.com/ar-io/ar-io-sdk/commit/0a1f22ebe7fccd6d7f77a5255d2b639d670492fb))
+* **api:** default evaluation options on getArNSReservedNames api ([0a1f22e](https://github.com/ar-io/ar-io-sdk/commit/0a1f22ebe7fccd6d7f77a5255d2b639d670492fb))
 
 # [1.1.0](https://github.com/ar-io/ar-io-sdk/compare/v1.0.8...v1.1.0) (2024-06-03)
 

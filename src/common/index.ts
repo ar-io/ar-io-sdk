@@ -19,6 +19,11 @@ export * from './error.js';
 export * from './logger.js';
 export * from './ant.js';
 
-// contracts
+// contracts - deprecated
 export * from './contracts/remote-contract.js';
 export * from './contracts/warp-contract.js';
+
+// ao
+export * from './io.js';
+export * from './ant-ao.js';
+export * from './contracts/ao-process.js';

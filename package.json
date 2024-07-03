@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "1.1.1",
+  "version": "1.2.0-alpha.21",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -68,7 +68,12 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "yarn test:unit && yarn test:integration",
+    "test:cjs": "cd ./tests/e2e/cjs && yarn && yarn test",
+    "test:esm": "cd ./tests/e2e/esm && yarn && yarn test",
+    "test:web": "cd ./tests/e2e/web && yarn && yarn test",
     "test:unit": "jest --config=jest.config.mjs",
+    "test:link": "yarn build && yarn link",
+    "test:e2e": "yarn test:link && yarn test:cjs && yarn test:esm && yarn test:web",
     "test:integration": "jest --config=jest.integration.config.mjs --runInBand",
     "test:docker": "docker-compose up --exit-code-from test-runner --build",
     "prepare": "husky install",
@@ -117,11 +122,14 @@
     "warp-contracts-plugin-deploy": "^1.0.13"
   },
   "dependencies": {
+    "@permaweb/aoconnect": "^0.0.55",
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
     "axios": "1.7.2",
     "axios-retry": "^4.3.0",
     "bunyan": "^1.8.15",
+    "eventemitter3": "^5.0.1",
+    "plimit-lit": "^3.0.1",
     "warp-contracts": "1.4.45"
   },
   "lint-staged": {

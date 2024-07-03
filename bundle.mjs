@@ -22,7 +22,8 @@ const bundle = async () => {
     ],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
-    external: ['dtrace-provider'],
+    // bunyan - these are not available in the browser
+    external: ['dtrace-provider', 'fs', 'mv', 'os', 'source-map-support'],
   })
     .catch((e) => {
       console.log(e);
