@@ -494,7 +494,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     if (Object.keys(config).length === 0) {
       super({
         process: new AOProcess({
-          processId: ioDevnetProcessId,
+          processId: IO_TESTNET_PROCESS_ID,
         }),
       });
       this.signer = signer;
