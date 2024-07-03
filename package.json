@@ -67,7 +67,7 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "test": "yarn test:unit && yarn test:integration",
+    "test": "yarn test:unit && yarn test:integration && yarn test:e2e",
     "test:cjs": "cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "cd ./tests/e2e/web && yarn && yarn test",

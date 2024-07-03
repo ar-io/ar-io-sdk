@@ -19,7 +19,7 @@ import { pLimit } from 'plimit-lit';
 
 import { ANT } from '../../common/ant.js';
 import { IO } from '../../common/io.js';
-import { ioDevnetProcessId } from '../../constants.js';
+import { IO_TESTNET_PROCESS_ID } from '../../constants.js';
 import {
   AoANTState,
   AoArNSNameData,
@@ -31,7 +31,7 @@ import {
 export const getANTProcessesOwnedByWallet = async ({
   address,
   contract = IO.init({
-    processId: ioDevnetProcessId,
+    processId: IO_TESTNET_PROCESS_ID,
   }),
 }: {
   address: WalletAddress;
@@ -96,7 +96,7 @@ export class ArNSEventEmitter extends EventEmitter {
   private throttle;
   constructor({
     contract = IO.init({
-      processId: ioDevnetProcessId,
+      processId: IO_TESTNET_PROCESS_ID,
     }),
     timeoutMs = 60_000,
     concurrency = 30,
