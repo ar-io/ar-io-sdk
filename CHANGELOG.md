@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)
+
+
+### Bug Fixes
+
+* **io:** default the IO process to use testnet ([61bca5c](https://github.com/ar-io/ar-io-sdk/commit/61bca5cb4f2ecc1928ebc8271c9acc9f25ac0412))
+
 # [1.2.0](https://github.com/ar-io/ar-io-sdk/compare/v1.1.1...v1.2.0) (2024-07-03)
 
 
