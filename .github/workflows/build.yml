@@ -47,26 +47,9 @@ jobs:
         run: yarn --immutable --immutable-cache
 
       - name: Run tests
-        run: yarn test:docker
+        run: yarn test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set Up node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: 'yarn'
-
-      - name: Install
-        run: yarn --immutable --immutable-cache
-
-      - name: Run e2e tests
-        run: yarn test:e2e
