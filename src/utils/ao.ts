@@ -85,3 +85,39 @@ export async function spawnANT({
 
   return processId;
 }
+
+export async function evolveANT({
+  signer,
+  processId,
+  luaCodeTxId = ANT_LUA_ID,
+  ao = connect(),
+}: {
+  signer: ContractSigner;
+  processId: string;
+  luaCodeTxId?: string;
+  ao?: AoClient;
+}): Promise<string> {
+  //TODO: cache locally and only fetch if not cached
+  const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
+    decode: true,
+    string: true,
+  })) as string;
+
+  const aosClient = new AOProcess({
+    processId,
+    ao,
+  });
+
+  await aosClient.send({
+    tags: [
+      { name: 'Action', value: 'Eval' },
+      { name: 'Action', value: 'Evolve' },
+      { name: 'App-Name', value: 'ArNS-ANT' },
+      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
+    ],
+    data: luaString,
+    signer,
+  });
+
+  return processId;
+}
