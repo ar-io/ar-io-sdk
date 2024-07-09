@@ -74,8 +74,8 @@
     "test:e2e": "yarn test:link && yarn test:cjs && yarn test:esm && yarn test:web",
     "prepare": "husky install",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
-    "example:cjs": "cd examples/cjs && yarn && node index.cjs",
-    "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web"
+    "example:cjs": "yarn test:link && cd examples/cjs && yarn && node index.cjs",
+    "example:web": "yarn test:link && build:web && http-server --port 8080 --host -o examples/web"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",

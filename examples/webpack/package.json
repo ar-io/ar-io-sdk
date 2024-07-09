@@ -35,6 +35,7 @@
   },
   "scripts": {
     "start": "webpack serve --mode development",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "postinstall": "yarn link @ar.io/sdk"
   }
 }

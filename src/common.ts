@@ -104,14 +104,6 @@ export type AtLeastOne<
 export type UpdateGatewaySettingsParams =
   AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
-export interface Logger {
-  setLogLevel: (level: string) => void;
-  info: (message: string, ...args: unknown[]) => void;
-  warn: (message: string, ...args: unknown[]) => void;
-  error: (message: string, ...args: unknown[]) => void;
-  debug: (message: string, ...args: unknown[]) => void;
-}
-
 export interface HTTPClient {
   get<I, K>({
     endpoint,

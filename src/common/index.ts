@@ -20,5 +20,4 @@ export * from './ant.js';
 
 // ao
 export * from './io.js';
-export * from './ant-ao.js';
 export * from './contracts/ao-process.js';

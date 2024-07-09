@@ -1,6 +1,9 @@
-const { IO, ioDevnetProcessId } = require('@ar.io/sdk');
+const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
 
 (async () => {
+  // set the log level for the SDK
+  Logger.default.setLogLevel('info');
+
   const arIO = IO.init();
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
