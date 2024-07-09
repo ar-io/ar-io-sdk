@@ -147,7 +147,8 @@ const io = IO.init();
 const gateways = await io.getGateways();
 ```
 
-> _**Note**: polyfills are only provided when using the named `@ar.io/sdk/web` export (which requires `moduleResolution: nodenext` in `tsconfig.json`). If you are using the default export within a Typescript project (e.g. `moduleResolution: node`), you will need to provide your own polyfills - specifically `crypto`, `fs` and `buffer`. Refer to [examples/webpack] and [examples/vite] for references in how to properly provide those polyfills. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills._
+> [!WARNING]
+> Polyfills are not provided by default for ESM exports. Depending on your apps bundler configuration and plugins, you will need to provide polyfills for various imports including `crypto`, `process` and `buffer`. Refer to [examples/webpack] and [examples/vite] for examples. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills.
 
 #### Browser
 
@@ -189,6 +190,9 @@ const gateways = await io.getGateways();
 ### Typescript
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
+
+> [!NOTE]
+> Typescript version 5.3 or higher is recommended.
 
 ## IOToken & mIOToken
 
