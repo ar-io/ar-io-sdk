@@ -192,6 +192,10 @@ const gateways = await io.getGateways();
 
 The SDK provides TypeScript types. When you import the SDK in a TypeScript project types are exported from `./lib/types/[node/web]/index.d.ts` and should be automatically recognized by package managers, offering benefits such as type-checking and autocompletion.
 
+[!NOTE]
+
+> Typescript version 5.3 or higher is recommended.
+
 ## IOToken & mIOToken
 
 The IO process stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
