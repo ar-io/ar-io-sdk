@@ -1,3 +1,18 @@
+# [2.0.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v2.0.0-alpha.1) (2024-07-09)
+
+
+### Bug Fixes
+
+* **deps:** remove bunyan and other issues ([9d940aa](https://github.com/ar-io/ar-io-sdk/commit/9d940aac99e94e5086091a2e41ffd73fe2c36715))
+* **imports:** update named web exports to properly provide esm file instead of bundle ([e97fa7c](https://github.com/ar-io/ar-io-sdk/commit/e97fa7c3bb95782944b9204df7eddb201e280db1))
+* **warp:** remove warp-contracts and all implementations ([0dcf4f2](https://github.com/ar-io/ar-io-sdk/commit/0dcf4f26026044e1b9da810a853b065802a782cd))
+
+
+### BREAKING CHANGES
+
+* **warp:** this removes all smartweave implementations using warp-sdk. The result is an only AO compatibile ANT and IO network contracts. Some utitlies are preserved due to their usefulness
+* **imports:** this directly impacts imports for clients, so it is considered a breaking change
+
 ## [1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)
 
 
