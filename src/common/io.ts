@@ -16,7 +16,7 @@
  */
 import Arweave from 'arweave';
 
-import { ioDevnetProcessId } from '../constants.js';
+import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   ArNSReservedNameData,
   EpochDistributionData,
@@ -90,10 +90,10 @@ export class IOReadable implements AoIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = Arweave.init({})) {
+  constructor(config?: ProcessConfiguration, arweave = new Arweave({})) {
     if (!config) {
       this.process = new AOProcess({
-        processId: ioDevnetProcessId,
+        processId: IO_TESTNET_PROCESS_ID,
       });
     } else if (isProcessConfiguration(config)) {
       this.process = config.process;
@@ -494,7 +494,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     if (Object.keys(config).length === 0) {
       super({
         process: new AOProcess({
-          processId: ioDevnetProcessId,
+          processId: IO_TESTNET_PROCESS_ID,
         }),
       });
       this.signer = signer;

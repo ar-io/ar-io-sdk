@@ -1,3 +1,75 @@
+## [1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)
+
+
+### Bug Fixes
+
+* **io:** default the IO process to use testnet ([61bca5c](https://github.com/ar-io/ar-io-sdk/commit/61bca5cb4f2ecc1928ebc8271c9acc9f25ac0412))
+
+# [1.2.0](https://github.com/ar-io/ar-io-sdk/compare/v1.1.1...v1.2.0) (2024-07-03)
+
+
+### Bug Fixes
+
+* **ant:** add event emitter util for fetching ants ([ee5287b](https://github.com/ar-io/ar-io-sdk/commit/ee5287b985aa6ef4b41f6e67ec0119dabcff3b3f))
+* **ant:** fix read api and update types ([977e0e3](https://github.com/ar-io/ar-io-sdk/commit/977e0e3e46bbc6e324f545f28b6fb6d93d9e2d08))
+* **ant:** handle when no data is returned ([1de6610](https://github.com/ar-io/ar-io-sdk/commit/1de66101e0a4fd2b9366b95085ede218292e36f9))
+* **ants:** separate out interfaces ([60fd593](https://github.com/ar-io/ar-io-sdk/commit/60fd59321960ee61e487295800d3fc72c1a139b5))
+* **ant:** update apis to implement interface ([9c54db0](https://github.com/ar-io/ar-io-sdk/commit/9c54db09cc896bae17943597532fa08df3f40e74))
+* **ant:** update interface to expect `undername` instead of `name` for ant records ([416cb3d](https://github.com/ar-io/ar-io-sdk/commit/416cb3dfde20d46cca19e439fddace455db1f03e))
+* **ao ant:** add handler for get state ([fd20aa7](https://github.com/ar-io/ar-io-sdk/commit/fd20aa761fabac4e98b9bedb546d23aa915b4309))
+* **ao reads:** safely parse json ([1ff5410](https://github.com/ar-io/ar-io-sdk/commit/1ff54104526d1850b4f2dba0c119a33818d76f56))
+* **ao:** add AR-IO-SDK tag to process interaction ([e5b5603](https://github.com/ar-io/ar-io-sdk/commit/e5b5603ed9b6eaae3e6cc0b4f6407f91081ea272))
+* **ao:** add default timestamp to getTokenCost ([36fed1b](https://github.com/ar-io/ar-io-sdk/commit/36fed1b8a0206c7dcb0c1d1fbacd533cd537b5b9))
+* **ao:** add getPrescribedNames for epoch api ([747fad2](https://github.com/ar-io/ar-io-sdk/commit/747fad28b64edbed288511a895af6b930c93f762))
+* **ao:** add retries to read interactions ([67d59e2](https://github.com/ar-io/ar-io-sdk/commit/67d59e2cbdef917bc9a776409a8040565434aeaa))
+* **ao:** fix tag for join network, update observation response ([556f5d5](https://github.com/ar-io/ar-io-sdk/commit/556f5d5d957a07944f3655f3ed1be026de51102e))
+* **ao:** prune tags on joinNetwork ([31978f9](https://github.com/ar-io/ar-io-sdk/commit/31978f9788f67a488ddd1d0804c90809a10ac90c))
+* **aoread:** fix interface to have ant getState api ([4e95bbd](https://github.com/ar-io/ar-io-sdk/commit/4e95bbdedc5cc6a448a860d48b30a7502fbbf179))
+* **aos:** update aos module id and lua id ([e19139e](https://github.com/ar-io/ar-io-sdk/commit/e19139e1391656e7eb4038a479e620535f3671c4))
+* **ao:** support connection config params in AO ([3e6a246](https://github.com/ar-io/ar-io-sdk/commit/3e6a2469c73a1889d89c4a90fc0d43ec8f3d8a39))
+* **ao:** support tags for all write interactions ([67f8da9](https://github.com/ar-io/ar-io-sdk/commit/67f8da987aa280e1648d4b65fa305f643ab42535))
+* **ao:** update APIs for ao interface to be more descriptive ([f07ac36](https://github.com/ar-io/ar-io-sdk/commit/f07ac369045a0c71db50e9864f4b513d18a671b1))
+* **ao:** update epoch interfaces to support various inputs ([ddc4c10](https://github.com/ar-io/ar-io-sdk/commit/ddc4c1041ecbb316ff555e354b8c28782e859c3b))
+* **ao:** update send on process to use proper signer and evalute result ([4e2f65d](https://github.com/ar-io/ar-io-sdk/commit/4e2f65d79770fee48f5288307cfd7b50048e6d58))
+* **ao:** update stake interface ([427e8ba](https://github.com/ar-io/ar-io-sdk/commit/427e8baf8c8e58dffbfb5632ddb3c5d9c51d66e8))
+* **ao:** use types and connect config in ao process to wrap connect from ao ([05b07cf](https://github.com/ar-io/ar-io-sdk/commit/05b07cfbb1d974e708108c8239d8214d6c50b418))
+* **buy:** require processId on buyRecord ([cc5859f](https://github.com/ar-io/ar-io-sdk/commit/cc5859fcc4e7ecb09f687a2ad02a59aa4763be13))
+* **deps:** add eventemitter3 dep ([1d50cd1](https://github.com/ar-io/ar-io-sdk/commit/1d50cd12a3ffd37bbf23a368c590b74aaa040b93))
+* **deps:** use p-limit-lit to avoid jest issues ([05e0673](https://github.com/ar-io/ar-io-sdk/commit/05e0673873490180e71974b90448561cacd21662))
+* **emitter:** add a `end` and some console logs in the example ([bc4e6b8](https://github.com/ar-io/ar-io-sdk/commit/bc4e6b8f3c252e3d79033e25f5de6cd8fa7f087a))
+* **emmiter:** rename and move throttle to be variable powered ([f9cf40d](https://github.com/ar-io/ar-io-sdk/commit/f9cf40d547e353005501188aa73d4f9cd3203f7b))
+* **epochs:** fix epoch default timestamp ([ffb9df7](https://github.com/ar-io/ar-io-sdk/commit/ffb9df7acafd5378073537fe1f71835663e00231))
+* **events:** return process ids on end of fetching ([15e3f44](https://github.com/ar-io/ar-io-sdk/commit/15e3f44f20deea1c29d8d67aa4973c39e9182072))
+* **handlers:** update handler names ([720b178](https://github.com/ar-io/ar-io-sdk/commit/720b178eca08570b7beff02445d82b5c7366e220))
+* **io:** add buyRecord API ([30d5e74](https://github.com/ar-io/ar-io-sdk/commit/30d5e74384d6af25805fc5d1c35f30486ea204a2))
+* **io:** add epoch-settings api and tests ([56555ea](https://github.com/ar-io/ar-io-sdk/commit/56555eac9ff627ff9d5762965477e5895e43ded5))
+* **io:** add init to provide custom process ([8811016](https://github.com/ar-io/ar-io-sdk/commit/8811016a9049102a0c5c3d9c82d473ccbe4e2d10))
+* **io:** separate out io/ao contract interfaces ([d96fa59](https://github.com/ar-io/ar-io-sdk/commit/d96fa5928a1cc45639fe3e0f687726eba059a762))
+* **io:** update arns interactions on registry contract ([9befe2a](https://github.com/ar-io/ar-io-sdk/commit/9befe2a1823f580821f5175ebc97fa24f481e1fe))
+* **pLimit:** add pLimit for util to avoid ao throttlling ([5b13560](https://github.com/ar-io/ar-io-sdk/commit/5b1356079153f4cc637596bb75b3f916d77a69e3))
+* readds incorrectly removed descriptions ([c77217a](https://github.com/ar-io/ar-io-sdk/commit/c77217a9baa28f5397a81ae46e3618b4730e49c0))
+* revert purchasetype tag ([2dc08df](https://github.com/ar-io/ar-io-sdk/commit/2dc08dfb946cd8e7002dde80458e44e739693627))
+* **spawn:** add option state contractTxID to track where init state is from ([1745766](https://github.com/ar-io/ar-io-sdk/commit/1745766efbaf39dab3d848febf320fc6a78a0fed))
+* **tags:** make remaining tags ans-116 compliant ([d034c8c](https://github.com/ar-io/ar-io-sdk/commit/d034c8c694f4558aa807beeef36217868f50c8e8))
+* **tags:** use updated ans-116 tag format for actions ([261b788](https://github.com/ar-io/ar-io-sdk/commit/261b7888c6c84d94261ea59499e65854ddf11e31))
+* **timeout:** increase timeout period on arns emitter ([b5ddb5f](https://github.com/ar-io/ar-io-sdk/commit/b5ddb5f0e79aeabeac6a5a55855436abd6cc9199))
+* **type:** default to unknown return type for json ([0bddce0](https://github.com/ar-io/ar-io-sdk/commit/0bddce0870c96dfbb2175a0eeb98bd86d65c1e84))
+* **types:** add ao ant state type ([02dbacd](https://github.com/ar-io/ar-io-sdk/commit/02dbacd71f5b5aabc8eb7a539a908c7fabebe27a))
+* **types:** update some types for arns names and contract state ([2d23241](https://github.com/ar-io/ar-io-sdk/commit/2d23241cd632ec2931521b98804e8cf536a92af7))
+* updates to use IO class and process terminology ([ec45d66](https://github.com/ar-io/ar-io-sdk/commit/ec45d666747a31734ae93cc8b5a4b29af1e7cd3e))
+* **util:** initial implementation of get ant process for wallet ([885fa31](https://github.com/ar-io/ar-io-sdk/commit/885fa31531725e396a94a53bfff200a6e3258395))
+
+
+### Features
+
+* **ant:** add balance APIs to ant interface ([ec67440](https://github.com/ar-io/ar-io-sdk/commit/ec67440b7189c95ce4c2fcc933ef63ca9c1732b6))
+* **ant:** add utility for fetchint ant modules owned by wallet ([01f7ec9](https://github.com/ar-io/ar-io-sdk/commit/01f7ec95d4de88b3a098a2ab59fa811c9820b279))
+* **ants:** support ANT apis in SDK ([b187aeb](https://github.com/ar-io/ar-io-sdk/commit/b187aebc34fd5afc237d5a68aa091d4fe14d0bce))
+* **ao utils:** add spawn ant util ([d02566e](https://github.com/ar-io/ar-io-sdk/commit/d02566eac7385b5a25fb1851fa4aeb4906616328))
+* **ao:** experiment with initial implementation of ao contract ([6118cea](https://github.com/ar-io/ar-io-sdk/commit/6118cea0b1d5aa027f97e81b34849bd56107a396))
+* **getInfo io:** add getInfo method to io class ([4ef25ec](https://github.com/ar-io/ar-io-sdk/commit/4ef25ec37f60a5155e68047f2cffa2c49ecaa093))
+* **IO:** implement io/ao classes that call process apis ([aab8967](https://github.com/ar-io/ar-io-sdk/commit/aab8967c83e69fafe1258b768b1e33cb3920aeb8))
+
 # [1.2.0-alpha.21](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0-alpha.20...v1.2.0-alpha.21) (2024-07-02)
 
 
@@ -23,11 +95,11 @@
 * **axios:** add back axios-retry ([9aae4de](https://github.com/ar-io/ar-io-sdk/commit/9aae4de1c23ca50acb613ff566e3f73c27f0ff0e))
 * **errors:** throw AbortError on signal aborted ([63bd395](https://github.com/ar-io/ar-io-sdk/commit/63bd39566bc4ee08504b98b82c62dd22e100bc7f))
 * **getContracts:** only implement util for now ([6b29c2f](https://github.com/ar-io/ar-io-sdk/commit/6b29c2ff7773320c2b6d16677826d59bd515332c))
-* **gql query:** dont abstract the data protocol query ([f0b8f77](https://github.com/ar-io/ar-io-sdk/commit/f0b8f7718b777358d6b6946159f57551ea76c1e7))
+* **gql query:** do not abstract the data protocol query ([f0b8f77](https://github.com/ar-io/ar-io-sdk/commit/f0b8f7718b777358d6b6946159f57551ea76c1e7))
 * **imports:** import type from base route warp-contracts ([bf99a85](https://github.com/ar-io/ar-io-sdk/commit/bf99a85d0d099cf20db9b70db1bf84f9908b51e5))
 * **init:** allow signer to be undefined and if so return readable ([b6a05e2](https://github.com/ar-io/ar-io-sdk/commit/b6a05e205c60c6b8623fbac6795a1e96a7a19590))
 * **init:** fix type for init to allow undefined signer ([0a64ea9](https://github.com/ar-io/ar-io-sdk/commit/0a64ea9006571c93b4e9a26803b04d7da8ddcb9f))
-* **init:** rmeove unnecessary destructuring ([81af1af](https://github.com/ar-io/ar-io-sdk/commit/81af1af7190f18726a20ebaaaa5712a4e815bb35))
+* **init:** remove unnecessary destructuring ([81af1af](https://github.com/ar-io/ar-io-sdk/commit/81af1af7190f18726a20ebaaaa5712a4e815bb35))
 * remove epochBlockHeight from interface ([b646f08](https://github.com/ar-io/ar-io-sdk/commit/b646f08e795635e4597d48d7c56419849c352a88))
 * **types:** remove DataItem from WriteInteractionResult ([eadb1a1](https://github.com/ar-io/ar-io-sdk/commit/eadb1a1d61985caf1326c32d1205d3e8db309374))
 * **types:** use gql node interface for dataProtocolTransaction ([79cebd9](https://github.com/ar-io/ar-io-sdk/commit/79cebd90b930829b740bed058f7cfe0da3b7799e))

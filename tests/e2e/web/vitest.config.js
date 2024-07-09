@@ -1,7 +1,8 @@
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [],
+  plugins: [nodePolyfills()],
   test: {
     environment: 'jsdom',
     globals: true,
