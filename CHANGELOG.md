@@ -1,3 +1,10 @@
+# [2.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.2...v2.0.0-alpha.3) (2024-07-09)
+
+
+### Bug Fixes
+
+* **logger:** allow configuration for log level and provide your own logger ([9cb0981](https://github.com/ar-io/ar-io-sdk/commit/9cb0981e0f48c80fc000c05aba2c4cb69b5ca43c))
+
 # [2.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.1...v2.0.0-alpha.2) (2024-07-09)
 
 
