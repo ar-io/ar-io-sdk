@@ -50,3 +50,5 @@ export default defineConfig({
 ```
 
 If you are using a bundler other than Vite, you may need to include the necessary polyfills in a similar way.
+
+[vite-plugin-node-polyfills]: https://www.npmjs.com/package/vite-plugin-node-polyfills

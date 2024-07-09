@@ -22,7 +22,7 @@ yarn start
 
 ## Polyfills
 
-The `@ar.io/sdk` uses some modern browser features that may not be available in all browsers. To ensure compatibility, you may need to include some polyfills. This example uses the [vite-plugin-node-polyfills] plugin to include the necessary polyfills.
+The `@ar.io/sdk` uses some modern browser features that may not be available in all browsers. To ensure compatibility, you may need to include some polyfills. This example uses the [node-polyfill-webpack-plugin] plugin to include the necessary polyfills.
 
 The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 
@@ -52,3 +52,7 @@ module.exports = {
 ```
 
 If you are using a bundler other than Webpack, you may need to include the necessary polyfills in a similar way.
+
+[node-polyfill-webpack-plugin]: https://www.npmjs.com/package/node-polyfill-webpack-plugin
+
+`;
