@@ -25,6 +25,7 @@
   },
   "scripts": {
     "start": "vite --config vite.config.js",
-    "build": "vite build --config vite.config.js"
+    "build": "vite build --config vite.config.js",
+    "postinstall": "yarn link @ar.io/sdk"
   }
 }

@@ -2,5 +2,8 @@
   "type": "commonjs",
   "dependencies": {
     "@ar.io/sdk": "1.2.0-alpha.17"
+  },
+  "scripts": {
+    "postinstall": "yarn link @ar.io/sdk"
   }
 }

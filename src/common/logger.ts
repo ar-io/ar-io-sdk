@@ -14,14 +14,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Logger, createLogger, format, transports } from 'winston';
+import {
+  Logger as WinstonLogger,
+  createLogger,
+  format,
+  transports,
+} from 'winston';
 
-import { Logger as ILogger } from '../types.js';
 import { version } from '../version.js';
 
-export class DefaultLogger implements ILogger {
-  private logger: Logger | Console;
+export interface ILogger {
+  setLogLevel: (level: 'info' | 'debug' | 'error' | 'warn' | 'none') => void;
+  info: (message: string, ...args: unknown[]) => void;
+  warn: (message: string, ...args: unknown[]) => void;
+  error: (message: string, ...args: unknown[]) => void;
+  debug: (message: string, ...args: unknown[]) => void;
+}
+
+export class Logger implements ILogger {
+  private logger: WinstonLogger | Console;
   private silent = false;
+
+  static default = new Logger();
 
   constructor({
     level = 'info',
@@ -75,10 +89,9 @@ export class DefaultLogger implements ILogger {
     this.logger.debug(message, ...args);
   }
 
-  setLogLevel(level: string) {
+  setLogLevel(level: 'info' | 'debug' | 'error' | 'warn' | 'none') {
     if ('silent' in this.logger) {
       this.logger.silent = level === 'none';
-      return;
     }
 
     if ('level' in this.logger) {

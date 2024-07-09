@@ -42,6 +42,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Configuration](#custom-configuration)
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
+
   - [ANT APIs](#ant-apis)
     - [`init({ signer})`](#init-signer-)
     - [`getInfo()`](#getinfo)
@@ -56,6 +57,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
   - [Configuration](#configuration)
+
+- [Logging](#logging)
+
+  - [Configuration](#configuration)
+
 - [Developers](#developers)
   - [Requirements](#requirements)
   - [Setup \& Build](#setup--build)
@@ -1136,6 +1142,22 @@ const ant = ANT.init({
 });
 ```
 
+## Logging
+
+The library uses the [Winston] logger for node based projects, and `console` logger for web based projects by default. You can configure the log level via `setLogLevel()` API. Alternatively you can set a custom logger as the default logger so long as it satisfes the `ILogger` interface.
+
+### Configuration
+
+```typescript
+import { Logger } from '@ar.io/sdk';
+
+// set the log level
+Logger.default.setLogLevel('debug');
+
+// provide your own logger
+Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other logger that satisifes ILogger interface
+```
+
 ## Developers
 
 ### Requirements
@@ -1184,3 +1206,4 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [AO Connect]: https://github.com/permaweb/ao/tree/main/connect
 [IO testnet process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
 [IO Network spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
+[Winston]: https://www.npmjs.com/package/winston
