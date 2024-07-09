@@ -108,10 +108,12 @@ export async function evolveANT({
     ao,
   });
 
+  // we call eval twice to ensure the Source code tx id is set in the process. ANTs that do not have the prepended evolve handler will not do it immediately until eval is called again.
+  // TODO: evaluate gas cost of this compared to checking the with a read first vs just calling it twice.
+  // we would not need this with a weavedrive implementation of "evolve"
   await aosClient.send({
     tags: [
       { name: 'Action', value: 'Eval' },
-      { name: 'Action', value: 'Evolve' },
       { name: 'App-Name', value: 'ArNS-ANT' },
       { name: 'Source-Code-TX-ID', value: luaCodeTxId },
     ],
@@ -119,5 +121,15 @@ export async function evolveANT({
     signer,
   });
 
-  return processId;
+  const { id } = await aosClient.send({
+    tags: [
+      { name: 'Action', value: 'Eval' },
+      { name: 'App-Name', value: 'ArNS-ANT' },
+      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
+    ],
+    data: luaString,
+    signer,
+  });
+
+  return id;
 }
