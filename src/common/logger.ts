@@ -14,14 +14,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import bunyan from 'bunyan';
+import { Logger, createLogger, format, transports } from 'winston';
 
-import { Logger } from '../types.js';
+import { Logger as ILogger } from '../types.js';
 import { version } from '../version.js';
 
-export class DefaultLogger implements Logger {
-  private logger: bunyan.Logger;
+export class DefaultLogger implements ILogger {
+  private logger: Logger | Console;
   private silent = false;
+
   constructor({
     level = 'info',
   }: {
@@ -31,39 +32,57 @@ export class DefaultLogger implements Logger {
       this.silent = true;
       return;
     }
-    this.logger = bunyan.createLogger({
+    this.logger = createLogger({
       level,
-      name: 'ar-io-sdk',
-      version,
-      serializers: bunyan.stdSerializers,
+      silent: this.silent,
+      defaultMeta: {
+        name: 'ar-io-sdk',
+        version,
+      },
+      format: format.combine(format.timestamp(), format.json()),
     });
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    if (typeof window !== 'undefined') {
+      this.logger = console;
+    } else {
+      this.logger.add(
+        new transports.Console({
+          format: format.combine(format.timestamp(), format.json()),
+        }),
+      );
+    }
   }
 
   info(message: string, ...args: unknown[]) {
     if (this.silent) return;
-    this.logger.info(...args, message);
+    this.logger.info(message, ...args);
   }
 
   warn(message: string, ...args: unknown[]) {
     if (this.silent) return;
-    this.logger.warn(...args, message);
+    this.logger.warn(message, ...args);
   }
 
   error(message: string, ...args: unknown[]) {
     if (this.silent) return;
-    this.logger.error(...args, message);
+    this.logger.error(message, ...args);
   }
 
   debug(message: string, ...args: unknown[]) {
     if (this.silent) return;
-    this.logger.debug(...args, message);
+    this.logger.debug(message, ...args);
   }
 
   setLogLevel(level: string) {
-    if (level === 'none') {
-      this.silent = true;
+    if ('silent' in this.logger) {
+      this.logger.silent = level === 'none';
       return;
     }
-    this.logger.level(level);
+
+    if ('level' in this.logger) {
+      this.logger.level = level;
+    }
   }
 }
