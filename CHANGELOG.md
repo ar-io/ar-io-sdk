@@ -1,3 +1,10 @@
+# [2.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.3...v2.0.0-alpha.4) (2024-07-09)
+
+
+### Bug Fixes
+
+* use web version of arweave ([a8d73c2](https://github.com/ar-io/ar-io-sdk/commit/a8d73c28c727b2ff11d692eb8d71ecaa72a20085))
+
 # [2.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.2...v2.0.0-alpha.3) (2024-07-09)
 
 
