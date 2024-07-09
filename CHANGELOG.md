@@ -1,3 +1,11 @@
+# [2.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.1...v2.0.0-alpha.2) (2024-07-09)
+
+
+### Bug Fixes
+
+* **log:** replace bunyan with winston to ensure browser compatibility ([80b38e0](https://github.com/ar-io/ar-io-sdk/commit/80b38e08879c83a986542f3fd9c65379680bf9b5))
+* **log:** use console if in browser ([346ee74](https://github.com/ar-io/ar-io-sdk/commit/346ee741ec04aff0f2a75f6db5c1bf5e9cec6c3c))
+
 # [2.0.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v2.0.0-alpha.1) (2024-07-09)
 
 
