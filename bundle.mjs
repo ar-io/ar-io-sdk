@@ -17,13 +17,12 @@ const bundle = async () => {
           crypto: true,
           process: true,
           fs: true,
+          buffer: true,
         },
       }),
     ],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
-    // bunyan - these are not available in the browser
-    external: ['dtrace-provider', 'fs', 'mv', 'os', 'source-map-support'],
   })
     .catch((e) => {
       console.log(e);
