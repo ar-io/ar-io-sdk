@@ -22,14 +22,14 @@ yarn start
 
 ## Polyfills
 
-The `@ar.io/sdk` uses some modern browser features that may not be available in all browsers. To ensure compatibility, you may need to include polyfills when your `tsconfig.json` uses `moduleResolution: "node"`.
+The `@ar.io/sdk` uses some modern browser features that may not be available in all browsers. To ensure compatibility, you may need to include some polyfills. This example uses the [vite-plugin-node-polyfills] plugin to include the necessary polyfills.
 
 The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 
 ```json
 {
   "compilerOptions": {
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler", // or nodenext are reccomended to use named exports (e.g. @ar.io/sdk/web)
     "lib": ["es2015", "dom"]
   }
 }
@@ -51,4 +51,4 @@ module.exports = {
 };
 ```
 
-If you're project is using `moduleResolution: "nodenext"`, you can remove the polyfills from the webpack configuration and use named export for web - `@ar.io/sdk/web` - which includes the necessary polyfills.
+If you are using a bundler other than Webpack, you may need to include the necessary polyfills in a similar way.
