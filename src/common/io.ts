@@ -90,7 +90,7 @@ export class IOReadable implements AoIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = Arweave.init({})) {
+  constructor(config?: ProcessConfiguration, arweave = new Arweave({})) {
     if (!config) {
       this.process = new AOProcess({
         processId: IO_TESTNET_PROCESS_ID,
