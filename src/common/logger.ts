@@ -20,8 +20,9 @@ import { Logger as ILogger } from '../types.js';
 import { version } from '../version.js';
 
 export class DefaultLogger implements ILogger {
-  private logger: Logger;
+  private logger: Logger | Console;
   private silent = false;
+
   constructor({
     level = 'info',
   }: {
@@ -39,8 +40,19 @@ export class DefaultLogger implements ILogger {
         version,
       },
       format: format.combine(format.timestamp(), format.json()),
-      transports: [new transports.Console()],
     });
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    if (typeof window !== 'undefined') {
+      this.logger = console;
+    } else {
+      this.logger.add(
+        new transports.Console({
+          format: format.combine(format.timestamp(), format.json()),
+        }),
+      );
+    }
   }
 
   info(message: string, ...args: unknown[]) {
@@ -64,11 +76,13 @@ export class DefaultLogger implements ILogger {
   }
 
   setLogLevel(level: string) {
-    if (level === 'none') {
-      this.logger.silent = true;
+    if ('silent' in this.logger) {
+      this.logger.silent = level === 'none';
       return;
     }
-    this.logger.silent = false;
-    this.logger.level = level;
+
+    if ('level' in this.logger) {
+      this.logger.level = level;
+    }
   }
 }
