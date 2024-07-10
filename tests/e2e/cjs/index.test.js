@@ -18,16 +18,16 @@ describe('IO', async () => {
   it('should be able to get first set of arns records', async () => {
     const records = await io.getArNSRecords();
     assert.ok(records);
-    assert(records.limit === 100); // default
-    assert(records.sortOrder === 'asc');
-    assert(records.sortBy === 'name');
+    assert(records.limit === 100);
+    assert(records.sortOrder === 'desc');
+    assert(records.sortBy === 'startTimestamp');
     assert(typeof records.totalItems === 'number');
     assert(typeof records.totalPages === 'number');
     assert(typeof records.sortBy === 'string');
     assert(typeof records.sortOrder === 'string');
     assert(typeof records.limit === 'number');
     if (records.nextCursor) {
-      assert(typeof records.nextCursor === 'string');
+      assert(typeof records.nextCursor === 'number');
     }
     assert(Array.isArray(records.items));
     records.items.forEach((record) => {
@@ -69,7 +69,7 @@ describe('IO', async () => {
     });
   });
   it('should be able to get a single arns record', async () => {
-    const arns = await io.getArNSRecords({ name: 'ao' });
+    const arns = await io.getArNSRecord({ name: 'ardrive' });
     assert.ok(arns);
   });
 
@@ -102,15 +102,15 @@ describe('IO', async () => {
     const gateways = await io.getGateways();
     assert.ok(gateways);
     assert(gateways.limit === 100);
-    assert(gateways.sortOrder === 'asc');
-    assert(gateways.sortBy === 'gatewayAddress');
+    assert(gateways.sortOrder === 'desc');
+    assert(gateways.sortBy === 'startTimestamp');
     assert(typeof gateways.totalItems === 'number');
     assert(typeof gateways.totalPages === 'number');
     assert(typeof gateways.sortBy === 'string');
     assert(typeof gateways.sortOrder === 'string');
     assert(typeof gateways.limit === 'number');
     if (gateways.nextCursor) {
-      assert(typeof gateways.nextCursor === 'string');
+      assert(typeof gateways.nextCursor === 'number');
     }
     assert(Array.isArray(gateways.items));
     gateways.items.forEach((gateway) => {
@@ -162,15 +162,15 @@ describe('IO', async () => {
     const balances = await io.getBalances();
     assert.ok(balances);
     assert(balances.limit === 100);
-    assert(balances.sortOrder === 'asc');
-    assert(balances.sortBy === 'address');
+    assert(balances.sortOrder === 'desc');
+    assert(balances.sortBy === 'balance');
     assert(typeof balances.totalItems === 'number');
     assert(typeof balances.totalPages === 'number');
     assert(typeof balances.sortBy === 'string');
     assert(typeof balances.sortOrder === 'string');
     assert(typeof balances.limit === 'number');
     if (balances.nextCursor) {
-      assert(typeof gateways.nextCursor === 'string');
+      assert(typeof gateways.nextCursor === 'number');
     }
     assert(Array.isArray(balances.items));
     balances.items.forEach((wallet) => {
@@ -183,20 +183,20 @@ describe('IO', async () => {
     const balances = await io.getBalances({
       cursor: 1000000,
       limit: 1,
-      sortBy: 'balance',
-      sortOrder: 'desc',
+      sortBy: 'address',
+      sortOrder: 'asc',
     });
     assert.ok(balances);
     assert(balances.limit === 1);
-    assert(balances.sortOrder === 'desc');
-    assert(balances.sortBy === 'balance');
+    assert(balances.sortOrder === 'asc');
+    assert(balances.sortBy === 'address');
     assert(typeof balances.totalItems === 'number');
     assert(typeof balances.totalPages === 'number');
     assert(typeof balances.sortBy === 'string');
     assert(typeof balances.sortOrder === 'string');
     assert(typeof balances.limit === 'number');
     if (balances.nextCursor) {
-      assert(typeof balances.nextCursor === 'number');
+      assert(typeof balances.nextCursor === 'string');
     }
     assert(Array.isArray(balances.items));
     balances.items.forEach((wallet) => {
