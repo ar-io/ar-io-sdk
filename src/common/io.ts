@@ -49,7 +49,6 @@ import {
 } from '../types.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
-import { DefaultLogger } from './logger.js';
 
 export class IO {
   static init(): AoIORead;
@@ -90,7 +89,7 @@ export class IOReadable implements AoIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = Arweave.init({})) {
+  constructor(config?: ProcessConfiguration, arweave = new Arweave({})) {
     if (!config) {
       this.process = new AOProcess({
         processId: IO_TESTNET_PROCESS_ID,
@@ -100,9 +99,6 @@ export class IOReadable implements AoIORead {
     } else if (isProcessIdConfiguration(config)) {
       this.process = new AOProcess({
         processId: config.processId,
-        logger: new DefaultLogger({
-          level: 'info',
-        }),
       });
     } else {
       throw new InvalidContractConfigurationError();

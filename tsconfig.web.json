@@ -6,7 +6,7 @@
     "outDir": "./lib/web",
     "moduleResolution": "bundler",
     "paths": {
-      "arweave": ["./node_modules/arweave/node/index.js"],
+      "arweave": ["./node_modules/arweave/web/index.js"],
       "arbundles": ["./node_modules/arbundles/build/web/bundle.js"]
     }
   }

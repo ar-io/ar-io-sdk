@@ -1,6 +1,7 @@
 const {
   IO,
   ioDevnetProcessId,
+  Logger,
   spawnANT,
   evolveANT,
   ArweaveSigner,
@@ -9,6 +10,9 @@ const {
 const Arweave = require('arweave');
 
 (async () => {
+  // set the log level for the SDK
+  Logger.default.setLogLevel('info');
+
   const arIO = IO.init();
   // testnet gateways
   const testnetGateways = await arIO.getGateways();

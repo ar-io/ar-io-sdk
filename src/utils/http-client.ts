@@ -17,19 +17,18 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import axiosRetry, { IAxiosRetryConfig } from 'axios-retry';
 
-import { DefaultLogger } from '../common/logger.js';
-import { Logger } from '../types.js';
+import { ILogger, Logger } from '../common/logger.js';
 import { version } from '../version.js';
 
 export interface AxiosInstanceParameters {
   axiosConfig?: Omit<AxiosRequestConfig, 'validateStatus'>;
   retryConfig?: IAxiosRetryConfig;
-  logger?: Logger;
+  logger?: ILogger;
 }
 
 export const createAxiosInstance = ({
   axiosConfig = {},
-  logger = new DefaultLogger(),
+  logger = Logger.default,
   retryConfig = {
     retries: 5,
     retryDelay: axiosRetry.exponentialDelay,

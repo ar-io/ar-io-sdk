@@ -16,22 +16,21 @@
  */
 import { AxiosInstance } from 'axios';
 
-import { HTTPClient, Logger } from '../types.js';
+import { HTTPClient } from '../types.js';
 import { createAxiosInstance } from '../utils/index.js';
 import { FailedRequestError, NotFound, UnknownError } from './error.js';
-import { DefaultLogger } from './logger.js';
+import { ILogger, Logger } from './logger.js';
 
 export class AxiosHTTPService implements HTTPClient {
   private axios: AxiosInstance;
-  private logger: Logger;
+  private logger: ILogger;
 
-  // TODO: re-implement axios-retry. Currently that package is broken for nodenext.
   constructor({
     url,
-    logger = new DefaultLogger(),
+    logger = Logger.default,
   }: {
     url: string;
-    logger?: Logger;
+    logger?: ILogger;
   }) {
     this.logger = logger;
     this.axios = createAxiosInstance({
