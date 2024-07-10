@@ -91,7 +91,7 @@ export class IOReadable implements AoIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = new Arweave({})) {
+  constructor(config?: ProcessConfiguration, arweave = Arweave.init({})) {
     if (!config) {
       this.process = new AOProcess({
         processId: IO_TESTNET_PROCESS_ID,
@@ -280,11 +280,36 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getGateways(): Promise<
-    Record<string, AoGateway> | Record<string, never>
-  > {
-    return this.process.read<Record<string, AoGateway>>({
-      tags: [{ name: 'Action', value: 'Gateways' }],
+  async getGateways(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>> {
+    const params = {
+      page: 1,
+      pageSize: 100,
+      sortBy: 'gatewayAddress',
+      sortOrder: 'asc',
+      ...pageParams,
+    };
+
+    const alTags = [
+      { name: 'Action', value: 'Paginated-Gateways' },
+      { name: 'Page', value: params.page.toString() },
+      { name: 'Page-Size', value: params.pageSize.toString() },
+      { name: 'Sort-By', value: params.sortBy },
+      { name: 'Sort-Order', value: params.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = alTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<
+      PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>
+    >({
+      tags: prunedTags,
     });
   }
 
