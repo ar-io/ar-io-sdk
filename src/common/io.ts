@@ -209,7 +209,6 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  // @deprecated - use call with pagination
   async getArNSRecords(
     pageParams?: PaginationParams,
   ): Promise<PaginationResult<AoArNSNameData & { name: string }>> {
