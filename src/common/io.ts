@@ -40,6 +40,8 @@ import {
   ContractSigner,
   JoinNetworkParams,
   OptionalSigner,
+  PaginationParams,
+  PaginationResult,
   ProcessConfiguration,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -197,50 +199,23 @@ export class IOReadable implements AoIORead {
   }
 
   // @deprecated - use call with pagination
-  async getArNSRecords(): Promise<Record<string, AoArNSNameData>>;
-  async getArNSRecords(pageParams: {
-    page: number;
-    pageSize: number;
-    sortBy?: keyof (AoArNSNameData & { name: string });
-    sortOrder?: 'asc' | 'desc';
-  }): Promise<{
-    records: (AoArNSNameData & { name: string })[];
-    hasNextPage: boolean;
-    totalItems: number;
-    totalPages: number;
-    sortBy: 'string';
-    sortOrder: 'asc' | 'desc';
-  }>;
-  async getArNSRecords(pageParams?: {
-    page?: number;
-    pageSize?: number;
-    sortBy?: keyof (AoArNSNameData & { name: string });
-    sortOrder?: 'asc' | 'desc';
-  }): Promise<
-    | Record<string, AoArNSNameData>
-    | { records: (AoArNSNameData & { name: string })[] }
-  > {
-    if (!pageParams) {
-      // Deprecated call without pagination
-      return this.process.read<Record<string, AoArNSNameData>>({
-        tags: [{ name: 'Action', value: 'Records' }],
-      });
-    }
-
-    // Call with pagination
-    const {
-      page = 1,
-      pageSize = 100,
-      sortBy = 'name',
-      sortOrder = 'desc',
-    } = pageParams;
+  async getArNSRecords(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<AoArNSNameData & { name: string }>> {
+    const params = {
+      page: 1,
+      pageSize: 100,
+      sortBy: 'name',
+      sortOrder: 'asc',
+      ...pageParams,
+    };
 
     const alTags = [
       { name: 'Action', value: 'Paginated-Records' },
-      { name: 'Page', value: page.toString() },
-      { name: 'Page-Size', value: pageSize.toString() },
-      { name: 'Sort-By', value: sortBy },
-      { name: 'Sort-Order', value: sortOrder },
+      { name: 'Page', value: params.page.toString() },
+      { name: 'Page-Size', value: params.pageSize.toString() },
+      { name: 'Sort-By', value: params.sortBy },
+      { name: 'Sort-Order', value: params.sortOrder },
     ];
 
     const prunedTags: { name: string; value: string }[] = alTags.filter(
@@ -250,14 +225,9 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<{
-      records: (AoArNSNameData & { name: string })[];
-      hasNextPage: boolean;
-      totalItems: number;
-      totalPages: number;
-      sortBy: 'string';
-      sortOrder: 'asc' | 'desc';
-    }>({
+    return this.process.read<
+      PaginationResult<AoArNSNameData & { name: string }>
+    >({
       tags: prunedTags,
     });
   }

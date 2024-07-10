@@ -63,6 +63,22 @@ export function isLeasedArNSRecord(
   return record.type === 'lease' && record.endTimestamp !== undefined;
 }
 
+export type PaginationParams = {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type PaginationResult<T> = {
+  items: T[];
+  hasNextPage: boolean;
+  totalItems: number;
+  totalPages: number;
+  sortBy: keyof T;
+  sortOrder: 'asc' | 'desc';
+};
+
 export type ProcessConfiguration =
   | {
       process?: AOProcess;
@@ -123,18 +139,9 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
-  // @deprecated - use getArNSRecord with pagination parameters
-  getArNSRecords(): Promise<
-    Record<string, AoArNSNameData> | Record<string, never>
-  >;
-  getArNSRecords({ page, pageSize, sortBy, sortOrder }): Promise<{
-    records: (AoArNSNameData & { name: string })[];
-    hasNextPage: boolean;
-    totalItems: number;
-    totalPages: number;
-    sortBy: 'string';
-    sortOrder: 'asc' | 'desc';
-  }>;
+  getArNSRecords(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoArNSNameData & { name: string }>>;
   getArNSReservedNames(): Promise<
     Record<string, AoArNSReservedNameData> | Record<string, never>
   >;

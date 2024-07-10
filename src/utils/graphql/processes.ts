@@ -39,13 +39,32 @@ export const getANTProcessesOwnedByWallet = async ({
 }): Promise<ProcessId[]> => {
   const throttle = pLimit(50);
   // get the record names of the registry - TODO: this may need to be paginated
-  const uniqueContractProcessIds = await contract
-    .getArNSRecords()
-    .then((records) =>
-      Object.values(records)
-        .filter((record) => record.processId !== undefined)
-        .map((record) => record.processId),
-    );
+  let hasNextPage = true;
+  let page = 0;
+  const records: Record<string, AoArNSNameData> = {};
+  while (hasNextPage) {
+    const pageResult = await contract
+      .getArNSRecords({ page, pageSize: 100 })
+      .catch((e) => {
+        console.error(`Error getting ArNS records: ${e}`);
+        return undefined;
+      });
+
+    if (!pageResult) {
+      return [];
+    }
+
+    pageResult.items.forEach((record) => {
+      const { name, ...recordDetails } = record;
+      records[name] = recordDetails;
+    });
+    hasNextPage = pageResult.hasNextPage;
+    page++;
+  }
+
+  const uniqueContractProcessIds = Object.values(records)
+    .filter((record) => record.processId !== undefined)
+    .map((record) => record.processId);
 
   // check the contract owner and controllers
   const ownedOrControlledByWallet = await Promise.all(
@@ -117,13 +136,31 @@ export class ArNSEventEmitter extends EventEmitter {
       { state: AoANTState | undefined; names: Record<string, AoArNSNameData> }
     > = {};
 
-    await timeout(
-      this.timeoutMs,
-      this.contract.getArNSRecords().catch((e) => {
-        this.emit('error', `Error getting ArNS records: ${e}`);
-        return {};
-      }),
-    ).then((records) => {
+    await timeout(this.timeoutMs, async () => {
+      let hasNextPage = true;
+      let page = 0;
+      const records: Record<string, AoArNSNameData> = {};
+      while (hasNextPage) {
+        const pageResult = await this.contract
+          .getArNSRecords({ page, pageSize: 100 })
+          .catch((e) => {
+            this.emit('error', `Error getting ArNS records: ${e}`);
+            return undefined;
+          });
+
+        if (!pageResult) {
+          return [];
+        }
+
+        pageResult.items.forEach((record) => {
+          const { name, ...recordDetails } = record;
+          records[name] = recordDetails;
+        });
+        hasNextPage = pageResult.hasNextPage;
+        page++;
+      }
+      return records;
+    }).then((records) => {
       if (!records) return;
       Object.entries(records).forEach(([name, record]) => {
         if (record.processId === undefined) {
