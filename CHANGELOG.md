@@ -1,3 +1,10 @@
+# [2.0.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.6...v2.0.0-alpha.7) (2024-07-10)
+
+
+### Bug Fixes
+
+* **arweave:** use default arweave in IO ([21d25b9](https://github.com/ar-io/ar-io-sdk/commit/21d25b9e1109bc18ba4e074f314848143ed0828c))
+
 # [2.0.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.5...v2.0.0-alpha.6) (2024-07-10)
 
 
