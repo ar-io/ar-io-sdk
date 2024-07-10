@@ -97,9 +97,55 @@ describe('IO', async () => {
     assert.ok(reservedNames);
   });
 
-  it('should be able to get gateways', async () => {
+  it('should be able to get first page of gateways', async () => {
     const gateways = await io.getGateways();
     assert.ok(gateways);
+    assert(gateways.page === 1);
+    assert(gateways.pageSize === 100);
+    assert(gateways.sortOrder === 'asc');
+    assert(gateways.sortBy === 'gatewayAddress');
+    assert(typeof gateways.hasNextPage === 'boolean');
+    assert(typeof gateways.totalItems === 'number');
+    assert(typeof gateways.totalPages === 'number');
+    assert(typeof gateways.sortBy === 'string');
+    assert(typeof gateways.sortOrder === 'string');
+    assert(Array.isArray(gateways.items));
+    // check the records
+    gateways.items.forEach((gateway) => {
+      assert(typeof gateway.gatewayAddress === 'string');
+      assert(typeof gateway.observerAddress === 'string');
+      assert(typeof gateway.startTimestamp === 'number');
+      assert(typeof gateway.operatorStake === 'number');
+      assert(typeof gateway.totalDelegatedStake === 'number');
+    });
+  });
+
+  it('should be able to get a specific page of gateways', async () => {
+    const gateways = await io.getGateways({
+      page: 2,
+      pageSize: 1,
+      sortBy: 'operatorStake',
+      sortOrder: 'desc',
+    });
+    assert.ok(gateways);
+    assert(gateways.page === 2);
+    assert(gateways.pageSize === 1);
+    assert(gateways.sortOrder === 'desc');
+    assert(gateways.sortBy === 'operatorStake');
+    assert(typeof gateways.hasNextPage === 'boolean');
+    assert(typeof gateways.totalItems === 'number');
+    assert(typeof gateways.totalPages === 'number');
+    assert(typeof gateways.sortBy === 'string');
+    assert(typeof gateways.sortOrder === 'string');
+    assert(Array.isArray(gateways.items));
+    // check the gateways
+    gateways.items.forEach((gateway) => {
+      assert(typeof gateway.gatewayAddress === 'string');
+      assert(typeof gateway.observerAddress === 'string');
+      assert(typeof gateway.startTimestamp === 'number');
+      assert(typeof gateway.operatorStake === 'number');
+      assert(typeof gateway.totalDelegatedStake === 'number');
+    });
   });
 
   it('should be able to get a single gateway', async () => {

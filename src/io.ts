@@ -129,9 +129,9 @@ export interface AoIORead {
   }: {
     address: WalletAddress;
   }): Promise<AoGateway | undefined>;
-  getGateways(): Promise<
-    Record<WalletAddress, AoGateway> | Record<string, never>
-  >;
+  getGateways(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(): Promise<Record<WalletAddress, number> | Record<string, never>>;
   getArNSRecord({
