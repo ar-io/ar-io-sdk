@@ -187,6 +187,7 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  leaveNetwork(options?: WriteOptions): Promise<AoMessageResult>;
   updateGatewaySettings(
     {
       allowDelegatedStaking,
