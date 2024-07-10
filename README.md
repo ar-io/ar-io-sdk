@@ -23,9 +23,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances()`](#getbalances)
     - [`getGateway({ address })`](#getgateway-address-)
-    - [`getGateways()`](#getgateways)
+    - [`getGateways({ page, pageSize, sortBy, sortOrder })`](#getgateways-page-pagesize-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
-    - [`getArNSRecords()`](#getarnsrecords)
+    - [`getArNSRecords({ page, pageSize, sortBy, sortOrder })`](#getarnsrecords-page-pagesize-sortby-sortorder-)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
@@ -362,24 +362,54 @@ const gateway = await io.getGateway({
 
 </details>
 
-#### `getGateways()`
+#### `getGateways({ page, pageSize, sortBy, sortOrder })`
 
-Retrieves the registered gateways of the IO process.
+Retrieves registered gateways of the IO process, paginated and sorted by the specified criteria.
 
 ```typescript
 const io = IO.init();
-const gateways = await io.getGateways();
+const gateways = await io.getGateways({
+  page: 1,
+  pageSize: 10,
+  sortOrder: 'desc',
+  sortBy: 'operatorStake',
+});
 ```
+
+Available `sortBy` options are any of the keys on the gateway object, e.g. `operatorStake`, `start`, `status`, `settings.fqdn`, `settings.label`, `settings.note`, `settings.port`, `settings.protocol`, etc.
 
 <details>
   <summary>Output</summary>
 
 ```json
-{
-  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-    "end": 0,
-    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000000000, // value in mIO
+[
+  {
+    "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+    "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+    "operatorStake": 250000000000,
+    "settings": {
+      "fqdn": "ar-io.dev",
+      "label": "AR.IO Test",
+      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+      "port": 443,
+      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+      "protocol": "https"
+    },
+    "start": 1256694,
+    "stats": {
+      "failedConsecutiveEpochs": 0,
+      "passedEpochCount": 30,
+      "submittedEpochCount": 30,
+      "totalEpochParticipationCount": 31,
+      "totalEpochsPrescribedCount": 31
+    },
+    "status": "joined",
+    "vaults": {}
+  },
+  {
+    "gatewayAddress": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+    "observerAddress": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+    "operatorStake": 100000000,
     "settings": {
       "fqdn": "ar-io.dev",
       "label": "AR.IO Test",
@@ -399,7 +429,7 @@ const gateways = await io.getGateways();
     "status": "joined",
     "vaults": {}
   }
-}
+]
 ```
 
 </details>
@@ -428,35 +458,44 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 </details>
 
-#### `getArNSRecords()`
+#### `getArNSRecords({ page, pageSize, sortBy, sortOrder })`
 
 Retrieves all registered ArNS records of the IO process.
 
 ```typescript
 const io = IO.init();
-const records = await io.getArNSRecords();
+const records = await io.getArNSRecords({
+  page: 1,
+  pageSize: 10,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
 ```
+
+Available `sortBy` options are any of the keys on the record object, e.g. `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
 
 <details>
   <summary>Output</summary>
 
 ```json
-{
-  "ardrive": {
-    "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-    "endTimestamp": 1711122739,
-    "startTimestamp": 1694101828,
-    "type": "lease",
-    "undernames": 100
-  },
-  "ar-io": {
+[
+  {
+    "name": "ar-io",
     "processId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
     "purchasePrice": 75541282285, // value in mIO
     "startTimestamp": 1706747215,
     "type": "permabuy",
     "undernames": 10
+  },
+  {
+    "name": "ardrive",
+    "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+    "endTimestamp": 1711122739,
+    "startTimestamp": 1694101828,
+    "type": "lease",
+    "undernames": 100
   }
-}
+]
 ```
 
 </details>
