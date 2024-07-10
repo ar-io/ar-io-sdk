@@ -133,7 +133,9 @@ export interface AoIORead {
     params?: PaginationParams,
   ): Promise<PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
-  getBalances(): Promise<Record<WalletAddress, number> | Record<string, never>>;
+  getBalances(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<{ address: WalletAddress; balance: number }>>;
   getArNSRecord({
     name,
   }: {

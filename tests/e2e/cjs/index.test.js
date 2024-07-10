@@ -153,9 +153,48 @@ describe('IO', async () => {
     assert.ok(gateways);
   });
 
-  it('should be able to get balances', async () => {
+  it('should be able to get balances, defaulting to first page', async () => {
     const balances = await io.getBalances();
     assert.ok(balances);
+    assert(balances.page === 1);
+    assert(balances.pageSize === 100);
+    assert(balances.sortOrder === 'asc');
+    assert(balances.sortBy === 'address');
+    assert(typeof balances.hasNextPage === 'boolean');
+    assert(typeof balances.totalItems === 'number');
+    assert(typeof balances.totalPages === 'number');
+    assert(typeof balances.sortBy === 'string');
+    assert(typeof balances.sortOrder === 'string');
+    assert(Array.isArray(balances.items));
+    balances.items.forEach((wallet) => {
+      assert(typeof wallet.address === 'string');
+      assert(typeof wallet.balance === 'number');
+    });
+  });
+
+  it('should be able to get balances of a specific to first page', async () => {
+    const balances = await io.getBalances({
+      page: 2,
+      pageSize: 1,
+      sortBy: 'balance',
+      sortOrder: 'desc',
+    });
+    assert.ok(balances);
+    assert(balances.page === 2);
+    assert(balances.pageSize === 1);
+    assert(balances.sortOrder === 'desc');
+    assert(balances.sortBy === 'balance');
+    assert(typeof balances.hasNextPage === 'boolean');
+    assert(typeof balances.totalItems === 'number');
+    assert(typeof balances.totalPages === 'number');
+    assert(typeof balances.sortBy === 'string');
+    assert(typeof balances.sortOrder === 'string');
+    assert(Array.isArray(balances.items));
+    // check the records
+    balances.items.forEach((wallet) => {
+      assert(typeof wallet.address === 'string');
+      assert(typeof wallet.balance === 'number');
+    });
   });
 
   it('should be able to get a single balance', async () => {
