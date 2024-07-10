@@ -15,11 +15,56 @@ describe('IO', async () => {
     assert.ok(epoch);
   });
 
-  it('should be able to get arns records', async () => {
-    const arns = await io.getArNSRecords();
-    assert.ok(arns);
+  it('should be able to get first page of arns records', async () => {
+    const records = await io.getArNSRecords();
+    assert.ok(records);
+    assert(records.page === 1);
+    assert(records.pageSize === 100);
+    assert(records.sortOrder === 'asc');
+    assert(records.sortBy === 'name');
+    assert(typeof records.hasNextPage === 'boolean');
+    assert(typeof records.totalItems === 'number');
+    assert(typeof records.totalPages === 'number');
+    assert(typeof records.sortBy === 'string');
+    assert(typeof records.sortOrder === 'string');
+    assert(Array.isArray(records.items));
+    // check the records
+    records.items.forEach((record) => {
+      assert(typeof record.processId === 'string');
+      assert(typeof record.name === 'string');
+      assert(typeof record.startTimestamp === 'number');
+      assert(['lease', 'permabuy'].includes(record.type));
+      assert(typeof record.undernameLimit === 'number');
+    });
   });
 
+  it('should be able to return a specific page of arns records', async () => {
+    const records = await io.getArNSRecords({
+      page: 10,
+      pageSize: 5,
+      sortOrder: 'desc',
+      sortBy: 'name',
+    });
+    assert.ok(records);
+    assert(records.page === 10);
+    assert(records.pageSize === 5);
+    assert(records.sortOrder === 'desc');
+    assert(records.sortBy === 'name');
+    assert(Array.isArray(records.items));
+    assert(typeof records.hasNextPage === 'boolean');
+    assert(typeof records.totalItems === 'number');
+    assert(typeof records.totalPages === 'number');
+    assert(typeof records.sortBy === 'string');
+    assert(Array.isArray(records.items));
+    // check the records
+    records.items.forEach((record) => {
+      assert(typeof record.processId === 'string');
+      assert(typeof record.name === 'string');
+      assert(typeof record.startTimestamp === 'number');
+      assert(['lease', 'permabuy'].includes(record.type));
+      assert(typeof record.undernameLimit === 'number');
+    });
+  });
   it('should be able to get a single arns record', async () => {
     const arns = await io.getArNSRecords({ name: 'ao' });
     assert.ok(arns);
