@@ -260,7 +260,7 @@ const info = await io.getInfo();
   "name": "Testnet IO",
   "ticker": "tIO",
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-  "denomination": "IO"
+  "denomination": "6"
 }
 ```
 
@@ -277,17 +277,14 @@ const balance = await io
   .getBalance({
     address: 'INSERT_WALLET_ADDRESS',
   })
-  .then((balance) => new mIOToken().toIO());
-
-console.log(balance.valueOf());
+  .then((balance) => new mIOToken().toIO()); // convert it to IO for readability
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-// value in IO
-1_000_000
+100000
 ```
 
 </details>
@@ -312,9 +309,9 @@ const balances = await io.getBalances();
 
 ```json
 {
-  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000000000, // value in mIO
-  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000000000, // value in mIO
-  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000000000 // value in mIO
+  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000000000,
+  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000000000,
+  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000000000
 }
 ```
 
@@ -338,7 +335,7 @@ const gateway = await io.getGateway({
 {
   "end": 0,
   "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000000000, // value in mIO
+  "operatorStake": 250000000000,
   "settings": {
     "fqdn": "ar-io.dev",
     "label": "AR.IO Test",
@@ -460,7 +457,7 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 #### `getArNSRecords({ page, pageSize, sortBy, sortOrder })`
 
-Retrieves all registered ArNS records of the IO process.
+Retrieves all registered ArNS records of the IO process, paginated and sorted by the specified criteria.
 
 ```typescript
 const io = IO.init();
@@ -472,7 +469,7 @@ const records = await io.getArNSRecords({
 });
 ```
 
-Available `sortBy` options are any of the keys on the record object, e.g. `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
+Available `sortBy` options are any of the keys on the record object, e.g. `name`, `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
 
 <details>
   <summary>Output</summary>
@@ -547,11 +544,12 @@ const distributions = await io.getDistributions();
 
 ```json
 {
-  "epochEndHeight": 1382379,
-  "epochPeriod": 43,
-  "epochStartHeight": 1381660,
-  "epochZeroStartHeight": 1350700,
-  "nextDistributionHeight": 1382394
+  "totalEligibleRewards": 100000000,
+  "totalDistributedRewards": 100000000,
+  "distributedTimestamp": 1711122739,
+  "rewards": {
+    "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+  }
 }
 ```
 
@@ -604,6 +602,7 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
   "distributions": {
     "distributedTimestamp": 1711122739,
     "totalEligibleRewards": 100000000,
+    "totoalDistributedRewards": 100000000,
     "rewards": {
       "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
     }
@@ -647,7 +646,7 @@ const epoch = await io.getCurrentEpoch();
     {
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "stake": 10000000000, // value in mIO
+      "stake": 10000000000,
       "start": 1292450,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
@@ -711,16 +710,14 @@ const price = await io
     name: 'ar-io',
     type: 'permabuy',
   })
-  .then((p) => new mIOToken(p).toIO());
-// Price is returned as mio, convert to IO and log it out
-console.log({ price: price.valueOf() });
+  .then((p) => new mIOToken(p).toIO()); // convert to IO for readability
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-{ "price": 1642.62 }
+1642.34
 ```
 
 </details>
