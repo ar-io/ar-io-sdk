@@ -77,6 +77,7 @@ export type PaginationResult<T> = {
   totalPages: number;
   sortBy: keyof T;
   sortOrder: 'asc' | 'desc';
+  cursorField: string;
 };
 
 export type ProcessConfiguration =

@@ -23,7 +23,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ page, pageSize, sortBy, sortOrder })`](#getbalances-page-pagesize-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
-    - [`getGateways({ page, pageSize, sortBy, sortOrder })`](#getgateways-page-pagesize-sortby-sortorder-)
+    - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-page-pagesize-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ page, pageSize, sortBy, sortOrder })`](#getarnsrecords-page-pagesize-sortby-sortorder-)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
@@ -289,15 +289,15 @@ const balance = await io
 
 </details>
 
-#### `getBalances({ page, pageSize, sortBy, sortOrder })`
+#### `getBalances({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves the balances of the IO process in `mIO`, paginated and sorted by the specified criteria.
+Retrieves the balances of the IO process in `mIO`, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous page.
 
 ```typescript
 const io = IO.init();
 const balances = await io.getBalances({
-  page: 1,
-  pageSize: 10,
+  cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
+  limit: 1,
   sortBy: 'balance',
   sortOrder: 'desc',
 });
@@ -367,21 +367,20 @@ const gateway = await io.getGateway({
 
 </details>
 
-#### `getGateways({ page, pageSize, sortBy, sortOrder })`
+#### `getGateways({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves registered gateways of the IO process, paginated and sorted by the specified criteria.
+Retrieves registered gateways of the IO process, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last gateway address from the previous page.
 
 ```typescript
 const io = IO.init();
 const gateways = await io.getGateways({
-  page: 1,
-  pageSize: 10,
+  limit: 10,
   sortOrder: 'desc',
   sortBy: 'operatorStake',
 });
 ```
 
-Available `sortBy` options are any of the keys on the gateway object, e.g. `operatorStake`, `start`, `status`, `settings.fqdn`, `settings.label`, `settings.note`, `settings.port`, `settings.protocol`, etc.
+Available `sortBy` options are any of the keys on the gateway object, e.g. `operatorStake`, `start`, `status`, `settings.fqdn`, `settings.label`, `settings.note`, `settings.port`, `settings.protocol`, `stats.failedConsecutiveEpochs`, `stats.passedConsecutiveEpochs`, etc.
 
 <details>
   <summary>Output</summary>
@@ -463,14 +462,14 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 </details>
 
-#### `getArNSRecords({ page, pageSize, sortBy, sortOrder })`
+#### `getArNSRecords({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all registered ArNS records of the IO process, paginated and sorted by the specified criteria.
+Retrieves all registered ArNS records of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous page.
 
 ```typescript
 const io = IO.init();
 const records = await io.getArNSRecords({
-  page: 1,
+  cursor: 'ar-io',
   pageSize: 10,
   sortBy: 'startTimestamp',
   sortOrder: 'desc',
@@ -485,9 +484,9 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 ```json
 [
   {
-    "name": "ar-io",
+    "name": "ao",
     "processId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
-    "purchasePrice": 75541282285, // value in mIO
+    "purchasePrice": 75541282285,
     "startTimestamp": 1706747215,
     "type": "permabuy",
     "undernames": 10
