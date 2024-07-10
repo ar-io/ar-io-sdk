@@ -106,6 +106,7 @@ export class AoANTReadable implements AoANTRead {
     Ticker: string;
     Denomination: number;
     Owner: string;
+    ['Source-Code-TX-ID']?: string;
   }> {
     const tags = [{ name: 'Action', value: 'Info' }];
     const info = await this.process.read<{
@@ -113,6 +114,7 @@ export class AoANTReadable implements AoANTRead {
       Ticker: string;
       Denomination: number;
       Owner: string;
+      ['Source-Code-TX-ID']?: string;
     }>({
       tags,
     });

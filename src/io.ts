@@ -270,6 +270,7 @@ export interface AoANTRead {
     Ticker: string;
     Denomination: number;
     Owner: string;
+    ['Source-Code-TX-ID']?: string;
   }>;
   getRecord({ undername }): Promise<ANTRecord | undefined>;
   getRecords(): Promise<Record<string, ANTRecord>>;

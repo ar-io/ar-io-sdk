@@ -17,7 +17,7 @@
 import { connect } from '@permaweb/aoconnect';
 
 import { defaultArweave } from '../common/arweave.js';
-import { AOProcess } from '../common/index.js';
+import { ANT, AOProcess } from '../common/index.js';
 import {
   ANT_LUA_ID,
   AOS_MODULE_ID,
@@ -97,29 +97,46 @@ export async function evolveANT({
   luaCodeTxId?: string;
   ao?: AoClient;
 }): Promise<string> {
+  const aosClient = new AOProcess({
+    processId,
+    ao,
+  });
+
+  const ant = ANT.init({
+    process: aosClient,
+  });
+
+  const info = await ant.getInfo();
+
+  const shouldCallEvalTwice = info['Source-Code-TX-ID'] === undefined;
+
+  if (info['Source-Code-TX-ID'] == luaCodeTxId) {
+    throw new Error('ANT is already evolved to this source code');
+  }
+
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
     decode: true,
     string: true,
   })) as string;
 
-  const aosClient = new AOProcess({
-    processId,
-    ao,
-  });
+  /**
+   *  we call eval twice to ensure the Source code tx id is set in the process.
+   * ANTs that do not have the prepended evolve handler will not do it immediately until eval is called again.
+   * if source code tx id is present, then we assume the prepended handler is added.
+   */
 
-  // we call eval twice to ensure the Source code tx id is set in the process. ANTs that do not have the prepended evolve handler will not do it immediately until eval is called again.
-  // TODO: evaluate gas cost of this compared to checking the with a read first vs just calling it twice.
-  // we would not need this with a weavedrive implementation of "evolve"
-  await aosClient.send({
-    tags: [
-      { name: 'Action', value: 'Eval' },
-      { name: 'App-Name', value: 'ArNS-ANT' },
-      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
-    ],
-    data: luaString,
-    signer,
-  });
+  if (shouldCallEvalTwice) {
+    await aosClient.send({
+      tags: [
+        { name: 'Action', value: 'Eval' },
+        { name: 'App-Name', value: 'ArNS-ANT' },
+        { name: 'Source-Code-TX-ID', value: luaCodeTxId },
+      ],
+      data: luaString,
+      signer,
+    });
+  }
 
   const { id } = await aosClient.send({
     tags: [
