@@ -1,3 +1,10 @@
+# [2.0.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.4...v2.0.0-alpha.5) (2024-07-10)
+
+
+### Bug Fixes
+
+* **web:** fix cjs export for web ([30c5978](https://github.com/ar-io/ar-io-sdk/commit/30c59784dbf13a0fc293423bd846ec00444529ae))
+
 # [2.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.3...v2.0.0-alpha.4) (2024-07-09)
 
 
