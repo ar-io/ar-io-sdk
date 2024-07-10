@@ -64,15 +64,15 @@ export function isLeasedArNSRecord(
 }
 
 export type PaginationParams = {
-  page?: number;
-  pageSize?: number;
+  cursor?: string | number;
+  limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 };
 
 export type PaginationResult<T> = {
   items: T[];
-  hasNextPage: boolean;
+  nextCursor: string | number | undefined;
   totalItems: number;
   totalPages: number;
   sortBy: keyof T;

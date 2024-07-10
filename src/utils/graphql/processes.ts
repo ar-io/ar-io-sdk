@@ -39,12 +39,11 @@ export const getANTProcessesOwnedByWallet = async ({
 }): Promise<ProcessId[]> => {
   const throttle = pLimit(50);
   // get the record names of the registry - TODO: this may need to be paginated
-  let hasNextPage = true;
-  let page = 0;
+  let cursor: string | number | undefined;
   const records: Record<string, AoArNSNameData> = {};
-  while (hasNextPage) {
+  do {
     const pageResult = await contract
-      .getArNSRecords({ page, pageSize: 100 })
+      .getArNSRecords({ cursor, limit: 100 })
       .catch((e) => {
         console.error(`Error getting ArNS records: ${e}`);
         return undefined;
@@ -58,9 +57,8 @@ export const getANTProcessesOwnedByWallet = async ({
       const { name, ...recordDetails } = record;
       records[name] = recordDetails;
     });
-    hasNextPage = pageResult.hasNextPage;
-    page++;
-  }
+    cursor = pageResult.nextCursor;
+  } while (cursor !== undefined);
 
   const uniqueContractProcessIds = Object.values(records)
     .filter((record) => record.processId !== undefined)
@@ -137,12 +135,11 @@ export class ArNSEventEmitter extends EventEmitter {
     > = {};
 
     await timeout(this.timeoutMs, async () => {
-      let hasNextPage = true;
-      let page = 0;
+      let cursor: string | number | undefined;
       const records: Record<string, AoArNSNameData> = {};
-      while (hasNextPage) {
+      do {
         const pageResult = await this.contract
-          .getArNSRecords({ page, pageSize: 100 })
+          .getArNSRecords({ cursor, limit: 100 })
           .catch((e) => {
             this.emit('error', `Error getting ArNS records: ${e}`);
             return undefined;
@@ -156,9 +153,8 @@ export class ArNSEventEmitter extends EventEmitter {
           const { name, ...recordDetails } = record;
           records[name] = recordDetails;
         });
-        hasNextPage = pageResult.hasNextPage;
-        page++;
-      }
+        cursor = pageResult.nextCursor;
+      } while (cursor !== undefined);
       return records;
     }).then((records) => {
       if (!records) return;
