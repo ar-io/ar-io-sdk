@@ -50,7 +50,7 @@
     },
     "./web": {
       "import": "./lib/esm/web/index.js",
-      "require": "./bundles/web.bundle.min.js",
+      "require": "./lib/cjs/web/index.js",
       "types": "./lib/types/web/index.d.ts",
       "browser": "./bundles/web.bundle.min.js"
     }
