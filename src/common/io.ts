@@ -47,6 +47,7 @@ import {
   WithSigner,
   WriteOptions,
 } from '../types.js';
+import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
@@ -89,7 +90,7 @@ export class IOReadable implements AoIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = new Arweave({})) {
+  constructor(config?: ProcessConfiguration, arweave = defaultArweave) {
     if (!config) {
       this.process = new AOProcess({
         processId: IO_TESTNET_PROCESS_ID,
