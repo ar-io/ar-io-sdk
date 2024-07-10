@@ -32,6 +32,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
     - [`joinNetwork(params)`](#joinnetworkparams)
+    - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty })`](#decreasedelegatestake-target-qty-)
@@ -39,6 +40,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
+    - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
+    - [`extendLease({ name, years })`](#extendlease-name-years-)
   - [Configuration](#custom-configuration)
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
@@ -706,6 +709,21 @@ const { id: txId } = await io.joinNetwork(
     port: 443, // port number
     protocol: 'https', // only 'https' is supported
   },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `leaveNetwork()`
+
+Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `IO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.leaveNetwork(
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );

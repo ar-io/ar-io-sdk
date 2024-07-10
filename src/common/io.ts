@@ -625,6 +625,14 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
+  async leaveNetwork(options?: WriteOptions): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [...tags, { name: 'Action', value: 'Leave-Network' }],
+    });
+  }
+
   async updateGatewaySettings(
     {
       allowDelegatedStaking,
