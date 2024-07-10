@@ -1,3 +1,10 @@
+# [2.0.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.5...v2.0.0-alpha.6) (2024-07-10)
+
+
+### Bug Fixes
+
+* restore arweave path ([bfd806f](https://github.com/ar-io/ar-io-sdk/commit/bfd806fdd3d5b1040206eb1f23da47ec79353b6a))
+
 # [2.0.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.4...v2.0.0-alpha.5) (2024-07-10)
 
 
