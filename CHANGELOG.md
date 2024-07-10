@@ -1,3 +1,10 @@
+# [2.0.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.7...v2.0.0-alpha.8) (2024-07-10)
+
+
+### Bug Fixes
+
+* **io:** add leaveNetwork API ([54222ce](https://github.com/ar-io/ar-io-sdk/commit/54222ce65b25e203b243df7a7c2317f9dc1fc7b9))
+
 # [2.0.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.6...v2.0.0-alpha.7) (2024-07-10)
 
 
