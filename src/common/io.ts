@@ -220,7 +220,7 @@ export class IOReadable implements AoIORead {
       ...pageParams,
     };
 
-    const alTags = [
+    const allTags = [
       { name: 'Action', value: 'Paginated-Records' },
       { name: 'Page', value: params.page.toString() },
       { name: 'Page-Size', value: params.pageSize.toString() },
@@ -228,17 +228,10 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: params.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = alTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<
       PaginationResult<AoArNSNameData & { name: string }>
     >({
-      tags: prunedTags,
+      tags: allTags,
     });
   }
 
@@ -272,9 +265,29 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getBalances(): Promise<Record<WalletAddress, number>> {
-    return this.process.read<Record<string, number>>({
-      tags: [{ name: 'Action', value: 'Balances' }],
+  async getBalances(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<{ address: WalletAddress; balance: number }>> {
+    const params = {
+      page: 1,
+      pageSize: 100,
+      sortBy: 'address',
+      sortOrder: 'asc',
+      ...pageParams,
+    };
+
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Balances' },
+      { name: 'Page', value: params.page.toString() },
+      { name: 'Page-Size', value: params.pageSize.toString() },
+      { name: 'Sort-By', value: params.sortBy },
+      { name: 'Sort-Order', value: params.sortOrder },
+    ];
+
+    return this.process.read<
+      PaginationResult<{ address: WalletAddress; balance: number }>
+    >({
+      tags: allTags,
     });
   }
 
@@ -302,7 +315,7 @@ export class IOReadable implements AoIORead {
       ...pageParams,
     };
 
-    const alTags = [
+    const allTags = [
       { name: 'Action', value: 'Paginated-Gateways' },
       { name: 'Page', value: params.page.toString() },
       { name: 'Page-Size', value: params.pageSize.toString() },
@@ -310,17 +323,10 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: params.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = alTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<
       PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>
     >({
-      tags: prunedTags,
+      tags: allTags,
     });
   }
 
