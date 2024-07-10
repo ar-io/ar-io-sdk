@@ -21,7 +21,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getBalance({ address })`](#getbalance-address-)
-    - [`getBalances()`](#getbalances)
+    - [`getBalances({ page, pageSize, sortBy, sortOrder })`](#getbalances-page-pagesize-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ page, pageSize, sortBy, sortOrder })`](#getgateways-page-pagesize-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
@@ -289,30 +289,38 @@ const balance = await io
 
 </details>
 
-#### `getBalances()`
+#### `getBalances({ page, pageSize, sortBy, sortOrder })`
 
-Retrieves the balances of the IO process in `mIO`
-
-<!--
-// ALM - A part of me wonders whether streaming JSON might be beneficial in the future
-// and if providing streaming versions of these APIs will scale nicely longer term, e.g.
-// io.streamBalances({ sortingCriteria: BALANCE_DESC });
- -->
+Retrieves the balances of the IO process in `mIO`, paginated and sorted by the specified criteria.
 
 ```typescript
 const io = IO.init();
-const balances = await io.getBalances();
+const balances = await io.getBalances({
+  page: 1,
+  pageSize: 10,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-{
-  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000000000,
-  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000000000,
-  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000000000
-}
+[
+  {
+    "address": "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA",
+    "balance": 1000000
+  },
+  {
+    "address": "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck",
+    "balance": 500000
+  },
+  {
+    "address": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+    "balance": 10000
+  }
+]
 ```
 
 </details>
