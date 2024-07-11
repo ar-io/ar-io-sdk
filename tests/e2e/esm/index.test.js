@@ -23,10 +23,10 @@ describe('IO', async () => {
     assert(records.sortOrder === 'desc');
     assert(records.sortBy === 'startTimestamp');
     assert(typeof records.totalItems === 'number');
-    assert(typeof records.totalPages === 'number');
     assert(typeof records.sortBy === 'string');
     assert(typeof records.sortOrder === 'string');
     assert(typeof records.limit === 'number');
+    assert(typeof records.hasMore === 'boolean');
     if (records.nextCursor) {
       assert(typeof records.nextCursor === 'string');
     }
@@ -52,10 +52,10 @@ describe('IO', async () => {
     assert(records.sortOrder === 'desc');
     assert(records.sortBy === 'name');
     assert(typeof records.totalItems === 'number');
-    assert(typeof records.totalPages === 'number');
     assert(typeof records.sortBy === 'string');
     assert(typeof records.sortOrder === 'string');
     assert(typeof records.limit === 'number');
+    assert(typeof records.hasMore === 'boolean');
     if (records.nextCursor) {
       assert(typeof records.nextCursor === 'string');
     }
@@ -105,10 +105,10 @@ describe('IO', async () => {
     assert(gateways.sortOrder === 'desc');
     assert(gateways.sortBy === 'startTimestamp');
     assert(typeof gateways.totalItems === 'number');
-    assert(typeof gateways.totalPages === 'number');
     assert(typeof gateways.sortBy === 'string');
     assert(typeof gateways.sortOrder === 'string');
     assert(typeof gateways.limit === 'number');
+    assert(typeof gateways.hasMore === 'boolean');
     if (gateways.nextCursor) {
       assert(typeof gateways.nextCursor === 'string');
     }
@@ -134,12 +134,12 @@ describe('IO', async () => {
     assert(gateways.sortOrder === 'desc');
     assert(gateways.sortBy === 'operatorStake');
     assert(typeof gateways.totalItems === 'number');
-    assert(typeof gateways.totalPages === 'number');
     assert(typeof gateways.sortBy === 'string');
     assert(typeof gateways.sortOrder === 'string');
     assert(typeof gateways.limit === 'number');
+    assert(typeof gateways.hasMore === 'boolean');
     if (gateways.nextCursor) {
-      assert(typeof gateways.nextCursor === 'string'); // it's a number
+      assert(typeof gateways.nextCursor === 'string');
     }
     assert(Array.isArray(gateways.items));
     gateways.items.forEach((gateway) => {
@@ -165,10 +165,10 @@ describe('IO', async () => {
     assert(balances.sortOrder === 'desc');
     assert(balances.sortBy === 'balance');
     assert(typeof balances.totalItems === 'number');
-    assert(typeof balances.totalPages === 'number');
     assert(typeof balances.sortBy === 'string');
     assert(typeof balances.sortOrder === 'string');
     assert(typeof balances.limit === 'number');
+    assert(typeof balances.hasMore === 'boolean');
     if (balances.nextCursor) {
       assert(typeof gateways.nextCursor === 'string');
     }
@@ -191,10 +191,10 @@ describe('IO', async () => {
     assert(balances.sortOrder === 'asc');
     assert(balances.sortBy === 'address');
     assert(typeof balances.totalItems === 'number');
-    assert(typeof balances.totalPages === 'number');
     assert(typeof balances.sortBy === 'string');
     assert(typeof balances.sortOrder === 'string');
     assert(typeof balances.limit === 'number');
+    assert(typeof balances.hasMore === 'boolean');
     if (balances.nextCursor) {
       assert(typeof balances.nextCursor === 'string');
     }

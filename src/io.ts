@@ -74,10 +74,9 @@ export type PaginationResult<T> = {
   items: T[];
   nextCursor: string | undefined;
   totalItems: number;
-  totalPages: number;
   sortBy: keyof T;
   sortOrder: 'asc' | 'desc';
-  hasNextPage: boolean;
+  hasMore: boolean;
 };
 
 export type ProcessConfiguration =
