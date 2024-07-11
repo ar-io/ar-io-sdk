@@ -274,7 +274,7 @@ const io = IO.init();
 // the balance will be returned in mIO as a value
 const balance = await io
   .getBalance({
-    address: 'INSERT_WALLET_ADDRESS',
+    address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   })
   .then((balance) => new mIOToken().toIO()); // convert it to IO for readability
 ```
@@ -1250,11 +1250,10 @@ let hasMore = true;
 let cursor: string | undefined;
 const gateaways = [];
 while (hasMore) {
-  const { items, nextCursor, hasMore, totalItems, sortBy, sortOrder } =
-    await io.getGateways({ limit: 10, cursor });
+  const page = await io.getGateways({ limit: 10, cursor });
   gateaways.push(...items);
-  cursor = nextCursor;
-  hasMore = hasMore;
+  cursor = page.nextCursor;
+  hasMore = page.hasMore;
 }
 ```
 
