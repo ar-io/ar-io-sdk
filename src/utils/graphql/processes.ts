@@ -39,7 +39,7 @@ export const getANTProcessesOwnedByWallet = async ({
 }): Promise<ProcessId[]> => {
   const throttle = pLimit(50);
   // get the record names of the registry - TODO: this may need to be paginated
-  let cursor: string | number | undefined;
+  let cursor: string | undefined;
   const records: Record<string, AoArNSNameData> = {};
   do {
     const pageResult = await contract
@@ -135,7 +135,7 @@ export class ArNSEventEmitter extends EventEmitter {
     > = {};
 
     await timeout(this.timeoutMs, async () => {
-      let cursor: string | number | undefined;
+      let cursor: string | undefined;
       const records: Record<string, AoArNSNameData> = {};
       do {
         const pageResult = await this.contract
