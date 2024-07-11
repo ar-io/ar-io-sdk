@@ -45,28 +45,21 @@ const Arweave = require('arweave');
     signer: new ArweaveSigner(jwk),
   });
 
-  const evolveId = await evolveANT({
-    processId,
-    signer: new ArweaveSigner(jwk),
-    luaCodeTxId: '7L3jTSDLSvS_GkHkUwM9B7FgxmTZclHAX4INo69wBww',
-  });
-
   console.dir(
     {
       processId,
-      evolveId,
-      // testnetGateways,
-      // ardriveRecord,
-      // protocolBalance,
-      // arnsStats: {
-      //   'registered domains': Object.keys(allRecords).length,
-      //   ardrive: allRecords.ardrive,
-      // },
-      // oldEpoch,
-      // epoch,
-      // observations,
-      // observation,
-      // distributions,
+      testnetGateways,
+      ardriveRecord,
+      protocolBalance,
+      arnsStats: {
+        'registered domains': Object.keys(allRecords).length,
+        ardrive: allRecords.ardrive,
+      },
+      oldEpoch,
+      epoch,
+      observations,
+      observation,
+      distributions,
     },
     { depth: 2 },
   );
