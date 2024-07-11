@@ -28,7 +28,7 @@ describe('IO', async () => {
     assert(typeof records.sortOrder === 'string');
     assert(typeof records.limit === 'number');
     if (records.nextCursor) {
-      assert(typeof records.nextCursor === 'number');
+      assert(typeof records.nextCursor === 'string');
     }
     assert(Array.isArray(records.items));
     records.items.forEach((record) => {
@@ -110,7 +110,7 @@ describe('IO', async () => {
     assert(typeof gateways.sortOrder === 'string');
     assert(typeof gateways.limit === 'number');
     if (gateways.nextCursor) {
-      assert(typeof gateways.nextCursor === 'number');
+      assert(typeof gateways.nextCursor === 'string');
     }
     assert(Array.isArray(gateways.items));
     gateways.items.forEach((gateway) => {
@@ -139,7 +139,7 @@ describe('IO', async () => {
     assert(typeof gateways.sortOrder === 'string');
     assert(typeof gateways.limit === 'number');
     if (gateways.nextCursor) {
-      assert(typeof gateways.nextCursor === 'number'); // it's a number
+      assert(typeof gateways.nextCursor === 'string'); // it's a number
     }
     assert(Array.isArray(gateways.items));
     gateways.items.forEach((gateway) => {
@@ -170,7 +170,7 @@ describe('IO', async () => {
     assert(typeof balances.sortOrder === 'string');
     assert(typeof balances.limit === 'number');
     if (balances.nextCursor) {
-      assert(typeof gateways.nextCursor === 'number');
+      assert(typeof gateways.nextCursor === 'string');
     }
     assert(Array.isArray(balances.items));
     balances.items.forEach((wallet) => {
