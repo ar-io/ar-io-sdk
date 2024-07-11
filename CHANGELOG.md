@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0...v2.0.1) (2024-07-11)
+
+
+### Bug Fixes
+
+* **logger:** fixes the console logger to respect the log level provided by web clients ([99d7993](https://github.com/ar-io/ar-io-sdk/commit/99d79939806ef8f26407aa3237ea8773179b91a6))
+
 # [2.0.0](https://github.com/ar-io/ar-io-sdk/compare/v1.2.2...v2.0.0) (2024-07-11)
 
 ### Bug Fixes
