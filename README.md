@@ -1275,7 +1275,9 @@ while (hasMore) {
 
 ### Testing
 
-- `yarn test:integration` - runs integration tests against a local AO testnet
+- `yarn test` - runs e2e tests and unit tests
+- `yarn test:e2e` - runs e2e tests
+- `yarn test:unit` - runs unit tests
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
