@@ -36,10 +36,15 @@ import {
 } from '../io.js';
 import { mIOToken } from '../token.js';
 import {
+  AoArNSNameDataWithName,
+  AoBalanceWithAddress,
+  AoGatewayWithAddress,
   AoMessageResult,
   ContractSigner,
   JoinNetworkParams,
   OptionalSigner,
+  PaginationParams,
+  PaginationResult,
   ProcessConfiguration,
   TransactionId,
   UpdateGatewaySettingsParams,
@@ -207,9 +212,26 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getArNSRecords(): Promise<Record<string, AoArNSNameData>> {
-    return this.process.read<Record<string, AoArNSNameData>>({
-      tags: [{ name: 'Action', value: 'Records' }],
+  async getArNSRecords(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Records' },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-By', value: pageParams?.sortBy },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoArNSNameDataWithName>>({
+      tags: prunedTags,
     });
   }
 
@@ -243,9 +265,26 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getBalances(): Promise<Record<WalletAddress, number>> {
-    return this.process.read<Record<string, number>>({
-      tags: [{ name: 'Action', value: 'Balances' }],
+  async getBalances(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<AoBalanceWithAddress>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Balances' },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-By', value: pageParams?.sortBy },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoBalanceWithAddress>>({
+      tags: prunedTags,
     });
   }
 
@@ -262,11 +301,26 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getGateways(): Promise<
-    Record<string, AoGateway> | Record<string, never>
-  > {
-    return this.process.read<Record<string, AoGateway>>({
-      tags: [{ name: 'Action', value: 'Gateways' }],
+  async getGateways(
+    pageParams?: PaginationParams,
+  ): Promise<PaginationResult<AoGatewayWithAddress>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Gateways' },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-By', value: pageParams?.sortBy },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoGatewayWithAddress>>({
+      tags: prunedTags,
     });
   }
 

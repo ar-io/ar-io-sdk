@@ -11,7 +11,12 @@ const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
     address: ioDevnetProcessId,
   });
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
-  const allRecords = await arIO.getArNSRecords();
+  const partialRecords = await arIO
+    .getArNSRecords({
+      page: 10,
+      pageSize: 5,
+    })
+    .then((page) => page.items);
   const oldEpoch = await arIO.getEpoch({
     epochIndex: 0,
   });
@@ -24,6 +29,7 @@ const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
     {
       testnetGateways,
       ardriveRecord,
+      partialRecords,
       protocolBalance,
       arnsStats: {
         'registered domains': Object.keys(allRecords).length,
