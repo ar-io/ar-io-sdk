@@ -131,11 +131,11 @@ export interface AoIORead {
   }): Promise<AoGateway | undefined>;
   getGateways(
     params?: PaginationParams,
-  ): Promise<PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>>;
+  ): Promise<PaginationResult<AoGatewayWithAddress>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
     params?: PaginationParams,
-  ): Promise<PaginationResult<{ address: WalletAddress; balance: number }>>;
+  ): Promise<PaginationResult<AoBalanceWithAddress>>;
   getArNSRecord({
     name,
   }: {
@@ -143,7 +143,7 @@ export interface AoIORead {
   }): Promise<AoArNSNameData | undefined>;
   getArNSRecords(
     params?: PaginationParams,
-  ): Promise<PaginationResult<AoArNSNameData & { name: string }>>;
+  ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(): Promise<
     Record<string, AoArNSReservedNameData> | Record<string, never>
   >;
@@ -344,6 +344,7 @@ export interface AoIOState {
 export type AoEpochIndex = number;
 export type AoArNSReservedNameData = ArNSReservedNameData;
 export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
+export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
 export type AoArNSBaseNameData = {
   processId: ProcessId;
   startTimestamp: number;
@@ -408,6 +409,15 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   // TODO: add weights
+};
+
+export type AoBalanceWithAddress = {
+  address: WalletAddress;
+  balance: number;
+};
+
+export type AoGatewayWithAddress = AoGateway & {
+  gatewayAddress: WalletAddress;
 };
 
 export type AoANTState = {

@@ -36,6 +36,9 @@ import {
 } from '../io.js';
 import { mIOToken } from '../token.js';
 import {
+  AoArNSNameDataWithName,
+  AoBalanceWithAddress,
+  AoGatewayWithAddress,
   AoMessageResult,
   ContractSigner,
   JoinNetworkParams,
@@ -211,7 +214,7 @@ export class IOReadable implements AoIORead {
 
   async getArNSRecords(
     pageParams?: PaginationParams,
-  ): Promise<PaginationResult<AoArNSNameData & { name: string }>> {
+  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Records' },
       { name: 'Cursor', value: pageParams?.cursor?.toString() },
@@ -227,9 +230,7 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<
-      PaginationResult<AoArNSNameData & { name: string }>
-    >({
+    return this.process.read<PaginationResult<AoArNSNameDataWithName>>({
       tags: prunedTags,
     });
   }
@@ -266,7 +267,7 @@ export class IOReadable implements AoIORead {
 
   async getBalances(
     pageParams?: PaginationParams,
-  ): Promise<PaginationResult<{ address: WalletAddress; balance: number }>> {
+  ): Promise<PaginationResult<AoBalanceWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Balances' },
       { name: 'Cursor', value: pageParams?.cursor?.toString() },
@@ -282,9 +283,7 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<
-      PaginationResult<{ address: WalletAddress; balance: number }>
-    >({
+    return this.process.read<PaginationResult<AoBalanceWithAddress>>({
       tags: prunedTags,
     });
   }
@@ -304,7 +303,7 @@ export class IOReadable implements AoIORead {
 
   async getGateways(
     pageParams?: PaginationParams,
-  ): Promise<PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>> {
+  ): Promise<PaginationResult<AoGatewayWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Gateways' },
       { name: 'Cursor', value: pageParams?.cursor?.toString() },
@@ -320,9 +319,7 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<
-      PaginationResult<AoGateway & { gatewayAddress: WalletAddress }>
-    >({
+    return this.process.read<PaginationResult<AoGatewayWithAddress>>({
       tags: prunedTags,
     });
   }
