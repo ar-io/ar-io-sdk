@@ -47,7 +47,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
 
   - [ANT APIs](#ant-apis)
-    - [`init({ signer })`](#init-signer-)
+    - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -971,7 +971,7 @@ The ANT client class exposes APIs relevant to compliant Arweave Name Token proce
 
 ### ANT APIs
 
-#### `init({ signer )`
+#### `init({ processId, signer )`
 
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
