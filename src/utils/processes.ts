@@ -19,6 +19,7 @@ import { pLimit } from 'plimit-lit';
 
 import { ANT } from '../common/ant.js';
 import { IO } from '../common/io.js';
+import { ILogger } from '../common/logger.js';
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoANTState,
@@ -187,16 +188,23 @@ export const fetchAllArNSRecords = async ({
   contract = IO.init({
     processId: IO_TESTNET_PROCESS_ID,
   }),
+  logger,
 }: {
   contract?: AoIORead;
+  logger?: ILogger;
 }): Promise<Record<string, AoArNSNameData>> => {
   let cursor: string | undefined;
   const records: Record<string, AoArNSNameData> = {};
   do {
-    const pageResult = await contract.getArNSRecords({ cursor }).catch((e) => {
-      console.error(`Error getting ArNS records: ${e}`);
-      return undefined;
-    });
+    const pageResult = await contract
+      .getArNSRecords({ cursor })
+      .catch((e: any) => {
+        logger?.error(`Error getting ArNS records`, {
+          message: e?.message,
+          stack: e?.stack,
+        });
+        return undefined;
+      });
 
     if (!pageResult) {
       return {};
