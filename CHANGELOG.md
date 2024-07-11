@@ -63,6 +63,13 @@
 * **warp:** this removes all smartweave implementations using warp-sdk. The result is an only AO compatibile ANT and IO network contracts. Some utitlies are preserved due to their usefulness
 * **imports:** this directly impacts imports for clients, so it is considered a breaking change
 
+## [1.2.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v1.2.2) (2024-07-11)
+
+
+### Bug Fixes
+
+* **api:** ensure timestamps are always in miliseconds ([93b162f](https://github.com/ar-io/ar-io-sdk/commit/93b162f22f27e6af4252e7551f785fbffc062e87))
+
 ## [1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)
 
 
