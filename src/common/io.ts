@@ -134,9 +134,14 @@ export class IOReadable implements AoIORead {
         value:
           (params as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -164,9 +169,14 @@ export class IOReadable implements AoIORead {
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -270,9 +280,14 @@ export class IOReadable implements AoIORead {
         {
           name: 'Timestamp',
           value: (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
         },
       ],
@@ -289,9 +304,14 @@ export class IOReadable implements AoIORead {
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -320,9 +340,14 @@ export class IOReadable implements AoIORead {
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -351,9 +376,14 @@ export class IOReadable implements AoIORead {
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: `${Date.now()}` }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: `${Date.now()}` }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -382,9 +412,14 @@ export class IOReadable implements AoIORead {
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
           (
-            await this.arweave.blocks.getCurrent().catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
+            await this.arweave.blocks
+              .getCurrent()
+              .then((block) => {
+                return { timestamp: block.timestamp * 1000 };
+              })
+              .catch(() => {
+                return { timestamp: Date.now() }; // fallback to current time
+              })
           ).timestamp.toString(),
       },
       {
@@ -459,9 +494,14 @@ export class IOReadable implements AoIORead {
       {
         name: 'Timestamp',
         value: (
-          await this.arweave.blocks.getCurrent().catch(() => {
-            return { timestamp: Date.now() }; // fallback to current time
-          })
+          await this.arweave.blocks
+            .getCurrent()
+            .then((block) => {
+              return { timestamp: block.timestamp * 1000 };
+            })
+            .catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
         ).timestamp.toString(),
       },
     ];
