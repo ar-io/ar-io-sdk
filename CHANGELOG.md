@@ -1,3 +1,10 @@
+# [2.0.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.8...v2.0.0-alpha.9) (2024-07-11)
+
+
+### Bug Fixes
+
+* **api:** ensure timestamps are always in miliseconds ([93b162f](https://github.com/ar-io/ar-io-sdk/commit/93b162f22f27e6af4252e7551f785fbffc062e87))
+
 # [2.0.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.7...v2.0.0-alpha.8) (2024-07-10)
 
 
