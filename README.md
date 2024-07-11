@@ -906,7 +906,6 @@ const { id: txId } = await io.transfer(
   {
     target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
     qty: new IOToken(1000).toMIO(),
-    denomination: 'IO',
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
