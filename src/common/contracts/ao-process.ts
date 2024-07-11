@@ -17,25 +17,25 @@
 import { connect } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
 
-import { AOContract, AoClient, ContractSigner, Logger } from '../../types.js';
+import { AOContract, AoClient, ContractSigner } from '../../types.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
-import { DefaultLogger } from '../logger.js';
+import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
-  private logger: Logger;
+  private logger: ILogger;
   private processId: string;
   private ao: AoClient;
 
   constructor({
     processId,
     ao = connect(),
-    logger = new DefaultLogger({ level: 'info' }),
+    logger = Logger.default,
   }: {
     processId: string;
     ao?: AoClient;
-    logger?: DefaultLogger;
+    logger?: ILogger;
   }) {
     this.processId = processId;
     this.logger = logger;

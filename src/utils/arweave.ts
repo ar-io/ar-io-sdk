@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { Tag, Transaction } from 'warp-contracts';
-
 import { BlockHeight } from '../common.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 
@@ -25,20 +23,4 @@ export const validateArweaveId = (id: string): boolean => {
 
 export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
-}
-
-export const isTransaction = (tx: object): tx is Transaction => {
-  const requiredTxKeys = ['id', 'owner', 'tags', 'signature'];
-  return requiredTxKeys.every((key) => key in tx);
-};
-
-export function tagsToObject(tags: Tag[]): {
-  [x: string]: string;
-} {
-  return tags.reduce((decodedTags: { [x: string]: string }, tag) => {
-    const key = tag.get('name', { decode: true, string: true });
-    const value = tag.get('value', { decode: true, string: true });
-    decodedTags[key] = value;
-    return decodedTags;
-  }, {});
 }

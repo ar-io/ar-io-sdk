@@ -17,16 +17,17 @@
 import { EventEmitter } from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
 
-import { ANT } from '../../common/ant.js';
-import { IO } from '../../common/io.js';
-import { IO_TESTNET_PROCESS_ID } from '../../constants.js';
+import { ANT } from '../common/ant.js';
+import { IO } from '../common/io.js';
+import { ILogger } from '../common/logger.js';
+import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoANTState,
   AoArNSNameData,
   AoIORead,
   ProcessId,
   WalletAddress,
-} from '../../types.js';
+} from '../types.js';
 
 export const getANTProcessesOwnedByWallet = async ({
   address,
@@ -39,13 +40,12 @@ export const getANTProcessesOwnedByWallet = async ({
 }): Promise<ProcessId[]> => {
   const throttle = pLimit(50);
   // get the record names of the registry - TODO: this may need to be paginated
-  const uniqueContractProcessIds = await contract
-    .getArNSRecords()
-    .then((records) =>
-      Object.values(records)
-        .filter((record) => record.processId !== undefined)
-        .map((record) => record.processId),
-    );
+  const records: Record<string, AoArNSNameData> = await fetchAllArNSRecords({
+    contract: contract,
+  });
+  const uniqueContractProcessIds = Object.values(records)
+    .filter((record) => record.processId !== undefined)
+    .map((record) => record.processId);
 
   // check the contract owner and controllers
   const ownedOrControlledByWallet = await Promise.all(
@@ -119,25 +119,27 @@ export class ArNSEventEmitter extends EventEmitter {
 
     await timeout(
       this.timeoutMs,
-      this.contract.getArNSRecords().catch((e) => {
+      fetchAllArNSRecords({ contract: this.contract }),
+    )
+      .catch((e) => {
         this.emit('error', `Error getting ArNS records: ${e}`);
         return {};
-      }),
-    ).then((records) => {
-      if (!records) return;
-      Object.entries(records).forEach(([name, record]) => {
-        if (record.processId === undefined) {
-          return;
-        }
-        if (uniqueContractProcessIds[record.processId] === undefined) {
-          uniqueContractProcessIds[record.processId] = {
-            state: undefined,
-            names: {},
-          };
-        }
-        uniqueContractProcessIds[record.processId].names[name] = record;
+      })
+      .then((records) => {
+        if (!records) return;
+        Object.entries(records).forEach(([name, record]) => {
+          if (record.processId === undefined) {
+            return;
+          }
+          if (uniqueContractProcessIds[record.processId] === undefined) {
+            uniqueContractProcessIds[record.processId] = {
+              state: undefined,
+              names: {},
+            };
+          }
+          uniqueContractProcessIds[record.processId].names[name] = record;
+        });
       });
-    });
 
     const idCount = Object.keys(uniqueContractProcessIds).length;
     // check the contract owner and controllers
@@ -181,3 +183,39 @@ export class ArNSEventEmitter extends EventEmitter {
     this.emit('end', uniqueContractProcessIds);
   }
 }
+
+export const fetchAllArNSRecords = async ({
+  contract = IO.init({
+    processId: IO_TESTNET_PROCESS_ID,
+  }),
+  logger,
+}: {
+  contract?: AoIORead;
+  logger?: ILogger;
+}): Promise<Record<string, AoArNSNameData>> => {
+  let cursor: string | undefined;
+  const records: Record<string, AoArNSNameData> = {};
+  do {
+    const pageResult = await contract
+      .getArNSRecords({ cursor })
+      .catch((e: any) => {
+        logger?.error(`Error getting ArNS records`, {
+          message: e?.message,
+          stack: e?.stack,
+        });
+        return undefined;
+      });
+
+    if (!pageResult) {
+      return {};
+    }
+
+    pageResult.items.forEach((record) => {
+      const { name, ...recordDetails } = record;
+      records[name] = recordDetails;
+    });
+    cursor = pageResult.nextCursor;
+  } while (cursor !== undefined);
+
+  return records;
+};

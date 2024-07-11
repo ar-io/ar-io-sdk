@@ -1,4 +1,4 @@
-import { ANT, ANTState } from '@ar.io/sdk';
+import { ANT, ANTState } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

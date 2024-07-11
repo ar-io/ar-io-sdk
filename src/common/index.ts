@@ -14,16 +14,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-export * from './ar-io.js';
 export * from './error.js';
 export * from './logger.js';
 export * from './ant.js';
 
-// contracts - deprecated
-export * from './contracts/remote-contract.js';
-export * from './contracts/warp-contract.js';
-
 // ao
 export * from './io.js';
-export * from './ant-ao.js';
 export * from './contracts/ao-process.js';
