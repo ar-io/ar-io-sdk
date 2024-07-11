@@ -1,53 +1,9 @@
-# [2.0.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.5...v2.0.0-alpha.6) (2024-07-10)
+## [1.2.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v1.2.2) (2024-07-11)
 
 
 ### Bug Fixes
 
-* restore arweave path ([bfd806f](https://github.com/ar-io/ar-io-sdk/commit/bfd806fdd3d5b1040206eb1f23da47ec79353b6a))
-
-# [2.0.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.4...v2.0.0-alpha.5) (2024-07-10)
-
-
-### Bug Fixes
-
-* **web:** fix cjs export for web ([30c5978](https://github.com/ar-io/ar-io-sdk/commit/30c59784dbf13a0fc293423bd846ec00444529ae))
-
-# [2.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.3...v2.0.0-alpha.4) (2024-07-09)
-
-
-### Bug Fixes
-
-* use web version of arweave ([a8d73c2](https://github.com/ar-io/ar-io-sdk/commit/a8d73c28c727b2ff11d692eb8d71ecaa72a20085))
-
-# [2.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.2...v2.0.0-alpha.3) (2024-07-09)
-
-
-### Bug Fixes
-
-* **logger:** allow configuration for log level and provide your own logger ([9cb0981](https://github.com/ar-io/ar-io-sdk/commit/9cb0981e0f48c80fc000c05aba2c4cb69b5ca43c))
-
-# [2.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.1...v2.0.0-alpha.2) (2024-07-09)
-
-
-### Bug Fixes
-
-* **log:** replace bunyan with winston to ensure browser compatibility ([80b38e0](https://github.com/ar-io/ar-io-sdk/commit/80b38e08879c83a986542f3fd9c65379680bf9b5))
-* **log:** use console if in browser ([346ee74](https://github.com/ar-io/ar-io-sdk/commit/346ee741ec04aff0f2a75f6db5c1bf5e9cec6c3c))
-
-# [2.0.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v2.0.0-alpha.1) (2024-07-09)
-
-
-### Bug Fixes
-
-* **deps:** remove bunyan and other issues ([9d940aa](https://github.com/ar-io/ar-io-sdk/commit/9d940aac99e94e5086091a2e41ffd73fe2c36715))
-* **imports:** update named web exports to properly provide esm file instead of bundle ([e97fa7c](https://github.com/ar-io/ar-io-sdk/commit/e97fa7c3bb95782944b9204df7eddb201e280db1))
-* **warp:** remove warp-contracts and all implementations ([0dcf4f2](https://github.com/ar-io/ar-io-sdk/commit/0dcf4f26026044e1b9da810a853b065802a782cd))
-
-
-### BREAKING CHANGES
-
-* **warp:** this removes all smartweave implementations using warp-sdk. The result is an only AO compatibile ANT and IO network contracts. Some utitlies are preserved due to their usefulness
-* **imports:** this directly impacts imports for clients, so it is considered a breaking change
+* **api:** ensure timestamps are always in miliseconds ([93b162f](https://github.com/ar-io/ar-io-sdk/commit/93b162f22f27e6af4252e7551f785fbffc062e87))
 
 ## [1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)
 

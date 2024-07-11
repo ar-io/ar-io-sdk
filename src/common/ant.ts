@@ -31,30 +31,6 @@ import {
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
-  /**
-   * Initializes an ANT instance.
-   *
-   * There are two overloads for this function:
-   * 1. When a signer is provided in the configuration, it returns an instance of ANTWritable.
-   * 2. When a signer is NOT provided in the configuration, it returns an instance of ANTReadable.
-   *
-   *
-   * @param {ContractConfiguration & WithSigner} config - The configuration object.
-   *    If a signer is provided, it should be an object that implements the ContractSigner interface.
-   *
-   * @returns {ANTWritable | ANTReadable} - An instance of ANTWritable if a signer is provided, otherwise an instance of ANTReadable.
-   * @throws {Error} - Throws an error if the configuration is invalid.
-   *
-   * @example
-   * Overload 1: When signer is provided
-   * ```ts
-   * const writable = ANT.init({ signer: mySigner, contract: myContract });
-   *```
-   * Overload 2: When signer is not provided
-   * ```ts
-   * const readable = ANT.init({ contract: myContract });
-   * ```
-   */
   static init(
     config: Required<ProcessConfiguration> & { signer?: undefined },
   ): AoANTRead;

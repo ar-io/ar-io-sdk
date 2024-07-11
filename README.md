@@ -21,30 +21,33 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getBalance({ address })`](#getbalance-address-)
-    - [`getBalances()`](#getbalances)
+    - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
-    - [`getGateways()`](#getgateways)
+    - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
-    - [`getArNSRecords()`](#getarnsrecords)
+    - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
     - [`joinNetwork(params)`](#joinnetworkparams)
+    - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty })`](#decreasedelegatestake-target-qty-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
-    - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
+    - [`transfer({ target, qty })`](#transfer-target-qty-)
+    - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
+    - [`extendLease({ name, years })`](#extendlease-name-years-)
   - [Configuration](#custom-configuration)
 
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
 
   - [ANT APIs](#ant-apis)
-    - [`init({ signer})`](#init-signer-)
+    - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -61,6 +64,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Logging](#logging)
 
   - [Configuration](#configuration)
+
+- [Pagination](#pagination)
 
 - [Developers](#developers)
   - [Requirements](#requirements)
@@ -100,37 +105,36 @@ const gateways = await io.getGateways();
 
 ```json
 {
-  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-    "end": 0,
-    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000000000, // value in mIO
-    "settings": {
-      "fqdn": "ar-io.dev",
-      "label": "AR.IO Test",
-      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-      "port": 443,
-      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-      "protocol": "https"
-    },
-    "start": 1256694,
-    "stats": {
-      "failedConsecutiveEpochs": 0,
-      "passedEpochCount": 30,
-      "submittedEpochCount": 30,
-      "totalEpochParticipationCount": 31,
-      "totalEpochsPrescribedCount": 31
-    },
-    "status": "joined",
-    "vaults": {},
-    "weights": {
-      "stakeWeight": 25,
-      "tenureWeight": 0.9031327160493827,
-      "gatewayRewardRatioWeight": 0.96875,
-      "observerRewardRatioWeight": 0.96875,
-      "compositeWeight": 21.189222170982834,
-      "normalizedCompositeWeight": 0.27485583057217183
+  "items": [
+    {
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+      "operatorStake": 250000000000,
+      "settings": {
+        "fqdn": "ar-io.dev",
+        "label": "AR.IO Test",
+        "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+        "port": 443,
+        "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+        "protocol": "https"
+      },
+      "startTimestamp": 1720720621424,
+      "stats": {
+        "failedConsecutiveEpochs": 0,
+        "passedEpochCount": 30,
+        "submittedEpochCount": 30,
+        "totalEpochParticipationCount": 31,
+        "totalEpochsPrescribedCount": 31
+      },
+      "status": "joined",
+      "vaults": {}
     }
-  }
+  ],
+  "hasMore": true,
+  "nextCursor": "-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA",
+  "totalItems": 316,
+  "sortBy": "startTimestamp",
+  "sortOrder": "desc"
 }
 ```
 
@@ -213,11 +217,9 @@ import { IOToken, mIOToken } from '@ar.io/sdk';
 
 const ioValue = 1;
 const mIOValue = new IOToken(ioValue).toMIO();
-console.log(mIOValue); // 1000000 (mIO)
 
 const mIOValue = 1_000_000;
 const ioValue = new mIOToken(mIOValue).toIO();
-console.log(ioValue); // 1 (IO)
 ```
 
 ## IO Process
@@ -257,7 +259,7 @@ const info = await io.getInfo();
   "name": "Testnet IO",
   "ticker": "tIO",
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-  "denomination": "IO"
+  "denomination": "6"
 }
 ```
 
@@ -272,36 +274,32 @@ const io = IO.init();
 // the balance will be returned in mIO as a value
 const balance = await io
   .getBalance({
-    address: 'INSERT_WALLET_ADDRESS',
+    address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   })
-  .then((balance) => new mIOToken().toIO());
-
-console.log(balance.valueOf());
+  .then((balance) => new mIOToken().toIO()); // convert it to IO for readability
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-// value in IO
-1_000_000
+100000
 ```
 
 </details>
 
-#### `getBalances()`
+#### `getBalances({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves the balances of the IO process in `mIO`
-
-<!--
-// ALM - A part of me wonders whether streaming JSON might be beneficial in the future
-// and if providing streaming versions of these APIs will scale nicely longer term, e.g.
-// io.streamBalances({ sortingCriteria: BALANCE_DESC });
- -->
+Retrieves the balances of the IO process in `mIO`, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
 
 ```typescript
 const io = IO.init();
-const balances = await io.getBalances();
+const balances = await io.getBalances({
+  cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
+  limit: 1,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
 ```
 
 <details>
@@ -309,9 +307,17 @@ const balances = await io.getBalances();
 
 ```json
 {
-  "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA": 5000000000, // value in mIO
-  "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck": 5000000000, // value in mIO
-  "-9JU3W8g9nOAB1OrJQ8FxkaWCpv5slBET2HppTItbmk": 5000000000 // value in mIO
+  "items": [
+    {
+      "address": "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA",
+      "balance": 1000000
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck",
+  "totalItems": 1789,
+  "sortBy": "balance",
+  "sortOrder": "desc"
 }
 ```
 
@@ -324,7 +330,7 @@ Retrieves a gateway's info by its staking wallet address.
 ```typescript
 const io = IO.init();
 const gateway = await io.getGateway({
-  address: 'INSERT_GATEWAY_ADDRESS',
+  address: '-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck',
 });
 ```
 
@@ -333,9 +339,8 @@ const gateway = await io.getGateway({
 
 ```json
 {
-  "end": 0,
-  "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-  "operatorStake": 250000000000, // value in mIO
+  "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+  "operatorStake": 250000000000,
   "settings": {
     "fqdn": "ar-io.dev",
     "label": "AR.IO Test",
@@ -344,7 +349,7 @@ const gateway = await io.getGateway({
     "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
     "protocol": "https"
   },
-  "start": 1256694,
+  "startTimestamp": 1720720620813,
   "stats": {
     "failedConsecutiveEpochs": 0,
     "passedEpochCount": 30,
@@ -359,43 +364,56 @@ const gateway = await io.getGateway({
 
 </details>
 
-#### `getGateways()`
+#### `getGateways({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves the registered gateways of the IO process.
+Retrieves registered gateways of the IO process, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last gateway address from the previous request.
 
 ```typescript
 const io = IO.init();
-const gateways = await io.getGateways();
+const gateways = await io.getGateways({
+  limit: 1,
+  sortOrder: 'desc',
+  sortBy: 'operatorStake',
+});
 ```
+
+Available `sortBy` options are any of the keys on the gateway object, e.g. `operatorStake`, `start`, `status`, `settings.fqdn`, `settings.label`, `settings.note`, `settings.port`, `settings.protocol`, `stats.failedConsecutiveEpochs`, `stats.passedConsecutiveEpochs`, etc.
 
 <details>
   <summary>Output</summary>
 
 ```json
 {
-  "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ": {
-    "end": 0,
-    "observerWallet": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
-    "operatorStake": 250000000000, // value in mIO
-    "settings": {
-      "fqdn": "ar-io.dev",
-      "label": "AR.IO Test",
-      "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
-      "port": 443,
-      "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
-      "protocol": "https"
-    },
-    "start": 1256694,
-    "stats": {
-      "failedConsecutiveEpochs": 0,
-      "passedEpochCount": 30,
-      "submittedEpochCount": 30,
-      "totalEpochParticipationCount": 31,
-      "totalEpochsPrescribedCount": 31
-    },
-    "status": "joined",
-    "vaults": {}
-  }
+  "items": [
+    {
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
+      "operatorStake": 250000000000,
+      "settings": {
+        "fqdn": "ar-io.dev",
+        "label": "AR.IO Test",
+        "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+        "port": 443,
+        "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
+        "protocol": "https"
+      },
+      "startTimestamp": 1720720620813,
+      "stats": {
+        "failedConsecutiveEpochs": 0,
+        "passedEpochCount": 30,
+        "submittedEpochCount": 30,
+        "totalEpochParticipationCount": 31,
+        "totalEpochsPrescribedCount": 31
+      },
+      "status": "joined",
+      "vaults": {}
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA",
+  "totalItems": 316,
+  "sortBy": "operatorStake",
+  "sortOrder": "desc"
 }
 ```
 
@@ -416,8 +434,8 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 ```json
 {
   "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-  "endTimestamp": 1711122739,
-  "startTimestamp": 1694101828,
+  "endTimestamp": 1752256702026,
+  "startTimestamp": 1720720819969,
   "type": "lease",
   "undernames": 100
 }
@@ -425,34 +443,74 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 </details>
 
-#### `getArNSRecords()`
+#### `getArNSRecords({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all registered ArNS records of the IO process.
+Retrieves all registered ArNS records of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous request.
 
 ```typescript
 const io = IO.init();
-const records = await io.getArNSRecords();
+// get the 5 newest names
+const records = await io.getArNSRecords({
+  limit: 5,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
 ```
+
+Available `sortBy` options are any of the keys on the record object, e.g. `name`, `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
 
 <details>
   <summary>Output</summary>
 
 ```json
 {
-  "ardrive": {
-    "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-    "endTimestamp": 1711122739,
-    "startTimestamp": 1694101828,
-    "type": "lease",
-    "undernames": 100
-  },
-  "ar-io": {
-    "processId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
-    "purchasePrice": 75541282285, // value in mIO
-    "startTimestamp": 1706747215,
-    "type": "permabuy",
-    "undernames": 10
-  }
+  "items": [
+    {
+      "name": "ao",
+      "processId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
+      "purchasePrice": 75541282285,
+      "startTimestamp": 1720720621424,
+      "type": "permabuy",
+      "undernames": 10
+    },
+    {
+      "name": "ardrive",
+      "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+      "endTimestamp": 1720720819969,
+      "startTimestamp": 1720720620813,
+      "type": "lease",
+      "undernames": 100
+    },
+    {
+      "name": "arweave",
+      "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+      "endTimestamp": 1720720819969,
+      "startTimestamp": 1720720620800,
+      "type": "lease",
+      "undernames": 100
+    },
+    {
+      "name": "ar-io",
+      "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+      "endTimestamp": 1720720819969,
+      "startTimestamp": 1720720619000,
+      "type": "lease",
+      "undernames": 100
+    },
+    {
+      "name": "fwd",
+      "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+      "endTimestamp": 1720720819969,
+      "startTimestamp": 1720720220811,
+      "type": "lease",
+      "undernames": 100
+    }
+  ],
+  "hasMore": true,
+  "nextCursor": "fwdresearch",
+  "totalItems": 21740,
+  "sortBy": "startTimestamp",
+  "sortOrder": "desc"
 }
 ```
 
@@ -505,11 +563,12 @@ const distributions = await io.getDistributions();
 
 ```json
 {
-  "epochEndHeight": 1382379,
-  "epochPeriod": 43,
-  "epochStartHeight": 1381660,
-  "epochZeroStartHeight": 1350700,
-  "nextDistributionHeight": 1382394
+  "totalEligibleRewards": 100000000,
+  "totalDistributedRewards": 100000000,
+  "distributedTimestamp": 1720720621424,
+  "rewards": {
+    "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+  }
 }
 ```
 
@@ -530,10 +589,10 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
 ```json
 {
   "epochIndex": 0,
-  "startTimestamp": 1694101828,
-  "endTimestamp": 1711122739,
+  "startTimestamp": 1720720620813,
+  "endTimestamp": 1752256702026,
   "startHeight": 1350700,
-  "distributionTimestamp": 1711122739,
+  "distributionTimestamp": 1752256702026,
   "observations": {
     "failureSummaries": {
       "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
@@ -550,7 +609,7 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "stake": 10000000000, // value in mIO
-      "start": 1292450,
+      "startTimestamp": 1720720620813,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
       "gatewayRewardRatioWeight": 1,
@@ -560,8 +619,9 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
     }
   ],
   "distributions": {
-    "distributedTimestamp": 1711122739,
+    "distributedTimestamp": 1752256702026,
     "totalEligibleRewards": 100000000,
+    "totoalDistributedRewards": 100000000,
     "rewards": {
       "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
     }
@@ -586,8 +646,8 @@ const epoch = await io.getCurrentEpoch();
 ```json
 {
   "epochIndex": 0,
-  "startTimestamp": 1694101828,
-  "endTimestamp": 1711122739,
+  "startTimestamp": 1720720621424,
+  "endTimestamp": 1752256702026,
   "startHeight": 1350700,
   "distributionTimestamp": 1711122739,
   "observations": {
@@ -605,7 +665,7 @@ const epoch = await io.getCurrentEpoch();
     {
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "stake": 10000000000, // value in mIO
+      "stake": 10000000000,
       "start": 1292450,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
@@ -669,16 +729,14 @@ const price = await io
     name: 'ar-io',
     type: 'permabuy',
   })
-  .then((p) => new mIOToken(p).toIO());
-// Price is returned as mio, convert to IO and log it out
-console.log({ price: price.valueOf() });
+  .then((p) => new mIOToken(p).toIO()); // convert to IO for readability
 ```
 
 <details>
   <summary>Output</summary>
 
 ```json
-{ "price": 1642.62 }
+1642.34
 ```
 
 </details>
@@ -706,6 +764,21 @@ const { id: txId } = await io.joinNetwork(
     port: 443, // port number
     protocol: 'https', // only 'https' is supported
   },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `leaveNetwork()`
+
+Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `IO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.leaveNetwork(
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -821,9 +894,9 @@ const { id: txId } = await io.saveObservations(
 );
 ```
 
-#### `transfer({ target, qty, denomination })`
+#### `transfer({ target, qty })`
 
-Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as `IO`, to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Transfers `mIO` to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
@@ -833,7 +906,6 @@ const { id: txId } = await io.transfer(
   {
     target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
     qty: new IOToken(1000).toMIO(),
-    denomination: 'IO',
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -1158,6 +1230,33 @@ Logger.default.setLogLevel('debug');
 Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other logger that satisifes ILogger interface
 ```
 
+## Pagination
+
+Certain APIs that could return a large amount of data are paginated using cursors. The SDK uses the `cursor` pattern (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
+
+Paginated results include the following properties:
+
+- `items`: the list of items on the current request, defaulted to 100 items.
+- `nextCursor`: the cursor to use for the next batch of items. This is `undefined` if there are no more items to fetch.
+- `hasMore`: a boolean indicating if there are more items to fetch. This is `false` if there are no more items to fetch.
+- `totalItems`: the total number of items available. This may change as new items are added to the list, only use this for informational purposes.
+- `sortBy`: the field used to sort the items, by default this is `startTimestamp`.
+- `sortOrder`: the order used to sort the items, by default this is `desc`.
+
+To request all the items in a list, you can iterate through the list using the `nextCursor` until `hasMore` is `false`.
+
+```typescript
+let hasMore = true;
+let cursor: string | undefined;
+const gateaways = [];
+while (hasMore) {
+  const page = await io.getGateways({ limit: 10, cursor });
+  gateaways.push(...items);
+  cursor = page.nextCursor;
+  hasMore = page.hasMore;
+}
+```
+
 ## Developers
 
 ### Requirements
@@ -1174,7 +1273,9 @@ Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other lo
 
 ### Testing
 
-- `yarn test:integration` - runs integration tests against a local AO testnet
+- `yarn test` - runs e2e tests and unit tests
+- `yarn test:e2e` - runs e2e tests
+- `yarn test:unit` - runs unit tests
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script

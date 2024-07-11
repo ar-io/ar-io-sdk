@@ -63,6 +63,22 @@ export function isLeasedArNSRecord(
   return record.type === 'lease' && record.endTimestamp !== undefined;
 }
 
+export type PaginationParams = {
+  cursor?: string;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type PaginationResult<T> = {
+  items: T[];
+  nextCursor: string | undefined;
+  totalItems: number;
+  sortBy: keyof T;
+  sortOrder: 'asc' | 'desc';
+  hasMore: boolean;
+};
+
 export type ProcessConfiguration =
   | {
       process?: AOProcess;
@@ -113,19 +129,21 @@ export interface AoIORead {
   }: {
     address: WalletAddress;
   }): Promise<AoGateway | undefined>;
-  getGateways(): Promise<
-    Record<WalletAddress, AoGateway> | Record<string, never>
-  >;
+  getGateways(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoGatewayWithAddress>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
-  getBalances(): Promise<Record<WalletAddress, number> | Record<string, never>>;
+  getBalances(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoBalanceWithAddress>>;
   getArNSRecord({
     name,
   }: {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
-  getArNSRecords(): Promise<
-    Record<string, AoArNSNameData> | Record<string, never>
-  >;
+  getArNSRecords(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(): Promise<
     Record<string, AoArNSReservedNameData> | Record<string, never>
   >;
@@ -187,6 +205,7 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  leaveNetwork(options?: WriteOptions): Promise<AoMessageResult>;
   updateGatewaySettings(
     {
       allowDelegatedStaking,
@@ -326,6 +345,7 @@ export interface AoIOState {
 export type AoEpochIndex = number;
 export type AoArNSReservedNameData = ArNSReservedNameData;
 export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
+export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
 export type AoArNSBaseNameData = {
   processId: ProcessId;
   startTimestamp: number;
@@ -390,6 +410,15 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   // TODO: add weights
+};
+
+export type AoBalanceWithAddress = {
+  address: WalletAddress;
+  balance: number;
+};
+
+export type AoGatewayWithAddress = AoGateway & {
+  gatewayAddress: WalletAddress;
 };
 
 export type AoANTState = {
