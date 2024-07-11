@@ -1,3 +1,26 @@
+# [2.0.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.9...v2.0.0-alpha.10) (2024-07-11)
+
+
+### Bug Fixes
+
+* **ao:** support paginated reocrds endpoint ([9059327](https://github.com/ar-io/ar-io-sdk/commit/905932735da9311b17d54a8652b49063afd2fe3c))
+* **api:** only allow paginated requests for arns records ([d1bcc87](https://github.com/ar-io/ar-io-sdk/commit/d1bcc874e85eb71f9c5c2aabd40a09029e604baa))
+* **io:** add hasNextPage to pagination results ([db0cd86](https://github.com/ar-io/ar-io-sdk/commit/db0cd86389c7f6e8731b2f2aab2a241c2b6a3a7a))
+* **io:** remove cursor field from pagination ([d165e1c](https://github.com/ar-io/ar-io-sdk/commit/d165e1c552acb21676d754423c0639dd13a1a6b3))
+* **io:** update pagination parameters to use `hasMore` and remove `totalPages` ([860c999](https://github.com/ar-io/ar-io-sdk/commit/860c999912c86c3cebf968a72ff1a20ed9aaa8b0))
+* overload getArNSRecords method ([c60ebb1](https://github.com/ar-io/ar-io-sdk/commit/c60ebb1f169b5dc1a0dfe4f1d8d0adb743092b35))
+* **types:** add named types for pagination results ([2db664a](https://github.com/ar-io/ar-io-sdk/commit/2db664a4310837e05e25e5206f304925ec911d60))
+* **types:** fix interface ([7b2fbbe](https://github.com/ar-io/ar-io-sdk/commit/7b2fbbead1f309238f9bd943c3a676237bc8b56f))
+* **types:** update the types ([004ede6](https://github.com/ar-io/ar-io-sdk/commit/004ede697312ef88aaa57b34d19d92a726d3bbdf))
+
+
+### Features
+
+* **api:** add paginated gateway support ([b23efa8](https://github.com/ar-io/ar-io-sdk/commit/b23efa8e433451c3ff8361c54f6e35fdd30457a0))
+* **io:** modify balances to support pagination ([b09fd60](https://github.com/ar-io/ar-io-sdk/commit/b09fd60322e95111e82f939e2ca0e9435b8a688a))
+* **io:** use cursor with limit instead of pages in pagination ([ec1ba82](https://github.com/ar-io/ar-io-sdk/commit/ec1ba82904fc8ba5e6abccacf6e02ddb06c14b67))
+* **util:** add utility for fetching all records ([8df2aac](https://github.com/ar-io/ar-io-sdk/commit/8df2aacf530ff24f15cc14022a81f3168b8baea0))
+
 # [2.0.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.8...v2.0.0-alpha.9) (2024-07-11)
 
 
