@@ -3,32 +3,26 @@
 
 ### Bug Fixes
 
-* **ao:** support paginated reocrds endpoint ([9059327](https://github.com/ar-io/ar-io-sdk/commit/905932735da9311b17d54a8652b49063afd2fe3c))
-* **api:** only allow paginated requests for arns records ([d1bcc87](https://github.com/ar-io/ar-io-sdk/commit/d1bcc874e85eb71f9c5c2aabd40a09029e604baa))
+* **io:** support paginated records endpoint ([9059327](https://github.com/ar-io/ar-io-sdk/commit/905932735da9311b17d54a8652b49063afd2fe3c))
+* **io:** only allow paginated requests for arns records ([d1bcc87](https://github.com/ar-io/ar-io-sdk/commit/d1bcc874e85eb71f9c5c2aabd40a09029e604baa))
 * **arweave:** use default arweave in IO ([21d25b9](https://github.com/ar-io/ar-io-sdk/commit/21d25b9e1109bc18ba4e074f314848143ed0828c))
 * **deps:** remove bunyan and other issues ([9d940aa](https://github.com/ar-io/ar-io-sdk/commit/9d940aac99e94e5086091a2e41ffd73fe2c36715))
-* **imports:** update named web exports to properly provide esm file instead of bundle ([e97fa7c](https://github.com/ar-io/ar-io-sdk/commit/e97fa7c3bb95782944b9204df7eddb201e280db1))
 * **io:** add hasNextPage to pagination results ([db0cd86](https://github.com/ar-io/ar-io-sdk/commit/db0cd86389c7f6e8731b2f2aab2a241c2b6a3a7a))
 * **io:** add leaveNetwork API ([54222ce](https://github.com/ar-io/ar-io-sdk/commit/54222ce65b25e203b243df7a7c2317f9dc1fc7b9))
 * **io:** remove cursor field from pagination ([d165e1c](https://github.com/ar-io/ar-io-sdk/commit/d165e1c552acb21676d754423c0639dd13a1a6b3))
 * **io:** update pagination parameters to use `hasMore` and remove `totalPages` ([860c999](https://github.com/ar-io/ar-io-sdk/commit/860c999912c86c3cebf968a72ff1a20ed9aaa8b0))
-* **logger:** allow configuration for log level and provide your own logger ([9cb0981](https://github.com/ar-io/ar-io-sdk/commit/9cb0981e0f48c80fc000c05aba2c4cb69b5ca43c))
+* **log:** allow configuration for log level and provide your own logger ([9cb0981](https://github.com/ar-io/ar-io-sdk/commit/9cb0981e0f48c80fc000c05aba2c4cb69b5ca43c))
 * **log:** replace bunyan with winston to ensure browser compatibility ([80b38e0](https://github.com/ar-io/ar-io-sdk/commit/80b38e08879c83a986542f3fd9c65379680bf9b5))
 * **log:** use console if in browser ([346ee74](https://github.com/ar-io/ar-io-sdk/commit/346ee741ec04aff0f2a75f6db5c1bf5e9cec6c3c))
-* overload getArNSRecords method ([c60ebb1](https://github.com/ar-io/ar-io-sdk/commit/c60ebb1f169b5dc1a0dfe4f1d8d0adb743092b35))
-* restore arweave path ([bfd806f](https://github.com/ar-io/ar-io-sdk/commit/bfd806fdd3d5b1040206eb1f23da47ec79353b6a))
 * **types:** add named types for pagination results ([2db664a](https://github.com/ar-io/ar-io-sdk/commit/2db664a4310837e05e25e5206f304925ec911d60))
 * **types:** fix interface ([7b2fbbe](https://github.com/ar-io/ar-io-sdk/commit/7b2fbbead1f309238f9bd943c3a676237bc8b56f))
 * **types:** update the types ([004ede6](https://github.com/ar-io/ar-io-sdk/commit/004ede697312ef88aaa57b34d19d92a726d3bbdf))
-* use web version of arweave ([a8d73c2](https://github.com/ar-io/ar-io-sdk/commit/a8d73c28c727b2ff11d692eb8d71ecaa72a20085))
 * **utils:** update fetchAllArNSRecords utility to include logs ([7ba8692](https://github.com/ar-io/ar-io-sdk/commit/7ba86924bf047c82d60dda8a3b3bbd817063e053))
-* **warp:** remove warp-contracts and all implementations ([0dcf4f2](https://github.com/ar-io/ar-io-sdk/commit/0dcf4f26026044e1b9da810a853b065802a782cd))
-* **web:** fix cjs export for web ([30c5978](https://github.com/ar-io/ar-io-sdk/commit/30c59784dbf13a0fc293423bd846ec00444529ae))
 
 
 ### Features
 
-* **api:** add paginated gateway support ([b23efa8](https://github.com/ar-io/ar-io-sdk/commit/b23efa8e433451c3ff8361c54f6e35fdd30457a0))
+* **io:** add paginated gateway support for larger state objects ([b23efa8](https://github.com/ar-io/ar-io-sdk/commit/b23efa8e433451c3ff8361c54f6e35fdd30457a0))
 * **io:** modify balances to support pagination ([b09fd60](https://github.com/ar-io/ar-io-sdk/commit/b09fd60322e95111e82f939e2ca0e9435b8a688a))
 * **io:** use cursor with limit instead of pages in pagination ([ec1ba82](https://github.com/ar-io/ar-io-sdk/commit/ec1ba82904fc8ba5e6abccacf6e02ddb06c14b67))
 * **util:** add utility for fetching all records ([8df2aac](https://github.com/ar-io/ar-io-sdk/commit/8df2aacf530ff24f15cc14022a81f3168b8baea0))
@@ -36,8 +30,8 @@
 
 ### BREAKING CHANGES
 
-* **warp:** this removes all smartweave implementations using warp-sdk. The result is an only AO compatibile ANT and IO network contracts. Some utitlies are preserved due to their usefulness
-* **imports:** this directly impacts imports for clients, so it is considered a breaking change
+* **deps:** this removes all smartweave implementations using warp-sdk. The result is an only AO compatible ANT and IO network contracts. Some unities are preserved due to their usefulness.
+* **imports:** modifies `web` named exports to provide esm files instead of bundle. The web bundle was causing issues in bundled projects, and polyfills are no longer provided by default. Refer to the [README](./README.md) for specifications on how to use the SDK for a web project.
 
 ## [1.2.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v1.2.2) (2024-07-11)
 
