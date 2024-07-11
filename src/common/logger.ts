@@ -44,28 +44,26 @@ export class Logger implements ILogger {
   } = {}) {
     if (level === 'none') {
       this.silent = true;
-      return;
     }
-    this.logger = createLogger({
-      level,
-      silent: this.silent,
-      defaultMeta: {
-        name: 'ar-io-sdk',
-        version,
-      },
-      format: format.combine(format.timestamp(), format.json()),
-    });
-
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     if (typeof window !== 'undefined') {
       this.logger = console;
     } else {
-      this.logger.add(
-        new transports.Console({
-          format: format.combine(format.timestamp(), format.json()),
-        }),
-      );
+      this.logger = createLogger({
+        level,
+        silent: this.silent,
+        defaultMeta: {
+          name: 'ar-io-sdk',
+          version,
+        },
+        format: format.combine(format.timestamp(), format.json()),
+        transports: [
+          new transports.Console({
+            format: format.combine(format.timestamp(), format.json()),
+          }),
+        ],
+      });
     }
   }
 
@@ -90,6 +88,7 @@ export class Logger implements ILogger {
   }
 
   setLogLevel(level: 'info' | 'debug' | 'error' | 'warn' | 'none') {
+    this.silent = level === 'none';
     if ('silent' in this.logger) {
       this.logger.silent = level === 'none';
     }
