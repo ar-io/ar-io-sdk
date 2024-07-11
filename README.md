@@ -39,7 +39,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
-    - [`transfer({ target, qty, denomination })`](#transfer-target-qty-denomination-)
+    - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
   - [Configuration](#custom-configuration)
@@ -882,9 +882,9 @@ const { id: txId } = await io.saveObservations(
 );
 ```
 
-#### `transfer({ target, qty, denomination })`
+#### `transfer({ target, qty })`
 
-Transfers `IO` or `mIO` depending on the `denomination` selected, defaulting as `IO`, to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Transfers `mIO` to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
