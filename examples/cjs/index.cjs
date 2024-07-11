@@ -45,10 +45,10 @@ const Arweave = require('arweave');
     signer: new ArweaveSigner(jwk),
   });
 
-  await evolveANT({
+  const evolveId = await evolveANT({
     processId,
     signer: new ArweaveSigner(jwk),
-    luaCodeTxId: 'AN6-0jkvjhFkHYFqFsjH4R9MVGLuMaaFsD55JOXbAxQ',
+    luaCodeTxId: '7L3jTSDLSvS_GkHkUwM9B7FgxmTZclHAX4INo69wBww',
   });
 
   console.dir(

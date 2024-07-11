@@ -17,7 +17,7 @@
 import { connect } from '@permaweb/aoconnect';
 
 import { defaultArweave } from '../common/arweave.js';
-import { ANT, AOProcess } from '../common/index.js';
+import { AOProcess } from '../common/index.js';
 import {
   ANT_LUA_ID,
   AOS_MODULE_ID,
