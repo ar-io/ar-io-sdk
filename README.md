@@ -1233,7 +1233,7 @@ Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other lo
 
 ## Pagination
 
-All APIs that return a list of items are paginated using cursors. We've chosen to uses `cursors` (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
+Certain APIs that could return a large amount of data are paginated using cursors. The SDK uses the `cursor` pattern (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
 
 Paginated results include the following properties:
 
@@ -1308,7 +1308,3 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [IO testnet process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
 [IO Network spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
 [Winston]: https://www.npmjs.com/package/winston
-
-```
-
-```
