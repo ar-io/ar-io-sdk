@@ -5,7 +5,6 @@ const {
   spawnANT,
   evolveANT,
   ArweaveSigner,
-  ANT_LUA_ID,
 } = require('@ar.io/sdk');
 const Arweave = require('arweave');
 
@@ -44,25 +43,25 @@ const Arweave = require('arweave');
   await evolveANT({
     processId,
     signer: new ArweaveSigner(jwk),
-    luaCodeTxId: '40ehDFzeiOjirz2V7R7mn33D3W97-j_nOJ3pc4b2JXs',
+    luaCodeTxId: 'AN6-0jkvjhFkHYFqFsjH4R9MVGLuMaaFsD55JOXbAxQ',
   });
 
   console.dir(
     {
       processId,
       evolveId,
-      testnetGateways,
-      ardriveRecord,
-      protocolBalance,
-      arnsStats: {
-        'registered domains': Object.keys(allRecords).length,
-        ardrive: allRecords.ardrive,
-      },
-      oldEpoch,
-      epoch,
-      observations,
-      observation,
-      distributions,
+      // testnetGateways,
+      // ardriveRecord,
+      // protocolBalance,
+      // arnsStats: {
+      //   'registered domains': Object.keys(allRecords).length,
+      //   ardrive: allRecords.ardrive,
+      // },
+      // oldEpoch,
+      // epoch,
+      // observations,
+      // observation,
+      // distributions,
     },
     { depth: 2 },
   );
