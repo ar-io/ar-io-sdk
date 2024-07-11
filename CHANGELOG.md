@@ -1,3 +1,10 @@
+# [2.0.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0-alpha.10...v2.0.0-alpha.11) (2024-07-11)
+
+
+### Bug Fixes
+
+* **utils:** update fetchAllArNSRecords utility to include logs ([7ba8692](https://github.com/ar-io/ar-io-sdk/commit/7ba86924bf047c82d60dda8a3b3bbd817063e053))
+
 ## [1.2.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v1.2.2) (2024-07-11)
 
 
