@@ -219,9 +219,7 @@ export interface AoIOWrite extends AoIORead {
       protocol,
       autoStake,
       observerAddress,
-    }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
-      observerAddress?: WalletAddress;
-    },
+    }: UpdateGatewaySettingsParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   increaseOperatorStake(

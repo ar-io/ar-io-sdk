@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.1...v2.0.2) (2024-07-12)
+
+
+### Bug Fixes
+
+* **types:** update gateway settings type to only support `observerAddress` ([13e073b](https://github.com/ar-io/ar-io-sdk/commit/13e073ba6d7482028e43d5c8fbab8e769d2c9e01))
+
 ## [2.0.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0...v2.0.1) (2024-07-11)
 
 
