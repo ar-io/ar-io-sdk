@@ -218,7 +218,7 @@ export const fetchAllArNSRecords = async ({
           stack: e?.stack,
         });
 
-        emitter?.emit('error', `Error getting ArNS records: ${e}`);
+        emitter?.emit('arnsError', `Error getting ArNS records: ${e}`);
 
         return undefined;
       });
@@ -238,7 +238,7 @@ export const fetchAllArNSRecords = async ({
       cursor: pageResult.nextCursor,
     });
 
-    emitter?.emit('pageLoaded', {
+    emitter?.emit('arnsPage', {
       totalRecordCount: pageResult.totalItems,
       fetchedRecordCount: Object.keys(records).length,
       records: pageResult.items,
@@ -248,7 +248,7 @@ export const fetchAllArNSRecords = async ({
     cursor = pageResult.nextCursor;
   } while (cursor !== undefined);
 
-  emitter?.emit('end', records);
+  emitter?.emit('arnsEnd', records);
 
   logger.debug('Fetched all ArNS records', {
     totalRecordCount: Object.keys(records).length,
