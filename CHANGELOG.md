@@ -1,3 +1,12 @@
+## [2.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.2...v2.0.3-alpha.1) (2024-07-12)
+
+
+### Bug Fixes
+
+* **arns:** update event emitter to provide more events and logs while loading arns records ([8775896](https://github.com/ar-io/ar-io-sdk/commit/87758966e54b9563e8153feb07bba808a110aa5b))
+* **events:** use arns name space for events ([1d67dfe](https://github.com/ar-io/ar-io-sdk/commit/1d67dfe1f7a4766bbce6cf5a55438f33423f660f))
+* use custom event names to avoid overlap ([5b919ac](https://github.com/ar-io/ar-io-sdk/commit/5b919ac483778673527e0535a5aec8b06e6ce68e))
+
 ## [2.0.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.1...v2.0.2) (2024-07-12)
 
 
