@@ -74,10 +74,7 @@ export type JoinNetworkParams = Overwrite<
   {
     minDelegatedStake: number | mIOToken; // TODO: this is for backwards compatibility
   }
-> & {
-  qty: number | mIOToken; // TODO: this is for backwards compatibility
-  observerWallet?: WalletAddress;
-};
+>;
 
 // Original type definition refined with proper field-specific types
 export type UpdateGatewaySettingsParamsBase = {
@@ -91,7 +88,7 @@ export type UpdateGatewaySettingsParamsBase = {
   properties?: string;
   protocol?: AllowedProtocols;
   autoStake?: boolean;
-  observerWallet?: WalletAddress;
+  observerAddress?: WalletAddress;
 };
 
 // Utility type to require at least one of the fields
