@@ -39,15 +39,8 @@ const Arweave = require('arweave');
     protocol: 'https',
   });
 
-  const jwk = await arweave.wallets.generate();
-
-  const processId = await spawnANT({
-    signer: new ArweaveSigner(jwk),
-  });
-
   console.dir(
     {
-      processId,
       testnetGateways,
       ardriveRecord,
       protocolBalance,
