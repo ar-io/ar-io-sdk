@@ -740,9 +740,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       protocol,
       autoStake,
       observerAddress,
-    }: Omit<UpdateGatewaySettingsParams, 'observerWallet'> & {
-      observerAddress: string;
-    },
+    }: UpdateGatewaySettingsParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
