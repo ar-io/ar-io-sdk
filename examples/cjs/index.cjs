@@ -33,11 +33,6 @@ const Arweave = require('arweave');
   const observation = await arIO.getObservations({ epochIndex: 0 });
   const distributions = await arIO.getDistributions();
 
-  const arweave = Arweave.init({
-    host: 'arweave.net',
-    port: 443,
-    protocol: 'https',
-  });
 
   console.dir(
     {
