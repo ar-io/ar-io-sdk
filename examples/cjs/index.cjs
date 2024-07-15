@@ -1,12 +1,4 @@
-const {
-  IO,
-  ioDevnetProcessId,
-  Logger,
-  spawnANT,
-  evolveANT,
-  ArweaveSigner,
-} = require('@ar.io/sdk');
-const Arweave = require('arweave');
+const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
 
 (async () => {
   // set the log level for the SDK
@@ -19,12 +11,6 @@ const Arweave = require('arweave');
     address: ioDevnetProcessId,
   });
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
-  const partialRecords = await arIO
-    .getArNSRecords({
-      page: 10,
-      pageSize: 5,
-    })
-    .then((page) => page.items);
   const oldEpoch = await arIO.getEpoch({
     epochIndex: 0,
   });
@@ -32,7 +18,6 @@ const Arweave = require('arweave');
   const observations = await arIO.getObservations();
   const observation = await arIO.getObservations({ epochIndex: 0 });
   const distributions = await arIO.getDistributions();
-
 
   console.dir(
     {
