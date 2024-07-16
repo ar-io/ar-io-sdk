@@ -20,6 +20,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [IO APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
+    - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
@@ -264,6 +265,15 @@ const info = await io.getInfo();
 ```
 
 </details>
+
+#### `getTokenSupply()`
+
+Retrieves the total supply of tokens, returned in mIO.
+
+```typescript
+const io = IO.init();
+const supply = await io.getTokenSupply().then((s) => new mIOToken(s).toIO()); // convert it to IO for readability
+```
 
 #### `getBalance({ address })`
 
