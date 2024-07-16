@@ -31,16 +31,13 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node_version: [18.x]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set Up node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node_version }}
+          node-version-file: .nvmrc
           cache: 'yarn'
 
       - name: Install dependencies
@@ -53,3 +50,19 @@ jobs:
         uses: codecov/codecov-action@v4.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Send Slack failure notification
+        if: failure() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
+        env:
+          SLACK_TITLE: Build / E2E tests failed!
+          SLACK_COLOR: danger
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        uses: rtCamp/action-slack-notify@v2
+
+      - name: Send Slack success notification
+        if: success() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
+        env:
+          SLACK_TITLE: Build / E2E tests succeeded!
+          SLACK_COLOR: good
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        uses: rtCamp/action-slack-notify@v2
