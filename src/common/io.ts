@@ -128,6 +128,12 @@ export class IOReadable implements AoIORead {
     });
   }
 
+  async getTokenSupply(): Promise<number> {
+    return this.process.read<number>({
+      tags: [{ name: 'Action', value: 'Total-Token-Supply' }],
+    });
+  }
+
   async getEpochSettings(params?: EpochInput): Promise<AoEpochSettings> {
     const allTags = [
       { name: 'Action', value: 'Epoch-Settings' },

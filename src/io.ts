@@ -123,6 +123,7 @@ export interface AoIORead {
     Logo: string;
     Denomination: number;
   }>;
+  getTokenSupply(): Promise<number>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
   getGateway({
     address,

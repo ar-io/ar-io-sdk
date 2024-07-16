@@ -16,6 +16,11 @@ describe('IO', async () => {
     assert.ok(epoch);
   });
 
+  it('should be able to get the total token supply', async () => {
+    const tokenSupply = await io.getTokenSupply();
+    assert.ok(tokenSupply);
+  });
+
   it('should be able to get first set of arns records', async () => {
     const records = await io.getArNSRecords();
     assert.ok(records);
