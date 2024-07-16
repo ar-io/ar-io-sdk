@@ -1,3 +1,23 @@
+# [2.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.3-alpha.1...v2.1.0-alpha.1) (2024-07-16)
+
+
+### Bug Fixes
+
+* **ant lua id:** update to version Flwio4Lr08g6s6uim6lEJNnVGD9ylvz0_aafvpiL8FI ([8cbd564](https://github.com/ar-io/ar-io-sdk/commit/8cbd564cffb18055c46cb3212a0657e55f02d781))
+* **evolve:** call eval twice to ensure evolve txid is set ([a6261e5](https://github.com/ar-io/ar-io-sdk/commit/a6261e566bdf9ba6d18bbc9088487f9b79bbd5aa))
+* **evolve:** dont double eval ([a2a9121](https://github.com/ar-io/ar-io-sdk/commit/a2a9121cbdbfe1b16e43602cf83f86793f0e8f48))
+* **evolve:** fixed evolve somehow ([b06503b](https://github.com/ar-io/ar-io-sdk/commit/b06503b098fee87ef9e710c2fa4cd585416b21ed))
+* **example:** dont spawn in example ([d1d5147](https://github.com/ar-io/ar-io-sdk/commit/d1d514759a1a5af90246b2d51a43ca5ec03e5c16))
+* **example:** remove unused arweave instance ([d0035c0](https://github.com/ar-io/ar-io-sdk/commit/d0035c01093e8acd3141a933439184897a74ad4e))
+* **format:** fix linting issues in format ([b72dc1f](https://github.com/ar-io/ar-io-sdk/commit/b72dc1f4969763568a8d1fa7e36cfd1afb3a5ccb))
+* **lua id:** set new lua id in constants ([e4c3aaf](https://github.com/ar-io/ar-io-sdk/commit/e4c3aaf8b65c02294e021c2df8dac9d25ea6ec05))
+* **types:** check info on evolve util first ([a44cca1](https://github.com/ar-io/ar-io-sdk/commit/a44cca17fc8d44661326e39d189b5a9e0e43367d))
+
+
+### Features
+
+* **evolve:** add evolve util ([47bfe20](https://github.com/ar-io/ar-io-sdk/commit/47bfe20a9713bfdd82a7ca03ce8576653af29cf0))
+
 ## [2.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.2...v2.0.3-alpha.1) (2024-07-12)
 
 
