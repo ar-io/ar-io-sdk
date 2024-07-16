@@ -1,3 +1,10 @@
+# [2.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.1...v2.1.0-alpha.2) (2024-07-16)
+
+
+### Bug Fixes
+
+* **io:** add api that returns the total token supply ([261c85c](https://github.com/ar-io/ar-io-sdk/commit/261c85cf44490acc8bb46bd337693d83ffba7120))
+
 # [2.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.3-alpha.1...v2.1.0-alpha.1) (2024-07-16)
 
 
