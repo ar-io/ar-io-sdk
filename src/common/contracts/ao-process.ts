@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect } from '@permaweb/aoconnect';
-import { createData } from 'arbundles';
+import { connect, createDataItemSigner } from '@permaweb/aoconnect';
+import { Signer, createData } from 'arbundles';
 
 import { AOContract, AoClient, ContractSigner } from '../../types.js';
 import { safeDecode } from '../../utils/json.js';
@@ -53,8 +53,15 @@ export class AOProcess implements AOContract {
       anchor?: string;
     }) => Promise<{ id: string; raw: ArrayBuffer }>
   > {
+    if (!(signer instanceof Signer)) {
+      return createDataItemSigner(signer) as any;
+    }
     // ensure appropriate permissions are granted with injected signers.
-    if (signer.publicKey === undefined && 'setPublicKey' in signer) {
+    if (
+      signer.publicKey === undefined &&
+      'setPublicKey' in signer &&
+      typeof signer.setPublicKey === 'function'
+    ) {
       await signer.setPublicKey();
     }
 

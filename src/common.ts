@@ -23,7 +23,7 @@ import {
   spawn,
   unmonitor,
 } from '@permaweb/aoconnect';
-import { ArconnectSigner, ArweaveSigner } from 'arbundles';
+import { Signer } from 'arbundles';
 
 import {
   AllowedProtocols,
@@ -41,7 +41,7 @@ export type TransactionId = string;
 export type ProcessId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractSigner = ArweaveSigner | ArconnectSigner;
+export type ContractSigner = Signer | Window['arweaveWallet'];
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
