@@ -132,11 +132,13 @@ export type GatewaySettings = GatewayConnectionSettings &
 export type AllowedProtocols = 'https';
 
 export type GatewayStats = {
-  failedConsecutiveEpochs: number;
-  passedEpochCount: number;
-  submittedEpochCount: number;
+  prescribedEpochCount: number;
+  observedEpochCount: number;
   totalEpochCount: number;
-  totalEpochsPrescribedCount: number;
+  passedEpochCount: number;
+  failedEpochCount: number;
+  failedConsecutiveEpochs: number;
+  passedConsecutiveEpochs: number;
 };
 
 // Observations
