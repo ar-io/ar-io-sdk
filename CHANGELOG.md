@@ -1,3 +1,11 @@
+# [2.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.2...v2.1.0-alpha.3) (2024-07-25)
+
+
+### Bug Fixes
+
+* **emitter:** add page size param for emitter to increase amount of records per page to 50k ([b6f2157](https://github.com/ar-io/ar-io-sdk/commit/b6f215763b5d7b3e713f0dbb1babca99ddd79dfe))
+* **types:** update type name to what contract returns ([99edbad](https://github.com/ar-io/ar-io-sdk/commit/99edbad2fb4553d85c366d6c62466d984b42e7cf))
+
 # [2.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.1...v2.1.0-alpha.2) (2024-07-16)
 
 
