@@ -115,7 +115,13 @@ export class ArNSEventEmitter extends EventEmitter {
     this.logger = logger;
   }
 
-  async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
+  async fetchProcessesOwnedByWallet({
+    address,
+    pageSize,
+  }: {
+    address: WalletAddress;
+    pageSize?: number;
+  }) {
     const uniqueContractProcessIds: Record<
       string,
       {
@@ -126,7 +132,7 @@ export class ArNSEventEmitter extends EventEmitter {
 
     await timeout(
       this.timeoutMs,
-      fetchAllArNSRecords({ contract: this.contract, emitter: this }),
+      fetchAllArNSRecords({ contract: this.contract, emitter: this, pageSize }),
     )
       .catch((e) => {
         this.emit('error', `Error getting ArNS records: ${e}`);
@@ -201,17 +207,19 @@ export const fetchAllArNSRecords = async ({
   }),
   emitter,
   logger = Logger.default,
+  pageSize = 50_000,
 }: {
   contract?: AoIORead;
   emitter?: EventEmitter;
   logger?: ILogger;
+  pageSize?: number;
 }): Promise<Record<string, AoArNSNameData>> => {
   let cursor: string | undefined;
   const startTimestamp = Date.now();
   const records: Record<string, AoArNSNameData> = {};
   do {
     const pageResult = await contract
-      .getArNSRecords({ cursor })
+      .getArNSRecords({ cursor, limit: pageSize })
       .catch((e: any) => {
         logger?.error(`Error getting ArNS records`, {
           message: e?.message,
