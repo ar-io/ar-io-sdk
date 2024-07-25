@@ -1,3 +1,10 @@
+# [2.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.3...v2.1.0-alpha.4) (2024-07-25)
+
+
+### Bug Fixes
+
+* **gateway stats:** update gateway stat types ([a59b166](https://github.com/ar-io/ar-io-sdk/commit/a59b166fa17735889aaae44e2b91cb5964f85f63))
+
 # [2.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.2...v2.1.0-alpha.3) (2024-07-25)
 
 
