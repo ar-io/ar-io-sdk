@@ -124,7 +124,7 @@ const gateways = await io.getGateways();
         "failedConsecutiveEpochs": 0,
         "passedEpochCount": 30,
         "submittedEpochCount": 30,
-        "totalEpochParticipationCount": 31,
+        "totalEpochCount": 31,
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",
@@ -364,7 +364,7 @@ const gateway = await io.getGateway({
     "failedConsecutiveEpochs": 0,
     "passedEpochCount": 30,
     "submittedEpochCount": 30,
-    "totalEpochParticipationCount": 31,
+    "totalEpochCount": 31,
     "totalEpochsPrescribedCount": 31
   },
   "status": "joined",
@@ -412,7 +412,7 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
         "failedConsecutiveEpochs": 0,
         "passedEpochCount": 30,
         "submittedEpochCount": 30,
-        "totalEpochParticipationCount": 31,
+        "totalEpochCount": 31,
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",

@@ -135,7 +135,7 @@ export type GatewayStats = {
   failedConsecutiveEpochs: number;
   passedEpochCount: number;
   submittedEpochCount: number;
-  totalEpochParticipationCount: number;
+  totalEpochCount: number;
   totalEpochsPrescribedCount: number;
 };
 
