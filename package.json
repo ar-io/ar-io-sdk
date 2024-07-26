@@ -118,7 +118,7 @@
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
-    "@permaweb/aoconnect": "^0.0.55",
+    "@permaweb/aoconnect": "^0.0.57",
     "arbundles": "0.11.0",
     "arconnect": "^1.0.3",
     "arweave": "1.14.4",

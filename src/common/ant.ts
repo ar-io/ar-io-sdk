@@ -20,7 +20,7 @@ import {
   AoANTState,
   AoANTWrite,
   AoMessageResult,
-  ContractSigner,
+  AoSigningFuction,
   OptionalSigner,
   ProcessConfiguration,
   WalletAddress,
@@ -227,14 +227,14 @@ export class AoANTReadable implements AoANTRead {
 }
 
 export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
-  private signer: ContractSigner;
+  private signer: AoSigningFuction;
 
   constructor({
     signer,
     ...config
   }: WithSigner<Required<ProcessConfiguration>>) {
     super(config);
-    this.signer = signer;
+    this.signer = AOProcess.createAoSigner(signer);
   }
 
   /**

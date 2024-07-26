@@ -153,3 +153,10 @@ export class mIOToken extends PositiveFiniteInteger {
     return new IOToken(this.valueOf() / MIO_PER_IO);
   }
 }
+
+export type AoSigningFuction = (args: {
+  data: string | Buffer;
+  tags?: { name: string; value: string }[];
+  target?: string;
+  anchor?: string;
+}) => Promise<{ id: string; raw: ArrayBuffer }>;

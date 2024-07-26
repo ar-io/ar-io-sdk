@@ -26,11 +26,10 @@ import {
   VaultData,
   WeightedObserver,
 } from './contract-state.js';
-import { mIOToken } from './token.js';
+import { AoSigningFuction, mIOToken } from './token.js';
 import {
   AoMessageResult,
   BlockHeight,
-  ContractSigner,
   JoinNetworkParams,
   ProcessId,
   Timestamp,
@@ -111,7 +110,7 @@ export interface AOContract {
   }: {
     tags: { name: string; value: string }[];
     data: I;
-    signer: ContractSigner;
+    signer: AoSigningFuction;
   }): Promise<{ id: string; result?: K }>;
 }
 

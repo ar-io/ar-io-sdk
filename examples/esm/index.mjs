@@ -1,5 +1,7 @@
 import {
   ANT,
+  AOProcess,
+  ArNSEventEmitter,
   ArweaveSigner,
   IO,
   ioDevnetProcessId,
@@ -66,10 +68,14 @@ import Arweave from 'arweave';
   });
 
   const jwk = await arweave.wallets.generate();
-
-  const processId = await spawnANT({
-    signer: new ArweaveSigner(jwk),
-  });
+  let processId;
+  try {
+    processId = await spawnANT({
+      signer: AOProcess.createAoSigner(new ArweaveSigner(jwk)),
+    });
+  } catch (error) {
+    console.log(error);
+  }
 
   const ant = ANT.init({
     processId,
@@ -92,7 +98,7 @@ import Arweave from 'arweave';
 
   // fetching ants owned by a wallet using an event emitter
   const address = 'ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo';
-  const processEmitter = new ArNSNameEmitter({ contract: arIO });
+  const processEmitter = new ArNSEventEmitter({ contract: arIO });
   processEmitter.on('error', (e) => {
     console.error(e);
   });

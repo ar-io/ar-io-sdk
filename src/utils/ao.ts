@@ -24,7 +24,7 @@ import {
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { ANTState } from '../contract-state.js';
-import { AoClient, ContractSigner } from '../types.js';
+import { AoClient, AoSigningFuction } from '../types.js';
 
 export async function spawnANT({
   signer,
@@ -35,7 +35,7 @@ export async function spawnANT({
   state,
   stateContractTxId,
 }: {
-  signer: ContractSigner;
+  signer: AoSigningFuction;
   module?: string;
   luaCodeTxId?: string;
   ao?: AoClient;
@@ -52,7 +52,7 @@ export async function spawnANT({
   const processId = await ao.spawn({
     module,
     scheduler,
-    signer: await AOProcess.createAoSigner(signer),
+    signer,
   });
 
   const aosClient = new AOProcess({
@@ -92,7 +92,7 @@ export async function evolveANT({
   luaCodeTxId = ANT_LUA_ID,
   ao = connect(),
 }: {
-  signer: ContractSigner;
+  signer: AoSigningFuction;
   processId: string;
   luaCodeTxId?: string;
   ao?: AoClient;
