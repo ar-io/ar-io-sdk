@@ -154,7 +154,7 @@ export class mIOToken extends PositiveFiniteInteger {
   }
 }
 
-export type AoSigningFuction = (args: {
+export type AoSigner = (args: {
   data: string | Buffer;
   tags?: { name: string; value: string }[];
   target?: string;

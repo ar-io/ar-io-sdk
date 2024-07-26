@@ -17,12 +17,7 @@
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
 
-import {
-  AOContract,
-  AoClient,
-  AoSigningFuction,
-  ContractSigner,
-} from '../../types.js';
+import { AOContract, AoClient, AoSigner, ContractSigner } from '../../types.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -147,7 +142,7 @@ export class AOProcess implements AOContract {
   }: {
     tags: Array<{ name: string; value: string }>;
     data?: I;
-    signer: AoSigningFuction;
+    signer: AoSigner;
     retries?: number;
   }): Promise<{ id: string; result?: K }> {
     // main purpose of retries is to handle network errors/new process delays

@@ -34,7 +34,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../io.js';
-import { AoSigningFuction, mIOToken } from '../token.js';
+import { AoSigner, mIOToken } from '../token.js';
 import {
   AoArNSNameDataWithName,
   AoBalanceWithAddress,
@@ -578,7 +578,7 @@ export class IOReadable implements AoIORead {
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
   protected declare process: AOProcess;
-  private signer: AoSigningFuction;
+  private aoSigner: AoSigner;
   constructor({
     signer,
     ...config
@@ -594,17 +594,17 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           processId: IO_TESTNET_PROCESS_ID,
         }),
       });
-      this.signer = AOProcess.createAoSigner(signer);
+      this.aoSigner = AOProcess.createAoSigner(signer);
     } else if (isProcessConfiguration(config)) {
       super({ process: config.process });
-      this.signer = AOProcess.createAoSigner(signer);
+      this.aoSigner = AOProcess.createAoSigner(signer);
     } else if (isProcessIdConfiguration(config)) {
       super({
         process: new AOProcess({
           processId: config.processId,
         }),
       });
-      this.signer = AOProcess.createAoSigner(signer);
+      this.aoSigner = AOProcess.createAoSigner(signer);
     } else {
       throw new InvalidContractConfigurationError();
     }
@@ -634,7 +634,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           value: qty.valueOf().toString(),
         },
       ],
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -720,7 +720,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     );
 
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: prunedTags,
     });
   }
@@ -728,7 +728,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async leaveNetwork(options?: WriteOptions): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [...tags, { name: 'Action', value: 'Leave-Network' }],
     });
   }
@@ -783,7 +783,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     );
 
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: prunedTags,
     });
   }
@@ -797,7 +797,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Delegate-Stake' },
@@ -816,7 +816,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Decrease-Delegate-Stake' },
@@ -834,7 +834,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Increase-Operator-Stake' },
@@ -851,7 +851,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Decrease-Operator-Stake' },
@@ -875,7 +875,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
       never
     >({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Save-Observations' },
@@ -922,7 +922,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     );
 
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: prunedTags,
     });
   }
@@ -936,7 +936,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Extend-Lease' },
@@ -955,7 +955,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     return this.process.send({
-      signer: this.signer,
+      signer: this.aoSigner,
       tags: [
         ...tags,
         { name: 'Action', value: 'Increase-Undername-Limit' },

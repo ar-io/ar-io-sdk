@@ -20,7 +20,7 @@ import {
   AoANTState,
   AoANTWrite,
   AoMessageResult,
-  AoSigningFuction,
+  AoSigner,
   OptionalSigner,
   ProcessConfiguration,
   WalletAddress,
@@ -227,14 +227,14 @@ export class AoANTReadable implements AoANTRead {
 }
 
 export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
-  private signer: AoSigningFuction;
+  private aoSigner: AoSigner;
 
   constructor({
     signer,
     ...config
   }: WithSigner<Required<ProcessConfiguration>>) {
     super(config);
-    this.signer = AOProcess.createAoSigner(signer);
+    this.aoSigner = AOProcess.createAoSigner(signer);
   }
 
   /**
@@ -254,7 +254,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     return this.process.send({
       tags,
       data: {},
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -279,7 +279,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     return this.process.send({
       tags,
       data: {},
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -304,7 +304,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     return this.process.send({
       tags,
       data: {},
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -335,7 +335,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'TTL-Seconds', value: ttlSeconds.toString() },
       ],
       data: { transactionId, ttlSeconds },
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -358,7 +358,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Sub-Domain', value: undername },
       ],
       data: { undername },
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 
@@ -377,7 +377,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Ticker', value: ticker },
       ],
       data: { ticker },
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
   /**
@@ -395,7 +395,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Name', value: name },
       ],
       data: { name },
-      signer: this.signer,
+      signer: this.aoSigner,
     });
   }
 }
