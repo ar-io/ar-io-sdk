@@ -25,7 +25,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --immutable --immutable-cache
+        run: yarn --immutable --immutable-cache --ignore-engines
 
       - run: yarn ${{ matrix.command }}
 
@@ -41,7 +41,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --immutable --immutable-cache
+        run: yarn --immutable --immutable-cache --ignore-engines
 
       - name: Run tests
         run: yarn test
