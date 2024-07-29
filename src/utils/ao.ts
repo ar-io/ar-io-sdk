@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-import { connect } from '@permaweb/aoconnect';
+import { connect, createDataItemSigner } from '@permaweb/aoconnect';
+import { createData } from 'arbundles';
 
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess } from '../common/index.js';
@@ -24,7 +25,7 @@ import {
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { ANTState } from '../contract-state.js';
-import { AoClient, ContractSigner } from '../types.js';
+import { AoClient, AoSigner, ContractSigner } from '../types.js';
 
 export async function spawnANT({
   signer,
@@ -35,7 +36,7 @@ export async function spawnANT({
   state,
   stateContractTxId,
 }: {
-  signer: ContractSigner;
+  signer: AoSigner;
   module?: string;
   luaCodeTxId?: string;
   ao?: AoClient;
@@ -52,7 +53,7 @@ export async function spawnANT({
   const processId = await ao.spawn({
     module,
     scheduler,
-    signer: await AOProcess.createAoSigner(signer),
+    signer,
   });
 
   const aosClient = new AOProcess({
@@ -92,7 +93,7 @@ export async function evolveANT({
   luaCodeTxId = ANT_LUA_ID,
   ao = connect(),
 }: {
-  signer: ContractSigner;
+  signer: AoSigner;
   processId: string;
   luaCodeTxId?: string;
   ao?: AoClient;
@@ -119,4 +120,29 @@ export async function evolveANT({
   });
 
   return id;
+}
+
+export function createAoSigner(signer: ContractSigner): AoSigner {
+  if (!('publicKey' in signer)) {
+    return createDataItemSigner(signer) as any;
+  }
+
+  const aoSigner = async ({ data, tags, target, anchor }) => {
+    // ensure appropriate permissions are granted with injected signers.
+    if (
+      signer.publicKey === undefined &&
+      'setPublicKey' in signer &&
+      typeof signer.setPublicKey === 'function'
+    ) {
+      await signer.setPublicKey();
+    }
+    const dataItem = createData(data, signer, { tags, target, anchor });
+    const signedData = dataItem.sign(signer).then(async () => ({
+      id: await dataItem.id,
+      raw: await dataItem.getRaw(),
+    }));
+    return signedData;
+  };
+
+  return aoSigner;
 }

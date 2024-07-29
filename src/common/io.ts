@@ -34,7 +34,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../io.js';
-import { mIOToken } from '../token.js';
+import { AoSigner, mIOToken } from '../token.js';
 import {
   AoArNSNameDataWithName,
   AoBalanceWithAddress,
@@ -52,6 +52,7 @@ import {
   WithSigner,
   WriteOptions,
 } from '../types.js';
+import { createAoSigner } from '../utils/ao.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -578,7 +579,7 @@ export class IOReadable implements AoIORead {
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
   protected declare process: AOProcess;
-  private signer: ContractSigner;
+  private signer: AoSigner;
   constructor({
     signer,
     ...config
@@ -594,17 +595,17 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           processId: IO_TESTNET_PROCESS_ID,
         }),
       });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else if (isProcessConfiguration(config)) {
       super({ process: config.process });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else if (isProcessIdConfiguration(config)) {
       super({
         process: new AOProcess({
           processId: config.processId,
         }),
       });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else {
       throw new InvalidContractConfigurationError();
     }

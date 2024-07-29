@@ -91,6 +91,7 @@
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
+    "arconnect": "^1.0.3",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "esbuild": "^0.19.2",
@@ -118,7 +119,7 @@
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
-    "@permaweb/aoconnect": "^0.0.55",
+    "@permaweb/aoconnect": "^0.0.57",
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
     "axios": "1.7.2",
