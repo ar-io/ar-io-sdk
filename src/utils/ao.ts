@@ -122,14 +122,7 @@ export async function evolveANT({
   return id;
 }
 
-export function createAoSigner(
-  signer: ContractSigner,
-): (args: {
-  data: string | Buffer;
-  tags?: { name: string; value: string }[];
-  target?: string;
-  anchor?: string;
-}) => Promise<{ id: string; raw: ArrayBuffer }> {
+export function createAoSigner(signer: ContractSigner): AoSigner {
   if (!('publicKey' in signer)) {
     return createDataItemSigner(signer) as any;
   }
