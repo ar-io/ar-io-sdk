@@ -286,7 +286,7 @@ const balance = await io
   .getBalance({
     address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   })
-  .then((balance) => new mIOToken().toIO()); // convert it to IO for readability
+  .then((balance: number) => new mIOToken(balance).toIO()); // convert it to IO for readability
 ```
 
 <details>
