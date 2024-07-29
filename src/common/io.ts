@@ -52,6 +52,7 @@ import {
   WithSigner,
   WriteOptions,
 } from '../types.js';
+import { createAoSigner } from '../utils/ao.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -594,17 +595,17 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           processId: IO_TESTNET_PROCESS_ID,
         }),
       });
-      this.aoSigner = AOProcess.createAoSigner(signer);
+      this.aoSigner = createAoSigner(signer);
     } else if (isProcessConfiguration(config)) {
       super({ process: config.process });
-      this.aoSigner = AOProcess.createAoSigner(signer);
+      this.aoSigner = createAoSigner(signer);
     } else if (isProcessIdConfiguration(config)) {
       super({
         process: new AOProcess({
           processId: config.processId,
         }),
       });
-      this.aoSigner = AOProcess.createAoSigner(signer);
+      this.aoSigner = createAoSigner(signer);
     } else {
       throw new InvalidContractConfigurationError();
     }

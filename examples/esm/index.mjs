@@ -1,9 +1,9 @@
 import {
   ANT,
-  AOProcess,
   ArNSEventEmitter,
   ArweaveSigner,
   IO,
+  createAoSigner,
   ioDevnetProcessId,
   spawnANT,
 } from '@ar.io/sdk';
@@ -71,7 +71,7 @@ import Arweave from 'arweave';
   let processId;
   try {
     processId = await spawnANT({
-      signer: AOProcess.createAoSigner(new ArweaveSigner(jwk)),
+      signer: createAoSigner(new ArweaveSigner(jwk)),
     });
   } catch (error) {
     console.log(error);

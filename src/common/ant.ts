@@ -28,6 +28,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types.js';
+import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
@@ -234,7 +235,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     ...config
   }: WithSigner<Required<ProcessConfiguration>>) {
     super(config);
-    this.aoSigner = AOProcess.createAoSigner(signer);
+    this.aoSigner = createAoSigner(signer);
   }
 
   /**
