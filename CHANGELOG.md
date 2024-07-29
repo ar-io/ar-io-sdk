@@ -1,3 +1,21 @@
+# [2.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.4...v2.1.0-alpha.5) (2024-07-29)
+
+
+### Bug Fixes
+
+* **actions:** ignore engines in action ([7f6f87d](https://github.com/ar-io/ar-io-sdk/commit/7f6f87d442dca7970ee495f2b4286049e63cbcff))
+* **deps:** move arconnect to dev deps ([34f07d2](https://github.com/ar-io/ar-io-sdk/commit/34f07d25024c080f529218569cba57041e34baa2))
+* **naming:** name AoSigner property aoSigner ([4604524](https://github.com/ar-io/ar-io-sdk/commit/4604524dc56333c3ed1698978b61747920c43848))
+* **signer:** describe signing function as signer vs aoSigner in case of signer type changes ([3b23f80](https://github.com/ar-io/ar-io-sdk/commit/3b23f80581ea331b89ac31756421f74799315e2c))
+* **signer:** move createAoSigner to be a util ([7f7a0e6](https://github.com/ar-io/ar-io-sdk/commit/7f7a0e6f16b1b8f2e900aca056f6f5aaa98bd4f1))
+* **signer:** pass in signing function instead of signer class ([cba16e3](https://github.com/ar-io/ar-io-sdk/commit/cba16e3f72d3adf0b0ecf39dd93236511b77bb7c))
+* **signer:** use AoSigner type as return type ([8e95edd](https://github.com/ar-io/ar-io-sdk/commit/8e95eddf5723b0fdbf870688556f76a3e80bb6fa))
+
+
+### Features
+
+* **signing:** add window arweave wallet to available signing options ([7596aec](https://github.com/ar-io/ar-io-sdk/commit/7596aec43557b2a0aac3844a973b78f4fed33b65))
+
 # [2.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.3...v2.1.0-alpha.4) (2024-07-25)
 
 
