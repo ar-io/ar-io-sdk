@@ -16,10 +16,20 @@
  */
 import { connect } from '@permaweb/aoconnect';
 
-import { AOContract, AoClient, AoSigner } from '../../types.js';
+import {
+  AOContract,
+  AoClient,
+  AoSigner,
+  ProcessConfiguration,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
+} from '../../types.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
-import { WriteInteractionError } from '../error.js';
+import {
+  InvalidContractConfigurationError,
+  WriteInteractionError,
+} from '../error.js';
 import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
@@ -39,6 +49,18 @@ export class AOProcess implements AOContract {
     this.processId = processId;
     this.logger = logger;
     this.ao = ao;
+  }
+
+  static fromConfiguration(config: Required<ProcessConfiguration>) {
+    if (isProcessConfiguration(config)) {
+      return config.process;
+    } else if (isProcessIdConfiguration(config)) {
+      return new AOProcess({
+        processId: config.processId,
+      });
+    } else {
+      throw new InvalidContractConfigurationError();
+    }
   }
 
   async read<K>({

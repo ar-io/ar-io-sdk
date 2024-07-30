@@ -325,6 +325,14 @@ export interface AoANTWrite extends AoANTRead {
   setName({ name }): Promise<AoMessageResult>;
 }
 
+export interface AoANTRegistryRead {
+  accessControlList(params: { address: string }): Promise<string[]>;
+}
+
+export interface AoANTRegistryWrite extends AoANTRegistryRead {
+  register(params: { processId: string }): Promise<AoMessageResult>;
+}
+
 // AO Contract types
 export interface AoIOState {
   GatewayRegistry: Record<WalletAddress, AoGateway>;
