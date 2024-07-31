@@ -1087,6 +1087,8 @@ const state = await ant.getState();
 }
 ```
 
+<details>
+
 #### `getOwner()`
 
 Returns the owner of the configured ANT process.
