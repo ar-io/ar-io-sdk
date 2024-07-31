@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "2.1.0-alpha.5",
+  "version": "2.1.0-alpha.6",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
