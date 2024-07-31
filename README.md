@@ -50,6 +50,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo)
+    - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
     - [`getRecords()`](#getrecords)
@@ -1044,6 +1045,47 @@ const info = await ant.getInfo();
 ```
 
 </details>
+
+#### `getState()`
+
+Retrieves the state of the ANT process.
+
+```typescript
+const state = await ant.getState();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "TotalSupply": 1,
+  "Balances": {
+    "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY": 1
+  },
+  "Controllers": [],
+  "Records": {
+    "v1-0-0_whitepaper": {
+      "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
+      "ttlSeconds": 900
+    },
+    "@": {
+      "transactionId": "2rMLb2uHAyEt7jSu6bXtKx8e-jOfIf7E-DOgQnm8EtU",
+      "ttlSeconds": 3600
+    },
+    "whitepaper": {
+      "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
+      "ttlSeconds": 900
+    }
+  },
+  "Initialized": true,
+  "Ticker": "ANT-AR-IO",
+  "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
+  "Denomination": 0,
+  "Name": "AR.IO Foundation",
+  "Owner": "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY"
+}
+```
 
 #### `getOwner()`
 
