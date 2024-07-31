@@ -124,6 +124,14 @@ describe('IO', async () => {
       assert(typeof gateway.startTimestamp === 'number');
       assert(typeof gateway.operatorStake === 'number');
       assert(typeof gateway.totalDelegatedStake === 'number');
+      assert(typeof gateway.settings === 'object');
+      assert(typeof gateway.weights === 'object');
+      assert(typeof gateway.weights.normalizedCompositeWeight === 'number');
+      assert(typeof gateway.weights.compositeWeight === 'number');
+      assert(typeof gateway.weights.stakeWeight === 'number');
+      assert(typeof gateway.weights.tenureWeight === 'number');
+      assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
+      assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
     });
   });
 
@@ -153,6 +161,14 @@ describe('IO', async () => {
       assert(typeof gateway.startTimestamp === 'number');
       assert(typeof gateway.operatorStake === 'number');
       assert(typeof gateway.totalDelegatedStake === 'number');
+      assert(typeof gateway.settings === 'object');
+      assert(typeof gateway.weights === 'object');
+      assert(typeof gateway.weights.normalizedCompositeWeight === 'number');
+      assert(typeof gateway.weights.compositeWeight === 'number');
+      assert(typeof gateway.weights.stakeWeight === 'number');
+      assert(typeof gateway.weights.tenureWeight === 'number');
+      assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
+      assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
     });
   });
 
