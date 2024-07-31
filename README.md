@@ -1087,7 +1087,7 @@ const state = await ant.getState();
 }
 ```
 
-<details>
+</details>
 
 #### `getOwner()`
 
