@@ -87,11 +87,6 @@ describe('IO', async () => {
     assert.ok(epochSettings);
   });
 
-  it('should be able to get the current prescribed observers', async () => {
-    const observers = await io.getPrescribedObservers();
-    assert.ok(observers);
-  });
-
   it('should be able to get reserved names', async () => {
     const reservedNames = await io.getArNSReservedNames();
     assert.ok(reservedNames);
@@ -123,6 +118,14 @@ describe('IO', async () => {
       assert(typeof gateway.startTimestamp === 'number');
       assert(typeof gateway.operatorStake === 'number');
       assert(typeof gateway.totalDelegatedStake === 'number');
+      assert(typeof gateway.settings === 'object');
+      assert(typeof gateway.weights === 'object');
+      assert(typeof gateway.weights.normalizedCompositeWeight === 'number');
+      assert(typeof gateway.weights.compositeWeight === 'number');
+      assert(typeof gateway.weights.stakeWeight === 'number');
+      assert(typeof gateway.weights.tenureWeight === 'number');
+      assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
+      assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
     });
   });
 
@@ -152,6 +155,14 @@ describe('IO', async () => {
       assert(typeof gateway.startTimestamp === 'number');
       assert(typeof gateway.operatorStake === 'number');
       assert(typeof gateway.totalDelegatedStake === 'number');
+      assert(typeof gateway.settings === 'object');
+      assert(typeof gateway.weights === 'object');
+      assert(typeof gateway.weights.normalizedCompositeWeight === 'number');
+      assert(typeof gateway.weights.compositeWeight === 'number');
+      assert(typeof gateway.weights.stakeWeight === 'number');
+      assert(typeof gateway.weights.tenureWeight === 'number');
+      assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
+      assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
     });
   });
 
@@ -219,6 +230,22 @@ describe('IO', async () => {
   it('should be able to get prescribed names', async () => {
     const prescribedNames = await io.getPrescribedNames();
     assert.ok(prescribedNames);
+  });
+
+  it('should return the prescribed observers for a given epoch', async () => {
+    const observers = await io.getPrescribedObservers();
+    assert.ok(observers);
+    for (const observer of observers) {
+      assert(typeof observer.gatewayAddress === 'string');
+      assert(typeof observer.observerAddress === 'string');
+      assert(typeof observer.stake === 'number');
+      assert(typeof observer.startTimestamp === 'number');
+      assert(typeof observer.stakeWeight === 'number');
+      assert(typeof observer.tenureWeight === 'number');
+      assert(typeof observer.gatewayRewardRatioWeight === 'number');
+      assert(typeof observer.observerRewardRatioWeight === 'number');
+      assert(typeof observer.compositeWeight === 'number');
+    }
   });
 
   it('should be able to get token cost for leasing a name', async () => {
