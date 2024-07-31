@@ -128,7 +128,15 @@ const gateways = await io.getGateways();
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",
-      "vaults": {}
+      "vaults": {},
+      "weights": {
+        "compositeWeight": 0.97688888893556,
+        "gatewayRewardRatioWeight": 1,
+        "tenureWeight": 0.19444444444444,
+        "observerRewardRatioWeight": 1,
+        "normalizedCompositeWeight": 0.19247316211083,
+        "stakeWeight": 5.02400000024
+      }
     }
   ],
   "hasMore": true,
@@ -368,7 +376,15 @@ const gateway = await io.getGateway({
     "totalEpochsPrescribedCount": 31
   },
   "status": "joined",
-  "vaults": {}
+  "vaults": {},
+  "weights": {
+    "compositeWeight": 0.97688888893556,
+    "gatewayRewardRatioWeight": 1,
+    "tenureWeight": 0.19444444444444,
+    "observerRewardRatioWeight": 1,
+    "normalizedCompositeWeight": 0.19247316211083,
+    "stakeWeight": 5.02400000024
+  }
 }
 ```
 
@@ -416,7 +432,15 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",
-      "vaults": {}
+      "vaults": {},
+      "weights": {
+        "compositeWeight": 0.97688888893556,
+        "gatewayRewardRatioWeight": 1,
+        "tenureWeight": 0.19444444444444,
+        "observerRewardRatioWeight": 1,
+        "normalizedCompositeWeight": 0.19247316211083,
+        "stakeWeight": 5.02400000024
+      }
     }
   ],
   "hasMore": true,
