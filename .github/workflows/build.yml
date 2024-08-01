@@ -25,7 +25,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --immutable --immutable-cache --ignore-engines
+        run: yarn --immutable --immutable-cache
 
       - run: yarn ${{ matrix.command }}
 
@@ -41,7 +41,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn --immutable --immutable-cache --ignore-engines
+        run: yarn --immutable --immutable-cache
 
       - name: Run tests
         run: yarn test
@@ -52,17 +52,17 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Send Slack failure notification
+        uses: rtCamp/action-slack-notify@v2
         if: failure() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
         env:
           SLACK_TITLE: Build / E2E tests failed!
           SLACK_COLOR: danger
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        uses: rtCamp/action-slack-notify@v2
 
       - name: Send Slack success notification
+        uses: rtCamp/action-slack-notify@v2
         if: success() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
         env:
           SLACK_TITLE: Build / E2E tests succeeded!
           SLACK_COLOR: good
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        uses: rtCamp/action-slack-notify@v2

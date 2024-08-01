@@ -33,7 +33,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Install dependencies
-        run: yarn --immutable --immutable-cache --ignore-engines
+        run: yarn --immutable --immutable-cache
 
       - name: Build
         run: yarn build
