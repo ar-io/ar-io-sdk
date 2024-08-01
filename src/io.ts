@@ -404,6 +404,15 @@ export type AoGatewayStats = {
   prescribedEpochCount: number;
 };
 
+export type AoGatewayWeights = {
+  compositeWeight: number;
+  gatewayRewardRatioWeight: number;
+  tenureWeight: number;
+  observerRewardRatioWeight: number;
+  normalizedCompositeWeight: number;
+  stakeWeight: number;
+};
+
 export type AoGateway = {
   settings: GatewaySettings;
   stats: AoGatewayStats;
@@ -415,7 +424,7 @@ export type AoGateway = {
   observerAddress: WalletAddress;
   operatorStake: number;
   status: 'joined' | 'leaving';
-  // TODO: add weights
+  weights: AoGatewayWeights;
 };
 
 export type AoBalanceWithAddress = {

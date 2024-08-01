@@ -1,3 +1,10 @@
+# [2.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.5...v2.1.0-alpha.6) (2024-07-31)
+
+
+### Bug Fixes
+
+* **types:** update AoGateway to include weights ([5368668](https://github.com/ar-io/ar-io-sdk/commit/5368668ec6fcd84bf6a723a80b13cad7753a8606))
+
 # [2.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.4...v2.1.0-alpha.5) (2024-07-29)
 
 
