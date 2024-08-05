@@ -869,13 +869,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
-    return this.process.send<
-      {
-        reportTxId: TransactionId;
-        failedGateways: WalletAddress[];
-      },
-      never
-    >({
+    return this.process.send({
       signer: this.signer,
       tags: [
         ...tags,
@@ -889,10 +883,6 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           value: params.failedGateways.join(','),
         },
       ],
-      data: {
-        reportTxId: params.reportTxId,
-        failedGateways: params.failedGateways,
-      },
     });
   }
 
