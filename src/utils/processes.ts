@@ -17,60 +17,18 @@
 import { EventEmitter } from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
 
+import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
 import { IO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
+  AoANTRegistryRead,
   AoANTState,
   AoArNSNameData,
   AoIORead,
-  ProcessId,
   WalletAddress,
 } from '../types.js';
-
-export const getANTProcessesOwnedByWallet = async ({
-  address,
-  contract = IO.init({
-    processId: IO_TESTNET_PROCESS_ID,
-  }),
-}: {
-  address: WalletAddress;
-  contract?: AoIORead;
-}): Promise<ProcessId[]> => {
-  const throttle = pLimit(50);
-  // get the record names of the registry - TODO: this may need to be paginated
-  const records: Record<string, AoArNSNameData> = await fetchAllArNSRecords({
-    contract: contract,
-  });
-  const uniqueContractProcessIds = Object.values(records)
-    .filter((record) => record.processId !== undefined)
-    .map((record) => record.processId);
-
-  // check the contract owner and controllers
-  const ownedOrControlledByWallet = await Promise.all(
-    uniqueContractProcessIds.map(async (processId) =>
-      throttle(async () => {
-        const ant = ANT.init({
-          processId,
-        });
-        const { Owner, Controllers } = await ant.getState();
-
-        if (Owner === address || Controllers.includes(address)) {
-          return processId;
-        }
-        return;
-      }),
-    ),
-  );
-
-  if (ownedOrControlledByWallet.length === 0) {
-    return [];
-  }
-
-  // TODO: insert gql query to find ANT processes owned by wallet given wallet not currently in the registry
-  return [...new Set(ownedOrControlledByWallet)] as string[];
-};
 
 function timeout(ms: number, promise) {
   return new Promise((resolve, reject) => {
@@ -118,9 +76,11 @@ export class ArNSEventEmitter extends EventEmitter {
   async fetchProcessesOwnedByWallet({
     address,
     pageSize,
+    antRegistry = ANTRegistry.init(),
   }: {
     address: WalletAddress;
     pageSize?: number;
+    antRegistry?: AoANTRegistryRead;
   }) {
     const uniqueContractProcessIds: Record<
       string,
@@ -129,7 +89,7 @@ export class ArNSEventEmitter extends EventEmitter {
         names: Record<string, AoArNSNameData>;
       }
     > = {};
-
+    const antIds = await antRegistry.accessControlList({ address });
     await timeout(
       this.timeoutMs,
       fetchAllArNSRecords({ contract: this.contract, emitter: this, pageSize }),
@@ -142,19 +102,18 @@ export class ArNSEventEmitter extends EventEmitter {
         });
         return {};
       })
-      .then((records) => {
-        if (!records) return;
-        Object.entries(records).forEach(([name, record]) => {
-          if (record.processId === undefined) {
-            return;
+      .then((records: Record<string, AoArNSNameData>) => {
+        Object.entries(records).forEach(([name, arnsRecord]) => {
+          if (antIds.includes(arnsRecord.processId)) {
+            if (!uniqueContractProcessIds[arnsRecord.processId]) {
+              uniqueContractProcessIds[arnsRecord.processId] = {
+                state: undefined,
+                names: {},
+              };
+            }
+            uniqueContractProcessIds[arnsRecord.processId].names[name] =
+              arnsRecord;
           }
-          if (uniqueContractProcessIds[record.processId] === undefined) {
-            uniqueContractProcessIds[record.processId] = {
-              state: undefined,
-              names: {},
-            };
-          }
-          uniqueContractProcessIds[record.processId].names[name] = record;
         });
       });
 
