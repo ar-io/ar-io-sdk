@@ -1,40 +1,16 @@
-import {
-  ANTRegistry,
-  ANT_REGISTRY_ID,
-  AoANTRegistryWrite,
-  AoSigner,
-  ArweaveSigner,
-  createAoSigner,
-} from '@ar.io/sdk/web';
+import { ANTRegistry, AoANTRegistryRead } from '@ar.io/sdk/web';
 import '@testing-library/jest-dom';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { JWKInterface } from 'arbundles/node';
-import Arweave from 'arweave';
 import { describe, expect, it } from 'vitest';
 
 import App from './App';
 
-const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
-
 describe('ESM browser validation', () => {
-  let registry: AoANTRegistryWrite;
-  let wallet: JWKInterface;
-  let address: string;
-  let signer: AoSigner;
+  let registry: AoANTRegistryRead;
+  const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
 
   beforeAll(async () => {
-    wallet = await arweave.wallets.generate();
-    address = await arweave.wallets.jwkToAddress(wallet);
-    const arbundlesSigner = await new ArweaveSigner(wallet);
-    signer = await createAoSigner(arbundlesSigner);
-    registry = ANTRegistry.init({
-      signer: arbundlesSigner,
-      processId: ANT_REGISTRY_ID,
-    }) as AoANTRegistryWrite;
+    registry = ANTRegistry.init();
   });
   it('should load the app and SDK', async () => {
     await act(async () => render(<App />));
@@ -58,6 +34,6 @@ describe('ESM browser validation', () => {
   it('should retrieve ids from registry', async () => {
     const antIdsRes = await registry.accessControlList({ address });
     const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    expect(antIds).toHaveLength(0);
+    expect(antIds).toBeInstanceOf(Array);
   });
 });

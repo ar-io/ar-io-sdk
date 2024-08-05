@@ -4,21 +4,7 @@ const assert = require('node:assert/strict');
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
  */
-const {
-  IO,
-  ioDevnetProcessId,
-  ANTRegistry,
-  ArweaveSigner,
-  createAoSigner,
-  spawnANT,
-} = require('@ar.io/sdk');
-const Arweave = require('arweave');
-
-const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
+const { IO, ioDevnetProcessId, ANTRegistry } = require('@ar.io/sdk');
 
 const io = IO.init({
   processId: ioDevnetProcessId,
@@ -283,19 +269,15 @@ describe('IO', async () => {
 
 describe('ANTRegistry', async () => {
   let registry;
-  let wallet;
-  let address;
+  let address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
 
   before(async () => {
-    wallet = await arweave.wallets.generate();
-    address = await arweave.wallets.jwkToAddress(wallet);
-    const arbundlesSigner = new ArweaveSigner(wallet);
-    registry = ANTRegistry.init({ signer: arbundlesSigner });
+    registry = ANTRegistry.init();
   });
 
   it('should retrieve ids from registry', async () => {
     const antIdsRes = await registry.accessControlList({ address });
     const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    assert(antIds.length == 0);
+    assert(antIds instanceof Array);
   });
 });

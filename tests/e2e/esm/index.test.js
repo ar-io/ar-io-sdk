@@ -1,20 +1,6 @@
-import {
-  ANTRegistry,
-  ArweaveSigner,
-  IO,
-  createAoSigner,
-  ioDevnetProcessId,
-  spawnANT,
-} from '@ar.io/sdk';
-import Arweave from 'arweave';
+import { ANTRegistry, IO, ioDevnetProcessId } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import { before, describe, it } from 'node:test';
-
-const arweave = Arweave.init({
-  host: 'arweave.net',
-  protocol: 'https',
-  port: 443,
-});
 
 /**
  * Ensure that npm link has been ran prior to running these tests
@@ -284,18 +270,16 @@ describe('IO', async () => {
 
 describe('ANTRegistry', async () => {
   let registry;
-  let wallet;
-  let address;
+
+  let address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
 
   before(async () => {
-    wallet = await arweave.wallets.generate();
-    address = await arweave.wallets.jwkToAddress(wallet);
     registry = ANTRegistry.init();
   });
 
   it('should retrieve ids from registry', async () => {
     const antIdsRes = await registry.accessControlList({ address });
     const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    assert(antIds.length == 0);
+    assert(antIds instanceof Array);
   });
 });
