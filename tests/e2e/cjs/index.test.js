@@ -1,10 +1,24 @@
-const { describe, it } = require('node:test');
+const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
 /**
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
  */
-const { IO, ioDevnetProcessId } = require('@ar.io/sdk');
+const {
+  IO,
+  ioDevnetProcessId,
+  ANTRegistry,
+  ArweaveSigner,
+  createAoSigner,
+  spawnANT,
+} = require('@ar.io/sdk');
+const Arweave = require('arweave');
+
+const arweave = Arweave.init({
+  host: 'arweave.net',
+  protocol: 'https',
+  port: 443,
+});
 
 const io = IO.init({
   processId: ioDevnetProcessId,
@@ -264,5 +278,31 @@ describe('IO', async () => {
       type: 'permabuy',
     });
     assert.ok(tokenCost);
+  });
+});
+
+describe('ANTRegistry', async () => {
+  let registry;
+  let wallet;
+  let address;
+  let signer;
+
+  before(async () => {
+    wallet = await arweave.wallets.generate();
+    address = await arweave.wallets.jwkToAddress(wallet);
+    const arbundlesSigner = new ArweaveSigner(wallet);
+    signer = createAoSigner(arbundlesSigner);
+    registry = ANTRegistry.init({ signer: arbundlesSigner });
+  });
+
+  it('should deploy and register a new ANT', async () => {
+    const antId = await spawnANT({
+      signer,
+    });
+    await registry.register({ processId: antId });
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    const antIdsRes = await registry.accessControlList({ address });
+    const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
+    assert(antIds[0] == antId);
   });
 });
