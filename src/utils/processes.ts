@@ -118,7 +118,7 @@ export class ArNSEventEmitter extends EventEmitter {
       .then((records: Record<string, AoArNSNameData>) => {
         Object.entries(records).forEach(([name, arnsRecord]) => {
           if (antIds.includes(arnsRecord.processId)) {
-            if (!uniqueContractProcessIds[arnsRecord.processId]) {
+            if (uniqueContractProcessIds[arnsRecord.processId] == undefined) {
               uniqueContractProcessIds[arnsRecord.processId] = {
                 state: undefined,
                 names: {},
@@ -192,7 +192,7 @@ export const fetchAllArNSRecords = async ({
   do {
     const pageResult = await contract
       .getArNSRecords({ cursor, limit: pageSize })
-      .catch((e: any) => {
+      .catch((e: Error) => {
         logger?.error(`Error getting ArNS records`, {
           message: e?.message,
           stack: e?.stack,
