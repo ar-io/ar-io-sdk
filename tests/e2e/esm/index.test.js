@@ -1,6 +1,6 @@
 import { ANTRegistry, IO, ioDevnetProcessId } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
-import { before, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 /**
  * Ensure that npm link has been ran prior to running these tests
@@ -269,13 +269,8 @@ describe('IO', async () => {
 });
 
 describe('ANTRegistry', async () => {
-  let registry;
-
-  let address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
-
-  before(async () => {
-    registry = ANTRegistry.init();
-  });
+  const registry = ANTRegistry.init();
+  const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
 
   it('should retrieve ids from registry', async () => {
     const affiliatedAnts = await registry.accessControlList({ address });

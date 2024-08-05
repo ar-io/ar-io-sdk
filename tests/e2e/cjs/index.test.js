@@ -1,4 +1,4 @@
-const { describe, it, before } = require('node:test');
+const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 /**
  * Ensure that npm link has been ran prior to running these tests
@@ -268,12 +268,8 @@ describe('IO', async () => {
 });
 
 describe('ANTRegistry', async () => {
-  let registry;
-  let address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
-
-  before(async () => {
-    registry = ANTRegistry.init();
-  });
+  const registry = ANTRegistry.init();
+  const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
 
   it('should retrieve ids from registry', async () => {
     const affiliatedAnts = await registry.accessControlList({ address });
