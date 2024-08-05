@@ -39,8 +39,7 @@ export const IO_TESTNET_PROCESS_ID =
   'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
 
 // TODO: set ant registry ID with deployed contract
-export const ANT_REGISTRY_ID =
-  process.env.ANT_REGISTRY_ID ?? 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
+export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MIO_PER_IO = 1_000_000;
 export const AOS_MODULE_ID = 'cbn0KKrBZH7hdNkNokuXLtGryrWM--PjSTBqIzw9Kkk';
 export const ANT_LUA_ID = 'Flwio4Lr08g6s6uim6lEJNnVGD9ylvz0_aafvpiL8FI';
