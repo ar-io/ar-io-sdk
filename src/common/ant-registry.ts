@@ -27,7 +27,7 @@ import {
   isProcessIdConfiguration,
 } from '../types.js';
 import { createAoSigner } from '../utils/ao.js';
-import { AOProcess } from './index.js';
+import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANTRegistry {
   static init(): AoANTRegistryRead;
@@ -60,9 +60,17 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
       config &&
       (isProcessIdConfiguration(config) || isProcessConfiguration(config))
     ) {
-      this.process = AOProcess.fromConfiguration(config);
+      if (isProcessConfiguration(config)) {
+        this.process = config.process;
+      } else if (isProcessIdConfiguration(config)) {
+        this.process = new AOProcess({
+          processId: config.processId,
+        });
+      } else {
+        throw new InvalidContractConfigurationError();
+      }
     } else {
-      this.process = AOProcess.fromConfiguration({
+      this.process = new AOProcess({
         processId: ANT_REGISTRY_ID,
       });
     }
