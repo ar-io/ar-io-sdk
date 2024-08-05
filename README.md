@@ -6,18 +6,24 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
 ## Table of Contents
 
+<!-- toc -->
+
+- [Table of Contents](#table-of-contents)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Web](#web)
+    - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
+    - [Browser](#browser)
   - [Node](#node)
+    - [ESM (NodeNext)](#esm-nodenext)
+    - [CJS](#cjs)
   - [Typescript](#typescript)
 - [IOToken & mIOToken](#iotoken--miotoken)
   - [Converting IO to mIO](#converting-io-to-mio)
 - [IO Process](#io-process)
-
-  - [IO APIs](#apis)
+  - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getTokenSupply()`](#gettokensupply)
@@ -32,6 +38,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
+    - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
@@ -43,13 +50,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
-  - [Configuration](#custom-configuration)
-
+  - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
-
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
-    - [`getInfo()`](#getinfo)
+    - [`getInfo()`](#getinfo-1)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -61,20 +66,18 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
-  - [Configuration](#configuration)
-
+  - [Configuration](#configuration-1)
 - [Logging](#logging)
-
-  - [Configuration](#configuration)
-
+  - [Configuration](#configuration-2)
 - [Pagination](#pagination)
-
 - [Developers](#developers)
   - [Requirements](#requirements)
-  - [Setup \& Build](#setup--build)
+  - [Setup & Build](#setup--build)
   - [Testing](#testing)
-  - [Linting \& Formatting](#linting--formatting)
+  - [Linting & Formatting](#linting--formatting)
   - [Architecture](#architecture)
+
+<!-- tocstop -->
 
 ## Prerequisites
 
@@ -1006,7 +1009,7 @@ The ANT client class exposes APIs relevant to compliant Arweave Name Token proce
 
 ### ANT APIs
 
-#### `init({ processId, signer )`
+#### `init({ processId, signer })`
 
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 

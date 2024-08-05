@@ -109,6 +109,7 @@
     "husky": "^8.0.3",
     "jest": "^29.7.0",
     "lint-staged": "^15.2.2",
+    "markdown-toc-gen": "^1.0.1",
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
@@ -131,6 +132,9 @@
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."
+    ],
+    "**/*.md": [
+      "markdown-toc-gen insert"
     ]
   }
 }
