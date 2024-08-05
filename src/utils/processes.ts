@@ -31,6 +31,9 @@ import {
   WalletAddress,
 } from '../types.js';
 
+/**
+ * @beta This API is in beta and may change in the future.
+ */
 export const getANTProcessesOwnedByWallet = async ({
   address,
   registry = ANTRegistry.init(),
