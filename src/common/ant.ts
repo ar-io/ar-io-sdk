@@ -254,7 +254,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -279,7 +278,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -304,7 +302,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -335,7 +332,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Transaction-Id', value: transactionId },
         { name: 'TTL-Seconds', value: ttlSeconds.toString() },
       ],
-      data: { transactionId, ttlSeconds },
       signer: this.signer,
     });
   }
@@ -358,7 +354,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Remove-Record' },
         { name: 'Sub-Domain', value: undername },
       ],
-      data: { undername },
       signer: this.signer,
     });
   }
@@ -377,7 +372,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Set-Ticker' },
         { name: 'Ticker', value: ticker },
       ],
-      data: { ticker },
       signer: this.signer,
     });
   }
@@ -395,7 +389,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Set-Name' },
         { name: 'Name', value: name },
       ],
-      data: { name },
       signer: this.signer,
     });
   }
