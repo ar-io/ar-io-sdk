@@ -100,14 +100,14 @@ export class AOProcess implements AOContract {
     throw lastError;
   }
 
-  async send<I, K>({
+  async send<K>({
     tags,
     data,
     signer,
     retries = 3,
   }: {
     tags: Array<{ name: string; value: string }>;
-    data?: I;
+    data?: string | undefined;
     signer: AoSigner;
     retries?: number;
   }): Promise<{ id: string; result?: K }> {
@@ -128,7 +128,7 @@ export class AOProcess implements AOContract {
           process: this.processId,
           // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
-          data: typeof data !== 'string' ? JSON.stringify(data) : data,
+          data,
           signer,
         });
 

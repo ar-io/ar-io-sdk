@@ -1,3 +1,12 @@
+# [2.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.6...v2.1.0-alpha.7) (2024-08-05)
+
+
+### Bug Fixes
+
+* **ant:** remove data from ant object, none of our ant methods require data attributes ([0f267c1](https://github.com/ar-io/ar-io-sdk/commit/0f267c1faab7f7c0e923eb7398e3f471c55c4c1f))
+* **ao:** update AoProcess to only support string | undefined ([584aee1](https://github.com/ar-io/ar-io-sdk/commit/584aee12cad2a246108d65c827fbddb0e3cd09f9))
+* **io:** no longer add data to save observations ([c017b52](https://github.com/ar-io/ar-io-sdk/commit/c017b52ba940a0738367f28043ff885d45e85951))
+
 # [2.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.5...v2.1.0-alpha.6) (2024-07-31)
 
 
@@ -64,6 +73,56 @@
 ### Features
 
 * **evolve:** add evolve util ([47bfe20](https://github.com/ar-io/ar-io-sdk/commit/47bfe20a9713bfdd82a7ca03ce8576653af29cf0))
+
+<!-- toc -->
+
+  - [Bug Fixes](#bug-fixes)
+  - [Bug Fixes](#bug-fixes-1)
+  - [Bug Fixes](#bug-fixes-2)
+  - [Features](#features)
+  - [Bug Fixes](#bug-fixes-3)
+  - [Bug Fixes](#bug-fixes-4)
+  - [Bug Fixes](#bug-fixes-5)
+  - [Bug Fixes](#bug-fixes-6)
+  - [Features](#features-1)
+- [[2.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.2...v2.0.3-alpha.1) (2024-07-12)](#203-alpha1httpsgithubcomar-ioar-io-sdkcomparev202v203-alpha1-2024-07-12)
+  - [Bug Fixes](#bug-fixes-7)
+- [[2.0.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.1...v2.0.2) (2024-07-12)](#202httpsgithubcomar-ioar-io-sdkcomparev201v202-2024-07-12)
+  - [Bug Fixes](#bug-fixes-8)
+- [[2.0.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.0...v2.0.1) (2024-07-11)](#201httpsgithubcomar-ioar-io-sdkcomparev200v201-2024-07-11)
+  - [Bug Fixes](#bug-fixes-9)
+  - [Bug Fixes](#bug-fixes-10)
+  - [Features](#features-2)
+  - [BREAKING CHANGES](#breaking-changes)
+- [[1.2.2](https://github.com/ar-io/ar-io-sdk/compare/v1.2.1...v1.2.2) (2024-07-11)](#122httpsgithubcomar-ioar-io-sdkcomparev121v122-2024-07-11)
+  - [Bug Fixes](#bug-fixes-11)
+- [[1.2.1](https://github.com/ar-io/ar-io-sdk/compare/v1.2.0...v1.2.1) (2024-07-04)](#121httpsgithubcomar-ioar-io-sdkcomparev120v121-2024-07-04)
+  - [Bug Fixes](#bug-fixes-12)
+  - [Features](#features-3)
+- [[1.1.1](https://github.com/ar-io/ar-io-sdk/compare/v1.1.0...v1.1.1) (2024-06-06)](#111httpsgithubcomar-ioar-io-sdkcomparev110v111-2024-06-06)
+  - [Bug Fixes](#bug-fixes-13)
+  - [Bug Fixes](#bug-fixes-14)
+  - [Features](#features-4)
+- [[1.0.8](https://github.com/ar-io/ar-io-sdk/compare/v1.0.7...v1.0.8) (2024-05-29)](#108httpsgithubcomar-ioar-io-sdkcomparev107v108-2024-05-29)
+  - [Bug Fixes](#bug-fixes-15)
+- [[1.0.7](https://github.com/ar-io/ar-io-sdk/compare/v1.0.6...v1.0.7) (2024-05-23)](#107httpsgithubcomar-ioar-io-sdkcomparev106v107-2024-05-23)
+  - [Bug Fixes](#bug-fixes-16)
+- [[1.0.6](https://github.com/ar-io/ar-io-sdk/compare/v1.0.5...v1.0.6) (2024-05-07)](#106httpsgithubcomar-ioar-io-sdkcomparev105v106-2024-05-07)
+  - [Bug Fixes](#bug-fixes-17)
+- [[1.0.5](https://github.com/ar-io/ar-io-sdk/compare/v1.0.4...v1.0.5) (2024-05-02)](#105httpsgithubcomar-ioar-io-sdkcomparev104v105-2024-05-02)
+  - [Bug Fixes](#bug-fixes-18)
+- [[1.0.4](https://github.com/ar-io/ar-io-sdk/compare/v1.0.3...v1.0.4) (2024-04-30)](#104httpsgithubcomar-ioar-io-sdkcomparev103v104-2024-04-30)
+  - [Bug Fixes](#bug-fixes-19)
+- [[1.0.3](https://github.com/ar-io/ar-io-sdk/compare/v1.0.2...v1.0.3) (2024-04-26)](#103httpsgithubcomar-ioar-io-sdkcomparev102v103-2024-04-26)
+  - [Bug Fixes](#bug-fixes-20)
+- [[1.0.2](https://github.com/ar-io/ar-io-sdk/compare/v1.0.1...v1.0.2) (2024-04-25)](#102httpsgithubcomar-ioar-io-sdkcomparev101v102-2024-04-25)
+  - [Bug Fixes](#bug-fixes-21)
+- [[1.0.1](https://github.com/ar-io/ar-io-sdk/compare/v1.0.0...v1.0.1) (2024-04-23)](#101httpsgithubcomar-ioar-io-sdkcomparev100v101-2024-04-23)
+  - [Bug Fixes](#bug-fixes-22)
+  - [Bug Fixes](#bug-fixes-23)
+  - [Features](#features-5)
+
+<!-- tocstop -->
 
 ## [2.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.0.2...v2.0.3-alpha.1) (2024-07-12)
 

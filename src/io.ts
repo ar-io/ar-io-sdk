@@ -103,13 +103,13 @@ export interface AOContract {
     tags?: { name: string; value: string }[];
     retries?: number;
   }): Promise<K>;
-  send<I, K>({
+  send<K>({
     tags,
     data,
     signer,
   }: {
     tags: { name: string; value: string }[];
-    data: I;
+    data: string | undefined;
     signer: AoSigner;
   }): Promise<{ id: string; result?: K }>;
 }
