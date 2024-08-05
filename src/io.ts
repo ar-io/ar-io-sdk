@@ -326,7 +326,9 @@ export interface AoANTWrite extends AoANTRead {
 }
 
 export interface AoANTRegistryRead {
-  accessControlList(params: { address: string }): Promise<string[]>;
+  accessControlList(params: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }>;
 }
 
 export interface AoANTRegistryWrite extends AoANTRegistryRead {

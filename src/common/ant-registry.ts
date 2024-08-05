@@ -77,7 +77,11 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
   }
 
   // Should we rename this to "getANTsByAddress"? seems more clear, though not same as handler name
-  async accessControlList({ address }: { address: string }): Promise<string[]> {
+  async accessControlList({
+    address,
+  }: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }> {
     return this.process.read({
       tags: [
         { name: 'Action', value: 'Access-Control-List' },

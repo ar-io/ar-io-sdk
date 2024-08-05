@@ -27,8 +27,20 @@ import {
   AoANTState,
   AoArNSNameData,
   AoIORead,
+  ProcessId,
   WalletAddress,
 } from '../types.js';
+
+export const getANTProcessesOwnedByWallet = async ({
+  address,
+  registry = ANTRegistry.init(),
+}: {
+  address: WalletAddress;
+  registry?: AoANTRegistryRead;
+}): Promise<ProcessId[]> => {
+  const res = await registry.accessControlList({ address });
+  return [...res.Owned, ...res.Controlled];
+};
 
 function timeout(ms: number, promise) {
   return new Promise((resolve, reject) => {
@@ -89,7 +101,8 @@ export class ArNSEventEmitter extends EventEmitter {
         names: Record<string, AoArNSNameData>;
       }
     > = {};
-    const antIds = await antRegistry.accessControlList({ address });
+    const antIdRes = await antRegistry.accessControlList({ address });
+    const antIds = [...antIdRes.Owned, ...antIdRes.Controlled];
     await timeout(
       this.timeoutMs,
       fetchAllArNSRecords({ contract: this.contract, emitter: this, pageSize }),
