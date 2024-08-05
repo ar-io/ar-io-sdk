@@ -192,7 +192,8 @@ export const fetchAllArNSRecords = async ({
   do {
     const pageResult = await contract
       .getArNSRecords({ cursor, limit: pageSize })
-      .catch((e: Error) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .catch((e: any) => {
         logger?.error(`Error getting ArNS records`, {
           message: e?.message,
           stack: e?.stack,
