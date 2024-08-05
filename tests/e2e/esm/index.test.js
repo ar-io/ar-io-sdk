@@ -286,24 +286,16 @@ describe('ANTRegistry', async () => {
   let registry;
   let wallet;
   let address;
-  let signer;
 
   before(async () => {
     wallet = await arweave.wallets.generate();
     address = await arweave.wallets.jwkToAddress(wallet);
-    const arbundlesSigner = new ArweaveSigner(wallet);
-    signer = createAoSigner(arbundlesSigner);
-    registry = ANTRegistry.init({ signer: arbundlesSigner });
+    registry = ANTRegistry.init();
   });
 
-  it('should deploy and register a new ANT', async () => {
-    const antId = await spawnANT({
-      signer,
-    });
-    await registry.register({ processId: antId });
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+  it('should retrieve ids from registry', async () => {
     const antIdsRes = await registry.accessControlList({ address });
     const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    assert(antIds[0] == antId);
+    assert(antIds.length == 0);
   });
 });

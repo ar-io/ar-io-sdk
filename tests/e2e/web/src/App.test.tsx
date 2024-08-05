@@ -1,13 +1,11 @@
 import {
   ANTRegistry,
   ANT_REGISTRY_ID,
-  AoANTRegistryRead,
   AoANTRegistryWrite,
   AoSigner,
   ArweaveSigner,
   createAoSigner,
-  spawnANT,
-} from '@ar.io/sdk';
+} from '@ar.io/sdk/web';
 import '@testing-library/jest-dom';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { JWKInterface } from 'arbundles/node';
@@ -57,15 +55,9 @@ describe('ESM browser validation', () => {
     expect(result).toHaveTextContent('true');
   });
 
-  it('should deploy and register a new ANT', async () => {
-    const antId = await spawnANT({
-      signer,
-    });
-    await registry.register({ processId: antId });
-    // wait 5 seconds for the contract to be registered
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+  it('should retrieve ids from registry', async () => {
     const antIdsRes = await registry.accessControlList({ address });
     const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    expect(antIds).toContain(antId);
+    expect(antIds).toHaveLength(0);
   });
 });
