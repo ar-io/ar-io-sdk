@@ -32,8 +32,9 @@ describe('ESM browser validation', () => {
   });
 
   it('should retrieve ids from registry', async () => {
-    const antIdsRes = await registry.accessControlList({ address });
-    const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    expect(antIds).toBeInstanceOf(Array);
+    const affiliatedAnts = await registry.accessControlList({ address });
+
+    expect(Array.isArray(affiliatedAnts.Owned)).toEqual(true);
+    expect(Array.isArray(affiliatedAnts.Controlled)).toEqual(true);
   });
 });

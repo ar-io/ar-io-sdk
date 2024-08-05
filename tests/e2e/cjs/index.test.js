@@ -276,8 +276,8 @@ describe('ANTRegistry', async () => {
   });
 
   it('should retrieve ids from registry', async () => {
-    const antIdsRes = await registry.accessControlList({ address });
-    const antIds = [...antIdsRes.Owned, ...antIdsRes.Controlled];
-    assert(antIds instanceof Array);
+    const affiliatedAnts = await registry.accessControlList({ address });
+    assert(Array.isArray(affiliatedAnts.Owned));
+    assert(Array.isArray(affiliatedAnts.Controlled));
   });
 });
