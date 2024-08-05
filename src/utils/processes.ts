@@ -39,7 +39,7 @@ export const getANTProcessesOwnedByWallet = async ({
   registry?: AoANTRegistryRead;
 }): Promise<ProcessId[]> => {
   const res = await registry.accessControlList({ address });
-  return [...res.Owned, ...res.Controlled];
+  return [...new Set([...res.Owned, ...res.Controlled])];
 };
 
 function timeout(ms: number, promise) {
@@ -102,7 +102,7 @@ export class ArNSEventEmitter extends EventEmitter {
       }
     > = {};
     const antIdRes = await antRegistry.accessControlList({ address });
-    const antIds = [...antIdRes.Owned, ...antIdRes.Controlled];
+    const antIds = new Set([...antIdRes.Owned, ...antIdRes.Controlled]);
     await timeout(
       this.timeoutMs,
       fetchAllArNSRecords({ contract: this.contract, emitter: this, pageSize }),
@@ -117,7 +117,7 @@ export class ArNSEventEmitter extends EventEmitter {
       })
       .then((records: Record<string, AoArNSNameData>) => {
         Object.entries(records).forEach(([name, arnsRecord]) => {
-          if (antIds.includes(arnsRecord.processId)) {
+          if (antIds.has(arnsRecord.processId)) {
             if (uniqueContractProcessIds[arnsRecord.processId] == undefined) {
               uniqueContractProcessIds[arnsRecord.processId] = {
                 state: undefined,
