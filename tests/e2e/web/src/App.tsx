@@ -10,18 +10,19 @@ const antRegistry = ANTRegistry.init();
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
   const [ants, setAnts] = useState<string>('Loading...');
-  const [success, setSuccess] = useState<boolean>(false);
+  const [ioContractSuccess, setIoContractSuccess] = useState<boolean>(false);
+  const [antRegistrySuccess, setAntRegistrySuccess] = useState<boolean>(false);
   const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     io.getInfo()
       .then((state: any) => {
         setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
-        setSuccess(true);
+        setIoContractSuccess(true);
       })
       .catch((error: any) => {
         console.error(error);
-        setSuccess(false);
+        setIoContractSuccess(false);
         setContract('Error loading contract state');
       })
       .finally(() => {
@@ -33,20 +34,28 @@ function App() {
       })
       .then((affiliatedAnts: { Owned: string[]; Controlled: string[] }) => {
         setAnts(`\`\`\`json\n${JSON.stringify(affiliatedAnts, null, 2)}`);
+        setAntRegistrySuccess(true);
       })
       .catch((error: any) => {
         console.error(error);
-        setSuccess(false);
+        setAntRegistrySuccess(false);
         setAnts('Error loading affiliated ants');
       });
   }, []);
 
   return (
     <div className="App">
-      {loaded && <div data-testid="load-info-result">{`${success}`}</div>}
-      <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
-        {contract}
-      </Markdown>
+      <div>
+        {loaded && (
+          <div data-testid="load-info-result">{`${ioContractSuccess}`}</div>
+        )}
+        <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
+          {contract}
+        </Markdown>
+      </div>
+      {loaded && (
+        <div data-testid="load-registry-result">{`${antRegistrySuccess}`}</div>
+      )}
       <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
         {ants}
       </Markdown>
