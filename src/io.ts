@@ -15,52 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { AOProcess } from './common/index.js';
-import {
-  ANTRecord,
-  ArNSReservedNameData,
-  EpochDistributionData,
-  EpochObservations,
-  GatewayDelegate,
-  GatewaySettings,
-  RegistrationType,
-  VaultData,
-  WeightedObserver,
-} from './contract-state.js';
-import { AoSigner, mIOToken } from './token.js';
+import { mIOToken } from './token.js';
 import {
   AoMessageResult,
+  AoSigner,
+  AtLeastOne,
   BlockHeight,
-  JoinNetworkParams,
   ProcessId,
   Timestamp,
   TransactionId,
-  UpdateGatewaySettingsParams,
   WalletAddress,
   WriteOptions,
 } from './types.js';
 import { validateArweaveId } from './utils/arweave.js';
 
-export function isProcessConfiguration(
-  config: object,
-): config is { process: AOProcess } {
-  return 'process' in config;
-}
-
-export function isProcessIdConfiguration(
-  config: object,
-): config is { processId: string } {
-  return (
-    'processId' in config &&
-    typeof config.processId === 'string' &&
-    validateArweaveId(config.processId) === true
-  );
-}
-
-export function isLeasedArNSRecord(
-  record: AoArNSNameData,
-): record is AoArNSLeaseData {
-  return record.type === 'lease' && record.endTimestamp !== undefined;
-}
+// Pagination
 
 export type PaginationParams = {
   cursor?: string;
@@ -78,6 +47,7 @@ export type PaginationResult<T> = {
   hasMore: boolean;
 };
 
+// Configuration
 export type ProcessConfiguration =
   | {
       process?: AOProcess;
@@ -94,6 +64,188 @@ export type EpochInput =
       timestamp: Timestamp;
     }
   | undefined;
+
+// AO/IO Contract
+export type AoBalances = Record<WalletAddress, number>;
+export type AoFees = Record<string, number>;
+export type AoObservations = Record<number, AoEpochObservationData>;
+export type AoEpochIndex = number;
+
+export interface AoIOState {
+  GatewayRegistry: Record<WalletAddress, AoGateway>;
+  Epochs: Record<AoEpochIndex, AoEpochData>;
+  NameRegistry: {
+    records: Record<string, AoArNSNameData>;
+    reserved: Record<string, AoArNSReservedNameData>;
+  };
+  Balances: Record<WalletAddress, number>;
+  Vaults: Record<WalletAddress, AoVaultData>;
+  Ticker: string;
+  Name: string;
+  Logo: string;
+}
+
+export type AoEpochObservationData = {
+  failureSummaries: Record<WalletAddress, WalletAddress[]>;
+  reports: Record<WalletAddress, TransactionId>;
+};
+
+export type AoVaultData = {
+  balance: number;
+  locked: number;
+  endTimestamp: Timestamp;
+};
+
+export type AoEpochDistributionData = {
+  rewards: Record<WalletAddress, number>;
+  distributedTimestamp: Timestamp;
+  totalDistributedRewards: number;
+  totalEligibleRewards: number;
+};
+
+export type AoArNSReservedNameData = {
+  target?: string;
+  endTimestamp?: number;
+};
+export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
+export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
+export type AoArNSBaseNameData = {
+  processId: ProcessId;
+  startTimestamp: number;
+  type: 'lease' | 'permabuy';
+  undernameLimit: number;
+  purchasePrice: number;
+};
+
+export type AoArNSPermabuyData = AoArNSBaseNameData & {
+  type: 'permabuy';
+};
+
+export type AoArNSLeaseData = AoArNSBaseNameData & {
+  type: 'lease';
+  endTimestamp: Timestamp;
+};
+
+export type AoEpochSettings = {
+  epochZeroStartTimestamp: Timestamp;
+  durationMs: number;
+  prescribedNameCount: number;
+  rewardPercentage: number;
+  maxObservers: number;
+  distributionDelayMs: number;
+};
+
+export type AoEpochData = {
+  epochIndex: AoEpochIndex;
+  startHeight: BlockHeight;
+  observations: AoObservations;
+  prescribedObservers: AoWeightedObserver[];
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+  distributionTimestamp: Timestamp;
+  distributions: AoEpochDistributionData;
+};
+
+export type AoGateway = {
+  settings: AoGatewaySettings;
+  stats: AoGatewayStats;
+  delegates: Record<WalletAddress, AoGatewayDelegate>;
+  totalDelegatedStake: number;
+  vaults: Record<WalletAddress, AoVaultData>;
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+  observerAddress: WalletAddress;
+  operatorStake: number;
+  status: 'joined' | 'leaving';
+  // TODO: add weights
+};
+
+export type AoGatewayStats = {
+  passedConsecutiveEpochs: number;
+  failedConsecutiveEpochs: number;
+  totalEpochParticipationCount: number;
+  passedEpochCount: number;
+  failedEpochCount: number;
+  observedEpochCount: number;
+  prescribedEpochCount: number;
+};
+
+export type AoWeightedObserver = {
+  gatewayAddress: WalletAddress;
+  observerAddress: WalletAddress;
+  stake: number;
+  startTimestamp: number;
+} & AoGatewayWeights;
+
+export type AoGatewayWeights = {
+  stakeWeight: number;
+  tenureWeight: number;
+  gatewayRewardRatioWeight: number;
+  observerRewardRatioWeight: number;
+  compositeWeight: number;
+  normalizedCompositeWeight: number;
+};
+
+export type AoGatewayWithAddress = AoGateway & {
+  gatewayAddress: WalletAddress;
+};
+
+export type AoGatewayDelegate = {
+  delegatedStake: number;
+  startTimestamp: Timestamp;
+  vaults: Record<WalletAddress, AoVaultData>;
+};
+
+export type AoGatewaySettings = {
+  allowDelegatedStaking: boolean;
+  delegateRewardShareRatio: number;
+  minDelegatedStake: number;
+  autoStake: boolean;
+  label: string;
+  note: string;
+  properties: string;
+  fqdn: string;
+  port: number;
+  protocol: 'https';
+};
+
+export type AoBalanceWithAddress = {
+  address: WalletAddress;
+  balance: number;
+};
+
+// ANT Contract
+
+export type AoANTState = {
+  Name: string;
+  Ticker: string;
+  Denomination: number;
+  Owner: WalletAddress;
+  Controllers: WalletAddress[];
+  Records: Record<string, AoANTRecord>;
+  Balances: Record<WalletAddress, number>;
+  Logo: string;
+  TotalSupply: number;
+  Initialized: boolean;
+};
+
+export type AoANTRecord = {
+  transactionId: string;
+  ttlSeconds: number;
+};
+
+// Input types
+
+// TODO: confirm what is required or if all can be optional and defaults will be provided
+export type AoJoinNetworkParams = Pick<
+  AoGateway,
+  'operatorStake' | 'observerAddress'
+> &
+  Partial<AoGatewaySettings>;
+
+export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
+
+// Interfaces
 
 export interface AOContract {
   read<K>({
@@ -151,13 +303,13 @@ export interface AoIORead {
     name,
   }: {
     name: string;
-  }): Promise<ArNSReservedNameData | undefined>;
+  }): Promise<AoArNSReservedNameData | undefined>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(epoch?: EpochInput): Promise<WeightedObserver[]>;
+  getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
-  getObservations(epoch?: EpochInput): Promise<EpochObservations>;
-  getDistributions(epoch?: EpochInput): Promise<EpochDistributionData>;
+  getObservations(epoch?: EpochInput): Promise<AoEpochObservationData>;
+  getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
   getTokenCost({
     intent,
     purchaseType,
@@ -199,10 +351,7 @@ export interface AoIOWrite extends AoIORead {
       protocol,
       autoStake,
       observerAddress,
-    }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
-      observerAddress: string;
-      operatorStake: number | mIOToken;
-    },
+    }: AoJoinNetworkParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   leaveNetwork(options?: WriteOptions): Promise<AoMessageResult>;
@@ -219,7 +368,7 @@ export interface AoIOWrite extends AoIORead {
       protocol,
       autoStake,
       observerAddress,
-    }: UpdateGatewaySettingsParams,
+    }: AoUpdateGatewaySettingsParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   increaseOperatorStake(
@@ -289,8 +438,8 @@ export interface AoANTRead {
     Owner: string;
     ['Source-Code-TX-ID']?: string;
   }>;
-  getRecord({ undername }): Promise<ANTRecord | undefined>;
-  getRecords(): Promise<Record<string, ANTRecord>>;
+  getRecord({ undername }): Promise<AoANTRecord | undefined>;
+  getRecords(): Promise<Record<string, AoANTRecord>>;
   getOwner(): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
   getTicker(): Promise<string>;
@@ -335,118 +484,25 @@ export interface AoANTRegistryWrite extends AoANTRegistryRead {
   register(params: { processId: string }): Promise<AoMessageResult>;
 }
 
-// AO Contract types
-export interface AoIOState {
-  GatewayRegistry: Record<WalletAddress, AoGateway>;
-  Epochs: Record<AoEpochIndex, AoEpochData>;
-  NameRegistry: {
-    records: Record<string, AoArNSNameData>;
-    reserved: Record<string, AoArNSReservedNameData>;
-  };
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, VaultData>;
-  Ticker: string;
-  Name: string;
-  Logo: string;
+// Typeguard functions
+export function isProcessConfiguration(
+  config: object,
+): config is { process: AOProcess } {
+  return 'process' in config;
 }
 
-export type AoEpochIndex = number;
-export type AoArNSReservedNameData = ArNSReservedNameData;
-export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
-export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
-export type AoArNSBaseNameData = {
-  processId: ProcessId;
-  startTimestamp: number;
-  type: RegistrationType;
-  undernameLimit: number;
-  purchasePrice: number;
-};
+export function isProcessIdConfiguration(
+  config: object,
+): config is { processId: string } {
+  return (
+    'processId' in config &&
+    typeof config.processId === 'string' &&
+    validateArweaveId(config.processId) === true
+  );
+}
 
-export type AoArNSPermabuyData = AoArNSBaseNameData & {
-  type: 'permabuy';
-};
-
-export type AoArNSLeaseData = AoArNSBaseNameData & {
-  type: 'lease';
-  endTimestamp: number; // At what unix time (seconds since epoch) the lease ends
-};
-
-export type AoEpochSettings = {
-  epochZeroStartTimestamp: Timestamp;
-  durationMs: number;
-  prescribedNameCount: number;
-  rewardPercentage: number;
-  maxObservers: number;
-  distributionDelayMs: number;
-};
-
-export type AoEpochData = {
-  epochIndex: AoEpochIndex;
-  startHeight: BlockHeight;
-  observations: EpochObservations;
-  prescribedObservers: WeightedObserver[];
-  startTimestamp: Timestamp;
-  endTimestamp: Timestamp;
-  distributionTimestamp: Timestamp;
-  distributions: {
-    rewards: Record<WalletAddress, number>;
-    distributedTimestamp: Timestamp;
-    totalDistributedRewards: number;
-    totalEligibleRewards: number;
-  };
-};
-
-export type AoGatewayStats = {
-  passedConsecutiveEpochs: number;
-  failedConsecutiveEpochs: number;
-  totalEpochCount: number;
-  passedEpochCount: number;
-  failedEpochCount: number;
-  observedEpochCount: number;
-  prescribedEpochCount: number;
-};
-
-export type AoGatewayWeights = {
-  compositeWeight: number;
-  gatewayRewardRatioWeight: number;
-  tenureWeight: number;
-  observerRewardRatioWeight: number;
-  normalizedCompositeWeight: number;
-  stakeWeight: number;
-};
-
-export type AoGateway = {
-  settings: GatewaySettings;
-  stats: AoGatewayStats;
-  delegates: Record<WalletAddress, GatewayDelegate>;
-  totalDelegatedStake: number;
-  vaults: Record<WalletAddress, VaultData>;
-  startTimestamp: Timestamp;
-  endTimestamp: Timestamp;
-  observerAddress: WalletAddress;
-  operatorStake: number;
-  status: 'joined' | 'leaving';
-  weights: AoGatewayWeights;
-};
-
-export type AoBalanceWithAddress = {
-  address: WalletAddress;
-  balance: number;
-};
-
-export type AoGatewayWithAddress = AoGateway & {
-  gatewayAddress: WalletAddress;
-};
-
-export type AoANTState = {
-  Name: string;
-  Ticker: string;
-  Denomination: number;
-  Owner: WalletAddress;
-  Controllers: WalletAddress[];
-  Records: Record<string, ANTRecord>;
-  Balances: Record<WalletAddress, number>;
-  Logo: string;
-  TotalSupply: number;
-  Initialized: boolean;
-};
+export function isLeasedArNSRecord(
+  record: AoArNSNameData,
+): record is AoArNSLeaseData {
+  return record.type === 'lease';
+}

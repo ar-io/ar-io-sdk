@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
-  ANTRecord,
   AoANTRead,
+  AoANTRecord,
   AoANTState,
   AoANTWrite,
   AoMessageResult,
@@ -107,29 +107,29 @@ export class AoANTReadable implements AoANTRead {
    * ant.getRecord({ undername: "john" });
    * ```
    */
-  async getRecord({ undername }: { undername: string }): Promise<ANTRecord> {
+  async getRecord({ undername }: { undername: string }): Promise<AoANTRecord> {
     const tags = [
       { name: 'Sub-Domain', value: undername },
       { name: 'Action', value: 'Record' },
     ];
 
-    const record = await this.process.read<ANTRecord>({
+    const record = await this.process.read<AoANTRecord>({
       tags,
     });
     return record;
   }
 
   /**
-   * @returns {Promise<Record<string, ANTRecord>>} All the undernames managed by the ANT.
+   * @returns {Promise<Record<string, AoANTRecord>>} All the undernames managed by the ANT.
    * @example
    * Get the current records
    * ```ts
    * ant.getRecords();
    * ````
    */
-  async getRecords(): Promise<Record<string, ANTRecord>> {
+  async getRecords(): Promise<Record<string, AoANTRecord>> {
     const tags = [{ name: 'Action', value: 'Records' }];
-    const records = await this.process.read<Record<string, ANTRecord>>({
+    const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
     return records;

@@ -25,8 +25,13 @@ import {
   AOS_MODULE_ID,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
-import { ANTState } from '../contract-state.js';
-import { AoClient, AoSigner, ContractSigner } from '../types.js';
+import {
+  AoANTRecord,
+  AoClient,
+  AoSigner,
+  ContractSigner,
+  WalletAddress,
+} from '../types.js';
 
 export async function spawnANT({
   signer,
@@ -43,7 +48,14 @@ export async function spawnANT({
   luaCodeTxId?: string;
   ao?: AoClient;
   scheduler?: string;
-  state?: ANTState;
+  state?: {
+    owner: WalletAddress;
+    controllers: WalletAddress[];
+    name: string;
+    ticker: string;
+    records: Record<string, AoANTRecord>;
+    balances: Record<WalletAddress, number>;
+  };
   stateContractTxId?: string;
   antRegistryId?: string;
 }): Promise<string> {
