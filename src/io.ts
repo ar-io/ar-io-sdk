@@ -157,7 +157,7 @@ export type AoGateway = {
   observerAddress: WalletAddress;
   operatorStake: number;
   status: 'joined' | 'leaving';
-  // TODO: add weights
+  weights: AoGatewayWeights;
 };
 
 export type AoGatewayStats = {
