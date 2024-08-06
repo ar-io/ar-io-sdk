@@ -1,4 +1,4 @@
-import { IO } from '@ar.io/sdk/web';
+import { ANTRegistry, IO } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -6,32 +6,58 @@ import remarkGfm from 'remark-gfm';
 import './App.css';
 
 const io = IO.init();
+const antRegistry = ANTRegistry.init();
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
-  const [success, setSuccess] = useState<boolean>(false);
+  const [ants, setAnts] = useState<string>('Loading...');
+  const [ioContractSuccess, setIoContractSuccess] = useState<boolean>(false);
+  const [antRegistrySuccess, setAntRegistrySuccess] = useState<boolean>(false);
   const [loaded, setLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     io.getInfo()
-      .then((state) => {
+      .then((state: any) => {
         setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
-        setSuccess(true);
+        setIoContractSuccess(true);
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error(error);
-        setSuccess(false);
+        setIoContractSuccess(false);
         setContract('Error loading contract state');
       })
       .finally(() => {
         setLoaded(true);
       });
+    antRegistry
+      .accessControlList({
+        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+      })
+      .then((affiliatedAnts: { Owned: string[]; Controlled: string[] }) => {
+        setAnts(`\`\`\`json\n${JSON.stringify(affiliatedAnts, null, 2)}`);
+        setAntRegistrySuccess(true);
+      })
+      .catch((error: any) => {
+        console.error(error);
+        setAntRegistrySuccess(false);
+        setAnts('Error loading affiliated ants');
+      });
   }, []);
 
   return (
     <div className="App">
-      {loaded && <div data-testid="load-info-result">{`${success}`}</div>}
+      <div>
+        {loaded && (
+          <div data-testid="load-info-result">{`${ioContractSuccess}`}</div>
+        )}
+        <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
+          {contract}
+        </Markdown>
+      </div>
+      {loaded && (
+        <div data-testid="load-registry-result">{`${antRegistrySuccess}`}</div>
+      )}
       <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
-        {contract}
+        {ants}
       </Markdown>
     </div>
   );

@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
  */
-const { IO, ioDevnetProcessId } = require('@ar.io/sdk');
+const { IO, ioDevnetProcessId, ANTRegistry } = require('@ar.io/sdk');
 
 const io = IO.init({
   processId: ioDevnetProcessId,
@@ -264,5 +264,16 @@ describe('IO', async () => {
       type: 'permabuy',
     });
     assert.ok(tokenCost);
+  });
+});
+
+describe('ANTRegistry', async () => {
+  const registry = ANTRegistry.init();
+  const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
+
+  it('should retrieve ids from registry', async () => {
+    const affiliatedAnts = await registry.accessControlList({ address });
+    assert(Array.isArray(affiliatedAnts.Owned));
+    assert(Array.isArray(affiliatedAnts.Controlled));
   });
 });

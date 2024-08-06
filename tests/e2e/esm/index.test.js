@@ -1,4 +1,4 @@
-import { IO, ioDevnetProcessId } from '@ar.io/sdk';
+import { ANTRegistry, IO, ioDevnetProcessId } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
@@ -265,5 +265,16 @@ describe('IO', async () => {
       type: 'permabuy',
     });
     assert.ok(tokenCost);
+  });
+});
+
+describe('ANTRegistry', async () => {
+  const registry = ANTRegistry.init();
+  const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
+
+  it('should retrieve ids from registry', async () => {
+    const affiliatedAnts = await registry.accessControlList({ address });
+    assert(Array.isArray(affiliatedAnts.Owned));
+    assert(Array.isArray(affiliatedAnts.Controlled));
   });
 });

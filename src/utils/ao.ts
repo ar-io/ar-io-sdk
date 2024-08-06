@@ -21,6 +21,7 @@ import { defaultArweave } from '../common/arweave.js';
 import { AOProcess } from '../common/index.js';
 import {
   ANT_LUA_ID,
+  ANT_REGISTRY_ID,
   AOS_MODULE_ID,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
@@ -35,6 +36,7 @@ export async function spawnANT({
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
   stateContractTxId,
+  antRegistryId = ANT_REGISTRY_ID,
 }: {
   signer: AoSigner;
   module?: string;
@@ -43,6 +45,7 @@ export async function spawnANT({
   scheduler?: string;
   state?: ANTState;
   stateContractTxId?: string;
+  antRegistryId?: string;
 }): Promise<string> {
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
@@ -54,6 +57,12 @@ export async function spawnANT({
     module,
     scheduler,
     signer,
+    tags: [
+      {
+        name: 'ANT-Registry-Id',
+        value: antRegistryId,
+      },
+    ],
   });
 
   const aosClient = new AOProcess({
@@ -124,7 +133,7 @@ export async function evolveANT({
 
 export function createAoSigner(signer: ContractSigner): AoSigner {
   if (!('publicKey' in signer)) {
-    return createDataItemSigner(signer) as any;
+    return createDataItemSigner(signer) as AoSigner;
   }
 
   const aoSigner = async ({ data, tags, target, anchor }) => {
