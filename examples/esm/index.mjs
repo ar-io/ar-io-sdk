@@ -1,32 +1,27 @@
 import {
   ANT,
-  ArweaveSigner,
   IO,
-  ioDevnetProcessId,
-  spawnANT,
+  IO_TESTNET_PROCESS_ID,
+  getANTProcessesOwnedByWallet,
 } from '@ar.io/sdk';
-import Arweave from 'arweave';
 
 (async () => {
-  const arIO = IO.init({
-    processId: ioDevnetProcessId,
-  });
-  // devnet gateways
+  const arIO = IO.init();
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: ioDevnetProcessId,
+    address: IO_TESTNET_PROCESS_ID,
   });
   const contractInfo = await arIO.getInfo();
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
-  const allRecords = await arIO.getArNSRecords();
+  const partialRecords = await arIO.getArNSRecords();
   const epoch = await arIO.getCurrentEpoch();
   const currentObservations = await arIO.getObservations();
-  const observations = await arIO.getObservations({ epochIndex: 19879 });
-  const distributions = await arIO.getDistributions({ epochIndex: 19879 });
+  const observations = await arIO.getObservations({ epochIndex: 0 });
+  const distributions = await arIO.getDistributions({ epochIndex: 0 });
   const buyRecordCost = await arIO.getTokenCost({
     intent: 'Buy-Record',
     purchaseType: 'lease',
-    name: 'adriaaaaan',
+    name: 'ar-io-dapp-record',
     years: 1,
   });
   const extendLeaseCost = await arIO.getTokenCost({
@@ -36,7 +31,7 @@ import Arweave from 'arweave';
   });
   const increaseUndernameCost = await arIO.getTokenCost({
     intent: 'Increase-Undername-Limit',
-    name: 'vilenario',
+    name: 'ao',
     quantity: 1,
   });
 
@@ -50,7 +45,7 @@ import Arweave from 'arweave';
       observations,
       distributions,
       protocolBalance,
-      names: Object.keys(allRecords),
+      records: partialRecords.items,
       buyRecordCost,
       extendLeaseCost,
       increaseUndernameCost,
@@ -58,21 +53,13 @@ import Arweave from 'arweave';
     { depth: 2 },
   );
 
-  // io ant
-  const arweave = Arweave.init({
-    host: 'arweave.net',
-    port: 443,
-    protocol: 'https',
+  // fetching ants owned by a wallet using an event emitter
+  const address = 'ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo';
+  const affiliatedAnts = await getANTProcessesOwnedByWallet({
+    address,
   });
-
-  const jwk = await arweave.wallets.generate();
-
-  const processId = await spawnANT({
-    signer: new ArweaveSigner(jwk),
-  });
-
   const ant = ANT.init({
-    processId,
+    processId: affiliatedAnts[0],
   });
   const antRecords = await ant.getRecords();
   const rootRecord = await ant.getRecord({ undername: '@' });
@@ -81,6 +68,8 @@ import Arweave from 'arweave';
   const info = await ant.getInfo();
   console.dir(
     {
+      affiliatedAnts,
+      antProcessId: affiliatedAnts[0],
       antRecords,
       rootRecord,
       controllers,
@@ -89,26 +78,4 @@ import Arweave from 'arweave';
     },
     { depth: 2 },
   );
-
-  // fetching ants owned by a wallet using an event emitter
-  const address = 'ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo';
-  const processEmitter = new ArNSNameEmitter({ contract: arIO });
-  processEmitter.on('error', (e) => {
-    console.error(e);
-  });
-  processEmitter.on('process', (processId, antState) =>
-    console.log(
-      `Discovered process owned by wallet called "${antState.names}": `,
-      processId,
-    ),
-  );
-  processEmitter.on('end', (res) => {
-    console.log(
-      'Complete',
-      `${Object.keys(res).length} ids checked with ${antsInError} ants in error.`,
-    );
-  });
-
-  // kick off the retrieval of ants owned by a process
-  processEmitter.fetchProcessesOwnedByWallet({ address });
 })();

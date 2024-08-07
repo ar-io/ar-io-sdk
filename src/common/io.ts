@@ -18,12 +18,6 @@ import Arweave from 'arweave';
 
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
-  ArNSReservedNameData,
-  EpochDistributionData,
-  EpochObservations,
-  WeightedObserver,
-} from '../contract-state.js';
-import {
   AoArNSNameData,
   AoEpochData,
   AoEpochSettings,
@@ -34,24 +28,29 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../io.js';
-import { mIOToken } from '../token.js';
+import { AoSigner, mIOToken } from '../token.js';
 import {
   AoArNSNameDataWithName,
+  AoArNSReservedNameData,
   AoBalanceWithAddress,
+  AoEpochDistributionData,
+  AoEpochObservationData,
   AoGatewayWithAddress,
+  AoJoinNetworkParams,
   AoMessageResult,
+  AoUpdateGatewaySettingsParams,
+  AoWeightedObserver,
   ContractSigner,
-  JoinNetworkParams,
   OptionalSigner,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
   TransactionId,
-  UpdateGatewaySettingsParams,
   WalletAddress,
   WithSigner,
   WriteOptions,
 } from '../types.js';
+import { createAoSigner } from '../utils/ao.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -125,6 +124,12 @@ export class IOReadable implements AoIORead {
       Denomination: number;
     }>({
       tags: [{ name: 'Action', value: 'Info' }],
+    });
+  }
+
+  async getTokenSupply(): Promise<number> {
+    return this.process.read<number>({
+      tags: [{ name: 'Action', value: 'Total-Token-Supply' }],
     });
   }
 
@@ -236,9 +241,9 @@ export class IOReadable implements AoIORead {
   }
 
   async getArNSReservedNames(): Promise<
-    Record<string, ArNSReservedNameData> | Record<string, never>
+    Record<string, AoArNSReservedNameData> | Record<string, never>
   > {
-    return this.process.read<Record<string, ArNSReservedNameData>>({
+    return this.process.read<Record<string, AoArNSReservedNameData>>({
       tags: [{ name: 'Action', value: 'Reserved-Names' }],
     });
   }
@@ -247,8 +252,8 @@ export class IOReadable implements AoIORead {
     name,
   }: {
     name: string;
-  }): Promise<ArNSReservedNameData | undefined> {
-    return this.process.read<ArNSReservedNameData>({
+  }): Promise<AoArNSReservedNameData | undefined> {
+    return this.process.read<AoArNSReservedNameData>({
       tags: [
         { name: 'Action', value: 'Reserved-Name' },
         { name: 'Name', value: name },
@@ -347,7 +352,7 @@ export class IOReadable implements AoIORead {
 
   async getPrescribedObservers(
     epoch?: EpochInput,
-  ): Promise<WeightedObserver[]> {
+  ): Promise<AoWeightedObserver[]> {
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
       {
@@ -378,7 +383,7 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<WeightedObserver[]>({
+    return this.process.read<AoWeightedObserver[]>({
       tags: prunedTags,
     });
   }
@@ -419,7 +424,7 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getObservations(epoch?: EpochInput): Promise<EpochObservations> {
+  async getObservations(epoch?: EpochInput): Promise<AoEpochObservationData> {
     const allTags = [
       { name: 'Action', value: 'Epoch-Observations' },
       {
@@ -450,12 +455,12 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<EpochObservations>({
+    return this.process.read<AoEpochObservationData>({
       tags: prunedTags,
     });
   }
 
-  async getDistributions(epoch?: EpochInput): Promise<EpochDistributionData> {
+  async getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData> {
     const allTags = [
       { name: 'Action', value: 'Epoch-Distributions' },
       {
@@ -486,7 +491,7 @@ export class IOReadable implements AoIORead {
       }): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<EpochDistributionData>({
+    return this.process.read<AoEpochDistributionData>({
       tags: prunedTags,
     });
   }
@@ -572,7 +577,7 @@ export class IOReadable implements AoIORead {
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
   protected declare process: AOProcess;
-  private signer: ContractSigner;
+  private signer: AoSigner;
   constructor({
     signer,
     ...config
@@ -588,17 +593,17 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           processId: IO_TESTNET_PROCESS_ID,
         }),
       });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else if (isProcessConfiguration(config)) {
       super({ process: config.process });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else if (isProcessIdConfiguration(config)) {
       super({
         process: new AOProcess({
           processId: config.processId,
         }),
       });
-      this.signer = signer;
+      this.signer = createAoSigner(signer);
     } else {
       throw new InvalidContractConfigurationError();
     }
@@ -646,10 +651,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       protocol,
       autoStake,
       observerAddress,
-    }: Omit<JoinNetworkParams, 'observerWallet' | 'qty'> & {
-      observerAddress: string;
-      operatorStake: number | mIOToken;
-    },
+    }: AoJoinNetworkParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
@@ -662,11 +664,11 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
       {
         name: 'Allow-Delegated-Staking',
-        value: allowDelegatedStaking.toString(),
+        value: allowDelegatedStaking?.toString(),
       },
       {
         name: 'Delegate-Reward-Share-Ratio',
-        value: delegateRewardShareRatio.toString(),
+        value: delegateRewardShareRatio?.toString(),
       },
       {
         name: 'FQDN',
@@ -678,7 +680,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
       {
         name: 'Min-Delegated-Stake',
-        value: minDelegatedStake.valueOf().toString(),
+        value: minDelegatedStake?.valueOf().toString(),
       },
       {
         name: 'Note',
@@ -686,7 +688,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
       {
         name: 'Port',
-        value: port.toString(),
+        value: port?.toString(),
       },
       {
         name: 'Properties',
@@ -698,7 +700,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
       {
         name: 'Auto-Stake',
-        value: autoStake.toString(),
+        value: autoStake?.toString(),
       },
       {
         name: 'Observer-Address',
@@ -740,7 +742,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       protocol,
       autoStake,
       observerAddress,
-    }: UpdateGatewaySettingsParams,
+    }: AoUpdateGatewaySettingsParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
@@ -862,13 +864,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
-    return this.process.send<
-      {
-        reportTxId: TransactionId;
-        failedGateways: WalletAddress[];
-      },
-      never
-    >({
+    return this.process.send({
       signer: this.signer,
       tags: [
         ...tags,
@@ -882,10 +878,6 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
           value: params.failedGateways.join(','),
         },
       ],
-      data: {
-        reportTxId: params.reportTxId,
-        failedGateways: params.failedGateways,
-      },
     });
   }
 

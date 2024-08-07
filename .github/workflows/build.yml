@@ -4,9 +4,7 @@ concurrency:
   group: ${{ github.ref_name }}
   cancel-in-progress: true
 
-on:
-  pull_request:
-  workflow_call:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -31,16 +29,13 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node_version: [18.x]
     steps:
       - uses: actions/checkout@v4
 
       - name: Set Up node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node_version }}
+          node-version-file: .nvmrc
           cache: 'yarn'
 
       - name: Install dependencies
@@ -53,3 +48,10 @@ jobs:
         uses: codecov/codecov-action@v4.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Send Slack notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_TITLE: ${{ job.status == 'success' && 'Build / E2E tests succeeded!' || 'Build / E2E tests failed!' }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

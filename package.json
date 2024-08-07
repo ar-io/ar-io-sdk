@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "2.0.2",
+  "version": "2.1.0-alpha.9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -91,6 +91,7 @@
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
+    "arconnect": "^1.0.3",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "esbuild": "^0.19.2",
@@ -108,6 +109,7 @@
     "husky": "^8.0.3",
     "jest": "^29.7.0",
     "lint-staged": "^15.2.2",
+    "markdown-toc-gen": "^1.0.1",
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
     "semantic-release": "^21.0.7",
@@ -118,7 +120,7 @@
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "dependencies": {
-    "@permaweb/aoconnect": "^0.0.55",
+    "@permaweb/aoconnect": "^0.0.57",
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
     "axios": "1.7.2",
@@ -130,6 +132,9 @@
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."
+    ],
+    "**/README.md": [
+      "markdown-toc-gen insert"
     ]
   }
 }

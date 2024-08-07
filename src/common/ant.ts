@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import {
-  ANTRecord,
   AoANTRead,
+  AoANTRecord,
   AoANTState,
   AoANTWrite,
   AoMessageResult,
-  ContractSigner,
+  AoSigner,
   OptionalSigner,
   ProcessConfiguration,
   WalletAddress,
@@ -28,6 +28,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types.js';
+import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
@@ -82,6 +83,7 @@ export class AoANTReadable implements AoANTRead {
     Ticker: string;
     Denomination: number;
     Owner: string;
+    ['Source-Code-TX-ID']?: string;
   }> {
     const tags = [{ name: 'Action', value: 'Info' }];
     const info = await this.process.read<{
@@ -89,6 +91,7 @@ export class AoANTReadable implements AoANTRead {
       Ticker: string;
       Denomination: number;
       Owner: string;
+      ['Source-Code-TX-ID']?: string;
     }>({
       tags,
     });
@@ -104,29 +107,29 @@ export class AoANTReadable implements AoANTRead {
    * ant.getRecord({ undername: "john" });
    * ```
    */
-  async getRecord({ undername }: { undername: string }): Promise<ANTRecord> {
+  async getRecord({ undername }: { undername: string }): Promise<AoANTRecord> {
     const tags = [
       { name: 'Sub-Domain', value: undername },
       { name: 'Action', value: 'Record' },
     ];
 
-    const record = await this.process.read<ANTRecord>({
+    const record = await this.process.read<AoANTRecord>({
       tags,
     });
     return record;
   }
 
   /**
-   * @returns {Promise<Record<string, ANTRecord>>} All the undernames managed by the ANT.
+   * @returns {Promise<Record<string, AoANTRecord>>} All the undernames managed by the ANT.
    * @example
    * Get the current records
    * ```ts
    * ant.getRecords();
    * ````
    */
-  async getRecords(): Promise<Record<string, ANTRecord>> {
+  async getRecords(): Promise<Record<string, AoANTRecord>> {
     const tags = [{ name: 'Action', value: 'Records' }];
-    const records = await this.process.read<Record<string, ANTRecord>>({
+    const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
     return records;
@@ -225,14 +228,14 @@ export class AoANTReadable implements AoANTRead {
 }
 
 export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
-  private signer: ContractSigner;
+  private signer: AoSigner;
 
   constructor({
     signer,
     ...config
   }: WithSigner<Required<ProcessConfiguration>>) {
     super(config);
-    this.signer = signer;
+    this.signer = createAoSigner(signer);
   }
 
   /**
@@ -251,7 +254,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -276,7 +278,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -301,7 +302,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
     return this.process.send({
       tags,
-      data: {},
       signer: this.signer,
     });
   }
@@ -332,7 +332,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Transaction-Id', value: transactionId },
         { name: 'TTL-Seconds', value: ttlSeconds.toString() },
       ],
-      data: { transactionId, ttlSeconds },
       signer: this.signer,
     });
   }
@@ -355,7 +354,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Remove-Record' },
         { name: 'Sub-Domain', value: undername },
       ],
-      data: { undername },
       signer: this.signer,
     });
   }
@@ -374,7 +372,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Set-Ticker' },
         { name: 'Ticker', value: ticker },
       ],
-      data: { ticker },
       signer: this.signer,
     });
   }
@@ -392,7 +389,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Set-Name' },
         { name: 'Name', value: name },
       ],
-      data: { name },
       signer: this.signer,
     });
   }

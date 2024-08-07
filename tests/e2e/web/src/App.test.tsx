@@ -14,13 +14,30 @@ describe('ESM browser validation', () => {
         screen.getByTestId('load-info-result');
       },
       {
-        interval: 2000,
+        interval: 10000,
         timeout: 30000,
       },
     );
 
     const result = screen.getByTestId('load-info-result');
     // check the sdk loaded the data
+    expect(result).toHaveTextContent('true');
+  });
+
+  it('should retrieve ids from registry', async () => {
+    await act(async () => render(<App />));
+
+    await waitFor(
+      () => {
+        screen.getByTestId('load-registry-result');
+      },
+      {
+        interval: 2000,
+        timeout: 30000,
+      },
+    );
+
+    const result = screen.getByTestId('load-registry-result');
     expect(result).toHaveTextContent('true');
   });
 });

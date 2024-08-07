@@ -15,9 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import { connect } from '@permaweb/aoconnect';
-import { createData } from 'arbundles';
 
-import { AOContract, AoClient, ContractSigner } from '../../types.js';
+import { AOContract, AoClient, AoSigner } from '../../types.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -40,34 +39,6 @@ export class AOProcess implements AOContract {
     this.processId = processId;
     this.logger = logger;
     this.ao = ao;
-  }
-
-  // TODO: could abstract into our own interface that constructs different signers
-  static async createAoSigner(
-    signer: ContractSigner,
-  ): Promise<
-    (args: {
-      data: string | Buffer;
-      tags?: { name: string; value: string }[];
-      target?: string;
-      anchor?: string;
-    }) => Promise<{ id: string; raw: ArrayBuffer }>
-  > {
-    // ensure appropriate permissions are granted with injected signers.
-    if (signer.publicKey === undefined && 'setPublicKey' in signer) {
-      await signer.setPublicKey();
-    }
-
-    const aoSigner = async ({ data, tags, target, anchor }) => {
-      const dataItem = createData(data, signer, { tags, target, anchor });
-      const signedData = dataItem.sign(signer).then(async () => ({
-        id: await dataItem.id,
-        raw: await dataItem.getRaw(),
-      }));
-      return signedData;
-    };
-
-    return aoSigner;
   }
 
   async read<K>({
@@ -129,15 +100,15 @@ export class AOProcess implements AOContract {
     throw lastError;
   }
 
-  async send<I, K>({
+  async send<K>({
     tags,
     data,
     signer,
     retries = 3,
   }: {
     tags: Array<{ name: string; value: string }>;
-    data?: I;
-    signer: ContractSigner;
+    data?: string | undefined;
+    signer: AoSigner;
     retries?: number;
   }): Promise<{ id: string; result?: K }> {
     // main purpose of retries is to handle network errors/new process delays
@@ -157,8 +128,8 @@ export class AOProcess implements AOContract {
           process: this.processId,
           // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
-          data: typeof data !== 'string' ? JSON.stringify(data) : data,
-          signer: await AOProcess.createAoSigner(signer),
+          data,
+          signer,
         });
 
         this.logger.debug(`Sent message to process`, {

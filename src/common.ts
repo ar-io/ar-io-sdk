@@ -23,15 +23,7 @@ import {
   spawn,
   unmonitor,
 } from '@permaweb/aoconnect';
-import { ArconnectSigner, ArweaveSigner } from 'arbundles';
-
-import {
-  AllowedProtocols,
-  GatewayConnectionSettings,
-  GatewayMetadata,
-  GatewayStakingSettings,
-} from './contract-state.js';
-import { mIOToken } from './token.js';
+import { Signer } from 'arbundles';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -41,7 +33,7 @@ export type TransactionId = string;
 export type ProcessId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractSigner = ArweaveSigner | ArconnectSigner;
+export type ContractSigner = Signer | Window['arweaveWallet'];
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
@@ -64,42 +56,11 @@ export type WriteParameters<Input> = WithSigner<
 
 export type AoMessageResult = { id: string };
 
-// Helper type to overwrite properties of A with B
-type Overwrite<T, U> = {
-  [K in keyof T]: K extends keyof U ? U[K] : T[K];
-};
-
-export type JoinNetworkParams = Overwrite<
-  GatewayConnectionSettings & GatewayStakingSettings & GatewayMetadata,
-  {
-    minDelegatedStake: number | mIOToken; // TODO: this is for backwards compatibility
-  }
->;
-
-// Original type definition refined with proper field-specific types
-export type UpdateGatewaySettingsParamsBase = {
-  allowDelegatedStaking?: boolean;
-  delegateRewardShareRatio?: number;
-  fqdn?: string;
-  label?: string;
-  minDelegatedStake?: number | mIOToken; // TODO: this is for backwards compatibility - eventually we'll drop number
-  note?: string;
-  port?: number;
-  properties?: string;
-  protocol?: AllowedProtocols;
-  autoStake?: boolean;
-  observerAddress?: WalletAddress;
-};
-
 // Utility type to require at least one of the fields
 export type AtLeastOne<
   T,
   U = { [K in keyof T]-?: Record<K, T[K]> },
 > = Partial<T> & U[keyof U];
-
-// Define the type used for function parameters
-export type UpdateGatewaySettingsParams =
-  AtLeastOne<UpdateGatewaySettingsParamsBase>;
 
 export interface HTTPClient {
   get<I, K>({

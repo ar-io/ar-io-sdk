@@ -6,20 +6,27 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
 ## Table of Contents
 
+<!-- toc -->
+
+- [Table of Contents](#table-of-contents)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Web](#web)
+    - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
+    - [Browser](#browser)
   - [Node](#node)
+    - [ESM (NodeNext)](#esm-nodenext)
+    - [CJS](#cjs)
   - [Typescript](#typescript)
 - [IOToken & mIOToken](#iotoken--miotoken)
   - [Converting IO to mIO](#converting-io-to-mio)
 - [IO Process](#io-process)
-
-  - [IO APIs](#apis)
+  - [APIs](#apis)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
+    - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
@@ -31,6 +38,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
+    - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
@@ -42,13 +50,12 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
-  - [Configuration](#custom-configuration)
-
+  - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
-
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
-    - [`getInfo()`](#getinfo)
+    - [`getInfo()`](#getinfo-1)
+    - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
     - [`getRecords()`](#getrecords)
@@ -59,20 +66,18 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
-  - [Configuration](#configuration)
-
+  - [Configuration](#configuration-1)
 - [Logging](#logging)
-
-  - [Configuration](#configuration)
-
+  - [Configuration](#configuration-2)
 - [Pagination](#pagination)
-
 - [Developers](#developers)
   - [Requirements](#requirements)
-  - [Setup \& Build](#setup--build)
+  - [Setup & Build](#setup--build)
   - [Testing](#testing)
-  - [Linting \& Formatting](#linting--formatting)
+  - [Linting & Formatting](#linting--formatting)
   - [Architecture](#architecture)
+
+<!-- tocstop -->
 
 ## Prerequisites
 
@@ -123,11 +128,19 @@ const gateways = await io.getGateways();
         "failedConsecutiveEpochs": 0,
         "passedEpochCount": 30,
         "submittedEpochCount": 30,
-        "totalEpochParticipationCount": 31,
+        "totalEpochCount": 31,
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",
-      "vaults": {}
+      "vaults": {},
+      "weights": {
+        "compositeWeight": 0.97688888893556,
+        "gatewayRewardRatioWeight": 1,
+        "tenureWeight": 0.19444444444444,
+        "observerRewardRatioWeight": 1,
+        "normalizedCompositeWeight": 0.19247316211083,
+        "stakeWeight": 5.02400000024
+      }
     }
   ],
   "hasMore": true,
@@ -265,6 +278,15 @@ const info = await io.getInfo();
 
 </details>
 
+#### `getTokenSupply()`
+
+Retrieves the total supply of tokens, returned in mIO.
+
+```typescript
+const io = IO.init();
+const supply = await io.getTokenSupply().then((s) => new mIOToken(s).toIO()); // convert it to IO for readability
+```
+
 #### `getBalance({ address })`
 
 Retrieves the balance of the specified wallet address.
@@ -276,7 +298,7 @@ const balance = await io
   .getBalance({
     address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   })
-  .then((balance) => new mIOToken().toIO()); // convert it to IO for readability
+  .then((balance: number) => new mIOToken(balance).toIO()); // convert it to IO for readability
 ```
 
 <details>
@@ -354,11 +376,19 @@ const gateway = await io.getGateway({
     "failedConsecutiveEpochs": 0,
     "passedEpochCount": 30,
     "submittedEpochCount": 30,
-    "totalEpochParticipationCount": 31,
+    "totalEpochCount": 31,
     "totalEpochsPrescribedCount": 31
   },
   "status": "joined",
-  "vaults": {}
+  "vaults": {},
+  "weights": {
+    "compositeWeight": 0.97688888893556,
+    "gatewayRewardRatioWeight": 1,
+    "tenureWeight": 0.19444444444444,
+    "observerRewardRatioWeight": 1,
+    "normalizedCompositeWeight": 0.19247316211083,
+    "stakeWeight": 5.02400000024
+  }
 }
 ```
 
@@ -402,11 +432,19 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
         "failedConsecutiveEpochs": 0,
         "passedEpochCount": 30,
         "submittedEpochCount": 30,
-        "totalEpochParticipationCount": 31,
+        "totalEpochCount": 31,
         "totalEpochsPrescribedCount": 31
       },
       "status": "joined",
-      "vaults": {}
+      "vaults": {},
+      "weights": {
+        "compositeWeight": 0.97688888893556,
+        "gatewayRewardRatioWeight": 1,
+        "tenureWeight": 0.19444444444444,
+        "observerRewardRatioWeight": 1,
+        "normalizedCompositeWeight": 0.19247316211083,
+        "stakeWeight": 5.02400000024
+      }
     }
   ],
   "hasMore": true,
@@ -971,7 +1009,7 @@ The ANT client class exposes APIs relevant to compliant Arweave Name Token proce
 
 ### ANT APIs
 
-#### `init({ processId, signer )`
+#### `init({ processId, signer })`
 
 Factory function to that creates a read-only or writeable client. By providing a `signer` additional write APIs that require signing, like `setRecord` and `transfer` are available. By default, a read-only client is returned and no write APIs are available.
 
@@ -1006,6 +1044,49 @@ const info = await ant.getInfo();
   "name": "Ardrive",
   "ticker": "ANT-ARDRIVE",
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
+}
+```
+
+</details>
+
+#### `getState()`
+
+Retrieves the state of the ANT process.
+
+```typescript
+const state = await ant.getState();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "TotalSupply": 1,
+  "Balances": {
+    "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY": 1
+  },
+  "Controllers": [],
+  "Records": {
+    "v1-0-0_whitepaper": {
+      "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
+      "ttlSeconds": 900
+    },
+    "@": {
+      "transactionId": "2rMLb2uHAyEt7jSu6bXtKx8e-jOfIf7E-DOgQnm8EtU",
+      "ttlSeconds": 3600
+    },
+    "whitepaper": {
+      "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
+      "ttlSeconds": 900
+    }
+  },
+  "Initialized": true,
+  "Ticker": "ANT-AR-IO",
+  "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
+  "Denomination": 0,
+  "Name": "AR.IO Foundation",
+  "Owner": "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY"
 }
 ```
 

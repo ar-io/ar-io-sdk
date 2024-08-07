@@ -17,11 +17,13 @@
 import { EventEmitter } from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
 
+import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
 import { IO } from '../common/io.js';
-import { ILogger } from '../common/logger.js';
+import { ILogger, Logger } from '../common/logger.js';
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
+  AoANTRegistryRead,
   AoANTState,
   AoArNSNameData,
   AoIORead,
@@ -29,47 +31,18 @@ import {
   WalletAddress,
 } from '../types.js';
 
+/**
+ * @beta This API is in beta and may change in the future.
+ */
 export const getANTProcessesOwnedByWallet = async ({
   address,
-  contract = IO.init({
-    processId: IO_TESTNET_PROCESS_ID,
-  }),
+  registry = ANTRegistry.init(),
 }: {
   address: WalletAddress;
-  contract?: AoIORead;
+  registry?: AoANTRegistryRead;
 }): Promise<ProcessId[]> => {
-  const throttle = pLimit(50);
-  // get the record names of the registry - TODO: this may need to be paginated
-  const records: Record<string, AoArNSNameData> = await fetchAllArNSRecords({
-    contract: contract,
-  });
-  const uniqueContractProcessIds = Object.values(records)
-    .filter((record) => record.processId !== undefined)
-    .map((record) => record.processId);
-
-  // check the contract owner and controllers
-  const ownedOrControlledByWallet = await Promise.all(
-    uniqueContractProcessIds.map(async (processId) =>
-      throttle(async () => {
-        const ant = ANT.init({
-          processId,
-        });
-        const { Owner, Controllers } = await ant.getState();
-
-        if (Owner === address || Controllers.includes(address)) {
-          return processId;
-        }
-        return;
-      }),
-    ),
-  );
-
-  if (ownedOrControlledByWallet.length === 0) {
-    return [];
-  }
-
-  // TODO: insert gql query to find ANT processes owned by wallet given wallet not currently in the registry
-  return [...new Set(ownedOrControlledByWallet)] as string[];
+  const res = await registry.accessControlList({ address });
+  return [...new Set([...res.Owned, ...res.Controlled])];
 };
 
 function timeout(ms: number, promise) {
@@ -94,56 +67,75 @@ export class ArNSEventEmitter extends EventEmitter {
   protected contract: AoIORead;
   private timeoutMs: number; // timeout for each request to 3 seconds
   private throttle;
+  private logger: ILogger;
   constructor({
     contract = IO.init({
       processId: IO_TESTNET_PROCESS_ID,
     }),
     timeoutMs = 60_000,
     concurrency = 30,
+    logger = Logger.default,
   }: {
     contract?: AoIORead;
     timeoutMs?: number;
     concurrency?: number;
-  }) {
+    logger?: ILogger;
+  } = {}) {
     super();
     this.contract = contract;
     this.timeoutMs = timeoutMs;
     this.throttle = pLimit(concurrency);
+    this.logger = logger;
   }
 
-  async fetchProcessesOwnedByWallet({ address }: { address: WalletAddress }) {
+  async fetchProcessesOwnedByWallet({
+    address,
+    pageSize,
+    antRegistry = ANTRegistry.init(),
+  }: {
+    address: WalletAddress;
+    pageSize?: number;
+    antRegistry?: AoANTRegistryRead;
+  }) {
     const uniqueContractProcessIds: Record<
       string,
-      { state: AoANTState | undefined; names: Record<string, AoArNSNameData> }
+      {
+        state: AoANTState | undefined;
+        names: Record<string, AoArNSNameData>;
+      }
     > = {};
-
+    const antIdRes = await antRegistry.accessControlList({ address });
+    const antIds = new Set([...antIdRes.Owned, ...antIdRes.Controlled]);
     await timeout(
       this.timeoutMs,
-      fetchAllArNSRecords({ contract: this.contract }),
+      fetchAllArNSRecords({ contract: this.contract, emitter: this, pageSize }),
     )
       .catch((e) => {
         this.emit('error', `Error getting ArNS records: ${e}`);
+        this.logger.error(`Error getting ArNS records`, {
+          message: e?.message,
+          stack: e?.stack,
+        });
         return {};
       })
-      .then((records) => {
-        if (!records) return;
-        Object.entries(records).forEach(([name, record]) => {
-          if (record.processId === undefined) {
-            return;
+      .then((records: Record<string, AoArNSNameData>) => {
+        Object.entries(records).forEach(([name, arnsRecord]) => {
+          if (antIds.has(arnsRecord.processId)) {
+            if (uniqueContractProcessIds[arnsRecord.processId] == undefined) {
+              uniqueContractProcessIds[arnsRecord.processId] = {
+                state: undefined,
+                names: {},
+              };
+            }
+            uniqueContractProcessIds[arnsRecord.processId].names[name] =
+              arnsRecord;
           }
-          if (uniqueContractProcessIds[record.processId] === undefined) {
-            uniqueContractProcessIds[record.processId] = {
-              state: undefined,
-              names: {},
-            };
-          }
-          uniqueContractProcessIds[record.processId].names[name] = record;
         });
       });
 
     const idCount = Object.keys(uniqueContractProcessIds).length;
-    // check the contract owner and controllers
     this.emit('progress', 0, idCount);
+    // check the contract owner and controllers
     await Promise.all(
       Object.keys(uniqueContractProcessIds).map(async (processId, i) =>
         this.throttle(async () => {
@@ -188,21 +180,30 @@ export const fetchAllArNSRecords = async ({
   contract = IO.init({
     processId: IO_TESTNET_PROCESS_ID,
   }),
-  logger,
+  emitter,
+  logger = Logger.default,
+  pageSize = 50_000,
 }: {
   contract?: AoIORead;
+  emitter?: EventEmitter;
   logger?: ILogger;
+  pageSize?: number;
 }): Promise<Record<string, AoArNSNameData>> => {
   let cursor: string | undefined;
+  const startTimestamp = Date.now();
   const records: Record<string, AoArNSNameData> = {};
   do {
     const pageResult = await contract
-      .getArNSRecords({ cursor })
+      .getArNSRecords({ cursor, limit: pageSize })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .catch((e: any) => {
         logger?.error(`Error getting ArNS records`, {
           message: e?.message,
           stack: e?.stack,
         });
+
+        emitter?.emit('arns:error', `Error getting ArNS records: ${e}`);
+
         return undefined;
       });
 
@@ -214,8 +215,29 @@ export const fetchAllArNSRecords = async ({
       const { name, ...recordDetails } = record;
       records[name] = recordDetails;
     });
+
+    logger.debug('Fetched page of ArNS records', {
+      totalRecordCount: pageResult.totalItems,
+      fetchedRecordCount: Object.keys(records).length,
+      cursor: pageResult.nextCursor,
+    });
+
+    emitter?.emit('arns:pageLoaded', {
+      totalRecordCount: pageResult.totalItems,
+      fetchedRecordCount: Object.keys(records).length,
+      records: pageResult.items,
+      cursor: pageResult.nextCursor,
+    });
+
     cursor = pageResult.nextCursor;
   } while (cursor !== undefined);
+
+  emitter?.emit('arns:end', records);
+
+  logger.debug('Fetched all ArNS records', {
+    totalRecordCount: Object.keys(records).length,
+    durationMs: Date.now() - startTimestamp,
+  });
 
   return records;
 };
