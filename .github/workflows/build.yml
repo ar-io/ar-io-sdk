@@ -4,9 +4,7 @@ concurrency:
   group: ${{ github.ref_name }}
   cancel-in-progress: true
 
-on:
-  pull_request:
-  workflow_call:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -51,18 +49,9 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Send Slack failure notification
+      - name: Send Slack notification
         uses: rtCamp/action-slack-notify@v2
-        if: failure() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
         env:
-          SLACK_TITLE: Build / E2E tests failed!
-          SLACK_COLOR: danger
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
-      - name: Send Slack success notification
-        uses: rtCamp/action-slack-notify@v2
-        if: success() && (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'alpha'))
-        env:
-          SLACK_TITLE: Build / E2E tests succeeded!
-          SLACK_COLOR: good
+          SLACK_TITLE: ${{ job.status == 'success' && 'Build / E2E tests succeeded!' || 'Build / E2E tests failed!' }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
