@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.9",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -133,7 +133,7 @@
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."
     ],
-    "**/*.md": [
+    "**/README.md": [
       "markdown-toc-gen insert"
     ]
   }
