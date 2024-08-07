@@ -1,4 +1,4 @@
-const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
+const { IO, Logger, IO_TESTNET_PROCESS_ID } = require('@ar.io/sdk');
 
 (async () => {
   // set the log level for the SDK
@@ -8,9 +8,13 @@ const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: ioDevnetProcessId,
+    address: IO_TESTNET_PROCESS_ID,
   });
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
+  const partialRecords = await arIO.getArNSRecords({
+    page: 10,
+    pageSize: 5,
+  });
   const oldEpoch = await arIO.getEpoch({
     epochIndex: 0,
   });
@@ -23,11 +27,8 @@ const { IO, ioDevnetProcessId, Logger } = require('@ar.io/sdk');
     {
       testnetGateways,
       ardriveRecord,
+      partialRecords: partialRecords.items,
       protocolBalance,
-      arnsStats: {
-        'registered domains': Object.keys(allRecords).length,
-        ardrive: allRecords.ardrive,
-      },
       oldEpoch,
       epoch,
       observations,
