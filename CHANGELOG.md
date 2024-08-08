@@ -1,3 +1,10 @@
+# [2.1.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.10...v2.1.0-alpha.11) (2024-08-08)
+
+
+### Bug Fixes
+
+* **register:** update spawn ant to register at end of spawn ([4320c80](https://github.com/ar-io/ar-io-sdk/commit/4320c803bec96eedf4fe4bd5456a5eaa4ac9ae88))
+
 ## [2.0.2](https://github.com/ar-io/ar-io-sdk/compare/v2.0.1...v2.0.2) (2024-07-12)
 
 
