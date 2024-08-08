@@ -59,6 +59,12 @@ export async function spawnANT({
   stateContractTxId?: string;
   antRegistryId?: string;
 }): Promise<string> {
+  // AoSigner is not a Contract Signer - should probably add that to the contract signer type
+  const registryClient = new AOProcess({
+    processId: antRegistryId,
+    ao,
+  });
+
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
     decode: true,
@@ -104,6 +110,14 @@ export async function spawnANT({
       signer,
     });
   }
+
+  await registryClient.send({
+    tags: [
+      { name: 'Action', value: 'Register' },
+      { name: 'Process-Id', value: processId },
+    ],
+    signer,
+  });
 
   return processId;
 }
