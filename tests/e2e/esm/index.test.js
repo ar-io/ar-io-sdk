@@ -6,9 +6,12 @@ import {
   createAoSigner,
   ioDevnetProcessId,
 } from '@ar.io/sdk';
-import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
-import { before, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
+
+import testWalletJSON from '../test-wallet.json';
+
+const testWallet = JSON.parse(testWalletJSON);
 
 /**
  * Ensure that npm link has been ran prior to running these tests
@@ -18,7 +21,7 @@ import { before, describe, it } from 'node:test';
 const io = IO.init({
   processId: ioDevnetProcessId,
 });
-const arweave = Arweave.init({});
+
 describe('IO', async () => {
   it('should be able to get the process information', async () => {
     const epoch = await io.getInfo();
@@ -289,17 +292,16 @@ describe('ANTRegistry', async () => {
 });
 
 describe('Signing', async () => {
-  let signers = [];
-  before(async () => {
-    const jwk = await arweave.wallets.generate();
-    signers = [new ArweaveSigner(jwk), createAoSigner(new ArweaveSigner(jwk))];
-  });
+  const signers = [
+    new ArweaveSigner(testWallet),
+    createAoSigner(new ArweaveSigner(testWallet)),
+  ];
 
   it('Should be able to sign on the IO contract with all ContractSigner types', async () => {
     for (const signer of signers) {
       const io = IO.init({ signer });
 
-      assert(io);
+      assert(io instanceof IOWriteable);
     }
   });
   it('Should be able to sign on ANTs with all ContractSigner types', async () => {
@@ -309,7 +311,7 @@ describe('Signing', async () => {
         signer,
       });
 
-      assert(ant);
+      assert(ant instanceof AoANTWriteable);
     }
   });
 
@@ -318,7 +320,7 @@ describe('Signing', async () => {
       const registry = ANTRegistry.init({
         signer,
       });
-      assert(registry);
+      assert(registry instanceof AoANTRegistryWriteable);
     }
   });
 });

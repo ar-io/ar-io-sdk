@@ -11,10 +11,14 @@ const {
   ANT,
   createAoSigner,
   ArweaveSigner,
+  IOWriteable,
+  AoANTWriteable,
+  AoANTRegistryWriteable,
 } = require('@ar.io/sdk');
-const Arweave = require('arweave');
 
-const arweave = Arweave.init({});
+const testWalletJSON = require('../test-wallet.json');
+const testWallet = JSON.parse(testWalletJSON);
+
 const io = IO.init({
   processId: ioDevnetProcessId,
 });
@@ -288,17 +292,16 @@ describe('ANTRegistry', async () => {
 });
 
 describe('Signing', async () => {
-  let signers = [];
-  before(async () => {
-    const jwk = await arweave.wallets.generate();
-    signers = [new ArweaveSigner(jwk), createAoSigner(new ArweaveSigner(jwk))];
-  });
+  const signers = [
+    new ArweaveSigner(testWallet),
+    createAoSigner(new ArweaveSigner(testWallet)),
+  ];
 
   it('Should be able to sign on the IO contract with all ContractSigner types', async () => {
     for (const signer of signers) {
       const io = IO.init({ signer });
 
-      assert(io);
+      assert(io instanceof IOWriteable);
     }
   });
   it('Should be able to sign on ANTs with all ContractSigner types', async () => {
@@ -308,7 +311,7 @@ describe('Signing', async () => {
         signer,
       });
 
-      assert(ant);
+      assert(ant instanceof AoANTWriteable);
     }
   });
 
@@ -317,7 +320,7 @@ describe('Signing', async () => {
       const registry = ANTRegistry.init({
         signer,
       });
-      assert(registry);
+      assert(registry instanceof AoANTRegistryWriteable);
     }
   });
 });
