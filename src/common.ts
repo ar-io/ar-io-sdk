@@ -25,6 +25,8 @@ import {
 } from '@permaweb/aoconnect';
 import { Signer } from 'arbundles';
 
+import { AoSigner } from './token.js';
+
 export type BlockHeight = number;
 export type SortKey = string;
 export type Timestamp = number;
@@ -33,7 +35,7 @@ export type TransactionId = string;
 export type ProcessId = string;
 
 // TODO: append this with other configuration options (e.g. local vs. remote evaluation)
-export type ContractSigner = Signer | Window['arweaveWallet'];
+export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer
