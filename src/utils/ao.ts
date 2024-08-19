@@ -158,6 +158,10 @@ export async function evolveANT({
 }
 
 export function createAoSigner(signer: ContractSigner): AoSigner {
+  if (typeof signer == 'function') {
+    return signer;
+  }
+
   if (!('publicKey' in signer)) {
     return createDataItemSigner(signer) as AoSigner;
   }

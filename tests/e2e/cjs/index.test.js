@@ -1,11 +1,21 @@
-const { describe, it } = require('node:test');
+const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
 /**
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
  */
-const { IO, ioDevnetProcessId, ANTRegistry } = require('@ar.io/sdk');
+const {
+  IO,
+  ioDevnetProcessId,
+  ANTRegistry,
+  ANT,
+  createAoSigner,
+  ArweaveSigner,
+  WriteInteractionError,
+} = require('@ar.io/sdk');
+const Arweave = require('arweave');
 
+const arweave = Arweave.init({});
 const io = IO.init({
   processId: ioDevnetProcessId,
 });
@@ -275,5 +285,55 @@ describe('ANTRegistry', async () => {
     const affiliatedAnts = await registry.accessControlList({ address });
     assert(Array.isArray(affiliatedAnts.Owned));
     assert(Array.isArray(affiliatedAnts.Controlled));
+  });
+});
+
+describe('Signing', async () => {
+  let signers = [];
+  before(async () => {
+    const jwk = await arweave.wallets.generate();
+    signers = [new ArweaveSigner(jwk), createAoSigner(new ArweaveSigner(jwk))];
+  });
+
+  it('Should be able to sign on the IO contract with all ContractSigner types', async () => {
+    for (const signer of signers) {
+      const io = IO.init({ signer });
+      const res = await io
+        .transfer({
+          target: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+          qty: 1,
+        })
+        .catch((e) => e);
+      // if it is a WriteInteractionError, it means the transaction was signed contract threw an error
+      assert(res instanceof WriteInteractionError);
+    }
+  });
+  it('Should be able to sign on ANTs with all ContractSigner types', async () => {
+    for (const signer of signers) {
+      const ant = ANT.init({
+        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+        signer,
+      });
+      const res = await ant
+        .transfer({
+          target: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+          qty: 1,
+        })
+        .catch((e) => e);
+      // if it is a WriteInteractionError, it means the transaction was signed contract threw an error
+      assert(res instanceof WriteInteractionError);
+    }
+  });
+
+  it('Should be able to sign on ANTRegistry with all ContractSigner types', async () => {
+    for (const signer of signers) {
+      const registry = ANTRegistry.init({
+        signer,
+      });
+      const res = await registry.register({
+        processId: ''.padEnd(43, '1'),
+      });
+      assert(res.id);
+    }
   });
 });
