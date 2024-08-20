@@ -1,3 +1,14 @@
+# [2.1.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.11...v2.1.0-alpha.12) (2024-08-20)
+
+
+### Bug Fixes
+
+* **signer:** add typeguard util for aoSigner ([0d7f210](https://github.com/ar-io/ar-io-sdk/commit/0d7f210ac3ab44a1c7ea296936917e5297878e48))
+* **signing:** add aosigner to contract signer ([3b0495a](https://github.com/ar-io/ar-io-sdk/commit/3b0495a3ca4420c61cf4f72c7eb451777cbaf16d))
+* **tests:** dont send messages to ao in e2e tests ([e7108da](https://github.com/ar-io/ar-io-sdk/commit/e7108dafb7602e29833b0120c91cff73b022d31f))
+* **tests:** reconfigure test structure ([1872a26](https://github.com/ar-io/ar-io-sdk/commit/1872a262b654d72c779c2607ed454c5ae8271e87))
+* **tests:** use test-wallet fixture in tests instead of generating anew each time ([27a5dc2](https://github.com/ar-io/ar-io-sdk/commit/27a5dc25cd6bbe75736187280d3f511235dfa0b0))
+
 # [2.1.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.10...v2.1.0-alpha.11) (2024-08-08)
 
 
