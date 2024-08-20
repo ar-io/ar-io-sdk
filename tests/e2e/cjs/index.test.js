@@ -1,5 +1,6 @@
 const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 /**
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
@@ -16,8 +17,14 @@ const {
   AoANTRegistryWriteable,
 } = require('@ar.io/sdk');
 
-const testWalletJSON = require('../test-wallet.json');
+const testWalletJSON = fs.readFileSync('../test-wallet.json', {
+  encoding: 'utf-8',
+});
 const testWallet = JSON.parse(testWalletJSON);
+const signers = [
+  new ArweaveSigner(testWallet),
+  createAoSigner(new ArweaveSigner(testWallet)),
+];
 
 const io = IO.init({
   processId: ioDevnetProcessId,
@@ -278,6 +285,14 @@ describe('IO', async () => {
     });
     assert.ok(tokenCost);
   });
+
+  it('should be able to create IOWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const io = IO.init({ signer });
+
+      assert(io instanceof IOWriteable);
+    }
+  });
 });
 
 describe('ANTRegistry', async () => {
@@ -289,22 +304,19 @@ describe('ANTRegistry', async () => {
     assert(Array.isArray(affiliatedAnts.Owned));
     assert(Array.isArray(affiliatedAnts.Controlled));
   });
-});
 
-describe('Signing', async () => {
-  const signers = [
-    new ArweaveSigner(testWallet),
-    createAoSigner(new ArweaveSigner(testWallet)),
-  ];
-
-  it('Should be able to sign on the IO contract with all ContractSigner types', async () => {
+  it('should be able to create AoANTRegistryWriteable with valid signers', async () => {
     for (const signer of signers) {
-      const io = IO.init({ signer });
-
-      assert(io instanceof IOWriteable);
+      const registry = ANTRegistry.init({
+        signer,
+      });
+      assert(registry instanceof AoANTRegistryWriteable);
     }
   });
-  it('Should be able to sign on ANTs with all ContractSigner types', async () => {
+});
+
+describe('ANT', async () => {
+  it('should be able to create ANTWriteable with valid signers', async () => {
     for (const signer of signers) {
       const ant = ANT.init({
         processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
@@ -312,15 +324,6 @@ describe('Signing', async () => {
       });
 
       assert(ant instanceof AoANTWriteable);
-    }
-  });
-
-  it('Should be able to sign on ANTRegistry with all ContractSigner types', async () => {
-    for (const signer of signers) {
-      const registry = ANTRegistry.init({
-        signer,
-      });
-      assert(registry instanceof AoANTRegistryWriteable);
     }
   });
 });
