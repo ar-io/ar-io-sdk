@@ -1,6 +1,27 @@
-import { ANTRegistry, IO, ioDevnetProcessId } from '@ar.io/sdk';
+import {
+  ANT,
+  ANTRegistry,
+  AoANTRegistryWriteable,
+  AoANTWriteable,
+  ArweaveSigner,
+  IO,
+  IOWriteable,
+  createAoSigner,
+  ioDevnetProcessId,
+} from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
 import { describe, it } from 'node:test';
+
+const testWalletJSON = fs.readFileSync('../test-wallet.json', {
+  encoding: 'utf-8',
+});
+
+const testWallet = JSON.parse(testWalletJSON);
+const signers = [
+  new ArweaveSigner(testWallet),
+  createAoSigner(new ArweaveSigner(testWallet)),
+];
 
 /**
  * Ensure that npm link has been ran prior to running these tests
@@ -10,6 +31,7 @@ import { describe, it } from 'node:test';
 const io = IO.init({
   processId: ioDevnetProcessId,
 });
+
 describe('IO', async () => {
   it('should be able to get the process information', async () => {
     const epoch = await io.getInfo();
@@ -266,6 +288,14 @@ describe('IO', async () => {
     });
     assert.ok(tokenCost);
   });
+
+  it('should be able to create IOWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const io = IO.init({ signer });
+
+      assert(io instanceof IOWriteable);
+    }
+  });
 });
 
 describe('ANTRegistry', async () => {
@@ -276,5 +306,27 @@ describe('ANTRegistry', async () => {
     const affiliatedAnts = await registry.accessControlList({ address });
     assert(Array.isArray(affiliatedAnts.Owned));
     assert(Array.isArray(affiliatedAnts.Controlled));
+  });
+
+  it('should be able to create AoANTRegistryWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const registry = ANTRegistry.init({
+        signer,
+      });
+      assert(registry instanceof AoANTRegistryWriteable);
+    }
+  });
+});
+
+describe('ANT', async () => {
+  it('should be able to create ANTWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const ant = ANT.init({
+        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+        signer,
+      });
+
+      assert(ant instanceof AoANTWriteable);
+    }
   });
 });
