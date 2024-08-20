@@ -16,6 +16,7 @@
  */
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import { createData } from 'arbundles';
+import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess } from '../common/index.js';
@@ -157,7 +158,43 @@ export async function evolveANT({
   return id;
 }
 
+export function isAoSigner(value: unknown): value is AoSigner {
+  const TagSchema = z.object({
+    name: z.string(),
+    value: z.union([z.string(), z.number()]),
+  });
+
+  const AoSignerSchema = z
+    .function()
+    .args(
+      z.object({
+        data: z.union([z.string(), z.instanceof(Buffer)]),
+        tags: z.array(TagSchema).optional(),
+        target: z.string().optional(),
+        anchor: z.string().optional(),
+      }),
+    )
+    .returns(
+      z.promise(
+        z.object({
+          id: z.string(),
+          raw: z.instanceof(ArrayBuffer),
+        }),
+      ),
+    );
+  try {
+    AoSignerSchema.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function createAoSigner(signer: ContractSigner): AoSigner {
+  if (isAoSigner(signer)) {
+    return signer;
+  }
+
   if (!('publicKey' in signer)) {
     return createDataItemSigner(signer) as AoSigner;
   }

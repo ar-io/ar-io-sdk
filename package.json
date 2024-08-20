@@ -127,7 +127,8 @@
     "axios-retry": "^4.3.0",
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "zod": "^3.23.8"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
