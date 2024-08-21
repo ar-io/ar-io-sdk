@@ -1,3 +1,10 @@
+# [2.1.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.12...v2.1.0-alpha.13) (2024-08-21)
+
+
+### Features
+
+* **ant id:** update lua ant id to latest ([968c30e](https://github.com/ar-io/ar-io-sdk/commit/968c30e9b3851c0eed1bb7e152e78835d558243b))
+
 # [2.1.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0-alpha.11...v2.1.0-alpha.12) (2024-08-20)
 
 
