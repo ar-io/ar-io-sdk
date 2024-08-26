@@ -28,10 +28,7 @@ describe('ANT', () => {
   });
 
   it('should invalidate inaccurate ANT state', () => {
-    try {
-      isAoANTState({ ...testAoANTState, Name: 1 });
-    } catch (error) {
-      assert(error instanceof Error);
-    }
+    const res = isAoANTState({ ...testAoANTState, Name: 1 });
+    assert.strictEqual(res, false);
   });
 });
