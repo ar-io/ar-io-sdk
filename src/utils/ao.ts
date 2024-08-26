@@ -28,6 +28,7 @@ import {
 } from '../constants.js';
 import {
   AoANTRecord,
+  AoANTState,
   AoClient,
   AoSigner,
   ContractSigner,
@@ -217,4 +218,35 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
+}
+
+/**
+ * @param state
+ * @returns {boolean}
+ * @throws {z.ZodError} if the state object does not match the expected schema
+ */
+export function isAoANTState(state: object): state is AoANTState {
+  // using passThrough to require the minimum fields and allow others (eg TotalSupply, Logo, etc)
+  const AntStateSchema = z
+    .object({
+      Name: z.string(),
+      Ticker: z.string(),
+      Owner: z.string(),
+      Controllers: z.array(z.string()),
+      Records: z.record(
+        z.string(),
+        z
+          .object({
+            transactionId: z.string(),
+            ttlSeconds: z.number(),
+          })
+          .passthrough(),
+      ),
+      Balances: z.record(z.string(), z.number()),
+    })
+    .passthrough();
+
+  AntStateSchema.parse(state);
+
+  return true;
 }
