@@ -245,14 +245,16 @@ export const AntStateSchema = z
  * @returns {boolean}
  * @throws {z.ZodError} if the state object does not match the expected schema
  */
-export function isAoANTState(state: object): state is AoANTState {
+export function isAoANTState(
+  state: object,
+  logger: Logger = Logger.default,
+): state is AoANTState {
   try {
     AntStateSchema.parse(state);
-
     return true;
   } catch (error) {
     // this allows us to see the path of the error in the object as well as the expected schema on invalid fields
-    Logger.default.error(error.issues);
+    logger.error(error.issues);
     return false;
   }
 }
