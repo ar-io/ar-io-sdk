@@ -96,11 +96,26 @@ export type AoVaultData = {
   endTimestamp: Timestamp;
 };
 
+export type AoEpochDistributionRewards = {
+  eligible: Record<
+    WalletAddress,
+    {
+      delegateRewards: Record<WalletAddress, number>;
+      operatorReward: number;
+    }
+  >;
+  // TODO: we could create a new type for this
+  distributed?: Record<WalletAddress, number>;
+};
+
 export type AoEpochDistributionData = {
-  rewards: Record<WalletAddress, number>;
-  distributedTimestamp: Timestamp;
-  totalDistributedRewards: number;
+  rewards: AoEpochDistributionRewards;
   totalEligibleRewards: number;
+  totalEligibleObserverReward: number;
+  totalEligibleGatewayReward: number;
+  // TODO: we could create a new type for this
+  distributedTimestamp?: Timestamp; // only set if rewards have been distributed
+  totalDistributedRewards?: number; // only set if rewards have been distributed
 };
 
 export type AoArNSReservedNameData = {
