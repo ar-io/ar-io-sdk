@@ -19,7 +19,7 @@ import { createData } from 'arbundles';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
-import { AOProcess, Logger } from '../common/index.js';
+import { ANTRegistry, AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
@@ -61,12 +61,13 @@ export async function spawnANT({
   stateContractTxId?: string;
   antRegistryId?: string;
 }): Promise<string> {
-  // AoSigner is not a Contract Signer - should probably add that to the contract signer type
-  const registryClient = new AOProcess({
-    processId: antRegistryId,
-    ao,
+  const registryClient = ANTRegistry.init({
+    process: new AOProcess({
+      processId: antRegistryId,
+      ao,
+    }),
+    signer: signer,
   });
-
   //TODO: cache locally and only fetch if not cached
   const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
     decode: true,
@@ -113,13 +114,7 @@ export async function spawnANT({
     });
   }
 
-  await registryClient.send({
-    tags: [
-      { name: 'Action', value: 'Register' },
-      { name: 'Process-Id', value: processId },
-    ],
-    signer,
-  });
+  await registryClient.register({ processId });
 
   return processId;
 }

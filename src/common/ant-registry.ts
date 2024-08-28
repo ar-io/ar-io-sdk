@@ -37,7 +37,7 @@ export class ANTRegistry {
   static init({
     signer,
     ...config
-  }: WithSigner<Required<ProcessConfiguration>>): AoANTRegistryRead;
+  }: WithSigner<Required<ProcessConfiguration>>): AoANTRegistryWrite;
   static init(
     config?: OptionalSigner<ProcessConfiguration>,
   ): AoANTRegistryRead | AoANTRegistryWrite {
