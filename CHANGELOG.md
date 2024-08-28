@@ -1,3 +1,10 @@
+# [2.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0-alpha.1...v2.2.0-alpha.2) (2024-08-27)
+
+
+### Bug Fixes
+
+* **types:** update types for epoch distributions ([5aedf50](https://github.com/ar-io/ar-io-sdk/commit/5aedf5077a68faec8d86281a401ab2f4d6daf142))
+
 # [2.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0...v2.2.0-alpha.1) (2024-08-22)
 
 
