@@ -1,3 +1,10 @@
+# [2.2.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0-alpha.3...v2.2.0-alpha.4) (2024-08-28)
+
+
+### Bug Fixes
+
+* **util:** use ANTRegistry class for registering ant on spawn instead of aoconnect ([350112d](https://github.com/ar-io/ar-io-sdk/commit/350112d7fb29c180231b69ede5c4c2f94a60afa3))
+
 # [2.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0-alpha.2...v2.2.0-alpha.3) (2024-08-28)
 
 
