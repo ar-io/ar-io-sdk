@@ -19,7 +19,7 @@ import { createData } from 'arbundles';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
-import { AOProcess } from '../common/index.js';
+import { AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
@@ -28,6 +28,7 @@ import {
 } from '../constants.js';
 import {
   AoANTRecord,
+  AoANTState,
   AoClient,
   AoSigner,
   ContractSigner,
@@ -217,4 +218,43 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
+}
+
+// using passThrough to require the minimum fields and allow others (eg TotalSupply, Logo, etc)
+export const AntStateSchema = z
+  .object({
+    Name: z.string(),
+    Ticker: z.string(),
+    Owner: z.string(),
+    Controllers: z.array(z.string()),
+    Records: z.record(
+      z.string(),
+      z
+        .object({
+          transactionId: z.string(),
+          ttlSeconds: z.number(),
+        })
+        .passthrough(),
+    ),
+    Balances: z.record(z.string(), z.number()),
+  })
+  .passthrough();
+
+/**
+ * @param state
+ * @returns {boolean}
+ * @throws {z.ZodError} if the state object does not match the expected schema
+ */
+export function isAoANTState(
+  state: object,
+  logger: Logger = Logger.default,
+): state is AoANTState {
+  try {
+    AntStateSchema.parse(state);
+    return true;
+  } catch (error) {
+    // this allows us to see the path of the error in the object as well as the expected schema on invalid fields
+    logger.error(error.issues);
+    return false;
+  }
 }
