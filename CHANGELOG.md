@@ -1,3 +1,16 @@
+# [2.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0-alpha.2...v2.2.0-alpha.3) (2024-08-28)
+
+
+### Bug Fixes
+
+* **logger:** permit logger as argument for typeguard util and default it ([45df626](https://github.com/ar-io/ar-io-sdk/commit/45df6267df3260744201aa86ced572e5da842aae))
+* **typeguard:** return true or false in typeguard and log the error ([4b851c5](https://github.com/ar-io/ar-io-sdk/commit/4b851c5bd904f66bd88efc67cdc239a1300c7ecf))
+
+
+### Features
+
+* **util:** add AoAntState typeguard util ([c6f457f](https://github.com/ar-io/ar-io-sdk/commit/c6f457f88f7b17af615ffacc593cc01b77230257))
+
 # [2.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0-alpha.1...v2.2.0-alpha.2) (2024-08-27)
 
 
