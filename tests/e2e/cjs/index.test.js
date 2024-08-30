@@ -1,10 +1,30 @@
-const { describe, it } = require('node:test');
+const { describe, it, before } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 /**
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
  */
-const { IO, ioDevnetProcessId, ANTRegistry } = require('@ar.io/sdk');
+const {
+  IO,
+  ioDevnetProcessId,
+  ANTRegistry,
+  ANT,
+  createAoSigner,
+  ArweaveSigner,
+  IOWriteable,
+  AoANTWriteable,
+  AoANTRegistryWriteable,
+} = require('@ar.io/sdk');
+
+const testWalletJSON = fs.readFileSync('../test-wallet.json', {
+  encoding: 'utf-8',
+});
+const testWallet = JSON.parse(testWalletJSON);
+const signers = [
+  new ArweaveSigner(testWallet),
+  createAoSigner(new ArweaveSigner(testWallet)),
+];
 
 const io = IO.init({
   processId: ioDevnetProcessId,
@@ -265,6 +285,14 @@ describe('IO', async () => {
     });
     assert.ok(tokenCost);
   });
+
+  it('should be able to create IOWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const io = IO.init({ signer });
+
+      assert(io instanceof IOWriteable);
+    }
+  });
 });
 
 describe('ANTRegistry', async () => {
@@ -275,5 +303,27 @@ describe('ANTRegistry', async () => {
     const affiliatedAnts = await registry.accessControlList({ address });
     assert(Array.isArray(affiliatedAnts.Owned));
     assert(Array.isArray(affiliatedAnts.Controlled));
+  });
+
+  it('should be able to create AoANTRegistryWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const registry = ANTRegistry.init({
+        signer,
+      });
+      assert(registry instanceof AoANTRegistryWriteable);
+    }
+  });
+});
+
+describe('ANT', async () => {
+  it('should be able to create ANTWriteable with valid signers', async () => {
+    for (const signer of signers) {
+      const ant = ANT.init({
+        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+        signer,
+      });
+
+      assert(ant instanceof AoANTWriteable);
+    }
   });
 });

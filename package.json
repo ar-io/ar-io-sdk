@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "2.1.0",
+  "version": "2.2.0-alpha.4",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -123,11 +123,12 @@
     "@permaweb/aoconnect": "^0.0.57",
     "arbundles": "0.11.0",
     "arweave": "1.14.4",
-    "axios": "1.7.2",
+    "axios": "1.7.3",
     "axios-retry": "^4.3.0",
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "zod": "^3.23.8"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
