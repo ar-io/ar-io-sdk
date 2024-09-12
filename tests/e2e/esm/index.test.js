@@ -1,6 +1,7 @@
 import {
   ANT,
   ANTRegistry,
+  AOProcess,
   AoANTRegistryWriteable,
   AoANTWriteable,
   ArweaveSigner,
@@ -9,6 +10,7 @@ import {
   createAoSigner,
   ioDevnetProcessId,
 } from '@ar.io/sdk';
+import { connect } from '@permaweb/aoconnect';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { describe, it } from 'node:test';
@@ -29,7 +31,12 @@ const signers = [
  */
 
 const io = IO.init({
-  processId: ioDevnetProcessId,
+  process: new AOProcess({
+    processId: ioDevnetProcessId,
+    ao: connect({
+      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+    }),
+  }),
 });
 
 describe('IO', async () => {

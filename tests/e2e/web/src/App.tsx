@@ -1,11 +1,19 @@
-import { ANTRegistry, IO } from '@ar.io/sdk/web';
+import { ANTRegistry, AOProcess, IO, ioDevnetProcessId } from '@ar.io/sdk/web';
+import { connect } from '@permaweb/aoconnect';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import './App.css';
 
-const io = IO.init();
+const io = IO.init({
+  process: new AOProcess({
+    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+    ao: connect({
+      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+    }),
+  }),
+});
 const antRegistry = ANTRegistry.init();
 function App() {
   const [contract, setContract] = useState<string>('Loading...');

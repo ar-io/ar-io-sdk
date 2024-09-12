@@ -7,7 +7,8 @@
     "test": "node --enable-source-maps index.test.js && echo '\nNode CJS Integration ✅'"
   },
   "dependencies": {
-    "@ar.io/sdk": "*"
+    "@ar.io/sdk": "*",
+    "@permaweb/aoconnect": "^0.0.59"
   },
   "license": "AGPL-3.0-or-later"
 }

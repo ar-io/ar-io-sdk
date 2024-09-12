@@ -15,7 +15,9 @@ const {
   IOWriteable,
   AoANTWriteable,
   AoANTRegistryWriteable,
+  AOProcess,
 } = require('@ar.io/sdk');
+const { connect } = require('@permaweb/aoconnect');
 
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
   encoding: 'utf-8',
@@ -27,8 +29,14 @@ const signers = [
 ];
 
 const io = IO.init({
-  processId: ioDevnetProcessId,
+  process: new AOProcess({
+    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+    ao: connect({
+      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+    }),
+  }),
 });
+
 describe('IO', async () => {
   it('should be able to get the process information', async () => {
     const epoch = await io.getInfo();
