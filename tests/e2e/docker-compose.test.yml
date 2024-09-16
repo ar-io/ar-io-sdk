@@ -1,0 +1,17 @@
+services:
+  ao-cu:
+    image: ghcr.io/permaweb/ao-cu:latest
+    restart: on-failure
+    volumes:
+      - ${CU_WALLET_FILE:-./test-wallet.json}:/usr/app/test-wallet.json
+    ports:
+      - ${CU_PORT:-6363}:${CU_PORT:-6363}
+    environment:
+      PORT: ${CU_PORT:-6363}
+      WALLET_FILE: ${CU_WALLET_FILE:-./test-wallet.json}
+      NODE_CONFIG_ENV: ${NODE_CONFIG_ENV:-development}
+      NODE_HEAPDUMP_OPTIONS: ${NODE_HEAPDUMP_OPTIONS:-nosignal}
+      PROCESS_CHECKPOINT_TRUSTED_OWNERS: ${PROCESS_CHECKPOINT_TRUSTED_OWNERS:-fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY}
+      GRAPHQL_URL: ${GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
+      CHECKPOINT_GRAPHQL_URL: ${CHECKPOINT_GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
+      DISABLE_PROCESS_CHECKPOINT_CREATION: ${DISABLE_PROCESS_CHECKPOINT_CREATION:-true}

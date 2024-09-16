@@ -5,6 +5,8 @@ export default {
   testMatch: ['**/tests/unit/**.test.ts'],
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts'],
+  coverageReporters: ['json', 'html'],
+  coverageDirectory: 'coverage',
   testEnvironment: 'node',
   testTimeout: 120_000,
   extensionsToTreatAsEsm: ['.ts'],

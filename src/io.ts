@@ -178,7 +178,7 @@ export type AoGateway = {
 export type AoGatewayStats = {
   passedConsecutiveEpochs: number;
   failedConsecutiveEpochs: number;
-  totalEpochParticipationCount: number;
+  totalEpochCount: number;
   passedEpochCount: number;
   failedEpochCount: number;
   observedEpochCount: number;
