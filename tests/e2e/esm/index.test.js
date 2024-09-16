@@ -13,8 +13,10 @@ import {
 import { connect } from '@permaweb/aoconnect';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
-import { describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
+import { DockerComposeEnvironment, Wait } from 'testcontainers';
 
+const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
   encoding: 'utf-8',
 });
@@ -34,12 +36,27 @@ const io = IO.init({
   process: new AOProcess({
     processId: ioDevnetProcessId,
     ao: connect({
-      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+      CU_URL: 'http://localhost:6363',
     }),
   }),
 });
 
 describe('IO', async () => {
+  let compose;
+  before(async () => {
+    compose = await new DockerComposeEnvironment(
+      projectRootPath,
+      '../docker-compose.test.yml',
+    )
+      .withBuild()
+      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .up(['ao-cu']);
+  });
+
+  after(async () => {
+    await compose.down();
+  });
+
   it('should be able to get the process information', async () => {
     const epoch = await io.getInfo();
     assert.ok(epoch);

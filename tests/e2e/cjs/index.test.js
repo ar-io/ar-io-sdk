@@ -1,4 +1,5 @@
-const { describe, it, before } = require('node:test');
+const { describe, it, before, after } = require('node:test');
+const { DockerComposeEnvironment, Wait } = require('testcontainers');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 /**
@@ -19,6 +20,7 @@ const {
 } = require('@ar.io/sdk');
 const { connect } = require('@permaweb/aoconnect');
 
+const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
   encoding: 'utf-8',
 });
@@ -32,12 +34,26 @@ const io = IO.init({
   process: new AOProcess({
     processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
     ao: connect({
-      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+      CU_URL: 'http://localhost:6363',
     }),
   }),
 });
 
 describe('IO', async () => {
+  let compose;
+  before(async () => {
+    compose = await new DockerComposeEnvironment(
+      projectRootPath,
+      '../docker-compose.test.yml',
+    )
+      .withBuild()
+      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .up(['ao-cu']);
+  });
+
+  after(async () => {
+    await compose.down();
+  });
   it('should be able to get the process information', async () => {
     const epoch = await io.getInfo();
     assert.ok(epoch);

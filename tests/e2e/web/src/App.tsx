@@ -1,4 +1,10 @@
-import { ANTRegistry, AOProcess, IO, ioDevnetProcessId } from '@ar.io/sdk/web';
+import {
+  ANTRegistry,
+  ANT_REGISTRY_ID,
+  AOProcess,
+  IO,
+  ioDevnetProcessId,
+} from '@ar.io/sdk/web';
 import { connect } from '@permaweb/aoconnect';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
@@ -10,7 +16,7 @@ const io = IO.init({
   process: new AOProcess({
     processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
     ao: connect({
-      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+      CU_URL: 'http://localhost:6363',
     }),
   }),
 });
@@ -21,6 +27,7 @@ function App() {
   const [ioContractSuccess, setIoContractSuccess] = useState<boolean>(false);
   const [antRegistrySuccess, setAntRegistrySuccess] = useState<boolean>(false);
   const [loaded, setLoaded] = useState<boolean>(false);
+  const [registryLoaded, setRegistryLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     io.getInfo()
@@ -38,7 +45,7 @@ function App() {
       });
     antRegistry
       .accessControlList({
-        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        address: ANT_REGISTRY_ID,
       })
       .then((affiliatedAnts: { Owned: string[]; Controlled: string[] }) => {
         setAnts(`\`\`\`json\n${JSON.stringify(affiliatedAnts, null, 2)}`);
@@ -48,6 +55,9 @@ function App() {
         console.error(error);
         setAntRegistrySuccess(false);
         setAnts('Error loading affiliated ants');
+      })
+      .finally(() => {
+        setRegistryLoaded(true);
       });
   }, []);
 
@@ -61,7 +71,7 @@ function App() {
           {contract}
         </Markdown>
       </div>
-      {loaded && (
+      {registryLoaded && (
         <div data-testid="load-registry-result">{`${antRegistrySuccess}`}</div>
       )}
       <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
