@@ -1,10 +1,3 @@
-## [2.2.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0...v2.2.1-alpha.1) (2024-09-16)
-
-
-### Bug Fixes
-
-* **types:** correct totalEpochCount for gateway stats ([f82fed8](https://github.com/ar-io/ar-io-sdk/commit/f82fed8bc54b8d3f1a17ff78a72712709858952e))
-
 # [2.2.0](https://github.com/ar-io/ar-io-sdk/compare/v2.1.0...v2.2.0) (2024-08-30)
 
 
