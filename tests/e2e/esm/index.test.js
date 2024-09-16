@@ -34,7 +34,7 @@ const io = IO.init({
   process: new AOProcess({
     processId: ioDevnetProcessId,
     ao: connect({
-      CU_URL: process.env.AO_CU_URL || 'https://cu.ao-testnet.xyz',
+      CU_URL: process.env.AO_CU_URL || 'https://cu.ar-io.dev',
     }),
   }),
 });

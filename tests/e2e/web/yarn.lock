@@ -722,6 +722,29 @@
   resolved "https://registry.yarnpkg.com/@noble/ed25519/-/ed25519-1.7.3.tgz#57e1677bf6885354b466c38e2b620c62f45a7123"
   integrity sha512-iR8GBkDt0Q3GyaVcIu7mSsVIqnFbkbRzGLWlvhwunacoLwt4J3swfKhfaM6rN6WY+TBGoYT1GtT1mIh2/jGbRQ==
 
+"@permaweb/ao-scheduler-utils@~0.0.23":
+  version "0.0.24"
+  resolved "https://registry.yarnpkg.com/@permaweb/ao-scheduler-utils/-/ao-scheduler-utils-0.0.24.tgz#a7d2c1e09f9b6ea5d45127fa395bbbcef6688452"
+  integrity sha512-G6109Nz8+dQFPuG7mV8mz66kLVA+gl2uTSqU7qpaRwfujrWi6obM94CpmvyvAnrLo3dB29EYiuv7+KOKcns8ig==
+  dependencies:
+    lru-cache "^10.2.2"
+    ramda "^0.30.0"
+    zod "^3.23.5"
+
+"@permaweb/aoconnect@^0.0.59":
+  version "0.0.59"
+  resolved "https://registry.yarnpkg.com/@permaweb/aoconnect/-/aoconnect-0.0.59.tgz#0ceb6257e2f376f4af6783163e3037240560dff1"
+  integrity sha512-AgnUv50hp3BVvqWk2IOw3p9ksF2GblFwQHCIWqwTYjvdViCPlsL4gx/BefxFqbMABXQ5q2QJItMJLlPelqC2CQ==
+  dependencies:
+    "@permaweb/ao-scheduler-utils" "~0.0.23"
+    buffer "^6.0.3"
+    debug "^4.3.6"
+    hyper-async "^1.1.2"
+    mnemonist "^0.39.8"
+    ramda "^0.30.1"
+    warp-arbundles "^1.0.4"
+    zod "^3.23.8"
+
 "@randlabs/communication-bridge@1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@randlabs/communication-bridge/-/communication-bridge-1.0.1.tgz#d1ecfc29157afcbb0ca2d73122d67905eecb5bf3"
@@ -1903,6 +1926,13 @@ debug@^4.0.0, debug@^4.1.0, debug@^4.3.1:
   dependencies:
     ms "2.1.2"
 
+debug@^4.3.6:
+  version "4.3.7"
+  resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.7.tgz#87945b4151a011d76d95a198d7111c865c360a52"
+  integrity sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==
+  dependencies:
+    ms "^2.1.3"
+
 decimal.js@^10.4.3:
   version "10.4.3"
   resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.4.3.tgz#1044092884d245d1b7f65725fa4ad4c6f781cc23"
@@ -2475,6 +2505,11 @@ human-signals@^5.0.0:
   resolved "https://registry.yarnpkg.com/human-signals/-/human-signals-5.0.0.tgz#42665a284f9ae0dade3ba41ebc37eb4b852f3a28"
   integrity sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==
 
+hyper-async@^1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/hyper-async/-/hyper-async-1.1.2.tgz#b9a83be36e726bface6f4a5b84f1a1a25bf19e6a"
+  integrity sha512-cnpOgKa+5FZOaccTtjduac1FrZuSc38/ftCp3vYJdUMt+7c+uvGDKLDK4MTNK8D3aFjIeveVrPcSgUPvzZLopg==
+
 iconv-lite@0.6.3:
   version "0.6.3"
   resolved "https://registry.yarnpkg.com/iconv-lite/-/iconv-lite-0.6.3.tgz#a52f80bf38da1952eb5c681790719871a1a72501"
@@ -2896,6 +2931,11 @@ loupe@^2.3.6, loupe@^2.3.7:
   integrity sha512-zSMINGVYkdpYSOBmLi0D1Uo7JU9nVdQKrHxC8eYlV+9YKK9WePqAlL7lSlorG/U2Fw1w0hTBmaa/jrQ3UbPHtA==
   dependencies:
     get-func-name "^2.0.1"
+
+lru-cache@^10.2.2:
+  version "10.4.3"
+  resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-10.4.3.tgz#410fc8a17b70e598013df257c2446b7f3383f119"
+  integrity sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==
 
 lru-cache@^5.1.1:
   version "5.1.1"
@@ -3473,6 +3513,13 @@ mlly@^1.4.2, mlly@^1.7.1:
     pkg-types "^1.1.1"
     ufo "^1.5.3"
 
+mnemonist@^0.39.8:
+  version "0.39.8"
+  resolved "https://registry.yarnpkg.com/mnemonist/-/mnemonist-0.39.8.tgz#9078cd8386081afd986cca34b52b5d84ea7a4d38"
+  integrity sha512-vyWo2K3fjrUw8YeeZ1zF0fy6Mu59RHokURlld8ymdUPjMlD9EC9ov1/YPqTgqRvUN9nTr3Gqfz29LYAmu0PHPQ==
+  dependencies:
+    obliterator "^2.0.1"
+
 module-error@^1.0.1, module-error@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/module-error/-/module-error-1.0.2.tgz#8d1a48897ca883f47a45816d4fb3e3c6ba404d86"
@@ -3487,6 +3534,11 @@ ms@2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.2.tgz#d09d1f357b443f493382a8eb3ccd183872ae6009"
   integrity sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==
+
+ms@^2.1.3:
+  version "2.1.3"
+  resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
+  integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
 multistream@^4.1.0:
   version "4.1.0"
@@ -3629,6 +3681,11 @@ object.assign@^4.1.4:
     define-properties "^1.2.1"
     has-symbols "^1.0.3"
     object-keys "^1.1.1"
+
+obliterator@^2.0.1:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/obliterator/-/obliterator-2.0.4.tgz#fa650e019b2d075d745e44f1effeb13a2adbe816"
+  integrity sha512-lgHwxlxV1qIg1Eap7LgIeoBWIMFibOjbrYPIPJZcI1mmGAI2m3lNYpK12Y+GBdPQ0U1hRwSord7GIaawz962qQ==
 
 once@^1.3.0, once@^1.4.0:
   version "1.4.0"
@@ -3890,6 +3947,11 @@ queue-microtask@^1.2.2, queue-microtask@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/queue-microtask/-/queue-microtask-1.2.3.tgz#4929228bbc724dfac43e0efb058caf7b6cfb6243"
   integrity sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==
+
+ramda@^0.30.0, ramda@^0.30.1:
+  version "0.30.1"
+  resolved "https://registry.yarnpkg.com/ramda/-/ramda-0.30.1.tgz#7108ac95673062b060025052cd5143ae8fc605bf"
+  integrity sha512-tEF5I22zJnuclswcZMc8bDIrwRHRzf+NqVEmqg50ShAZMP7MWeR/RGDthfM/p+BlqvF2fXAzpn8i+SJcYD3alw==
 
 randombytes@^2.0.0, randombytes@^2.0.1, randombytes@^2.0.5:
   version "2.1.0"
@@ -4895,6 +4957,11 @@ zip-stream@^4.1.0:
     archiver-utils "^3.0.4"
     compress-commons "^4.1.2"
     readable-stream "^3.6.0"
+
+zod@^3.23.5, zod@^3.23.8:
+  version "3.23.8"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-3.23.8.tgz#e37b957b5d52079769fb8097099b592f0ef4067d"
+  integrity sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==
 
 zwitch@^2.0.0:
   version "2.0.4"
