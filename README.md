@@ -76,6 +76,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Testing](#testing)
   - [Linting & Formatting](#linting--formatting)
   - [Architecture](#architecture)
+- [Resources](#resources)
+  - [Bundling](#bundling)
+  - [Gateways](#gateways)
+  - [Running a Gateway](#running-a-gateway)
+  - [AO](#ao)
 
 <!-- tocstop -->
 
@@ -1377,6 +1382,29 @@ while (hasMore) {
 
 For more information on how to contribute, please see [CONTRIBUTING.md].
 
+## Resources
+
+### Bundling
+
+For [ANS-104] bundling compatible with ar.io gateways, we recommend using [turbo-sdk](https://github.com/ardriveapp/turbo-sdk). Turbo SDK provides efficient and reliable methods for creating and uploading data bundles to the Arweave network, which are fully compatible with ar.io gateways. Turbo supports fiat and crypto bundling and uploading with a focus on ease of use and reliability.
+
+### Gateways
+
+### Running a Gateway
+
+To run your own ar.io gateway, you can refer to the following resources:
+
+- [ar-io-node repository]: This repository contains the source code and instructions for setting up and running an ar.io gateway node.
+- [ar.io Gateway Documentation]: This comprehensive guide provides detailed information on gateway setup, configuration, and management.
+
+Running your own gateway allows you to participate in the ar.io network, serve Arweave data, and potentially earn rewards. Make sure to follow the official documentation for the most up-to-date and accurate information on gateway operation.
+
+### AO
+
+This library integrates with [AO], a decentralized compute platform built on Arweave. We utilize [AO Connect] to interact with AO processes and messages. This integration allows for seamless communication with the AO network, enabling developers to leverage decentralized computation and storage capabilities in their applications.
+
+For more information on how to use AO and AO Connect within this library, please refer to our documentation and examples.
+
 <!-- ADD ALL LINK REFERENCES BELOW -->
 
 [ar.io]: https://ar.io
@@ -1389,3 +1417,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [IO testnet process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
 [IO Network spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
 [Winston]: https://www.npmjs.com/package/winston
+[AO]: https://github.com/permaweb/ao
+[ar-io-node repository]: https://github.com/ar-io/ar-io-node
+[ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
+[ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md

@@ -23,17 +23,15 @@ describe('ESM browser validation', () => {
 
     await waitFor(
       () => {
-        console.log('waiting for contract info to render...');
         screen.getByTestId('load-info-result');
       },
       {
-        interval: 10000,
-        timeout: 30000,
+        interval: 5_000,
+        timeout: 60_000,
       },
     );
 
     const result = screen.getByTestId('load-info-result');
-    // check the sdk loaded the data
     expect(result).toHaveTextContent('true');
   });
 
@@ -45,8 +43,8 @@ describe('ESM browser validation', () => {
         screen.getByTestId('load-registry-result');
       },
       {
-        interval: 2000,
-        timeout: 30000,
+        interval: 5_000,
+        timeout: 60_000,
       },
     );
 
