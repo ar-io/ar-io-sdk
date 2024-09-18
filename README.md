@@ -1386,7 +1386,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 
 ### Bundling
 
-For ANS-104 bundling compatible with ar.io gateways, we recommend using [turbo-sdk](https://github.com/ardriveapp/turbo-sdk). Turbo SDK provides efficient and reliable methods for creating and uploading data bundles to the Arweave network, which are fully compatible with ar.io gateways.
+For [ANS-104] bundling compatible with ar.io gateways, we recommend using [turbo-sdk](https://github.com/ardriveapp/turbo-sdk). Turbo SDK provides efficient and reliable methods for creating and uploading data bundles to the Arweave network, which are fully compatible with ar.io gateways. Turbo supports fiat and crypto bundling and uploading with a focus on ease of use and reliability.
 
 ### Gateways
 
@@ -1420,3 +1420,4 @@ For more information on how to use AO and AO Connect within this library, please
 [AO]: https://github.com/permaweb/ao
 [ar-io-node repository]: https://github.com/ar-io/ar-io-node
 [ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
+[ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
