@@ -23,6 +23,7 @@ import {
   AoGateway,
   AoIORead,
   AoIOWrite,
+  AoRegistrationFees,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -570,6 +571,12 @@ export class IOReadable implements AoIORead {
 
     return this.process.read<number>({
       tags: prunedTags,
+    });
+  }
+
+  async getRegistrationFees(): Promise<AoRegistrationFees> {
+    return this.process.read<AoRegistrationFees>({
+      tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
     });
   }
 }

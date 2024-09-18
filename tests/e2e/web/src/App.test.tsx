@@ -52,4 +52,21 @@ describe('ESM browser validation', () => {
     const result = screen.getByTestId('load-registry-result');
     expect(result).toHaveTextContent('true');
   });
+
+  it('should retrieve registration fees', async () => {
+    await act(async () => render(<App />));
+
+    await waitFor(
+      () => {
+        screen.getByTestId('load-registration-fees-result');
+      },
+      {
+        interval: 5_000,
+        timeout: 60_000,
+      },
+    );
+
+    const result = screen.getByTestId('load-registration-fees-result');
+    expect(result).toHaveTextContent('true');
+  });
 });

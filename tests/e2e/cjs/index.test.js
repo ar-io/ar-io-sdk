@@ -310,6 +310,19 @@ describe('IO', async () => {
     assert.ok(tokenCost);
   });
 
+  it('should be able to get registration fees', async () => {
+    const registrationFees = await io.getRegistrationFees();
+    assert(registrationFees);
+    assert.equal(Object.keys(registrationFees).length, 51);
+    for (const nameLength of Object.keys(registrationFees)) {
+      assert(registrationFees[nameLength]['1']);
+      assert(registrationFees[nameLength]['2']);
+      assert(registrationFees[nameLength]['3']);
+      assert(registrationFees[nameLength]['4']);
+      assert(registrationFees[nameLength]['5']);
+      assert(registrationFees[nameLength]['permabuy']);
+    }
+  });
   it('should be able to create IOWriteable with valid signers', async () => {
     for (const signer of signers) {
       const io = IO.init({ signer });
