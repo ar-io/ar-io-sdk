@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Signer } from '@dha-team/arbundles';
 import {
   dryrun,
   message,
@@ -22,7 +23,6 @@ import {
   spawn,
   unmonitor,
 } from '@permaweb/aoconnect';
-import { Signer } from 'arbundles';
 
 import { AoSigner } from './token.js';
 

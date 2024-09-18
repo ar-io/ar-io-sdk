@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { createData } from 'arbundles';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
