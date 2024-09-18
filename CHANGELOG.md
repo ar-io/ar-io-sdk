@@ -1,3 +1,10 @@
+## [2.2.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.1...v2.2.2-alpha.1) (2024-09-18)
+
+
+### Bug Fixes
+
+* **deps:** update arbundles to @dha-team/arbundles ([c41e4e4](https://github.com/ar-io/ar-io-sdk/commit/c41e4e42057698a9a2895c2ac9e78a01c69bc2d5))
+
 ## [2.2.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.0...v2.2.1) (2024-09-16)
 
 
