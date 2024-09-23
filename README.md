@@ -323,7 +323,7 @@ Retrieves the balances of the IO process in `mIO`, paginated and sorted by the s
 const io = IO.init();
 const balances = await io.getBalances({
   cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
-  limit: 1,
+  limit: 100,
   sortBy: 'balance',
   sortOrder: 'desc',
 });
@@ -338,7 +338,12 @@ const balances = await io.getBalances({
     {
       "address": "-4xgjroXENKYhTWqrBo57HQwvDL51mMvSxJy6Y2Z_sA",
       "balance": 1000000
+    },
+    {
+      "address": "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck",
+      "balance": 1000000
     }
+    // ...98 other balances
   ],
   "hasMore": true,
   "nextCursor": "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck",
@@ -406,7 +411,7 @@ Retrieves registered gateways of the IO process, using pagination and sorting by
 ```typescript
 const io = IO.init();
 const gateways = await io.getGateways({
-  limit: 1,
+  limit: 100,
   sortOrder: 'desc',
   sortBy: 'operatorStake',
 });
@@ -492,9 +497,9 @@ Retrieves all registered ArNS records of the IO process, paginated and sorted by
 
 ```typescript
 const io = IO.init();
-// get the 5 newest names
+// get the newest 100 names
 const records = await io.getArNSRecords({
-  limit: 5,
+  limit: 100,
   sortBy: 'startTimestamp',
   sortOrder: 'desc',
 });
@@ -548,6 +553,7 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
       "type": "lease",
       "undernames": 100
     }
+    // ...95 other records
   ],
   "hasMore": true,
   "nextCursor": "fwdresearch",
@@ -1336,7 +1342,7 @@ let hasMore = true;
 let cursor: string | undefined;
 const gateaways = [];
 while (hasMore) {
-  const page = await io.getGateways({ limit: 10, cursor });
+  const page = await io.getGateways({ limit: 100, cursor });
   gateaways.push(...items);
   cursor = page.nextCursor;
   hasMore = page.hasMore;
