@@ -315,12 +315,13 @@ describe('IO', async () => {
     assert(registrationFees);
     assert.equal(Object.keys(registrationFees).length, 51);
     for (const nameLength of Object.keys(registrationFees)) {
-      assert(registrationFees[nameLength]['1']);
-      assert(registrationFees[nameLength]['2']);
-      assert(registrationFees[nameLength]['3']);
-      assert(registrationFees[nameLength]['4']);
-      assert(registrationFees[nameLength]['5']);
-      assert(registrationFees[nameLength]['permabuy']);
+      // assert lease is length of 5
+      assert(registrationFees[nameLength]['lease']['1'] > 0);
+      assert(registrationFees[nameLength]['lease']['2'] > 0);
+      assert(registrationFees[nameLength]['lease']['3'] > 0);
+      assert(registrationFees[nameLength]['lease']['4'] > 0);
+      assert(registrationFees[nameLength]['lease']['5'] > 0);
+      assert(registrationFees[nameLength]['permabuy'] > 0);
     }
   });
   it('should be able to create IOWriteable with valid signers', async () => {
