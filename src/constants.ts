@@ -40,6 +40,6 @@ export const IO_TESTNET_PROCESS_ID =
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MIO_PER_IO = 1_000_000;
 export const AOS_MODULE_ID = 'cbn0KKrBZH7hdNkNokuXLtGryrWM--PjSTBqIzw9Kkk';
-export const ANT_LUA_ID = 'JqOo-V7uwJeRncbZrwLRGQUt2KO--RGDKI-mgfT7Bgc';
+export const ANT_LUA_ID = 'zeglqubvIKvBEZaxAUuenLGGtQ1pJp9LZjd5hDe0-J0';
 export const DEFAULT_SCHEDULER_ID =
   '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
