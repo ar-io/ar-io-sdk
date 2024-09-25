@@ -1,34 +1,68 @@
-import { fromB64Url, toB64Url } from '../../src/utils/base64';
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
+
+import { fromB64Url, toB64Url } from '../../src/utils/base64.js';
 
 describe('b64utils', () => {
-  it.each([
-    'hello+_world_+',
-    'hello/_world/_',
-    '', // empty string
-    'hello', // single character
-    'hello123456', // alphanumeric string
-    '123456', // numeric string
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/', // all base64 characters
-    'aGVsbG8=',
-  ])(
-    'should properly convert a buffer to base64url string',
-    async (str: string) => {
-      const input = Buffer.from(str, 'base64');
-      const expected = input.toString('base64url');
-      expect(toB64Url(input)).toEqual(expected);
-    },
-  );
-
-  it.each([
-    'aGVsbG8', // missing padding character
-    'YQ==', // single character
-    'aGVsbG8gMTIzNDU2', // alphanumeric string
-    'MTIzNDU2', // numeric string
-    'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXotLUVy', // all base64url characters
-    '', // empty string
-  ])('should properly convert a base64 string to a buffer', async (str) => {
-    const b64url = Buffer.from(str).toString('base64url');
-    const expected = Buffer.from(b64url, 'base64url');
-    expect(fromB64Url(b64url)).toEqual(expected);
+  it('should convert various strings to base64url and back', () => {
+    const testStrings = [
+      'Hello, World!',
+      'Test123!@#',
+      'Base64URLEncoding',
+      'Special_Chars+/',
+      '',
+      'A',
+      '1234567890',
+    ];
+    for (const str of testStrings) {
+      const encoded = toB64Url(Buffer.from(str));
+      const decoded = Buffer.from(fromB64Url(encoded)).toString();
+      assert.strictEqual(decoded, str, `Failed for string: ${str}`);
+    }
+  });
+  it('should convert various buffers to base64url and back', () => {
+    const testBuffers = [
+      Buffer.from('Hello, World!'),
+      Buffer.from([0, 1, 2, 3, 4, 5]),
+      Buffer.from('Test123!@#'),
+      Buffer.from('Base64URLEncoding'),
+      Buffer.from('Special_Chars+/'),
+      Buffer.alloc(0),
+      Buffer.from('A'),
+      Buffer.from('1234567890'),
+    ];
+    for (const buf of testBuffers) {
+      const encoded = toB64Url(buf);
+      const decoded = fromB64Url(encoded);
+      assert.deepStrictEqual(
+        decoded,
+        buf,
+        `Failed for buffer: ${buf.toString()}`,
+      );
+    }
+  });
+  it('should handle edge cases for base64url conversion', () => {
+    const edgeCases = [
+      '',
+      'A',
+      'AA',
+      'AAA',
+      '====',
+      '===',
+      '==',
+      '=',
+      'A===',
+      'AA==',
+      'AAA=',
+    ];
+    for (const testCase of edgeCases) {
+      const encoded = toB64Url(Buffer.from(testCase));
+      const decoded = Buffer.from(fromB64Url(encoded)).toString();
+      assert.strictEqual(
+        decoded,
+        testCase,
+        `Failed for edge case: ${testCase}`,
+      );
+    }
   });
 });

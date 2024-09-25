@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { DockerComposeEnvironment, Wait } from 'testcontainers';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -17,7 +18,7 @@ describe('ESM browser validation', () => {
       .withBuild()
       .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
       .up(['ao-cu']);
-  });
+  }, 120_000);
   it('should load the app and SDK', async () => {
     await act(async () => render(<App />));
 

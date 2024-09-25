@@ -34,6 +34,9 @@ jobs:
       - run: yarn ${{ matrix.command }}
 
   test:
+    strategy:
+      matrix:
+        suite: [unit, web, esm, cjs]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,16 +51,22 @@ jobs:
         run: yarn --immutable --immutable-cache
 
       - name: Run tests
-        run: yarn test
+        run: yarn test:${{ matrix.suite }}
 
       - name: Upload coverage
+        if: matrix.suite == 'unit'
         uses: codecov/codecov-action@v4.0.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  notify:
+    needs: [build, test]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
       - name: Send Slack notification
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_TITLE: ${{ job.status == 'success' && 'Build / E2E tests succeeded!' || 'Build / E2E tests failed!' }}
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: 'Build / E2E tests succeeded!'
+          SLACK_COLOR: 'good'
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

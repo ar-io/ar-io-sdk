@@ -1,6 +1,7 @@
-import assert from 'node:assert';
+import { strict as assert } from 'node:assert';
+import { describe, it } from 'node:test';
 
-import { isAoANTState } from '../../src/utils/ao';
+import { isAoANTState } from '../../src/utils/ao.js';
 
 const testAoANTState = {
   Name: 'TestToken',

@@ -30,35 +30,38 @@ function App() {
   const [registryLoaded, setRegistryLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    io.getInfo()
-      .then((state: any) => {
-        setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
-        setIoContractSuccess(true);
-      })
-      .catch((error: any) => {
-        console.error(error);
-        setIoContractSuccess(false);
-        setContract('Error loading contract state');
-      })
-      .finally(() => {
-        setLoaded(true);
-      });
-    antRegistry
-      .accessControlList({
-        address: ANT_REGISTRY_ID,
-      })
-      .then((affiliatedAnts: { Owned: string[]; Controlled: string[] }) => {
-        setAnts(`\`\`\`json\n${JSON.stringify(affiliatedAnts, null, 2)}`);
-        setAntRegistrySuccess(true);
-      })
-      .catch((error: any) => {
-        console.error(error);
-        setAntRegistrySuccess(false);
-        setAnts('Error loading affiliated ants');
-      })
-      .finally(() => {
-        setRegistryLoaded(true);
-      });
+    Promise.all([
+      io
+        .getInfo()
+        .then((state: any) => {
+          setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
+          setIoContractSuccess(true);
+        })
+        .catch((error: any) => {
+          console.error(error);
+          setIoContractSuccess(false);
+          setContract('Error loading contract state');
+        })
+        .finally(() => {
+          setLoaded(true);
+        }),
+      antRegistry
+        .accessControlList({
+          address: ANT_REGISTRY_ID,
+        })
+        .then((affiliatedAnts: { Owned: string[]; Controlled: string[] }) => {
+          setAnts(`\`\`\`json\n${JSON.stringify(affiliatedAnts, null, 2)}`);
+          setAntRegistrySuccess(true);
+        })
+        .catch((error: any) => {
+          console.error(error);
+          setAntRegistrySuccess(false);
+          setAnts('Error loading affiliated ants');
+        })
+        .finally(() => {
+          setRegistryLoaded(true);
+        }),
+    ]);
   }, []);
 
   return (
