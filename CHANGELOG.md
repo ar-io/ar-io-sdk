@@ -1,3 +1,10 @@
+# [2.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.3...v2.3.0-alpha.4) (2024-09-26)
+
+
+### Bug Fixes
+
+* **types:** update types ([883ffb3](https://github.com/ar-io/ar-io-sdk/commit/883ffb35549d8fe40963489d93a6423f534d29e8))
+
 # [2.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.2...v2.3.0-alpha.3) (2024-09-26)
 
 
