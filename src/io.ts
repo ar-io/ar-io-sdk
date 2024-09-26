@@ -287,6 +287,8 @@ export interface AoIORead {
     Name: string;
     Logo: string;
     Denomination: number;
+    Handlers: string[];
+    LastTickedEpochIndex: number;
   }>;
   getTokenSupply(): Promise<number>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
