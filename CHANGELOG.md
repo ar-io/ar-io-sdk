@@ -6,6 +6,14 @@
 * **types:** fix types on ant ([3bdb3a6](https://github.com/ar-io/ar-io-sdk/commit/3bdb3a6e8c30fc55780b716ea9a05619b19bfcee))
 * **types:** remove restricted type ([b1fac75](https://github.com/ar-io/ar-io-sdk/commit/b1fac7505484bf62fde044ca0c6c9895b3678859))
 
+# [2.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.2...v2.3.0-alpha.3) (2024-09-26)
+
+
+### Bug Fixes
+
+* **types:** fix types on ant ([3bdb3a6](https://github.com/ar-io/ar-io-sdk/commit/3bdb3a6e8c30fc55780b716ea9a05619b19bfcee))
+* **types:** remove restricted type ([b1fac75](https://github.com/ar-io/ar-io-sdk/commit/b1fac7505484bf62fde044ca0c6c9895b3678859))
+
 # [2.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.1...v2.3.0-alpha.2) (2024-09-26)
 
 ### Features
