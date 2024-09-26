@@ -274,10 +274,12 @@ const info = await io.getInfo();
 
 ```json
 {
-  "name": "Testnet IO",
-  "ticker": "tIO",
-  "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-  "denomination": "6"
+  "Name": "Testnet IO",
+  "Ticker": "tIO",
+  "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "Denomination": 6,
+  "Handlers": ["_eval", "_default_"], // full list of handlers, useful for debugging
+  "LastTickedEpochIndex": 31 // epoch index of the last tick
 }
 ```
 

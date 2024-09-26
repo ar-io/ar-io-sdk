@@ -115,12 +115,16 @@ export class IOReadable implements AoIORead {
     Ticker: string;
     Logo: string;
     Denomination: number;
+    Handlers: string[];
+    LastTickedEpochIndex: number;
   }> {
     return this.process.read<{
       Name: string;
       Ticker: string;
       Logo: string;
       Denomination: number;
+      Handlers: string[];
+      LastTickedEpochIndex: number;
     }>({
       tags: [{ name: 'Action', value: 'Info' }],
     });
