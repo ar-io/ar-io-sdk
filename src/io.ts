@@ -472,7 +472,10 @@ export interface AoANTRead {
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer({ target }: { target: WalletAddress }): Promise<AoMessageResult>;
+  transfer(
+    { target }: { target: WalletAddress },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   addController(
     {
       controller,
@@ -499,14 +502,20 @@ export interface AoANTWrite extends AoANTRead {
       transactionId: string;
       ttlSeconds: number;
     },
-    options,
+    options?: WriteOptions,
   ): Promise<AoMessageResult>;
   removeRecord(
     { undername }: { undername: string },
-    options,
+    options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  setTicker({ ticker }, options): Promise<AoMessageResult>;
-  setName({ name }, options): Promise<AoMessageResult>;
+  setTicker(
+    { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }
 
 export interface AoANTRegistryRead {
