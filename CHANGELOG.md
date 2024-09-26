@@ -1,3 +1,10 @@
+## [2.2.4](https://github.com/ar-io/ar-io-sdk/compare/v2.2.3...v2.2.4) (2024-09-26)
+
+
+### Bug Fixes
+
+* **types:** update getInfo types on IO ([7a0d20d](https://github.com/ar-io/ar-io-sdk/commit/7a0d20da45373ef370617db9dc07e7bf54feab4f))
+
 ## [2.2.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3) (2024-09-25)
 
 
