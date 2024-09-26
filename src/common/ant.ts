@@ -24,6 +24,7 @@ import {
   ProcessConfiguration,
   WalletAddress,
   WithSigner,
+  WriteOptions,
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types.js';
@@ -245,8 +246,12 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.transfer({ target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async transfer({ target }: { target: string }): Promise<AoMessageResult> {
+  async transfer(
+    { target }: { target: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     const tags = [
+      ...(options?.tags ?? []),
       { name: 'Action', value: 'Transfer' },
       { name: 'Recipient', value: target },
     ];
@@ -265,12 +270,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async addController({
-    controller,
-  }: {
-    controller: string;
-  }): Promise<AoMessageResult> {
+  async addController(
+    {
+      controller,
+    }: {
+      controller: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     const tags = [
+      ...(options?.tags ?? []),
       { name: 'Action', value: 'Add-Controller' },
       { name: 'Controller', value: controller },
     ];
@@ -289,12 +298,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.removeController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async removeController({
-    controller,
-  }: {
-    controller: string;
-  }): Promise<AoMessageResult> {
+  async removeController(
+    {
+      controller,
+    }: {
+      controller: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     const tags = [
+      ...(options?.tags ?? []),
       { name: 'Action', value: 'Remove-Controller' },
       { name: 'Controller', value: controller },
     ];
@@ -315,17 +328,21 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
    * ```
    */
-  async setRecord({
-    undername,
-    transactionId,
-    ttlSeconds,
-  }: {
-    undername: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult> {
+  async setRecord(
+    {
+      undername,
+      transactionId,
+      ttlSeconds,
+    }: {
+      undername: string;
+      transactionId: string;
+      ttlSeconds: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
+        ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Record' },
         { name: 'Sub-Domain', value: undername },
         { name: 'Transaction-Id', value: transactionId },
@@ -343,13 +360,17 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.removeRecord({ subDomain: "shorts" });
    * ```
    */
-  async removeRecord({
-    undername,
-  }: {
-    undername: string;
-  }): Promise<AoMessageResult> {
+  async removeRecord(
+    {
+      undername,
+    }: {
+      undername: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
+        ...(options?.tags ?? []),
         { name: 'Action', value: 'Remove-Record' },
         { name: 'Sub-Domain', value: undername },
       ],
@@ -365,9 +386,13 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setTicker({ ticker: "KAPOW" });
    * ```
    */
-  async setTicker({ ticker }: { ticker: string }): Promise<AoMessageResult> {
+  async setTicker(
+    { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
+        ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Ticker' },
         { name: 'Ticker', value: ticker },
       ],
@@ -382,9 +407,13 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setName({ name: "ships at sea" });
    * ```
    */
-  async setName({ name }: { name: string }): Promise<AoMessageResult> {
+  async setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
+        ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Name' },
         { name: 'Name', value: name },
       ],

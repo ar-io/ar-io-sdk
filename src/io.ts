@@ -466,28 +466,40 @@ export interface AoANTRead {
 
 export interface AoANTWrite extends AoANTRead {
   transfer({ target }: { target: WalletAddress }): Promise<AoMessageResult>;
-  addController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<AoMessageResult>;
-  removeController({
-    controller,
-  }: {
-    controller: WalletAddress;
-  }): Promise<AoMessageResult>;
-  setRecord({
-    undername,
-    transactionId,
-    ttlSeconds,
-  }: {
-    undername: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult>;
-  removeRecord({ undername }: { undername: string }): Promise<AoMessageResult>;
-  setTicker({ ticker }): Promise<AoMessageResult>;
-  setName({ name }): Promise<AoMessageResult>;
+  addController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  removeController(
+    {
+      controller,
+    }: {
+      controller: WalletAddress;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setRecord(
+    {
+      undername,
+      transactionId,
+      ttlSeconds,
+    }: {
+      undername: string;
+      transactionId: string;
+      ttlSeconds: number;
+    },
+    options,
+  ): Promise<AoMessageResult>;
+  removeRecord(
+    { undername }: { undername: string },
+    options,
+  ): Promise<AoMessageResult>;
+  setTicker({ ticker }, options): Promise<AoMessageResult>;
+  setName({ name }, options): Promise<AoMessageResult>;
 }
 
 export interface AoANTRegistryRead {
