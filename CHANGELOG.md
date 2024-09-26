@@ -1,28 +1,28 @@
 # [2.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.3...v2.3.0-alpha.1) (2024-09-25)
 
+### Features
+
+* **io:** add api for querying get registration fees handler to AoIORead class ([7b3909f](https://github.com/ar-io/ar-io-sdk/commit/7b3909fb9def0e864dc59d87d1d78c9718feb830))
+
+
+## [2.2.5](https://github.com/ar-io/ar-io-sdk/compare/v2.2.4...v2.2.5) (2024-09-26)
+
+
+* **ant:** allow sending tags on ant write interactions ([99c24f8](https://github.com/ar-io/ar-io-sdk/commit/99c24f85e7e5829fb009f23702fa25243cf603da))
+
+## [2.2.4](https://github.com/ar-io/ar-io-sdk/compare/v2.2.3...v2.2.4) (2024-09-26)
+
+
+### Bug Fixes
+
+* **types:** update getInfo types on IO ([7a0d20d](https://github.com/ar-io/ar-io-sdk/commit/7a0d20da45373ef370617db9dc07e7bf54feab4f))
+
+## [2.2.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3) (2024-09-25)
 
 ### Bug Fixes
 
 * **types:** update type and tests ([877b03f](https://github.com/ar-io/ar-io-sdk/commit/877b03f4124894cafbd0bc60b9d55b8803365cec))
 
-
-### Features
-
-* **io:** add api for querying get registration fees handler to AoIORead class ([7b3909f](https://github.com/ar-io/ar-io-sdk/commit/7b3909fb9def0e864dc59d87d1d78c9718feb830))
-
-## [2.2.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3) (2024-09-25)
-
-
-### Bug Fixes
-
-* **ants:** bump lua id to zeglqubvIKvBEZaxAUuenLGGtQ1pJp9LZjd5hDe0-J0 ([ba6101d](https://github.com/ar-io/ar-io-sdk/commit/ba6101da59e889ef47d5980eca155e4d172ca121))
-
-## [2.2.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3-alpha.1) (2024-09-25)
-
-
-### Bug Fixes
-
-* **ants:** bump lua id to zeglqubvIKvBEZaxAUuenLGGtQ1pJp9LZjd5hDe0-J0 ([ba6101d](https://github.com/ar-io/ar-io-sdk/commit/ba6101da59e889ef47d5980eca155e4d172ca121))
 
 ## [2.2.2](https://github.com/ar-io/ar-io-sdk/compare/v2.2.1...v2.2.2) (2024-09-23)
 
