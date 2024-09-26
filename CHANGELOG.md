@@ -1,3 +1,12 @@
+# [2.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.1...v2.3.0-alpha.2) (2024-09-26)
+
+
+### Bug Fixes
+
+* **ant:** allow sending tags on ant write interactions ([99c24f8](https://github.com/ar-io/ar-io-sdk/commit/99c24f85e7e5829fb009f23702fa25243cf603da))
+* **main:** merge main back to alpha, release hotfixes on alpha ([9299427](https://github.com/ar-io/ar-io-sdk/commit/929942755b09204e4d142e673b82f6400b8fe596))
+* **types:** update getInfo types on IO ([7a0d20d](https://github.com/ar-io/ar-io-sdk/commit/7a0d20da45373ef370617db9dc07e7bf54feab4f))
+
 # [2.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.3...v2.3.0-alpha.1) (2024-09-25)
 
 ### Features
