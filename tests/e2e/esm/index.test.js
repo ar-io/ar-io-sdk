@@ -58,8 +58,14 @@ describe('IO', async () => {
   });
 
   it('should be able to get the process information', async () => {
-    const epoch = await io.getInfo();
-    assert.ok(epoch);
+    const info = await io.getInfo();
+    assert.ok(info);
+    assert(typeof info.Name === 'string');
+    assert(typeof info.Ticker === 'string');
+    assert(typeof info.Logo === 'string');
+    assert(typeof info.Denomination === 'number');
+    assert(Array.isArray(info.Handlers));
+    assert(typeof info.LastTickedEpochIndex === 'number');
   });
 
   it('should be able to get the total token supply', async () => {
