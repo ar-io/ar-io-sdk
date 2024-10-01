@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  AoANTInfo,
   AoANTRead,
   AoANTRecord,
   AoANTState,
@@ -78,21 +79,9 @@ export class AoANTReadable implements AoANTRead {
     return res;
   }
 
-  async getInfo(): Promise<{
-    Name: string;
-    Ticker: string;
-    Denomination: number;
-    Owner: string;
-    ['Source-Code-TX-ID']?: string;
-  }> {
+  async getInfo(): Promise<AoANTInfo> {
     const tags = [{ name: 'Action', value: 'Info' }];
-    const info = await this.process.read<{
-      Name: string;
-      Ticker: string;
-      Denomination: number;
-      Owner: string;
-      ['Source-Code-TX-ID']?: string;
-    }>({
+    const info = await this.process.read<AoANTInfo>({
       tags,
     });
     return info;
