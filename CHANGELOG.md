@@ -1,3 +1,10 @@
+# [2.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.4...v2.3.0-alpha.5) (2024-10-01)
+
+
+### Bug Fixes
+
+* **luaID:** update lua id to latest for ant source code ([9c13dd3](https://github.com/ar-io/ar-io-sdk/commit/9c13dd37b5feec69cd0a5f7dba64f85b5285888b))
+
 # [2.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.3...v2.3.0-alpha.4) (2024-09-26)
 
 
