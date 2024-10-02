@@ -1,3 +1,10 @@
+# [2.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.5...v2.3.0-alpha.6) (2024-10-02)
+
+
+### Bug Fixes
+
+* **types:** add source code tx id to ant state type ([8949f04](https://github.com/ar-io/ar-io-sdk/commit/8949f04889741cc2c895bacea4ef3831c9c2ac15))
+
 # [2.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.4...v2.3.0-alpha.5) (2024-10-01)
 
 
