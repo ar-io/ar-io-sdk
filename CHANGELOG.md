@@ -1,3 +1,10 @@
+# [2.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.6...v2.3.0-alpha.7) (2024-10-02)
+
+
+### Bug Fixes
+
+* **ao:** check messages is not empty to avoid `.length` error when evaluating outputs of `dryrun` ([a7b4953](https://github.com/ar-io/ar-io-sdk/commit/a7b495334f5d3962807de9f630518a270a6e35a6))
+
 ## [2.2.5](https://github.com/ar-io/ar-io-sdk/compare/v2.2.4...v2.2.5) (2024-09-26)
 
 
