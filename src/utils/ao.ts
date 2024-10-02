@@ -231,6 +231,7 @@ export const AntStateSchema = z
         .passthrough(),
     ),
     Balances: z.record(z.string(), z.number()),
+    ['Source-Code-TX-ID']: z.string(),
   })
   .passthrough();
 

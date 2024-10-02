@@ -247,6 +247,19 @@ export type AoANTState = {
   Logo: string;
   TotalSupply: number;
   Initialized: boolean;
+  ['Source-Code-TX-ID']: string;
+};
+
+export type AoANTInfo = {
+  Name: string;
+  Owner: string;
+  Handlers: string[];
+  ['Source-Code-TX-ID']: string;
+  // token related
+  Ticker: string;
+  ['Total-Supply']: string;
+  Logo: string;
+  Denomination: string;
 };
 
 export type AoANTRecord = {
@@ -454,13 +467,7 @@ export interface AoIOWrite extends AoIORead {
 
 export interface AoANTRead {
   getState(): Promise<AoANTState>;
-  getInfo(): Promise<{
-    Name: string;
-    Ticker: string;
-    Denomination: number;
-    Owner: string;
-    ['Source-Code-TX-ID']?: string;
-  }>;
+  getInfo(): Promise<AoANTInfo>;
   getRecord({ undername }): Promise<AoANTRecord | undefined>;
   getRecords(): Promise<Record<string, AoANTRecord>>;
   getOwner(): Promise<WalletAddress>;
