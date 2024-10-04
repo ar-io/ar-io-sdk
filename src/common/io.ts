@@ -960,4 +960,20 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       ],
     });
   }
+
+  async cancelDelegateWithdrawal(
+    params: { address: string; vaultId: string },
+    options?: WriteOptions | undefined,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Cancel-Delegate-Withdrawal' },
+        { name: 'Address', value: params.address },
+        { name: 'Vault-Id', value: params.vaultId },
+      ],
+    });
+  }
 }
