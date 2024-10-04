@@ -1,3 +1,10 @@
+# [2.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.8...v2.3.0-alpha.9) (2024-10-04)
+
+
+### Bug Fixes
+
+* **logs:** enable logging in spawn and evolve utils ([08ce71a](https://github.com/ar-io/ar-io-sdk/commit/08ce71a2cfed30b09138194d8841ff1b1adccde4))
+
 # [2.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2024-10-04)
 
 
