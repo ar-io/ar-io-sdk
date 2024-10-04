@@ -463,6 +463,13 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  cancelDelegateWithdrawal(
+    params: {
+      address: string;
+      vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }
 
 export interface AoANTRead {
