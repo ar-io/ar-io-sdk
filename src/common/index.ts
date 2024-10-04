@@ -21,3 +21,6 @@ export * from './ant-registry.js';
 // ao
 export * from './io.js';
 export * from './contracts/ao-process.js';
+
+// gateway
+export * from './gateway.js';
