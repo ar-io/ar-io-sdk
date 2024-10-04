@@ -1,3 +1,10 @@
+# [2.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2024-10-04)
+
+
+### Features
+
+* **delegates:** add cancel delegate withdrawal method ([a3827dc](https://github.com/ar-io/ar-io-sdk/commit/a3827dcd83f35e9fc9fbde26e6dbb38f88ab9f36))
+
 # [2.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.6...v2.3.0-alpha.7) (2024-10-02)
 
 
