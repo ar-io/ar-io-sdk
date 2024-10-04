@@ -15,6 +15,7 @@
  */
 import { createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
+import Arweave from 'arweave';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
@@ -43,6 +44,8 @@ export async function spawnANT({
   state,
   stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
+  logger = Logger.default,
+  arweave = defaultArweave,
 }: {
   signer: AoSigner;
   module?: string;
@@ -59,16 +62,19 @@ export async function spawnANT({
   };
   stateContractTxId?: string;
   antRegistryId?: string;
+  logger?: Logger;
+  arweave?: Arweave;
 }): Promise<string> {
   const registryClient = ANTRegistry.init({
     process: new AOProcess({
       processId: antRegistryId,
       ao,
+      logger,
     }),
     signer: signer,
   });
   //TODO: cache locally and only fetch if not cached
-  const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
+  const luaString = (await arweave.transactions.getData(luaCodeTxId, {
     decode: true,
     string: true,
   })) as string;
@@ -88,9 +94,10 @@ export async function spawnANT({
   const aosClient = new AOProcess({
     processId,
     ao,
+    logger,
   });
 
-  await aosClient.send({
+  const { id: evalId } = await aosClient.send({
     tags: [
       { name: 'Action', value: 'Eval' },
       { name: 'App-Name', value: 'ArNS-ANT' },
@@ -100,8 +107,16 @@ export async function spawnANT({
     signer,
   });
 
+  logger.info(`Spawned ANT`, {
+    processId,
+    module,
+    scheduler,
+    luaCodeTxId,
+    evalId,
+  });
+
   if (state) {
-    await aosClient.send({
+    const { id: initializeMsgId } = await aosClient.send({
       tags: [
         { name: 'Action', value: 'Initialize-State' },
         ...(stateContractTxId !== undefined
@@ -111,9 +126,25 @@ export async function spawnANT({
       data: JSON.stringify(state),
       signer,
     });
+    logger.info(`Initialized ANT`, {
+      processId,
+      module,
+      scheduler,
+      initializeMsgId,
+    });
   }
 
-  await registryClient.register({ processId });
+  const { id: antRegistrationMsgId } = await registryClient.register({
+    processId,
+  });
+
+  logger.info(`Registered ANT to ANT Registry`, {
+    processId,
+    module,
+    scheduler,
+    antRegistrationMsgId,
+    antRegistryId,
+  });
 
   return processId;
 }
@@ -123,24 +154,29 @@ export async function evolveANT({
   processId,
   luaCodeTxId = ANT_LUA_ID,
   ao = connect(),
+  logger = Logger.default,
+  arweave = defaultArweave,
 }: {
   signer: AoSigner;
   processId: string;
   luaCodeTxId?: string;
   ao?: AoClient;
+  logger?: Logger;
+  arweave?: Arweave;
 }): Promise<string> {
   const aosClient = new AOProcess({
     processId,
     ao,
+    logger,
   });
 
   //TODO: cache locally and only fetch if not cached
-  const luaString = (await defaultArweave.transactions.getData(luaCodeTxId, {
+  const luaString = (await arweave.transactions.getData(luaCodeTxId, {
     decode: true,
     string: true,
   })) as string;
 
-  const { id } = await aosClient.send({
+  const { id: evolveMsgId } = await aosClient.send({
     tags: [
       { name: 'Action', value: 'Eval' },
       { name: 'App-Name', value: 'ArNS-ANT' },
@@ -149,8 +185,13 @@ export async function evolveANT({
     data: luaString,
     signer,
   });
+  logger.info(`Evolved ANT`, {
+    processId,
+    luaCodeTxId,
+    evalMsgId: evolveMsgId,
+  });
 
-  return id;
+  return evolveMsgId;
 }
 
 export function isAoSigner(value: unknown): value is AoSigner {
