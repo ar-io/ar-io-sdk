@@ -257,7 +257,7 @@ export class AOProcess implements AOContract {
       },
       { schedulerId: null, moduleId: null },
     );
-    if (!schedulerId || !moduleId) {
+    if (schedulerId === null || moduleId === null) {
       throw new Error('Process missing required tags');
     }
 
