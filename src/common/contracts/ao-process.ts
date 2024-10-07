@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { TurboFactory, TurboSigner } from '@ardrive/turbo-sdk';
+import { Signer, createData } from '@dha-team/arbundles';
 import { connect } from '@permaweb/aoconnect';
+import Arweave from 'arweave';
+import arweaveGraphql from 'arweave-graphql';
+import pako from 'pako';
 
 import { AOContract, AoClient, AoSigner } from '../../types.js';
+import { createAoSigner } from '../../utils/ao.js';
 import { safeDecode } from '../../utils/json.js';
+import { sha256 } from '../../utils/sha256.js';
 import { version } from '../../version.js';
+import { defaultArweave } from '../arweave.js';
 import { WriteInteractionError } from '../error.js';
+import { AxiosHTTPService } from '../http.js';
 import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
@@ -204,5 +213,122 @@ export class AOProcess implements AOContract {
       }
     }
     throw lastError;
+  }
+
+  static async clone({
+    processId,
+    signer,
+    network = {
+      CU_URL: 'https://cu.ao-testnet.xyz',
+    },
+    ao = connect({
+      CU_URL: network.CU_URL,
+    }),
+    arweave = defaultArweave,
+  }: {
+    processId: string;
+    signer: Signer;
+    ao?: AoClient;
+    arweave?: Arweave;
+    network?: { CU_URL: string; SCHEDULER?: string };
+  }): Promise<{ processId: string; memory: any; checkpoint: string }> {
+    const cuService = new AxiosHTTPService({
+      url: network.CU_URL,
+    });
+    const gql = arweaveGraphql(`${arweave.getConfig().api.host}/graphql`);
+
+    // need to retrieve the process information from a gateway
+    const processTx = await gql
+      .getTransactions({
+        ids: [processId],
+      })
+      .then((res) => res.transactions.edges[0].node);
+    // parse the scheduler ID and module ID from the tags
+    const { schedulerId, moduleId } = processTx.tags.reduce(
+      (acc: { moduleId: string | null; schedulerId: string | null }, tag) => {
+        const tagName = tag.name;
+        const tagValue = tag.value;
+        if (tagName === 'Scheduler') {
+          acc.schedulerId = tagValue;
+        } else if (tag.name === 'Module') {
+          acc.moduleId = tagValue;
+        }
+        return acc;
+      },
+      { schedulerId: null, moduleId: null },
+    );
+    if (!schedulerId || !moduleId) {
+      throw new Error('Process missing required tags');
+    }
+
+    const currentMemory = await cuService.get<unknown, Uint8Array>({
+      endpoint: `/state/${processId}`,
+    });
+
+    const newProcessId = await ao.spawn({
+      scheduler: network.SCHEDULER ?? schedulerId,
+      module: moduleId,
+      tags: [
+        ...processTx.tags.filter(
+          (
+            tag, // filter out tags that are set internally by the SDK
+          ) =>
+            tag.name !== 'Scheduler' &&
+            tag.name !== 'Module' &&
+            tag.name !== 'Data-Protocol' &&
+            tag.name !== 'Variant' &&
+            tag.name !== 'Type' &&
+            tag.name !== 'SDK',
+        ),
+        { name: 'Original-Process', value: processId },
+        { name: 'AR-IO-SDK', value: version },
+      ],
+      signer: createAoSigner(signer),
+    });
+    // deploy new checkpoint with the current memory
+    const networkInfo = await arweave.network.getInfo();
+    const newCheckpointDataItem = createData(pako.gzip(currentMemory), signer, {
+      tags: [
+        { name: 'Data-Protocol', value: 'ao' },
+        { name: 'Variant', value: 'ao.TN.1' },
+        { name: 'Type', value: 'Checkpoint' },
+        { name: 'Module', value: moduleId },
+        { name: 'Process', value: newProcessId },
+        { name: 'Nonce', value: '0' },
+        { name: 'Timestamp', value: Date.now().toString() },
+        { name: 'Block-Height', value: networkInfo.height.toString() },
+        { name: 'Content-Type', value: 'application/octet-stream' },
+        {
+          name: 'SHA-256',
+          value: await sha256(currentMemory.toString()),
+        },
+        {
+          name: 'Content-Encoding',
+          value: 'gzip',
+        },
+        {
+          name: 'Original-Process',
+          value: processId,
+        },
+        {
+          name: 'AR-IO-SDK',
+          value: version,
+        },
+      ],
+    });
+    const turboAuthenticated = TurboFactory.authenticated({
+      signer: signer as TurboSigner,
+    });
+    await newCheckpointDataItem.sign(signer);
+    const checkpointRes = await turboAuthenticated.uploadSignedDataItem({
+      dataItemSizeFactory: () => newCheckpointDataItem.getRaw().length,
+      dataItemStreamFactory: () => newCheckpointDataItem.getRaw(),
+    });
+
+    return {
+      processId: newProcessId,
+      memory: currentMemory,
+      checkpoint: checkpointRes.id,
+    };
   }
 }
