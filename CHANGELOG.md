@@ -1,24 +1,3 @@
-# [2.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.8...v2.3.0-alpha.9) (2024-10-04)
-
-
-### Bug Fixes
-
-* **logs:** enable logging in spawn and evolve utils ([08ce71a](https://github.com/ar-io/ar-io-sdk/commit/08ce71a2cfed30b09138194d8841ff1b1adccde4))
-
-# [2.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2024-10-04)
-
-
-### Features
-
-* **delegates:** add cancel delegate withdrawal method ([a3827dc](https://github.com/ar-io/ar-io-sdk/commit/a3827dcd83f35e9fc9fbde26e6dbb38f88ab9f36))
-
-# [2.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0-alpha.6...v2.3.0-alpha.7) (2024-10-02)
-
-
-### Bug Fixes
-
-* **ao:** check messages is not empty to avoid `.length` error when evaluating outputs of `dryrun` ([a7b4953](https://github.com/ar-io/ar-io-sdk/commit/a7b495334f5d3962807de9f630518a270a6e35a6))
-
 ## [2.2.5](https://github.com/ar-io/ar-io-sdk/compare/v2.2.4...v2.2.5) (2024-09-26)
 
 
