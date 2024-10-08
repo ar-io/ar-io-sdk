@@ -50,6 +50,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
+    - [`cancelDelegateWithdrawal({ address, vaultId })`](#canceldelegatewithdrawal-address-vaultid-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -997,6 +998,26 @@ const { id: txId } = await io.extendLease(
 );
 ```
 
+#### `cancelDelegateWithdrawal({ address, vaultId })`
+
+Cancels a pending delegate withdrawal.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+````typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.cancelDelegateWithdrawal(
+  {
+    // gateway address where vault exists
+    address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
 ### Configuration
 
 The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO testnet process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
@@ -1014,7 +1035,7 @@ const io = IO.init({
     })
   })
 });
-```
+````
 
 ## Arweave Name Tokens (ANT's)
 
