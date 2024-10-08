@@ -66,7 +66,13 @@ export type EpochInput =
 
 // AO/IO Contract
 export type AoBalances = Record<WalletAddress, number>;
-export type AoFees = Record<string, number>;
+export type AoRegistrationFees = Record<
+  number,
+  {
+    lease: Record<number, number>;
+    permabuy: number;
+  }
+>;
 export type AoObservations = Record<number, AoEpochObservationData>;
 export type AoEpochIndex = number;
 
@@ -241,6 +247,19 @@ export type AoANTState = {
   Logo: string;
   TotalSupply: number;
   Initialized: boolean;
+  ['Source-Code-TX-ID']: string;
+};
+
+export type AoANTInfo = {
+  Name: string;
+  Owner: string;
+  Handlers: string[];
+  ['Source-Code-TX-ID']: string;
+  // token related
+  Ticker: string;
+  ['Total-Supply']: string;
+  Logo: string;
+  Denomination: string;
 };
 
 export type AoANTRecord = {
@@ -339,6 +358,7 @@ export interface AoIORead {
     name?: string;
     quantity?: number;
   }): Promise<number>;
+  getRegistrationFees(): Promise<AoRegistrationFees>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -443,17 +463,18 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  cancelDelegateWithdrawal(
+    params: {
+      address: string;
+      vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }
 
 export interface AoANTRead {
   getState(): Promise<AoANTState>;
-  getInfo(): Promise<{
-    Name: string;
-    Ticker: string;
-    Denomination: number;
-    Owner: string;
-    ['Source-Code-TX-ID']?: string;
-  }>;
+  getInfo(): Promise<AoANTInfo>;
   getRecord({ undername }): Promise<AoANTRecord | undefined>;
   getRecords(): Promise<Record<string, AoANTRecord>>;
   getOwner(): Promise<WalletAddress>;
@@ -465,7 +486,10 @@ export interface AoANTRead {
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer({ target }: { target: WalletAddress }): Promise<AoMessageResult>;
+  transfer(
+    { target }: { target: WalletAddress },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   addController(
     {
       controller,
@@ -492,14 +516,20 @@ export interface AoANTWrite extends AoANTRead {
       transactionId: string;
       ttlSeconds: number;
     },
-    options,
+    options?: WriteOptions,
   ): Promise<AoMessageResult>;
   removeRecord(
     { undername }: { undername: string },
-    options,
+    options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  setTicker({ ticker }, options): Promise<AoMessageResult>;
-  setName({ name }, options): Promise<AoMessageResult>;
+  setTicker(
+    { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setName(
+    { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }
 
 export interface AoANTRegistryRead {

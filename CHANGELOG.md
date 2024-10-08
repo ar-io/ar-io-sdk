@@ -14,17 +14,10 @@
 
 ## [2.2.3](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3) (2024-09-25)
 
-
 ### Bug Fixes
 
-* **ants:** bump lua id to zeglqubvIKvBEZaxAUuenLGGtQ1pJp9LZjd5hDe0-J0 ([ba6101d](https://github.com/ar-io/ar-io-sdk/commit/ba6101da59e889ef47d5980eca155e4d172ca121))
+* **types:** update type and tests ([877b03f](https://github.com/ar-io/ar-io-sdk/commit/877b03f4124894cafbd0bc60b9d55b8803365cec))
 
-## [2.2.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.2.2...v2.2.3-alpha.1) (2024-09-25)
-
-
-### Bug Fixes
-
-* **ants:** bump lua id to zeglqubvIKvBEZaxAUuenLGGtQ1pJp9LZjd5hDe0-J0 ([ba6101d](https://github.com/ar-io/ar-io-sdk/commit/ba6101da59e889ef47d5980eca155e4d172ca121))
 
 ## [2.2.2](https://github.com/ar-io/ar-io-sdk/compare/v2.2.1...v2.2.2) (2024-09-23)
 

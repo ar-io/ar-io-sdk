@@ -21,6 +21,7 @@ const testAoANTState = {
   Logo: ''.padEnd(43, '1'),
   TotalSupply: 0,
   Initialized: true,
+  ['Source-Code-TX-ID']: ''.padEnd(43, '1'),
 };
 describe('ANT', () => {
   it('should validate accurate ANT state', () => {

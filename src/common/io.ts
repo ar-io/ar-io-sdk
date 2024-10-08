@@ -23,6 +23,7 @@ import {
   AoGateway,
   AoIORead,
   AoIOWrite,
+  AoRegistrationFees,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -576,6 +577,12 @@ export class IOReadable implements AoIORead {
       tags: prunedTags,
     });
   }
+
+  async getRegistrationFees(): Promise<AoRegistrationFees> {
+    return this.process.read<AoRegistrationFees>({
+      tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
@@ -950,6 +957,22 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Action', value: 'Increase-Undername-Limit' },
         { name: 'Name', value: params.name },
         { name: 'Quantity', value: params.increaseCount.toString() },
+      ],
+    });
+  }
+
+  async cancelDelegateWithdrawal(
+    params: { address: string; vaultId: string },
+    options?: WriteOptions | undefined,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Cancel-Delegate-Withdrawal' },
+        { name: 'Address', value: params.address },
+        { name: 'Vault-Id', value: params.vaultId },
       ],
     });
   }

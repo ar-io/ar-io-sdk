@@ -50,6 +50,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
+    - [`cancelDelegateWithdrawal({ address, vaultId })`](#canceldelegatewithdrawal-address-vaultid-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -98,8 +99,11 @@ npm install @ar.io/sdk
 or
 
 ```shell
-yarn add @ar.io/sdk
+yarn add @ar.io/sdk --ignore-engines
 ```
+
+> [!Info]
+> The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
 
 ## Quick Start
 
@@ -997,9 +1001,29 @@ const { id: txId } = await io.extendLease(
 );
 ```
 
+#### `cancelDelegateWithdrawal({ address, vaultId })`
+
+Cancels a pending delegate withdrawal.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.cancelDelegateWithdrawal(
+  {
+    // gateway address where vault exists
+    address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
 ### Configuration
 
-The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO testnet process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
+The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO Testnet Process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
 
 ```typescript
 // provide a custom ao infrastructure and process id
@@ -1416,14 +1440,15 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 <!-- ADD ALL LINK REFERENCES BELOW -->
 
 [ar.io]: https://ar.io
+[permaweb/aoconnect]: https://github.com/permaweb/aoconnect
 [package.json]: ./package.json
 [examples]: ./examples
 [examples/webpack]: ./examples/webpack
 [examples/vite]: ./examples/vite
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
 [AO Connect]: https://github.com/permaweb/ao/tree/main/connect
-[IO testnet process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
-[IO Network spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
+[IO Testnet Process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
+[IO Network Spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
 [Winston]: https://www.npmjs.com/package/winston
 [AO]: https://github.com/permaweb/ao
 [ar-io-node repository]: https://github.com/ar-io/ar-io-node

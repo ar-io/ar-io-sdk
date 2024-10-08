@@ -60,7 +60,7 @@ export class AOProcess implements AOContract {
           tags,
         });
 
-        if (result.Messages.length === 0) {
+        if (result.Messages === undefined || result.Messages.length === 0) {
           throw new Error(
             `Process ${this.processId} does not support provided action.`,
           );
