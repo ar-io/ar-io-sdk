@@ -73,7 +73,6 @@ export type AoRegistrationFees = Record<
     permabuy: number;
   }
 >;
-export type AoObservations = Record<number, AoEpochObservationData>;
 export type AoEpochIndex = number;
 
 export interface AoIOState {
@@ -158,7 +157,7 @@ export type AoEpochSettings = {
 export type AoEpochData = {
   epochIndex: AoEpochIndex;
   startHeight: BlockHeight;
-  observations: AoObservations;
+  observations: AoEpochObservationData;
   prescribedObservers: AoWeightedObserver[];
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
