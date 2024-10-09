@@ -1,3 +1,10 @@
+## [2.3.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0...v2.3.1) (2024-10-09)
+
+
+### Bug Fixes
+
+* use AoEpochObservationData type to match what is coming back from contract ([684abf3](https://github.com/ar-io/ar-io-sdk/commit/684abf34607e62e3b9e8bb92fa4da6e202b84061))
+
 # [2.3.0](https://github.com/ar-io/ar-io-sdk/compare/v2.2.5...v2.3.0) (2024-10-08)
 
 
