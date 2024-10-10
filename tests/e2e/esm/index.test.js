@@ -364,14 +364,71 @@ describe('ANTRegistry', async () => {
 });
 
 describe('ANT', async () => {
+  const processId = 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg';
+  const ant = ANT.init({
+    processId,
+  });
+
   it('should be able to create ANTWriteable with valid signers', async () => {
     for (const signer of signers) {
-      const ant = ANT.init({
-        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+      const writeable = ANT.init({
+        processId,
         signer,
       });
 
-      assert(ant instanceof AoANTWriteable);
+      assert(writeable instanceof AoANTWriteable);
     }
+  });
+
+  it('should be able to get ANT info', async () => {
+    const info = await ant.getInfo({ processId });
+    assert.ok(info);
+  });
+
+  it('should be able to get the ANT records', async () => {
+    const records = await ant.getRecords({ processId });
+    assert.ok(records);
+  });
+
+  it('should be able to get a @ record from the ANT', async () => {
+    const record = await ant.getRecord({ undername: '@' });
+    assert.ok(record);
+  });
+
+  it('should be able to get the ANT owner', async () => {
+    const owner = await ant.getOwner();
+    assert.ok(owner);
+  });
+
+  it('should be able to get the ANT name', async () => {
+    const name = await ant.getName();
+    assert.ok(name);
+  });
+
+  it('should be able to get the ANT ticker', async () => {
+    const ticker = await ant.getTicker();
+    assert.ok(ticker);
+  });
+
+  it('should be able to get the ANT controllers', async () => {
+    const controllers = await ant.getControllers();
+    assert.ok(controllers);
+  });
+
+  it('should be able to get the ANT state', async () => {
+    const state = await ant.getState();
+    assert.ok(state);
+  });
+
+  it('should be able to get the ANT balance for an address', async () => {
+    const balance = await ant.getBalance({
+      address: '"7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+    });
+    assert.notEqual(balance, undefined);
+  });
+
+  it('should be able to get the ANT balances', async () => {
+    const balances = await ant.getBalances();
+    assert.ok(balances);
   });
 });
