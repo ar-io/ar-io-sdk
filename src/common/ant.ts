@@ -86,7 +86,13 @@ export class AoANTReadable implements AoANTRead {
     const res = await this.process.read<AoANTState>({
       tags,
     });
-    const schemaResult = AntStateSchema.safeParse(res);
+    const schemaResult = AntStateSchema.passthrough()
+      .and(
+        z.object({
+          Records: z.record(z.string(), AntRecordSchema.passthrough()),
+        }),
+      )
+      .safeParse(res);
     if (!schemaResult.success) {
       throw new Error(
         'Invalid ANT State\n' +
@@ -101,7 +107,7 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
-    const schemaResult = AntInfoSchema.safeParse(info);
+    const schemaResult = AntInfoSchema.passthrough().safeParse(info);
     if (!schemaResult.success) {
       throw new Error(
         'Invalid ANT Info\n' +
@@ -129,7 +135,7 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
-    const schemaResult = AntRecordSchema.safeParse(record);
+    const schemaResult = AntRecordSchema.passthrough().safeParse(record);
     if (!schemaResult.success) {
       throw new Error(
         'Invalid ANT Record\n' +
