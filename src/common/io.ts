@@ -17,19 +17,6 @@ import Arweave from 'arweave';
 
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
-  AoArNSNameData,
-  AoEpochData,
-  AoEpochSettings,
-  AoGateway,
-  AoIORead,
-  AoIOWrite,
-  AoRegistrationFees,
-  EpochInput,
-  isProcessConfiguration,
-  isProcessIdConfiguration,
-} from '../io.js';
-import { AoSigner, mIOToken } from '../token.js';
-import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
   AoBalanceWithAddress,
@@ -49,7 +36,20 @@ import {
   WalletAddress,
   WithSigner,
   WriteOptions,
-} from '../types.js';
+} from '../types/index.js';
+import {
+  AoArNSNameData,
+  AoEpochData,
+  AoEpochSettings,
+  AoGateway,
+  AoIORead,
+  AoIOWrite,
+  AoRegistrationFees,
+  EpochInput,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
+} from '../types/io.js';
+import { AoSigner, mIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';

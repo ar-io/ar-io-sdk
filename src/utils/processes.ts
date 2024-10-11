@@ -21,14 +21,14 @@ import { ANT } from '../common/ant.js';
 import { IO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
+import { AoANTRegistryRead } from '../types/ant-registry.js';
+import { AoANTState } from '../types/ant.js';
 import {
-  AoANTRegistryRead,
-  AoANTState,
   AoArNSNameData,
   AoIORead,
   ProcessId,
   WalletAddress,
-} from '../types.js';
+} from '../types/index.js';
 
 /**
  * @beta This API is in beta and may change in the future.

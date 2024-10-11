@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { MIO_PER_IO } from './constants.js';
+import { MIO_PER_IO } from '../constants.js';
 
 interface Equatable<T> {
   equals(other: T): boolean;

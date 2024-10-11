@@ -88,3 +88,22 @@ export interface AoClient {
   unmonitor: typeof unmonitor;
   dryrun: typeof dryrun;
 }
+
+export interface AOContract {
+  read<K>({
+    tags,
+    retries,
+  }: {
+    tags?: { name: string; value: string }[];
+    retries?: number;
+  }): Promise<K>;
+  send<K>({
+    tags,
+    data,
+    signer,
+  }: {
+    tags: { name: string; value: string }[];
+    data: string | undefined;
+    signer: AoSigner;
+  }): Promise<{ id: string; result?: K }>;
+}

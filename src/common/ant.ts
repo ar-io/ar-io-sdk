@@ -13,12 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { z } from 'zod';
+
 import {
+  AntBalancesSchema,
+  AntControllersSchema,
+  AntInfoSchema,
+  AntRecordSchema,
+  AntRecordsSchema,
+  AntStateSchema,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
   AoANTState,
   AoANTWrite,
+} from '../types/ant.js';
+import {
   AoMessageResult,
   AoSigner,
   OptionalSigner,
@@ -28,7 +38,7 @@ import {
   WriteOptions,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types.js';
+} from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
@@ -76,6 +86,7 @@ export class AoANTReadable implements AoANTRead {
     const res = await this.process.read<AoANTState>({
       tags,
     });
+    AntStateSchema.parse(res);
     return res;
   }
 
@@ -84,6 +95,7 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
+    AntInfoSchema.parse(info);
     return info;
   }
 
@@ -105,6 +117,7 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
+    AntRecordSchema.parse(record);
     return record;
   }
 
@@ -121,6 +134,7 @@ export class AoANTReadable implements AoANTRead {
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
+    AntRecordsSchema.parse(records);
     return records;
   }
 
@@ -150,6 +164,7 @@ export class AoANTReadable implements AoANTRead {
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
+    AntControllersSchema.parse(controllers);
     return controllers;
   }
 
@@ -192,6 +207,7 @@ export class AoANTReadable implements AoANTRead {
     const balances = await this.process.read<Record<string, number>>({
       tags,
     });
+    AntBalancesSchema.parse(balances);
     return balances;
   }
 
@@ -212,6 +228,7 @@ export class AoANTReadable implements AoANTRead {
     const balance = await this.process.read<number>({
       tags,
     });
+    z.number().parse(balance);
     return balance;
   }
 }

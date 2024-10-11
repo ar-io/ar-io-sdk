@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { IOToken, mIOToken } from '../../src/token.js';
+import { IOToken, mIOToken } from '../../src/types/token';
 
 describe('IOToken', () => {
   it('should throw an error on invalid input', () => {
