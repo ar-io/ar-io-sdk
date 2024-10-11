@@ -86,7 +86,13 @@ export class AoANTReadable implements AoANTRead {
     const res = await this.process.read<AoANTState>({
       tags,
     });
-    AntStateSchema.parse(res);
+    const schemaResult = AntStateSchema.safeParse(res);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT State\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return res;
   }
 
@@ -95,7 +101,13 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
-    AntInfoSchema.parse(info);
+    const schemaResult = AntInfoSchema.safeParse(info);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Info\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return info;
   }
 
@@ -117,7 +129,13 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
-    AntRecordSchema.parse(record);
+    const schemaResult = AntRecordSchema.safeParse(record);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Record\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return record;
   }
 
@@ -134,7 +152,13 @@ export class AoANTReadable implements AoANTRead {
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
-    AntRecordsSchema.parse(records);
+    const schemaResult = AntRecordsSchema.safeParse(records);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Records\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return records;
   }
 
@@ -164,7 +188,13 @@ export class AoANTReadable implements AoANTRead {
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
-    AntControllersSchema.parse(controllers);
+    const schemaResult = AntControllersSchema.safeParse(controllers);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Controllers\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return controllers;
   }
 
@@ -207,7 +237,13 @@ export class AoANTReadable implements AoANTRead {
     const balances = await this.process.read<Record<string, number>>({
       tags,
     });
-    AntBalancesSchema.parse(balances);
+    const schemaResult = AntBalancesSchema.safeParse(balances);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Balances\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return balances;
   }
 
@@ -228,7 +264,13 @@ export class AoANTReadable implements AoANTRead {
     const balance = await this.process.read<number>({
       tags,
     });
-    z.number().parse(balance);
+    const schemaResult = z.number().safeParse(balance);
+    if (!schemaResult.success) {
+      throw new Error(
+        'Invalid ANT Balance\n' +
+          JSON.stringify(schemaResult.error.format(), null, 2),
+      );
+    }
     return balance;
   }
 }

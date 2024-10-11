@@ -16,38 +16,105 @@
 import { z } from 'zod';
 
 import { Logger } from '../common/logger.js';
+import { ARWEAVE_TX_REGEX } from '../constants.js';
 import { AoMessageResult, WalletAddress, WriteOptions } from './common.js';
 
-export type AoANTState = {
-  Name: string;
-  Ticker: string;
-  Denomination: number;
-  Owner: WalletAddress;
-  Controllers: WalletAddress[];
-  Records: Record<string, AoANTRecord>;
-  Balances: Record<WalletAddress, number>;
-  Logo: string;
-  TotalSupply: number;
-  Initialized: boolean;
-  ['Source-Code-TX-ID']: string;
-};
+/**
+ * example error:
+ *  {
+        "code": "custom",
+        "message": "Must be an Arweave Transaction ID",
+        "path": [
+          "Records",
+          "record1",
+          "transactionId"
+        ]
+      },
+ */
+export const ArweaveTxIdSchema = z
+  .string({
+    description: 'Arweave Transaction ID',
+  })
+  .refine((val) => ARWEAVE_TX_REGEX.test(val), {
+    message: 'Must be an Arweave Transaction ID',
+  });
+export const AntRecordSchema = z.object({
+  transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
+  ttlSeconds: z.number(),
+});
+export type AoANTRecord = z.infer<typeof AntRecordSchema>;
 
-export type AoANTInfo = {
-  Name: string;
-  Owner: string;
-  Handlers: string[];
-  ['Source-Code-TX-ID']: string;
-  // token related
-  Ticker: string;
-  ['Total-Supply']: string;
-  Logo: string;
-  Denomination: string;
-};
+export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
+export const AntControllersSchema = z.array(
+  ArweaveTxIdSchema.describe('Controller address'),
+);
+export const AntBalancesSchema = z.record(
+  ArweaveTxIdSchema.describe('Holder address'),
+  z.number(),
+);
 
-export type AoANTRecord = {
-  transactionId: string;
-  ttlSeconds: number;
-};
+export const AntStateSchema = z.object({
+  Name: z.string().describe('The name of the ANT.'),
+  Ticker: z.string().describe('The ticker symbol for the ANT.'),
+  Denomination: z.number(),
+  Owner: ArweaveTxIdSchema.describe('The Owners address.'),
+  Controllers: AntControllersSchema.describe(
+    'Controllers of the ANT who have administrative privileges.',
+  ),
+  Records: AntRecordsSchema.describe('Records associated with the ANT.'),
+  Balances: AntBalancesSchema.describe(
+    'Balance details for each address holding the ANT.',
+  ),
+  Logo: ArweaveTxIdSchema.describe('Transaction ID of the ANT logo.'),
+  TotalSupply: z
+    .number()
+    .describe('Total supply of the ANT in circulation.')
+    .min(0, { message: 'Total supply must be a non-negative number' }),
+  Initialized: z
+    .boolean()
+    .describe('Flag indicating whether the ANT has been initialized.'),
+  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
+    'Transaction ID of the Source Code for the ANT.',
+  ),
+});
+
+export type AoANTState = z.infer<typeof AntStateSchema>;
+
+export const AntInfoSchema = z.object({
+  Name: z.string().describe('The name of the ANT.'),
+  Owner: ArweaveTxIdSchema.describe('The Owners address.'),
+  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
+    'Transaction ID of the Source Code for the ANT.',
+  ),
+  Ticker: z.string().describe('The ticker symbol for the ANT.'),
+  ['Total-Supply']: z
+    .number()
+    .describe('Total supply of the ANT in circulation.')
+    .min(0, { message: 'Total supply must be a non-negative number' }),
+  Logo: ArweaveTxIdSchema.describe('Transaction ID of the ANT logo.'),
+  Denomination: z.number(),
+});
+
+export type AoANTInfo = z.infer<typeof AntInfoSchema>;
+
+/**
+ * @param state
+ * @returns {boolean}
+ * @throws {z.ZodError} if the state object does not match the expected schema
+ */
+export function isAoANTState(
+  state: object,
+  logger: Logger = Logger.default,
+): state is AoANTState {
+  try {
+    AntStateSchema.parse(state);
+    return true;
+  } catch (error) {
+    // this allows us to see the path of the error in the object as well as the expected schema on invalid fields
+    logger.error(error.issues);
+    return false;
+  }
+}
 
 export interface AoANTRead {
   getState(): Promise<AoANTState>;
@@ -107,59 +174,4 @@ export interface AoANTWrite extends AoANTRead {
     { name }: { name: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-}
-
-export const AntRecordSchema = z
-  .object({
-    transactionId: z.string(),
-    ttlSeconds: z.number(),
-  })
-  .passthrough();
-export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
-
-export const AntControllersSchema = z.array(z.string());
-export const AntBalancesSchema = z.record(z.string(), z.number());
-
-// using passThrough to require the minimum fields and allow others (eg TotalSupply, Logo, etc)
-export const AntStateSchema = z
-  .object({
-    Name: z.string(),
-    Ticker: z.string(),
-    Owner: z.string(),
-    Controllers: AntControllersSchema,
-    Records: AntRecordsSchema,
-    Balances: AntBalancesSchema,
-    ['Source-Code-TX-ID']: z.string(),
-  })
-  .passthrough();
-
-export const AntInfoSchema = z
-  .object({
-    Name: z.string(),
-    Owner: z.string(),
-    ['Source-Code-TX-ID']: z.string(),
-    Ticker: z.string(),
-    ['Total-Supply']: z.string(),
-    Logo: z.string(),
-    Denomination: z.string(),
-  })
-  .passthrough();
-
-/**
- * @param state
- * @returns {boolean}
- * @throws {z.ZodError} if the state object does not match the expected schema
- */
-export function isAoANTState(
-  state: object,
-  logger: Logger = Logger.default,
-): state is AoANTState {
-  try {
-    AntStateSchema.parse(state);
-    return true;
-  } catch (error) {
-    // this allows us to see the path of the error in the object as well as the expected schema on invalid fields
-    logger.error(error.issues);
-    return false;
-  }
 }
