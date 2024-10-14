@@ -15,7 +15,6 @@
  */
 import { z } from 'zod';
 
-import { Logger } from '../common/logger.js';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 import { AoMessageResult, WalletAddress, WriteOptions } from './common.js';
 
@@ -93,7 +92,6 @@ export const AntStateSchema = z.object({
   ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
     'Transaction ID of the Source Code for the ANT.',
   ),
-  Handlers: z.array(z.string()),
 });
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
@@ -112,6 +110,9 @@ export const AntInfoSchema = z.object({
   Denomination: IntegerStringSchema.describe(
     'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
   ),
+  HandlerNames: z
+    .array(z.string({ description: 'Handler Name' }))
+    .describe('List of handlers for the ANT.'),
 });
 
 export type AoANTInfo = z.infer<typeof AntInfoSchema>;

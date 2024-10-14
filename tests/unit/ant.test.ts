@@ -66,6 +66,7 @@ describe('ANT Schemas', () => {
       ['Total-Supply']: '1',
       Logo: stub_address,
       Denomination: '0',
+      HandlerNames: ['handler1', 'handler2'],
     };
     const invalidInfo = {
       Name: 'TestToken',
@@ -75,6 +76,7 @@ describe('ANT Schemas', () => {
       ['Total-Supply']: 1000,
       Logo: stub_address,
       Denomination: '1',
+      HandlerNames: ['handler1', 'handler2'],
     };
 
     assert.doesNotThrow(() => AntInfoSchema.parse(validInfo));

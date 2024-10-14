@@ -364,7 +364,7 @@ describe('ANTRegistry', async () => {
 });
 
 describe('ANT', async () => {
-  const processId = 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg';
+  const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
   const ant = ANT.init({
     processId,
   });
