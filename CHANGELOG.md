@@ -1,3 +1,10 @@
+## [2.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.1...v2.3.2-alpha.1) (2024-10-14)
+
+
+### Bug Fixes
+
+* **types:** update gateways to include services ([a3fe5b4](https://github.com/ar-io/ar-io-sdk/commit/a3fe5b41725d1648f19d8e72d71e59d41bed91fe))
+
 ## [2.3.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0...v2.3.1) (2024-10-09)
 
 

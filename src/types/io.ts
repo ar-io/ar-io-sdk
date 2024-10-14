@@ -164,6 +164,19 @@ export type AoEpochData = {
   distributions: AoEpochDistributionData;
 };
 
+export type AoGatewayService = {
+  fqdn: string;
+  path: string;
+  protocol: 'https';
+  port: number;
+};
+
+export type AoGatewayServices =
+  | {
+      bundlers: AoGatewayService[];
+    }
+  | undefined; // not required, for now
+
 export type AoGateway = {
   settings: AoGatewaySettings;
   stats: AoGatewayStats;
@@ -176,6 +189,7 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   weights: AoGatewayWeights;
+  services: AoGatewayServices;
 };
 
 export type AoGatewayStats = {
