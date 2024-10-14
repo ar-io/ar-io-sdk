@@ -23,6 +23,7 @@ import {
   spawn,
   unmonitor,
 } from '@permaweb/aoconnect';
+import { z } from 'zod';
 
 import { AoSigner } from './token.js';
 

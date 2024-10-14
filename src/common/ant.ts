@@ -40,6 +40,7 @@ import {
   isProcessIdConfiguration,
 } from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
+import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
@@ -86,19 +87,15 @@ export class AoANTReadable implements AoANTRead {
     const res = await this.process.read<AoANTState>({
       tags,
     });
-    const schemaResult = AntStateSchema.passthrough()
-      .and(
+
+    parseSchemaResult(
+      AntStateSchema.passthrough().and(
         z.object({
           Records: z.record(z.string(), AntRecordSchema.passthrough()),
         }),
-      )
-      .safeParse(res);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT State\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+      ),
+      res,
+    );
     return res;
   }
 
@@ -107,13 +104,7 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
-    const schemaResult = AntInfoSchema.passthrough().safeParse(info);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Info\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(AntInfoSchema.passthrough(), info);
     return info;
   }
 
@@ -135,13 +126,7 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
-    const schemaResult = AntRecordSchema.passthrough().safeParse(record);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Record\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(AntRecordSchema.passthrough(), record);
     return record;
   }
 
@@ -158,13 +143,7 @@ export class AoANTReadable implements AoANTRead {
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
-    const schemaResult = AntRecordsSchema.safeParse(records);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Records\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(AntRecordsSchema, records);
     return records;
   }
 
@@ -194,13 +173,7 @@ export class AoANTReadable implements AoANTRead {
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
-    const schemaResult = AntControllersSchema.safeParse(controllers);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Controllers\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(AntControllersSchema, controllers);
     return controllers;
   }
 
@@ -243,13 +216,7 @@ export class AoANTReadable implements AoANTRead {
     const balances = await this.process.read<Record<string, number>>({
       tags,
     });
-    const schemaResult = AntBalancesSchema.safeParse(balances);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Balances\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(AntBalancesSchema, balances);
     return balances;
   }
 
@@ -270,13 +237,7 @@ export class AoANTReadable implements AoANTRead {
     const balance = await this.process.read<number>({
       tags,
     });
-    const schemaResult = z.number().safeParse(balance);
-    if (!schemaResult.success) {
-      throw new Error(
-        'Invalid ANT Balance\n' +
-          JSON.stringify(schemaResult.error.format(), null, 2),
-      );
-    }
+    parseSchemaResult(z.number(), balance);
     return balance;
   }
 }
