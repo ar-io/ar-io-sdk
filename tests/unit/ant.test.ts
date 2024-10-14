@@ -63,9 +63,9 @@ describe('ANT Schemas', () => {
       Owner: stub_address,
       ['Source-Code-TX-ID']: stub_address,
       Ticker: 'TST',
-      ['Total-Supply']: 1,
+      ['Total-Supply']: '1',
       Logo: stub_address,
-      Denomination: 0,
+      Denomination: '0',
     };
     const invalidInfo = {
       Name: 'TestToken',

@@ -38,6 +38,18 @@ export const ArweaveTxIdSchema = z
   .refine((val) => ARWEAVE_TX_REGEX.test(val), {
     message: 'Must be an Arweave Transaction ID',
   });
+
+export const IntegerStringSchema = z
+  .string({
+    description: 'Integer String',
+  })
+  .refine(
+    (val) => {
+      const num = parseInt(val);
+      return Number.isInteger(num) && num >= 0;
+    },
+    { message: 'Must be a non negative integer string' },
+  );
 export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
@@ -56,7 +68,12 @@ export const AntBalancesSchema = z.record(
 export const AntStateSchema = z.object({
   Name: z.string().describe('The name of the ANT.'),
   Ticker: z.string().describe('The ticker symbol for the ANT.'),
-  Denomination: z.number(),
+  Denomination: z
+    .number()
+    .describe(
+      'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
+    )
+    .min(0, { message: 'Denomination must be a non-negative number' }),
   Owner: ArweaveTxIdSchema.describe('The Owners address.'),
   Controllers: AntControllersSchema.describe(
     'Controllers of the ANT who have administrative privileges.',
@@ -87,12 +104,13 @@ export const AntInfoSchema = z.object({
     'Transaction ID of the Source Code for the ANT.',
   ),
   Ticker: z.string().describe('The ticker symbol for the ANT.'),
-  ['Total-Supply']: z
-    .number()
-    .describe('Total supply of the ANT in circulation.')
-    .min(0, { message: 'Total supply must be a non-negative number' }),
+  ['Total-Supply']: IntegerStringSchema.describe(
+    'Total supply of the ANT in circulation.',
+  ),
   Logo: ArweaveTxIdSchema.describe('Transaction ID of the ANT logo.'),
-  Denomination: z.number(),
+  Denomination: IntegerStringSchema.describe(
+    'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
+  ),
 });
 
 export type AoANTInfo = z.infer<typeof AntInfoSchema>;
