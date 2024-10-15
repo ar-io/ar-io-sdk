@@ -592,7 +592,7 @@ const demandFactor = await io.getDemandFactor();
 
 #### `getObservations({ epochIndex })`
 
-Returns the epoch-indexed observation list.
+Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -625,7 +625,7 @@ const observations = await io.getObservations();
 
 #### `getDistributions({ epochIndex })`
 
-Returns the current rewards distribution information.
+Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -661,7 +661,7 @@ const distributions = await io.getDistributions({ epochIndex: 0 });
 
 #### `getEpoch({ epochIndex })`
 
-Returns the epoch data for the specified block height.
+Returns the epoch data for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
