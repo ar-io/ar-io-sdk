@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { z } from 'zod';
 
 import {
+  AntHandlerNames,
   AntInfoSchema,
   AntStateSchema,
   isAoANTState,
@@ -66,7 +67,7 @@ describe('ANT Schemas', () => {
       ['Total-Supply']: '1',
       Logo: stub_address,
       Denomination: '0',
-      HandlerNames: ['handler1', 'handler2'],
+      Handlers: AntHandlerNames,
     };
     const invalidInfo = {
       Name: 'TestToken',
@@ -76,7 +77,7 @@ describe('ANT Schemas', () => {
       ['Total-Supply']: 1000,
       Logo: stub_address,
       Denomination: '1',
-      HandlerNames: ['handler1', 'handler2'],
+      Handlers: AntHandlerNames,
     };
 
     assert.doesNotThrow(() => AntInfoSchema.parse(validInfo));

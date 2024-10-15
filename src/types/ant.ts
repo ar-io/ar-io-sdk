@@ -49,6 +49,7 @@ export const IntegerStringSchema = z
     },
     { message: 'Must be a non negative integer string' },
   );
+
 export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
@@ -95,6 +96,37 @@ export const AntStateSchema = z.object({
 });
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
+export const AntHandlerNames = [
+  'evolve',
+  '_eval',
+  '_default',
+  'transfer',
+  'balance',
+  'balances',
+  'totalSupply',
+  'info',
+  'addController',
+  'removeController',
+  'controllers',
+  'setRecord',
+  'removeRecord',
+  'record',
+  'records',
+  'setName',
+  'setTicker',
+  'initializeState',
+  'state',
+];
+export const AntHandlersSchema = z
+  .array(z.string({ description: 'Handler Name' }))
+  .refine(
+    (antHandlers: string[]) => {
+      return AntHandlerNames.every((handler) => antHandlers.includes(handler));
+    },
+    {
+      message: 'ANT is missing required handlers',
+    },
+  );
 
 export const AntInfoSchema = z.object({
   Name: z.string().describe('The name of the ANT.'),
@@ -110,9 +142,12 @@ export const AntInfoSchema = z.object({
   Denomination: IntegerStringSchema.describe(
     'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
   ),
-  HandlerNames: z
-    .array(z.string({ description: 'Handler Name' }))
-    .describe('List of handlers for the ANT.'),
+  Handlers: AntHandlersSchema.optional().describe(
+    'List of handlers for the ANT.',
+  ),
+  HandlerNames: AntHandlersSchema.optional().describe(
+    'Deprecated: List of handlers for the ANT. Use "Handlers" instead.',
+  ),
 });
 
 export type AoANTInfo = z.infer<typeof AntInfoSchema>;
