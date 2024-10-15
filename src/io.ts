@@ -372,6 +372,7 @@ export interface AoIORead {
     quantity?: number;
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
+  getDemandFactor(): Promise<number>;
 }
 
 export interface AoIOWrite extends AoIORead {
