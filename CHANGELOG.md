@@ -1,3 +1,10 @@
+## [2.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.1...v2.3.2-alpha.2) (2024-10-15)
+
+
+### Bug Fixes
+
+* **io:** add getDemandFactor api ([feab461](https://github.com/ar-io/ar-io-sdk/commit/feab4612d4e95b0fea14a4e0fa9f17a5c57779e1))
+
 ## [2.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.1...v2.3.2-alpha.1) (2024-10-14)
 
 
