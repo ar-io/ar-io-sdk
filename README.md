@@ -592,7 +592,7 @@ const demandFactor = await io.getDemandFactor();
 
 #### `getObservations({ epochIndex })`
 
-Returns the epoch-indexed observation list.
+Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -625,11 +625,11 @@ const observations = await io.getObservations();
 
 #### `getDistributions({ epochIndex })`
 
-Returns the current rewards distribution information.
+Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
-const distributions = await io.getDistributions();
+const distributions = await io.getDistributions({ epochIndex: 0 });
 ```
 
 <details>
@@ -637,11 +637,22 @@ const distributions = await io.getDistributions();
 
 ```json
 {
+  "totalEligibleGateways": 1,
   "totalEligibleRewards": 100000000,
+  "totalEligibleObserverReward": 100000000,
+  "totalEligibleGatewayReward": 100000000,
   "totalDistributedRewards": 100000000,
   "distributedTimestamp": 1720720621424,
   "rewards": {
-    "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    "eligible": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
+        "operatorReward": 100000000,
+        "delegateRewards": {}
+      }
+    },
+    "distributed": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    }
   }
 }
 ```
@@ -650,7 +661,7 @@ const distributions = await io.getDistributions();
 
 #### `getEpoch({ epochIndex })`
 
-Returns the epoch data for the specified block height.
+Returns the epoch data for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -693,11 +704,22 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
     }
   ],
   "distributions": {
-    "distributedTimestamp": 1752256702026,
+    "totalEligibleGateways": 1,
     "totalEligibleRewards": 100000000,
-    "totoalDistributedRewards": 100000000,
+    "totalEligibleObserverReward": 100000000,
+    "totalEligibleGatewayReward": 100000000,
+    "totalDistributedRewards": 100000000,
+    "distributedTimestamp": 1720720621424,
     "rewards": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+      "eligible": {
+        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
+          "operatorReward": 100000000,
+          "delegateRewards": {}
+        }
+      },
+      "distributed": {
+        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+      }
     }
   }
 }
