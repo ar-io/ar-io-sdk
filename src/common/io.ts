@@ -583,6 +583,12 @@ export class IOReadable implements AoIORead {
       tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
     });
   }
+
+  async getDemandFactor(): Promise<number> {
+    return this.process.read<number>({
+      tags: [{ name: 'Action', value: 'Demand-Factor' }],
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {

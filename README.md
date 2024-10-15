@@ -33,6 +33,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
+    - [`getDemandFactor()`](#getdemandfactor)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
@@ -567,6 +568,24 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
   "sortBy": "startTimestamp",
   "sortOrder": "desc"
 }
+```
+
+</details>
+
+#### `getDemandFactor()`
+
+Retrieves the current demand factor of the network. The demand factor is a multiplier applied to the cost of ArNS interactions based on the current network demand.
+
+```typescript
+const io = IO.init();
+const demandFactor = await io.getDemandFactor();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+1.05256
 ```
 
 </details>
