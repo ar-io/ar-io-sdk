@@ -53,6 +53,7 @@ export class AOProcess implements AOContract {
       try {
         this.logger.debug(`Evaluating read interaction on contract`, {
           tags,
+          processId: this.processId,
         });
         // map tags to inputs
         const result = await this.ao.dryrun({
@@ -86,8 +87,9 @@ export class AOProcess implements AOContract {
       } catch (e) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
-          error: e,
+          error: e.message,
           tags,
+          processId: this.processId,
         });
         lastError = e;
         // exponential backoff

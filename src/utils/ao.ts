@@ -19,17 +19,19 @@ import Arweave from 'arweave';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
-import { ANTRegistry, AOProcess, Logger } from '../common/index.js';
+import { ANT, ANTRegistry, AOProcess, IO, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
   AOS_MODULE_ID,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
+import { KVStore, NodeCacheKVStore } from '../lib/node-cache-kv-store.js';
 import {
   AoANTRecord,
   AoANTState,
   AoClient,
+  AoIORead,
   AoSigner,
   ContractSigner,
   WalletAddress,
@@ -292,5 +294,163 @@ export function isAoANTState(
     // this allows us to see the path of the error in the object as well as the expected schema on invalid fields
     logger.error(error.issues);
     return false;
+  }
+}
+
+export class ArNSResolver {
+  private readonly io: AoIORead;
+  private readonly logger: Logger;
+  private readonly forwardCache: KVStore;
+  private readonly reverseCache: KVStore;
+
+  private readonly ao: AoClient;
+  constructor({
+    io = IO.init(),
+    ao = connect(),
+    logger = Logger.default,
+    forwardCache = new NodeCacheKVStore({
+      ttlSeconds: 60 * 5,
+    }),
+    reverseCache = new NodeCacheKVStore({
+      ttlSeconds: 60 * 5,
+    }),
+  }: {
+    io?: AoIORead;
+    ao?: AoClient;
+    arweave?: Arweave;
+    logger?: Logger;
+    forwardCache?: KVStore;
+    reverseCache?: KVStore;
+  }) {
+    this.io = io;
+    this.logger = logger;
+    this.ao = ao;
+    this.forwardCache = forwardCache;
+    this.reverseCache = reverseCache;
+  }
+
+  async resolveArNSName({ name }: { name: string }): Promise<
+    | {
+        name: string;
+        transactionId: string;
+        ttlSeconds: number;
+        processId: string;
+      }
+    | undefined
+  > {
+    // split name based on underscore, last element is the apex name
+    const nameParts = name.split('_');
+    const apexName = nameParts[nameParts.length - 1];
+    const undername = nameParts.slice(0, -1).join('_') || '@';
+
+    // get the process id
+    const record = await this.io.getArNSRecord({ name: apexName });
+
+    if (!record) {
+      return undefined;
+    }
+
+    const ant = ANT.init({
+      process: new AOProcess({
+        processId: record.processId,
+        ao: this.ao,
+        logger: this.logger,
+      }),
+    });
+
+    const undernameRecord = await ant.getRecord({ undername });
+
+    if (!undernameRecord) {
+      return undefined;
+    }
+
+    // confirm transaction id is not empty
+    if (
+      !undernameRecord.transactionId ||
+      undernameRecord.transactionId === '' ||
+      undernameRecord.transactionId === undefined
+    ) {
+      return undefined;
+    }
+
+    // update forward cache, do not update the reverse cache to avoid resetting the TTL and preventing names from being removed
+    this.forwardCache.set(name, undernameRecord.transactionId);
+
+    return {
+      name,
+      transactionId: undernameRecord.transactionId,
+      ttlSeconds: undernameRecord.ttlSeconds,
+      processId: record.processId,
+    };
+  }
+
+  async lookupAssociatedArNSNames({
+    txId,
+  }: {
+    txId: string;
+  }): Promise<string[]> {
+    // get the associated names from the reverse cache
+    const cachedNames = this.reverseCache.get(txId);
+    if (cachedNames !== undefined) {
+      this.logger.debug(`Found cached names for txId: ${txId}`, {
+        cachedNames,
+      });
+      return cachedNames.split(',');
+    }
+
+    const associatedNames: string[] = [];
+    let cursor: string | undefined = undefined;
+    do {
+      this.logger.debug(`Fetching ArNS records for txId: ${txId}`, {
+        cursor,
+      });
+      const { items: arnsRecords, nextCursor } = await this.io.getArNSRecords({
+        cursor,
+        limit: 1000,
+      });
+
+      for (const arnsRecord of arnsRecords) {
+        const ant = ANT.init({
+          process: new AOProcess({
+            processId: arnsRecord.processId,
+            ao: this.ao,
+            logger: this.logger,
+          }),
+        });
+        const antRecords = await ant.getRecords().catch((e) => {
+          this.logger.error(`Error getting records for ${arnsRecord.name}`, {
+            error: e,
+            processId: arnsRecord.processId,
+          });
+          return {};
+        });
+        // we can hydrate both caches here since we have the process id and undername while we are here
+        for (const [key, value] of Object.entries(antRecords)) {
+          const cacheKey =
+            key === '@' ? arnsRecord.name : `${arnsRecord.name}_${key}`;
+          this.forwardCache.set(cacheKey, value.transactionId);
+          if (value.transactionId === txId) {
+            this.logger.debug(`Found associated name: ${key}`, {
+              cacheKey,
+              txId,
+            });
+            associatedNames.push(key);
+          }
+        }
+      }
+      cursor = nextCursor;
+    } while (cursor !== undefined);
+
+    // update our reverse cache with the associated names
+    this.reverseCache.set(txId, associatedNames.join(','));
+
+    this.logger.debug(
+      `Found ${associatedNames.length} associated names for txId: ${txId}`,
+      {
+        associatedNames,
+      },
+    );
+
+    return associatedNames;
   }
 }
