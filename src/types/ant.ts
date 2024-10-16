@@ -160,17 +160,25 @@ export function isAoANTState(state: object): state is AoANTState {
   return AntStateSchema.safeParse(state).success;
 }
 
+export type AntReadOptions = { strict?: boolean };
+
 export interface AoANTRead {
-  getState(): Promise<AoANTState>;
-  getInfo(): Promise<AoANTInfo>;
-  getRecord({ undername }): Promise<AoANTRecord | undefined>;
-  getRecords(): Promise<Record<string, AoANTRecord>>;
-  getOwner(): Promise<WalletAddress>;
+  getState(opts?: AntReadOptions): Promise<AoANTState>;
+  getInfo(opts?: AntReadOptions): Promise<AoANTInfo>;
+  getRecord(
+    { undername }: { undername: string },
+    opts?: AntReadOptions,
+  ): Promise<AoANTRecord | undefined>;
+  getRecords(opts?: AntReadOptions): Promise<Record<string, AoANTRecord>>;
+  getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
-  getTicker(): Promise<string>;
-  getName(): Promise<string>;
-  getBalance({ address }: { address: WalletAddress }): Promise<number>;
-  getBalances(): Promise<Record<WalletAddress, number>>;
+  getTicker(opts?: AntReadOptions): Promise<string>;
+  getName(opts?: AntReadOptions): Promise<string>;
+  getBalance(
+    { address }: { address: WalletAddress },
+    opts?: AntReadOptions,
+  ): Promise<number>;
+  getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
 }
 
 export interface AoANTWrite extends AoANTRead {
