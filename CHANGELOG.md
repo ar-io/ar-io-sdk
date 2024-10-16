@@ -1,31 +1,3 @@
-## [2.3.2-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.3...v2.3.2-alpha.4) (2024-10-16)
-
-
-### Bug Fixes
-
-* **io:** update `getTokenSupply` to type that returns full breakdown of tokens ([e790055](https://github.com/ar-io/ar-io-sdk/commit/e790055d03df0786c93db54d4d3294160fac1ad5))
-
-## [2.3.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.2...v2.3.2-alpha.3) (2024-10-15)
-
-
-### Bug Fixes
-
-* **types:** add `totalEligibleGateways` to `AoEpochDistributionData` type ([9a35d39](https://github.com/ar-io/ar-io-sdk/commit/9a35d39ed811076a03a392cd5ac7b8f2ce878d98))
-
-## [2.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.1...v2.3.2-alpha.2) (2024-10-15)
-
-
-### Bug Fixes
-
-* **io:** add getDemandFactor api ([feab461](https://github.com/ar-io/ar-io-sdk/commit/feab4612d4e95b0fea14a4e0fa9f17a5c57779e1))
-
-## [2.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.1...v2.3.2-alpha.1) (2024-10-14)
-
-
-### Bug Fixes
-
-* **types:** update gateways to include services ([a3fe5b4](https://github.com/ar-io/ar-io-sdk/commit/a3fe5b41725d1648f19d8e72d71e59d41bed91fe))
-
 ## [2.3.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.0...v2.3.1) (2024-10-09)
 
 
