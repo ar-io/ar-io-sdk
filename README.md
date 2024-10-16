@@ -298,8 +298,8 @@ Retrieves the total supply of tokens, returned in mIO. The total supply includes
 - `circulating` - the total supply minus locked, withdrawn, delegated, and staked
 - `locked` - tokens that are locked in the protocol (a.k.a. vaulted)
 - `withdrawn` - tokens that have been withdrawn from the protocol by operators and delegators
-- `delegated` - tokens that have been delegated to other gateways
-- `staked` - tokens that are staked in the protocol
+- `delegated` - tokens that have been delegated to gateways
+- `staked` - tokens that are staked in the protocol by gateway operators
 - `protocolBalance` - tokens that are held in the protocol's treasury. This is included in the circulating supply.
 
 ```typescript
