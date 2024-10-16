@@ -103,7 +103,7 @@ or
 yarn add @ar.io/sdk --ignore-engines
 ```
 
-> [!Info]
+> [!NOTE]
 > The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
 
 ## Quick Start
@@ -292,12 +292,37 @@ const info = await io.getInfo();
 
 #### `getTokenSupply()`
 
-Retrieves the total supply of tokens, returned in mIO.
+Retrieves the total supply of tokens, returned in mIO. The total supply includes the following:
+
+- `total` - the total supply of all tokens
+- `circulating` - the total supply minus locked, withdrawn, delegated, and staked
+- `locked` - tokens that are locked in the protocol (a.k.a. vaulted)
+- `withdrawn` - tokens that have been withdrawn from the protocol by operators and delegators
+- `delegated` - tokens that have been delegated to gateways
+- `staked` - tokens that are staked in the protocol by gateway operators
+- `protocolBalance` - tokens that are held in the protocol's treasury. This is included in the circulating supply.
 
 ```typescript
 const io = IO.init();
-const supply = await io.getTokenSupply().then((s) => new mIOToken(s).toIO()); // convert it to IO for readability
+const supply = await io.getTokenSupply();
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "total": 1000000000000000000,
+  "circulating": 998094653842520,
+  "locked": 0,
+  "withdrawn": 560563387278,
+  "delegated": 1750000000,
+  "staked": 1343032770199,
+  "protocolBalance": 46317263683761
+}
+```
+
+</details>
 
 #### `getBalance({ address })`
 
