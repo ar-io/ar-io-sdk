@@ -294,6 +294,7 @@ const info = await io.getInfo();
 
 Retrieves the total supply of tokens, returned in mIO. The total supply includes the following:
 
+- `total` - the total supply of all tokens
 - `circulating` - the total supply minus locked, withdrawn, delegated, and staked
 - `locked` - tokens that are locked in the protocol (a.k.a. vaulted)
 - `withdrawn` - tokens that have been withdrawn from the protocol by operators and delegators
