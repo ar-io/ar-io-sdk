@@ -33,6 +33,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
+    - [`getDemandFactor()`](#getdemandfactor)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
@@ -102,7 +103,7 @@ or
 yarn add @ar.io/sdk --ignore-engines
 ```
 
-> [!Info]
+> [!NOTE]
 > The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
 
 ## Quick Start
@@ -291,12 +292,37 @@ const info = await io.getInfo();
 
 #### `getTokenSupply()`
 
-Retrieves the total supply of tokens, returned in mIO.
+Retrieves the total supply of tokens, returned in mIO. The total supply includes the following:
+
+- `total` - the total supply of all tokens
+- `circulating` - the total supply minus locked, withdrawn, delegated, and staked
+- `locked` - tokens that are locked in the protocol (a.k.a. vaulted)
+- `withdrawn` - tokens that have been withdrawn from the protocol by operators and delegators
+- `delegated` - tokens that have been delegated to gateways
+- `staked` - tokens that are staked in the protocol by gateway operators
+- `protocolBalance` - tokens that are held in the protocol's treasury. This is included in the circulating supply.
 
 ```typescript
 const io = IO.init();
-const supply = await io.getTokenSupply().then((s) => new mIOToken(s).toIO()); // convert it to IO for readability
+const supply = await io.getTokenSupply();
 ```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "total": 1000000000000000000,
+  "circulating": 998094653842520,
+  "locked": 0,
+  "withdrawn": 560563387278,
+  "delegated": 1750000000,
+  "staked": 1343032770199,
+  "protocolBalance": 46317263683761
+}
+```
+
+</details>
 
 #### `getBalance({ address })`
 
@@ -571,9 +597,27 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 
 </details>
 
+#### `getDemandFactor()`
+
+Retrieves the current demand factor of the network. The demand factor is a multiplier applied to the cost of ArNS interactions based on the current network demand.
+
+```typescript
+const io = IO.init();
+const demandFactor = await io.getDemandFactor();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+1.05256
+```
+
+</details>
+
 #### `getObservations({ epochIndex })`
 
-Returns the epoch-indexed observation list.
+Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -606,11 +650,11 @@ const observations = await io.getObservations();
 
 #### `getDistributions({ epochIndex })`
 
-Returns the current rewards distribution information.
+Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
-const distributions = await io.getDistributions();
+const distributions = await io.getDistributions({ epochIndex: 0 });
 ```
 
 <details>
@@ -618,11 +662,22 @@ const distributions = await io.getDistributions();
 
 ```json
 {
+  "totalEligibleGateways": 1,
   "totalEligibleRewards": 100000000,
+  "totalEligibleObserverReward": 100000000,
+  "totalEligibleGatewayReward": 100000000,
   "totalDistributedRewards": 100000000,
   "distributedTimestamp": 1720720621424,
   "rewards": {
-    "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    "eligible": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
+        "operatorReward": 100000000,
+        "delegateRewards": {}
+      }
+    },
+    "distributed": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+    }
   }
 }
 ```
@@ -631,7 +686,7 @@ const distributions = await io.getDistributions();
 
 #### `getEpoch({ epochIndex })`
 
-Returns the epoch data for the specified block height.
+Returns the epoch data for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
@@ -674,11 +729,22 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
     }
   ],
   "distributions": {
-    "distributedTimestamp": 1752256702026,
+    "totalEligibleGateways": 1,
     "totalEligibleRewards": 100000000,
-    "totoalDistributedRewards": 100000000,
+    "totalEligibleObserverReward": 100000000,
+    "totalEligibleGatewayReward": 100000000,
+    "totalDistributedRewards": 100000000,
+    "distributedTimestamp": 1720720621424,
     "rewards": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+      "eligible": {
+        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
+          "operatorReward": 100000000,
+          "delegateRewards": {}
+        }
+      },
+      "distributed": {
+        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
+      }
     }
   }
 }

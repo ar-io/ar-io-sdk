@@ -38,6 +38,7 @@ import {
   AoGatewayWithAddress,
   AoJoinNetworkParams,
   AoMessageResult,
+  AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
   ContractSigner,
@@ -131,8 +132,8 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getTokenSupply(): Promise<number> {
-    return this.process.read<number>({
+  async getTokenSupply(): Promise<AoTokenSupplyData> {
+    return this.process.read<AoTokenSupplyData>({
       tags: [{ name: 'Action', value: 'Total-Token-Supply' }],
     });
   }
@@ -581,6 +582,12 @@ export class IOReadable implements AoIORead {
   async getRegistrationFees(): Promise<AoRegistrationFees> {
     return this.process.read<AoRegistrationFees>({
       tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
+    });
+  }
+
+  async getDemandFactor(): Promise<number> {
+    return this.process.read<number>({
+      tags: [{ name: 'Action', value: 'Demand-Factor' }],
     });
   }
 }

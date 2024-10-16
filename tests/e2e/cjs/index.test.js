@@ -121,8 +121,13 @@ describe('IO', async () => {
     assert.ok(arns);
   });
 
-  it('should be able to get the current epoch', async () => {
+  it('should be able to get the current epoch using getCurrentEpoch', async () => {
     const epoch = await io.getCurrentEpoch();
+    assert.ok(epoch);
+  });
+
+  it('should be able to get the current epoch using getEpoch', async () => {
+    const epoch = await io.getEpoch({ epochIndex: 0 });
     assert.ok(epoch);
   });
 

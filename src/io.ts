@@ -114,6 +114,7 @@ export type AoEpochDistributionRewards = {
 
 export type AoEpochDistributionData = {
   rewards: AoEpochDistributionRewards;
+  totalEligibleGateways: number;
   totalEligibleRewards: number;
   totalEligibleObserverReward: number;
   totalEligibleGatewayReward: number;
@@ -165,6 +166,29 @@ export type AoEpochData = {
   distributions: AoEpochDistributionData;
 };
 
+export type AoTokenSupplyData = {
+  total: number;
+  circulating: number;
+  locked: number;
+  withdrawn: number;
+  delegated: number;
+  staked: number;
+  protocolBalance: number;
+};
+
+export type AoGatewayService = {
+  fqdn: string;
+  path: string;
+  protocol: 'https';
+  port: number;
+};
+
+export type AoGatewayServices =
+  | {
+      bundlers: AoGatewayService[];
+    }
+  | undefined; // not required, for now
+
 export type AoGateway = {
   settings: AoGatewaySettings;
   stats: AoGatewayStats;
@@ -177,6 +201,7 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   weights: AoGatewayWeights;
+  services: AoGatewayServices;
 };
 
 export type AoGatewayStats = {
@@ -308,7 +333,7 @@ export interface AoIORead {
     Handlers: string[];
     LastTickedEpochIndex: number;
   }>;
-  getTokenSupply(): Promise<number>;
+  getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
   getGateway({
     address,
@@ -358,6 +383,7 @@ export interface AoIORead {
     quantity?: number;
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
+  getDemandFactor(): Promise<number>;
 }
 
 export interface AoIOWrite extends AoIORead {
