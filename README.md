@@ -103,7 +103,7 @@ or
 yarn add @ar.io/sdk --ignore-engines
 ```
 
-> [!Info]
+> [!NOTE]
 > The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
 
 ## Quick Start
