@@ -16,3 +16,4 @@
 export * from './common.js';
 export * from './token.js';
 export * from './io.js';
+export * from './gateway.js';
