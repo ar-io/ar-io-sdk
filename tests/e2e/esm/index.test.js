@@ -71,6 +71,13 @@ describe('IO', async () => {
   it('should be able to get the total token supply', async () => {
     const tokenSupply = await io.getTokenSupply();
     assert.ok(tokenSupply);
+    assert(typeof tokenSupply.total === 'number');
+    assert(typeof tokenSupply.circulating === 'number');
+    assert(typeof tokenSupply.locked === 'number');
+    assert(typeof tokenSupply.withdrawn === 'number');
+    assert(typeof tokenSupply.delegated === 'number');
+    assert(typeof tokenSupply.staked === 'number');
+    assert(typeof tokenSupply.protocolBalance === 'number');
   });
 
   it('should be able to get first set of arns records', async () => {

@@ -166,6 +166,16 @@ export type AoEpochData = {
   distributions: AoEpochDistributionData;
 };
 
+export type AoTokenSupplyData = {
+  total: number;
+  circulating: number;
+  locked: number;
+  withdrawn: number;
+  delegated: number;
+  staked: number;
+  protocolBalance: number;
+};
+
 export type AoGatewayService = {
   fqdn: string;
   path: string;
@@ -323,7 +333,7 @@ export interface AoIORead {
     Handlers: string[];
     LastTickedEpochIndex: number;
   }>;
-  getTokenSupply(): Promise<number>;
+  getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
   getGateway({
     address,
