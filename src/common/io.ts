@@ -38,6 +38,7 @@ import {
   AoGatewayWithAddress,
   AoJoinNetworkParams,
   AoMessageResult,
+  AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
   ContractSigner,
@@ -131,8 +132,8 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getTokenSupply(): Promise<number> {
-    return this.process.read<number>({
+  async getTokenSupply(): Promise<AoTokenSupplyData> {
+    return this.process.read<AoTokenSupplyData>({
       tags: [{ name: 'Action', value: 'Total-Token-Supply' }],
     });
   }
