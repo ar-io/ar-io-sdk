@@ -403,7 +403,7 @@ describe('ANT', async () => {
     assert(controllers);
     const records = await ant.getRecords({ strict });
     assert(records);
-    const record = await ant.getRecord({ name: 'ardrive' }, { strict });
+    const record = await ant.getRecord({ undername: 'ardrive' }, { strict });
     assert(record);
   });
   it(`should be able to read methods when strict is false`, async () => {
@@ -427,7 +427,7 @@ describe('ANT', async () => {
     assert(controllers);
     const records = await ant.getRecords({ strict });
     assert(records);
-    const record = await ant.getRecord({ name: 'ardrive' }, { strict });
+    const record = await ant.getRecord({ undername: 'ardrive' }, { strict });
     assert(record);
   });
 });
