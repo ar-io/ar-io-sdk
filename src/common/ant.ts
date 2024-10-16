@@ -45,22 +45,30 @@ import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
   static init(
-    config: Required<ProcessConfiguration> & { signer?: undefined },
+    config: Required<ProcessConfiguration> & {
+      signer?: undefined;
+      strict?: boolean;
+    },
   ): AoANTRead;
   static init({
     signer,
     ...config
-  }: WithSigner<Required<ProcessConfiguration>>): AoANTWrite;
+  }: WithSigner<Required<ProcessConfiguration>> & {
+    strict?: boolean;
+  }): AoANTWrite;
   static init({
     signer,
+    strict = false,
     ...config
-  }: OptionalSigner<Required<ProcessConfiguration>>): AoANTRead | AoANTWrite {
+  }: OptionalSigner<Required<ProcessConfiguration>> & { strict?: boolean }):
+    | AoANTRead
+    | AoANTWrite {
     // ao supported implementation
     if (isProcessConfiguration(config) || isProcessIdConfiguration(config)) {
       if (!signer) {
-        return new AoANTReadable(config);
+        return new AoANTReadable({ strict, ...config });
       }
-      return new AoANTWriteable({ signer, ...config });
+      return new AoANTWriteable({ signer, strict, ...config });
     }
 
     throw new InvalidContractConfigurationError();
@@ -69,8 +77,10 @@ export class ANT {
 
 export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
+  private strict: boolean;
 
-  constructor(config: Required<ProcessConfiguration>) {
+  constructor(config: Required<ProcessConfiguration> & { strict?: boolean }) {
+    this.strict = config.strict || false;
     if (isProcessConfiguration(config)) {
       this.process = config.process;
     } else if (isProcessIdConfiguration(config)) {
@@ -87,15 +97,17 @@ export class AoANTReadable implements AoANTRead {
     const res = await this.process.read<AoANTState>({
       tags,
     });
+    if (this.strict) {
+      parseSchemaResult(
+        AntStateSchema.passthrough().and(
+          z.object({
+            Records: z.record(z.string(), AntRecordSchema.passthrough()),
+          }),
+        ),
+        res,
+      );
+    }
 
-    parseSchemaResult(
-      AntStateSchema.passthrough().and(
-        z.object({
-          Records: z.record(z.string(), AntRecordSchema.passthrough()),
-        }),
-      ),
-      res,
-    );
     return res;
   }
 
@@ -104,7 +116,9 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
-    parseSchemaResult(AntInfoSchema.passthrough(), info);
+    if (this.strict) {
+      parseSchemaResult(AntInfoSchema.passthrough(), info);
+    }
     return info;
   }
 
@@ -126,7 +140,8 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
-    parseSchemaResult(AntRecordSchema.passthrough(), record);
+    if (this.strict) parseSchemaResult(AntRecordSchema.passthrough(), record);
+
     return record;
   }
 
@@ -143,7 +158,7 @@ export class AoANTReadable implements AoANTRead {
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
-    parseSchemaResult(AntRecordsSchema, records);
+    if (this.strict) parseSchemaResult(AntRecordsSchema, records);
     return records;
   }
 
@@ -173,7 +188,7 @@ export class AoANTReadable implements AoANTRead {
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
-    parseSchemaResult(AntControllersSchema, controllers);
+    if (this.strict) parseSchemaResult(AntControllersSchema, controllers);
     return controllers;
   }
 
@@ -216,7 +231,7 @@ export class AoANTReadable implements AoANTRead {
     const balances = await this.process.read<Record<string, number>>({
       tags,
     });
-    parseSchemaResult(AntBalancesSchema, balances);
+    if (this.strict) parseSchemaResult(AntBalancesSchema, balances);
     return balances;
   }
 
@@ -237,7 +252,7 @@ export class AoANTReadable implements AoANTRead {
     const balance = await this.process.read<number>({
       tags,
     });
-    parseSchemaResult(z.number(), balance);
+    if (this.strict) parseSchemaResult(z.number(), balance);
     return balance;
   }
 }
@@ -248,7 +263,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   constructor({
     signer,
     ...config
-  }: WithSigner<Required<ProcessConfiguration>>) {
+  }: WithSigner<Required<ProcessConfiguration>> & { strict?: boolean }) {
     super(config);
     this.signer = createAoSigner(signer);
   }

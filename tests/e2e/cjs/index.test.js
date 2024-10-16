@@ -359,6 +359,7 @@ describe('ANT', async () => {
       const ant = ANT.init({
         processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
         signer,
+        strict: true,
       });
 
       assert(ant instanceof AoANTWriteable);

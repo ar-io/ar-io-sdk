@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import './App.css';
 
 const contractTxId = 'ilwT4ObFQ7cGPbW-8z-h7mvvWGt_yhWNlqxNjSUgiYY';
-const antContract = ANT.init({ contractTxId });
+const antContract = ANT.init({ contractTxId, strict: true });
 
 function App() {
   const [contract, setContract] = useState<string>('Loading...');

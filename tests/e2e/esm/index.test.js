@@ -367,6 +367,7 @@ describe('ANT', async () => {
   const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
   const ant = ANT.init({
     processId,
+    strict: true,
   });
 
   it('should be able to create ANTWriteable with valid signers', async () => {
@@ -374,6 +375,7 @@ describe('ANT', async () => {
       const writeable = ANT.init({
         processId,
         signer,
+        strict: true,
       });
 
       assert(writeable instanceof AoANTWriteable);
