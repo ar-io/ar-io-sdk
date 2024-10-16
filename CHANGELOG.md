@@ -1,3 +1,10 @@
+## [2.3.2-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.3...v2.3.2-alpha.4) (2024-10-16)
+
+
+### Bug Fixes
+
+* **io:** update `getTokenSupply` to type that returns full breakdown of tokens ([e790055](https://github.com/ar-io/ar-io-sdk/commit/e790055d03df0786c93db54d4d3294160fac1ad5))
+
 ## [2.3.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.2...v2.3.2-alpha.3) (2024-10-15)
 
 
