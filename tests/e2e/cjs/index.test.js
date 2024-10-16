@@ -361,8 +361,14 @@ describe('ANT', async () => {
         signer,
         strict: true,
       });
+      const strictAnt = ANT.init({
+        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+        signer,
+        strict: true,
+      });
 
       assert(ant instanceof AoANTWriteable);
+      assert(strictAnt instanceof AoANTWriteable);
     }
   });
 });

@@ -372,13 +372,19 @@ describe('ANT', async () => {
 
   it('should be able to create ANTWriteable with valid signers', async () => {
     for (const signer of signers) {
-      const writeable = ANT.init({
+      const nonStrictAnt = ANT.init({
+        processId,
+        signer,
+        strict: true,
+      });
+      const strictAnt = ANT.init({
         processId,
         signer,
         strict: true,
       });
 
-      assert(writeable instanceof AoANTWriteable);
+      assert(nonStrictAnt instanceof AoANTWriteable);
+      assert(strictAnt instanceof AoANTWriteable);
     }
   });
 
