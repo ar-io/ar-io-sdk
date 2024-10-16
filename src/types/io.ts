@@ -113,6 +113,7 @@ export type AoEpochDistributionRewards = {
 
 export type AoEpochDistributionData = {
   rewards: AoEpochDistributionRewards;
+  totalEligibleGateways: number;
   totalEligibleRewards: number;
   totalEligibleObserverReward: number;
   totalEligibleGatewayReward: number;

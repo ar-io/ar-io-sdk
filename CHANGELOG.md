@@ -1,3 +1,10 @@
+## [2.3.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.2...v2.3.2-alpha.3) (2024-10-15)
+
+
+### Bug Fixes
+
+* **types:** add `totalEligibleGateways` to `AoEpochDistributionData` type ([9a35d39](https://github.com/ar-io/ar-io-sdk/commit/9a35d39ed811076a03a392cd5ac7b8f2ce878d98))
+
 ## [2.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2-alpha.1...v2.3.2-alpha.2) (2024-10-15)
 
 

@@ -334,6 +334,31 @@ describe('IO', async () => {
     }
   });
 
+  it('should be able to get current epoch distributions', async () => {
+    const distributions = await io.getDistributions();
+    assert.ok(distributions);
+  });
+
+  it('should be able to get epoch distributions at a specific epoch', async () => {
+    const distributions = await io.getDistributions({ epochIndex: 0 });
+    assert.ok(distributions);
+  });
+
+  it('should be able to get current epoch observations', async () => {
+    const observations = await io.getObservations();
+    assert.ok(observations);
+  });
+
+  it('should be able to get epoch observations at a specific epoch', async () => {
+    const observations = await io.getObservations({ epochIndex: 0 });
+    assert.ok(observations);
+  });
+
+  it('should be able to get current demand factor', async () => {
+    const demandFactor = await io.getDemandFactor();
+    assert.ok(demandFactor);
+  });
+
   it('should be able to create IOWriteable with valid signers', async () => {
     for (const signer of signers) {
       const io = IO.init({ signer });
