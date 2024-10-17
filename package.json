@@ -123,6 +123,7 @@
     "axios": "1.7.7",
     "axios-retry": "^4.3.0",
     "eventemitter3": "^5.0.1",
+    "node-cache": "^5.1.2",
     "plimit-lit": "^3.0.1",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
