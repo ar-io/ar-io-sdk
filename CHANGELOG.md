@@ -1,3 +1,22 @@
+## [2.3.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.3.3-alpha.1) (2024-10-17)
+
+
+### Bug Fixes
+
+* **schema:** add strict mode to ANT with default to false ([4864abf](https://github.com/ar-io/ar-io-sdk/commit/4864abf361ffb6fdef877f52833194beb228cfbf))
+* **schemas:** add passthrough on schema checks for ants ([9cb2776](https://github.com/ar-io/ar-io-sdk/commit/9cb2776da4a9886a1467abbf51b7c4f814bdb7a6))
+* **schemas:** add zod schemas and tests ([feba587](https://github.com/ar-io/ar-io-sdk/commit/feba5873e7efd47f314f5e22561d0d0e07c26908))
+* **schema:** specify HandlerNames instead of Handlers ([44cc472](https://github.com/ar-io/ar-io-sdk/commit/44cc472139ddc9462f024b4f6877643fcedec034))
+* **schemas:** update ant schema and tests ([f3284ed](https://github.com/ar-io/ar-io-sdk/commit/f3284ed038cebc8ddacae3ac0de3f740dcf86106))
+* **schema:** update handlers schema ([6ec52e4](https://github.com/ar-io/ar-io-sdk/commit/6ec52e4b07b5731f9388239ada9fd0f64373b445))
+* **strict:** allow for passing in strict mode on apis ([e147220](https://github.com/ar-io/ar-io-sdk/commit/e14722032c79baefb9729fac2f5a328168797005))
+* **test:** correct params for get record ([f999c49](https://github.com/ar-io/ar-io-sdk/commit/f999c498192edc8da2419016ec5b3f7f27f6e728))
+* **tests:** add esm tests and remove redundant cjs tests ([95244ea](https://github.com/ar-io/ar-io-sdk/commit/95244ea820ac5970b5c4ee3abad92a765765df33))
+* **tests:** add js path on imports ([db1520a](https://github.com/ar-io/ar-io-sdk/commit/db1520a0f2dc9b5045ce0db56f46fddf7456474d))
+* **tests:** simplify strict check on test ([62c9140](https://github.com/ar-io/ar-io-sdk/commit/62c914086b936b0c91cea757709941c1987f3ade))
+* **util:** create schema parsing util to pretty format errors ([367537a](https://github.com/ar-io/ar-io-sdk/commit/367537a07b97180bfffee6cf0d6133cc03afdc4e))
+* **validations:** add zod schema validations on ant returns ([163c2f1](https://github.com/ar-io/ar-io-sdk/commit/163c2f188a362d1ffb41e7cb3ba6deee9fe5147e))
+
 ## [2.3.2](https://github.com/ar-io/ar-io-sdk/compare/v2.3.1...v2.3.2) (2024-10-16)
 
 
