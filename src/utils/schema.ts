@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { BlockHeight } from '../types/common.js';
+import { z } from 'zod';
 
-export const validateArweaveId = (id: string): boolean => {
-  return ARWEAVE_TX_REGEX.test(id);
-};
-
-export function isBlockHeight(height: string | number): height is BlockHeight {
-  return height !== undefined && !isNaN(parseInt(height.toString()));
+/**
+ *
+ * @param schema - zod schema
+ * @param v - value to parse
+ * @throws {z.SafeParseError<any>} - if the value fails to parse
+ */
+export function parseSchemaResult(schema: z.ZodTypeAny, v: unknown) {
+  const schemaResult = schema.safeParse(v);
+  if (!schemaResult.success) {
+    throw new Error(JSON.stringify(schemaResult.error.format(), null, 2));
+  }
+  return schemaResult;
 }

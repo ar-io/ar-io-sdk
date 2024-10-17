@@ -18,3 +18,4 @@ export * from './http-client.js';
 export * from './ao.js';
 export * from './json.js';
 export * from './processes.js';
+export * from './schema.js';

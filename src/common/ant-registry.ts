@@ -17,6 +17,8 @@ import { ANT_REGISTRY_ID } from '../constants.js';
 import {
   AoANTRegistryRead,
   AoANTRegistryWrite,
+} from '../types/ant-registry.js';
+import {
   AoMessageResult,
   AoSigner,
   OptionalSigner,
@@ -24,7 +26,7 @@ import {
   WithSigner,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types.js';
+} from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 

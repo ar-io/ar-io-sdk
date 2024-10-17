@@ -15,7 +15,7 @@
  */
 import { connect } from '@permaweb/aoconnect';
 
-import { AOContract, AoClient, AoSigner } from '../../types.js';
+import { AOContract, AoClient, AoSigner } from '../../types/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';

@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { BlockHeight } from '../types/common.js';
+import { AoMessageResult } from './common.js';
 
-export const validateArweaveId = (id: string): boolean => {
-  return ARWEAVE_TX_REGEX.test(id);
-};
+export interface AoANTRegistryRead {
+  accessControlList(params: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }>;
+}
 
-export function isBlockHeight(height: string | number): height is BlockHeight {
-  return height !== undefined && !isNaN(parseInt(height.toString()));
+export interface AoANTRegistryWrite extends AoANTRegistryRead {
+  register(params: { processId: string }): Promise<AoMessageResult>;
 }

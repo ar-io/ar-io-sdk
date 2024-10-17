@@ -30,12 +30,14 @@ const signers = [
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
 
+const aoClient = connect({
+  CU_URL: 'http://localhost:6363',
+});
+
 const io = IO.init({
   process: new AOProcess({
     processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
-    ao: connect({
-      CU_URL: 'http://localhost:6363',
-    }),
+    ao: aoClient,
   }),
 });
 
@@ -359,14 +361,24 @@ describe('ANTRegistry', async () => {
 });
 
 describe('ANT', async () => {
+  const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
   it('should be able to create ANTWriteable with valid signers', async () => {
     for (const signer of signers) {
       const ant = ANT.init({
-        processId: 'aWI_dq1JH7facsulLuas1X3l5dkKuWtixcZDYMw9mpg',
+        processId,
         signer,
+        strict: true,
+        ao: aoClient,
+      });
+      const strictAnt = ANT.init({
+        processId,
+        signer,
+        strict: true,
+        ao: aoClient,
       });
 
       assert(ant instanceof AoANTWriteable);
+      assert(strictAnt instanceof AoANTWriteable);
     }
   });
 });

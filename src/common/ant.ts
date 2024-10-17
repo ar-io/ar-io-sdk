@@ -13,12 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { z } from 'zod';
+
 import {
+  AntBalancesSchema,
+  AntControllersSchema,
+  AntInfoSchema,
+  AntReadOptions,
+  AntRecordSchema,
+  AntRecordsSchema,
+  AntStateSchema,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
   AoANTState,
   AoANTWrite,
+} from '../types/ant.js';
+import {
   AoMessageResult,
   AoSigner,
   OptionalSigner,
@@ -28,28 +39,37 @@ import {
   WriteOptions,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types.js';
+} from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
+import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 export class ANT {
   static init(
-    config: Required<ProcessConfiguration> & { signer?: undefined },
+    config: Required<ProcessConfiguration> & {
+      signer?: undefined;
+      strict?: boolean;
+    },
   ): AoANTRead;
   static init({
     signer,
     ...config
-  }: WithSigner<Required<ProcessConfiguration>>): AoANTWrite;
+  }: WithSigner<Required<ProcessConfiguration>> & {
+    strict?: boolean;
+  }): AoANTWrite;
   static init({
     signer,
+    strict = false,
     ...config
-  }: OptionalSigner<Required<ProcessConfiguration>>): AoANTRead | AoANTWrite {
+  }: OptionalSigner<Required<ProcessConfiguration>> & { strict?: boolean }):
+    | AoANTRead
+    | AoANTWrite {
     // ao supported implementation
     if (isProcessConfiguration(config) || isProcessIdConfiguration(config)) {
       if (!signer) {
-        return new AoANTReadable(config);
+        return new AoANTReadable({ strict, ...config });
       }
-      return new AoANTWriteable({ signer, ...config });
+      return new AoANTWriteable({ signer, strict, ...config });
     }
 
     throw new InvalidContractConfigurationError();
@@ -58,8 +78,10 @@ export class ANT {
 
 export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
+  private strict: boolean;
 
-  constructor(config: Required<ProcessConfiguration>) {
+  constructor(config: Required<ProcessConfiguration> & { strict?: boolean }) {
+    this.strict = config.strict || false;
     if (isProcessConfiguration(config)) {
       this.process = config.process;
     } else if (isProcessIdConfiguration(config)) {
@@ -71,19 +93,37 @@ export class AoANTReadable implements AoANTRead {
     }
   }
 
-  async getState(): Promise<AoANTState> {
+  async getState(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<AoANTState> {
     const tags = [{ name: 'Action', value: 'State' }];
     const res = await this.process.read<AoANTState>({
       tags,
     });
+    if (strict) {
+      parseSchemaResult(
+        AntStateSchema.passthrough().and(
+          z.object({
+            Records: z.record(z.string(), AntRecordSchema.passthrough()),
+          }),
+        ),
+        res,
+      );
+    }
+
     return res;
   }
 
-  async getInfo(): Promise<AoANTInfo> {
+  async getInfo(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<AoANTInfo> {
     const tags = [{ name: 'Action', value: 'Info' }];
     const info = await this.process.read<AoANTInfo>({
       tags,
     });
+    if (strict) {
+      parseSchemaResult(AntInfoSchema.passthrough(), info);
+    }
     return info;
   }
 
@@ -96,7 +136,10 @@ export class AoANTReadable implements AoANTRead {
    * ant.getRecord({ undername: "john" });
    * ```
    */
-  async getRecord({ undername }: { undername: string }): Promise<AoANTRecord> {
+  async getRecord(
+    { undername }: { undername: string },
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<AoANTRecord> {
     const tags = [
       { name: 'Sub-Domain', value: undername },
       { name: 'Action', value: 'Record' },
@@ -105,6 +148,8 @@ export class AoANTReadable implements AoANTRead {
     const record = await this.process.read<AoANTRecord>({
       tags,
     });
+    if (strict) parseSchemaResult(AntRecordSchema.passthrough(), record);
+
     return record;
   }
 
@@ -116,11 +161,14 @@ export class AoANTReadable implements AoANTRead {
    * ant.getRecords();
    * ````
    */
-  async getRecords(): Promise<Record<string, AoANTRecord>> {
+  async getRecords(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<Record<string, AoANTRecord>> {
     const tags = [{ name: 'Action', value: 'Records' }];
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
+    if (strict) parseSchemaResult(AntRecordsSchema, records);
     return records;
   }
 
@@ -132,8 +180,10 @@ export class AoANTReadable implements AoANTRead {
    *  ant.getOwner();
    * ```
    */
-  async getOwner(): Promise<string> {
-    const info = await this.getInfo();
+  async getOwner(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<string> {
+    const info = await this.getInfo({ strict });
     return info.Owner;
   }
 
@@ -145,11 +195,14 @@ export class AoANTReadable implements AoANTRead {
    * ant.getControllers();
    * ```
    */
-  async getControllers(): Promise<WalletAddress[]> {
+  async getControllers(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<WalletAddress[]> {
     const tags = [{ name: 'Action', value: 'Controllers' }];
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
     });
+    if (strict) parseSchemaResult(AntControllersSchema, controllers);
     return controllers;
   }
 
@@ -161,8 +214,10 @@ export class AoANTReadable implements AoANTRead {
    * ant.getName();
    * ```
    */
-  async getName(): Promise<string> {
-    const info = await this.getInfo();
+  async getName(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<string> {
+    const info = await this.getInfo({ strict });
     return info.Name;
   }
 
@@ -174,8 +229,10 @@ export class AoANTReadable implements AoANTRead {
    * ant.getTicker();
    * ```
    */
-  async getTicker(): Promise<string> {
-    const info = await this.getInfo();
+  async getTicker(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<string> {
+    const info = await this.getInfo({ strict });
     return info.Ticker;
   }
 
@@ -187,11 +244,14 @@ export class AoANTReadable implements AoANTRead {
    * ant.getBalances();
    * ```
    */
-  async getBalances(): Promise<Record<string, number>> {
+  async getBalances(
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<Record<string, number>> {
     const tags = [{ name: 'Action', value: 'Balances' }];
     const balances = await this.process.read<Record<string, number>>({
       tags,
     });
+    if (strict) parseSchemaResult(AntBalancesSchema, balances);
     return balances;
   }
 
@@ -204,7 +264,10 @@ export class AoANTReadable implements AoANTRead {
    * ant.getBalance({ address });
    * ```
    */
-  async getBalance({ address }: { address: string }): Promise<number> {
+  async getBalance(
+    { address }: { address: string },
+    { strict }: AntReadOptions = { strict: this.strict },
+  ): Promise<number> {
     const tags = [
       { name: 'Action', value: 'Balance' },
       { name: 'Recipient', value: address },
@@ -212,6 +275,7 @@ export class AoANTReadable implements AoANTRead {
     const balance = await this.process.read<number>({
       tags,
     });
+    if (strict) parseSchemaResult(z.number(), balance);
     return balance;
   }
 }
@@ -222,7 +286,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   constructor({
     signer,
     ...config
-  }: WithSigner<Required<ProcessConfiguration>>) {
+  }: WithSigner<Required<ProcessConfiguration>> & { strict?: boolean }) {
     super(config);
     this.signer = createAoSigner(signer);
   }

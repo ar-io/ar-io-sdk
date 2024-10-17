@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AOProcess } from './common/index.js';
-import { mIOToken } from './token.js';
+import { AOProcess } from '../common/index.js';
+import { validateArweaveId } from '../utils/arweave.js';
 import {
   AoMessageResult,
-  AoSigner,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -25,8 +24,8 @@ import {
   TransactionId,
   WalletAddress,
   WriteOptions,
-} from './types.js';
-import { validateArweaveId } from './utils/arweave.js';
+} from './index.js';
+import { mIOToken } from './token.js';
 
 // Pagination
 
@@ -258,39 +257,6 @@ export type AoBalanceWithAddress = {
   balance: number;
 };
 
-// ANT Contract
-
-export type AoANTState = {
-  Name: string;
-  Ticker: string;
-  Denomination: number;
-  Owner: WalletAddress;
-  Controllers: WalletAddress[];
-  Records: Record<string, AoANTRecord>;
-  Balances: Record<WalletAddress, number>;
-  Logo: string;
-  TotalSupply: number;
-  Initialized: boolean;
-  ['Source-Code-TX-ID']: string;
-};
-
-export type AoANTInfo = {
-  Name: string;
-  Owner: string;
-  Handlers: string[];
-  ['Source-Code-TX-ID']: string;
-  // token related
-  Ticker: string;
-  ['Total-Supply']: string;
-  Logo: string;
-  Denomination: string;
-};
-
-export type AoANTRecord = {
-  transactionId: string;
-  ttlSeconds: number;
-};
-
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -303,25 +269,6 @@ export type AoJoinNetworkParams = Pick<
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
 
 // Interfaces
-
-export interface AOContract {
-  read<K>({
-    tags,
-    retries,
-  }: {
-    tags?: { name: string; value: string }[];
-    retries?: number;
-  }): Promise<K>;
-  send<K>({
-    tags,
-    data,
-    signer,
-  }: {
-    tags: { name: string; value: string }[];
-    data: string | undefined;
-    signer: AoSigner;
-  }): Promise<{ id: string; result?: K }>;
-}
 
 export interface AoIORead {
   // read interactions
@@ -495,76 +442,6 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-}
-
-export interface AoANTRead {
-  getState(): Promise<AoANTState>;
-  getInfo(): Promise<AoANTInfo>;
-  getRecord({ undername }): Promise<AoANTRecord | undefined>;
-  getRecords(): Promise<Record<string, AoANTRecord>>;
-  getOwner(): Promise<WalletAddress>;
-  getControllers(): Promise<WalletAddress[]>;
-  getTicker(): Promise<string>;
-  getName(): Promise<string>;
-  getBalance({ address }: { address: WalletAddress }): Promise<number>;
-  getBalances(): Promise<Record<WalletAddress, number>>;
-}
-
-export interface AoANTWrite extends AoANTRead {
-  transfer(
-    { target }: { target: WalletAddress },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  addController(
-    {
-      controller,
-    }: {
-      controller: WalletAddress;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  removeController(
-    {
-      controller,
-    }: {
-      controller: WalletAddress;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    }: {
-      undername: string;
-      transactionId: string;
-      ttlSeconds: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  removeRecord(
-    { undername }: { undername: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setTicker(
-    { ticker }: { ticker: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setName(
-    { name }: { name: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-}
-
-export interface AoANTRegistryRead {
-  accessControlList(params: {
-    address: string;
-  }): Promise<{ Owned: string[]; Controlled: string[] }>;
-}
-
-export interface AoANTRegistryWrite extends AoANTRegistryRead {
-  register(params: { processId: string }): Promise<AoMessageResult>;
 }
 
 // Typeguard functions
