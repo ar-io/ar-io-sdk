@@ -399,6 +399,7 @@ describe('ANT', async () => {
   const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
   const ant = ANT.init({
     processId,
+    strict: true,
   });
 
   it('should be able to create ANTWriteable with valid signers', async () => {
@@ -420,17 +421,17 @@ describe('ANT', async () => {
   });
 
   it('should be able to get ANT info', async () => {
-    const info = await ant.getInfo({ strict: true });
+    const info = await ant.getInfo();
     assert.ok(info);
   });
 
   it('should be able to get the ANT records', async () => {
-    const records = await ant.getRecords({ strict: true }, { strict: true });
+    const records = await ant.getRecords();
     assert.ok(records);
   });
 
   it('should be able to get a @ record from the ANT', async () => {
-    const record = await ant.getRecord({ undername: '@' }, { strict: true });
+    const record = await ant.getRecord({ undername: '@' });
     assert.ok(record);
   });
 
@@ -455,22 +456,19 @@ describe('ANT', async () => {
   });
 
   it('should be able to get the ANT state', async () => {
-    const state = await ant.getState({ strict: true });
+    const state = await ant.getState();
     assert.ok(state);
   });
 
   it('should be able to get the ANT balance for an address', async () => {
-    const balance = await ant.getBalance(
-      {
-        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-      },
-      { strict: true },
-    );
+    const balance = await ant.getBalance({
+      address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+    });
     assert.notEqual(balance, undefined);
   });
 
   it('should be able to get the ANT balances', async () => {
-    const balances = await ant.getBalances({ strict: true });
+    const balances = await ant.getBalances();
     assert.ok(balances);
   });
 });
