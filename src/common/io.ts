@@ -19,6 +19,7 @@ import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
+  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -590,6 +591,39 @@ export class IOReadable implements AoIORead {
       tags: [{ name: 'Action', value: 'Demand-Factor' }],
     });
   }
+
+  // Auctions
+  async getAuctions(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoAuction>> {
+    const allTags = [
+      { name: 'Action', value: 'Auctions' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoAuction>>({
+      tags: prunedTags,
+    });
+  }
+
+  async getAuction({ name }: { name: string }): Promise<AoAuction | undefined> {
+    return this.process.read<AoAuction | undefined>({
+      tags: [
+        { name: 'Action', value: 'Auction-Info' },
+        { name: 'Name', value: name },
+      ],
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
@@ -1003,6 +1037,32 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Address', value: params.address },
         { name: 'Vault-Id', value: params.vaultId },
       ],
+    });
+  }
+
+  async submitAuctionBid(
+    params: { name: string; processId: string; quantity?: number },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Submit-Auction-Bid' },
+      { name: 'Name', value: params.name },
+      { name: 'Process-Id', value: params.processId },
+      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send({
+      signer: this.signer,
+      tags: prunedTags,
     });
   }
 }

@@ -257,6 +257,26 @@ export type AoBalanceWithAddress = {
   balance: number;
 };
 
+// Auctions
+export type AoAuctionSettings = {
+  durationMs: number;
+  decayRate: number;
+  scalingExponent: number;
+  baseFee: number;
+  demandFactor: number;
+};
+
+export type AoAuction = {
+  name: string;
+  type: 'permabuy' | 'lease';
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+  startPrice: number;
+  floorPrice: number;
+  currentPrice: number;
+  settings: AoAuctionSettings;
+};
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -331,6 +351,8 @@ export interface AoIORead {
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+  getAuctions(params?: PaginationParams): Promise<PaginationResult<AoAuction>>;
+  getAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -447,6 +469,14 @@ export interface AoIOWrite extends AoIORead {
     params: {
       address: string;
       vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  submitAuctionBid(
+    params: {
+      name: string;
+      processId: string;
+      quantity?: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

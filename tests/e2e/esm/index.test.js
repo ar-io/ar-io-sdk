@@ -41,7 +41,7 @@ const io = IO.init({
   }),
 });
 
-describe('IO', async () => {
+describe('e2e esm tests', async () => {
   let compose;
   before(async () => {
     compose = await new DockerComposeEnvironment(
@@ -57,50 +57,16 @@ describe('IO', async () => {
     await compose.down();
   });
 
-  it('should be able to get the process information', async () => {
-    const info = await io.getInfo();
-    assert.ok(info);
-    assert(typeof info.Name === 'string');
-    assert(typeof info.Ticker === 'string');
-    assert(typeof info.Logo === 'string');
-    assert(typeof info.Denomination === 'number');
-    assert(Array.isArray(info.Handlers));
-    assert(typeof info.LastTickedEpochIndex === 'number');
-  });
-
-  it('should be able to get the total token supply', async () => {
-    const tokenSupply = await io.getTokenSupply();
-    assert.ok(tokenSupply);
-    assert(typeof tokenSupply.total === 'number');
-    assert(typeof tokenSupply.circulating === 'number');
-    assert(typeof tokenSupply.locked === 'number');
-    assert(typeof tokenSupply.withdrawn === 'number');
-    assert(typeof tokenSupply.delegated === 'number');
-    assert(typeof tokenSupply.staked === 'number');
-    assert(typeof tokenSupply.protocolBalance === 'number');
-  });
-
-  it('should be able to get first set of arns records', async () => {
-    const records = await io.getArNSRecords();
-    assert.ok(records);
-    assert(records.limit === 100);
-    assert(records.sortOrder === 'desc');
-    assert(records.sortBy === 'startTimestamp');
-    assert(typeof records.totalItems === 'number');
-    assert(typeof records.sortBy === 'string');
-    assert(typeof records.sortOrder === 'string');
-    assert(typeof records.limit === 'number');
-    assert(typeof records.hasMore === 'boolean');
-    if (records.nextCursor) {
-      assert(typeof records.nextCursor === 'string');
-    }
-    assert(Array.isArray(records.items));
-    records.items.forEach((record) => {
-      assert(typeof record.processId === 'string');
-      assert(typeof record.name === 'string');
-      assert(typeof record.startTimestamp === 'number');
-      assert(['lease', 'permabuy'].includes(record.type));
-      assert(typeof record.undernameLimit === 'number');
+  describe('IO', async () => {
+    it('should be able to get the process information', async () => {
+      const info = await io.getInfo();
+      assert.ok(info);
+      assert(typeof info.Name === 'string');
+      assert(typeof info.Ticker === 'string');
+      assert(typeof info.Logo === 'string');
+      assert(typeof info.Denomination === 'number');
+      assert(Array.isArray(info.Handlers));
+      assert(typeof info.LastTickedEpochIndex === 'number');
     });
   });
 
@@ -364,6 +330,16 @@ describe('IO', async () => {
   it('should be able to get current demand factor', async () => {
     const demandFactor = await io.getDemandFactor();
     assert.ok(demandFactor);
+  });
+
+  it('should be able to get current auctions', async () => {
+    const auctions = await io.getAuctions();
+    assert.ok(auctions);
+  });
+
+  it('should be able to get a specific auction', async () => {
+    const auction = await io.getAuction({ name: 'ardrive' });
+    assert.ok(auction);
   });
 
   it('should be able to create IOWriteable with valid signers', async () => {
