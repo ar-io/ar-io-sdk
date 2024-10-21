@@ -264,15 +264,13 @@ export type AoAuctionSettings = {
   scalingExponent: number;
   baseFee: number;
   demandFactor: number;
+  startPriceMultiplier: number;
 };
 
 export type AoAuction = {
   name: string;
-  type: 'permabuy' | 'lease';
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
-  startPrice: number;
-  floorPrice: number;
   currentPrice: number;
   settings: AoAuctionSettings;
 };
@@ -338,13 +336,13 @@ export interface AoIORead {
   getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
   getTokenCost({
     intent,
-    purchaseType,
+    type,
     years,
     name,
     quantity,
   }: {
     intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    purchaseType?: 'permabuy' | 'lease';
+    type?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
@@ -352,7 +350,18 @@ export interface AoIORead {
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getAuctions(params?: PaginationParams): Promise<PaginationResult<AoAuction>>;
-  getAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
+  getAuction({
+    name,
+    type,
+    timestamp,
+    years,
+  }: {
+    name: string;
+    type: 'permabuy' | 'lease';
+    timestamp?: number;
+    years?: number;
+    // TODO: include prices, which is a separate message
+  }): Promise<AoAuction | undefined>;
 }
 
 export interface AoIOWrite extends AoIORead {
