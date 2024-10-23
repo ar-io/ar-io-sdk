@@ -837,7 +837,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Action', value: 'Decrease-Delegate-Stake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
-        { name: 'Instant', value: `${params.instant || false}`,
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
     });
   }
