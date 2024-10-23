@@ -28,10 +28,8 @@ function App() {
   const [auctions, setAuctions] = useState<AuctionWithPrices[]>([]);
 
   useEffect(() => {
-    console.log('fetching auctions', io);
     io.getAuctions().then((page: PaginationResult<AoAuction>) => {
       page.items.forEach((auction: AoAuction) => {
-        console.log('auction', auction);
         io.getAuctionPrices({ name: auction.name, type: 'lease' }).then(
           (price: AoAuctionPriceData) => {
             const arrayOfPrices = Object.entries(price.prices)
