@@ -1,3 +1,17 @@
+# [2.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.3-alpha.1...v2.4.0-alpha.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* **delegates:** fixes type ([ae7be5c](https://github.com/ar-io/ar-io-sdk/commit/ae7be5caaa79f470eb9755c05c85467e98643d55))
+* **lint:** add lint fix and missing bracket ([72446aa](https://github.com/ar-io/ar-io-sdk/commit/72446aa0c1bfa8c69faf7781022a098c0e57d960))
+* **tag:** small tweak to instant tag ([663de6f](https://github.com/ar-io/ar-io-sdk/commit/663de6f04557549f010f12d435c303e051d00501))
+
+
+### Features
+
+* **delegates:** add instant delegate withdrawal for a fee ([4b4cb8f](https://github.com/ar-io/ar-io-sdk/commit/4b4cb8f6e6ee98c875541df21a0845f6069501f7))
+
 ## [2.3.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.3.3-alpha.1) (2024-10-17)
 
 
