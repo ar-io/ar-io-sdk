@@ -628,16 +628,29 @@ export class IOReadable implements AoIORead {
     });
   }
 
+  /**
+   * Get auction prices for a given auction at the provided intervals
+   *
+   * @param {Object} params - The parameters for fetching auction prices
+   * @param {string} params.name - The name of the auction
+   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
+   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
+   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
+   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
+   * @returns {Promise<AoAuctionPriceData>} The auction price data
+   */
   async getAuctionPrices({
     name,
     type,
     years,
     timestamp,
+    intervalMs,
   }: {
     name: string;
     type?: 'permabuy' | 'lease';
     years?: number;
     timestamp?: number;
+    intervalMs?: number;
   }): Promise<AoAuctionPriceData> {
     const prunedPriceTags: { name: string; value: string }[] = [
       { name: 'Action', value: 'Auction-Prices' },
@@ -653,6 +666,10 @@ export class IOReadable implements AoIORead {
           type == undefined || type === 'lease'
             ? years?.toString() ?? '1'
             : undefined,
+      },
+      {
+        name: 'Price-Interval-Ms',
+        value: intervalMs?.toString() ?? '900000',
       },
     ].filter(
       (tag): tag is { name: string; value: string } => tag.value !== undefined,

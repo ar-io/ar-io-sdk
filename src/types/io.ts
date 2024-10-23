@@ -357,18 +357,20 @@ export interface AoIORead {
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getAuctions(params?: PaginationParams): Promise<PaginationResult<AoAuction>>;
-  getAuction({
+  getAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
+  getAuctionPrices({
     name,
     type,
-    timestamp,
     years,
+    timestamp,
+    intervalMs,
   }: {
     name: string;
-    type: 'permabuy' | 'lease';
-    timestamp?: number;
+    type: 'lease' | 'permabuy';
     years?: number;
-    // TODO: include prices, which is a separate message
-  }): Promise<AoAuction | undefined>;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData>;
 }
 
 export interface AoIOWrite extends AoIORead {
