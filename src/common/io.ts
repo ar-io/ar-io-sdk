@@ -824,6 +824,39 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       decreaseQty: number | mIOToken;
+      instant: boolean;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    if (params.instant == true) {
+      return this.process.send({
+        signer: this.signer,
+        tags: [
+          ...tags,
+          { name: 'Action', value: 'Decrease-Delegate-Stake' },
+          { name: 'Target', value: params.target },
+          { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+          { name: 'Instant', value: 'true' },
+        ],
+      });
+    } else {
+      return this.process.send({
+        signer: this.signer,
+        tags: [
+          ...tags,
+          { name: 'Action', value: 'Decrease-Delegate-Stake' },
+          { name: 'Target', value: params.target },
+          { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        ],
+      });
+    }
+  }
+
+  async instantDelegateWithdrawal(
+    params: {
+      target: string;
+      vaultId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -834,7 +867,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         ...tags,
         { name: 'Action', value: 'Decrease-Delegate-Stake' },
         { name: 'Target', value: params.target },
-        { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Vault-Id', value: params.vaultId },
       ],
     });
   }
