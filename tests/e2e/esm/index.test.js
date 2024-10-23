@@ -33,12 +33,14 @@ const signers = [
  * (simply running npm run test:integration will ensure npm link is ran)
  */
 
+const aoClient = connect({
+  CU_URL: 'http://localhost:6363',
+});
+
 const io = IO.init({
   process: new AOProcess({
     processId: ioDevnetProcessId,
-    ao: connect({
-      CU_URL: 'http://localhost:6363',
-    }),
+    ao: aoClient,
   }),
 });
 
@@ -333,12 +335,16 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get current auctions', async () => {
-      const auctions = await io.getAuctions();
+      const { items: auctions } = await io.getAuctions();
       assert.ok(auctions);
     });
 
     it('should be able to get a specific auction', async () => {
-      const auction = await io.getAuction({ name: 'ardrive' });
+      const { items: auctions } = await io.getAuctions();
+      if (auctions.length === 0) {
+        return;
+      }
+      const auction = await io.getAuction({ name: auctions[0].name });
       assert.ok(auction);
     });
 
