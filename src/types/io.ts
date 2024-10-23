@@ -262,8 +262,6 @@ export type AoAuctionSettings = {
   durationMs: number;
   decayRate: number;
   scalingExponent: number;
-  baseFee: number;
-  demandFactor: number;
   startPriceMultiplier: number;
 };
 
@@ -271,8 +269,17 @@ export type AoAuction = {
   name: string;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
-  currentPrice: number;
+  initiator: string;
+  baseFee: number;
+  demandFactor: number;
   settings: AoAuctionSettings;
+};
+
+export type AoAuctionPriceData = {
+  type: 'lease' | 'permabuy';
+  years?: number;
+  prices: Record<string, number>;
+  currentPrice: number;
 };
 
 // Input types

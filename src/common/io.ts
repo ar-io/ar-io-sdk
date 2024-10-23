@@ -41,6 +41,7 @@ import {
 } from '../types/index.js';
 import {
   AoArNSNameData,
+  AoAuctionPriceData,
   AoEpochData,
   AoEpochSettings,
   AoGateway,
@@ -616,20 +617,30 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getAuction({
-    name,
-    type,
-    timestamp,
-    years,
-    // TODO: include prices, which is a separate message and requires a different tag, and is fairly expensive on compute
-  }: {
-    name: string;
-    timestamp?: number;
-    type: 'permabuy' | 'lease';
-    years?: number;
-  }): Promise<AoAuction | undefined> {
+  async getAuction({ name }: { name: string }): Promise<AoAuction | undefined> {
     const allTags = [
       { name: 'Action', value: 'Auction-Info' },
+      { name: 'Name', value: name },
+    ];
+
+    return this.process.read<AoAuction>({
+      tags: allTags,
+    });
+  }
+
+  async getAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+  }: {
+    name: string;
+    type?: 'permabuy' | 'lease';
+    years?: number;
+    timestamp?: number;
+  }): Promise<AoAuctionPriceData> {
+    const prunedPriceTags: { name: string; value: string }[] = [
+      { name: 'Action', value: 'Auction-Prices' },
       { name: 'Name', value: name },
       {
         name: 'Timestamp',
@@ -638,19 +649,17 @@ export class IOReadable implements AoIORead {
       { name: 'Purchase-Type', value: type ?? 'lease' },
       {
         name: 'Years',
-        value: type === 'lease' ? years?.toString() ?? '1' : undefined,
+        value:
+          type == undefined || type === 'lease'
+            ? years?.toString() ?? '1'
+            : undefined,
       },
-    ];
-
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
+    ].filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
     );
 
-    return this.process.read<AoAuction | undefined>({
-      tags: prunedTags,
+    return this.process.read<AoAuctionPriceData>({
+      tags: prunedPriceTags,
     });
   }
 }
