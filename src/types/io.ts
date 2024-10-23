@@ -402,7 +402,7 @@ export interface AoIOWrite extends AoIORead {
     params: {
       target: WalletAddress;
       decreaseQty: number | mIOToken;
-      instant: true;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
