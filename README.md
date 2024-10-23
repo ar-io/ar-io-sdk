@@ -44,7 +44,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
-    - [`decreaseDelegateStake({ target, qty })`](#decreasedelegatestake-target-qty-)
+    - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
+    - [`instantDelegateWithdrawal({ target, vaultId })`](#instantdelegatewithdrawal-target-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
@@ -941,9 +942,9 @@ const { id: txId } = await io.increaseDelegateStake(
 );
 ```
 
-#### `decreaseDelegateStake({ target, qty })`
+#### `decreaseDelegateStake({ target, qty, instant })`
 
-Decreases the callers stake on the target gateway.
+Decreases the callers stake on the target gateway. Can instantly decrease stake by setting instant to `true`.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
@@ -954,6 +955,39 @@ const { id: txId } = await io.decreaseDelegateStake(
     target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
     qty: new IOToken(100).toMIO(),
   },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+```
+
+Pay the early withdrawal fee and withdraw instantly.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseDelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  qty: new IOToken(100).toMIO(),
+  instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
+});
+```
+
+#### `instantDelegateWithdrawal({ target, vaultId })`
+
+Instantly withdraws vaulted delegate tokens at the cost of the early withdrawal fee.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.instantDelegateWithdrawal(
+  {
+    // gateway address where delegate vault exists
+    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // delegated vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
   },

@@ -402,6 +402,14 @@ export interface AoIOWrite extends AoIORead {
     params: {
       target: WalletAddress;
       decreaseQty: number | mIOToken;
+      instant?: boolean;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  instantDelegateWithdrawal(
+    params: {
+      target: WalletAddress;
+      vaultId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
