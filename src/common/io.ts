@@ -824,33 +824,22 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       decreaseQty: number | mIOToken;
-      instant: boolean;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
-    if (params.instant == true) {
-      return this.process.send({
-        signer: this.signer,
-        tags: [
-          ...tags,
-          { name: 'Action', value: 'Decrease-Delegate-Stake' },
-          { name: 'Target', value: params.target },
-          { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
-          { name: 'Instant', value: 'true' },
-        ],
-      });
-    } else {
-      return this.process.send({
-        signer: this.signer,
-        tags: [
-          ...tags,
-          { name: 'Action', value: 'Decrease-Delegate-Stake' },
-          { name: 'Target', value: params.target },
-          { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
-        ],
-      });
-    }
+
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Decrease-Delegate-Stake' },
+        { name: 'Target', value: params.target },
+        { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: String(params.instant ?? false) },
+      ],
+    });
   }
 
   async instantDelegateWithdrawal(
