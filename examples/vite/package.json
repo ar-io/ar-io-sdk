@@ -7,6 +7,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
+    "recharts": "^2.13.0",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {

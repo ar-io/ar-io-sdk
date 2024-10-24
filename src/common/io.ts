@@ -19,6 +19,7 @@ import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
+  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -40,6 +41,7 @@ import {
 } from '../types/index.js';
 import {
   AoArNSNameData,
+  AoAuctionPriceData,
   AoEpochData,
   AoEpochSettings,
   AoGateway,
@@ -503,7 +505,7 @@ export class IOReadable implements AoIORead {
 
   async getTokenCost(params: {
     intent: 'Buy-Record';
-    purchaseType: 'permabuy' | 'lease';
+    type: 'permabuy' | 'lease';
     years: number;
     name: string;
   }): Promise<number>;
@@ -519,13 +521,13 @@ export class IOReadable implements AoIORead {
   }): Promise<number>;
   async getTokenCost({
     intent,
-    purchaseType,
+    type,
     years,
     name,
     quantity,
   }: {
     intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    purchaseType?: 'permabuy' | 'lease';
+    type?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
@@ -550,7 +552,7 @@ export class IOReadable implements AoIORead {
       },
       {
         name: 'Purchase-Type',
-        value: purchaseType,
+        value: type,
       },
       {
         name: 'Timestamp',
@@ -588,6 +590,93 @@ export class IOReadable implements AoIORead {
   async getDemandFactor(): Promise<number> {
     return this.process.read<number>({
       tags: [{ name: 'Action', value: 'Demand-Factor' }],
+    });
+  }
+
+  // Auctions
+  async getAuctions(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoAuction>> {
+    const allTags = [
+      { name: 'Action', value: 'Auctions' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoAuction>>({
+      tags: prunedTags,
+    });
+  }
+
+  async getAuction({ name }: { name: string }): Promise<AoAuction | undefined> {
+    const allTags = [
+      { name: 'Action', value: 'Auction-Info' },
+      { name: 'Name', value: name },
+    ];
+
+    return this.process.read<AoAuction>({
+      tags: allTags,
+    });
+  }
+
+  /**
+   * Get auction prices for a given auction at the provided intervals
+   *
+   * @param {Object} params - The parameters for fetching auction prices
+   * @param {string} params.name - The name of the auction
+   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
+   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
+   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
+   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
+   * @returns {Promise<AoAuctionPriceData>} The auction price data
+   */
+  async getAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+    intervalMs,
+  }: {
+    name: string;
+    type?: 'permabuy' | 'lease';
+    years?: number;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData> {
+    const prunedPriceTags: { name: string; value: string }[] = [
+      { name: 'Action', value: 'Auction-Prices' },
+      { name: 'Name', value: name },
+      {
+        name: 'Timestamp',
+        value: timestamp?.toString() ?? Date.now().toString(),
+      },
+      { name: 'Purchase-Type', value: type ?? 'lease' },
+      {
+        name: 'Years',
+        value:
+          type == undefined || type === 'lease'
+            ? years?.toString() ?? '1'
+            : undefined,
+      },
+      {
+        name: 'Price-Interval-Ms',
+        value: intervalMs?.toString() ?? '900000',
+      },
+    ].filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<AoAuctionPriceData>({
+      tags: prunedPriceTags,
     });
   }
 }
@@ -1003,6 +1092,32 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Address', value: params.address },
         { name: 'Vault-Id', value: params.vaultId },
       ],
+    });
+  }
+
+  async submitAuctionBid(
+    params: { name: string; processId: string; quantity?: number },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Submit-Auction-Bid' },
+      { name: 'Name', value: params.name },
+      { name: 'Process-Id', value: params.processId },
+      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send({
+      signer: this.signer,
+      tags: prunedTags,
     });
   }
 }
