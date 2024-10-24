@@ -635,7 +635,11 @@ const auctions = await io.getAuctions({
         "startPriceMultiplier": 50
       }
     }
-  ]
+  ],
+  "hasMore": false,
+  "totalItems": 1,
+  "sortBy": "endTimestamp",
+  "sortOrder": "asc"
 }
 ```
 
