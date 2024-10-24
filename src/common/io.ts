@@ -1096,16 +1096,24 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   }
 
   async submitAuctionBid(
-    params: { name: string; processId: string; quantity?: number },
+    params: {
+      name: string;
+      processId: string;
+      quantity?: number;
+      type?: 'lease' | 'permabuy';
+      years?: number;
+    },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'Submit-Auction-Bid' },
+      { name: 'Action', value: 'Auction-Bid' },
       { name: 'Name', value: params.name },
       { name: 'Process-Id', value: params.processId },
       { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
+      { name: 'Purchase-Type', value: params.type || 'lease' },
+      { name: 'Years', value: params.years?.toString() ?? undefined },
     ];
 
     const prunedTags: { name: string; value: string }[] = allTags.filter(
