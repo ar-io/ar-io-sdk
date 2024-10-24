@@ -1,3 +1,10 @@
+# [2.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.2...v2.4.0-alpha.3) (2024-10-24)
+
+
+### Bug Fixes
+
+* **auctions:** fix submitAuctionApi to accept type and years ([6780a80](https://github.com/ar-io/ar-io-sdk/commit/6780a80b06a0a3c3943839e0f89c7d7a7ccb083d))
+
 # [2.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.1...v2.4.0-alpha.2) (2024-10-24)
 
 
