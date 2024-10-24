@@ -640,6 +640,7 @@ const auctions = await io.getAuctions({
 ```
 
 </details>
+
 #### `getAuction({ name })`
 
 Retrieves the auction data for the specified auction name.
