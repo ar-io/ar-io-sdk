@@ -1,3 +1,18 @@
+# [2.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.1...v2.4.0-alpha.2) (2024-10-24)
+
+
+### Bug Fixes
+
+* **auctions:** update read APIs to fetch auctions, use vite example display active auction ([32001c2](https://github.com/ar-io/ar-io-sdk/commit/32001c2cfcaab4aa0e03aeee99888ba9e2efd6ba))
+* **auctions:** update types and add `intervalMs` ([bc21200](https://github.com/ar-io/ar-io-sdk/commit/bc212007ef065b5eb5af8face148da446dfb73cd))
+* **types:** update types to match contract ([cb7d2b4](https://github.com/ar-io/ar-io-sdk/commit/cb7d2b49edf0e40734052078d9b5f5723e134876))
+
+
+### Features
+
+* **ant:** support releasing of name of ANTs ([16363e8](https://github.com/ar-io/ar-io-sdk/commit/16363e88602baaa55ae767fd16b058817926c35a))
+* **auctions:** add auctions api to IO classes ([974897b](https://github.com/ar-io/ar-io-sdk/commit/974897b3458906dac325089d34c4ed45d780f368))
+
 # [2.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.3-alpha.1...v2.4.0-alpha.1) (2024-10-23)
 
 
