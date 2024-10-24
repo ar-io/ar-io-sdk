@@ -393,7 +393,6 @@ describe('e2e esm tests', async () => {
         processId,
         ao: aoClient,
       }),
-      strict: true,
     });
 
     it('should be able to create ANTWriteable with valid signers', async () => {
@@ -404,7 +403,6 @@ describe('e2e esm tests', async () => {
             ao: aoClient,
           }),
           signer,
-          strict: false,
         });
         const strictAnt = ANT.init({
           process: new AOProcess({
