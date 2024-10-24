@@ -35,7 +35,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`getAuctions({ cursor, limit, sortBy, sortOrder })`](#getauctions-cursor-limit-sortby-sortorder-)
     - [`getAuction({ name })`](#getauction-name-)
-    - [`getAuctionPrice({ name, type, years, intervalMs })`](#getauctionprice-name-type-years-intervalms-)
+    - [`getAuctionPrices({ name, type, years, intervalMs })`](#getauctionprices-name-type-years-intervalms-)
     - [`getDemandFactor()`](#getdemandfactor)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
@@ -668,13 +668,13 @@ const auction = await io.getAuction({ name: 'permalink' });
 
 </details>
 
-#### `getAuctionPrice({ name, type, years, intervalMs })`
+#### `getAuctionPrices({ name, type, years, intervalMs })`
 
 Retrieves the auction price curve of the specified auction name for the specified type, duration, and interval. The `intervalMs` is the number of milliseconds between price points on the curve. The default interval is 15 minutes.
 
 ```typescript
 const io = IO.init();
-const priceCurve = await io.getAuctionPrice({
+const priceCurve = await io.getAuctionPrices({
   name: 'permalink',
   type: 'lease',
   years: 1,
