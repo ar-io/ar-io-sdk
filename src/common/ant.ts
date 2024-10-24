@@ -457,7 +457,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.setName({ name: "ships at sea" });
+   * ant.setName({ name: "test" }); // results in the resolution of `test_<apexName>.ar.io`
    * ```
    */
   async setName(
@@ -469,6 +469,30 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Name' },
         { name: 'Name', value: name },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+   * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.releaseName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID });
+   * ```
+   */
+  async releaseName(
+    { name, ioProcessId }: { name: string; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Release-Name' },
+        { name: 'Name', value: name },
+        { name: 'IO-Process-Id', value: ioProcessId },
       ],
       signer: this.signer,
     });

@@ -116,6 +116,7 @@ export const AntHandlerNames = [
   'setTicker',
   'initializeState',
   'state',
+  'releaseName',
 ];
 export const AntHandlersSchema = z
   .array(z.string({ description: 'Handler Name' }))
@@ -224,6 +225,10 @@ export interface AoANTWrite extends AoANTRead {
   ): Promise<AoMessageResult>;
   setName(
     { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  releaseName(
+    { name, ioProcessId }: { name: string; ioProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
 }
