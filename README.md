@@ -56,6 +56,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`cancelDelegateWithdrawal({ address, vaultId })`](#canceldelegatewithdrawal-address-vaultid-)
+    - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -1253,6 +1254,32 @@ const { id: txId } = await io.cancelDelegateWithdrawal(
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
+```
+
+#### `submitAuctionBid({ name, type, years, processId })`
+
+Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const auction = await io.getAuction({ name: 'permalink' });
+
+// check the current price is under some threshold
+if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
+  const { id: txId } = await io.submitAuctionBid(
+    {
+      name: 'permalink',
+      type: 'lease',
+      years: 1,
+      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    },
+    // optional additional tags
+    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  );
+}
 ```
 
 ### Configuration
