@@ -495,6 +495,8 @@ export interface AoIOWrite extends AoIORead {
       name: string;
       processId: string;
       quantity?: number;
+      type?: 'lease' | 'permabuy';
+      years?: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
