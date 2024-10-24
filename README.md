@@ -600,6 +600,8 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 }
 ```
 
+</details>
+
 #### `getAuctions({ cursor, limit, sortBy, sortOrder })`
 
 Retrieves all active auctions of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last auction name from the previous request.
