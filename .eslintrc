@@ -20,6 +20,7 @@
         "allowNullableObject": true,
         "allowNullableBoolean": true,
         "allowAny": true,
+        "allowNullableString": true,
       },
     ],
     "@typescript-eslint/no-unused-vars": "error",
