@@ -50,6 +50,8 @@ export const IntegerStringSchema = z
     { message: 'Must be a non negative integer string' },
   );
 
+export const AntDescriptionSchema = z.string(); // TODO: add specific limits for description ie max length
+export const AntKeywordsSchema = z.array(z.string()); // TODO: add specific limits for keywords ie max amount and max length
 export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
@@ -68,6 +70,8 @@ export const AntBalancesSchema = z.record(
 export const AntStateSchema = z.object({
   Name: z.string().describe('The name of the ANT.'),
   Ticker: z.string().describe('The ticker symbol for the ANT.'),
+  Description: z.string().describe('The description for the ANT.'),
+  Keywords: AntKeywordsSchema.describe('The keywords for the ANT.'),
   Denomination: z
     .number()
     .describe(
@@ -114,6 +118,8 @@ export const AntHandlerNames = [
   'records',
   'setName',
   'setTicker',
+  'setDescription',
+  'setKeywords',
   'initializeState',
   'state',
   'releaseName',
@@ -139,6 +145,9 @@ export const AntInfoSchema = z.object({
   ['Total-Supply']: IntegerStringSchema.describe(
     'Total supply of the ANT in circulation.',
   ),
+  Description: AntDescriptionSchema.describe('The description for the ANT.'),
+  Keywords: AntKeywordsSchema.describe('The keywords for the ANT.'),
+
   Logo: ArweaveTxIdSchema.describe('Transaction ID of the ANT logo.'),
   Denomination: IntegerStringSchema.describe(
     'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
@@ -221,6 +230,14 @@ export interface AoANTWrite extends AoANTRead {
   ): Promise<AoMessageResult>;
   setTicker(
     { ticker }: { ticker: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setDescription(
+    { description }: { description: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setKeywords(
+    { keywords }: { keywords: string[] },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   setName(

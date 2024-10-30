@@ -73,6 +73,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
+    - [`setDescription({ description })`](#setdescription-description-)
+    - [`setKeywords({ keywords })`](#setkeywords-keywords-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
@@ -1339,8 +1341,10 @@ const info = await ant.getInfo();
 
 ```json
 {
-  "name": "Ardrive",
+  "name": "ArDrive",
   "ticker": "ANT-ARDRIVE",
+  "description": "This is the ANT for the ArDrive decentralized web app.",
+  "keywords": ["File-sharing", "Publishing", "dApp"],
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
 }
 ```
@@ -1381,6 +1385,8 @@ const state = await ant.getState();
   },
   "Initialized": true,
   "Ticker": "ANT-AR-IO",
+  "Description": "A friendly description for this ANT.",
+  "Keywords": ["keyword1", "keyword2", "keyword3"],
   "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
   "Denomination": 0,
   "Name": "AR.IO Foundation",
@@ -1569,6 +1575,34 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.setTicker(
   { ticker: 'ANT-NEW-TICKER' },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `setDescription({ description })`
+
+Sets the description of the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setDescription(
+  { description: 'A friendly description of this ANT' },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `setKeywords({ keywords })`
+
+Sets the keywords of the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setDescription(
+  { keywords: ['Game', 'FPS', 'AO'] },
   // optional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
