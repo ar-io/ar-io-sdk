@@ -1,3 +1,10 @@
+# [2.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.3...v2.4.0-alpha.4) (2024-10-30)
+
+
+### Bug Fixes
+
+* **withdrawls:** update API for cancelling withdrawls to allow delegate and operator withdrawls ([5cb680a](https://github.com/ar-io/ar-io-sdk/commit/5cb680affca0029fd10641c5e9d0b1d76f8902c9))
+
 # [2.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.2...v2.4.0-alpha.3) (2024-10-24)
 
 
