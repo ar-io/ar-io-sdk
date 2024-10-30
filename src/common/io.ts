@@ -1079,19 +1079,38 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async cancelDelegateWithdrawal(
-    params: { address: string; vaultId: string },
+  /**
+   * Cancel a withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for cancelling a withdrawal
+   * @param {string} [params.address] - The address of the withdrawal (optional). If not provided, the signer's address will be used.
+   * @param {string} params.vaultId - The vault ID of the withdrawal.
+   * @param {Object} [options] - The options for the cancellation
+   * @returns {Promise<AoMessageResult>} The result of the cancellation
+   */
+  async cancelWithdrawal(
+    params: { address?: WalletAddress; vaultId: string },
     options?: WriteOptions | undefined,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Cancel-Withdrawal' },
+      { name: 'Address', value: params.address },
+      { name: 'Vault-Id', value: params.vaultId },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Cancel-Delegate-Withdrawal' },
-        { name: 'Address', value: params.address },
-        { name: 'Vault-Id', value: params.vaultId },
-      ],
+      tags: prunedTags,
     });
   }
 
