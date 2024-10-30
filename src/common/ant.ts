@@ -475,6 +475,50 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * @param description @type {string} Sets the ANT Description.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setDescription({ description: "This name is used for the ArDrive" });
+   * ```
+   */
+  async setDescription(
+    { description }: { description: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Description' },
+        { name: 'Description', value: description },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * @param keywords @type {string[]} Sets the ANT Keywords.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setKeywords({ keywords: ['keyword1', 'keyword2', 'keyword3']});
+   * ```
+   */
+  async setKeywords(
+    { keywords }: { keywords: string[] },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Keywords' },
+        { name: 'Description', value: JSON.stringify(keywords) },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
    * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
    * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
