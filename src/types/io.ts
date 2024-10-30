@@ -469,6 +469,12 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  upgradeRecord(
+    params: {
+      name: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   extendLease(
     params: {
       name: string;
