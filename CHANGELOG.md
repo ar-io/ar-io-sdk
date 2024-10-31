@@ -1,3 +1,10 @@
+# [2.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.4...v2.4.0-alpha.5) (2024-10-31)
+
+
+### Features
+
+* **ant:** adds set-keywords and set-description methods for ants) ([3b260a2](https://github.com/ar-io/ar-io-sdk/commit/3b260a2188f909dff1b8c6c0f41228f2444c8652))
+
 # [2.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.3...v2.4.0-alpha.4) (2024-10-30)
 
 
