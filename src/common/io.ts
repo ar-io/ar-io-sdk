@@ -1041,6 +1041,40 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
+  /**
+   * Upgrades an existing leased record to a permabuy.
+   *
+   * @param {Object} params - The parameters for upgrading a record
+   * @param {string} params.name - The name of the record to upgrade
+   * @param {Object} [options] - The options for the upgrade
+   * @returns {Promise<AoMessageResult>} The result of the upgrade
+   */
+  async upgradeRecord(
+    params: {
+      name: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+        { name: 'Name', value: params.name },
+      ],
+    });
+  }
+
+  /**
+   * Extends the lease of an existing leased record.
+   *
+   * @param {Object} params - The parameters for extending a lease
+   * @param {string} params.name - The name of the record to extend
+   * @param {number} params.years - The number of years to extend the lease
+   * @param {Object} [options] - The options for the extension
+   * @returns {Promise<AoMessageResult>} The result of the extension
+   */
   async extendLease(
     params: {
       name: string;
