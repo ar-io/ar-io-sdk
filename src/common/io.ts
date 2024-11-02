@@ -931,22 +931,40 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async instantDelegateWithdrawal(
+  /**
+   * Initiates an instant withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for initiating an instant withdrawal
+   * @param {string} params.address - The gateway address of the withdrawal, if not provided, the signer's address will be used
+   * @param {string} params.vaultId - The vault ID of the withdrawal
+   * @returns {Promise<AoMessageResult>} The result of the withdrawal
+   */
+  async instantWithdrawal(
     params: {
-      target: string;
+      gatewayAddress?: string;
       vaultId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Instant-Withdrawal' },
+      { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Decrease-Delegate-Stake' },
-        { name: 'Target', value: params.target },
-        { name: 'Vault-Id', value: params.vaultId },
-      ],
+      tags: prunedTags,
     });
   }
 
@@ -1123,7 +1141,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
    * @returns {Promise<AoMessageResult>} The result of the cancellation
    */
   async cancelWithdrawal(
-    params: { address?: WalletAddress; vaultId: string },
+    params: { gatewayAddress?: WalletAddress; vaultId: string },
     options?: WriteOptions | undefined,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
@@ -1131,8 +1149,8 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     const allTags = [
       ...tags,
       { name: 'Action', value: 'Cancel-Withdrawal' },
-      { name: 'Address', value: params.address },
       { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
     ];
 
     const prunedTags: { name: string; value: string }[] = allTags.filter(
