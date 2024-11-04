@@ -1,3 +1,10 @@
+# [2.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.7...v2.4.0-alpha.8) (2024-11-04)
+
+
+### Bug Fixes
+
+* **ant:** add `reassignName` to ant implementation ([9e705a9](https://github.com/ar-io/ar-io-sdk/commit/9e705a995d454092b1ea415debba02a9e2efb487))
+
 # [2.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.6...v2.4.0-alpha.7) (2024-11-04)
 
 
