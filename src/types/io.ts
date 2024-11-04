@@ -446,9 +446,9 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  instantDelegateWithdrawal(
+  instantWithdrawal(
     params: {
-      target: WalletAddress;
+      gatewayAddress?: WalletAddress;
       vaultId: string;
     },
     options?: WriteOptions,
@@ -491,7 +491,7 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   cancelWithdrawal(
     params: {
-      address?: WalletAddress;
+      gatewayAddress?: WalletAddress;
       vaultId: string;
     },
     options?: WriteOptions,

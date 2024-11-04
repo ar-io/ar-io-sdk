@@ -48,14 +48,14 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
-    - [`instantDelegateWithdrawal({ target, vaultId })`](#instantdelegatewithdrawal-target-vaultid-)
+    - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
-    - [`cancelDelegateWithdrawal({ address, vaultId })`](#canceldelegatewithdrawal-address-vaultid-)
+    - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
@@ -1109,24 +1109,31 @@ const { id: txId } = await io.decreaseDelegateStake({
 });
 ```
 
-#### `instantDelegateWithdrawal({ target, vaultId })`
+#### `instantWithdrawal({ gatewayAddress, vaultId })`
 
-Instantly withdraws vaulted delegate tokens at the cost of the early withdrawal fee.
+Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.instantDelegateWithdrawal(
+// removes a delegated vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
   {
     // gateway address where delegate vault exists
-    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
     // delegated vault id to cancel
     vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
   // optional additional tags
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+// removes an operator vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
+  {
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
 );
 ```
@@ -1238,23 +1245,31 @@ const { id: txId } = await io.extendLease(
 );
 ```
 
-#### `cancelDelegateWithdrawal({ address, vaultId })`
+#### `cancelWithdrawal({ gatewayAddress, vaultId })`
 
-Cancels a pending delegate withdrawal.
+Cancels an existing vault on a gateway. The vaulted stake will be returned to the callers stake. If no `gatewayAddress` is provided, the signer's address will be used.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.cancelDelegateWithdrawal(
+// cancels a delegated vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
   {
     // gateway address where vault exists
-    address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
     // vault id to cancel
     vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+// cancels an operator vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
+  {
+    // operator vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
 );
 ```
 
