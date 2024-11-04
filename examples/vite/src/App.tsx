@@ -1,12 +1,12 @@
-import { ANT, ANTState } from '@ar.io/sdk/web';
+import { ANT } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import './App.css';
 
-const contractTxId = 'ilwT4ObFQ7cGPbW-8z-h7mvvWGt_yhWNlqxNjSUgiYY';
-const antContract = ANT.init({ contractTxId });
+const processId = 'U2dlP4DMMZFO82tWzcDfcgNGq5aGYY6CU84oeHAfNHE';
+const antContract = ANT.init({ processId });
 
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
@@ -14,7 +14,7 @@ function App() {
   useEffect(() => {
     antContract
       .getState()
-      .then((state: ANTState) => {
+      .then((state: any) => {
         setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
       })
       .catch((error: unknown) => {
