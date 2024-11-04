@@ -1,3 +1,10 @@
+# [2.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.5...v2.4.0-alpha.6) (2024-11-04)
+
+
+### Features
+
+* **arns:** add upgradeRecord API ([9c1726d](https://github.com/ar-io/ar-io-sdk/commit/9c1726dc6f6f5f87c3b8b3d027593a3c749932ee))
+
 # [2.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.4...v2.4.0-alpha.5) (2024-10-31)
 
 
