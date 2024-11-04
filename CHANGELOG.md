@@ -1,3 +1,10 @@
+# [2.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.6...v2.4.0-alpha.7) (2024-11-04)
+
+
+### Bug Fixes
+
+* **io:** consolidate `instantGatewayWithdrawal` and `instantGatewayWithdrawal` to just `instantWithdrawal`, update `cancelWithdrawal ([ea9f3eb](https://github.com/ar-io/ar-io-sdk/commit/ea9f3eb90843f1181b83d9f876b75a059efb8811))
+
 # [2.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.5...v2.4.0-alpha.6) (2024-11-04)
 
 
