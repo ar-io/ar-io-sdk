@@ -76,6 +76,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setDescription({ description })`](#setdescription-description-)
     - [`setKeywords({ keywords })`](#setkeywords-keywords-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
+    - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -1633,6 +1634,20 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 const { id: txId } = await ant.releaseName({
   name: 'permalink',
   ioProcessId: IO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to auction on the IO contract
+});
+```
+
+#### `reassignName({ name, ioProcessId, antProcessId })`
+
+Reassigns a name to a new ANT. This can only be done by the current owner of the ANT.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.reassignName({
+  name: 'ardrive',
+  ioProcessId: IO_TESTNET_PROCESS_ID,
+  antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
 });
 ```
 
