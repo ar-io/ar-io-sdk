@@ -541,4 +541,35 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       signer: this.signer,
     });
   }
+
+  /**
+   * Sends a message to the IO contract to reassign the name to a new ANT. This can only be done by the current owner of the ANT.
+   * @param name @type {string} The name you want to reassign.
+   * @param ioProcessId @type {string} The processId of the IO contract.
+   * @param antProcessId @type {string} The processId of the ANT contract.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.reassignName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
+   * ```
+   */
+  async reassignName(
+    {
+      name,
+      ioProcessId,
+      antProcessId,
+    }: { name: string; ioProcessId: string; antProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Reassign-Name' },
+        { name: 'Name', value: name },
+        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'Process-Id', value: antProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
 }
