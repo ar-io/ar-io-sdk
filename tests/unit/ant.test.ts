@@ -16,6 +16,8 @@ describe('ANT Schemas', () => {
     const validState = {
       Name: 'TestToken',
       Ticker: 'TST',
+      Description: 'Test description',
+      Keywords: ['keyword1', 'keyword2', 'keyword3'],
       Denomination: 0,
       Owner: stub_address,
       Controllers: [stub_address],
@@ -36,6 +38,8 @@ describe('ANT Schemas', () => {
     const invalidState = {
       Name: 'TestToken',
       Ticker: 'TST',
+      Description: 'Test description',
+      Keywords: ['keyword1', 'keyword2', 'keyword3'],
       Denomination: 0,
       Owner: stub_address,
       Controllers: [stub_address],
@@ -64,6 +68,8 @@ describe('ANT Schemas', () => {
       Owner: stub_address,
       ['Source-Code-TX-ID']: stub_address,
       Ticker: 'TST',
+      Description: 'Test description',
+      Keywords: ['keyword1', 'keyword2', 'keyword3'],
       ['Total-Supply']: '1',
       Logo: stub_address,
       Denomination: '0',
@@ -88,6 +94,8 @@ describe('ANT Schemas', () => {
     const validState = {
       Name: 'TestToken',
       Ticker: 'TST',
+      Description: 'Test description',
+      Keywords: ['keyword1', 'keyword2', 'keyword3'],
       Denomination: 0,
       Owner: stub_address,
       Controllers: [stub_address],
@@ -108,6 +116,8 @@ describe('ANT Schemas', () => {
     const invalidState = {
       Name: 'TestToken',
       Ticker: 'TST',
+      Description: 'Test description',
+      Keywords: ['keyword1', 'keyword2', 'keyword3'],
       Denomination: 0,
       Owner: stub_address,
       Controllers: [stub_address],

@@ -19,6 +19,7 @@ import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
+  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -40,6 +41,7 @@ import {
 } from '../types/index.js';
 import {
   AoArNSNameData,
+  AoAuctionPriceData,
   AoEpochData,
   AoEpochSettings,
   AoGateway,
@@ -503,7 +505,7 @@ export class IOReadable implements AoIORead {
 
   async getTokenCost(params: {
     intent: 'Buy-Record';
-    purchaseType: 'permabuy' | 'lease';
+    type: 'permabuy' | 'lease';
     years: number;
     name: string;
   }): Promise<number>;
@@ -519,13 +521,13 @@ export class IOReadable implements AoIORead {
   }): Promise<number>;
   async getTokenCost({
     intent,
-    purchaseType,
+    type,
     years,
     name,
     quantity,
   }: {
     intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    purchaseType?: 'permabuy' | 'lease';
+    type?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
@@ -550,7 +552,7 @@ export class IOReadable implements AoIORead {
       },
       {
         name: 'Purchase-Type',
-        value: purchaseType,
+        value: type,
       },
       {
         name: 'Timestamp',
@@ -588,6 +590,93 @@ export class IOReadable implements AoIORead {
   async getDemandFactor(): Promise<number> {
     return this.process.read<number>({
       tags: [{ name: 'Action', value: 'Demand-Factor' }],
+    });
+  }
+
+  // Auctions
+  async getAuctions(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoAuction>> {
+    const allTags = [
+      { name: 'Action', value: 'Auctions' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoAuction>>({
+      tags: prunedTags,
+    });
+  }
+
+  async getAuction({ name }: { name: string }): Promise<AoAuction | undefined> {
+    const allTags = [
+      { name: 'Action', value: 'Auction-Info' },
+      { name: 'Name', value: name },
+    ];
+
+    return this.process.read<AoAuction>({
+      tags: allTags,
+    });
+  }
+
+  /**
+   * Get auction prices for a given auction at the provided intervals
+   *
+   * @param {Object} params - The parameters for fetching auction prices
+   * @param {string} params.name - The name of the auction
+   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
+   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
+   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
+   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
+   * @returns {Promise<AoAuctionPriceData>} The auction price data
+   */
+  async getAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+    intervalMs,
+  }: {
+    name: string;
+    type?: 'permabuy' | 'lease';
+    years?: number;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData> {
+    const prunedPriceTags: { name: string; value: string }[] = [
+      { name: 'Action', value: 'Auction-Prices' },
+      { name: 'Name', value: name },
+      {
+        name: 'Timestamp',
+        value: timestamp?.toString() ?? Date.now().toString(),
+      },
+      { name: 'Purchase-Type', value: type ?? 'lease' },
+      {
+        name: 'Years',
+        value:
+          type == undefined || type === 'lease'
+            ? years?.toString() ?? '1'
+            : undefined,
+      },
+      {
+        name: 'Price-Interval-Ms',
+        value: intervalMs?.toString() ?? '900000',
+      },
+    ].filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<AoAuctionPriceData>({
+      tags: prunedPriceTags,
     });
   }
 }
@@ -824,10 +913,12 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       decreaseQty: number | mIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
     return this.process.send({
       signer: this.signer,
       tags: [
@@ -835,7 +926,45 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Action', value: 'Decrease-Delegate-Stake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
+    });
+  }
+
+  /**
+   * Initiates an instant withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for initiating an instant withdrawal
+   * @param {string} params.address - The gateway address of the withdrawal, if not provided, the signer's address will be used
+   * @param {string} params.vaultId - The vault ID of the withdrawal
+   * @returns {Promise<AoMessageResult>} The result of the withdrawal
+   */
+  async instantWithdrawal(
+    params: {
+      gatewayAddress?: string;
+      vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Instant-Withdrawal' },
+      { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send({
+      signer: this.signer,
+      tags: prunedTags,
     });
   }
 
@@ -930,6 +1059,40 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
+  /**
+   * Upgrades an existing leased record to a permabuy.
+   *
+   * @param {Object} params - The parameters for upgrading a record
+   * @param {string} params.name - The name of the record to upgrade
+   * @param {Object} [options] - The options for the upgrade
+   * @returns {Promise<AoMessageResult>} The result of the upgrade
+   */
+  async upgradeRecord(
+    params: {
+      name: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+        { name: 'Name', value: params.name },
+      ],
+    });
+  }
+
+  /**
+   * Extends the lease of an existing leased record.
+   *
+   * @param {Object} params - The parameters for extending a lease
+   * @param {string} params.name - The name of the record to extend
+   * @param {number} params.years - The number of years to extend the lease
+   * @param {Object} [options] - The options for the extension
+   * @returns {Promise<AoMessageResult>} The result of the extension
+   */
   async extendLease(
     params: {
       name: string;
@@ -968,19 +1131,72 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async cancelDelegateWithdrawal(
-    params: { address: string; vaultId: string },
+  /**
+   * Cancel a withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for cancelling a withdrawal
+   * @param {string} [params.address] - The address of the withdrawal (optional). If not provided, the signer's address will be used.
+   * @param {string} params.vaultId - The vault ID of the withdrawal.
+   * @param {Object} [options] - The options for the cancellation
+   * @returns {Promise<AoMessageResult>} The result of the cancellation
+   */
+  async cancelWithdrawal(
+    params: { gatewayAddress?: WalletAddress; vaultId: string },
     options?: WriteOptions | undefined,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Cancel-Withdrawal' },
+      { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Cancel-Delegate-Withdrawal' },
-        { name: 'Address', value: params.address },
-        { name: 'Vault-Id', value: params.vaultId },
-      ],
+      tags: prunedTags,
+    });
+  }
+
+  async submitAuctionBid(
+    params: {
+      name: string;
+      processId: string;
+      quantity?: number;
+      type?: 'lease' | 'permabuy';
+      years?: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Auction-Bid' },
+      { name: 'Name', value: params.name },
+      { name: 'Process-Id', value: params.processId },
+      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
+      { name: 'Purchase-Type', value: params.type || 'lease' },
+      { name: 'Years', value: params.years?.toString() ?? undefined },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send({
+      signer: this.signer,
+      tags: prunedTags,
     });
   }
 }

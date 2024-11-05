@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "2.3.3-alpha.1",
+  "version": "2.4.0-alpha.8",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -73,6 +73,7 @@
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "prepare": "husky install",
+    "docs:update": "markdown-toc-gen insert README.md",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
     "example:cjs": "yarn test:link && cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn test:link && build:web && http-server --port 8080 --host -o examples/web"

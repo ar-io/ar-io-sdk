@@ -20,7 +20,7 @@ import {
   const distributions = await arIO.getDistributions({ epochIndex: 0 });
   const buyRecordCost = await arIO.getTokenCost({
     intent: 'Buy-Record',
-    purchaseType: 'lease',
+    type: 'lease',
     name: 'ar-io-dapp-record',
     years: 1,
   });

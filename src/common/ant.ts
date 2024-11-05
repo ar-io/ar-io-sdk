@@ -457,7 +457,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.setName({ name: "ships at sea" });
+   * ant.setName({ name: "test" }); // results in the resolution of `test_<apexName>.ar.io`
    * ```
    */
   async setName(
@@ -469,6 +469,105 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Name' },
         { name: 'Name', value: name },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * @param description @type {string} Sets the ANT Description.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setDescription({ description: "This name is used for the ArDrive" });
+   * ```
+   */
+  async setDescription(
+    { description }: { description: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Description' },
+        { name: 'Description', value: description },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * @param keywords @type {string[]} Sets the ANT Keywords.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setKeywords({ keywords: ['keyword1', 'keyword2', 'keyword3']});
+   * ```
+   */
+  async setKeywords(
+    { keywords }: { keywords: string[] },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Keywords' },
+        { name: 'Description', value: JSON.stringify(keywords) },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+   * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.releaseName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID });
+   * ```
+   */
+  async releaseName(
+    { name, ioProcessId }: { name: string; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Release-Name' },
+        { name: 'Name', value: name },
+        { name: 'IO-Process-Id', value: ioProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * Sends a message to the IO contract to reassign the name to a new ANT. This can only be done by the current owner of the ANT.
+   * @param name @type {string} The name you want to reassign.
+   * @param ioProcessId @type {string} The processId of the IO contract.
+   * @param antProcessId @type {string} The processId of the ANT contract.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.reassignName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
+   * ```
+   */
+  async reassignName(
+    {
+      name,
+      ioProcessId,
+      antProcessId,
+    }: { name: string; ioProcessId: string; antProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Reassign-Name' },
+        { name: 'Name', value: name },
+        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'Process-Id', value: antProcessId },
       ],
       signer: this.signer,
     });

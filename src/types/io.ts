@@ -257,6 +257,31 @@ export type AoBalanceWithAddress = {
   balance: number;
 };
 
+// Auctions
+export type AoAuctionSettings = {
+  durationMs: number;
+  decayRate: number;
+  scalingExponent: number;
+  startPriceMultiplier: number;
+};
+
+export type AoAuction = {
+  name: string;
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+  initiator: string;
+  baseFee: number;
+  demandFactor: number;
+  settings: AoAuctionSettings;
+};
+
+export type AoAuctionPriceData = {
+  type: 'lease' | 'permabuy';
+  years?: number;
+  prices: Record<string, number>;
+  currentPrice: number;
+};
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -318,19 +343,34 @@ export interface AoIORead {
   getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
   getTokenCost({
     intent,
-    purchaseType,
+    type,
     years,
     name,
     quantity,
   }: {
     intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    purchaseType?: 'permabuy' | 'lease';
+    type?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+  getAuctions(params?: PaginationParams): Promise<PaginationResult<AoAuction>>;
+  getAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
+  getAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+    intervalMs,
+  }: {
+    name: string;
+    type: 'lease' | 'permabuy';
+    years?: number;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -402,6 +442,14 @@ export interface AoIOWrite extends AoIORead {
     params: {
       target: WalletAddress;
       decreaseQty: number | mIOToken;
+      instant?: boolean;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  instantWithdrawal(
+    params: {
+      gatewayAddress?: WalletAddress;
+      vaultId: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
@@ -421,6 +469,12 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  upgradeRecord(
+    params: {
+      name: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   extendLease(
     params: {
       name: string;
@@ -435,10 +489,20 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  cancelDelegateWithdrawal(
+  cancelWithdrawal(
     params: {
-      address: string;
+      gatewayAddress?: WalletAddress;
       vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  submitAuctionBid(
+    params: {
+      name: string;
+      processId: string;
+      quantity?: number;
+      type?: 'lease' | 'permabuy';
+      years?: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

@@ -1,3 +1,74 @@
+# [2.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.7...v2.4.0-alpha.8) (2024-11-04)
+
+
+### Bug Fixes
+
+* **ant:** add `reassignName` to ant implementation ([9e705a9](https://github.com/ar-io/ar-io-sdk/commit/9e705a995d454092b1ea415debba02a9e2efb487))
+
+# [2.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.6...v2.4.0-alpha.7) (2024-11-04)
+
+
+### Bug Fixes
+
+* **io:** consolidate `instantGatewayWithdrawal` and `instantGatewayWithdrawal` to just `instantWithdrawal`, update `cancelWithdrawal ([ea9f3eb](https://github.com/ar-io/ar-io-sdk/commit/ea9f3eb90843f1181b83d9f876b75a059efb8811))
+
+# [2.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.5...v2.4.0-alpha.6) (2024-11-04)
+
+
+### Features
+
+* **arns:** add upgradeRecord API ([9c1726d](https://github.com/ar-io/ar-io-sdk/commit/9c1726dc6f6f5f87c3b8b3d027593a3c749932ee))
+
+# [2.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.4...v2.4.0-alpha.5) (2024-10-31)
+
+
+### Features
+
+* **ant:** adds set-keywords and set-description methods for ants) ([3b260a2](https://github.com/ar-io/ar-io-sdk/commit/3b260a2188f909dff1b8c6c0f41228f2444c8652))
+
+# [2.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.3...v2.4.0-alpha.4) (2024-10-30)
+
+
+### Bug Fixes
+
+* **withdrawls:** update API for cancelling withdrawls to allow delegate and operator withdrawls ([5cb680a](https://github.com/ar-io/ar-io-sdk/commit/5cb680affca0029fd10641c5e9d0b1d76f8902c9))
+
+# [2.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.2...v2.4.0-alpha.3) (2024-10-24)
+
+
+### Bug Fixes
+
+* **auctions:** fix submitAuctionApi to accept type and years ([6780a80](https://github.com/ar-io/ar-io-sdk/commit/6780a80b06a0a3c3943839e0f89c7d7a7ccb083d))
+
+# [2.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.1...v2.4.0-alpha.2) (2024-10-24)
+
+
+### Bug Fixes
+
+* **auctions:** update read APIs to fetch auctions, use vite example display active auction ([32001c2](https://github.com/ar-io/ar-io-sdk/commit/32001c2cfcaab4aa0e03aeee99888ba9e2efd6ba))
+* **auctions:** update types and add `intervalMs` ([bc21200](https://github.com/ar-io/ar-io-sdk/commit/bc212007ef065b5eb5af8face148da446dfb73cd))
+* **types:** update types to match contract ([cb7d2b4](https://github.com/ar-io/ar-io-sdk/commit/cb7d2b49edf0e40734052078d9b5f5723e134876))
+
+
+### Features
+
+* **ant:** support releasing of name of ANTs ([16363e8](https://github.com/ar-io/ar-io-sdk/commit/16363e88602baaa55ae767fd16b058817926c35a))
+* **auctions:** add auctions api to IO classes ([974897b](https://github.com/ar-io/ar-io-sdk/commit/974897b3458906dac325089d34c4ed45d780f368))
+
+# [2.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.3-alpha.1...v2.4.0-alpha.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* **delegates:** fixes type ([ae7be5c](https://github.com/ar-io/ar-io-sdk/commit/ae7be5caaa79f470eb9755c05c85467e98643d55))
+* **lint:** add lint fix and missing bracket ([72446aa](https://github.com/ar-io/ar-io-sdk/commit/72446aa0c1bfa8c69faf7781022a098c0e57d960))
+* **tag:** small tweak to instant tag ([663de6f](https://github.com/ar-io/ar-io-sdk/commit/663de6f04557549f010f12d435c303e051d00501))
+
+
+### Features
+
+* **delegates:** add instant delegate withdrawal for a fee ([4b4cb8f](https://github.com/ar-io/ar-io-sdk/commit/4b4cb8f6e6ee98c875541df21a0845f6069501f7))
+
 ## [2.3.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.3.3-alpha.1) (2024-10-17)
 
 
