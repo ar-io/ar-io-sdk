@@ -68,7 +68,7 @@
     "test": "yarn test:unit && yarn test:e2e",
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
-    "test:web": "yarn build:web && yarn link && cd ./tests/e2e/web && yarn && yarn test",
+    "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
     "test:unit": "NODE_OPTIONS=\"--import=./register.mjs\" node --test tests/unit/**.test.ts",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
