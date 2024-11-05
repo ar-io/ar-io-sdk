@@ -30,9 +30,9 @@ function App() {
   const [auctions, setAuctions] = useState<AuctionWithPrices[]>([]);
 
   useEffect(() => {
-    io.getAuctions().then((page: PaginationResult<AoAuction>) => {
+    io.getArNSAuctions().then((page: PaginationResult<AoAuction>) => {
       page.items.forEach((auction: AoAuction) => {
-        io.getAuctionPrices({
+        io.getArNSAuctionPrices({
           name: auction.name,
           type: 'lease',
           intervalMs: 1000 * 60 * 60 * 24, // 1 day
