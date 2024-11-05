@@ -1758,6 +1758,7 @@ For more information on how to use AO and AO Connect within this library, please
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
+- `yarn example:vite` - runs example Vite web page
 
 ### Linting & Formatting
 
