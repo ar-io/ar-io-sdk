@@ -33,9 +33,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
-    - [`getAuctions({ cursor, limit, sortBy, sortOrder })`](#getauctions-cursor-limit-sortby-sortorder-)
-    - [`getAuction({ name })`](#getauction-name-)
-    - [`getAuctionPrices({ name, type, years, intervalMs })`](#getauctionprices-name-type-years-intervalms-)
+    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
+    - [`getArNSAuction({ name })`](#getarnsauction-name-)
+    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
     - [`getDemandFactor()`](#getdemandfactor)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
@@ -606,13 +606,13 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 
 </details>
 
-#### `getAuctions({ cursor, limit, sortBy, sortOrder })`
+#### `getArNSAuctions({ cursor, limit, sortBy, sortOrder })`
 
 Retrieves all active auctions of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last auction name from the previous request.
 
 ```typescript
 const io = IO.init();
-const auctions = await io.getAuctions({
+const auctions = await io.getArNSAuctions({
   limit: 100,
   sortBy: 'endTimestamp',
   sortOrder: 'asc', // return the auctions ending soonest first
@@ -649,13 +649,13 @@ const auctions = await io.getAuctions({
 
 </details>
 
-#### `getAuction({ name })`
+#### `getArNSAuction({ name })`
 
 Retrieves the auction data for the specified auction name.
 
 ```typescript
 const io = IO.init();
-const auction = await io.getAuction({ name: 'permalink' });
+const auction = await io.getArNSAuction({ name: 'permalink' });
 ```
 
 <details>
@@ -680,13 +680,13 @@ const auction = await io.getAuction({ name: 'permalink' });
 
 </details>
 
-#### `getAuctionPrices({ name, type, years, intervalMs })`
+#### `getArNSAuctionPrices({ name, type, years, intervalMs })`
 
 Retrieves the auction price curve of the specified auction name for the specified type, duration, and interval. The `intervalMs` is the number of milliseconds between price points on the curve. The default interval is 15 minutes.
 
 ```typescript
 const io = IO.init();
-const priceCurve = await io.getAuctionPrices({
+const priceCurve = await io.getArNSAuctionPrices({
   name: 'permalink',
   type: 'lease',
   years: 1,
@@ -1283,7 +1283,7 @@ _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
 
-const auction = await io.getAuction({ name: 'permalink' });
+const auction = await io.getArNSAuction({ name: 'permalink' });
 
 // check the current price is under some threshold
 if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
@@ -1758,6 +1758,7 @@ For more information on how to use AO and AO Connect within this library, please
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
+- `yarn example:vite` - runs example Vite web page
 
 ### Linting & Formatting
 

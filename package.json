@@ -66,17 +66,18 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "yarn test:unit && yarn test:e2e",
-    "test:cjs": "yarn test:link && cd ./tests/e2e/cjs && yarn && yarn test",
-    "test:esm": "yarn test:link && cd ./tests/e2e/esm && yarn && yarn test",
-    "test:web": "yarn test:link && cd ./tests/e2e/web && yarn && yarn test",
+    "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
+    "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
+    "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
     "test:unit": "NODE_OPTIONS=\"--import=./register.mjs\" node --test tests/unit/**.test.ts",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "prepare": "husky install",
     "docs:update": "markdown-toc-gen insert README.md",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
-    "example:cjs": "yarn test:link && cd examples/cjs && yarn && node index.cjs",
-    "example:web": "yarn test:link && build:web && http-server --port 8080 --host -o examples/web"
+    "example:cjs": "yarn build:cjs && yarn link && cd examples/cjs && yarn && node index.cjs",
+    "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
+    "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",

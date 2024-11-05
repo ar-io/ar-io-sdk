@@ -335,17 +335,30 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get current auctions', async () => {
-      const { items: auctions } = await io.getAuctions();
+      const { items: auctions } = await io.getArNSAuctions();
       assert.ok(auctions);
     });
 
     it('should be able to get a specific auction', async () => {
-      const { items: auctions } = await io.getAuctions();
+      const { items: auctions } = await io.getArNSAuctions();
       if (auctions.length === 0) {
         return;
       }
-      const auction = await io.getAuction({ name: auctions[0].name });
+      const auction = await io.getArNSAuction({ name: auctions[0].name });
       assert.ok(auction);
+    });
+
+    it('should be able to get auction prices for an existing auction', async () => {
+      const { items: auctions } = await io.getArNSAuctions();
+      if (auctions.length === 0) {
+        return;
+      }
+      const auctionPrices = await io.getArNSAuctionPrices({
+        name: auctions[0].name,
+        type: 'lease',
+        years: 1,
+      });
+      assert.ok(auctionPrices);
     });
 
     it('should be able to create IOWriteable with valid signers', async () => {
