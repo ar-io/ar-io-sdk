@@ -335,6 +335,23 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined>;
+  getArNSAuctions(
+    params?: PaginationParams,
+  ): Promise<PaginationResult<AoAuction>>;
+  getArNSAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
+  getArNSAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+    intervalMs,
+  }: {
+    name: string;
+    type: 'lease' | 'permabuy';
+    years?: number;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
@@ -356,21 +373,6 @@ export interface AoIORead {
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
-  getAuctions(params?: PaginationParams): Promise<PaginationResult<AoAuction>>;
-  getAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
-  getAuctionPrices({
-    name,
-    type,
-    years,
-    timestamp,
-    intervalMs,
-  }: {
-    name: string;
-    type: 'lease' | 'permabuy';
-    years?: number;
-    timestamp?: number;
-    intervalMs?: number;
-  }): Promise<AoAuctionPriceData>;
 }
 
 export interface AoIOWrite extends AoIORead {

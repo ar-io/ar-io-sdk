@@ -1,3 +1,10 @@
+# [2.4.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.8...v2.4.0-alpha.9) (2024-11-05)
+
+
+### Bug Fixes
+
+* **auctions:** update auction APIs and types ([5fd2ccc](https://github.com/ar-io/ar-io-sdk/commit/5fd2ccc5c5d781234eaddc10c005b928fbc0fb50))
+
 # [2.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.7...v2.4.0-alpha.8) (2024-11-04)
 
 

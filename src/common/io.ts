@@ -594,7 +594,7 @@ export class IOReadable implements AoIORead {
   }
 
   // Auctions
-  async getAuctions(
+  async getArNSAuctions(
     params?: PaginationParams,
   ): Promise<PaginationResult<AoAuction>> {
     const allTags = [
@@ -617,7 +617,11 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getAuction({ name }: { name: string }): Promise<AoAuction | undefined> {
+  async getArNSAuction({
+    name,
+  }: {
+    name: string;
+  }): Promise<AoAuction | undefined> {
     const allTags = [
       { name: 'Action', value: 'Auction-Info' },
       { name: 'Name', value: name },
@@ -639,7 +643,7 @@ export class IOReadable implements AoIORead {
    * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
    * @returns {Promise<AoAuctionPriceData>} The auction price data
    */
-  async getAuctionPrices({
+  async getArNSAuctionPrices({
     name,
     type,
     years,
