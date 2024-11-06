@@ -17,6 +17,7 @@ const {
   AoANTWriteable,
   AoANTRegistryWriteable,
   AOProcess,
+  validateAnt,
 } = require('@ar.io/sdk');
 const { connect } = require('@permaweb/aoconnect');
 
@@ -42,21 +43,21 @@ const io = IO.init({
 });
 
 describe('e2e cjs tests', async () => {
-  describe('IO', async () => {
-    let compose;
-    before(async () => {
-      compose = await new DockerComposeEnvironment(
-        projectRootPath,
-        '../docker-compose.test.yml',
-      )
-        .withBuild()
-        .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
-        .up(['ao-cu']);
-    });
+  let compose;
+  before(async () => {
+    compose = await new DockerComposeEnvironment(
+      projectRootPath,
+      '../docker-compose.test.yml',
+    )
+      .withBuild()
+      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .up(['ao-cu']);
+  });
 
-    after(async () => {
-      await compose.down();
-    });
+  after(async () => {
+    await compose.down();
+  });
+  describe('IO', async () => {
     it('should be able to get the process information', async () => {
       const epoch = await io.getInfo();
       assert.ok(epoch);
@@ -362,7 +363,7 @@ describe('e2e cjs tests', async () => {
   });
 
   describe('ANT', async () => {
-    const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+    const processId = 'Zi3W4ZxKfc04txiotKZD_h4zs4wACvSNaTGC7Ah9prg';
     it('should be able to create ANTWriteable with valid signers', async () => {
       for (const signer of signers) {
         const ant = ANT.init({
@@ -381,6 +382,10 @@ describe('e2e cjs tests', async () => {
         assert(ant instanceof AoANTWriteable);
         assert(strictAnt instanceof AoANTWriteable);
       }
+    });
+    it('should validate all apis on the ant', async () => {
+      const res = await validateAnt({ processId, ao: aoClient });
+      assert(Object.values(res).every(({ valid }) => valid == true));
     });
   });
 });

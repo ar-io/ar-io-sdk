@@ -102,16 +102,14 @@ export const AntStateSchema = z.object({
 export type AoANTState = z.infer<typeof AntStateSchema>;
 
 export const AntReadHandlers = [
-  'getState',
-  'getInfo',
-  'getRecord',
-  'getRecords',
-  'getOwner',
-  'getControllers',
-  'getTicker',
-  'getName',
-  'getBalance',
-  'getBalances',
+  'balance',
+  'balances',
+  'totalSupply',
+  'info',
+  'controllers',
+  'record',
+  'records',
+  'state',
 ] as const;
 
 export type AoANTReadHandler = (typeof AntReadHandlers)[number];
@@ -121,23 +119,15 @@ export const AntWriteHandlers = [
   '_eval',
   '_default',
   'transfer',
-  'balance',
-  'balances',
-  'totalSupply',
-  'info',
   'addController',
   'removeController',
-  'controllers',
   'setRecord',
   'removeRecord',
-  'record',
-  'records',
   'setName',
   'setTicker',
   'setDescription',
   'setKeywords',
   'initializeState',
-  'state',
   'releaseName',
   'reassignName',
 ] as const;
