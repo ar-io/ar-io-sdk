@@ -135,7 +135,7 @@ export const AntWriteHandlers = [
 export type AoANTWriteHandler = (typeof AntWriteHandlers)[number];
 
 export const AntHandlerNames = [...AntReadHandlers, ...AntWriteHandlers];
-export type AoANTHandler = (typeof AntHandlerNames)[number];
+export type AoANTHandler = AoANTWriteHandler | AoANTReadHandler;
 export const AntHandlersSchema = z
   .array(z.string({ description: 'Handler Name' }))
   .refine(
