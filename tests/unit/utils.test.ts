@@ -1,7 +1,6 @@
 import Arweave from 'arweave';
-import nock from 'nock';
 import { strict as assert } from 'node:assert';
-import { after, afterEach, before, describe, it } from 'node:test';
+import { describe, it } from 'node:test';
 
 import {
   getCurrentBlockUnixTimestamp,
@@ -55,21 +54,6 @@ describe('pruneTags', () => {
 });
 
 describe('getCurrentBlockUnixTimestamp', () => {
-  before(() => {
-    // disable network connections for all tests - we don't want to hit the network
-    nock.disableNetConnect();
-  });
-
-  afterEach(() => {
-    // clean up nock after each test
-    nock.cleanAll();
-  });
-
-  after(() => {
-    // allow network connections for other tests
-    nock.enableNetConnect();
-  });
-
   it('should return the current block timestamp', async () => {
     // stub arweave block request using nock
     const arweave = Arweave.init({});

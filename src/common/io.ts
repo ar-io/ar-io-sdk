@@ -359,7 +359,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave).toString()),
+          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
