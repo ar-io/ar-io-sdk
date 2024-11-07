@@ -55,7 +55,7 @@ import {
 } from '../types/io.js';
 import { AoSigner, mIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
-import { pruneTags } from '../web/index.js';
+import { pruneTags } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
