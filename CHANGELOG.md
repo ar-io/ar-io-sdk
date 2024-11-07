@@ -1,3 +1,10 @@
+# [2.4.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.11...v2.4.0-alpha.12) (2024-11-07)
+
+
+### Bug Fixes
+
+* corrected AoVaultData field to be startTimestamp ([b9888bf](https://github.com/ar-io/ar-io-sdk/commit/b9888bf19655b77bb07fe4240d30a9bb3328a076))
+
 # [2.4.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.10...v2.4.0-alpha.11) (2024-11-07)
 
 
