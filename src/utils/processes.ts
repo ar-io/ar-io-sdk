@@ -144,7 +144,7 @@ export class ArNSEventEmitter extends EventEmitter {
           }
           const ant = ANT.init({
             processId,
-            strict: true,
+            strict: false,
           });
           const state: AoANTState | undefined = (await timeout(
             this.timeoutMs,
