@@ -291,17 +291,8 @@ export class AoANTReadable implements AoANTRead {
    */
   async getHandlers(): Promise<AoANTHandler[]> {
     const info = await this.getInfo();
-    const handlers = info.Handlers ?? info.HandlerNames;
-    if (
-      this.strict &&
-      !(
-        Array.isArray(handlers) &&
-        !handlers.every((handler) => typeof handler === 'string')
-      )
-    ) {
-      throw new Error('No handlers found');
-    }
-    return (handlers || []) as AoANTHandler[];
+
+    return (info.Handlers ?? info.HandlerNames) as AoANTHandler[];
   }
 
   /**
