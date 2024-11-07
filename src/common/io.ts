@@ -55,7 +55,7 @@ import {
 } from '../types/io.js';
 import { AoSigner, mIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
-import { getCurrentBlockUnixTimestamp, pruneTags } from '../utils/arweave.js';
+import { getCurrentBlockUnixTimestampMs, pruneTags } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -149,7 +149,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (params as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -168,7 +168,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -359,7 +359,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -379,7 +379,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -428,7 +428,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestamp(this.arweave)).toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',

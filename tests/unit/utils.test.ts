@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
-  getCurrentBlockUnixTimestamp,
+  getCurrentBlockUnixTimestampMs,
   pruneTags,
 } from '../../src/utils/arweave.js';
 
@@ -55,10 +55,12 @@ describe('pruneTags', () => {
 
 describe('getCurrentBlockUnixTimestamp', () => {
   it('should return the current block timestamp', async () => {
-    // stub arweave block request using nock
     const arweave = Arweave.init({});
+    // cheap way to check the returned timestamp is within the boundaries of the async call
     const minTimestamp = Date.now();
-    const timestamp = await getCurrentBlockUnixTimestamp(arweave);
+    const timestamp = await getCurrentBlockUnixTimestampMs(arweave);
+    const maxTimestamp = Date.now();
     assert.ok(timestamp >= minTimestamp);
+    assert.ok(timestamp <= maxTimestamp);
   });
 });

@@ -37,7 +37,7 @@ export const pruneTags = (
   );
 };
 
-export const getCurrentBlockUnixTimestamp = async (
+export const getCurrentBlockUnixTimestampMs = async (
   arweave: Arweave,
 ): Promise<Timestamp> => {
   return await arweave.blocks
