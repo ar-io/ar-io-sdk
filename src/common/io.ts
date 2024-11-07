@@ -45,6 +45,7 @@ import {
   AoEpochData,
   AoEpochSettings,
   AoGateway,
+  AoGatewayDelegate,
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
@@ -310,6 +311,54 @@ export class IOReadable implements AoIORead {
         { name: 'Action', value: 'Gateway' },
         { name: 'Address', value: address },
       ],
+    });
+  }
+
+  async getGatewayDelegates(
+    params?: { address: WalletAddress } & PaginationParams,
+  ): Promise<PaginationResult<AoGatewayDelegate>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Delegates' },
+      { name: 'Address', value: params?.address },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<AoGatewayDelegate>>({
+      tags: prunedTags,
+    });
+  }
+
+  async getGatewayDelegateAllowList(
+    params?: Omit<PaginationParams, 'sortBy'> & { address: WalletAddress },
+  ): Promise<PaginationResult<WalletAddress>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Allowed-Delegates' },
+      { name: 'Address', value: params?.address },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-Order', value: params?.sortOrder },
+      // note: sortBy is omitted because it's not supported for this action as table is an of addresses
+    ];
+
+    const prunedTags: { name: string; value: string }[] = allTags.filter(
+      (tag: {
+        name: string;
+        value: string | undefined;
+      }): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<PaginationResult<WalletAddress>>({
+      tags: prunedTags,
     });
   }
 
@@ -751,6 +800,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     {
       operatorStake,
       allowDelegatedStaking,
+      allowedDelegates,
       delegateRewardShareRatio,
       fqdn,
       label,
@@ -775,6 +825,10 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       {
         name: 'Allow-Delegated-Staking',
         value: allowDelegatedStaking?.toString(),
+      },
+      {
+        name: 'Allowed-Delegates',
+        value: allowedDelegates?.join(','),
       },
       {
         name: 'Delegate-Reward-Share-Ratio',
