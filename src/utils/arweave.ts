@@ -23,3 +23,14 @@ export const validateArweaveId = (id: string): boolean => {
 export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
+
+export const pruneTags = (
+  tags: { name: string; value: string | undefined }[],
+): { name: string; value: string }[] => {
+  return tags.filter(
+    (tag: {
+      name: string;
+      value: string | undefined;
+    }): tag is { name: string; value: string } => tag.value !== undefined,
+  );
+};

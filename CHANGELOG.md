@@ -1,3 +1,19 @@
+# [2.4.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.10...v2.4.0-alpha.11) (2024-11-07)
+
+
+### Bug Fixes
+
+* **emitter:** do non strict checks on state in arns emitter ([6566a3c](https://github.com/ar-io/ar-io-sdk/commit/6566a3c06be654b6f71ef2646a6c2d441ac3755c))
+* **emitter:** provide strictness in constuctor ([060df05](https://github.com/ar-io/ar-io-sdk/commit/060df0534b2ab9a8bbd851e40d2fc9ecdcd37426))
+
+# [2.4.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.9...v2.4.0-alpha.10) (2024-11-07)
+
+
+### Bug Fixes
+
+* **PE-7080:** add apis for fetching paginated delegates ([e3d4af2](https://github.com/ar-io/ar-io-sdk/commit/e3d4af2e0ff39c8b96ac14e60d4929fb27b73ab6))
+* **types:** use generic on PageParms for sortBy, update delegate types ([7a1abc4](https://github.com/ar-io/ar-io-sdk/commit/7a1abc4869aed61a39cd99a313c64aff7c5e10de))
+
 # [2.4.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.8...v2.4.0-alpha.9) (2024-11-05)
 
 

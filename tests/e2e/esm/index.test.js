@@ -154,6 +154,12 @@ describe('e2e esm tests', async () => {
         assert(typeof gateway.weights.tenureWeight === 'number');
         assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
         assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
+        if (gateway.vaults?.length > 0) {
+          gateway.vaults.forEach((vault) => {
+            assert(typeof vault.balance === 'number');
+            assert(typeof vault.startTimestamp === 'number');
+          });
+        }
       });
     });
 
@@ -191,14 +197,71 @@ describe('e2e esm tests', async () => {
         assert(typeof gateway.weights.tenureWeight === 'number');
         assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
         assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
+        if (gateway.vaults?.length > 0) {
+          gateway.vaults.forEach((vault) => {
+            assert(typeof vault.balance === 'number');
+            assert(typeof vault.startTimestamp === 'number');
+          });
+        }
       });
     });
 
     it('should be able to get a single gateway', async () => {
-      const gateways = await io.getGateway({
+      const gateway = await io.getGateway({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
-      assert.ok(gateways);
+      assert.ok(gateway);
+    });
+
+    it('should be able to get gateway delegates', async () => {
+      const delegates = await io.getGatewayDelegates({
+        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        limit: 1,
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(delegates);
+      assert(delegates.limit === 1);
+      assert(delegates.sortOrder === 'desc');
+      assert(delegates.sortBy === 'startTimestamp');
+      assert(typeof delegates.totalItems === 'number');
+      assert(typeof delegates.sortBy === 'string');
+      assert(typeof delegates.sortOrder === 'string');
+      assert(typeof delegates.limit === 'number');
+      assert(typeof delegates.hasMore === 'boolean');
+      if (delegates.nextCursor) {
+        assert(typeof delegates.nextCursor === 'string');
+      }
+      assert(Array.isArray(delegates.items));
+      delegates.items.forEach((delegate) => {
+        assert(Array.isArray(delegate.vaults));
+        assert(typeof delegate.delegatedStake === 'number');
+        assert(typeof delegate.startTimestamp === 'number');
+      });
+    });
+
+    it('should be able to get gateway delegate allow list', async () => {
+      const allowList = await io.getGatewayDelegateAllowList({
+        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        limit: 1,
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(allowList);
+      // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
+      assert(allowList.limit === 1);
+      assert(allowList.sortOrder === 'desc');
+      assert(typeof allowList.totalItems === 'number');
+      assert(typeof allowList.sortOrder === 'string');
+      assert(typeof allowList.limit === 'number');
+      assert(typeof allowList.hasMore === 'boolean');
+      if (allowList.nextCursor) {
+        assert(typeof allowList.nextCursor === 'string');
+      }
+      assert(Array.isArray(allowList.items));
+      allowList.items.forEach((address) => {
+        assert(typeof address === 'string');
+      });
     });
 
     it('should be able to get balances, defaulting to first page', async () => {
