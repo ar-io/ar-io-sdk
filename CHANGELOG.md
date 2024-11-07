@@ -1,3 +1,11 @@
+# [2.4.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.10...v2.4.0-alpha.11) (2024-11-07)
+
+
+### Bug Fixes
+
+* **emitter:** do non strict checks on state in arns emitter ([6566a3c](https://github.com/ar-io/ar-io-sdk/commit/6566a3c06be654b6f71ef2646a6c2d441ac3755c))
+* **emitter:** provide strictness in constuctor ([060df05](https://github.com/ar-io/ar-io-sdk/commit/060df0534b2ab9a8bbd851e40d2fc9ecdcd37426))
+
 # [2.4.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.9...v2.4.0-alpha.10) (2024-11-07)
 
 
