@@ -55,6 +55,7 @@ import {
 } from '../types/io.js';
 import { AoSigner, mIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
+import { pruneTags } from '../web/index.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -165,15 +166,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochSettings>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
@@ -200,15 +194,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -236,15 +223,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoArNSNameDataWithName>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -289,15 +269,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoBalanceWithAddress>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -326,15 +299,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoGatewayDelegate>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -350,15 +316,8 @@ export class IOReadable implements AoIORead {
       // note: sortBy is omitted because it's not supported for this action as table is an of addresses
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<WalletAddress>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -373,15 +332,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoGatewayWithAddress>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -432,15 +384,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoWeightedObserver[]>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -468,15 +413,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<string[]>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -504,15 +442,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochObservationData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -540,15 +471,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochDistributionData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -618,15 +542,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<number>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -654,15 +571,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoAuction>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -872,16 +782,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -896,6 +799,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async updateGatewaySettings(
     {
       allowDelegatedStaking,
+      allowedDelegates,
       delegateRewardShareRatio,
       fqdn,
       label,
@@ -925,6 +829,10 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         value: allowDelegatedStaking?.toString(),
       },
       {
+        name: 'Allowed-Delegates',
+        value: allowedDelegates?.join(','),
+      },
+      {
         name: 'Delegate-Reward-Share-Ratio',
         value: delegateRewardShareRatio?.toString(),
       },
@@ -935,16 +843,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Auto-Stake', value: autoStake?.toString() },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1013,16 +914,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Address', value: params.gatewayAddress },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1104,16 +998,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Purchase-Type', value: params.type || 'lease' },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1211,16 +1098,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Address', value: params.gatewayAddress },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1245,16 +1125,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Years', value: params.years?.toString() ?? undefined },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 }
