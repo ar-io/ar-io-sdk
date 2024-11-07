@@ -248,7 +248,7 @@ describe('e2e esm tests', async () => {
         sortOrder: 'desc',
       });
       assert.ok(allowList);
-      // note: sortBy is omitted because it's not supported for the contract handler
+      // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
       assert(allowList.limit === 1);
       assert(allowList.sortOrder === 'desc');
       assert(typeof allowList.totalItems === 'number');
