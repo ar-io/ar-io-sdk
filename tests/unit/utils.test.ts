@@ -41,4 +41,10 @@ describe('pruneTags', () => {
 
     assert.deepEqual(prunedTags, tags);
   });
+
+  it('should return empty array with no tags', () => {
+    const tags: { name: string; value: string | undefined }[] = [];
+    const prunedTags = pruneTags(tags);
+    assert.deepEqual(prunedTags, []);
+  });
 });

@@ -29,10 +29,10 @@ import { mIOToken } from './token.js';
 
 // Pagination
 
-export type PaginationParams = {
+export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: string;
+  sortBy?: keyof T extends never ? string : keyof T; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
 };
 
@@ -317,18 +317,22 @@ export interface AoIORead {
   }): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates(
-    params?: PaginationParams,
+    params: {
+      address: WalletAddress;
+    } & PaginationParams<AoGatewayDelegate>,
   ): Promise<PaginationResult<AoGatewayDelegate>>;
   getGatewayDelegateAllowList(
-    params?: PaginationParams,
+    params?: PaginationParams<WalletAddress> & {
+      address: WalletAddress;
+    },
   ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   getGateways(
-    params?: PaginationParams,
+    params?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
-    params?: PaginationParams,
+    params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>>;
   getArNSRecord({
     name,
@@ -336,7 +340,7 @@ export interface AoIORead {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
   getArNSRecords(
-    params?: PaginationParams,
+    params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(): Promise<
     Record<string, AoArNSReservedNameData> | Record<string, never>
@@ -347,7 +351,7 @@ export interface AoIORead {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined>;
   getArNSAuctions(
-    params?: PaginationParams,
+    params?: PaginationParams<AoAuction>,
   ): Promise<PaginationResult<AoAuction>>;
   getArNSAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
   getArNSAuctionPrices({

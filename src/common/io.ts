@@ -213,14 +213,14 @@ export class IOReadable implements AoIORead {
   }
 
   async getArNSRecords(
-    pageParams?: PaginationParams,
+    params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Records' },
-      { name: 'Cursor', value: pageParams?.cursor?.toString() },
-      { name: 'Limit', value: pageParams?.limit?.toString() },
-      { name: 'Sort-By', value: pageParams?.sortBy },
-      { name: 'Sort-Order', value: pageParams?.sortOrder },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
     return this.process.read<PaginationResult<AoArNSNameDataWithName>>({
@@ -259,14 +259,14 @@ export class IOReadable implements AoIORead {
   }
 
   async getBalances(
-    pageParams?: PaginationParams,
+    params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Balances' },
-      { name: 'Cursor', value: pageParams?.cursor?.toString() },
-      { name: 'Limit', value: pageParams?.limit?.toString() },
-      { name: 'Sort-By', value: pageParams?.sortBy },
-      { name: 'Sort-Order', value: pageParams?.sortOrder },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
     return this.process.read<PaginationResult<AoBalanceWithAddress>>({
@@ -287,16 +287,21 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getGatewayDelegates(
-    params?: { address: WalletAddress } & PaginationParams,
-  ): Promise<PaginationResult<AoGatewayDelegate>> {
+  async getGatewayDelegates({
+    address,
+    ...pageParams
+  }: {
+    address: WalletAddress;
+  } & PaginationParams<AoGatewayDelegate>): Promise<
+    PaginationResult<AoGatewayDelegate>
+  > {
     const allTags = [
       { name: 'Action', value: 'Paginated-Delegates' },
-      { name: 'Address', value: params?.address },
-      { name: 'Cursor', value: params?.cursor?.toString() },
-      { name: 'Limit', value: params?.limit?.toString() },
-      { name: 'Sort-By', value: params?.sortBy },
-      { name: 'Sort-Order', value: params?.sortOrder },
+      { name: 'Address', value: address },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-By', value: pageParams?.sortBy },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
     return this.process.read<PaginationResult<AoGatewayDelegate>>({
@@ -304,15 +309,20 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getGatewayDelegateAllowList(
-    params?: Omit<PaginationParams, 'sortBy'> & { address: WalletAddress },
-  ): Promise<PaginationResult<WalletAddress>> {
+  async getGatewayDelegateAllowList({
+    address,
+    ...pageParams
+  }: {
+    address: WalletAddress;
+  } & PaginationParams<WalletAddress>): Promise<
+    PaginationResult<WalletAddress>
+  > {
     const allTags = [
       { name: 'Action', value: 'Paginated-Allowed-Delegates' },
-      { name: 'Address', value: params?.address },
-      { name: 'Cursor', value: params?.cursor?.toString() },
-      { name: 'Limit', value: params?.limit?.toString() },
-      { name: 'Sort-Order', value: params?.sortOrder },
+      { name: 'Address', value: address },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
       // note: sortBy is omitted because it's not supported for this action as table is an of addresses
     ];
 
@@ -322,7 +332,7 @@ export class IOReadable implements AoIORead {
   }
 
   async getGateways(
-    pageParams?: PaginationParams,
+    pageParams?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Gateways' },
@@ -561,7 +571,7 @@ export class IOReadable implements AoIORead {
 
   // Auctions
   async getArNSAuctions(
-    params?: PaginationParams,
+    params?: PaginationParams<AoAuction>,
   ): Promise<PaginationResult<AoAuction>> {
     const allTags = [
       { name: 'Action', value: 'Auctions' },
