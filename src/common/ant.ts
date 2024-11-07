@@ -323,25 +323,27 @@ export class AoANTReadable implements AoANTRead {
       >
     >;
   } = {}): Promise<Record<AoANTHandler, { valid: boolean; error?: string }>> {
-    const antHandlers = await this.getHandlers();
-    const handlerValidationConfig = {
-      ...(Object.fromEntries(
-        AntHandlerNames.map((handler) => [
-          handler,
-          async (_: { ant: AoANTRead }) => {
-            if (antHandlers.includes(handler)) return true;
-            throw new Error(`Handler ${handler} not found`);
-          },
-        ]),
-      ) as Record<
-        AoANTHandler,
-        (p: { ant: AoANTReadable }) => Promise<boolean>
-      >),
-      ...(validations ?? {}),
-    };
+    // default to the validations provided in the config
+    const handlerValidationConfig = validations ?? {};
 
-    const results: Record<AoANTHandler, { valid: boolean; error?: string }> =
-      {} as Record<AoANTHandler, { valid: boolean; error?: string }>;
+    // validations not specified in the config will be defaulted to a check that the handler is present
+    const antHandlers = await this.getHandlers();
+    for (const handlerName of AntHandlerNames) {
+      // skip if the handler is already in the config
+      if (handlerValidationConfig[handlerName]) continue;
+      // create a default validator for the handler and add it to the config
+      const handlerNameValidator = async (_: { ant: AoANTRead }) => {
+        if (antHandlers.includes(handlerName)) return true;
+        // this will be caught and assigned to the error for the validation result
+        throw new Error(`Handler ${handlerName} not found`);
+      };
+      handlerValidationConfig[handlerName] = handlerNameValidator;
+    }
+
+    const results = {} as Record<
+      AoANTHandler,
+      { valid: boolean; error?: string }
+    >;
 
     for (const [handler, validator] of Object.entries(
       handlerValidationConfig,
