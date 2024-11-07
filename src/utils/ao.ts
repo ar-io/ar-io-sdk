@@ -19,7 +19,7 @@ import Arweave from 'arweave';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
-import { ANT, ANTRegistry, AOProcess, Logger } from '../common/index.js';
+import { ANTRegistry, AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
@@ -252,25 +252,4 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
-}
-
-export async function getAntHandlers({
-  processId,
-  ao = connect(),
-}: {
-  processId: string;
-  ao?: AoClient;
-}): Promise<string[]> {
-  const ant = ANT.init({
-    process: new AOProcess({
-      processId,
-      ao,
-    }),
-  });
-  const info = await ant.getInfo();
-  const handlers = info?.Handlers || info?.HandlerNames;
-
-  if (!Array.isArray(handlers)) throw new Error('Failed to get handlers');
-
-  return handlers;
 }

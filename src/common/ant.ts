@@ -18,11 +18,13 @@ import { z } from 'zod';
 import {
   AntBalancesSchema,
   AntControllersSchema,
+  AntHandlerNames,
   AntInfoSchema,
   AntReadOptions,
   AntRecordSchema,
   AntRecordsSchema,
   AntStateSchema,
+  AoANTHandler,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
@@ -277,6 +279,92 @@ export class AoANTReadable implements AoANTRead {
     });
     if (strict) parseSchemaResult(z.number(), balance);
     return balance;
+  }
+
+  /**
+   * @returns {Promise<AoANTHandler[]>} The handlers of the ANT.
+   * @example
+   * Get the handlers of the ANT.
+   * ```ts
+   * const handlers = await ant.getHandlers();
+   * ```
+   */
+  async getHandlers(): Promise<AoANTHandler[]> {
+    const info = await this.getInfo();
+    const handlers = info.Handlers ?? info.HandlerNames;
+    if (
+      this.strict &&
+      !(
+        Array.isArray(handlers) &&
+        !handlers.every((handler) => typeof handler === 'string')
+      )
+    ) {
+      throw new Error('No handlers found');
+    }
+    return (handlers || []) as AoANTHandler[];
+  }
+
+  /**
+   * @param validations @type {Partial<Record<AoANTHandler, ({ ant: AoANTReadable }) => Promise<boolean>>} The validations to run on the ANT. 
+   * @returns @type {Promise<Record<AoANTHandler, { valid: boolean; error?: string }>>} The results of the validations.
+   * @example
+   * ```ts
+   * const validity = await ant.validate({
+   * validations: {
+   *  'setTicker': async ({ant}: { ant: AoANTRead }) => {
+   *   const antHandlers = await ant.getHandlers();
+            if (antHandlers.includes("setTicker")) return true;
+            throw new Error(`Handler setTicker not found`);
+          }
+    
+   * },
+          //  ...rest of the ANT handlers config
+   * });
+   * ```
+   */
+  async validate({
+    validations,
+  }: {
+    validations?: Partial<
+      Record<
+        AoANTHandler,
+        ({ ant }: { ant: AoANTReadable }) => Promise<boolean>
+      >
+    >;
+  } = {}): Promise<Record<AoANTHandler, { valid: boolean; error?: string }>> {
+    const antHandlers = await this.getHandlers();
+    const handlerValidationConfig = {
+      ...(Object.fromEntries(
+        AntHandlerNames.map((handler) => [
+          handler,
+          async (_: { ant: AoANTRead }) => {
+            if (antHandlers.includes(handler)) return true;
+            throw new Error(`Handler ${handler} not found`);
+          },
+        ]),
+      ) as Record<
+        AoANTHandler,
+        (p: { ant: AoANTReadable }) => Promise<boolean>
+      >),
+      ...(validations ?? {}),
+    };
+
+    const results: Record<AoANTHandler, { valid: boolean; error?: string }> =
+      {} as Record<AoANTHandler, { valid: boolean; error?: string }>;
+
+    for (const [handler, validator] of Object.entries(
+      handlerValidationConfig,
+    )) {
+      await validator({ ant: this })
+        .then((valid) => {
+          results[handler] = { valid };
+        })
+        .catch((error) => {
+          results[handler] = { valid: false, error: error.message };
+        });
+    }
+
+    return results;
   }
 }
 

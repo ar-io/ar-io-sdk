@@ -201,6 +201,14 @@ export interface AoANTRead {
     opts?: AntReadOptions,
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
+  getHandlers(): Promise<AoANTHandler[]>;
+  validate({
+    validations,
+  }: {
+    validations?: Partial<
+      Record<AoANTHandler, ({ ant }: { ant: AoANTRead }) => Promise<boolean>>
+    >;
+  }): Promise<Record<AoANTHandler, { valid: boolean; error?: string }>>;
 }
 
 export interface AoANTWrite extends AoANTRead {

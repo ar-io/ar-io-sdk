@@ -17,7 +17,6 @@ const {
   AoANTWriteable,
   AoANTRegistryWriteable,
   AOProcess,
-  validateAnt,
 } = require('@ar.io/sdk');
 const { connect } = require('@permaweb/aoconnect');
 
@@ -364,6 +363,11 @@ describe('e2e cjs tests', async () => {
 
   describe('ANT', async () => {
     const processId = 'Zi3W4ZxKfc04txiotKZD_h4zs4wACvSNaTGC7Ah9prg';
+    const ant = ANT.init({
+      processId,
+      signer: signers[0],
+      ao: aoClient,
+    });
     it('should be able to create ANTWriteable with valid signers', async () => {
       for (const signer of signers) {
         const ant = ANT.init({
@@ -384,7 +388,7 @@ describe('e2e cjs tests', async () => {
       }
     });
     it('should validate all apis on the ant', async () => {
-      const res = await validateAnt({ processId, ao: aoClient });
+      const res = await ant.validate();
       assert(Object.values(res).every(({ valid }) => valid == true));
     });
   });

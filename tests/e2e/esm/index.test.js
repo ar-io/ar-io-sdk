@@ -10,7 +10,6 @@ import {
   IOWriteable,
   createAoSigner,
   ioDevnetProcessId,
-  validateAnt,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import { strict as assert } from 'node:assert';
@@ -485,7 +484,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should validate all apis on the ant', async () => {
-      const res = await validateAnt({ processId, ao: aoClient });
+      const res = await ant.validate();
       assert(Object.values(res).every(({ valid }) => valid == true));
     });
   });
