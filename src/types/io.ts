@@ -95,7 +95,7 @@ export type AoEpochObservationData = {
 
 export type AoVaultData = {
   balance: number;
-  locked: number;
+  startTimestamp: number;
   endTimestamp: Timestamp;
 };
 
