@@ -5,6 +5,7 @@ import {
   AoAuctionPriceData,
   AoGateway,
   AoGatewayWithAddress,
+  AoWeightedObserver,
   IO,
   IO_DEVNET_PROCESS_ID,
   PaginationResult,
@@ -39,6 +40,9 @@ function App() {
   const [totalGateways, setTotalGateways] = useState<number>(0);
   const [totalNames, setTotalNames] = useState<number>(0);
   const [totalAuctions, setTotalAuctions] = useState<number>(0);
+  const [prescribedObservers, setPrescribedObservers] = useState<
+    AoWeightedObserver[]
+  >([]);
 
   useEffect(() => {
     // fetch first page of arns names
@@ -90,6 +94,10 @@ function App() {
         });
       },
     );
+
+    io.getPrescribedObservers().then((observers: AoWeightedObserver[]) => {
+      setPrescribedObservers(observers);
+    });
   }, []);
 
   return (
@@ -103,7 +111,9 @@ function App() {
           alignItems: 'center',
         }}
       >
-        <div>
+        <div
+          style={{ paddingLeft: '75px', paddingRight: '75px', width: '75%' }}
+        >
           <h3>ArNS Names</h3>
           <div>
             <strong>Total Names:</strong> {totalNames}
@@ -119,12 +129,14 @@ function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Name</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>Name</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
                     Process
                   </th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Type</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Expiry</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>Type</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Expiry
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -150,7 +162,10 @@ function App() {
           </div>
         </div>
 
-        <div>
+        <div
+          style={{ paddingLeft: '75px', paddingRight: '75px', width: '75%' }}
+        >
+          {' '}
           <h3>Active Gateways</h3>
           <div>
             <strong>Total Gateways:</strong> {totalGateways}
@@ -166,12 +181,17 @@ function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
                     Address
                   </th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Status</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>
-                    Stake (IO)
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Status
+                  </th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Operator Stake (IO)
+                  </th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Total Delegated Stake (IO)
                   </th>
                 </tr>
               </thead>
@@ -188,13 +208,19 @@ function App() {
                     <td style={{ padding: '10px' }}>
                       {gateway.operatorStake / 10 ** 6}
                     </td>
+                    <td style={{ padding: '10px' }}>
+                      {gateway.totalDelegatedStake / 10 ** 6}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-        <div>
+        <div
+          style={{ paddingLeft: '75px', paddingRight: '75px', width: '75%' }}
+        >
+          {' '}
           <h3>Active Auctions</h3>
           <div>
             <strong>Total Auctions:</strong> {totalAuctions}
@@ -210,8 +236,17 @@ function App() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Name</th>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Ends</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>Name</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Starts
+                  </th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>Ends</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Base Fee
+                  </th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>
+                    Initiator
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -222,7 +257,16 @@ function App() {
                   >
                     <td style={{ padding: '10px' }}>{auction.name}</td>
                     <td style={{ padding: '10px' }}>
+                      {new Date(auction.startTimestamp).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '10px' }}>
                       {new Date(auction.endTimestamp).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {auction.baseFee / 10 ** 6}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {auction.initiator.slice(0, 8)}...
                     </td>
                   </tr>
                 ))}
@@ -265,6 +309,48 @@ function App() {
               </ResponsiveContainer>
             </div>
           )}
+        </div>
+        <div
+          style={{ paddingLeft: '75px', paddingRight: '75px', width: '75%' }}
+        >
+          <h3>Prescribed Observers</h3>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #ccc' }}>
+                <th style={{ padding: '10px', textAlign: 'center' }}>
+                  Observer
+                </th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>Stake</th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>
+                  Tenure Weight
+                </th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>
+                  Stake Weight
+                </th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>
+                  Normalized Weight
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {prescribedObservers.map((observer) => (
+                <tr
+                  key={observer.gatewayAddress}
+                  style={{ borderBottom: '1px solid #eee' }}
+                >
+                  <td style={{ padding: '10px' }}>
+                    {observer.gatewayAddress.slice(0, 8)}...
+                  </td>
+                  <td style={{ padding: '10px' }}>{observer.stake}</td>
+                  <td style={{ padding: '10px' }}>{observer.tenureWeight}</td>
+                  <td style={{ padding: '10px' }}>{observer.stakeWeight}</td>
+                  <td style={{ padding: '10px' }}>
+                    {observer.compositeWeight}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
