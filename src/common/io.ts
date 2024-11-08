@@ -49,6 +49,7 @@ import {
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
+  AoVaultDataAddressMap,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -252,6 +253,22 @@ export class IOReadable implements AoIORead {
     ];
 
     return this.process.read<PaginationResult<AoBalanceWithAddress>>({
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getVaults(
+    params?: PaginationParams<AoVaultDataAddressMap>,
+  ): Promise<PaginationResult<AoVaultDataAddressMap>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Vaults' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    return this.process.read<PaginationResult<AoVaultDataAddressMap>>({
       tags: pruneTags(allTags),
     });
   }

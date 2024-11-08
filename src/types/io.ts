@@ -191,11 +191,17 @@ export type AoGatewayServices =
 export type AoGatewayDelegates = Record<WalletAddress, AoGatewayDelegate>;
 export type AoGatewayDelegateAllowList = WalletAddress[];
 
+export type AoVaultDataIdMap = Record<string, AoVaultData>;
+export type AoVaultDataAddressMap = {
+  address: WalletAddress;
+  vault: AoVaultDataIdMap;
+};
+
 export type AoGateway = {
   settings: AoGatewaySettings;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
-  vaults: Record<WalletAddress, AoVaultData>;
+  vaults: AoVaultDataAddressMap;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   observerAddress: WalletAddress;
@@ -388,6 +394,10 @@ export interface AoIORead {
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+
+  getVaults(
+    params?: PaginationParams<AoVaultDataAddressMap>,
+  ): Promise<PaginationResult<AoVaultDataAddressMap>>;
 }
 
 export interface AoIOWrite extends AoIORead {
