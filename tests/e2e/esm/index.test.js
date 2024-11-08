@@ -449,7 +449,7 @@ describe('e2e esm tests', async () => {
       assert.ok(vaults);
       assert(vaults.limit === 100);
       assert(vaults.sortOrder === 'desc');
-      assert(vaults.sortBy === 'balance');
+      assert(vaults.sortBy === 'address');
       assert(typeof vaults.totalItems === 'number');
       assert(typeof vaults.sortBy === 'string');
       assert(typeof vaults.sortOrder === 'string');
