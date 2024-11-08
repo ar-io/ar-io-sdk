@@ -62,6 +62,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo-1)
+  - [`getHandlers()`](#gethandlers)
+  - [`validate({ validations })`](#validate-validations-)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -1362,6 +1364,71 @@ const info = await ant.getInfo();
   "description": "This is the ANT for the ArDrive decentralized web app.",
   "keywords": ["File-sharing", "Publishing", "dApp"],
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
+}
+```
+
+</details>
+
+### `getHandlers()`
+
+Retrieves the handlers supported on the ANT
+
+```typescript
+const handlers = await ant.getHandlers();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+[
+  "evolve",
+  "_eval",
+  "_default",
+  "transfer",
+  "balance",
+  "balances",
+  "totalSupply",
+  "info",
+  "addController",
+  "removeController",
+  "controllers",
+  "setRecord",
+  "removeRecord",
+  "record",
+  "records",
+  "setName",
+  "setTicker",
+  "initializeState",
+  "state"
+]
+```
+
+</details>
+
+### `validate({ validations })`
+
+Validate the APIs exposed by the ANT. Defaults to verifying the requisite handlers are returned.
+
+```typescript
+async function validateSetTicker({ant}) {
+    /// ... your CUSTOM validation here
+    return true | false
+  };
+const validations = {
+  ["setTicker"] = validateSetTicker,
+};
+const validities = await ant.validate({validations});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "setTicker": { "valid": true },
+  "state": { "valid": false, "error": "...some error about why its not valid" }
+  /// rest of handler validations
 }
 ```
 
