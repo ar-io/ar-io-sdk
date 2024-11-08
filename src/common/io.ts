@@ -49,6 +49,7 @@ import {
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
+  AoVaultData,
   AoVaultDataAddressMap,
   EpochInput,
   isProcessConfiguration,
@@ -254,6 +255,22 @@ export class IOReadable implements AoIORead {
 
     return this.process.read<PaginationResult<AoBalanceWithAddress>>({
       tags: pruneTags(allTags),
+    });
+  }
+
+  async getVault({
+    address,
+    vaultId,
+  }: {
+    address: WalletAddress;
+    vaultId: string;
+  }): Promise<AoVaultData> {
+    return this.process.read<AoVaultData>({
+      tags: [
+        { name: 'Action', value: 'Vault' },
+        { name: 'Address', value: address },
+        { name: 'Vault-Id', value: vaultId },
+      ],
     });
   }
 

@@ -398,6 +398,13 @@ export interface AoIORead {
   getVaults(
     params?: PaginationParams<AoVaultDataAddressMap>,
   ): Promise<PaginationResult<AoVaultDataAddressMap>>;
+  getVault({
+    address,
+    vaultId,
+  }: {
+    address: WalletAddress;
+    vaultId: string;
+  }): Promise<AoVaultData>;
 }
 
 export interface AoIOWrite extends AoIORead {
