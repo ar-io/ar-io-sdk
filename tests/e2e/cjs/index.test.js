@@ -340,6 +340,18 @@ describe('e2e cjs tests', async () => {
       }
     });
 
+    it('should be able to get a specific vault', async () => {
+      const vault = await io.getVault({
+        address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+        vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+      });
+      assert.deepEqual(vault, {
+        balance: 1,
+        startTimestamp: 1729962428678,
+        endTimestamp: 1731172028678,
+      });
+    });
+
     it('should be able to get paginated vaults', async () => {
       const vaults = await io.getVaults();
       assert.ok(vaults);
@@ -358,6 +370,8 @@ describe('e2e cjs tests', async () => {
       vaults.items.forEach(({ address, vault: vaultsForAddress }) => {
         assert(typeof address === 'string');
         for (const [vaultId, vault] of Object.entries(vaultsForAddress)) {
+          console.log('vaultId', vaultId);
+          console.log('vault', vault);
           assert(typeof vaultId === 'string');
           assert(typeof vault === 'object');
           assert(typeof vault.balance === 'number');

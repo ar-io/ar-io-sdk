@@ -432,6 +432,18 @@ describe('e2e esm tests', async () => {
       }
     });
 
+    it('should be able to get a specific vault', async () => {
+      const vault = await io.getVault({
+        address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+        vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+      });
+      assert.deepEqual(vault, {
+        balance: 1,
+        startTimestamp: 1729962428678,
+        endTimestamp: 1731172028678,
+      });
+    });
+
     it('should be able to get paginated vaults', async () => {
       const vaults = await io.getVaults();
       assert.ok(vaults);
