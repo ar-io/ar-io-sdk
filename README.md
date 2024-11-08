@@ -1411,12 +1411,11 @@ const handlers = await ant.getHandlers();
 Validate the APIs exposed by the ANT. Defaults to verifying the requisite handlers are returned.
 
 ```typescript
-async function validateSetTicker({ant}) {
-    /// ... your CUSTOM validation here
-    return true | false
-  };
 const validations = {
-  ["setTicker"] = validateSetTicker,
+  ["setTicker"] = async ({ant}) => {
+      const handlers = await ant.getHandlers()
+      return handlers.includes("setTicker") // true or false
+  },
 };
 const validities = await ant.validate({validations});
 ```
@@ -1426,9 +1425,29 @@ const validities = await ant.validate({validations});
 
 ```json
 {
+  "balance": { "valid": true },
+  "balances": { "valid": true },
+  "totalSupply": { "valid": true },
+  "info": { "valid": true },
+  "controllers": { "valid": true },
+  "record": { "valid": true },
+  "records": { "valid": true },
+  "state": { "valid": true },
+  "evolve": { "valid": true },
+  "_eval": { "valid": true },
+  "_default": { "valid": true },
+  "transfer": { "valid": true },
+  "addController": { "valid": true },
+  "removeController": { "valid": true },
+  "setRecord": { "valid": true },
+  "removeRecord": { "valid": true },
+  "setName": { "valid": true },
   "setTicker": { "valid": true },
-  "state": { "valid": false, "error": "...some error about why its not valid" }
-  /// rest of handler validations
+  "setDescription": { "valid": true },
+  "setKeywords": { "valid": true },
+  "initializeState": { "valid": true },
+  "releaseName": { "valid": true },
+  "reassignName": { "valid": true }
 }
 ```
 
