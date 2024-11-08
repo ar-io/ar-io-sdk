@@ -29,6 +29,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
+    - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
@@ -395,6 +396,51 @@ const balances = await io.getBalances({
 ```
 
 </details>
+
+#### `getVaults({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves the vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getVaults({
+  cursor: '0',
+  limit: 100,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "items": [
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vault": {
+        "vaultIdOne": {
+          "balance": 1000000,
+          "startTimestamp": 123,
+          "endTimestamp": 4567
+        },
+        "vaultIdTwo": {
+          "balance": 1000000,
+          "startTimestamp": 123,
+          "endTimestamp": 4567
+        }
+      }
+    }
+    // ...98 other addresses with vaults
+  ],
+  "hasMore": true,
+  "nextCursor": "1",
+  "totalItems": 1789,
+  "sortBy": "balance",
+  "sortOrder": "desc"
+}
+```
 
 #### `getGateway({ address })`
 
