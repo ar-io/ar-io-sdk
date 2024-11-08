@@ -17,7 +17,6 @@ export * from './error.js';
 export * from './logger.js';
 export * from './ant.js';
 export * from './ant-registry.js';
-export * from './http.js';
 
 // ao
 export * from './io.js';
