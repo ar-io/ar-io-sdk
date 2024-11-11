@@ -95,7 +95,7 @@ export type AoEpochObservationData = {
 
 export type AoVaultData = {
   balance: number;
-  startTimestamp: number;
+  startTimestamp: Timestamp;
   endTimestamp: Timestamp;
 };
 
@@ -191,17 +191,16 @@ export type AoGatewayServices =
 export type AoGatewayDelegates = Record<WalletAddress, AoGatewayDelegate>;
 export type AoGatewayDelegateAllowList = WalletAddress[];
 
-export type AoVaultDataIdMap = Record<string, AoVaultData>;
-export type AoVaultDataAddressMap = {
+export type AoWalletVault = AoVaultData & {
   address: WalletAddress;
-  vault: AoVaultDataIdMap;
+  vaultId: string;
 };
 
 export type AoGateway = {
   settings: AoGatewaySettings;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
-  vaults: AoVaultDataAddressMap;
+  vaults: AoWalletVault;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   observerAddress: WalletAddress;
@@ -396,8 +395,8 @@ export interface AoIORead {
   getDemandFactor(): Promise<number>;
 
   getVaults(
-    params?: PaginationParams<AoVaultDataAddressMap>,
-  ): Promise<PaginationResult<AoVaultDataAddressMap>>;
+    params?: PaginationParams<AoWalletVault>,
+  ): Promise<PaginationResult<AoWalletVault>>;
   getVault({
     address,
     vaultId,

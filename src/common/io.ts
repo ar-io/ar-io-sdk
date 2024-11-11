@@ -50,7 +50,7 @@ import {
   AoIOWrite,
   AoRegistrationFees,
   AoVaultData,
-  AoVaultDataAddressMap,
+  AoWalletVault,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -275,8 +275,8 @@ export class IOReadable implements AoIORead {
   }
 
   async getVaults(
-    params?: PaginationParams<AoVaultDataAddressMap>,
-  ): Promise<PaginationResult<AoVaultDataAddressMap>> {
+    params?: PaginationParams<AoWalletVault>,
+  ): Promise<PaginationResult<AoWalletVault>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Vaults' },
       { name: 'Cursor', value: params?.cursor?.toString() },
@@ -285,7 +285,7 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
-    return this.process.read<PaginationResult<AoVaultDataAddressMap>>({
+    return this.process.read<PaginationResult<AoWalletVault>>({
       tags: pruneTags(allTags),
     });
   }

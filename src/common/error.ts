@@ -55,3 +55,9 @@ export class InvalidProcessConfigurationError extends BaseError {
 }
 
 export class AbortError extends BaseError {}
+
+export class VaultNotFound extends BaseError {
+  constructor() {
+    super('Vault not found');
+  }
+}
