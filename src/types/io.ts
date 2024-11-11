@@ -200,7 +200,7 @@ export type AoGateway = {
   settings: AoGatewaySettings;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
-  vaults: AoWalletVault;
+  vaults: Record<WalletAddress, AoVaultData>;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   observerAddress: WalletAddress;
