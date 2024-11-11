@@ -389,7 +389,6 @@ describe('e2e cjs tests', async () => {
     });
     it('should validate all apis on the ant', async () => {
       const res = await ant.validate();
-      console.dir(res, { depth: null });
       assert(Object.values(res).every(({ valid }) => valid == true));
     });
   });
