@@ -1,3 +1,10 @@
+# [2.4.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.13...v2.4.0-alpha.14) (2024-11-11)
+
+
+### Bug Fixes
+
+* **io:** include address in delegate type for gateway ([46ef1a7](https://github.com/ar-io/ar-io-sdk/commit/46ef1a7e12c6a1f54478dfe9ca0050dfa06d209f))
+
 # [2.4.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.12...v2.4.0-alpha.13) (2024-11-11)
 
 
