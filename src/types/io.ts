@@ -241,6 +241,10 @@ export type AoGatewayDelegate = {
   vaults: Record<WalletAddress, AoVaultData>;
 };
 
+export type AoGatewayDelegateWithAddress = AoGatewayDelegate & {
+  address: WalletAddress;
+};
+
 export type AoGatewaySettings = {
   allowDelegatedStaking: boolean | 'allowlist';
   delegateRewardShareRatio: number;
@@ -316,15 +320,16 @@ export interface AoIORead {
     address: WalletAddress;
   }): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
-  getGatewayDelegates(
-    params: {
-      address: WalletAddress;
-    } & PaginationParams<AoGatewayDelegate>,
-  ): Promise<PaginationResult<AoGatewayDelegate>>;
+  getGatewayDelegates({
+    address,
+    ...pageParams
+  }: {
+    address: WalletAddress;
+  } & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
+    PaginationResult<AoGatewayDelegateWithAddress>
+  >;
   getGatewayDelegateAllowList(
-    params?: PaginationParams<WalletAddress> & {
-      address: WalletAddress;
-    },
+    params?: PaginationParams<WalletAddress>,
   ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   getGateways(
