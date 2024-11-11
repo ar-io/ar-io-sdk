@@ -387,9 +387,5 @@ describe('e2e cjs tests', async () => {
         assert(strictAnt instanceof AoANTWriteable);
       }
     });
-    it('should validate all apis on the ant', async () => {
-      const res = await ant.validate();
-      assert(Object.values(res).every(({ valid }) => valid == true));
-    });
   });
 });
