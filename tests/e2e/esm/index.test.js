@@ -8,7 +8,6 @@ import {
   ArweaveSigner,
   IO,
   IOWriteable,
-  VaultNotFound,
   createAoSigner,
   ioDevnetProcessId,
 } from '@ar.io/sdk';
@@ -454,7 +453,8 @@ describe('e2e esm tests', async () => {
         })
         .catch((e) => e);
       assert.ok(error);
-      assert(error instanceof VaultNotFound);
+      assert(error instanceof Error);
+      assert(error.message === 'Vault-Not-Found');
     });
 
     it('should be able to get paginated vaults', async () => {

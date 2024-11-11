@@ -18,7 +18,7 @@ import { connect } from '@permaweb/aoconnect';
 import { AOContract, AoClient, AoSigner } from '../../types/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
-import { VaultNotFound, WriteInteractionError } from '../error.js';
+import { WriteInteractionError } from '../error.js';
 import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
@@ -75,17 +75,17 @@ export class AOProcess implements AOContract {
         }
 
         const tagsOutput = result.Messages[0].Tags;
+        const messageData = result.Messages[0].Data;
+
         const error = tagsOutput.find((tag) => tag.name === 'Error');
         if (error) {
-          if (error.value === 'Vault-Not-Found') {
-            throw new VaultNotFound();
-          }
-          // TODO: `Value` doesn't exist on this type from getVault -- its a Tag: {"name":"Error","value":"Vault-Not-Found"}
-          throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
+          throw new Error(
+            `${error.value}${messageData ? `: ${messageData}` : ''}`,
+          );
         }
 
         // return empty object if no data is returned
-        if (result.Messages[0].Data === undefined) {
+        if (messageData === undefined) {
           return {} as K;
         }
 
@@ -98,10 +98,6 @@ export class AOProcess implements AOContract {
           tags,
         });
         lastError = e;
-        if (e instanceof VaultNotFound) {
-          // Don't retry if vault cannot be not found
-          throw e;
-        }
 
         // exponential backoff
         await new Promise((resolve) =>
