@@ -393,7 +393,6 @@ export interface AoIORead {
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
-
   getVaults(
     params?: PaginationParams<AoWalletVault>,
   ): Promise<PaginationResult<AoWalletVault>>;
