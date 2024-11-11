@@ -45,7 +45,7 @@ import {
   AoEpochData,
   AoEpochSettings,
   AoGateway,
-  AoGatewayDelegate,
+  AoGatewayDelegateWithAddress,
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
@@ -272,11 +272,7 @@ export class IOReadable implements AoIORead {
   async getGatewayDelegates({
     address,
     ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<AoGatewayDelegate>): Promise<
-    PaginationResult<AoGatewayDelegate>
-  > {
+  }): Promise<PaginationResult<AoGatewayDelegateWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Delegates' },
       { name: 'Address', value: address },
@@ -286,7 +282,7 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
-    return this.process.read<PaginationResult<AoGatewayDelegate>>({
+    return this.process.read<PaginationResult<AoGatewayDelegateWithAddress>>({
       tags: pruneTags(allTags),
     });
   }
