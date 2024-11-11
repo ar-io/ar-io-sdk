@@ -16,7 +16,7 @@
 import { AxiosInstance } from 'axios';
 
 import { HTTPClient } from '../types/index.js';
-import { createAxiosInstance } from '../utils/index.js';
+import { createAxiosInstance } from '../utils/http-client.js';
 import { FailedRequestError, NotFound, UnknownError } from './error.js';
 import { ILogger, Logger } from './logger.js';
 
