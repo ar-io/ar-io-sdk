@@ -419,18 +419,17 @@ const vaults = await io.getVaults({
   "items": [
     {
       "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-      "vault": {
-        "vaultIdOne": {
-          "balance": 1000000,
-          "startTimestamp": 123,
-          "endTimestamp": 4567
-        },
-        "vaultIdTwo": {
-          "balance": 1000000,
-          "startTimestamp": 123,
-          "endTimestamp": 4567
-        }
-      }
+      "vaultId": "vaultIdOne",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    },
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdTwo",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
     }
     // ...98 other addresses with vaults
   ],
