@@ -1,3 +1,11 @@
+# [2.4.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.12...v2.4.0-alpha.13) (2024-11-11)
+
+
+### Bug Fixes
+
+* **exports:** add exports to barrel file ([fec094e](https://github.com/ar-io/ar-io-sdk/commit/fec094e3095f54a2b14c6427dae50642bd5af16e))
+* **exports:** dont export http stuff) ([d6369aa](https://github.com/ar-io/ar-io-sdk/commit/d6369aa0a722abbe468eb0e73423b1b757dbf0ee))
+
 # [2.4.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.11...v2.4.0-alpha.12) (2024-11-07)
 
 
