@@ -62,8 +62,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo-1)
-  - [`getHandlers()`](#gethandlers)
-  - [`validate({ validations })`](#validate-validations-)
+    - [`getHandlers()`](#gethandlers)
+    - [`validate({ validations })`](#validate-validations-)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -1369,7 +1369,7 @@ const info = await ant.getInfo();
 
 </details>
 
-### `getHandlers()`
+#### `getHandlers()`
 
 Retrieves the handlers supported on the ANT
 
@@ -1406,7 +1406,7 @@ const handlers = await ant.getHandlers();
 
 </details>
 
-### `validate({ validations })`
+#### `validate({ validations })`
 
 Validate the APIs exposed by the ANT. Defaults to verifying the requisite handlers are returned.
 
