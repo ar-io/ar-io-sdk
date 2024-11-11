@@ -482,6 +482,35 @@ describe('e2e esm tests', async () => {
         },
       );
     });
+
+    it('should be able to get paginated vaults with custom sort', async () => {
+      const vaults = await io.getVaults({
+        sortBy: 'balance',
+        sortOrder: 'asc',
+      });
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'asc');
+      assert(vaults.sortBy === 'balance');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {
