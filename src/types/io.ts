@@ -198,6 +198,8 @@ export type AoWalletVault = AoVaultData & {
 
 export type AoGateway = {
   settings: AoGatewaySettings;
+  // @deprecated - use getGatewayDelegates instead
+  delegates: AoGatewayDelegates;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
   vaults: Record<WalletAddress, AoVaultData>;
