@@ -1,3 +1,12 @@
+# [2.4.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.14...v2.4.0-alpha.15) (2024-11-12)
+
+
+### Features
+
+* **getVault:** init IO method PE-7081 ([0e3cde2](https://github.com/ar-io/ar-io-sdk/commit/0e3cde2b877268ae7589579a6a540262da828222))
+* **paginated vaults:** init SDK paginated vaults PE-7081 ([6d079f9](https://github.com/ar-io/ar-io-sdk/commit/6d079f903d1e583aadaabe98b8765fb9f1bd997a))
+* **paginated vaults:** use flat array over nested vaults PE-7081 ([e17cfb7](https://github.com/ar-io/ar-io-sdk/commit/e17cfb7478d1512fadf31c2105dd7b6deb0339bb))
+
 # [2.4.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.13...v2.4.0-alpha.14) (2024-11-11)
 
 
