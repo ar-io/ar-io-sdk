@@ -422,6 +422,8 @@ const vault = await io.getVault({
 }
 ```
 
+</details>
+
 #### `getVaults({ cursor, limit, sortBy, sortOrder })`
 
 Retrieves all locked-balance user vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
@@ -465,6 +467,8 @@ const vaults = await io.getVaults({
   "sortOrder": "desc"
 }
 ```
+
+</details>
 
 #### `getGateway({ address })`
 
