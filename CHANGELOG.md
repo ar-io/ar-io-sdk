@@ -1,3 +1,10 @@
+# [2.4.0-alpha.16](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.15...v2.4.0-alpha.16) (2024-11-12)
+
+
+### Bug Fixes
+
+* **types:** add back delegates for AoGateway ([d337a74](https://github.com/ar-io/ar-io-sdk/commit/d337a7463458f27e079bf146033ba125add7a60a))
+
 # [2.4.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0-alpha.14...v2.4.0-alpha.15) (2024-11-12)
 
 
