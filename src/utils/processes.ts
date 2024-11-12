@@ -21,14 +21,14 @@ import { ANT } from '../common/ant.js';
 import { IO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
+import { AoANTRegistryRead } from '../types/ant-registry.js';
+import { AoANTState } from '../types/ant.js';
 import {
-  AoANTRegistryRead,
-  AoANTState,
   AoArNSNameData,
   AoIORead,
   ProcessId,
   WalletAddress,
-} from '../types.js';
+} from '../types/index.js';
 
 /**
  * @beta This API is in beta and may change in the future.
@@ -67,6 +67,7 @@ export class ArNSEventEmitter extends EventEmitter {
   private timeoutMs: number; // timeout for each request to 3 seconds
   private throttle;
   private logger: ILogger;
+  private strict: boolean;
   constructor({
     contract = IO.init({
       processId: IO_TESTNET_PROCESS_ID,
@@ -74,17 +75,20 @@ export class ArNSEventEmitter extends EventEmitter {
     timeoutMs = 60_000,
     concurrency = 30,
     logger = Logger.default,
+    strict = false,
   }: {
     contract?: AoIORead;
     timeoutMs?: number;
     concurrency?: number;
     logger?: ILogger;
+    strict?: boolean;
   } = {}) {
     super();
     this.contract = contract;
     this.timeoutMs = timeoutMs;
     this.throttle = pLimit(concurrency);
     this.logger = logger;
+    this.strict = strict;
   }
 
   async fetchProcessesOwnedByWallet({
@@ -144,6 +148,7 @@ export class ArNSEventEmitter extends EventEmitter {
           }
           const ant = ANT.init({
             processId,
+            strict: this.strict,
           });
           const state: AoANTState | undefined = (await timeout(
             this.timeoutMs,

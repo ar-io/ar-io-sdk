@@ -17,21 +17,9 @@ import Arweave from 'arweave';
 
 import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
-  AoArNSNameData,
-  AoEpochData,
-  AoEpochSettings,
-  AoGateway,
-  AoIORead,
-  AoIOWrite,
-  AoRegistrationFees,
-  EpochInput,
-  isProcessConfiguration,
-  isProcessIdConfiguration,
-} from '../io.js';
-import { AoSigner, mIOToken } from '../token.js';
-import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
+  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -50,8 +38,26 @@ import {
   WalletAddress,
   WithSigner,
   WriteOptions,
-} from '../types.js';
+} from '../types/index.js';
+import {
+  AoArNSNameData,
+  AoAuctionPriceData,
+  AoEpochData,
+  AoEpochSettings,
+  AoGateway,
+  AoGatewayDelegateWithAddress,
+  AoIORead,
+  AoIOWrite,
+  AoRegistrationFees,
+  AoVaultData,
+  AoWalletVault,
+  EpochInput,
+  isProcessConfiguration,
+  isProcessIdConfiguration,
+} from '../types/io.js';
+import { AoSigner, mIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
+import { getCurrentBlockUnixTimestampMs, pruneTags } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -145,16 +151,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (params as { timestamp?: number })?.timestamp?.toString() ??
-          (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -162,15 +159,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochSettings>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
@@ -180,16 +170,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -197,15 +178,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -223,25 +197,18 @@ export class IOReadable implements AoIORead {
   }
 
   async getArNSRecords(
-    pageParams?: PaginationParams,
+    params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Records' },
-      { name: 'Cursor', value: pageParams?.cursor?.toString() },
-      { name: 'Limit', value: pageParams?.limit?.toString() },
-      { name: 'Sort-By', value: pageParams?.sortBy },
-      { name: 'Sort-Order', value: pageParams?.sortOrder },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoArNSNameDataWithName>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -276,25 +243,50 @@ export class IOReadable implements AoIORead {
   }
 
   async getBalances(
-    pageParams?: PaginationParams,
+    params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Balances' },
-      { name: 'Cursor', value: pageParams?.cursor?.toString() },
-      { name: 'Limit', value: pageParams?.limit?.toString() },
-      { name: 'Sort-By', value: pageParams?.sortBy },
-      { name: 'Sort-Order', value: pageParams?.sortOrder },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoBalanceWithAddress>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getVault({
+    address,
+    vaultId,
+  }: {
+    address: WalletAddress;
+    vaultId: string;
+  }): Promise<AoVaultData> {
+    return this.process.read<AoVaultData>({
+      tags: [
+        { name: 'Action', value: 'Vault' },
+        { name: 'Address', value: address },
+        { name: 'Vault-Id', value: vaultId },
+      ],
+    });
+  }
+
+  async getVaults(
+    params?: PaginationParams<AoWalletVault>,
+  ): Promise<PaginationResult<AoWalletVault>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Vaults' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    return this.process.read<PaginationResult<AoWalletVault>>({
+      tags: pruneTags(allTags),
     });
   }
 
@@ -311,8 +303,48 @@ export class IOReadable implements AoIORead {
     });
   }
 
+  async getGatewayDelegates({
+    address,
+    ...pageParams
+  }): Promise<PaginationResult<AoGatewayDelegateWithAddress>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Delegates' },
+      { name: 'Address', value: address },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-By', value: pageParams?.sortBy },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
+    ];
+
+    return this.process.read<PaginationResult<AoGatewayDelegateWithAddress>>({
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getGatewayDelegateAllowList({
+    address,
+    ...pageParams
+  }: {
+    address: WalletAddress;
+  } & PaginationParams<WalletAddress>): Promise<
+    PaginationResult<WalletAddress>
+  > {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Allowed-Delegates' },
+      { name: 'Address', value: address },
+      { name: 'Cursor', value: pageParams?.cursor?.toString() },
+      { name: 'Limit', value: pageParams?.limit?.toString() },
+      { name: 'Sort-Order', value: pageParams?.sortOrder },
+      // note: sortBy is omitted because it's not supported for this action as table is an of addresses
+    ];
+
+    return this.process.read<PaginationResult<WalletAddress>>({
+      tags: pruneTags(allTags),
+    });
+  }
+
   async getGateways(
-    pageParams?: PaginationParams,
+    pageParams?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Gateways' },
@@ -322,15 +354,8 @@ export class IOReadable implements AoIORead {
       { name: 'Sort-Order', value: pageParams?.sortOrder },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<PaginationResult<AoGatewayWithAddress>>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -364,16 +389,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -381,15 +397,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoWeightedObserver[]>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -400,16 +409,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -417,15 +417,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<string[]>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -453,15 +446,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochObservationData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -472,16 +458,7 @@ export class IOReadable implements AoIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       {
         name: 'Epoch-Index',
@@ -489,21 +466,14 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<AoEpochDistributionData>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
   async getTokenCost(params: {
     intent: 'Buy-Record';
-    purchaseType: 'permabuy' | 'lease';
+    type: 'permabuy' | 'lease';
     years: number;
     name: string;
   }): Promise<number>;
@@ -519,13 +489,13 @@ export class IOReadable implements AoIORead {
   }): Promise<number>;
   async getTokenCost({
     intent,
-    purchaseType,
+    type,
     years,
     name,
     quantity,
   }: {
     intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    purchaseType?: 'permabuy' | 'lease';
+    type?: 'permabuy' | 'lease';
     years?: number;
     name?: string;
     quantity?: number;
@@ -550,7 +520,7 @@ export class IOReadable implements AoIORead {
       },
       {
         name: 'Purchase-Type',
-        value: purchaseType,
+        value: type,
       },
       {
         name: 'Timestamp',
@@ -567,15 +537,8 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.read<number>({
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -588,6 +551,90 @@ export class IOReadable implements AoIORead {
   async getDemandFactor(): Promise<number> {
     return this.process.read<number>({
       tags: [{ name: 'Action', value: 'Demand-Factor' }],
+    });
+  }
+
+  // Auctions
+  async getArNSAuctions(
+    params?: PaginationParams<AoAuction>,
+  ): Promise<PaginationResult<AoAuction>> {
+    const allTags = [
+      { name: 'Action', value: 'Auctions' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+    ];
+
+    return this.process.read<PaginationResult<AoAuction>>({
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getArNSAuction({
+    name,
+  }: {
+    name: string;
+  }): Promise<AoAuction | undefined> {
+    const allTags = [
+      { name: 'Action', value: 'Auction-Info' },
+      { name: 'Name', value: name },
+    ];
+
+    return this.process.read<AoAuction>({
+      tags: allTags,
+    });
+  }
+
+  /**
+   * Get auction prices for a given auction at the provided intervals
+   *
+   * @param {Object} params - The parameters for fetching auction prices
+   * @param {string} params.name - The name of the auction
+   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
+   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
+   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
+   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
+   * @returns {Promise<AoAuctionPriceData>} The auction price data
+   */
+  async getArNSAuctionPrices({
+    name,
+    type,
+    years,
+    timestamp,
+    intervalMs,
+  }: {
+    name: string;
+    type?: 'permabuy' | 'lease';
+    years?: number;
+    timestamp?: number;
+    intervalMs?: number;
+  }): Promise<AoAuctionPriceData> {
+    const prunedPriceTags: { name: string; value: string }[] = [
+      { name: 'Action', value: 'Auction-Prices' },
+      { name: 'Name', value: name },
+      {
+        name: 'Timestamp',
+        value: timestamp?.toString() ?? Date.now().toString(),
+      },
+      { name: 'Purchase-Type', value: type ?? 'lease' },
+      {
+        name: 'Years',
+        value:
+          type == undefined || type === 'lease'
+            ? years?.toString() ?? '1'
+            : undefined,
+      },
+      {
+        name: 'Price-Interval-Ms',
+        value: intervalMs?.toString() ?? '900000',
+      },
+    ].filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.read<AoAuctionPriceData>({
+      tags: prunedPriceTags,
     });
   }
 }
@@ -658,6 +705,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     {
       operatorStake,
       allowDelegatedStaking,
+      allowedDelegates,
       delegateRewardShareRatio,
       fqdn,
       label,
@@ -682,6 +730,10 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       {
         name: 'Allow-Delegated-Staking',
         value: allowDelegatedStaking?.toString(),
+      },
+      {
+        name: 'Allowed-Delegates',
+        value: allowedDelegates?.join(','),
       },
       {
         name: 'Delegate-Reward-Share-Ratio',
@@ -725,16 +777,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -749,6 +794,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async updateGatewaySettings(
     {
       allowDelegatedStaking,
+      allowedDelegates,
       delegateRewardShareRatio,
       fqdn,
       label,
@@ -778,6 +824,10 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         value: allowDelegatedStaking?.toString(),
       },
       {
+        name: 'Allowed-Delegates',
+        value: allowedDelegates?.join(','),
+      },
+      {
         name: 'Delegate-Reward-Share-Ratio',
         value: delegateRewardShareRatio?.toString(),
       },
@@ -788,16 +838,9 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Auto-Stake', value: autoStake?.toString() },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -824,10 +867,12 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       decreaseQty: number | mIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
     return this.process.send({
       signer: this.signer,
       tags: [
@@ -835,7 +880,38 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Action', value: 'Decrease-Delegate-Stake' },
         { name: 'Target', value: params.target },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
+    });
+  }
+
+  /**
+   * Initiates an instant withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for initiating an instant withdrawal
+   * @param {string} params.address - The gateway address of the withdrawal, if not provided, the signer's address will be used
+   * @param {string} params.vaultId - The vault ID of the withdrawal
+   * @returns {Promise<AoMessageResult>} The result of the withdrawal
+   */
+  async instantWithdrawal(
+    params: {
+      gatewayAddress?: string;
+      vaultId: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Instant-Withdrawal' },
+      { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
+    ];
+
+    return this.process.send({
+      signer: this.signer,
+      tags: pruneTags(allTags),
     });
   }
 
@@ -917,19 +993,46 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Purchase-Type', value: params.type || 'lease' },
     ];
 
-    const prunedTags: { name: string; value: string }[] = allTags.filter(
-      (tag: {
-        name: string;
-        value: string | undefined;
-      }): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
     return this.process.send({
       signer: this.signer,
-      tags: prunedTags,
+      tags: pruneTags(allTags),
     });
   }
 
+  /**
+   * Upgrades an existing leased record to a permabuy.
+   *
+   * @param {Object} params - The parameters for upgrading a record
+   * @param {string} params.name - The name of the record to upgrade
+   * @param {Object} [options] - The options for the upgrade
+   * @returns {Promise<AoMessageResult>} The result of the upgrade
+   */
+  async upgradeRecord(
+    params: {
+      name: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      signer: this.signer,
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+        { name: 'Name', value: params.name },
+      ],
+    });
+  }
+
+  /**
+   * Extends the lease of an existing leased record.
+   *
+   * @param {Object} params - The parameters for extending a lease
+   * @param {string} params.name - The name of the record to extend
+   * @param {number} params.years - The number of years to extend the lease
+   * @param {Object} [options] - The options for the extension
+   * @returns {Promise<AoMessageResult>} The result of the extension
+   */
   async extendLease(
     params: {
       name: string;
@@ -968,19 +1071,58 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async cancelDelegateWithdrawal(
-    params: { address: string; vaultId: string },
+  /**
+   * Cancel a withdrawal from a gateway.
+   *
+   * @param {Object} params - The parameters for cancelling a withdrawal
+   * @param {string} [params.address] - The address of the withdrawal (optional). If not provided, the signer's address will be used.
+   * @param {string} params.vaultId - The vault ID of the withdrawal.
+   * @param {Object} [options] - The options for the cancellation
+   * @returns {Promise<AoMessageResult>} The result of the cancellation
+   */
+  async cancelWithdrawal(
+    params: { gatewayAddress?: WalletAddress; vaultId: string },
     options?: WriteOptions | undefined,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Cancel-Withdrawal' },
+      { name: 'Vault-Id', value: params.vaultId },
+      { name: 'Address', value: params.gatewayAddress },
+    ];
+
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Cancel-Delegate-Withdrawal' },
-        { name: 'Address', value: params.address },
-        { name: 'Vault-Id', value: params.vaultId },
-      ],
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async submitAuctionBid(
+    params: {
+      name: string;
+      processId: string;
+      quantity?: number;
+      type?: 'lease' | 'permabuy';
+      years?: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Auction-Bid' },
+      { name: 'Name', value: params.name },
+      { name: 'Process-Id', value: params.processId },
+      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
+      { name: 'Purchase-Type', value: params.type || 'lease' },
+      { name: 'Years', value: params.years?.toString() ?? undefined },
+    ];
+
+    return this.process.send({
+      signer: this.signer,
+      tags: pruneTags(allTags),
     });
   }
 }

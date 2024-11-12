@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './ao.js';
-export * from './arweave.js';
-export * from './base64.js';
-export * from './json.js';
-export * from './processes.js';
-export * from './schema.js';
+import { AoMessageResult } from './common.js';
+
+export interface AoANTRegistryRead {
+  accessControlList(params: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }>;
+}
+
+export interface AoANTRegistryWrite extends AoANTRegistryRead {
+  register(params: { processId: string }): Promise<AoMessageResult>;
+}

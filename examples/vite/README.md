@@ -2,6 +2,13 @@
 
 This example shows how to use the `@ar.io/sdk` within a Typescript/React project using [Vite].
 
+<!-- toc -->
+
+- [Getting Started](#getting-started)
+- [Polyfills](#polyfills)
+
+<!-- tocstop -->
+
 ## Getting Started
 
 1. Install the dependencies:
@@ -18,7 +25,7 @@ yarn start
 
 3. Open your browser and navigate to `http://localhost:3000`. You should see:
 
-![screenshot](./public/screenshot.png)
+![screenshot](./public/image.png)
 
 ## Polyfills
 

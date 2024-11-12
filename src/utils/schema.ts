@@ -13,9 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './ao.js';
-export * from './arweave.js';
-export * from './base64.js';
-export * from './json.js';
-export * from './processes.js';
-export * from './schema.js';
+import { z } from 'zod';
+
+/**
+ *
+ * @param schema - zod schema
+ * @param v - value to parse
+ * @throws {z.SafeParseError<any>} - if the value fails to parse
+ */
+export function parseSchemaResult(schema: z.ZodTypeAny, v: unknown) {
+  const schemaResult = schema.safeParse(v);
+  if (!schemaResult.success) {
+    throw new Error(JSON.stringify(schemaResult.error.format(), null, 2));
+  }
+  return schemaResult;
+}

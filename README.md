@@ -29,10 +29,16 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
+    - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
+    - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
+    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
+    - [`getArNSAuction({ name })`](#getarnsauction-name-)
+    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
     - [`getDemandFactor()`](#getdemandfactor)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
@@ -44,14 +50,16 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
-    - [`decreaseDelegateStake({ target, qty })`](#decreasedelegatestake-target-qty-)
+    - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
+    - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
     - [`transfer({ target, qty })`](#transfer-target-qty-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
-    - [`cancelDelegateWithdrawal({ address, vaultId })`](#canceldelegatewithdrawal-address-vaultid-)
+    - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
+    - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -68,6 +76,10 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
     - [`setTicker({ ticker })`](#setticker-ticker-)
+    - [`setDescription({ description })`](#setdescription-description-)
+    - [`setKeywords({ keywords })`](#setkeywords-keywords-)
+    - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
+    - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -386,6 +398,73 @@ const balances = await io.getBalances({
 ```
 
 </details>
+ 
+#### `getVault({ address, vaultId })`
+
+Retrieves the locked-balance user vault of the IO process by the specified wallet address and vault ID.
+
+```typescript
+const io = IO.init();
+const vault = await io.getVault({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  vaultId: 'vaultIdOne',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "balance": 1000000,
+  "startTimestamp": 123,
+  "endTimestamp": 4567
+}
+```
+
+#### `getVaults({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all locked-balance user vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getVaults({
+  cursor: '0',
+  limit: 100,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "items": [
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdOne",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    },
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdTwo",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    }
+    // ...98 other addresses with vaults
+  ],
+  "hasMore": true,
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "totalItems": 1789,
+  "sortBy": "balance",
+  "sortOrder": "desc"
+}
+```
 
 #### `getGateway({ address })`
 
@@ -499,6 +578,23 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 
 </details>
 
+#### `buyRecord({ name, type, years, processId })`
+
+Purchases a new ArNS record with the specified name, type, and duration.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ processId: IO_DEVNET_PROCESS_ID, signer });
+const record = await io.buyRecord(
+  { name: 'ardrive', type: 'lease', years: 1 },
+  {
+    // optional tags
+    tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+  },
+);
+```
+
 #### `getArNSRecord({ name })`
 
 Retrieves the record info of the specified ArNS name.
@@ -592,6 +688,136 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
   "totalItems": 21740,
   "sortBy": "startTimestamp",
   "sortOrder": "desc"
+}
+```
+
+</details>
+
+#### `getArNSAuctions({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all active auctions of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last auction name from the previous request.
+
+```typescript
+const io = IO.init();
+const auctions = await io.getArNSAuctions({
+  limit: 100,
+  sortBy: 'endTimestamp',
+  sortOrder: 'asc', // return the auctions ending soonest first
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "items": [
+    {
+      "name": "permalink",
+      "endTimestamp": 1730985241349,
+      "startTimestamp": 1729775641349,
+      "baseFee": 250000000,
+      "demandFactor": 1.05256,
+      "initiator": "GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc",
+      "settings": {
+        "durationMs": 1209600000,
+        "decayRate": 0.000000000016847809193121693,
+        "scalingExponent": 190,
+        "startPriceMultiplier": 50
+      }
+    }
+  ],
+  "hasMore": false,
+  "totalItems": 1,
+  "sortBy": "endTimestamp",
+  "sortOrder": "asc"
+}
+```
+
+</details>
+
+#### `getArNSAuction({ name })`
+
+Retrieves the auction data for the specified auction name.
+
+```typescript
+const io = IO.init();
+const auction = await io.getArNSAuction({ name: 'permalink' });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "name": "permalink",
+  "endTimestamp": 1730985241349,
+  "startTimestamp": 1729775641349,
+  "baseFee": 250000000,
+  "demandFactor": 1.05256,
+  "initiator": "GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc",
+  "settings": {
+    "durationMs": 1209600000,
+    "decayRate": 0.000000000016847809193121693,
+    "scalingExponent": 190,
+    "startPriceMultiplier": 50
+  }
+}
+```
+
+</details>
+
+#### `getArNSAuctionPrices({ name, type, years, intervalMs })`
+
+Retrieves the auction price curve of the specified auction name for the specified type, duration, and interval. The `intervalMs` is the number of milliseconds between price points on the curve. The default interval is 15 minutes.
+
+```typescript
+const io = IO.init();
+const priceCurve = await io.getArNSAuctionPrices({
+  name: 'permalink',
+  type: 'lease',
+  years: 1,
+  intervalMs: 3600000, // 1 hour price intervals (default is 15 minutes)
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "name": "permalink",
+  "type": "lease",
+  "currentPrice": 12582015000,
+  "years": 1,
+  "prices": {
+    "1730412841349": 1618516789,
+    "1729908841349": 8210426826,
+    "1730722441349": 592768907,
+    "1730859241349": 379659914,
+    "1730866441349": 370850139,
+    "1730884441349": 349705277,
+    "1730150041349": 3780993370,
+    "1730031241349": 5541718397,
+    "1730603641349": 872066253,
+    "1730715241349": 606815377,
+    "1730942041349": 289775172,
+    "1730916841349": 314621977,
+    "1730484841349": 1281957300,
+    "1730585641349": 924535164,
+    "1730232841349": 2895237473,
+    "1730675641349": 690200977,
+    "1730420041349": 1581242331,
+    "1729786441349": 12154428186,
+    "1730308441349": 2268298483,
+    "1730564041349": 991657913,
+    "1730081641349": 4712427282,
+    "1730909641349": 322102563,
+    "1730945641349": 286388732,
+    "1730024041349": 5671483398,
+    "1729937641349": 7485620175
+    // ...
+  }
 }
 ```
 
@@ -941,9 +1167,9 @@ const { id: txId } = await io.increaseDelegateStake(
 );
 ```
 
-#### `decreaseDelegateStake({ target, qty })`
+#### `decreaseDelegateStake({ target, qty, instant })`
 
-Decreases the callers stake on the target gateway.
+Decreases the callers stake on the target gateway. Can instantly decrease stake by setting instant to `true`.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
@@ -956,6 +1182,46 @@ const { id: txId } = await io.decreaseDelegateStake(
   },
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+```
+
+Pay the early withdrawal fee and withdraw instantly.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseDelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  qty: new IOToken(100).toMIO(),
+  instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
+});
+```
+
+#### `instantWithdrawal({ gatewayAddress, vaultId })`
+
+Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+// removes a delegated vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
+  {
+    // gateway address where delegate vault exists
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // delegated vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+// removes an operator vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
+  {
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
 );
 ```
@@ -1067,24 +1333,58 @@ const { id: txId } = await io.extendLease(
 );
 ```
 
-#### `cancelDelegateWithdrawal({ address, vaultId })`
+#### `cancelWithdrawal({ gatewayAddress, vaultId })`
 
-Cancels a pending delegate withdrawal.
+Cancels an existing vault on a gateway. The vaulted stake will be returned to the callers stake. If no `gatewayAddress` is provided, the signer's address will be used.
 
 _Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
 
 ```typescript
 const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.cancelDelegateWithdrawal(
+// cancels a delegated vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
   {
     // gateway address where vault exists
-    address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
     // vault id to cancel
     vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
+// cancels an operator vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
+  {
+    // operator vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+);
+```
+
+#### `submitAuctionBid({ name, type, years, processId })`
+
+Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const auction = await io.getArNSAuction({ name: 'permalink' });
+
+// check the current price is under some threshold
+if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
+  const { id: txId } = await io.submitAuctionBid(
+    {
+      name: 'permalink',
+      type: 'lease',
+      years: 1,
+      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    },
+    // optional additional tags
+    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  );
+}
 ```
 
 ### Configuration
@@ -1144,8 +1444,10 @@ const info = await ant.getInfo();
 
 ```json
 {
-  "name": "Ardrive",
+  "name": "ArDrive",
   "ticker": "ANT-ARDRIVE",
+  "description": "This is the ANT for the ArDrive decentralized web app.",
+  "keywords": ["File-sharing", "Publishing", "dApp"],
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
 }
 ```
@@ -1186,6 +1488,8 @@ const state = await ant.getState();
   },
   "Initialized": true,
   "Ticker": "ANT-AR-IO",
+  "Description": "A friendly description for this ANT.",
+  "Keywords": ["keyword1", "keyword2", "keyword3"],
   "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
   "Denomination": 0,
   "Name": "AR.IO Foundation",
@@ -1379,6 +1683,61 @@ const { id: txId } = await ant.setTicker(
 );
 ```
 
+#### `setDescription({ description })`
+
+Sets the description of the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setDescription(
+  { description: 'A friendly description of this ANT' },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `setKeywords({ keywords })`
+
+Sets the keywords of the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setDescription(
+  { keywords: ['Game', 'FPS', 'AO'] },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `releaseName({ name, ioProcessId })`
+
+Releases a name from the auction and makes it available for auction on the IO contract. The name must be permanently owned by the releasing wallet. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.releaseName({
+  name: 'permalink',
+  ioProcessId: IO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to auction on the IO contract
+});
+```
+
+#### `reassignName({ name, ioProcessId, antProcessId })`
+
+Reassigns a name to a new ANT. This can only be done by the current owner of the ANT.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.reassignName({
+  name: 'ardrive',
+  ioProcessId: IO_TESTNET_PROCESS_ID,
+  antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
+});
+```
+
 ### Configuration
 
 ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
@@ -1486,6 +1845,7 @@ For more information on how to use AO and AO Connect within this library, please
 - `yarn example:web` - opens up the example web page
 - `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
+- `yarn example:vite` - runs example Vite web page
 
 ### Linting & Formatting
 

@@ -15,7 +15,7 @@
  */
 import { connect } from '@permaweb/aoconnect';
 
-import { AOContract, AoClient, AoSigner } from '../../types.js';
+import { AOContract, AoClient, AoSigner } from '../../types/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -59,25 +59,33 @@ export class AOProcess implements AOContract {
           process: this.processId,
           tags,
         });
+        this.logger.debug(`Read interaction result`, {
+          result,
+        });
 
         if (result.Messages === undefined || result.Messages.length === 0) {
+          this.logger.debug(
+            `Process ${this.processId} does not support provided action.`,
+            result,
+            tags,
+          );
           throw new Error(
             `Process ${this.processId} does not support provided action.`,
           );
         }
 
         const tagsOutput = result.Messages[0].Tags;
+        const messageData = result.Messages[0].Data;
+
         const error = tagsOutput.find((tag) => tag.name === 'Error');
         if (error) {
-          throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
+          throw new Error(
+            `${error.value}${messageData ? `: ${messageData}` : ''}`,
+          );
         }
 
-        this.logger.debug(`Read interaction result`, {
-          result: result.Messages[0].Data,
-        });
-
         // return empty object if no data is returned
-        if (result.Messages[0].Data === undefined) {
+        if (messageData === undefined) {
           return {} as K;
         }
 
@@ -90,6 +98,7 @@ export class AOProcess implements AOContract {
           tags,
         });
         lastError = e;
+
         // exponential backoff
         await new Promise((resolve) =>
           setTimeout(resolve, 2 ** attempts * 1000),
