@@ -33,6 +33,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
@@ -576,6 +577,23 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 ```
 
 </details>
+
+#### `buyRecord({ name, type, years, processId })`
+
+Purchases a new ArNS record with the specified name, type, and duration.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ processId: IO_DEVNET_PROCESS_ID, signer });
+const record = await io.buyRecord(
+  { name: 'ardrive', type: 'lease', years: 1 },
+  {
+    // optional tags
+    tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+  },
+);
+```
 
 #### `getArNSRecord({ name })`
 
