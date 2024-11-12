@@ -33,6 +33,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getgatewaydelegates-address-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
@@ -572,6 +573,59 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
   "totalItems": 316,
   "sortBy": "operatorStake",
   "sortOrder": "desc"
+}
+```
+
+</details>
+
+#### `getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves the delegates of the specified gateway, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last delegate address from the previous request.
+
+```typescript
+const io = IO.init();
+const delegates = await io.getGatewayDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  // pagination and sorting options
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 3,
+  "limit": 100,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "delegatedStake": 1336089822,
+      "startTimestamp": 1727991006455,
+      "address": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "vaults": []
+    },
+    {
+      "delegatedStake": 2004134750,
+      "startTimestamp": 1727831006221,
+      "address": "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
+      "vaults": []
+    },
+    {
+      "delegatedStake": 1275979113,
+      "startTimestamp": 1727815440632,
+      "address": "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
+      "vaults": {
+        "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g": {
+          "balance": 50000000,
+          "startTimestamp": 1730996691117,
+          "endTimestamp": 1733588691117
+        }
+      }
+    }
+  ]
 }
 ```
 
