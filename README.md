@@ -29,6 +29,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
+    - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
+    - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
@@ -395,6 +397,73 @@ const balances = await io.getBalances({
 ```
 
 </details>
+ 
+#### `getVault({ address, vaultId })`
+
+Retrieves the locked-balance user vault of the IO process by the specified wallet address and vault ID.
+
+```typescript
+const io = IO.init();
+const vault = await io.getVault({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  vaultId: 'vaultIdOne',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "balance": 1000000,
+  "startTimestamp": 123,
+  "endTimestamp": 4567
+}
+```
+
+#### `getVaults({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all locked-balance user vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getVaults({
+  cursor: '0',
+  limit: 100,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "items": [
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdOne",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    },
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdTwo",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    }
+    // ...98 other addresses with vaults
+  ],
+  "hasMore": true,
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "totalItems": 1789,
+  "sortBy": "balance",
+  "sortOrder": "desc"
+}
+```
 
 #### `getGateway({ address })`
 

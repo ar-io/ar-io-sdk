@@ -432,6 +432,86 @@ describe('e2e esm tests', async () => {
         assert(io instanceof IOWriteable);
       }
     });
+
+    // TODO: Make a vault within this test environment's context to cover this
+    // it('should be able to get a specific vault', async () => {
+    //   const vault = await io.getVault({
+    //     address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+    //     vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+    //   });
+    //   assert.deepEqual(vault, {
+    //     balance: 1,
+    //     startTimestamp: 1729962428678,
+    //     endTimestamp: 1731172028678,
+    //   });
+    // });
+
+    it('should throw an error when unable to get a specific vault', async () => {
+      const error = await io
+        .getVault({
+          address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+          vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+        })
+        .catch((e) => e);
+      assert.ok(error);
+      assert(error instanceof Error);
+      assert(error.message === 'Vault-Not-Found');
+    });
+
+    it('should be able to get paginated vaults', async () => {
+      const vaults = await io.getVaults();
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'desc');
+      assert(vaults.sortBy === 'address');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated vaults with custom sort', async () => {
+      const vaults = await io.getVaults({
+        sortBy: 'balance',
+        sortOrder: 'asc',
+      });
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'asc');
+      assert(vaults.sortBy === 'balance');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {

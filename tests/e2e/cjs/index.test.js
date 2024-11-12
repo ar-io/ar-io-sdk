@@ -339,6 +339,32 @@ describe('e2e cjs tests', async () => {
         assert(io instanceof IOWriteable);
       }
     });
+
+    it('should be able to get paginated vaults', async () => {
+      const vaults = await io.getVaults();
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'desc');
+      assert(vaults.sortBy === 'address');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {
