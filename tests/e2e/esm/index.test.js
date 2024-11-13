@@ -583,6 +583,10 @@ describe('e2e esm tests', async () => {
     it('should be able to get the ANT records', async () => {
       const records = await ant.getRecords();
       assert.ok(records);
+      it("should return ANT records alphabetized with '@' being first", async () => {
+        assert.strictEqual(records[0].name, '@');
+        assert.strictEqual(records.at(-1), 'zed');
+      });
     });
 
     it('should be able to get a @ record from the ANT', async () => {

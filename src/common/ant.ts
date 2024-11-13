@@ -18,14 +18,15 @@ import { z } from 'zod';
 import {
   AntBalancesSchema,
   AntControllersSchema,
+  AntEntriesSchema,
   AntInfoSchema,
   AntReadOptions,
   AntRecordSchema,
-  AntRecordsSchema,
   AntStateSchema,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
+  AoANTRecordEntry,
   AoANTState,
   AoANTWrite,
 } from '../types/ant.js';
@@ -154,7 +155,7 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
-   * @returns {Promise<Record<string, AoANTRecord>>} All the undernames managed by the ANT.
+   * @returns {Promise<AoANTRecordEntry[]>} All the undernames managed by the ANT.
    * @example
    * Get the current records
    * ```ts
@@ -163,13 +164,34 @@ export class AoANTReadable implements AoANTRead {
    */
   async getRecords(
     { strict }: AntReadOptions = { strict: this.strict },
-  ): Promise<Record<string, AoANTRecord>> {
+  ): Promise<AoANTRecordEntry[]> {
     const tags = [{ name: 'Action', value: 'Records' }];
-    const records = await this.process.read<Record<string, AoANTRecord>>({
+    const records = await this.process.read<
+      AoANTRecordEntry[] | Record<string, AoANTRecord>
+    >({
       tags,
     });
-    if (strict) parseSchemaResult(AntRecordsSchema, records);
-    return records;
+
+    const result = Array.isArray(records)
+      ? records // assumes if records is an array that its AoANTRecordEntry[]
+      : // backwards compatibility for when ANTs returned as Record<string, AoANTRecord>
+        Object.keys(records) // sort the keys since string indexed maps in lua do not retain order
+          .sort((a: string, b: string) => {
+            if (a == '@') return -1;
+            if (b == '@') return 1;
+            return a.localeCompare(b);
+          })
+          .reduce((acc: AoANTRecordEntry[], undername: string) => {
+            acc.push({
+              ...records[undername],
+              name: undername,
+            });
+            return acc;
+          }, [] as AoANTRecordEntry[]);
+
+    if (strict) parseSchemaResult(AntEntriesSchema, result);
+
+    return result;
   }
 
   /**
