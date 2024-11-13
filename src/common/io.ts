@@ -42,6 +42,7 @@ import {
 import {
   AoArNSNameData,
   AoAuctionPriceData,
+  AoDelegation,
   AoEpochData,
   AoEpochSettings,
   AoGateway,
@@ -635,6 +636,26 @@ export class IOReadable implements AoIORead {
 
     return this.process.read<AoAuctionPriceData>({
       tags: prunedPriceTags,
+    });
+  }
+
+  async getDelegations({
+    address,
+    params,
+  }: {
+    address: WalletAddress;
+    params?: PaginationParams<AoDelegation>;
+  }): Promise<PaginationResult<AoDelegation>> {
+    const allTags = [
+      { name: 'Action', value: 'Paginated-Delegations' },
+      { name: 'Cursor', value: params?.cursor?.toString() },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+      { name: 'Address', value: address },
+    ];
+    return this.process.read<PaginationResult<AoDelegation>>({
+      tags: pruneTags(allTags),
     });
   }
 }
