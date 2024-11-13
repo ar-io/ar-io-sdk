@@ -585,7 +585,7 @@ describe('e2e esm tests', async () => {
       assert.ok(records);
       it("should return ANT records alphabetized with '@' being first", async () => {
         assert.strictEqual(records[0].name, '@');
-        assert.strictEqual(records.at(-1), 'zed');
+        assert.strictEqual(records.at(-1).name, 'zed');
       });
     });
 

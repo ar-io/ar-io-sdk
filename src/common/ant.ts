@@ -41,7 +41,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/index.js';
-import { createAoSigner } from '../utils/ao.js';
+import { createAoSigner, parseAntRecords } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
@@ -172,22 +172,7 @@ export class AoANTReadable implements AoANTRead {
       tags,
     });
 
-    const result = Array.isArray(records)
-      ? records // assumes if records is an array that its AoANTRecordEntry[]
-      : // backwards compatibility for when ANTs returned as Record<string, AoANTRecord>
-        Object.keys(records) // sort the keys since string indexed maps in lua do not retain order
-          .sort((a: string, b: string) => {
-            if (a == '@') return -1;
-            if (b == '@') return 1;
-            return a.localeCompare(b);
-          })
-          .reduce((acc: AoANTRecordEntry[], undername: string) => {
-            acc.push({
-              ...records[undername],
-              name: undername,
-            });
-            return acc;
-          }, [] as AoANTRecordEntry[]);
+    const result = parseAntRecords(records);
 
     if (strict) parseSchemaResult(AntEntriesSchema, result);
 
