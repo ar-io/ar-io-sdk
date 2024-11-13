@@ -544,7 +544,8 @@ describe('e2e esm tests', async () => {
   });
 
   describe('ANT', async () => {
-    const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+    // ANT v8 source
+    const processId = 'oQ4GNTed8cnNw-H5olq606gCFd5MbGSV4NTmfpIW4FI';
     const ant = ANT.init({
       process: new AOProcess({
         processId,
