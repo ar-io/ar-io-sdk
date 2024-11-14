@@ -553,6 +553,18 @@ describe('e2e esm tests', async () => {
       }),
     });
 
+    it('should be able to get info on old ant', async () => {
+      const pid = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+      const oldAnt = ANT.init({
+        process: new AOProcess({
+          processId: pid,
+          ao: aoClient,
+        }),
+      });
+      const info = await oldAnt.getInfo();
+      assert(info, 'failed to get info on old ANT with id of: ' + pid);
+    });
+
     it('should be able to create ANTWriteable with valid signers', async () => {
       for (const signer of signers) {
         const nonStrictAnt = ANT.init({
