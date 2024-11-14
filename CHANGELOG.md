@@ -1,3 +1,18 @@
+# [2.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.1...v2.5.0-alpha.2) (2024-11-14)
+
+
+### Bug Fixes
+
+* **id and test:** add test for old ant and add lua source id for new code ([77601b2](https://github.com/ar-io/ar-io-sdk/commit/77601b2fc9117a2a4b9ff1226fa3f329e8a74e1d))
+* **tests:** add test for old ant ([0489cb6](https://github.com/ar-io/ar-io-sdk/commit/0489cb6924b68c19b8791cc47e0f7c1589be842f))
+* **tests:** add unit tests for util and move parsing of records to uitl ([2d08c9a](https://github.com/ar-io/ar-io-sdk/commit/2d08c9a18f1916db3d64be5af494fb4013b347c5))
+* **tests:** update ANT in tests to use v8 ant ([1eff8a9](https://github.com/ar-io/ar-io-sdk/commit/1eff8a97ab7179fb1d4e0ff68924480f360ee52c))
+
+
+### Features
+
+* **getRecords:** update getRecords to return as flat array of objects ([b9808c1](https://github.com/ar-io/ar-io-sdk/commit/b9808c117cd55a1ce92eb338a07fc07395a867fd))
+
 # [2.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0...v2.5.0-alpha.1) (2024-11-14)
 
 
