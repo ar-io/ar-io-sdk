@@ -628,12 +628,32 @@ describe('e2e esm tests', async () => {
   });
 
   describe('ANT', async () => {
-    const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+    // ANT v8 source
+    const processId = 'oQ4GNTed8cnNw-H5olq606gCFd5MbGSV4NTmfpIW4FI';
     const ant = ANT.init({
       process: new AOProcess({
         processId,
         ao: aoClient,
       }),
+    });
+
+    it('should be able to get info on old ant', async () => {
+      const pid = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+      const oldAnt = ANT.init({
+        process: new AOProcess({
+          processId: pid,
+          ao: aoClient,
+        }),
+      });
+      const info = await oldAnt.getInfo();
+      assert(info, 'failed to get info on old ANT with id of: ' + pid);
+
+      const records = await oldAnt.getRecords();
+      assert(records, 'failed to get records');
+      it("should return records from old ANT alphabetized with '@' being first", () => {
+        assert.strictEqual(records[0].name, '@');
+        assert.strictEqual(records.at(-1).name, 'zed');
+      });
     });
 
     it('should be able to create ANTWriteable with valid signers', async () => {
@@ -667,6 +687,10 @@ describe('e2e esm tests', async () => {
     it('should be able to get the ANT records', async () => {
       const records = await ant.getRecords();
       assert.ok(records);
+      it("should return ANT records alphabetized with '@' being first", async () => {
+        assert.strictEqual(records[0].name, '@');
+        assert.strictEqual(records.at(-1).name, 'zed');
+      });
     });
 
     it('should be able to get a @ record from the ANT', async () => {

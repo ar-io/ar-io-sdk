@@ -1597,36 +1597,43 @@ const records = await ant.getRecords();
   <summary>Output</summary>
 
 ```json
-{
-  "@": {
+[
+  {
+    "name": "@",
     "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
     "ttlSeconds": 3600
   },
-  "cn": {
+  {
+    "name": "cn",
     "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
     "ttlSeconds": 3300
   },
-  "dapp": {
+  {
+    "name": "dapp",
     "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
     "ttlSeconds": 3600
   },
-  "logo": {
+  {
+    "name": "logo",
     "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
     "ttlSeconds": 3600
   },
-  "og": {
+  {
+    "name": "og",
     "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
     "ttlSeconds": 3600
   },
-  "og_dapp": {
+  {
+    "name": "og_dapp",
     "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
     "ttlSeconds": 3600
   },
-  "og_logo": {
+  {
+    "name": "og_logo",
     "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
     "ttlSeconds": 3600
   }
-}
+]
 ```
 
 </details>
