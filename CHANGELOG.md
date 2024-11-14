@@ -1,3 +1,11 @@
+# [2.5.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.2...v2.5.0-alpha.3) (2024-11-14)
+
+
+### Bug Fixes
+
+* **io:** add `getDelegations` to `AoIORead` ([7c30c9b](https://github.com/ar-io/ar-io-sdk/commit/7c30c9b6dda8014575ba4f34f59fc4844c0ffe7a))
+* **types:** modify AoDelegation type ([18bb755](https://github.com/ar-io/ar-io-sdk/commit/18bb755c8a688060ea19ae9711888d0d53f1041f))
+
 # [2.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.1...v2.5.0-alpha.2) (2024-11-14)
 
 
