@@ -1,3 +1,11 @@
+# [2.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0...v2.5.0-alpha.1) (2024-11-14)
+
+
+### Features
+
+* **delegations:** add getter for staked and vaulted delegations PE-7093 ([7182942](https://github.com/ar-io/ar-io-sdk/commit/7182942ca737f86e94dc35423c71cd2bc6412f1d))
+* **delegations:** add SDK function to retrieve an address's delegations PE-7093 ([07c9107](https://github.com/ar-io/ar-io-sdk/commit/07c910786d4fd4d95b463a9eb28121149e66eb8a))
+
 # [2.4.0](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.4.0) (2024-11-12)
 
 
