@@ -639,20 +639,16 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getDelegations({
-    address,
-    params,
-  }: {
-    address: WalletAddress;
-    params?: PaginationParams<AoDelegation>;
-  }): Promise<PaginationResult<AoDelegation>> {
+  async getDelegations(
+    params: PaginationParams<AoDelegation> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoDelegation>> {
     const allTags = [
       { name: 'Action', value: 'Paginated-Delegations' },
-      { name: 'Cursor', value: params?.cursor?.toString() },
-      { name: 'Limit', value: params?.limit?.toString() },
-      { name: 'Sort-By', value: params?.sortBy },
-      { name: 'Sort-Order', value: params?.sortOrder },
-      { name: 'Address', value: address },
+      { name: 'Cursor', value: params.cursor?.toString() },
+      { name: 'Limit', value: params.limit?.toString() },
+      { name: 'Sort-By', value: params.sortBy },
+      { name: 'Sort-Order', value: params.sortOrder },
+      { name: 'Address', value: params.address },
     ];
     return this.process.read<PaginationResult<AoDelegation>>({
       tags: pruneTags(allTags),

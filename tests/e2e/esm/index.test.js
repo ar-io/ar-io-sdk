@@ -512,6 +512,90 @@ describe('e2e esm tests', async () => {
         },
       );
     });
+
+    it('should be able to get paginated delegations for a delegate address', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'startTimestamp');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(['stake', 'vault'].includes(type), true);
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated delegations for a delegate address with custom sort', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+        sortBy: 'balance',
+        sortOrder: 'desc',
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'balance');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(typeof type, 'string');
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {
