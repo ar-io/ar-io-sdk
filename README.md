@@ -1249,6 +1249,8 @@ const vaults = await io.getDelegations({
 }
 ```
 
+</details>
+
 #### `instantWithdrawal({ gatewayAddress, vaultId })`
 
 Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.

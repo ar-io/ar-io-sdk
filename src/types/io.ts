@@ -308,11 +308,10 @@ export type AoVaultDelegation = AoDelegationBase &
     vaultId: TransactionId;
   };
 
-export type AoStakeDelegation = Omit<
-  AoVaultDelegation,
-  'endTimestamp' | 'vaultId'
-> & {
+export type AoStakeDelegation = AoDelegationBase & {
   type: 'stake';
+  startTimestamp: Timestamp;
+  balance: number;
 };
 
 export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
@@ -363,6 +362,9 @@ export interface AoIORead {
   getGateways(
     params?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>>;
+  getDelegations(
+    params: PaginationParams<AoDelegation> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoDelegation>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,
