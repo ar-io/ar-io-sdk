@@ -51,6 +51,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
+    - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
@@ -1199,6 +1200,53 @@ const { id: txId } = await io.decreaseDelegateStake({
   qty: new IOToken(100).toMIO(),
   instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
 });
+```
+
+#### `getDelegations({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getDelegations({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
+  limit: 2,
+  sortBy: 'startTimestamp',
+  sortOrder: 'asc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "asc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 2,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "type": "stake",
+      "startTimestamp": 1727815440632,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1727815440632",
+      "balance": 1383212512
+    },
+    {
+      "type": "vault",
+      "startTimestamp": 1730996691117,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117",
+      "vaultId": "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g",
+      "balance": 50000000,
+      "endTimestamp": 1733588691117
+    }
+  ],
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
 ```
 
 #### `instantWithdrawal({ gatewayAddress, vaultId })`
