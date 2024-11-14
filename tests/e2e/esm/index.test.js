@@ -563,6 +563,13 @@ describe('e2e esm tests', async () => {
       });
       const info = await oldAnt.getInfo();
       assert(info, 'failed to get info on old ANT with id of: ' + pid);
+
+      const records = await oldAnt.getRecords();
+      assert(records, 'failed to get records');
+      it("should return records from old ANT alphabetized with '@' being first", () => {
+        assert.strictEqual(records[0].name, '@');
+        assert.strictEqual(records.at(-1).name, 'zed');
+      });
     });
 
     it('should be able to create ANTWriteable with valid signers', async () => {

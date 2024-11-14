@@ -40,6 +40,6 @@ export const IO_TESTNET_PROCESS_ID =
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MIO_PER_IO = 1_000_000;
 export const AOS_MODULE_ID = 'cbn0KKrBZH7hdNkNokuXLtGryrWM--PjSTBqIzw9Kkk';
-export const ANT_LUA_ID = 'pOh2yupSaQCrLI_-ah8tVTiusUdVNTxxeWTQQHNdf30';
+export const ANT_LUA_ID = 'AWO2a2lVfQnjPFThjE4Uuw4ZFAd9EsCHBEgDYkJA-kk'; // v8 id test - remove comment when updated with actual v8 id.
 export const DEFAULT_SCHEDULER_ID =
   '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
