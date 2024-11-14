@@ -308,11 +308,10 @@ export type AoVaultDelegation = AoDelegationBase &
     vaultId: TransactionId;
   };
 
-export type AoStakeDelegation = Omit<
-  AoVaultDelegation,
-  'endTimestamp' | 'vaultId'
-> & {
+export type AoStakeDelegation = AoDelegationBase & {
   type: 'stake';
+  startTimestamp: Timestamp;
+  balance: number;
 };
 
 export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
