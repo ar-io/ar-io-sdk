@@ -296,6 +296,27 @@ export type AoAuctionPriceData = {
   currentPrice: number;
 };
 
+export type AoDelegationBase = {
+  type: 'stake' | 'vault';
+  gatewayAddress: WalletAddress;
+  delegationId: string;
+};
+
+export type AoVaultDelegation = AoDelegationBase &
+  AoVaultData & {
+    type: 'vault';
+    vaultId: TransactionId;
+  };
+
+export type AoStakeDelegation = Omit<
+  AoVaultDelegation,
+  'endTimestamp' | 'vaultId'
+> & {
+  type: 'stake';
+};
+
+export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
