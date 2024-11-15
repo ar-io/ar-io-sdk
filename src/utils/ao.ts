@@ -87,6 +87,10 @@ export async function spawnANT({
         name: 'ANT-Registry-Id',
         value: antRegistryId,
       },
+      {
+        name: 'Source-Code-Tx-Id', // utility for understanding what the original source id of the lua code was
+        value: luaCodeTxId,
+      },
     ],
   });
 
