@@ -609,18 +609,28 @@ describe('e2e esm tests', async () => {
       assert.ok(primaryNames);
     });
 
-    it('should be able to get a specific primary name', async () => {
+    it('should be able to get a specific primary name by address', async () => {
       const primaryName = await io.getPrimaryName({
-        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
       });
       assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
     });
 
     it('should be able to get a specific primary name by name', async () => {
       const primaryName = await io.getPrimaryName({
-        name: 'new-name',
+        name: 'arns',
       });
       assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
     });
 
     it('should be able to get paginated primary name requests', async () => {
