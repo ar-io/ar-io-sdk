@@ -17,6 +17,8 @@ import { AOProcess } from '../common/index.js';
 import { validateArweaveId } from '../utils/arweave.js';
 import {
   AoMessageResult,
+  AoPrimaryName,
+  AoPrimaryNameRequest,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -433,6 +435,20 @@ export interface AoIORead {
     address: WalletAddress;
     vaultId: string;
   }): Promise<AoVaultData>;
+  getPrimaryNameRequest(
+    params: { initiator: WalletAddress } | { name: string },
+  ): Promise<AoMessageResult>;
+  getPrimaryNameRequests(
+    params: PaginationParams<AoPrimaryNameRequest> & {
+      initiator?: WalletAddress;
+    },
+  ): Promise<PaginationResult<AoPrimaryNameRequest>>;
+  getPrimaryName(
+    params: { address: WalletAddress } | { name: string },
+  ): Promise<AoPrimaryName>;
+  getPrimaryNames(
+    params?: PaginationParams<AoPrimaryName>,
+  ): Promise<PaginationResult<AoPrimaryName>>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -545,6 +561,7 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
 }
 
 // Typeguard functions
