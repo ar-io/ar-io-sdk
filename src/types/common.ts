@@ -57,6 +57,18 @@ export type WriteParameters<Input> = WithSigner<
 
 export type AoMessageResult = { id: string };
 
+export type AoPrimaryNameRequest = {
+  name: string;
+  startTimestamp: Timestamp;
+  endTimestamp: Timestamp;
+};
+
+export type AoPrimaryName = {
+  owner: WalletAddress;
+  name: string;
+  startTimestamp: Timestamp;
+};
+
 // Utility type to require at least one of the fields
 export type AtLeastOne<
   T,

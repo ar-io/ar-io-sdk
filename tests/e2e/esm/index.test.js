@@ -1,3 +1,7 @@
+/**
+ * Ensure that npm link has been ran prior to running these tests
+ * (simply running npm run test:integration will ensure npm link is ran)
+ */
 import {
   ANT,
   ANTRegistry,
@@ -27,11 +31,6 @@ const signers = [
   new ArweaveSigner(testWallet),
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
-
-/**
- * Ensure that npm link has been ran prior to running these tests
- * (simply running npm run test:integration will ensure npm link is ran)
- */
 
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
@@ -595,6 +594,38 @@ describe('e2e esm tests', async () => {
           assert(vaultId === undefined || typeof vaultId === 'string');
         },
       );
+    });
+
+    it('should be able to get paginated primary names', async () => {
+      const primaryNames = await io.getPrimaryNames();
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get paginated primary names with custom sort', async () => {
+      const primaryNames = await io.getPrimaryNames({
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get a specific primary name', async () => {
+      const primaryName = await io.getPrimaryName({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+      });
+      assert.ok(primaryName);
+    });
+
+    it('should be able to get a specific primary name by name', async () => {
+      const primaryName = await io.getPrimaryName({
+        name: 'new-name',
+      });
+      assert.ok(primaryName);
+    });
+
+    it('should be able to get paginated primary name requests', async () => {
+      const primaryNameRequests = await io.getPrimaryNameRequests();
+      assert.ok(primaryNameRequests);
     });
   });
 
