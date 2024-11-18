@@ -1,3 +1,30 @@
+# [2.5.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.3...v2.5.0-alpha.4) (2024-11-18)
+
+
+### Bug Fixes
+
+* **cjs:** remove ant validation from cjs test ([50b8290](https://github.com/ar-io/ar-io-sdk/commit/50b8290c8d0ecea690fbe317ff4f7703f12cdba6))
+* **eslint:** remove unnecessary rule config ([03a0552](https://github.com/ar-io/ar-io-sdk/commit/03a05520ab236af7ab7e500990e92157b5adb68f))
+* **getHandlers:** remove redundant check ([b0c9548](https://github.com/ar-io/ar-io-sdk/commit/b0c9548d6c569d43385636ad942e2999b3f99225))
+* **handlers:** update handler name list ([251695e](https://github.com/ar-io/ar-io-sdk/commit/251695ef31304f8b96be230b0cc6a932b33f0f1e))
+* **lint:** ignore underscore vars ([2c84d3d](https://github.com/ar-io/ar-io-sdk/commit/2c84d3d9f11cfcdfd6d487b65566e674be0704cc))
+* **lint:** update lint rule for ignore args ([136e44a](https://github.com/ar-io/ar-io-sdk/commit/136e44af9cb851ee54cac336e32614689a4809e6))
+* **lint:** update linter to allow nullable string ([b985139](https://github.com/ar-io/ar-io-sdk/commit/b985139a40bed20c49eb9f25c016153ac6cfba6c))
+* **readme:** make api headers h4 ([395f7fb](https://github.com/ar-io/ar-io-sdk/commit/395f7fb01927cc0a247b521d0f992eef00278348))
+* **readme:** update readme with new apis on ant class ([bce76d2](https://github.com/ar-io/ar-io-sdk/commit/bce76d2c4315ad8ab31e604ac23680c04d7f7141))
+* **readme:** use real outputs in example ([1529f79](https://github.com/ar-io/ar-io-sdk/commit/1529f795824a7b8352a47d2ee4f8a9048ba4fb91))
+* **test:** remove old test for validate ([14a77dc](https://github.com/ar-io/ar-io-sdk/commit/14a77dc61425c3c85ce11815adf719473d35c2e6))
+* **types:** restructure type construction ([2ef04db](https://github.com/ar-io/ar-io-sdk/commit/2ef04db418874feadfc010e79efec5b3d7866dd7))
+* **validation util:** remove validation util ([d803e59](https://github.com/ar-io/ar-io-sdk/commit/d803e5996ee847fc30414e00a8cc2c8ac04de1be))
+* **validator:** add comments and reformat into a more clear loop for creating the validation config ([ea3e70c](https://github.com/ar-io/ar-io-sdk/commit/ea3e70c0b5eac258736f0e9088f3c4cdf1f7d767))
+
+
+### Features
+
+* **util:** move validation util to ant class ([cad7149](https://github.com/ar-io/ar-io-sdk/commit/cad714987a37ed9cf5ee0246cc745faab1915e33))
+* **validation util:** simplify validation util ([cd57929](https://github.com/ar-io/ar-io-sdk/commit/cd579290d6b6230fcbe4274ee84eea5f27eb9108))
+* **validations:** add write validation util ([69fc131](https://github.com/ar-io/ar-io-sdk/commit/69fc13173daee4124e21f74aeab1ca85db5418f5))
+
 # [2.5.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.2...v2.5.0-alpha.3) (2024-11-14)
 
 
