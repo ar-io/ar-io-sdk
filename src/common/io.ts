@@ -43,6 +43,7 @@ import {
 } from '../types/index.js';
 import {
   AoArNSNameData,
+  AoArNSReservedNameDataWithName,
   AoAuctionPriceData,
   AoDelegation,
   AoEpochData,
@@ -214,11 +215,14 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getArNSReservedNames(): Promise<
-    Record<string, AoArNSReservedNameData> | Record<string, never>
-  > {
-    return this.process.read<Record<string, AoArNSReservedNameData>>({
-      tags: [{ name: 'Action', value: 'Reserved-Names' }],
+  async getArNSReservedNames(
+    params?: PaginationParams<AoArNSReservedNameDataWithName>,
+  ): Promise<PaginationResult<AoArNSReservedNameDataWithName>> {
+    return this.process.read<PaginationResult<AoArNSReservedNameDataWithName>>({
+      tags: [
+        { name: 'Action', value: 'Reserved-Names' },
+        ...paginationParamsToTags<AoArNSReservedNameDataWithName>(params),
+      ],
     });
   }
 

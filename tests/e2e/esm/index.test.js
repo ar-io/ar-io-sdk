@@ -104,6 +104,35 @@ describe('e2e esm tests', async () => {
       assert.ok(arns);
     });
 
+    it('should be able to get reserved names', async () => {
+      const reservedNames = await io.getArNSReservedNames({
+        limit: 1,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      });
+      assert.ok(reservedNames);
+      assert(reservedNames.limit === 1);
+      assert(reservedNames.sortOrder === 'asc');
+      assert(reservedNames.sortBy === 'name');
+      assert(typeof reservedNames.totalItems === 'number');
+      assert(typeof reservedNames.sortBy === 'string');
+      assert(typeof reservedNames.sortOrder === 'string');
+      assert(typeof reservedNames.limit === 'number');
+      assert(typeof reservedNames.hasMore === 'boolean');
+      if (reservedNames.nextCursor) {
+        assert(typeof reservedNames.nextCursor === 'string');
+      }
+      assert(Array.isArray(reservedNames.items));
+      reservedNames.items.forEach((item) => {
+        assert(typeof item.name === 'string');
+      });
+    });
+
+    it('should be able to get a single reserved name', async () => {
+      const reservedName = await io.getArNSReservedName({ name: 'www' });
+      assert.ok(reservedName);
+    });
+
     it('should be able to get the current epoch', async () => {
       const epoch = await io.getCurrentEpoch();
       assert.ok(epoch);
