@@ -66,6 +66,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo-1)
+    - [`getHandlers()`](#gethandlers)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -1504,6 +1505,43 @@ const info = await ant.getInfo();
   "keywords": ["File-sharing", "Publishing", "dApp"],
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
 }
+```
+
+</details>
+
+#### `getHandlers()`
+
+Retrieves the handlers supported on the ANT
+
+```typescript
+const handlers = await ant.getHandlers();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+[
+  "evolve",
+  "_eval",
+  "_default",
+  "transfer",
+  "balance",
+  "balances",
+  "totalSupply",
+  "info",
+  "addController",
+  "removeController",
+  "controllers",
+  "setRecord",
+  "removeRecord",
+  "record",
+  "records",
+  "setName",
+  "setTicker",
+  "initializeState",
+  "state"
+]
 ```
 
 </details>
