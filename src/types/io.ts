@@ -95,7 +95,7 @@ export type AoEpochObservationData = {
 
 export type AoVaultData = {
   balance: number;
-  startTimestamp: number;
+  startTimestamp: Timestamp;
   endTimestamp: Timestamp;
 };
 
@@ -191,8 +191,15 @@ export type AoGatewayServices =
 export type AoGatewayDelegates = Record<WalletAddress, AoGatewayDelegate>;
 export type AoGatewayDelegateAllowList = WalletAddress[];
 
+export type AoWalletVault = AoVaultData & {
+  address: WalletAddress;
+  vaultId: string;
+};
+
 export type AoGateway = {
   settings: AoGatewaySettings;
+  // @deprecated - use getGatewayDelegates instead
+  delegates: AoGatewayDelegates;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
   vaults: Record<WalletAddress, AoVaultData>;
@@ -289,6 +296,26 @@ export type AoAuctionPriceData = {
   currentPrice: number;
 };
 
+export type AoDelegationBase = {
+  type: 'stake' | 'vault';
+  gatewayAddress: WalletAddress;
+  delegationId: string;
+};
+
+export type AoVaultDelegation = AoDelegationBase &
+  AoVaultData & {
+    type: 'vault';
+    vaultId: TransactionId;
+  };
+
+export type AoStakeDelegation = AoDelegationBase & {
+  type: 'stake';
+  startTimestamp: Timestamp;
+  balance: number;
+};
+
+export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -335,6 +362,9 @@ export interface AoIORead {
   getGateways(
     params?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>>;
+  getDelegations(
+    params: PaginationParams<AoDelegation> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoDelegation>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,
@@ -393,6 +423,16 @@ export interface AoIORead {
   }): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+  getVaults(
+    params?: PaginationParams<AoWalletVault>,
+  ): Promise<PaginationResult<AoWalletVault>>;
+  getVault({
+    address,
+    vaultId,
+  }: {
+    address: WalletAddress;
+    vaultId: string;
+  }): Promise<AoVaultData>;
 }
 
 export interface AoIOWrite extends AoIORead {

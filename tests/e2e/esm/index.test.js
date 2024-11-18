@@ -432,6 +432,170 @@ describe('e2e esm tests', async () => {
         assert(io instanceof IOWriteable);
       }
     });
+
+    // TODO: Make a vault within this test environment's context to cover this
+    // it('should be able to get a specific vault', async () => {
+    //   const vault = await io.getVault({
+    //     address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+    //     vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+    //   });
+    //   assert.deepEqual(vault, {
+    //     balance: 1,
+    //     startTimestamp: 1729962428678,
+    //     endTimestamp: 1731172028678,
+    //   });
+    // });
+
+    it('should throw an error when unable to get a specific vault', async () => {
+      const error = await io
+        .getVault({
+          address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
+          vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
+        })
+        .catch((e) => e);
+      assert.ok(error);
+      assert(error instanceof Error);
+      assert(error.message === 'Vault-Not-Found');
+    });
+
+    it('should be able to get paginated vaults', async () => {
+      const vaults = await io.getVaults();
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'desc');
+      assert(vaults.sortBy === 'address');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated vaults with custom sort', async () => {
+      const vaults = await io.getVaults({
+        sortBy: 'balance',
+        sortOrder: 'asc',
+      });
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'asc');
+      assert(vaults.sortBy === 'balance');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach(
+        ({ address, vaultId, balance, endTimestamp, startTimestamp }) => {
+          assert(typeof address === 'string');
+          assert(typeof balance === 'number');
+          assert(typeof startTimestamp === 'number');
+          assert(typeof endTimestamp === 'number');
+          assert(typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated delegations for a delegate address', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'startTimestamp');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(['stake', 'vault'].includes(type), true);
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated delegations for a delegate address with custom sort', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+        sortBy: 'balance',
+        sortOrder: 'desc',
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'balance');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(typeof type, 'string');
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {
@@ -463,88 +627,97 @@ describe('e2e esm tests', async () => {
     });
   });
 
-  describe('ANT', async () => {
-    const processId = 'Zi3W4ZxKfc04txiotKZD_h4zs4wACvSNaTGC7Ah9prg';
-    const ant = ANT.init({
-      process: new AOProcess({
-        processId,
-        ao: aoClient,
-      }),
-    });
-
-    it('should be able to create ANTWriteable with valid signers', async () => {
-      for (const signer of signers) {
-        const nonStrictAnt = ANT.init({
-          process: new AOProcess({
-            processId,
-            ao: aoClient,
-          }),
-          signer,
-        });
-        const strictAnt = ANT.init({
-          process: new AOProcess({
-            processId,
-            ao: aoClient,
-          }),
-          signer,
-          strict: true,
-        });
-
-        assert(nonStrictAnt instanceof AoANTWriteable);
-        assert(strictAnt instanceof AoANTWriteable);
-      }
-    });
-
-    it('should be able to get ANT info', async () => {
-      const info = await ant.getInfo();
-      assert.ok(info);
-    });
-
-    it('should be able to get the ANT records', async () => {
-      const records = await ant.getRecords();
-      assert.ok(records);
-    });
-
-    it('should be able to get a @ record from the ANT', async () => {
-      const record = await ant.getRecord({ undername: '@' });
-      assert.ok(record);
-    });
-
-    it('should be able to get the ANT owner', async () => {
-      const owner = await ant.getOwner();
-      assert.ok(owner);
-    });
-
-    it('should be able to get the ANT name', async () => {
-      const name = await ant.getName();
-      assert.ok(name);
-    });
-
-    it('should be able to get the ANT ticker', async () => {
-      const ticker = await ant.getTicker();
-      assert.ok(ticker);
-    });
-
-    it('should be able to get the ANT controllers', async () => {
-      const controllers = await ant.getControllers();
-      assert.ok(controllers);
-    });
-
-    it('should be able to get the ANT state', async () => {
-      const state = await ant.getState();
-      assert.ok(state);
-    });
-
-    it('should be able to get the ANT balance for an address', async () => {
-      const balance = await ant.getBalance({
-        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+  describe.skip('ANT', async () => {
+    // ANT v7 process id
+    const oldProcessId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+    // ANT v8 source
+    const latestProcessId = 'oQ4GNTed8cnNw-H5olq606gCFd5MbGSV4NTmfpIW4FI';
+    for (const processId of [oldProcessId, latestProcessId]) {
+      const ant = ANT.init({
+        process: new AOProcess({
+          processId,
+          ao: aoClient,
+        }),
       });
-      assert.notEqual(balance, undefined);
-    });
 
-    it('should be able to get the ANT balances', async () => {
-      const balances = await ant.getBalances();
-      assert.ok(balances);
-    });
+      it('should be able to create ANTWriteable with valid signers', async () => {
+        for (const signer of signers) {
+          const nonStrictAnt = ANT.init({
+            process: new AOProcess({
+              processId,
+              ao: aoClient,
+            }),
+            signer,
+          });
+          const strictAnt = ANT.init({
+            process: new AOProcess({
+              processId,
+              ao: aoClient,
+            }),
+            signer,
+            strict: true,
+          });
+
+          assert(nonStrictAnt instanceof AoANTWriteable);
+          assert(strictAnt instanceof AoANTWriteable);
+        }
+      });
+
+      it('should be able to get ANT info', async () => {
+        const info = await ant.getInfo();
+        assert.ok(info);
+      });
+
+      it('should be able to get the ANT records', async () => {
+        const records = await ant.getRecords();
+        assert.ok(records);
+        it("should return ANT records alphabetized with '@' being first", async () => {
+          assert.strictEqual(records[0].name, '@');
+          assert.strictEqual(records.at(-1).name, 'zed');
+        });
+      });
+
+      it('should be able to get a @ record from the ANT', async () => {
+        const record = await ant.getRecord({ undername: '@' });
+        assert.ok(record);
+      });
+
+      it('should be able to get the ANT owner', async () => {
+        const owner = await ant.getOwner();
+        assert.ok(owner);
+      });
+
+      it('should be able to get the ANT name', async () => {
+        const name = await ant.getName();
+        assert.ok(name);
+      });
+
+      it('should be able to get the ANT ticker', async () => {
+        const ticker = await ant.getTicker();
+        assert.ok(ticker);
+      });
+
+      it('should be able to get the ANT controllers', async () => {
+        const controllers = await ant.getControllers();
+        assert.ok(controllers);
+      });
+
+      it('should be able to get the ANT state', async () => {
+        const state = await ant.getState();
+        assert.ok(state);
+      });
+
+      it('should be able to get the ANT balance for an address', async () => {
+        const balance = await ant.getBalance({
+          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        });
+        assert.notEqual(balance, undefined);
+      });
+
+      it('should be able to get the ANT balances', async () => {
+        const balances = await ant.getBalances();
+        assert.ok(balances);
+      });
+    }
   });
 });

@@ -75,7 +75,7 @@ export class ArNSEventEmitter extends EventEmitter {
     timeoutMs = 60_000,
     concurrency = 30,
     logger = Logger.default,
-    strict = true,
+    strict = false,
   }: {
     contract?: AoIORead;
     timeoutMs?: number;

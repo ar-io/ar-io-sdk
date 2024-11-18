@@ -56,9 +56,15 @@ export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
 });
+export const AntEntrySchema = z.intersection(
+  AntRecordSchema,
+  z.object({ name: z.string() }),
+);
 export type AoANTRecord = z.infer<typeof AntRecordSchema>;
+export type AoANTRecordEntry = z.infer<typeof AntEntrySchema>;
 
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
+export const AntEntriesSchema = z.array(AntEntrySchema);
 export const AntControllersSchema = z.array(
   ArweaveTxIdSchema.describe('Controller address'),
 );
@@ -186,7 +192,7 @@ export interface AoANTRead {
     { undername }: { undername: string },
     opts?: AntReadOptions,
   ): Promise<AoANTRecord | undefined>;
-  getRecords(opts?: AntReadOptions): Promise<Record<string, AoANTRecord>>;
+  getRecords(opts?: AntReadOptions): Promise<AoANTRecordEntry[]>;
   getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
   getTicker(opts?: AntReadOptions): Promise<string>;

@@ -1,9 +1,8 @@
 import {
-  AoArNSNameData,
+  ANT,
   AoArNSNameDataWithName,
   AoAuction,
   AoAuctionPriceData,
-  AoGateway,
   AoGatewayWithAddress,
   AoWeightedObserver,
   IO,

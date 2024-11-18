@@ -29,8 +29,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
+    - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
+    - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
     - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
@@ -48,6 +51,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
+    - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
@@ -396,6 +400,77 @@ const balances = await io.getBalances({
 ```
 
 </details>
+ 
+#### `getVault({ address, vaultId })`
+
+Retrieves the locked-balance user vault of the IO process by the specified wallet address and vault ID.
+
+```typescript
+const io = IO.init();
+const vault = await io.getVault({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  vaultId: 'vaultIdOne',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "balance": 1000000,
+  "startTimestamp": 123,
+  "endTimestamp": 4567
+}
+```
+
+</details>
+
+#### `getVaults({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all locked-balance user vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getVaults({
+  cursor: '0',
+  limit: 100,
+  sortBy: 'balance',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "items": [
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdOne",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    },
+    {
+      "address": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "vaultId": "vaultIdTwo",
+      "balance": 1000000,
+      "startTimestamp": 123,
+      "endTimestamp": 4567
+    }
+    // ...98 other addresses with vaults
+  ],
+  "hasMore": true,
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "totalItems": 1789,
+  "sortBy": "balance",
+  "sortOrder": "desc"
+}
+```
+
+</details>
 
 #### `getGateway({ address })`
 
@@ -508,6 +583,23 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 ```
 
 </details>
+
+#### `buyRecord({ name, type, years, processId })`
+
+Purchases a new ArNS record with the specified name, type, and duration.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ processId: IO_DEVNET_PROCESS_ID, signer });
+const record = await io.buyRecord(
+  { name: 'ardrive', type: 'lease', years: 1 },
+  {
+    // optional tags
+    tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+  },
+);
+```
 
 #### `getArNSRecord({ name })`
 
@@ -1111,6 +1203,55 @@ const { id: txId } = await io.decreaseDelegateStake({
 });
 ```
 
+#### `getDelegations({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getDelegations({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
+  limit: 2,
+  sortBy: 'startTimestamp',
+  sortOrder: 'asc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "asc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 2,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "type": "stake",
+      "startTimestamp": 1727815440632,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1727815440632",
+      "balance": 1383212512
+    },
+    {
+      "type": "vault",
+      "startTimestamp": 1730996691117,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117",
+      "vaultId": "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g",
+      "balance": 50000000,
+      "endTimestamp": 1733588691117
+    }
+  ],
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
+```
+
+</details>
+
 #### `instantWithdrawal({ gatewayAddress, vaultId })`
 
 Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
@@ -1496,36 +1637,43 @@ const records = await ant.getRecords();
   <summary>Output</summary>
 
 ```json
-{
-  "@": {
+[
+  {
+    "name": "@",
     "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
     "ttlSeconds": 3600
   },
-  "cn": {
+  {
+    "name": "cn",
     "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
     "ttlSeconds": 3300
   },
-  "dapp": {
+  {
+    "name": "dapp",
     "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
     "ttlSeconds": 3600
   },
-  "logo": {
+  {
+    "name": "logo",
     "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
     "ttlSeconds": 3600
   },
-  "og": {
+  {
+    "name": "og",
     "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
     "ttlSeconds": 3600
   },
-  "og_dapp": {
+  {
+    "name": "og_dapp",
     "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
     "ttlSeconds": 3600
   },
-  "og_logo": {
+  {
+    "name": "og_logo",
     "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
     "ttlSeconds": 3600
   }
-}
+]
 ```
 
 </details>

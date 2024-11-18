@@ -59,6 +59,9 @@ export class AOProcess implements AOContract {
           process: this.processId,
           tags,
         });
+        this.logger.debug(`Read interaction result`, {
+          result,
+        });
 
         if (result.Messages === undefined || result.Messages.length === 0) {
           this.logger.debug(
@@ -72,17 +75,17 @@ export class AOProcess implements AOContract {
         }
 
         const tagsOutput = result.Messages[0].Tags;
+        const messageData = result.Messages[0].Data;
+
         const error = tagsOutput.find((tag) => tag.name === 'Error');
         if (error) {
-          throw new Error(`${error.Value}: ${result.Messages[0].Data}`);
+          throw new Error(
+            `${error.value}${messageData ? `: ${messageData}` : ''}`,
+          );
         }
 
-        this.logger.debug(`Read interaction result`, {
-          result: result.Messages[0].Data,
-        });
-
         // return empty object if no data is returned
-        if (result.Messages[0].Data === undefined) {
+        if (messageData === undefined) {
           return {} as K;
         }
 
@@ -95,6 +98,7 @@ export class AOProcess implements AOContract {
           tags,
         });
         lastError = e;
+
         // exponential backoff
         await new Promise((resolve) =>
           setTimeout(resolve, 2 ** attempts * 1000),
