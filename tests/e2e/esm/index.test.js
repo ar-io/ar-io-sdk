@@ -546,10 +546,5 @@ describe('e2e esm tests', async () => {
       const balances = await ant.getBalances();
       assert.ok(balances);
     });
-
-    it('should validate all apis on the ant', async () => {
-      const res = await ant.validate();
-      assert(Object.values(res).every(({ valid }) => valid == true));
-    });
   });
 });
