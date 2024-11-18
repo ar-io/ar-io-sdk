@@ -17,6 +17,8 @@ import { AOProcess } from '../common/index.js';
 import { validateArweaveId } from '../utils/arweave.js';
 import {
   AoMessageResult,
+  AoPrimaryName,
+  AoPrimaryNameRequest,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -74,20 +76,6 @@ export type AoRegistrationFees = Record<
 >;
 export type AoEpochIndex = number;
 
-export interface AoIOState {
-  GatewayRegistry: Record<WalletAddress, AoGateway>;
-  Epochs: Record<AoEpochIndex, AoEpochData>;
-  NameRegistry: {
-    records: Record<string, AoArNSNameData>;
-    reserved: Record<string, AoArNSReservedNameData>;
-  };
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, AoVaultData>;
-  Ticker: string;
-  Name: string;
-  Logo: string;
-}
-
 export type AoEpochObservationData = {
   failureSummaries: Record<WalletAddress, WalletAddress[]>;
   reports: Record<WalletAddress, TransactionId>;
@@ -128,6 +116,9 @@ export type AoArNSReservedNameData = {
 };
 export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
 export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
+export type AoArNSReservedNameDataWithName = AoArNSReservedNameData & {
+  name: string;
+};
 export type AoArNSBaseNameData = {
   processId: ProcessId;
   startTimestamp: number;
@@ -377,9 +368,9 @@ export interface AoIORead {
   getArNSRecords(
     params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
-  getArNSReservedNames(): Promise<
-    Record<string, AoArNSReservedNameData> | Record<string, never>
-  >;
+  getArNSReservedNames(
+    params?: PaginationParams<AoArNSReservedNameDataWithName>,
+  ): Promise<PaginationResult<AoArNSReservedNameDataWithName>>;
   getArNSReservedName({
     name,
   }: {
@@ -433,6 +424,20 @@ export interface AoIORead {
     address: WalletAddress;
     vaultId: string;
   }): Promise<AoVaultData>;
+  getPrimaryNameRequest(
+    params: { initiator: WalletAddress } | { name: string },
+  ): Promise<AoMessageResult>;
+  getPrimaryNameRequests(
+    params: PaginationParams<AoPrimaryNameRequest> & {
+      initiator?: WalletAddress;
+    },
+  ): Promise<PaginationResult<AoPrimaryNameRequest>>;
+  getPrimaryName(
+    params: { address: WalletAddress } | { name: string },
+  ): Promise<AoPrimaryName>;
+  getPrimaryNames(
+    params?: PaginationParams<AoPrimaryName>,
+  ): Promise<PaginationResult<AoPrimaryName>>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -545,6 +550,7 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
 }
 
 // Typeguard functions

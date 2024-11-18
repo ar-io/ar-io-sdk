@@ -1,3 +1,7 @@
+/**
+ * Ensure that npm link has been ran prior to running these tests
+ * (simply running npm run test:integration will ensure npm link is ran)
+ */
 import {
   ANT,
   ANTRegistry,
@@ -27,11 +31,6 @@ const signers = [
   new ArweaveSigner(testWallet),
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
-
-/**
- * Ensure that npm link has been ran prior to running these tests
- * (simply running npm run test:integration will ensure npm link is ran)
- */
 
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
@@ -103,6 +102,35 @@ describe('e2e esm tests', async () => {
     it('should be able to get a single arns record', async () => {
       const arns = await io.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
+    });
+
+    it('should be able to get reserved names', async () => {
+      const reservedNames = await io.getArNSReservedNames({
+        limit: 1,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      });
+      assert.ok(reservedNames);
+      assert(reservedNames.limit === 1);
+      assert(reservedNames.sortOrder === 'asc');
+      assert(reservedNames.sortBy === 'name');
+      assert(typeof reservedNames.totalItems === 'number');
+      assert(typeof reservedNames.sortBy === 'string');
+      assert(typeof reservedNames.sortOrder === 'string');
+      assert(typeof reservedNames.limit === 'number');
+      assert(typeof reservedNames.hasMore === 'boolean');
+      if (reservedNames.nextCursor) {
+        assert(typeof reservedNames.nextCursor === 'string');
+      }
+      assert(Array.isArray(reservedNames.items));
+      reservedNames.items.forEach((item) => {
+        assert(typeof item.name === 'string');
+      });
+    });
+
+    it('should be able to get a single reserved name', async () => {
+      const reservedName = await io.getArNSReservedName({ name: 'www' });
+      assert.ok(reservedName);
     });
 
     it('should be able to get the current epoch', async () => {
@@ -595,6 +623,48 @@ describe('e2e esm tests', async () => {
           assert(vaultId === undefined || typeof vaultId === 'string');
         },
       );
+    });
+
+    it('should be able to get paginated primary names', async () => {
+      const primaryNames = await io.getPrimaryNames();
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get paginated primary names with custom sort', async () => {
+      const primaryNames = await io.getPrimaryNames({
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get a specific primary name by address', async () => {
+      const primaryName = await io.getPrimaryName({
+        address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+      });
+      assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
+    });
+
+    it('should be able to get a specific primary name by name', async () => {
+      const primaryName = await io.getPrimaryName({
+        name: 'arns',
+      });
+      assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
+    });
+
+    it('should be able to get paginated primary name requests', async () => {
+      const primaryNameRequests = await io.getPrimaryNameRequests();
+      assert.ok(primaryNameRequests);
     });
   });
 
