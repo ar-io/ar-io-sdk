@@ -33,7 +33,6 @@ describe('ANT Schemas', () => {
       Logo: stub_address,
       TotalSupply: 1,
       Initialized: true,
-      ['Source-Code-TX-ID']: stub_address,
     };
     const invalidState = {
       Name: 'TestToken',
@@ -55,7 +54,6 @@ describe('ANT Schemas', () => {
       Logo: stub_address,
       TotalSupply: -1,
       Initialized: true,
-      ['Source-Code-TX-ID']: stub_address,
     };
 
     assert.doesNotThrow(() => AntStateSchema.parse(validState));
@@ -66,7 +64,7 @@ describe('ANT Schemas', () => {
     const validInfo = {
       Name: 'TestToken',
       Owner: stub_address,
-      ['Source-Code-TX-ID']: stub_address,
+
       Ticker: 'TST',
       Description: 'Test description',
       Keywords: ['keyword1', 'keyword2', 'keyword3'],
@@ -78,7 +76,7 @@ describe('ANT Schemas', () => {
     const invalidInfo = {
       Name: 'TestToken',
       Owner: stub_address,
-      ['Source-Code-TX-ID']: stub_address,
+
       Ticker: 'TST',
       ['Total-Supply']: 1000,
       Logo: stub_address,
@@ -111,7 +109,6 @@ describe('ANT Schemas', () => {
       Logo: stub_address,
       TotalSupply: 0,
       Initialized: true,
-      ['Source-Code-TX-ID']: stub_address,
     };
     const invalidState = {
       Name: 'TestToken',
@@ -133,7 +130,6 @@ describe('ANT Schemas', () => {
       Logo: stub_address,
       TotalSupply: -1,
       Initialized: true,
-      ['Source-Code-TX-ID']: stub_address,
     };
 
     assert.strictEqual(isAoANTState(validState), true);

@@ -16,7 +16,6 @@
 import { z } from 'zod';
 
 /**
- *
  * @param schema - zod schema
  * @param v - value to parse
  * @throws {z.SafeParseError<any>} - if the value fails to parse

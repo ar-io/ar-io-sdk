@@ -100,37 +100,45 @@ export const AntStateSchema = z.object({
   Initialized: z
     .boolean()
     .describe('Flag indicating whether the ANT has been initialized.'),
-  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
-    'Transaction ID of the Source Code for the ANT.',
-  ),
 });
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
-export const AntHandlerNames = [
-  'evolve',
-  '_eval',
-  '_default',
-  'transfer',
+
+export const AntReadHandlers = [
   'balance',
   'balances',
   'totalSupply',
   'info',
-  'addController',
-  'removeController',
   'controllers',
-  'setRecord',
-  'removeRecord',
   'record',
   'records',
+  'state',
+] as const;
+
+export type AoANTReadHandler = (typeof AntReadHandlers)[number];
+
+export const AntWriteHandlers = [
+  'evolve',
+  '_eval',
+  '_default',
+  'transfer',
+  'addController',
+  'removeController',
+  'setRecord',
+  'removeRecord',
   'setName',
   'setTicker',
   'setDescription',
   'setKeywords',
   'initializeState',
-  'state',
   'releaseName',
   'reassignName',
-];
+] as const;
+
+export type AoANTWriteHandler = (typeof AntWriteHandlers)[number];
+
+export const AntHandlerNames = [...AntReadHandlers, ...AntWriteHandlers];
+export type AoANTHandler = AoANTWriteHandler | AoANTReadHandler;
 export const AntHandlersSchema = z
   .array(z.string({ description: 'Handler Name' }))
   .refine(
@@ -145,9 +153,7 @@ export const AntHandlersSchema = z
 export const AntInfoSchema = z.object({
   Name: z.string().describe('The name of the ANT.'),
   Owner: ArweaveTxIdSchema.describe('The Owners address.'),
-  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
-    'Transaction ID of the Source Code for the ANT.',
-  ),
+
   Ticker: z.string().describe('The ticker symbol for the ANT.'),
   ['Total-Supply']: IntegerStringSchema.describe(
     'Total supply of the ANT in circulation.',
@@ -196,6 +202,7 @@ export interface AoANTRead {
     opts?: AntReadOptions,
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
+  getHandlers(): Promise<AoANTHandler[]>;
 }
 
 export interface AoANTWrite extends AoANTRead {

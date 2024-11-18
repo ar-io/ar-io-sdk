@@ -23,6 +23,7 @@ import {
   AntReadOptions,
   AntRecordSchema,
   AntStateSchema,
+  AoANTHandler,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
@@ -284,6 +285,20 @@ export class AoANTReadable implements AoANTRead {
     });
     if (strict) parseSchemaResult(z.number(), balance);
     return balance;
+  }
+
+  /**
+   * @returns {Promise<AoANTHandler[]>} The handlers of the ANT.
+   * @example
+   * Get the handlers of the ANT.
+   * ```ts
+   * const handlers = await ant.getHandlers();
+   * ```
+   */
+  async getHandlers(): Promise<AoANTHandler[]> {
+    const info = await this.getInfo();
+
+    return (info.Handlers ?? info.HandlerNames) as AoANTHandler[];
   }
 }
 
