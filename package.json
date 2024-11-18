@@ -55,6 +55,9 @@
       "browser": "./bundles/web.bundle.min.js"
     }
   },
+  "bin": {
+    "ar-io": "./lib/esm/cli/cli.js"
+  },
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
@@ -125,6 +128,7 @@
     "arweave": "1.14.4",
     "axios": "1.7.7",
     "axios-retry": "^4.3.0",
+    "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
     "winston": "^3.13.0",
