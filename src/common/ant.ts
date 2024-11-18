@@ -18,7 +18,6 @@ import { z } from 'zod';
 import {
   AntBalancesSchema,
   AntControllersSchema,
-  AntHandlerNames,
   AntInfoSchema,
   AntReadOptions,
   AntRecordSchema,
@@ -293,71 +292,6 @@ export class AoANTReadable implements AoANTRead {
     const info = await this.getInfo();
 
     return (info.Handlers ?? info.HandlerNames) as AoANTHandler[];
-  }
-
-  /**
-   * @param validations @type {Partial<Record<AoANTHandler, ({ ant: AoANTReadable }) => Promise<boolean>>} The validations to run on the ANT. 
-   * @returns @type {Promise<Record<AoANTHandler, { valid: boolean; error?: string }>>} The results of the validations.
-   * @example
-   * ```ts
-   * const validity = await ant.validate({
-   * validations: {
-   *  'setTicker': async ({ant}: { ant: AoANTRead }) => {
-   *   const antHandlers = await ant.getHandlers();
-            if (antHandlers.includes("setTicker")) return true;
-            throw new Error(`Handler setTicker not found`);
-          }
-    
-   * },
-          //  ...rest of the ANT handlers config
-   * });
-   * ```
-   */
-  async validate({
-    validations,
-  }: {
-    validations?: Partial<
-      Record<
-        AoANTHandler,
-        ({ ant }: { ant: AoANTReadable }) => Promise<boolean>
-      >
-    >;
-  } = {}): Promise<Record<AoANTHandler, { valid: boolean; error?: string }>> {
-    // default to the validations provided in the config
-    const handlerValidationConfig = validations ?? {};
-
-    // validations not specified in the config will be defaulted to a check that the handler is present
-    const antHandlers = await this.getHandlers();
-    for (const handlerName of AntHandlerNames) {
-      // skip if the handler is already in the config
-      if (handlerValidationConfig[handlerName]) continue;
-      // create a default validator for the handler and add it to the config
-      const handlerNameValidator = async (_: { ant: AoANTRead }) => {
-        if (antHandlers.includes(handlerName)) return true;
-        // this will be caught and assigned to the error for the validation result
-        throw new Error(`Handler ${handlerName} not found`);
-      };
-      handlerValidationConfig[handlerName] = handlerNameValidator;
-    }
-
-    const results = {} as Record<
-      AoANTHandler,
-      { valid: boolean; error?: string }
-    >;
-
-    for (const [handler, validator] of Object.entries(
-      handlerValidationConfig,
-    )) {
-      await validator({ ant: this })
-        .then((valid) => {
-          results[handler] = { valid };
-        })
-        .catch((error) => {
-          results[handler] = { valid: false, error: error.message };
-        });
-    }
-
-    return results;
   }
 }
 

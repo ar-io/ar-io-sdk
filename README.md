@@ -63,7 +63,6 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo-1)
     - [`getHandlers()`](#gethandlers)
-    - [`validate({ validations })`](#validate-validations-)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -1402,53 +1401,6 @@ const handlers = await ant.getHandlers();
   "initializeState",
   "state"
 ]
-```
-
-</details>
-
-#### `validate({ validations })`
-
-Validate the APIs exposed by the ANT. Defaults to verifying the requisite handlers are returned.
-
-```typescript
-const validations = {
-  ["setTicker"] = async ({ant}) => {
-      const handlers = await ant.getHandlers()
-      return handlers.includes("setTicker") // true or false
-  },
-};
-const validities = await ant.validate({validations});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "balance": { "valid": true },
-  "balances": { "valid": true },
-  "totalSupply": { "valid": true },
-  "info": { "valid": true },
-  "controllers": { "valid": true },
-  "record": { "valid": true },
-  "records": { "valid": true },
-  "state": { "valid": true },
-  "evolve": { "valid": true },
-  "_eval": { "valid": true },
-  "_default": { "valid": true },
-  "transfer": { "valid": true },
-  "addController": { "valid": true },
-  "removeController": { "valid": true },
-  "setRecord": { "valid": true },
-  "removeRecord": { "valid": true },
-  "setName": { "valid": true },
-  "setTicker": { "valid": true },
-  "setDescription": { "valid": true },
-  "setKeywords": { "valid": true },
-  "initializeState": { "valid": true },
-  "releaseName": { "valid": true },
-  "reassignName": { "valid": true }
-}
 ```
 
 </details>

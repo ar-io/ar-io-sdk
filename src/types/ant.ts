@@ -94,9 +94,6 @@ export const AntStateSchema = z.object({
   Initialized: z
     .boolean()
     .describe('Flag indicating whether the ANT has been initialized.'),
-  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
-    'Transaction ID of the Source Code for the ANT.',
-  ),
 });
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
@@ -150,9 +147,7 @@ export const AntHandlersSchema = z
 export const AntInfoSchema = z.object({
   Name: z.string().describe('The name of the ANT.'),
   Owner: ArweaveTxIdSchema.describe('The Owners address.'),
-  ['Source-Code-TX-ID']: ArweaveTxIdSchema.describe(
-    'Transaction ID of the Source Code for the ANT.',
-  ),
+
   Ticker: z.string().describe('The ticker symbol for the ANT.'),
   ['Total-Supply']: IntegerStringSchema.describe(
     'Total supply of the ANT in circulation.',
@@ -202,13 +197,6 @@ export interface AoANTRead {
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
   getHandlers(): Promise<AoANTHandler[]>;
-  validate({
-    validations,
-  }: {
-    validations?: Partial<
-      Record<AoANTHandler, ({ ant }: { ant: AoANTRead }) => Promise<boolean>>
-    >;
-  }): Promise<Record<AoANTHandler, { valid: boolean; error?: string }>>;
 }
 
 export interface AoANTWrite extends AoANTRead {
