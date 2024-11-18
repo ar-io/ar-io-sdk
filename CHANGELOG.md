@@ -1,3 +1,11 @@
+# [2.5.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.4...v2.5.0-alpha.5) (2024-11-18)
+
+
+### Bug Fixes
+
+* **source id:** name the source id tags the same on evolve and spawn ([058c829](https://github.com/ar-io/ar-io-sdk/commit/058c82909ed424c1ae6fd07b8abb955bea5053ba))
+* **spawn:** add lua source id to spawn ([8850ed2](https://github.com/ar-io/ar-io-sdk/commit/8850ed2eb83a4a52e2e41ce8ef47628ba612a43b))
+
 # [2.5.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.3...v2.5.0-alpha.4) (2024-11-18)
 
 
