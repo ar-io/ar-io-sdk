@@ -1,3 +1,16 @@
+# [2.5.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.5...v2.5.0-alpha.6) (2024-11-18)
+
+
+### Bug Fixes
+
+* **arns:** update reserved names to pagaination api ([dacf0c5](https://github.com/ar-io/ar-io-sdk/commit/dacf0c52ac4f77d50e8baf914e520f4c2a8df717))
+
+
+### Features
+
+* **PE-6910:** support primary name APIs ([6ace606](https://github.com/ar-io/ar-io-sdk/commit/6ace6060f8b98e93229f4612cd976c463609ed92))
+* **PE-6910:** support primary name APIs ([82a5b44](https://github.com/ar-io/ar-io-sdk/commit/82a5b4414807447fe0ebb340f0085b5731cab0e3))
+
 # [2.5.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.4...v2.5.0-alpha.5) (2024-11-18)
 
 
