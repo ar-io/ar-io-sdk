@@ -76,20 +76,6 @@ export type AoRegistrationFees = Record<
 >;
 export type AoEpochIndex = number;
 
-export interface AoIOState {
-  GatewayRegistry: Record<WalletAddress, AoGateway>;
-  Epochs: Record<AoEpochIndex, AoEpochData>;
-  NameRegistry: {
-    records: Record<string, AoArNSNameData>;
-    reserved: Record<string, AoArNSReservedNameData>;
-  };
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, AoVaultData>;
-  Ticker: string;
-  Name: string;
-  Logo: string;
-}
-
 export type AoEpochObservationData = {
   failureSummaries: Record<WalletAddress, WalletAddress[]>;
   reports: Record<WalletAddress, TransactionId>;
@@ -130,6 +116,9 @@ export type AoArNSReservedNameData = {
 };
 export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
 export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
+export type AoArNSReservedNameDataWithName = AoArNSReservedNameData & {
+  name: string;
+};
 export type AoArNSBaseNameData = {
   processId: ProcessId;
   startTimestamp: number;
@@ -379,9 +368,9 @@ export interface AoIORead {
   getArNSRecords(
     params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
-  getArNSReservedNames(): Promise<
-    Record<string, AoArNSReservedNameData> | Record<string, never>
-  >;
+  getArNSReservedNames(
+    params?: PaginationParams<AoArNSReservedNameDataWithName>,
+  ): Promise<PaginationResult<AoArNSReservedNameDataWithName>>;
   getArNSReservedName({
     name,
   }: {
