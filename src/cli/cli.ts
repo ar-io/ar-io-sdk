@@ -29,7 +29,7 @@ import {
 import { makeCommand, runCommand } from './utils.js';
 
 makeCommand({
-  name: 'ar-io', // TODO: can it be ar.io?
+  name: 'ar.io', // TODO: can it be ar.io?
   description: 'AR.IO Network CLI',
   options: globalOptions,
 })
@@ -67,7 +67,7 @@ makeCommand({
 // redelegate-stake
 
 if (
-  process.argv[1].includes('bin/turbo') || // Running from global .bin
+  process.argv[1].includes('bin/ar.io') || // Running from global .bin
   process.argv[1].includes('cli/cli') // Running from source
 ) {
   program.parse(process.argv);

@@ -33,5 +33,5 @@ export async function balance(options: BalanceOptions) {
     message: `Provided address current has a balance of ${IOBalanceWithCommas} IO`,
   };
 
-  console.log(output);
+  console.log(JSON.stringify(output, null, 2));
 }

@@ -116,5 +116,5 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     message: `Congratulations! You have successfully joined the AR.IO network  (; `,
   };
 
-  console.log(output);
+  console.log(JSON.stringify(output, null, 2));
 }
