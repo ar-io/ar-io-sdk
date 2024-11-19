@@ -130,6 +130,7 @@ export const AntWriteHandlers = [
   'setTicker',
   'setDescription',
   'setKeywords',
+  'setLogo',
   'initializeState',
   'releaseName',
   'reassignName',
@@ -256,6 +257,10 @@ export interface AoANTWrite extends AoANTRead {
   ): Promise<AoMessageResult>;
   setName(
     { name }: { name: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  setLogo(
+    { logo }: { logo: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   releaseName(

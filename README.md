@@ -80,6 +80,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setTicker({ ticker })`](#setticker-ticker-)
     - [`setDescription({ description })`](#setdescription-description-)
     - [`setKeywords({ keywords })`](#setkeywords-keywords-)
+    - [`setLogo({ logo })`](#setlogo-logo-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
     - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
   - [Configuration](#configuration-1)
@@ -1805,6 +1806,20 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.setDescription(
   { keywords: ['Game', 'FPS', 'AO'] },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `setLogo({ logo })`
+
+Sets the Logo of the ANT - logo should be an Arweave transaction ID.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setLogo(
+  { logo: 'U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f' },
   // optional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
