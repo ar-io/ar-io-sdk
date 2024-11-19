@@ -1,3 +1,15 @@
+# [2.5.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.6...v2.5.0-alpha.7) (2024-11-19)
+
+
+### Bug Fixes
+
+* **setLogo:** call param txId instead of logo ([cda5e1d](https://github.com/ar-io/ar-io-sdk/commit/cda5e1d892d84a2160f72874833f518024aebf5d))
+
+
+### Features
+
+* **setLogo:** add set logo api to ant class ([c5812b1](https://github.com/ar-io/ar-io-sdk/commit/c5812b1bdeb66212f4ba398ba3c19645962a1725))
+
 # [2.5.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.5...v2.5.0-alpha.6) (2024-11-18)
 
 
