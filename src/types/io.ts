@@ -319,11 +319,10 @@ export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
-export type AoJoinNetworkParams = Pick<
-  AoGateway,
-  'operatorStake' | 'observerAddress'
-> &
-  Partial<AoGatewaySettings>;
+export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
+  Partial<AoGatewaySettings> & {
+    observerAddress?: WalletAddress;
+  };
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
 

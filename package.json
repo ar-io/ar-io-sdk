@@ -92,6 +92,7 @@
     "@semantic-release/npm": "^11.0.3",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/node": "^20.12.12",
+    "@types/prompts": "^2.4.9",
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
@@ -131,6 +132,7 @@
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
+    "prompts": "^2.4.2",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
   },

@@ -28,29 +28,92 @@ export const optionMap = {
     description: 'Private key to use with the action',
   },
   dev: {
-    alias: '-d, --dev',
-    description: 'Run against the dev-net process',
-    default: false,
+    alias: '--dev',
+    description: 'Run against the AR.IO devnet process',
+    type: 'boolean',
   },
   processId: {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
   },
-  retries: {
-    alias: '-r, --retries <retries>',
-    description: 'The number of times to retry the interaction',
-  },
-  tags: {
-    alias: '-t, --tags <tags>',
-    description: 'The tags to use for the interaction',
+  debug: {
+    alias: '--debug',
+    description: 'Enable debug log output',
+    type: 'boolean',
   },
   address: {
     alias: '-a, --address <address>',
     description: 'The address to interact with',
   },
+  quantity: {
+    alias: '-q, --quantity <quantity>',
+    description: 'The quantity of mIO to interact with',
+  },
+  disableAutoStake: {
+    alias: '--disable-auto-stake',
+    description: 'Disallow auto-staking of operator rewards',
+    type: 'boolean',
+  },
+  disableDelegatedStaking: {
+    alias: '--disable-delegated-staking',
+    description: 'Disallow delegating stake to the gateway',
+    type: 'boolean',
+  },
+  minDelegatedStake: {
+    alias: '--min-delegated-stake <minDelegatedStake>',
+    description: 'The minimum delegated stake allowed',
+  },
+  delegateRewardShareRatio: {
+    alias: '--delegate-reward-share-ratio <delegateRewardShareRatio>',
+    description: 'The percentage of rewards to share with delegates',
+  },
+  label: {
+    alias: '--label <label>',
+    description: 'The label for the gateway',
+  },
+  note: {
+    alias: '--note <note>',
+    description: 'The note for the gateway',
+  },
+  properties: {
+    alias: '--properties <properties>',
+    description: 'The properties for the gateway',
+  },
+  observer: {
+    alias: '--observer <observer>',
+    description: 'The observer wallet address for the gateway',
+  },
+  fqdn: {
+    alias: '--fqdn <fqdn>',
+    description: 'The fully qualified domain name for the gateway',
+  },
+  port: {
+    alias: '--port <port>',
+    description: 'The port for the gateway',
+  },
+  protocol: {
+    alias: '--protocol <protocol>',
+    description: 'The protocol for the gateway',
+  },
+  allowedDelegates: {
+    alias: '--allowed-delegates <allowedDelegates...>',
+    description:
+      'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake',
+    type: 'array',
+  },
+  skipConfirmation: {
+    alias: '--skip-confirmation',
+    description: 'Skip confirmation prompts',
+    type: 'boolean',
+  },
 };
 
-export const globalOptions = [optionMap.dev, optionMap.processId];
+export const globalOptions = [
+  optionMap.dev,
+  optionMap.debug,
+  optionMap.processId,
+  optionMap.skipConfirmation,
+];
 
 export const walletOptions = [
   ...globalOptions,
@@ -61,16 +124,33 @@ export const walletOptions = [
 
 export const balanceOptions = [...walletOptions, optionMap.address];
 
+export const joinNetworkOptions = [
+  ...walletOptions,
+  optionMap.quantity,
+  optionMap.disableAutoStake,
+  optionMap.disableDelegatedStaking,
+  optionMap.minDelegatedStake,
+  optionMap.delegateRewardShareRatio,
+  optionMap.label,
+  optionMap.note,
+  optionMap.properties,
+  optionMap.observer,
+  optionMap.fqdn,
+  optionMap.port,
+  optionMap.protocol,
+];
+
 // Option Types
 export type GlobalOptions = {
   dev: boolean;
+  debug: boolean;
   processId: string | undefined;
-  gateway: string | undefined;
+  skipConfirmation: boolean;
 };
 
 export type WalletOptions = GlobalOptions & {
   walletFile: string | undefined;
-  mnemonic: string | undefined;
+  // mnemonic: string | undefined;
   privateKey: string | undefined;
 };
 

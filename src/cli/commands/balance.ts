@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { MIO_PER_IO } from '../../constants.js';
 import { BalanceOptions } from '../options.js';
 import { addressFromOptions, readIOFromOptions } from '../utils.js';
 
@@ -21,10 +22,15 @@ export async function balance(options: BalanceOptions) {
   const address = addressFromOptions(options);
 
   const result = await io.getBalance({ address });
+  const formattedBalance = (result / MIO_PER_IO).toFixed(6);
+  const [integerPart, decimalPart] = formattedBalance.split('.');
+  const IOBalanceWithCommas =
+    integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + decimalPart;
+
   const output = {
     address: address,
-    balance: result,
-    message: 'mIO Balance retrieved successfully',
+    mIOBalance: result,
+    message: `Provided address current has a balance of ${IOBalanceWithCommas} IO`,
   };
 
   console.log(output);

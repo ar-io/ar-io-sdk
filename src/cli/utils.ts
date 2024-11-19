@@ -13,18 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
 import { readFileSync } from 'fs';
 
 import {
+  AoIORead,
+  AoIOWrite,
+  ArweaveSigner,
+  ContractSigner,
   IO,
-  IOReadable,
   IO_DEVNET_PROCESS_ID,
   IO_TESTNET_PROCESS_ID,
+  Logger,
   fromB64Url,
   sha256B64Url,
 } from '../node/index.js';
-import { AddressOptions, GlobalOptions } from './options.js';
+import { AddressOptions, GlobalOptions, WalletOptions } from './options.js';
 
 function exitWithErrorLog(error: unknown) {
   console.error(error instanceof Error ? error.message : error);
@@ -71,33 +76,76 @@ export function makeCommand({
   return applyOptions(command, options);
 }
 
-export function readIOFromOptions(options: GlobalOptions): IOReadable {
-  const defaultProcessId = options.dev
-    ? IO_DEVNET_PROCESS_ID
-    : IO_TESTNET_PROCESS_ID;
-
-  return IO.init({ processId: options.processId ?? defaultProcessId });
+function processIdFromOptions({ processId, dev }: GlobalOptions): string {
+  return processId !== undefined
+    ? processId
+    : dev
+      ? IO_DEVNET_PROCESS_ID
+      : IO_TESTNET_PROCESS_ID;
 }
 
-export function addressFromOptions({
-  address,
+function jwkFromOptions({
   privateKey,
   walletFile,
-}: AddressOptions): string {
-  if (address !== undefined) {
-    return address;
-  }
-  // TODO: Support other wallet types
-
+}: WalletOptions): JWKInterface | undefined {
   if (privateKey !== undefined) {
-    const jwk = JSON.parse(privateKey);
-    const address = sha256B64Url(fromB64Url(jwk.n));
-    return address;
+    return JSON.parse(privateKey);
   }
   if (walletFile !== undefined) {
-    const jwk = JSON.parse(readFileSync(walletFile, 'utf-8'));
-    const address = sha256B64Url(fromB64Url(jwk.n));
-    return address;
+    return JSON.parse(readFileSync(walletFile, 'utf-8'));
+  }
+  return undefined;
+}
+
+export function requiredJwkFromOptions(options: WalletOptions): JWKInterface {
+  const jwk = jwkFromOptions(options);
+  if (jwk === undefined) {
+    throw new Error(
+      'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
+    );
+  }
+  return jwk;
+}
+
+export function jwkToAddress(jwk: JWKInterface): string {
+  return sha256B64Url(fromB64Url(jwk.n));
+}
+
+function setLoggerIfDebug(options: GlobalOptions) {
+  if (options.debug) {
+    Logger.default.setLogLevel('debug');
+  }
+}
+
+export function readIOFromOptions(options: GlobalOptions): AoIORead {
+  setLoggerIfDebug(options);
+
+  return IO.init({
+    processId: processIdFromOptions(options),
+  });
+}
+
+export function writeIOFromOptions(
+  options: WalletOptions,
+  signer?: ContractSigner,
+): AoIOWrite {
+  signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
+  setLoggerIfDebug(options);
+
+  return IO.init({
+    processId: processIdFromOptions(options),
+    signer,
+  });
+}
+
+export function addressFromOptions(options: AddressOptions): string {
+  if (options.address !== undefined) {
+    return options.address;
+  }
+  // TODO: Support other wallet types
+  const jwk = jwkFromOptions(options);
+  if (jwk !== undefined) {
+    return jwkToAddress(jwk);
   }
 
   throw new Error('No address provided. Use --address or --wallet-file');

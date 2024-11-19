@@ -20,7 +20,12 @@ import { program } from 'commander';
 
 import { version } from '../version.js';
 import { balance } from './commands/balance.js';
-import { balanceOptions, globalOptions } from './options.js';
+import { joinNetwork } from './commands/joinNetwork.js';
+import {
+  balanceOptions,
+  globalOptions,
+  joinNetworkOptions,
+} from './options.js';
 import { makeCommand, runCommand } from './utils.js';
 
 makeCommand({
@@ -31,9 +36,6 @@ makeCommand({
   .version(version)
   .helpCommand(true);
 
-//  ar-io delegate-stake --wallet BAD_BOY_NO_ALLOW_WALLET --gateway permagate.io --stakeQty 1500 --unit IO
-
-// balance --address <address> or --wallet-file <wallet-file>
 makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',
@@ -42,11 +44,27 @@ makeCommand({
   await runCommand(command, balance);
 });
 
-// join-network
+makeCommand({
+  name: 'join-network',
+  description: 'Join the AR.IO network',
+  options: joinNetworkOptions,
+}).action(async (_, command) => {
+  await runCommand(command, joinNetwork);
+});
 
 // delegate-stake
 
+// increase-operator-stake
+
+// decrease-operator-stake
+
 // withdraw-stake
+
+// update-gateway-settings
+
+// transfer
+
+// redelegate-stake
 
 if (
   process.argv[1].includes('bin/turbo') || // Running from global .bin
