@@ -61,6 +61,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+    - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
+    - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
+    - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -83,6 +86,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setLogo({ txId })`](#setlogo-txid-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
     - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
+    - [`approvePrimaryNameRequest({ name, address })`](#approveprimarynamerequest-name-address-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -1443,6 +1447,81 @@ if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
 }
 ```
 
+#### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all primary names across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
+
+```typescript
+const io = IO.init();
+const names = await io.getPrimaryNames({
+  cursor: 'ar-io',
+  limit: 2,
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "name",
+  "items": [
+    {
+      "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+      "startTimestamp": 1719356032297,
+      "name": "arns"
+    }
+  ]
+}
+```
+
+</details>
+
+#### `getPrimaryName({ name, address })`
+
+Retrieves the primary name for a given name or address.
+
+```typescript
+const io = IO.init();
+const name = await io.getPrimaryName({
+  name: 'arns',
+});
+// or
+const name = await io.getPrimaryName({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+  "startTimestamp": 1719356032297,
+  "name": "arns"
+}
+```
+
+</details>
+
+#### `requestPrimaryName({ name, address })`
+
+Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.requestPrimaryName({
+  name: 'arns',
+});
+```
+
 ### Configuration
 
 The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO Testnet Process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
@@ -1849,6 +1928,19 @@ const { id: txId } = await ant.reassignName({
   name: 'ardrive',
   ioProcessId: IO_TESTNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
+});
+```
+
+#### `approvePrimaryNameRequest({ name, address })`
+
+Approves a primary name request for a given name or address.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.approvePrimaryNameRequest({
+  name: 'arns',
+  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
 });
 ```
 
