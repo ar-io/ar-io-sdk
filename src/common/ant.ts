@@ -541,6 +541,29 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * @param txId @type {string} - Arweave transaction id of the logo we want to set
+   * @param options @type {WriteOptions} - additional options to add to the write interaction (optional)
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setLogo({ logo: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f" });
+   * ```
+   */
+  async setLogo(
+    { txId }: { txId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Logo' },
+        { name: 'Logo', value: txId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
    * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
    * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
