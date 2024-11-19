@@ -347,15 +347,8 @@ export class IOReadable implements AoIORead {
         {
           name: 'Timestamp',
           value: (
-            await this.arweave.blocks
-              .getCurrent()
-              .then((block) => {
-                return { timestamp: block.timestamp * 1000 };
-              })
-              .catch(() => {
-                return { timestamp: Date.now() }; // fallback to current time
-              })
-          ).timestamp.toString(),
+            await getCurrentBlockUnixTimestampMs(this.arweave)
+          ).toString(),
         },
       ],
     });
@@ -582,7 +575,9 @@ export class IOReadable implements AoIORead {
       { name: 'Name', value: name },
       {
         name: 'Timestamp',
-        value: timestamp?.toString() ?? Date.now().toString(),
+        value:
+          timestamp?.toString() ??
+          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
       },
       { name: 'Purchase-Type', value: type ?? 'lease' },
       {
