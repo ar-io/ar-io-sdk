@@ -541,7 +541,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * @param logo @type {string} - Arweave transaction id of the logo we want to set
+   * @param txId @type {string} - Arweave transaction id of the logo we want to set
    * @param options @type {WriteOptions} - additional options to add to the write interaction (optional)
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
@@ -550,14 +550,14 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async setLogo(
-    { logo }: { logo: string },
+    { txId }: { txId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Logo' },
-        { name: 'Logo', value: logo },
+        { name: 'Logo', value: txId },
       ],
       signer: this.signer,
     });

@@ -260,7 +260,7 @@ export interface AoANTWrite extends AoANTRead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   setLogo(
-    { logo }: { logo: string },
+    { txId }: { txId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   releaseName(
