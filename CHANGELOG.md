@@ -1,3 +1,10 @@
+# [2.5.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.8...v2.5.0-alpha.9) (2024-11-20)
+
+
+### Bug Fixes
+
+* **primary:** add additional ANT handlers for primary names ([c98b136](https://github.com/ar-io/ar-io-sdk/commit/c98b13632fe05e960b166098fb3c8a060a017746))
+
 # [2.5.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.7...v2.5.0-alpha.8) (2024-11-20)
 
 
