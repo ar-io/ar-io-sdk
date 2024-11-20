@@ -1,3 +1,10 @@
+# [2.5.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.9...v2.5.0-alpha.10) (2024-11-20)
+
+
+### Bug Fixes
+
+* **vaults:** add API for gateway vaults ([923b2cd](https://github.com/ar-io/ar-io-sdk/commit/923b2cd4d604d5a3e5d773390feda278d41dbd00))
+
 # [2.5.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.8...v2.5.0-alpha.9) (2024-11-20)
 
 
