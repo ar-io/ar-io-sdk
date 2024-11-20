@@ -52,6 +52,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
     - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
+    - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
@@ -1253,6 +1254,41 @@ const vaults = await io.getDelegations({
     }
   ],
   "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
+```
+
+</details>
+
+#### `getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getGatewayVaults({
+  address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "endTimestamp",
+  "items": [
+    {
+      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_1728067635857",
+      "startTimestamp": 1728067635857,
+      "balance": 50000000000,
+      "vaultId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "endTimestamp": 1735843635857
+    }
+  ]
 }
 ```
 
