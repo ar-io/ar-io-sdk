@@ -50,6 +50,7 @@ import {
   AoEpochSettings,
   AoGateway,
   AoGatewayDelegateWithAddress,
+  AoGatewayVault,
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
@@ -611,6 +612,18 @@ export class IOReadable implements AoIORead {
 
     return this.process.read<PaginationResult<AoDelegation>>({
       tags: pruneTags(allTags),
+    });
+  }
+
+  async getGatewayVaults(
+    params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoGatewayVault>> {
+    return this.process.read<PaginationResult<AoGatewayVault>>({
+      tags: [
+        { name: 'Action', value: 'Paginated-Gateway-Vaults' },
+        { name: 'Address', value: params.address },
+        ...paginationParamsToTags(params),
+      ],
     });
   }
 
