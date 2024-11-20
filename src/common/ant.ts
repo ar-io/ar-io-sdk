@@ -617,4 +617,42 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       signer: this.signer,
     });
   }
+
+  /**
+   * Approves a primary name request for a given name or address.
+   */
+  async approvePrimaryNameRequest(
+    {
+      name,
+      address,
+      ioProcessId,
+    }: { name: string; address: WalletAddress; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Approve-Primary-Name' },
+        { name: 'Name', value: name },
+        { name: 'Recipient', value: address },
+        { name: 'IO-Process-Id', value: ioProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async removePrimaryNames(
+    { names, ioProcessId }: { names: string[]; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Remove-Primary-Names' },
+        { name: 'Names', value: names.join(',') },
+        { name: 'IO-Process-Id', value: ioProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
 }
