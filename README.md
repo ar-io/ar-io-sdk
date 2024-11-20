@@ -86,7 +86,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setLogo({ txId })`](#setlogo-txid-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
     - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
-    - [`approvePrimaryNameRequest({ name, address })`](#approveprimarynamerequest-name-address-)
+    - [`approvePrimaryNameRequest({ name, address, ioProcessId })`](#approveprimarynamerequest-name-address-ioprocessid-)
+    - [`removePrimaryNames({ names, ioProcessId })`](#removeprimarynames-names-ioprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -1931,7 +1932,7 @@ const { id: txId } = await ant.reassignName({
 });
 ```
 
-#### `approvePrimaryNameRequest({ name, address })`
+#### `approvePrimaryNameRequest({ name, address, ioProcessId })`
 
 Approves a primary name request for a given name or address.
 
@@ -1941,6 +1942,20 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
   owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
+});
+```
+
+#### `removePrimaryNames({ names, ioProcessId })`
+
+Removes primary names from the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.removePrimaryNames({
+  names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
+  ioProcessId: IO_TESTNET_PROCESS_ID,
 });
 ```
 
