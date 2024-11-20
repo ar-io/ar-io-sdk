@@ -74,14 +74,13 @@ export class AOProcess implements AOContract {
           );
         }
 
-        const tagsOutput = result.Messages[0].Tags;
-        const messageData = result.Messages[0].Data;
-
-        const error = tagsOutput.find((tag) => tag.name === 'Error');
+        const tagsOutput = result.Messages?.[0]?.Tags;
+        const messageData = result.Messages?.[0]?.Data;
+        const errorData = result.Error;
+        const error =
+          errorData || tagsOutput?.find((tag) => tag.name === 'Error')?.value;
         if (error) {
-          throw new Error(
-            `${error.value}${messageData ? `: ${messageData}` : ''}`,
-          );
+          throw new Error(`${error}${messageData ? `: ${messageData}` : ''}`);
         }
 
         // return empty object if no data is returned
@@ -157,17 +156,18 @@ export class AOProcess implements AOContract {
           processId: this.processId,
         });
 
+        const errorData = output.Error;
+        const error =
+          errorData ||
+          output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')
+            ?.value;
+        if (error) {
+          throw new WriteInteractionError(error);
+        }
+
         // check if there are any Messages in the output
         if (output.Messages?.length === 0 || output.Messages === undefined) {
           return { id: messageId };
-        }
-
-        const tagsOutput = output.Messages[0].Tags;
-        const error = tagsOutput.find((tag) => tag.name === 'Error');
-        // if there's an Error tag, throw an error related to it
-        if (error) {
-          const result = output.Messages[0].Data;
-          throw new WriteInteractionError(`${error.Value}: ${result}`);
         }
 
         if (output.Messages.length === 0) {
