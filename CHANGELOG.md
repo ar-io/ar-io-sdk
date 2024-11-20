@@ -1,3 +1,11 @@
+# [2.5.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.7...v2.5.0-alpha.8) (2024-11-20)
+
+
+### Bug Fixes
+
+* **errors:** we should be checking the result.Error as well as tags ([7ffe131](https://github.com/ar-io/ar-io-sdk/commit/7ffe131f22bf5aad978ea82e7e81d05ab750b728))
+* **io:** use helper for computing timestamp ([ffe6ff3](https://github.com/ar-io/ar-io-sdk/commit/ffe6ff3105fe0add3d13d505170237b06750b279))
+
 # [2.5.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.6...v2.5.0-alpha.7) (2024-11-19)
 
 
