@@ -1631,7 +1631,7 @@ const { id: txId } = await io.redelegateStake({
 
 #### `getRedelegationFee({ address })`
 
-Retrieves the fee rate as percentage required to redelegate the stake of a specific address.
+Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
 
 ```typescript
 const io = IO.init();
