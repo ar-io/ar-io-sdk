@@ -118,6 +118,12 @@ export const globalOptions = [
   optionMap.processId,
   optionMap.skipConfirmation,
 ];
+export type GlobalOptions = {
+  dev: boolean;
+  debug: boolean;
+  processId: string | undefined;
+  skipConfirmation: boolean;
+};
 
 export const walletOptions = [
   ...globalOptions,
@@ -125,14 +131,27 @@ export const walletOptions = [
   // optionMap.mnemonic,
   optionMap.privateKey,
 ];
+export type WalletOptions = GlobalOptions & {
+  walletFile: string | undefined;
+  // mnemonic: string | undefined;
+  privateKey: string | undefined;
+};
 
 export const balanceOptions = [...walletOptions, optionMap.address];
+export type AddressOptions = WalletOptions & {
+  address: string | undefined;
+};
+export type BalanceOptions = AddressOptions;
 
 export const transferOptions = [
   ...walletOptions,
   optionMap.quantity,
   optionMap.target,
 ];
+export type TransferOptions = WalletOptions & {
+  quantity: number | undefined;
+  target: string | undefined;
+};
 
 export const joinNetworkOptions = [
   ...walletOptions,
@@ -149,23 +168,18 @@ export const joinNetworkOptions = [
   optionMap.port,
   optionMap.protocol,
 ];
-
-// Option Types
-export type GlobalOptions = {
-  dev: boolean;
-  debug: boolean;
-  processId: string | undefined;
-  skipConfirmation: boolean;
+export type JoinNetworkOptions = WalletOptions & {
+  quantity: string | undefined;
+  disableAutoStake: boolean;
+  disableDelegatedStaking: boolean;
+  minDelegatedStake: string | undefined;
+  delegateRewardShareRatio: string | undefined;
+  label: string | undefined;
+  note: string | undefined;
+  properties: string | undefined;
+  observer: string | undefined;
+  fqdn: string | undefined;
+  port: string | undefined;
+  protocol: string | undefined;
+  allowedDelegates: string[] | undefined;
 };
-
-export type WalletOptions = GlobalOptions & {
-  walletFile: string | undefined;
-  // mnemonic: string | undefined;
-  privateKey: string | undefined;
-};
-
-export type AddressOptions = WalletOptions & {
-  address: string | undefined;
-};
-
-export type BalanceOptions = AddressOptions;

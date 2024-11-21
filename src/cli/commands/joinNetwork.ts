@@ -16,29 +16,13 @@
 import prompts from 'prompts';
 
 import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
-import { WalletOptions } from '../options.js';
+import { JoinNetworkOptions } from '../options.js';
 import {
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
-
-export type JoinNetworkOptions = WalletOptions & {
-  quantity: string | undefined;
-  disableAutoStake: boolean;
-  disableDelegatedStaking: boolean;
-  minDelegatedStake: string | undefined;
-  delegateRewardShareRatio: string | undefined;
-  label: string | undefined;
-  note: string | undefined;
-  properties: string | undefined;
-  observer: string | undefined;
-  fqdn: string | undefined;
-  port: string | undefined;
-  protocol: string | undefined;
-  allowedDelegates: string[] | undefined;
-};
 
 export async function joinNetwork(options: JoinNetworkOptions) {
   const jwk = requiredJwkFromOptions(options);

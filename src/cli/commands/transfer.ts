@@ -16,18 +16,13 @@
 import prompts from 'prompts';
 
 import { IOToken, mIOToken } from '../../types/token.js';
-import { WalletOptions } from '../options.js';
+import { TransferOptions } from '../options.js';
 import {
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
-
-export type TransferOptions = WalletOptions & {
-  quantity: number | undefined;
-  target: string | undefined;
-};
 
 export async function transfer(options: TransferOptions) {
   const jwk = requiredJwkFromOptions(options);
