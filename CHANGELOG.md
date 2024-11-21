@@ -1,3 +1,10 @@
+# [2.5.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.10...v2.5.0-alpha.11) (2024-11-21)
+
+
+### Features
+
+* **io:** add `getAllowedDelegates` to IO ([7d143e0](https://github.com/ar-io/ar-io-sdk/commit/7d143e0e5b5d92fb647d1b91ad4c6b13ad0da04f))
+
 # [2.5.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.9...v2.5.0-alpha.10) (2024-11-20)
 
 
