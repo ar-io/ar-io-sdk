@@ -275,4 +275,16 @@ export interface AoANTWrite extends AoANTRead {
     }: { name: string; ioProcessId: string; antProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  approvePrimaryNameRequest(
+    {
+      name,
+      address,
+      ioProcessId,
+    }: { name: string; address: WalletAddress; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  removePrimaryNames(
+    { names, ioProcessId }: { names: string[]; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }

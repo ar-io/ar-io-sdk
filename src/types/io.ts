@@ -189,11 +189,8 @@ export type AoWalletVault = AoVaultData & {
 
 export type AoGateway = {
   settings: AoGatewaySettings;
-  // @deprecated - use getGatewayDelegates instead
-  delegates: AoGatewayDelegates;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
-  vaults: Record<WalletAddress, AoVaultData>;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   observerAddress: WalletAddress;
@@ -307,6 +304,13 @@ export type AoStakeDelegation = AoDelegationBase & {
 
 export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
 
+export type AoGatewayVault = {
+  cursorId: string;
+  vaultId: TransactionId;
+  balance: number;
+  endTimestamp: Timestamp;
+  startTimestamp: Timestamp;
+};
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -355,6 +359,12 @@ export interface AoIORead {
   getDelegations(
     params: PaginationParams<AoDelegation> & { address: WalletAddress },
   ): Promise<PaginationResult<AoDelegation>>;
+  getAllowedDelegates(
+    params: PaginationParams & { address: WalletAddress },
+  ): Promise<PaginationResult<WalletAddress>>;
+  getGatewayVaults(
+    params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoGatewayVault>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,

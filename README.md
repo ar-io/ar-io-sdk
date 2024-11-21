@@ -52,6 +52,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
     - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
+    - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
+    - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
@@ -61,6 +63,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+    - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
+    - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
+    - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -83,6 +88,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setLogo({ txId })`](#setlogo-txid-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
     - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
+    - [`approvePrimaryNameRequest({ name, address, ioProcessId })`](#approveprimarynamerequest-name-address-ioprocessid-)
+    - [`removePrimaryNames({ names, ioProcessId })`](#removeprimarynames-names-ioprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -1253,6 +1260,72 @@ const vaults = await io.getDelegations({
 
 </details>
 
+#### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
+
+```typescript
+const io = IO.init();
+const allowedDelegates = await io.getAllowedDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 4,
+  "limit": 100,
+  "items": [
+    "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+    "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
+    "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
+    "31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8"
+  ]
+}
+```
+
+</details>
+
+#### `getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getGatewayVaults({
+  address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "endTimestamp",
+  "items": [
+    {
+      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_1728067635857",
+      "startTimestamp": 1728067635857,
+      "balance": 50000000000,
+      "vaultId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "endTimestamp": 1735843635857
+    }
+  ]
+}
+```
+
+</details>
+
 #### `instantWithdrawal({ gatewayAddress, vaultId })`
 
 Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
@@ -1441,6 +1514,81 @@ if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
     { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
   );
 }
+```
+
+#### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all primary names across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
+
+```typescript
+const io = IO.init();
+const names = await io.getPrimaryNames({
+  cursor: 'ar-io',
+  limit: 2,
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "name",
+  "items": [
+    {
+      "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+      "startTimestamp": 1719356032297,
+      "name": "arns"
+    }
+  ]
+}
+```
+
+</details>
+
+#### `getPrimaryName({ name, address })`
+
+Retrieves the primary name for a given name or address.
+
+```typescript
+const io = IO.init();
+const name = await io.getPrimaryName({
+  name: 'arns',
+});
+// or
+const name = await io.getPrimaryName({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+  "startTimestamp": 1719356032297,
+  "name": "arns"
+}
+```
+
+</details>
+
+#### `requestPrimaryName({ name, address })`
+
+Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.requestPrimaryName({
+  name: 'arns',
+});
 ```
 
 ### Configuration
@@ -1849,6 +1997,33 @@ const { id: txId } = await ant.reassignName({
   name: 'ardrive',
   ioProcessId: IO_TESTNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
+});
+```
+
+#### `approvePrimaryNameRequest({ name, address, ioProcessId })`
+
+Approves a primary name request for a given name or address.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.approvePrimaryNameRequest({
+  name: 'arns',
+  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
+});
+```
+
+#### `removePrimaryNames({ names, ioProcessId })`
+
+Removes primary names from the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.removePrimaryNames({
+  names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
+  ioProcessId: IO_TESTNET_PROCESS_ID,
 });
 ```
 

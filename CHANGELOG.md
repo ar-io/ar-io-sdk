@@ -1,3 +1,32 @@
+# [2.5.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.10...v2.5.0-alpha.11) (2024-11-21)
+
+
+### Features
+
+* **io:** add `getAllowedDelegates` to IO ([7d143e0](https://github.com/ar-io/ar-io-sdk/commit/7d143e0e5b5d92fb647d1b91ad4c6b13ad0da04f))
+
+# [2.5.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.9...v2.5.0-alpha.10) (2024-11-20)
+
+
+### Bug Fixes
+
+* **vaults:** add API for gateway vaults ([923b2cd](https://github.com/ar-io/ar-io-sdk/commit/923b2cd4d604d5a3e5d773390feda278d41dbd00))
+
+# [2.5.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.8...v2.5.0-alpha.9) (2024-11-20)
+
+
+### Bug Fixes
+
+* **primary:** add additional ANT handlers for primary names ([c98b136](https://github.com/ar-io/ar-io-sdk/commit/c98b13632fe05e960b166098fb3c8a060a017746))
+
+# [2.5.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.7...v2.5.0-alpha.8) (2024-11-20)
+
+
+### Bug Fixes
+
+* **errors:** we should be checking the result.Error as well as tags ([7ffe131](https://github.com/ar-io/ar-io-sdk/commit/7ffe131f22bf5aad978ea82e7e81d05ab750b728))
+* **io:** use helper for computing timestamp ([ffe6ff3](https://github.com/ar-io/ar-io-sdk/commit/ffe6ff3105fe0add3d13d505170237b06750b279))
+
 # [2.5.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.6...v2.5.0-alpha.7) (2024-11-19)
 
 
