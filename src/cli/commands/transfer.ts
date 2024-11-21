@@ -71,7 +71,7 @@ export async function transfer(options: TransferOptions) {
   });
 
   const output = {
-    address: address,
+    senderAddress: address,
     transferResult: result,
     message: `Successfully transferred ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
   };

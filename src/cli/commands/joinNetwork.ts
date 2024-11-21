@@ -15,9 +15,10 @@
  */
 import prompts from 'prompts';
 
-import { ArweaveSigner, IOToken } from '../../node/index.js';
+import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
 import { WalletOptions } from '../options.js';
 import {
+  formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
@@ -99,14 +100,14 @@ export async function joinNetwork(options: JoinNetworkOptions) {
 
     if (balance < operatorStake) {
       throw new Error(
-        `Insufficient balance. Required: ${operatorStake} mIO, available: ${balance} mIO`,
+        `Insufficient balance. Required: ${formatIOWithCommas(ioQuantity)} IO, available: ${formatIOWithCommas(new mIOToken(balance).toIO())} IO`,
       );
     }
 
     const { confirm } = await prompts({
       type: 'confirm',
       name: 'confirm',
-      message: `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${operatorStake} IO to join the AR.IO network\nAre you sure?\n`,
+      message: `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(ioQuantity)} IO to join the AR.IO network\nAre you sure?\n`,
       initial: true,
     });
 
@@ -120,7 +121,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
 
   const output = {
     joinNetworkResult: result,
-    address,
+    joinedAddress: address,
     message: `Congratulations!\nYou have successfully joined the AR.IO network  (;`,
   };
 

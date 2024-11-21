@@ -154,5 +154,9 @@ export function addressFromOptions(options: AddressOptions): string {
 
 export function formatIOWithCommas(value: IOToken): string {
   const [integerPart, decimalPart] = value.toString().split('.');
-  return integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + decimalPart;
+  const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (decimalPart === undefined) {
+    return integerWithCommas;
+  }
+  return integerWithCommas + '.' + decimalPart;
 }
