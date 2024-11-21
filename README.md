@@ -1610,25 +1610,6 @@ const { id: txId } = await io.redelegateStake({
 });
 ```
 
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "sourceGateway": {
-    // ...source gateway details
-  },
-  "targetGateway": {
-    // ...target gateway details
-  },
-  "redelegationFee": 0,
-  "feeResetTimestamp": 1730996691117,
-  "redelegationsSinceFeeReset": 1
-}
-```
-
-</details>
-
 #### `getRedelegationFee({ address })`
 
 Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
