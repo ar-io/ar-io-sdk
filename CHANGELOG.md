@@ -1,3 +1,10 @@
+# [2.5.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.11...v2.5.0-alpha.12) (2024-11-21)
+
+
+### Bug Fixes
+
+* **lua id:** rollback lua id ([89b8392](https://github.com/ar-io/ar-io-sdk/commit/89b83925778a3a9528f8a61c2c542cadb7bac0f8))
+
 # [2.4.0](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.4.0) (2024-11-12)
 
 
