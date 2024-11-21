@@ -41,6 +41,7 @@ export type JoinNetworkOptions = WalletOptions & {
 
 export async function joinNetwork(options: JoinNetworkOptions) {
   const jwk = requiredJwkFromOptions(options);
+  const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options, new ArweaveSigner(jwk));
 
   const {
@@ -69,30 +70,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     throw new Error('FQDN is required. Please provide a --fqdn for your node.');
   }
 
-  const address = jwkToAddress(jwk);
-  if (!options.skipConfirmation) {
-    const balance = await io.getBalance({ address });
-
-    if (balance < operatorStake) {
-      throw new Error(
-        `Insufficient balance. Required: ${operatorStake} mIO, available: ${balance} mIO`,
-      );
-    }
-
-    const { confirm } = await prompts({
-      type: 'confirm',
-      name: 'confirm',
-      message: `You are about to stake ${operatorStake} IO to join the AR.IO network. Are you sure?`,
-      initial: true,
-    });
-
-    if (!confirm) {
-      console.log('Aborted join-network command by user');
-      return;
-    }
-  }
-
-  const result = await io.joinNetwork({
+  const settings = {
     observerAddress: observer,
     operatorStake,
     allowDelegatedStaking:
@@ -108,12 +86,36 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     note,
     port,
     properties,
-  });
+  };
+
+  if (!options.skipConfirmation) {
+    const balance = await io.getBalance({ address });
+
+    if (balance < operatorStake) {
+      throw new Error(
+        `Insufficient balance. Required: ${operatorStake} mIO, available: ${balance} mIO`,
+      );
+    }
+
+    const { confirm } = await prompts({
+      type: 'confirm',
+      name: 'confirm',
+      message: `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${operatorStake} IO to join the AR.IO network\nAre you sure?\n`,
+      initial: true,
+    });
+
+    if (!confirm) {
+      console.log('Aborted join-network command by user');
+      return;
+    }
+  }
+
+  const result = await io.joinNetwork(settings);
 
   const output = {
     joinNetworkResult: result,
     address,
-    message: `Congratulations! You have successfully joined the AR.IO network  (; `,
+    message: `Congratulations!\nYou have successfully joined the AR.IO network  (;`,
   };
 
   console.log(JSON.stringify(output, null, 2));

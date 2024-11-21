@@ -23,6 +23,7 @@ import {
   ArweaveSigner,
   ContractSigner,
   IO,
+  IOToken,
   IO_DEVNET_PROCESS_ID,
   IO_TESTNET_PROCESS_ID,
   Logger,
@@ -149,4 +150,9 @@ export function addressFromOptions(options: AddressOptions): string {
   }
 
   throw new Error('No address provided. Use --address or --wallet-file');
+}
+
+export function formatIOWithCommas(value: IOToken): string {
+  const [integerPart, decimalPart] = value.toString().split('.');
+  return integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + decimalPart;
 }

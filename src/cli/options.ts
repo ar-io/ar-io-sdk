@@ -45,6 +45,10 @@ export const optionMap = {
     alias: '-a, --address <address>',
     description: 'The address to interact with',
   },
+  target: {
+    alias: '-t, --target <target>',
+    description: 'The target address to interact with',
+  },
   quantity: {
     alias: '-q, --quantity <quantity>',
     description: 'The quantity of mIO to interact with',
@@ -123,6 +127,12 @@ export const walletOptions = [
 ];
 
 export const balanceOptions = [...walletOptions, optionMap.address];
+
+export const transferOptions = [
+  ...walletOptions,
+  optionMap.quantity,
+  optionMap.target,
+];
 
 export const joinNetworkOptions = [
   ...walletOptions,

@@ -21,10 +21,12 @@ import { program } from 'commander';
 import { version } from '../version.js';
 import { balance } from './commands/balance.js';
 import { joinNetwork } from './commands/joinNetwork.js';
+import { transfer } from './commands/transfer.js';
 import {
   balanceOptions,
   globalOptions,
   joinNetworkOptions,
+  transferOptions,
 } from './options.js';
 import { makeCommand, runCommand } from './utils.js';
 
@@ -63,6 +65,13 @@ makeCommand({
 // update-gateway-settings
 
 // transfer
+makeCommand({
+  name: 'transfer',
+  description: 'Transfer IO to another address',
+  options: transferOptions,
+}).action(async (_, command) => {
+  await runCommand(command, transfer);
+});
 
 // redelegate-stake
 
