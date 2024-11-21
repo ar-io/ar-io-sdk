@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ArweaveSigner } from '@dha-team/arbundles/node';
 import prompts from 'prompts';
 
+import { ArweaveSigner, IOToken } from '../../node/index.js';
 import { WalletOptions } from '../options.js';
 import {
   jwkToAddress,
@@ -58,8 +58,6 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     quantity,
     allowedDelegates,
   } = options;
-  const minOperatorStake = 50_000_000_000; // 50,000 IO
-  const operatorStake = quantity ?? minOperatorStake;
 
   if (label === undefined) {
     throw new Error(
@@ -69,6 +67,14 @@ export async function joinNetwork(options: JoinNetworkOptions) {
   if (fqdn === undefined) {
     throw new Error('FQDN is required. Please provide a --fqdn for your node.');
   }
+  if (quantity === undefined) {
+    throw new Error(
+      'Quantity of operator stake is required. Please provide a --quantity denominated in IO for your node.',
+    );
+  }
+
+  const ioQuantity = new IOToken(+quantity);
+  const operatorStake = ioQuantity.toMIO().valueOf();
 
   const settings = {
     observerAddress: observer,
