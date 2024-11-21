@@ -19,6 +19,7 @@ import {
   AoMessageResult,
   AoPrimaryName,
   AoPrimaryNameRequest,
+  AoRedelegationFeeInfo,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -448,6 +449,9 @@ export interface AoIORead {
   getPrimaryNames(
     params?: PaginationParams<AoPrimaryName>,
   ): Promise<PaginationResult<AoPrimaryName>>;
+  getRedelegationFee(params: {
+    address: WalletAddress;
+  }): Promise<AoRedelegationFeeInfo>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -561,6 +565,15 @@ export interface AoIOWrite extends AoIORead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
+  redelegateStake(
+    params: {
+      target: string;
+      source: string;
+      stakeQty: number | mIOToken;
+      vaultId?: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
 }
 
 // Typeguard functions

@@ -69,6 +69,17 @@ export type AoPrimaryName = {
   startTimestamp: Timestamp;
 };
 
+/**
+ * Users are allowed one free redelegation every seven epochs. Each additional
+ * redelegation increases the fee by 10%, capping at a 60% redelegation fee
+ */
+export type AoRedelegationFeeInfo = {
+  /** Percentage of redelegated stake that will be returned to the protocol on redelegation */
+  redelegationFeeRate: number;
+  /** Timestamp when the redelegation fee will reset to zero */
+  feeResetTimestamp: number;
+};
+
 // Utility type to require at least one of the fields
 export type AtLeastOne<
   T,
