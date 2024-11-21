@@ -66,6 +66,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
     - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
+    - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -1590,6 +1592,66 @@ const { id: txId } = await io.requestPrimaryName({
   name: 'arns',
 });
 ```
+
+#### `redelegateStake({ target, source, stakeQty, vaultId })`
+
+Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
+
+e.g: If 1000 mIO is redelegated and the fee rate is 10%, the fee will be 100 mIO. Resulting in 900 mIO being redelegated to the new gateway and 100 mIO being deducted back to the protocol balance.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.redelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+  stakeQty: new IOToken(1000).toMIO(),
+  vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sourceGateway": {
+    // ...source gateway details
+  },
+  "targetGateway": {
+    // ...target gateway details
+  },
+  "redelegationFee": 0,
+  "feeResetTimestamp": 1730996691117,
+  "redelegationsSinceFeeReset": 1
+}
+```
+
+</details>
+
+#### `getRedelegationFee({ address })`
+
+Retrieves the fee rate as percentage required to redelegate the stake of a specific address.
+
+```typescript
+const io = IO.init();
+
+const fee = await io.getRedelegationFee({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "redelegationFeeRate": 10,
+  "feeResetTimestamp": 1730996691117
+}
+```
+
+</details>
 
 ### Configuration
 
