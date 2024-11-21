@@ -52,6 +52,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
     - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
+    - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
     - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
@@ -1254,6 +1255,37 @@ const vaults = await io.getDelegations({
     }
   ],
   "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
+```
+
+</details>
+
+#### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
+
+```typescript
+const io = IO.init();
+const allowedDelegates = await io.getAllowedDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 4,
+  "limit": 100,
+  "items": [
+    "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+    "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
+    "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
+    "31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8"
+  ]
 }
 ```
 

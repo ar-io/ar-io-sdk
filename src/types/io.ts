@@ -360,6 +360,9 @@ export interface AoIORead {
   getDelegations(
     params: PaginationParams<AoDelegation> & { address: WalletAddress },
   ): Promise<PaginationResult<AoDelegation>>;
+  getAllowedDelegates(
+    params: PaginationParams & { address: WalletAddress },
+  ): Promise<PaginationResult<WalletAddress>>;
   getGatewayVaults(
     params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
   ): Promise<PaginationResult<AoGatewayVault>>;

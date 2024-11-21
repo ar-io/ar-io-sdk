@@ -269,6 +269,24 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able get list of allowed gateway delegate addresses, if applicable', async () => {
+      const allowedDelegates = await io.getAllowedDelegates({
+        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+      });
+      assert.ok(allowedDelegates);
+      assert(allowedDelegates.limit === 100);
+      assert(typeof allowedDelegates.totalItems === 'number');
+      assert(typeof allowedDelegates.limit === 'number');
+      assert(typeof allowedDelegates.hasMore === 'boolean');
+      if (allowedDelegates.nextCursor) {
+        assert(typeof allowedDelegates.nextCursor === 'string');
+      }
+      assert(Array.isArray(allowedDelegates.items));
+      allowedDelegates.items.forEach((address) => {
+        assert(typeof address === 'string');
+      });
+    });
+
     it('should be able to get gateway vaults', async () => {
       const vaults = await io.getGatewayVaults({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
