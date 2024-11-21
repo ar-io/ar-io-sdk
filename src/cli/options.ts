@@ -51,7 +51,7 @@ export const optionMap = {
   },
   quantity: {
     alias: '-q, --quantity <quantity>',
-    description: 'The quantity of mIO to interact with',
+    description: 'The quantity of IO to interact with',
   },
   disableAutoStake: {
     alias: '--disable-auto-stake',

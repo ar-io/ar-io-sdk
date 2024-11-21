@@ -25,17 +25,17 @@ import {
 } from '../utils.js';
 
 export type JoinNetworkOptions = WalletOptions & {
-  quantity: number | undefined;
+  quantity: string | undefined;
   disableAutoStake: boolean;
   disableDelegatedStaking: boolean;
-  minDelegatedStake: number | undefined;
-  delegateRewardShareRatio: number | undefined;
+  minDelegatedStake: string | undefined;
+  delegateRewardShareRatio: string | undefined;
   label: string | undefined;
   note: string | undefined;
   properties: string | undefined;
   observer: string | undefined;
   fqdn: string | undefined;
-  port: number | undefined;
+  port: string | undefined;
   protocol: string | undefined;
   allowedDelegates: string[] | undefined;
 };
@@ -85,18 +85,24 @@ export async function joinNetwork(options: JoinNetworkOptions) {
         ? undefined
         : !disableDelegatedStaking,
     autoStake: disableAutoStake === undefined ? undefined : !disableAutoStake,
-    delegateRewardShareRatio,
+    delegateRewardShareRatio:
+      delegateRewardShareRatio !== undefined
+        ? +delegateRewardShareRatio
+        : undefined,
     allowedDelegates,
     fqdn,
     label,
-    minDelegatedStake,
+    minDelegatedStake:
+      minDelegatedStake !== undefined ? +minDelegatedStake : undefined,
     note,
-    port,
+    port: port !== undefined ? +port : undefined,
     properties,
   };
 
   if (!options.skipConfirmation) {
     const balance = await io.getBalance({ address });
+
+    // TODO: Could get current minimum stake and assert from contract
 
     if (balance < operatorStake) {
       throw new Error(
