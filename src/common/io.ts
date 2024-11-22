@@ -28,6 +28,7 @@ import {
   AoMessageResult,
   AoPrimaryName,
   AoPrimaryNameRequest,
+  AoRedelegationFeeInfo,
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
@@ -700,6 +701,24 @@ export class IOReadable implements AoIORead {
       ],
     });
   }
+
+  /**
+   * Get current redelegation fee percentage for address
+   *
+   * @param {Object} params - The parameters for fetching redelegation fee
+   * @param {string} params.address - The address to fetch the fee for
+   * @returns {Promise<AoMessageResult>} The redelegation fee result
+   */
+  async getRedelegationFee(params: {
+    address: WalletAddress;
+  }): Promise<AoRedelegationFeeInfo> {
+    return this.process.read({
+      tags: [
+        { name: 'Action', value: 'Redelegation-Fee' },
+        { name: 'Address', value: params.address },
+      ],
+    });
+  }
 }
 
 export class IOWriteable extends IOReadable implements AoIOWrite {
@@ -1196,6 +1215,42 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         { name: 'Action', value: 'Primary-Name-Request' },
         { name: 'Name', value: params.name },
       ],
+    });
+  }
+
+  /**
+   * Redelegate stake from one gateway to another gateway.
+   *
+   * @param {Object} params - The parameters for redelegating stake
+   * @param {string} params.target - The target gateway address
+   * @param {string} params.source - The source gateway address
+   * @param {number} params.stakeQty - The quantity of stake to redelegate
+   * @param {string} params.vaultId - An optional vault ID to redelegate from
+   * @param {Object} [options] - The options for the redelegation
+   * @returns {Promise<AoMessageResult>} The result of the redelegation
+   */
+  async redelegateStake(
+    params: {
+      target: string;
+      source: string;
+      stakeQty: number | mIOToken;
+      vaultId?: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Redelegate-Stake' },
+      { name: 'Target', value: params.target },
+      { name: 'Source', value: params.source },
+      { name: 'Quantity', value: params.stakeQty.valueOf().toString() },
+      { name: 'Vault-Id', value: params.vaultId },
+    ];
+
+    return this.process.send({
+      signer: this.signer,
+      tags: pruneTags(allTags),
     });
   }
 }

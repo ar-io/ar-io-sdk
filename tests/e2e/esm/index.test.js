@@ -710,6 +710,15 @@ describe('e2e esm tests', async () => {
       const primaryNameRequests = await io.getPrimaryNameRequests();
       assert.ok(primaryNameRequests);
     });
+
+    it('should be able to get current redelegation fee', async () => {
+      const redelegationFee = await io.getRedelegationFee({
+        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+      });
+      assert.ok(redelegationFee);
+      assert.equal(redelegationFee.redelegationFeeRate, 0);
+      assert.equal(redelegationFee.feeResetTimestamp, undefined);
+    });
   });
 
   describe('ANTRegistry', async () => {
