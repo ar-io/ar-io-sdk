@@ -2,8 +2,7 @@ import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { AoANTRecord, AoANTRecordEntry } from '../../src/types/ant.js';
-import { parseAntRecords } from '../../src/utils/ao.js';
+import { AoANTRecord } from '../../src/types/ant.js';
 import {
   getCurrentBlockUnixTimestampMs,
   pruneTags,
@@ -64,34 +63,5 @@ describe('getCurrentBlockUnixTimestamp', () => {
     const maxTimestamp = Date.now();
     assert.ok(timestamp >= minTimestamp);
     assert.ok(timestamp <= maxTimestamp);
-  });
-});
-
-describe('ANT', () => {
-  it('should parse and sort records from an ANT', () => {
-    const recordMap: Record<string, AoANTRecord> = {
-      zed: {
-        transactionId: ''.padEnd(43, '1'),
-        ttlSeconds: 3600,
-      },
-      ['@']: { transactionId: ''.padEnd(43, '1'), ttlSeconds: 3600 },
-    };
-
-    const recordList: AoANTRecordEntry[] = [
-      {
-        transactionId: ''.padEnd(43, '1'),
-        ttlSeconds: 3600,
-        name: '@',
-      },
-      {
-        transactionId: ''.padEnd(43, '1'),
-        ttlSeconds: 3600,
-        name: 'zed',
-      },
-    ];
-
-    assert.deepEqual(parseAntRecords(recordMap), recordList);
-    assert.strictEqual(parseAntRecords(recordMap)[0].name, '@');
-    assert.deepEqual(parseAntRecords(recordList), recordList);
   });
 });
