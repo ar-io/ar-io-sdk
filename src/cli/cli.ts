@@ -23,12 +23,13 @@ import { balance } from './commands/balance.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
+  GlobalOptions,
   balanceOptions,
   globalOptions,
   joinNetworkOptions,
   transferOptions,
 } from './options.js';
-import { makeCommand, runCommand } from './utils.js';
+import { makeCommand, readIOFromOptions, runCommand } from './utils.js';
 
 makeCommand({
   name: 'ar.io', // TODO: can it be ar.io?
@@ -37,6 +38,18 @@ makeCommand({
 })
   .version(version)
   .helpCommand(true);
+
+makeCommand({
+  name: 'info',
+  description: 'Get network info',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    const io = readIOFromOptions(options);
+    const result = await io.getInfo();
+    console.log(JSON.stringify(result, null, 2));
+  });
+});
 
 makeCommand({
   name: 'balance',
