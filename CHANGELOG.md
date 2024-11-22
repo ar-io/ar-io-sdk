@@ -1,3 +1,10 @@
+# [2.5.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.13...v2.5.0-alpha.14) (2024-11-22)
+
+
+### Bug Fixes
+
+* **ant:** revert breaking change on records for ANT ([58db878](https://github.com/ar-io/ar-io-sdk/commit/58db8780797cbdde59729431d5a70d71bf9e166b))
+
 # [2.5.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.12...v2.5.0-alpha.13) (2024-11-22)
 
 
