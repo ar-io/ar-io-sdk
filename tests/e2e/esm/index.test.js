@@ -38,7 +38,7 @@ const aoClient = connect({
 
 const io = IO.init({
   process: new AOProcess({
-    processId: ioDevnetProcessId,
+    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
     ao: aoClient,
   }),
 });
@@ -349,7 +349,7 @@ describe('e2e esm tests', async () => {
       assert(typeof balances.limit === 'number');
       assert(typeof balances.hasMore === 'boolean');
       if (balances.nextCursor) {
-        assert(typeof gateways.nextCursor === 'string');
+        assert(typeof balances.nextCursor === 'string');
       }
       assert(Array.isArray(balances.items));
       balances.items.forEach((wallet) => {
