@@ -2,7 +2,6 @@ import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { AoANTRecord } from '../../src/types/ant.js';
 import {
   getCurrentBlockUnixTimestampMs,
   pruneTags,
