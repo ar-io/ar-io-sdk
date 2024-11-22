@@ -54,9 +54,7 @@ makeCommand({
   options: [],
 }).action(async (_, command) => {
   await runCommand<GlobalOptions>(command, async (options) => {
-    const io = readIOFromOptions(options);
-    const result = await io.getInfo();
-    console.log(JSON.stringify(result, null, 2));
+    return readIOFromOptions(options).getInfo();
   });
 });
 
@@ -66,9 +64,7 @@ makeCommand({
   options: [],
 }).action(async (_, command) => {
   await runCommand<GlobalOptions>(command, async (options) => {
-    const io = readIOFromOptions(options);
-    const result = await io.getTokenSupply();
-    console.log(JSON.stringify(result, null, 2));
+    return readIOFromOptions(options).getTokenSupply();
   });
 });
 
@@ -85,7 +81,11 @@ makeCommand({
     }
     const io = readIOFromOptions(options);
     const result = await io.getVault({ address, vaultId });
-    console.log(JSON.stringify(result, null, 2));
+    return (
+      result ?? {
+        message: `No vault found for address ${address} and vault ID ${vaultId}`,
+      }
+    );
   });
 });
 
@@ -95,12 +95,13 @@ makeCommand({
   options: getGatewayOptions,
 }).action(async (_, command) => {
   await runCommand<GetGatewayOptions>(command, async (options) => {
-    if (options.address === undefined) {
-      throw new Error('--address is required');
-    }
-    const io = readIOFromOptions(options);
-    const result = await io.getGateway({ address: options.address });
-    console.log(JSON.stringify(result, null, 2));
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getGateway({ address });
+    return (
+      result ?? {
+        message: `No gateway found for address ${address}`,
+      }
+    );
   });
 });
 

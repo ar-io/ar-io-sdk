@@ -15,14 +15,31 @@
  */
 import prompts from 'prompts';
 
-import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
-import { JoinNetworkOptions } from '../options.js';
 import {
+  AoJoinNetworkParams,
+  ArweaveSigner,
+  IOToken,
+  mIOToken,
+} from '../../node/index.js';
+import { WalletOptions } from '../options.js';
+import {
+  StringAllNumberTypes,
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
+
+type JoinNetworkOptions = WalletOptions &
+  Partial<
+    StringAllNumberTypes<
+      Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>
+    >
+  > & {
+    disableDelegatedStaking?: boolean;
+    disableAutoStake?: boolean;
+    skipConfirmation?: boolean;
+  };
 
 export async function joinNetwork(options: JoinNetworkOptions) {
   const jwk = requiredJwkFromOptions(options);
@@ -37,10 +54,10 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     label,
     minDelegatedStake,
     note,
-    observer,
+    observerAddress,
     port,
     properties,
-    quantity,
+    operatorStake,
     allowedDelegates,
   } = options;
 
@@ -52,18 +69,18 @@ export async function joinNetwork(options: JoinNetworkOptions) {
   if (fqdn === undefined) {
     throw new Error('FQDN is required. Please provide a --fqdn for your node.');
   }
-  if (quantity === undefined) {
+  if (operatorStake === undefined) {
     throw new Error(
-      'Quantity of operator stake is required. Please provide a --quantity denominated in IO for your node.',
+      'Operator stake is required. Please provide a --operator-stake denominated in IO for your node.',
     );
   }
 
-  const ioQuantity = new IOToken(+quantity);
-  const operatorStake = ioQuantity.toMIO().valueOf();
+  const ioQuantity = new IOToken(+operatorStake);
+  const mIOOperatorStake = ioQuantity.toMIO().valueOf();
 
   const settings = {
-    observerAddress: observer,
-    operatorStake,
+    observerAddress,
+    operatorStake: mIOOperatorStake,
     allowDelegatedStaking:
       disableDelegatedStaking === undefined
         ? undefined
@@ -88,7 +105,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
 
     // TODO: Could get current minimum stake and assert from contract
 
-    if (balance < operatorStake) {
+    if (balance < mIOOperatorStake) {
       throw new Error(
         `Insufficient balance. Required: ${formatIOWithCommas(ioQuantity)} IO, available: ${formatIOWithCommas(new mIOToken(balance).toIO())} IO`,
       );
@@ -102,8 +119,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     });
 
     if (!confirm) {
-      console.log('Aborted join-network command by user');
-      return;
+      return { message: 'Aborted join-network command by user' };
     }
   }
 
@@ -115,5 +131,5 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     message: `Congratulations!\nYou have successfully joined the AR.IO network  (;`,
   };
 
-  console.log(JSON.stringify(output, null, 2));
+  return output;
 }

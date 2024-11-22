@@ -55,8 +55,7 @@ export async function transfer(options: TransferOptions) {
     });
 
     if (!confirm) {
-      console.log('Aborted transfer command by user');
-      return;
+      return { message: 'Transfer aborted' };
     }
   }
 
@@ -71,5 +70,5 @@ export async function transfer(options: TransferOptions) {
     message: `Successfully transferred ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
   };
 
-  console.log(JSON.stringify(output, null, 2));
+  return output;
 }

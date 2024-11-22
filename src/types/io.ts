@@ -174,11 +174,9 @@ export type AoGatewayService = {
   port: number;
 };
 
-export type AoGatewayServices =
-  | {
-      bundlers: AoGatewayService[];
-    }
-  | undefined; // not required, for now
+export type AoGatewayServices = {
+  bundlers: AoGatewayService[];
+};
 
 export type AoGatewayDelegates = Record<WalletAddress, AoGatewayDelegate>;
 export type AoGatewayDelegateAllowList = WalletAddress[];
@@ -198,7 +196,7 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   weights: AoGatewayWeights;
-  services: AoGatewayServices;
+  services?: AoGatewayServices;
 };
 
 export type AoGatewayStats = {
@@ -433,7 +431,7 @@ export interface AoIORead {
   }: {
     address: WalletAddress;
     vaultId: string;
-  }): Promise<AoVaultData>;
+  }): Promise<AoVaultData | undefined>;
   getPrimaryNameRequest(
     params: { initiator: WalletAddress } | { name: string },
   ): Promise<AoMessageResult>;

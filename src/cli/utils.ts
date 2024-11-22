@@ -32,23 +32,56 @@ import {
 } from '../node/index.js';
 import { AddressOptions, GlobalOptions, WalletOptions } from './options.js';
 
-function exitWithErrorLog(error: unknown) {
-  console.error(error instanceof Error ? error.message : error);
+/** Type helper to turn each `number` type into `string` types */
+export type StringAllNumberTypes<T> = {
+  [K in keyof T]: T[K] extends number ? string : T[K];
+};
+
+type JsonSerializable =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonSerializable[]
+  | { [key: string]: JsonSerializable };
+
+function logCommandOutput(output: JsonSerializable) {
+  console.log(JSON.stringify(output, null, 2));
+}
+
+function exitWithErrorLog(error: unknown, debug = false) {
+  let errorLog: string;
+  if (error instanceof Error) {
+    errorLog = error.message;
+    if (debug) {
+      errorLog += '\n' + JSON.stringify(error.stack, null, 2);
+    }
+  } else {
+    errorLog = JSON.stringify(error, null, 2);
+  }
+  console.error(errorLog);
   process.exit(1);
 }
 
 export async function runCommand<O extends OptionValues>(
   command: Command,
-  action: (options: O) => Promise<void>,
+  action: (options: O) => Promise<JsonSerializable>,
 ) {
   const options = command.optsWithGlobals<O>();
 
   try {
-    await action(options);
+    const output = await action(options);
+    logCommandOutput(output);
     process.exit(0);
   } catch (error) {
     exitWithErrorLog(error);
   }
+}
+
+export interface CommanderOption {
+  alias: string;
+  description: string;
+  default?: string | boolean;
 }
 
 function applyOptions(command: Command, options: CommanderOption[]): Command {
@@ -56,12 +89,6 @@ function applyOptions(command: Command, options: CommanderOption[]): Command {
     command.option(option.alias, option.description, option.default);
   });
   return command;
-}
-
-export interface CommanderOption {
-  alias: string;
-  description: string;
-  default?: string | boolean;
 }
 
 export function makeCommand({

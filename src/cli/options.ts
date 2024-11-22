@@ -83,8 +83,8 @@ export const optionMap = {
     alias: '--properties <properties>',
     description: 'The properties for the gateway',
   },
-  observer: {
-    alias: '--observer <observer>',
+  observerAddress: {
+    alias: '--observer-address <observerAddress>',
     description: 'The observer wallet address for the gateway',
   },
   fqdn: {
@@ -113,6 +113,10 @@ export const optionMap = {
   vaultId: {
     alias: '--vault-id <vaultId>',
     description: 'The vault ID to interact with',
+  },
+  operatorStake: {
+    alias: '--operator-stake <operatorStake>',
+    description: 'The operator stake to interact with',
   },
 };
 
@@ -169,7 +173,7 @@ export type TransferOptions = WalletOptions & {
 
 export const joinNetworkOptions = [
   ...walletOptions,
-  optionMap.quantity,
+  // optionMap.quantity,
   optionMap.disableAutoStake,
   optionMap.disableDelegatedStaking,
   optionMap.minDelegatedStake,
@@ -177,23 +181,8 @@ export const joinNetworkOptions = [
   optionMap.label,
   optionMap.note,
   optionMap.properties,
-  optionMap.observer,
+  // optionMap.observer,
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
 ];
-export type JoinNetworkOptions = WalletOptions & {
-  quantity: string | undefined;
-  disableAutoStake: boolean;
-  disableDelegatedStaking: boolean;
-  minDelegatedStake: string | undefined;
-  delegateRewardShareRatio: string | undefined;
-  label: string | undefined;
-  note: string | undefined;
-  properties: string | undefined;
-  observer: string | undefined;
-  fqdn: string | undefined;
-  port: string | undefined;
-  protocol: string | undefined;
-  allowedDelegates: string[] | undefined;
-};
