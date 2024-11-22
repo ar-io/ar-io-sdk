@@ -437,7 +437,7 @@ export interface AoIORead {
   }): Promise<AoVaultData>;
   getPrimaryNameRequest(
     params: { initiator: WalletAddress } | { name: string },
-  ): Promise<AoMessageResult>;
+  ): Promise<AoPrimaryNameRequest>;
   getPrimaryNameRequests(
     params: PaginationParams<AoPrimaryNameRequest> & {
       initiator?: WalletAddress;
