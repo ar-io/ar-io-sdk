@@ -23,6 +23,7 @@ import {
   AntRecordSchema,
   AntRecordsSchema,
   AntStateSchema,
+  AoANTHandler,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
@@ -168,6 +169,7 @@ export class AoANTReadable implements AoANTRead {
     const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
+
     if (strict) parseSchemaResult(AntRecordsSchema, records);
     return records;
   }
@@ -277,6 +279,20 @@ export class AoANTReadable implements AoANTRead {
     });
     if (strict) parseSchemaResult(z.number(), balance);
     return balance;
+  }
+
+  /**
+   * @returns {Promise<AoANTHandler[]>} The handlers of the ANT.
+   * @example
+   * Get the handlers of the ANT.
+   * ```ts
+   * const handlers = await ant.getHandlers();
+   * ```
+   */
+  async getHandlers(): Promise<AoANTHandler[]> {
+    const info = await this.getInfo();
+
+    return (info.Handlers ?? info.HandlerNames) as AoANTHandler[];
   }
 }
 
@@ -519,6 +535,29 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * @param txId @type {string} - Arweave transaction id of the logo we want to set
+   * @param options @type {WriteOptions} - additional options to add to the write interaction (optional)
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setLogo({ logo: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f" });
+   * ```
+   */
+  async setLogo(
+    { txId }: { txId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Set-Logo' },
+        { name: 'Logo', value: txId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
    * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
    * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
@@ -568,6 +607,44 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Name', value: name },
         { name: 'IO-Process-Id', value: ioProcessId },
         { name: 'Process-Id', value: antProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * Approves a primary name request for a given name or address.
+   */
+  async approvePrimaryNameRequest(
+    {
+      name,
+      address,
+      ioProcessId,
+    }: { name: string; address: WalletAddress; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Approve-Primary-Name' },
+        { name: 'Name', value: name },
+        { name: 'Recipient', value: address },
+        { name: 'IO-Process-Id', value: ioProcessId },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async removePrimaryNames(
+    { names, ioProcessId }: { names: string[]; ioProcessId: string },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Remove-Primary-Names' },
+        { name: 'Names', value: names.join(',') },
+        { name: 'IO-Process-Id', value: ioProcessId },
       ],
       signer: this.signer,
     });

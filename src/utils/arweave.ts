@@ -17,6 +17,7 @@ import Arweave from 'arweave';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 import { BlockHeight, Timestamp } from '../types/common.js';
+import { PaginationParams } from '../types/io.js';
 
 export const validateArweaveId = (id: string): boolean => {
   return ARWEAVE_TX_REGEX.test(id);
@@ -48,4 +49,17 @@ export const getCurrentBlockUnixTimestampMs = async (
     .catch(() => {
       return Date.now(); // fallback to current time
     });
+};
+
+export const paginationParamsToTags = <T>(
+  params?: PaginationParams<T>,
+): { name: string; value: string }[] => {
+  const tags = [
+    { name: 'Cursor', value: params?.cursor?.toString() },
+    { name: 'Limit', value: params?.limit?.toString() },
+    { name: 'Sort-By', value: params?.sortBy?.toString() },
+    { name: 'Sort-Order', value: params?.sortOrder?.toString() },
+  ];
+
+  return pruneTags(tags);
 };

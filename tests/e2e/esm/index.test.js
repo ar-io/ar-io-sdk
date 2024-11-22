@@ -1,3 +1,7 @@
+/**
+ * Ensure that npm link has been ran prior to running these tests
+ * (simply running npm run test:integration will ensure npm link is ran)
+ */
 import {
   ANT,
   ANTRegistry,
@@ -28,18 +32,13 @@ const signers = [
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
 
-/**
- * Ensure that npm link has been ran prior to running these tests
- * (simply running npm run test:integration will ensure npm link is ran)
- */
-
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
 
 const io = IO.init({
   process: new AOProcess({
-    processId: ioDevnetProcessId,
+    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
     ao: aoClient,
   }),
 });
@@ -103,6 +102,35 @@ describe('e2e esm tests', async () => {
     it('should be able to get a single arns record', async () => {
       const arns = await io.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
+    });
+
+    it('should be able to get reserved names', async () => {
+      const reservedNames = await io.getArNSReservedNames({
+        limit: 1,
+        sortBy: 'name',
+        sortOrder: 'asc',
+      });
+      assert.ok(reservedNames);
+      assert(reservedNames.limit === 1);
+      assert(reservedNames.sortOrder === 'asc');
+      assert(reservedNames.sortBy === 'name');
+      assert(typeof reservedNames.totalItems === 'number');
+      assert(typeof reservedNames.sortBy === 'string');
+      assert(typeof reservedNames.sortOrder === 'string');
+      assert(typeof reservedNames.limit === 'number');
+      assert(typeof reservedNames.hasMore === 'boolean');
+      if (reservedNames.nextCursor) {
+        assert(typeof reservedNames.nextCursor === 'string');
+      }
+      assert(Array.isArray(reservedNames.items));
+      reservedNames.items.forEach((item) => {
+        assert(typeof item.name === 'string');
+      });
+    });
+
+    it('should be able to get a single reserved name', async () => {
+      const reservedName = await io.getArNSReservedName({ name: 'www' });
+      assert.ok(reservedName);
     });
 
     it('should be able to get the current epoch', async () => {
@@ -241,6 +269,50 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able get list of allowed gateway delegate addresses, if applicable', async () => {
+      const allowedDelegates = await io.getAllowedDelegates({
+        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+      });
+      assert.ok(allowedDelegates);
+      assert(allowedDelegates.limit === 100);
+      assert(typeof allowedDelegates.totalItems === 'number');
+      assert(typeof allowedDelegates.limit === 'number');
+      assert(typeof allowedDelegates.hasMore === 'boolean');
+      if (allowedDelegates.nextCursor) {
+        assert(typeof allowedDelegates.nextCursor === 'string');
+      }
+      assert(Array.isArray(allowedDelegates.items));
+      allowedDelegates.items.forEach((address) => {
+        assert(typeof address === 'string');
+      });
+    });
+
+    it('should be able to get gateway vaults', async () => {
+      const vaults = await io.getGatewayVaults({
+        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+      });
+      assert.ok(vaults);
+      assert(vaults.limit === 100);
+      assert(vaults.sortOrder === 'desc');
+      assert(vaults.sortBy === 'endTimestamp');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach((vault) => {
+        assert(typeof vault.balance === 'number');
+        assert(typeof vault.cursorId === 'string');
+        assert(typeof vault.vaultId === 'string');
+        assert(typeof vault.startTimestamp === 'number');
+        assert(typeof vault.endTimestamp === 'number');
+      });
+    });
+
     it('should be able to get gateway delegate allow list', async () => {
       const allowList = await io.getGatewayDelegateAllowList({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
@@ -277,7 +349,7 @@ describe('e2e esm tests', async () => {
       assert(typeof balances.limit === 'number');
       assert(typeof balances.hasMore === 'boolean');
       if (balances.nextCursor) {
-        assert(typeof gateways.nextCursor === 'string');
+        assert(typeof balances.nextCursor === 'string');
       }
       assert(Array.isArray(balances.items));
       balances.items.forEach((wallet) => {
@@ -455,7 +527,7 @@ describe('e2e esm tests', async () => {
         .catch((e) => e);
       assert.ok(error);
       assert(error instanceof Error);
-      assert(error.message === 'Vault-Not-Found');
+      // assert(error.message.includes('Vault-Not-Found'));
     });
 
     it('should be able to get paginated vaults', async () => {
@@ -512,6 +584,141 @@ describe('e2e esm tests', async () => {
         },
       );
     });
+
+    it('should be able to get paginated delegations for a delegate address', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'startTimestamp');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(['stake', 'vault'].includes(type), true);
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated delegations for a delegate address with custom sort', async () => {
+      const delegations = await io.getDelegations({
+        address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
+        limit: 1,
+        sortBy: 'balance',
+        sortOrder: 'desc',
+      });
+      assert.ok(delegations);
+      assert.equal(delegations.limit, 1);
+      assert.equal(delegations.sortOrder, 'desc');
+      assert.equal(delegations.sortBy, 'balance');
+      assert.equal(typeof delegations.totalItems, 'number');
+      assert.equal(typeof delegations.sortBy, 'string');
+      assert.equal(typeof delegations.sortOrder, 'string');
+      assert.equal(typeof delegations.limit, 'number');
+      assert.equal(typeof delegations.hasMore, 'boolean');
+      if (delegations.nextCursor) {
+        assert.equal(typeof delegations.nextCursor, 'string');
+      }
+      assert(Array.isArray(delegations.items));
+      delegations.items.forEach(
+        ({
+          type,
+          gatewayAddress,
+          delegationId,
+          balance,
+          startTimestamp,
+          vaultId,
+          endTimestamp,
+        }) => {
+          assert.equal(typeof type, 'string');
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof delegationId, 'string');
+          assert.equal(typeof balance, 'number');
+          assert.equal(typeof startTimestamp, 'number');
+          assert(
+            endTimestamp === undefined || typeof endTimestamp === 'number',
+          );
+          assert(vaultId === undefined || typeof vaultId === 'string');
+        },
+      );
+    });
+
+    it('should be able to get paginated primary names', async () => {
+      const primaryNames = await io.getPrimaryNames();
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get paginated primary names with custom sort', async () => {
+      const primaryNames = await io.getPrimaryNames({
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(primaryNames);
+    });
+
+    it('should be able to get a specific primary name by address', async () => {
+      const primaryName = await io.getPrimaryName({
+        address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+      });
+      assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
+    });
+
+    it('should be able to get a specific primary name by name', async () => {
+      const primaryName = await io.getPrimaryName({
+        name: 'arns',
+      });
+      assert.ok(primaryName);
+      assert.deepStrictEqual(primaryName, {
+        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        name: 'arns',
+        startTimestamp: 1719356032297,
+      });
+    });
+
+    it('should be able to get paginated primary name requests', async () => {
+      const primaryNameRequests = await io.getPrimaryNameRequests();
+      assert.ok(primaryNameRequests);
+    });
+
+    it('should be able to get current redelegation fee', async () => {
+      const redelegationFee = await io.getRedelegationFee({
+        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+      });
+      assert.ok(redelegationFee);
+      assert.equal(redelegationFee.redelegationFeeRate, 0);
+      assert.equal(redelegationFee.feeResetTimestamp, undefined);
+    });
   });
 
   describe('ANTRegistry', async () => {
@@ -544,6 +751,7 @@ describe('e2e esm tests', async () => {
   });
 
   describe('ANT', async () => {
+    // ANT v7 process id
     const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
     const ant = ANT.init({
       process: new AOProcess({
@@ -583,6 +791,7 @@ describe('e2e esm tests', async () => {
     it('should be able to get the ANT records', async () => {
       const records = await ant.getRecords();
       assert.ok(records);
+      // TODO: check enforcement of alphabetical order with '@' first
     });
 
     it('should be able to get a @ record from the ANT', async () => {

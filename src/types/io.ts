@@ -17,6 +17,9 @@ import { AOProcess } from '../common/index.js';
 import { validateArweaveId } from '../utils/arweave.js';
 import {
   AoMessageResult,
+  AoPrimaryName,
+  AoPrimaryNameRequest,
+  AoRedelegationFeeInfo,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -74,20 +77,6 @@ export type AoRegistrationFees = Record<
 >;
 export type AoEpochIndex = number;
 
-export interface AoIOState {
-  GatewayRegistry: Record<WalletAddress, AoGateway>;
-  Epochs: Record<AoEpochIndex, AoEpochData>;
-  NameRegistry: {
-    records: Record<string, AoArNSNameData>;
-    reserved: Record<string, AoArNSReservedNameData>;
-  };
-  Balances: Record<WalletAddress, number>;
-  Vaults: Record<WalletAddress, AoVaultData>;
-  Ticker: string;
-  Name: string;
-  Logo: string;
-}
-
 export type AoEpochObservationData = {
   failureSummaries: Record<WalletAddress, WalletAddress[]>;
   reports: Record<WalletAddress, TransactionId>;
@@ -128,6 +117,9 @@ export type AoArNSReservedNameData = {
 };
 export type AoArNSNameData = AoArNSPermabuyData | AoArNSLeaseData;
 export type AoArNSNameDataWithName = AoArNSNameData & { name: string };
+export type AoArNSReservedNameDataWithName = AoArNSReservedNameData & {
+  name: string;
+};
 export type AoArNSBaseNameData = {
   processId: ProcessId;
   startTimestamp: number;
@@ -198,11 +190,8 @@ export type AoWalletVault = AoVaultData & {
 
 export type AoGateway = {
   settings: AoGatewaySettings;
-  // @deprecated - use getGatewayDelegates instead
-  delegates: AoGatewayDelegates;
   stats: AoGatewayStats;
   totalDelegatedStake: number;
-  vaults: Record<WalletAddress, AoVaultData>;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   observerAddress: WalletAddress;
@@ -296,6 +285,33 @@ export type AoAuctionPriceData = {
   currentPrice: number;
 };
 
+export type AoDelegationBase = {
+  type: 'stake' | 'vault';
+  gatewayAddress: WalletAddress;
+  delegationId: string;
+};
+
+export type AoVaultDelegation = AoDelegationBase &
+  AoVaultData & {
+    type: 'vault';
+    vaultId: TransactionId;
+  };
+
+export type AoStakeDelegation = AoDelegationBase & {
+  type: 'stake';
+  startTimestamp: Timestamp;
+  balance: number;
+};
+
+export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
+
+export type AoGatewayVault = {
+  cursorId: string;
+  vaultId: TransactionId;
+  balance: number;
+  endTimestamp: Timestamp;
+  startTimestamp: Timestamp;
+};
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -342,6 +358,15 @@ export interface AoIORead {
   getGateways(
     params?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>>;
+  getDelegations(
+    params: PaginationParams<AoDelegation> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoDelegation>>;
+  getAllowedDelegates(
+    params: PaginationParams & { address: WalletAddress },
+  ): Promise<PaginationResult<WalletAddress>>;
+  getGatewayVaults(
+    params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoGatewayVault>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
   getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,
@@ -354,9 +379,9 @@ export interface AoIORead {
   getArNSRecords(
     params?: PaginationParams<AoArNSNameDataWithName>,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
-  getArNSReservedNames(): Promise<
-    Record<string, AoArNSReservedNameData> | Record<string, never>
-  >;
+  getArNSReservedNames(
+    params?: PaginationParams<AoArNSReservedNameDataWithName>,
+  ): Promise<PaginationResult<AoArNSReservedNameDataWithName>>;
   getArNSReservedName({
     name,
   }: {
@@ -410,6 +435,23 @@ export interface AoIORead {
     address: WalletAddress;
     vaultId: string;
   }): Promise<AoVaultData>;
+  getPrimaryNameRequest(
+    params: { initiator: WalletAddress } | { name: string },
+  ): Promise<AoMessageResult>;
+  getPrimaryNameRequests(
+    params: PaginationParams<AoPrimaryNameRequest> & {
+      initiator?: WalletAddress;
+    },
+  ): Promise<PaginationResult<AoPrimaryNameRequest>>;
+  getPrimaryName(
+    params: { address: WalletAddress } | { name: string },
+  ): Promise<AoPrimaryName>;
+  getPrimaryNames(
+    params?: PaginationParams<AoPrimaryName>,
+  ): Promise<PaginationResult<AoPrimaryName>>;
+  getRedelegationFee(params: {
+    address: WalletAddress;
+  }): Promise<AoRedelegationFeeInfo>;
 }
 
 export interface AoIOWrite extends AoIORead {
@@ -519,6 +561,16 @@ export interface AoIOWrite extends AoIORead {
       quantity?: number;
       type?: 'lease' | 'permabuy';
       years?: number;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
+  redelegateStake(
+    params: {
+      target: string;
+      source: string;
+      stakeQty: number | mIOToken;
+      vaultId?: string;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

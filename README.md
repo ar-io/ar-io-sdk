@@ -51,6 +51,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
+    - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
+    - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
+    - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
     - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
@@ -60,11 +63,17 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+    - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
+    - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
+    - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
+    - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
     - [`init({ processId, signer })`](#init-processid-signer-)
     - [`getInfo()`](#getinfo-1)
+    - [`getHandlers()`](#gethandlers)
     - [`getState()`](#getstate)
     - [`getOwner()`](#getowner)
     - [`getControllers()`](#getcontrollers)
@@ -78,8 +87,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setTicker({ ticker })`](#setticker-ticker-)
     - [`setDescription({ description })`](#setdescription-description-)
     - [`setKeywords({ keywords })`](#setkeywords-keywords-)
+    - [`setLogo({ txId })`](#setlogo-txid-)
     - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
     - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
+    - [`approvePrimaryNameRequest({ name, address, ioProcessId })`](#approveprimarynamerequest-name-address-ioprocessid-)
+    - [`removePrimaryNames({ names, ioProcessId })`](#removeprimarynames-names-ioprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -1201,6 +1213,121 @@ const { id: txId } = await io.decreaseDelegateStake({
 });
 ```
 
+#### `getDelegations({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getDelegations({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
+  limit: 2,
+  sortBy: 'startTimestamp',
+  sortOrder: 'asc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "asc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 2,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "type": "stake",
+      "startTimestamp": 1727815440632,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1727815440632",
+      "balance": 1383212512
+    },
+    {
+      "type": "vault",
+      "startTimestamp": 1730996691117,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117",
+      "vaultId": "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g",
+      "balance": 50000000,
+      "endTimestamp": 1733588691117
+    }
+  ],
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
+```
+
+</details>
+
+#### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
+
+```typescript
+const io = IO.init();
+const allowedDelegates = await io.getAllowedDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 4,
+  "limit": 100,
+  "items": [
+    "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+    "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
+    "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
+    "31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8"
+  ]
+}
+```
+
+</details>
+
+#### `getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getGatewayVaults({
+  address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "endTimestamp",
+  "items": [
+    {
+      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_1728067635857",
+      "startTimestamp": 1728067635857,
+      "balance": 50000000000,
+      "vaultId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "endTimestamp": 1735843635857
+    }
+  ]
+}
+```
+
+</details>
+
 #### `instantWithdrawal({ gatewayAddress, vaultId })`
 
 Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
@@ -1391,6 +1518,122 @@ if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
 }
 ```
 
+#### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all primary names across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
+
+```typescript
+const io = IO.init();
+const names = await io.getPrimaryNames({
+  cursor: 'ar-io',
+  limit: 2,
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "name",
+  "items": [
+    {
+      "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+      "startTimestamp": 1719356032297,
+      "name": "arns"
+    }
+  ]
+}
+```
+
+</details>
+
+#### `getPrimaryName({ name, address })`
+
+Retrieves the primary name for a given name or address.
+
+```typescript
+const io = IO.init();
+const name = await io.getPrimaryName({
+  name: 'arns',
+});
+// or
+const name = await io.getPrimaryName({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
+  "startTimestamp": 1719356032297,
+  "name": "arns"
+}
+```
+
+</details>
+
+#### `requestPrimaryName({ name, address })`
+
+Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.requestPrimaryName({
+  name: 'arns',
+});
+```
+
+#### `redelegateStake({ target, source, stakeQty, vaultId })`
+
+Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
+
+e.g: If 1000 mIO is redelegated and the fee rate is 10%, the fee will be 100 mIO. Resulting in 900 mIO being redelegated to the new gateway and 100 mIO being deducted back to the protocol balance.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.redelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+  stakeQty: new IOToken(1000).toMIO(),
+  vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+});
+```
+
+#### `getRedelegationFee({ address })`
+
+Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
+
+```typescript
+const io = IO.init();
+
+const fee = await io.getRedelegationFee({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "redelegationFeeRate": 10,
+  "feeResetTimestamp": 1730996691117
+}
+```
+
+</details>
+
 ### Configuration
 
 The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO Testnet Process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
@@ -1454,6 +1697,43 @@ const info = await ant.getInfo();
   "keywords": ["File-sharing", "Publishing", "dApp"],
   "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
 }
+```
+
+</details>
+
+#### `getHandlers()`
+
+Retrieves the handlers supported on the ANT
+
+```typescript
+const handlers = await ant.getHandlers();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+[
+  "evolve",
+  "_eval",
+  "_default",
+  "transfer",
+  "balance",
+  "balances",
+  "totalSupply",
+  "info",
+  "addController",
+  "removeController",
+  "controllers",
+  "setRecord",
+  "removeRecord",
+  "record",
+  "records",
+  "setName",
+  "setTicker",
+  "initializeState",
+  "state"
+]
 ```
 
 </details>
@@ -1551,32 +1831,17 @@ const records = await ant.getRecords();
 ```json
 {
   "@": {
-    "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+    "transactionId": "UyC5P5qKPZaltMmmZAWdakhlDXsBF6qmyrbWYFchRTk",
     "ttlSeconds": 3600
   },
-  "cn": {
-    "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
-    "ttlSeconds": 3300
+  "zed": {
+    "transactionId": "-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI",
+    "ttlSeconds": 900
   },
-  "dapp": {
-    "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
-    "ttlSeconds": 3600
-  },
-  "logo": {
-    "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
-    "ttlSeconds": 3600
-  },
-  "og": {
-    "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
-    "ttlSeconds": 3600
-  },
-  "og_dapp": {
-    "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
-    "ttlSeconds": 3600
-  },
-  "og_logo": {
-    "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
-    "ttlSeconds": 3600
+
+  "ardrive": {
+    "transactionId": "-cucucachoodwedwedoiwepodiwpodiwpoidpwoiedp",
+    "ttlSeconds": 900
   }
 }
 ```
@@ -1715,6 +1980,20 @@ const { id: txId } = await ant.setDescription(
 );
 ```
 
+#### `setLogo({ txId })`
+
+Sets the Logo of the ANT - logo should be an Arweave transaction ID.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.setLogo(
+  { txId: 'U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f' },
+  // optional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
 #### `releaseName({ name, ioProcessId })`
 
 Releases a name from the auction and makes it available for auction on the IO contract. The name must be permanently owned by the releasing wallet. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
@@ -1739,6 +2018,33 @@ const { id: txId } = await ant.reassignName({
   name: 'ardrive',
   ioProcessId: IO_TESTNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
+});
+```
+
+#### `approvePrimaryNameRequest({ name, address, ioProcessId })`
+
+Approves a primary name request for a given name or address.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.approvePrimaryNameRequest({
+  name: 'arns',
+  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
+});
+```
+
+#### `removePrimaryNames({ names, ioProcessId })`
+
+Removes primary names from the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.removePrimaryNames({
+  names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
+  ioProcessId: IO_TESTNET_PROCESS_ID,
 });
 ```
 
