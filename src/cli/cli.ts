@@ -18,11 +18,12 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
+import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
-import { balance } from './commands/balance.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
+  BalanceOptions,
   GetGatewayOptions,
   GetVaultOptions,
   GlobalOptions,
@@ -34,6 +35,7 @@ import {
   transferOptions,
 } from './options.js';
 import {
+  formatIOWithCommas,
   makeCommand,
   readIOFromOptions,
   requiredAddressFromOptions,
@@ -106,11 +108,51 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'get-gateways',
+  description: 'Get the gateways of the network',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    // TODO: Pagination from CLI
+    return (await readIOFromOptions(options).getGateways()).items;
+  });
+});
+
+makeCommand({
+  name: 'get-gateway-delegates',
+  description: 'Get the delegates of a gateway',
+  options: getGatewayOptions,
+}).action(async (_, command) => {
+  await runCommand<GetGatewayOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getGatewayDelegates({
+      address,
+    });
+
+    // TODO: Paginate from CLI
+    return result.items?.length
+      ? result.items
+      : {
+          message: `No delegates found for gateway ${address}`,
+        };
+  });
+});
+
+makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',
   options: balanceOptions,
 }).action(async (_, command) => {
-  await runCommand(command, balance);
+  await runCommand<BalanceOptions>(command, async (options) => {
+    const io = readIOFromOptions(options);
+    const address = requiredAddressFromOptions(options);
+    const result = await io.getBalance({ address });
+    return {
+      address: address,
+      mIOBalance: result,
+      message: `Provided address current has a balance of ${formatIOWithCommas(new mIOToken(result).toIO())} IO`,
+    };
+  });
 });
 
 makeCommand({
