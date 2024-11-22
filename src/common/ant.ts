@@ -18,16 +18,15 @@ import { z } from 'zod';
 import {
   AntBalancesSchema,
   AntControllersSchema,
-  AntEntriesSchema,
   AntInfoSchema,
   AntReadOptions,
   AntRecordSchema,
+  AntRecordsSchema,
   AntStateSchema,
   AoANTHandler,
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
-  AoANTRecordEntry,
   AoANTState,
   AoANTWrite,
 } from '../types/ant.js';
@@ -42,7 +41,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/index.js';
-import { createAoSigner, parseAntRecords } from '../utils/ao.js';
+import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
@@ -156,7 +155,7 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
-   * @returns {Promise<AoANTRecordEntry[]>} All the undernames managed by the ANT.
+   * @returns {Promise<Record<string, AoANTRecord>>} All the undernames managed by the ANT.
    * @example
    * Get the current records
    * ```ts
@@ -165,19 +164,14 @@ export class AoANTReadable implements AoANTRead {
    */
   async getRecords(
     { strict }: AntReadOptions = { strict: this.strict },
-  ): Promise<AoANTRecordEntry[]> {
+  ): Promise<Record<string, AoANTRecord>> {
     const tags = [{ name: 'Action', value: 'Records' }];
-    const records = await this.process.read<
-      AoANTRecordEntry[] | Record<string, AoANTRecord>
-    >({
+    const records = await this.process.read<Record<string, AoANTRecord>>({
       tags,
     });
 
-    const result = parseAntRecords(records);
-
-    if (strict) parseSchemaResult(AntEntriesSchema, result);
-
-    return result;
+    if (strict) parseSchemaResult(AntRecordsSchema, records);
+    return records;
   }
 
   /**

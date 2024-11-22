@@ -26,7 +26,7 @@ import {
   AOS_MODULE_ID,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
-import { AoANTRecord, AoANTRecordEntry } from '../types/ant.js';
+import { AoANTRecord } from '../types/ant.js';
 import {
   AoClient,
   AoSigner,
@@ -256,31 +256,4 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
-}
-
-/**
- * @param records @type {AoANTRecordEntry[] | Record<string, AoANTRecord>} - the records returned by an ANT
- * @returns @type {AoANTRecordEntry[]} - the alphabetically sorted records
- */
-export function parseAntRecords(
-  records: AoANTRecordEntry[] | Record<string, AoANTRecord>,
-): AoANTRecordEntry[] {
-  const result = Array.isArray(records)
-    ? records // assumes if records is an array that its AoANTRecordEntry[]
-    : // backwards compatibility for when ANTs returned as Record<string, AoANTRecord>
-      Object.keys(records) // sort the keys since string indexed maps in lua do not retain order
-        .sort((a: string, b: string) => {
-          if (a == '@') return -1;
-          if (b == '@') return 1;
-          return a.localeCompare(b);
-        })
-        .reduce((acc: AoANTRecordEntry[], undername: string) => {
-          acc.push({
-            ...records[undername],
-            name: undername,
-          });
-          return acc;
-        }, [] as AoANTRecordEntry[]);
-
-  return result;
 }

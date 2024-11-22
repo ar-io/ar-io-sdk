@@ -1829,43 +1829,21 @@ const records = await ant.getRecords();
   <summary>Output</summary>
 
 ```json
-[
-  {
-    "name": "@",
-    "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+{
+  "@": {
+    "transactionId": "UyC5P5qKPZaltMmmZAWdakhlDXsBF6qmyrbWYFchRTk",
     "ttlSeconds": 3600
   },
-  {
-    "name": "cn",
-    "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
-    "ttlSeconds": 3300
+  "zed": {
+    "transactionId": "-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI",
+    "ttlSeconds": 900
   },
-  {
-    "name": "dapp",
-    "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "logo",
-    "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og",
-    "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og_dapp",
-    "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og_logo",
-    "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
-    "ttlSeconds": 3600
+
+  "ardrive": {
+    "transactionId": "-cucucachoodwedwedoiwepodiwpodiwpoidpwoiedp",
+    "ttlSeconds": 900
   }
-]
+}
 ```
 
 </details>
