@@ -52,6 +52,18 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'token-supply',
+  description: 'Get the total token supply',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    const io = readIOFromOptions(options);
+    const result = await io.getTokenSupply();
+    console.log(JSON.stringify(result, null, 2));
+  });
+});
+
+makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',
   options: balanceOptions,
