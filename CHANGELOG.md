@@ -1,3 +1,10 @@
+# [2.5.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.12...v2.5.0-alpha.13) (2024-11-22)
+
+
+### Features
+
+* **redelegate stake:** init IO methods PE-7159 ([7539dd2](https://github.com/ar-io/ar-io-sdk/commit/7539dd2edd0e4eae0c08515e0a3001eacada647c))
+
 # [2.5.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.11...v2.5.0-alpha.12) (2024-11-21)
 
 
