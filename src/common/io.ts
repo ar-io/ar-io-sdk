@@ -648,7 +648,7 @@ export class IOReadable implements AoIORead {
       | {
           name: string;
         },
-  ): Promise<AoMessageResult> {
+  ): Promise<AoPrimaryNameRequest> {
     const allTags = [
       { name: 'Action', value: 'Primary-Name-Request' },
       { name: 'Name', value: (params as { name: string }).name },
@@ -658,7 +658,7 @@ export class IOReadable implements AoIORead {
       },
     ];
 
-    return this.process.read<AoMessageResult>({
+    return this.process.read<AoPrimaryNameRequest>({
       tags: allTags,
     });
   }
