@@ -15,11 +15,11 @@
  */
 import { MIO_PER_IO } from '../../constants.js';
 import { BalanceOptions } from '../options.js';
-import { addressFromOptions, readIOFromOptions } from '../utils.js';
+import { readIOFromOptions, requiredAddressFromOptions } from '../utils.js';
 
 export async function balance(options: BalanceOptions) {
   const io = readIOFromOptions(options);
-  const address = addressFromOptions(options);
+  const address = requiredAddressFromOptions(options);
 
   const result = await io.getBalance({ address });
   const formattedBalance = (result / MIO_PER_IO).toFixed(6);

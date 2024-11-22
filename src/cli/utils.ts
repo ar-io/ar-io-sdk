@@ -139,7 +139,7 @@ export function writeIOFromOptions(
   });
 }
 
-export function addressFromOptions(options: AddressOptions): string {
+export function requiredAddressFromOptions(options: AddressOptions): string {
   if (options.address !== undefined) {
     return options.address;
   }

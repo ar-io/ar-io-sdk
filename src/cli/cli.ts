@@ -23,13 +23,22 @@ import { balance } from './commands/balance.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
+  GetGatewayOptions,
+  GetVaultOptions,
   GlobalOptions,
   balanceOptions,
+  getGatewayOptions,
+  getVaultOptions,
   globalOptions,
   joinNetworkOptions,
   transferOptions,
 } from './options.js';
-import { makeCommand, readIOFromOptions, runCommand } from './utils.js';
+import {
+  makeCommand,
+  readIOFromOptions,
+  requiredAddressFromOptions,
+  runCommand,
+} from './utils.js';
 
 makeCommand({
   name: 'ar.io', // TODO: can it be ar.io?
@@ -59,6 +68,38 @@ makeCommand({
   await runCommand<GlobalOptions>(command, async (options) => {
     const io = readIOFromOptions(options);
     const result = await io.getTokenSupply();
+    console.log(JSON.stringify(result, null, 2));
+  });
+});
+
+makeCommand({
+  name: 'get-vault',
+  description: 'Get the vault of provided address and vault ID',
+  options: getVaultOptions,
+}).action(async (_, command) => {
+  await runCommand<GetVaultOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const vaultId = options.vaultId;
+    if (vaultId === undefined) {
+      throw new Error('--vault-id is required');
+    }
+    const io = readIOFromOptions(options);
+    const result = await io.getVault({ address, vaultId });
+    console.log(JSON.stringify(result, null, 2));
+  });
+});
+
+makeCommand({
+  name: 'get-gateway',
+  description: 'Get the gateway of an address',
+  options: getGatewayOptions,
+}).action(async (_, command) => {
+  await runCommand<GetGatewayOptions>(command, async (options) => {
+    if (options.address === undefined) {
+      throw new Error('--address is required');
+    }
+    const io = readIOFromOptions(options);
+    const result = await io.getGateway({ address: options.address });
     console.log(JSON.stringify(result, null, 2));
   });
 });

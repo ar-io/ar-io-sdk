@@ -110,6 +110,10 @@ export const optionMap = {
     description: 'Skip confirmation prompts',
     type: 'boolean',
   },
+  vaultId: {
+    alias: '--vault-id <vaultId>',
+    description: 'The vault ID to interact with',
+  },
 };
 
 export const globalOptions = [
@@ -137,11 +141,21 @@ export type WalletOptions = GlobalOptions & {
   privateKey: string | undefined;
 };
 
-export const balanceOptions = [...walletOptions, optionMap.address];
+const addressOptions = [...walletOptions, optionMap.address];
 export type AddressOptions = WalletOptions & {
   address: string | undefined;
 };
+
+export const balanceOptions = addressOptions;
 export type BalanceOptions = AddressOptions;
+
+export const getVaultOptions = [...balanceOptions, optionMap.vaultId];
+export type GetVaultOptions = AddressOptions & {
+  vaultId: string | undefined;
+};
+
+export const getGatewayOptions = addressOptions;
+export type GetGatewayOptions = AddressOptions;
 
 export const transferOptions = [
   ...walletOptions,
