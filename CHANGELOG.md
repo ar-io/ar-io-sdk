@@ -1,24 +1,3 @@
-# [2.5.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.13...v2.5.0-alpha.14) (2024-11-22)
-
-
-### Bug Fixes
-
-* **ant:** revert breaking change on records for ANT ([58db878](https://github.com/ar-io/ar-io-sdk/commit/58db8780797cbdde59729431d5a70d71bf9e166b))
-
-# [2.5.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.12...v2.5.0-alpha.13) (2024-11-22)
-
-
-### Features
-
-* **redelegate stake:** init IO methods PE-7159 ([7539dd2](https://github.com/ar-io/ar-io-sdk/commit/7539dd2edd0e4eae0c08515e0a3001eacada647c))
-
-# [2.5.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0-alpha.11...v2.5.0-alpha.12) (2024-11-21)
-
-
-### Bug Fixes
-
-* **lua id:** rollback lua id ([89b8392](https://github.com/ar-io/ar-io-sdk/commit/89b83925778a3a9528f8a61c2c542cadb7bac0f8))
-
 # [2.4.0](https://github.com/ar-io/ar-io-sdk/compare/v2.3.2...v2.4.0) (2024-11-12)
 
 
