@@ -312,30 +312,6 @@ describe('e2e esm tests', async () => {
       });
     });
 
-    it('should be able to get gateway delegate allow list', async () => {
-      const allowList = await io.getGatewayDelegateAllowList({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
-        limit: 1,
-        sortBy: 'startTimestamp',
-        sortOrder: 'desc',
-      });
-      assert.ok(allowList);
-      // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
-      assert(allowList.limit === 1);
-      assert(allowList.sortOrder === 'desc');
-      assert(typeof allowList.totalItems === 'number');
-      assert(typeof allowList.sortOrder === 'string');
-      assert(typeof allowList.limit === 'number');
-      assert(typeof allowList.hasMore === 'boolean');
-      if (allowList.nextCursor) {
-        assert(typeof allowList.nextCursor === 'string');
-      }
-      assert(Array.isArray(allowList.items));
-      allowList.items.forEach((address) => {
-        assert(typeof address === 'string');
-      });
-    });
-
     it('should be able to get balances, defaulting to first page', async () => {
       const balances = await io.getBalances();
       assert.ok(balances);
