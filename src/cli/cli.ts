@@ -45,11 +45,12 @@ import {
   EpochOptions,
   GetTokenCostOptions,
   GetVaultOptions,
-  GlobalOptions,
   InitiatorOptions,
+  JoinNetworkOptions,
   NameOptions,
   PaginationAddressOptions,
   PaginationOptions,
+  TransferOptions,
 } from './types.js';
 import {
   addressFromOptions,
@@ -61,6 +62,7 @@ import {
   requiredAddressFromOptions,
   requiredInitiatorFromOptions,
   requiredNameFromOptions,
+  requiredVaultIdFromOptions,
   runCommand,
 } from './utils.js';
 
@@ -94,26 +96,6 @@ makeCommand({
   name: 'get-demand-factor',
   description: 'Get demand factor',
   action: (options) => readIOFromOptions(options).getDemandFactor(),
-});
-
-makeCommand<GetVaultOptions>({
-  name: 'get-vault',
-  description: 'Get the vault of provided address and vault ID',
-  options: getVaultOptions,
-  action: async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const vaultId = options.vaultId;
-    if (vaultId === undefined) {
-      throw new Error('--vault-id is required');
-    }
-    const io = readIOFromOptions(options);
-    const result = await io.getVault({ address, vaultId });
-    return (
-      result ?? {
-        message: `No vault found for address ${address} and vault ID ${vaultId}`,
-      }
-    );
-  },
 });
 
 makeCommand<AddressOptions>({
@@ -155,7 +137,7 @@ makeCommand<PaginationAddressOptions>({
     });
 
     return result.items?.length
-      ? result.items
+      ? result
       : {
           message: `No delegates found for gateway ${address}`,
         };
@@ -224,7 +206,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand({
+makeCommand<NameOptions>({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
   options: nameOptions,
@@ -273,12 +255,11 @@ makeCommand({
       ),
 });
 
-makeCommand({
+makeCommand<AuctionPricesOptions>({
   name: 'get-arns-auction-prices',
   description: 'Get ArNS auction prices',
   options: arNSAuctionPricesOptions,
-}).action(async (_, command) => {
-  await runCommand<AuctionPricesOptions>(command, async (options) => {
+  action: async (options) => {
     options.type ??= 'lease';
     if (options.type !== 'lease' && options.type !== 'permabuy') {
       throw new Error(`Invalid type. Valid types are: lease, permabuy`);
@@ -294,84 +275,64 @@ makeCommand({
       years: options.years !== undefined ? +options.years : undefined,
     });
     return result ?? { message: `No auction prices found` };
-  });
+  },
 });
 
-makeCommand({
+makeCommand<EpochOptions>({
   name: 'get-epoch',
   description: 'Get epoch data',
   options: epochOptions,
-}).action(async (_, command) => {
-  await runCommand<EpochOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getEpoch(
-      epochInputFromOptions(options),
-    );
-    return result ?? { message: `No epoch found for provided input` };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getEpoch(epochInputFromOptions(o))
+      .then(
+        (result) => result ?? { message: `No epoch found for provided input` },
+      ),
 });
 
 makeCommand({
   name: 'get-current-epoch',
   description: 'Get current epoch data',
-  options: [],
-}).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getCurrentEpoch();
-    return result;
-  });
+  action: (options) => readIOFromOptions(options).getCurrentEpoch(),
 });
 
 makeCommand({
   name: 'get-prescribed-observers',
   description: 'Get prescribed observers for an epoch',
   options: epochOptions,
-}).action(async (_, command) => {
-  await runCommand<EpochOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrescribedObservers(
-      epochInputFromOptions(options),
-    );
-
-    return result.length ? result : { message: `No observers found for epoch` };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getPrescribedObservers(epochInputFromOptions(o))
+      .then((result) =>
+        result.length ? result : { message: `No observers found for epoch` },
+      ),
 });
 
 makeCommand({
   name: 'get-prescribed-names',
   description: 'Get prescribed names for an epoch',
   options: epochOptions,
-}).action(async (_, command) => {
-  await runCommand<EpochOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrescribedNames(
-      epochInputFromOptions(options),
-    );
-    return result.length ? result : { message: `No names found for epoch` };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getPrescribedNames(epochInputFromOptions(o))
+      .then((result) =>
+        result.length ? result : { message: `No names found for epoch` },
+      ),
 });
 
 makeCommand({
   name: 'get-observations',
   description: 'Get observations for an epoch',
   options: epochOptions,
-}).action(async (_, command) => {
-  await runCommand<EpochOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getObservations(
-      epochInputFromOptions(options),
-    );
-    return result;
-  });
+  action: (o) => readIOFromOptions(o).getObservations(epochInputFromOptions(o)),
 });
 
 makeCommand({
   name: 'get-distributions',
   description: 'Get distributions for an epoch',
   options: epochOptions,
-}).action(async (_, command) => {
-  await runCommand<EpochOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getDistributions(
-      epochInputFromOptions(options),
-    );
-    return result;
-  });
+  action: (o) =>
+    readIOFromOptions(o).getDistributions(epochInputFromOptions(o)),
 });
 
 makeCommand({
@@ -500,6 +461,34 @@ makeCommand<PaginationOptions>({
 });
 
 makeCommand<AddressOptions>({
+  name: 'balance',
+  description: 'Get the balance of an address',
+  options: addressOptions,
+  action: (options) =>
+    readIOFromOptions(options)
+      .getBalance({ address: requiredAddressFromOptions(options) })
+      .then((result) => ({
+        address: requiredAddressFromOptions(options),
+        mIOBalance: result,
+        message: `Provided address current has a balance of ${formatIOWithCommas(
+          new mIOToken(result).toIO(),
+        )} IO`,
+      })),
+});
+
+makeCommand({
+  name: 'list-balances',
+  description: 'List all balances',
+  options: paginationOptions,
+  action: (o) =>
+    readIOFromOptions(o)
+      .getBalances(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No balances found' },
+      ),
+});
+
+makeCommand<AddressOptions>({
   name: 'get-redelegation-fee',
   description: 'Get redelegation fee',
   options: addressOptions,
@@ -509,142 +498,55 @@ makeCommand<AddressOptions>({
     }),
 });
 
-// makeCommand({
-//   name: 'delegate-stake',
-//   description: 'Delegate stake to a gateway',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).delegateStake({ address });
-//     return result;
-//   });
-// });
-
-// makeCommand({
-//   name: 'increase-operator-stake',
-//   description: 'Increase the stake of an operator',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).increaseOperatorStake({
-//       address,
-//     });
-//     return result;
-//   });
-// });
-
-// makeCommand({
-//   name: 'decrease-operator-stake',
-//   description: 'Decrease the stake of an operator',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).decreaseOperatorStake({
-//       address,
-//     });
-//     return result;
-//   });
-// });
-
-// makeCommand({
-//   name: 'withdraw-stake',
-//   description: 'Withdraw stake from a gateway',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).withdrawStake({ address });
-//     return result;
-//   });
-// });
-
-// makeCommand({
-//   name: 'update-gateway-settings',
-//   description: 'Update the settings of a gateway',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).updateGatewaySettings({
-//       address,
-//     });
-//     return result;
-//   });
-// });
-
-// makeCommand({
-//   name: 'redelegate-stake',
-//   description: 'Redelegate stake to another gateway',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).redelegateStake({
-//       address,
-//     });
-//     return result;
-//   });
-// });
-
-makeCommand({
-  name: 'balance',
-  description: 'Get the balance of an address',
-  options: addressOptions,
-}).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
-    const io = readIOFromOptions(options);
-    const address = requiredAddressFromOptions(options);
-    const result = await io.getBalance({ address });
-    return {
-      address: address,
-      mIOBalance: result,
-      message: `Provided address current has a balance of ${formatIOWithCommas(new mIOToken(result).toIO())} IO`,
-    };
-  });
+makeCommand<GetVaultOptions>({
+  name: 'get-vault',
+  description: 'Get the vault of provided address and vault ID',
+  options: getVaultOptions,
+  action: (o) =>
+    readIOFromOptions(o)
+      .getVault({
+        address: requiredAddressFromOptions(o),
+        vaultId: requiredVaultIdFromOptions(o),
+      })
+      .then(
+        (r) =>
+          r ?? {
+            message: `No vault found for provided address and vault ID`,
+          },
+      ),
 });
 
-makeCommand({
-  name: 'list-balances',
-  description: 'List all balances',
-  options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getBalances({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items;
-  });
-});
-
-makeCommand({
+makeCommand<PaginationAddressOptions>({
   name: 'get-gateway-vaults',
   description: 'Get the vaults of a gateway',
   options: paginationAddressOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationAddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getGatewayVaults({
+  action: async (o) => {
+    const address = requiredAddressFromOptions(o);
+    const result = await readIOFromOptions(o).getGatewayVaults({
       address,
-      ...paginationParamsFromOptions(options),
+      ...paginationParamsFromOptions(o),
     });
 
     return result.items?.length
-      ? result.items
+      ? result
       : {
           message: `No vaults found for gateway ${address}`,
         };
-  });
+  },
 });
 
-makeCommand({
+makeCommand<TransferOptions>({
+  name: 'transfer',
+  description: 'Transfer IO to another address',
+  options: transferOptions,
+  action: (o) => transfer(o),
+});
+
+makeCommand<JoinNetworkOptions>({
   name: 'join-network',
   description: 'Join the AR.IO network',
   options: joinNetworkOptions,
-}).action(async (_, command) => {
-  await runCommand(command, joinNetwork);
+  action: (options) => joinNetwork(options),
 });
 
 // delegate-stake
@@ -656,15 +558,6 @@ makeCommand({
 // withdraw-stake
 
 // update-gateway-settings
-
-// transfer
-makeCommand({
-  name: 'transfer',
-  description: 'Transfer IO to another address',
-  options: transferOptions,
-}).action(async (_, command) => {
-  await runCommand(command, transfer);
-});
 
 // redelegate-stake
 

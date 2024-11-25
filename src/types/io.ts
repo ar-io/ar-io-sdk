@@ -366,6 +366,11 @@ export type AoTokenCostParams = {
   quantity?: number;
 };
 
+export type AoGetVaultParams = {
+  address: WalletAddress;
+  vaultId: string;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -453,10 +458,7 @@ export interface AoIORead {
   getVault({
     address,
     vaultId,
-  }: {
-    address: WalletAddress;
-    vaultId: string;
-  }): Promise<AoVaultData | undefined>;
+  }: AoGetVaultParams): Promise<AoVaultData | undefined>;
   getPrimaryNameRequest(params: {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest>;

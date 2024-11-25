@@ -29,6 +29,7 @@ import {
   IO_TESTNET_PROCESS_ID,
   Logger,
   PaginationParams,
+  WriteOptions,
   fromB64Url,
   sha256B64Url,
 } from '../node/index.js';
@@ -40,7 +41,9 @@ import {
   JsonSerializable,
   NameOptions,
   PaginationOptions,
+  VaultIdOptions,
   WalletOptions,
+  WriteActionOptions,
 } from './types.js';
 
 function logCommandOutput(output: JsonSerializable) {
@@ -251,4 +254,39 @@ export function requiredInitiatorFromOptions(
     return options.initiator;
   }
   return requiredAddressFromOptions(options);
+}
+
+export function requiredVaultIdFromOptions(options: VaultIdOptions): string {
+  if (options.vaultId !== undefined) {
+    return options.vaultId;
+  }
+  throw new Error('--vault-id is required');
+}
+
+export function writeOptionsFromOptions<O extends WriteActionOptions>(
+  options: O,
+): WriteOptions {
+  if (options.tags === undefined) {
+    return {};
+  }
+  if (!Array.isArray(options.tags)) {
+    throw new Error('Tags must be an array');
+  }
+  if (options.tags.length === 0) {
+    return {};
+  }
+  if (options.tags.length % 2 !== 0) {
+    throw new Error('Tags must be an array of key-value pairs');
+  }
+  const tags: { name: string; value: string }[] = [];
+  for (let i = 0; i < options.tags.length; i += 2) {
+    tags.push({
+      name: options.tags[i],
+      value: options.tags[i + 1],
+    });
+  }
+
+  return {
+    tags,
+  };
 }

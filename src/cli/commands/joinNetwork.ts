@@ -22,6 +22,7 @@ import {
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
+  writeOptionsFromOptions,
 } from '../utils.js';
 
 export async function joinNetwork(options: JoinNetworkOptions) {
@@ -106,7 +107,10 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     }
   }
 
-  const result = await io.joinNetwork(settings);
+  const result = await io.joinNetwork(
+    settings,
+    writeOptionsFromOptions(options),
+  );
 
   const output = {
     joinNetworkResult: result,

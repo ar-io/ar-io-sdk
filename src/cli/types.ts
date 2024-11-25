@@ -17,6 +17,7 @@ import {
   AoAddressParams,
   AoArNSAuctionPricesParams,
   AoGetArNSNameParams,
+  AoGetVaultParams,
   AoJoinNetworkParams,
   AoTokenCostParams,
   PaginationParams,
@@ -83,15 +84,23 @@ export type PaginationAddressOptions = AddressOptions & PaginationOptions;
 export type NameOptions = GlobalOptions &
   CLIOptionsFromAoParams<AoGetArNSNameParams>;
 
-export type GetVaultOptions = AddressOptions & {
-  vaultId: string | undefined;
+export type GetVaultOptions = CLIOptionsFromAoParams<AoGetVaultParams> &
+  WalletOptions;
+
+export type VaultIdOptions = {
+  vaultId?: string;
 };
-export type TransferOptions = WalletOptions & {
+
+export type WriteActionOptions = WalletOptions & {
+  tags: string[] | undefined;
+};
+
+export type TransferOptions = WriteActionOptions & {
   quantity: number | undefined;
   target: string | undefined;
 };
 
-export type JoinNetworkOptions = WalletOptions &
+export type JoinNetworkOptions = WriteActionOptions &
   CLIOptionsFromAoParams<
     Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>
   > & {

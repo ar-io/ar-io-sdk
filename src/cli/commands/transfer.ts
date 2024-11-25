@@ -22,6 +22,7 @@ import {
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
+  writeOptionsFromOptions,
 } from '../utils.js';
 
 export async function transfer(options: TransferOptions) {
@@ -59,10 +60,13 @@ export async function transfer(options: TransferOptions) {
     }
   }
 
-  const result = await io.transfer({
-    target,
-    qty: ioQuantity.toMIO().valueOf(),
-  });
+  const result = await io.transfer(
+    {
+      target,
+      qty: ioQuantity.toMIO().valueOf(),
+    },
+    writeOptionsFromOptions(options),
+  );
 
   const output = {
     senderAddress: address,

@@ -235,6 +235,7 @@ export const arNSAuctionPricesOptions = [
 ];
 
 export const writeActionOptions = [...walletOptions, optionMap.tags];
+
 export const transferOptions = [
   ...writeActionOptions,
   optionMap.quantity,
