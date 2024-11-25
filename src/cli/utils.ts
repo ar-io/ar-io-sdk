@@ -33,31 +33,10 @@ import {
 import {
   AddressOptions,
   GlobalOptions,
+  JsonSerializable,
   NameOptions,
   WalletOptions,
-} from './options.js';
-
-/**
- * Type helper to turn a set of parameters that have `number` types
- * into `string` types and makes all parameters optional.
- *
- * Intended to be used to represent how `commander` parsed out CLI options.
- * @example
- * ```ts
- * export type MyNewCommandOptions = CLIOptionsFromAoParams<MyNewAoMethodParams> & GlobalOptions;
- * ```
- */
-export type CLIOptionsFromAoParams<T> = Partial<{
-  [K in keyof T]: T[K] extends number ? string : T[K];
-}>;
-
-type JsonSerializable =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonSerializable[]
-  | { [key: string]: JsonSerializable };
+} from './types.js';
 
 function logCommandOutput(output: JsonSerializable) {
   console.log(JSON.stringify(output, null, 2));

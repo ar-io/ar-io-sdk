@@ -23,19 +23,19 @@ import { version } from '../version.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
-  BalanceOptions,
-  GetGatewayOptions,
-  GetVaultOptions,
-  GlobalOptions,
-  NameOptions,
-  balanceOptions,
-  getGatewayOptions,
+  addressOptions,
   getVaultOptions,
   globalOptions,
   joinNetworkOptions,
   nameOptions,
   transferOptions,
 } from './options.js';
+import {
+  AddressOptions,
+  GetVaultOptions,
+  GlobalOptions,
+  NameOptions,
+} from './types.js';
 import {
   formatIOWithCommas,
   makeCommand,
@@ -97,9 +97,9 @@ makeCommand({
 makeCommand({
   name: 'get-gateway',
   description: 'Get the gateway of an address',
-  options: getGatewayOptions,
+  options: addressOptions,
 }).action(async (_, command) => {
-  await runCommand<GetGatewayOptions>(command, async (options) => {
+  await runCommand<AddressOptions>(command, async (options) => {
     const address = requiredAddressFromOptions(options);
     const result = await readIOFromOptions(options).getGateway({ address });
     return (
@@ -124,9 +124,9 @@ makeCommand({
 makeCommand({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
-  options: getGatewayOptions,
+  options: addressOptions,
 }).action(async (_, command) => {
-  await runCommand<GetGatewayOptions>(command, async (options) => {
+  await runCommand<AddressOptions>(command, async (options) => {
     const address = requiredAddressFromOptions(options);
     const result = await readIOFromOptions(options).getGatewayDelegates({
       address,
@@ -144,9 +144,9 @@ makeCommand({
 makeCommand({
   name: 'get-delegations',
   description: 'Get all stake delegated to gateways from this address',
-  options: getGatewayOptions,
+  options: addressOptions,
 }).action(async (_, command) => {
-  await runCommand<GetGatewayOptions>(command, async (options) => {
+  await runCommand<AddressOptions>(command, async (options) => {
     const address = requiredAddressFromOptions(options);
     const result = await readIOFromOptions(options).getDelegations({ address });
 
@@ -184,12 +184,13 @@ makeCommand({
     return result.items;
   });
 });
+
 makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',
-  options: balanceOptions,
+  options: addressOptions,
 }).action(async (_, command) => {
-  await runCommand<BalanceOptions>(command, async (options) => {
+  await runCommand<AddressOptions>(command, async (options) => {
     const io = readIOFromOptions(options);
     const address = requiredAddressFromOptions(options);
     const result = await io.getBalance({ address });

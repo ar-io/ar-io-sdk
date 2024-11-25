@@ -324,6 +324,10 @@ export type AoGetArNSNameParams = {
   name: string;
 };
 
+export type AoAddressParams = {
+  address: WalletAddress;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -338,18 +342,12 @@ export interface AoIORead {
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
-  getGateway({
-    address,
-  }: {
-    address: WalletAddress;
-  }): Promise<AoGateway | undefined>;
+  getGateway({ address }: AoAddressParams): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates({
     address,
     ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
+  }: AoAddressParams & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
     PaginationResult<AoGatewayDelegateWithAddress>
   >;
   getGatewayDelegateAllowList( // todo

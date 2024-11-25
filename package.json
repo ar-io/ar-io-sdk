@@ -56,7 +56,7 @@
     }
   },
   "bin": {
-    "ar-io": "./lib/esm/cli/cli.js"
+    "ar.io": "./lib/esm/cli/cli.js"
   },
   "scripts": {
     "build:web": "node bundle.mjs",

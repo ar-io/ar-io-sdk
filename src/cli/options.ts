@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoGetArNSNameParams } from '../types/io.js';
-import { CLIOptionsFromAoParams } from './utils.js';
 
 export const optionMap = {
   walletFile: {
@@ -132,12 +130,6 @@ export const globalOptions = [
   optionMap.processId,
   optionMap.skipConfirmation,
 ];
-export type GlobalOptions = {
-  dev: boolean;
-  debug: boolean;
-  processId: string | undefined;
-  skipConfirmation: boolean;
-};
 
 export const walletOptions = [
   ...globalOptions,
@@ -145,41 +137,18 @@ export const walletOptions = [
   // optionMap.mnemonic,
   optionMap.privateKey,
 ];
-export type WalletOptions = GlobalOptions & {
-  walletFile: string | undefined;
-  // mnemonic: string | undefined;
-  privateKey: string | undefined;
-};
 
 export const addressOptions = [...walletOptions, optionMap.address];
-export type AddressOptions = WalletOptions & {
-  address: string | undefined;
-};
 
 export const nameOptions = [optionMap.name];
-export type NameOptions = CLIOptionsFromAoParams<AoGetArNSNameParams> &
-  WalletOptions;
 
-export const balanceOptions = addressOptions;
-export type BalanceOptions = AddressOptions;
-
-export const getVaultOptions = [...balanceOptions, optionMap.vaultId];
-export type GetVaultOptions = AddressOptions & {
-  vaultId: string | undefined;
-};
-
-export const getGatewayOptions = addressOptions;
-export type GetGatewayOptions = AddressOptions;
+export const getVaultOptions = [...addressOptions, optionMap.vaultId];
 
 export const transferOptions = [
   ...walletOptions,
   optionMap.quantity,
   optionMap.target,
 ];
-export type TransferOptions = WalletOptions & {
-  quantity: number | undefined;
-  target: string | undefined;
-};
 
 export const joinNetworkOptions = [
   ...walletOptions,

@@ -16,7 +16,7 @@
 import prompts from 'prompts';
 
 import { IOToken, mIOToken } from '../../types/token.js';
-import { TransferOptions } from '../options.js';
+import { TransferOptions } from '../types.js';
 import {
   formatIOWithCommas,
   jwkToAddress,

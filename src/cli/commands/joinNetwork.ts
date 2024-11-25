@@ -15,31 +15,14 @@
  */
 import prompts from 'prompts';
 
+import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
+import { JoinNetworkOptions } from '../types.js';
 import {
-  AoJoinNetworkParams,
-  ArweaveSigner,
-  IOToken,
-  mIOToken,
-} from '../../node/index.js';
-import { WalletOptions } from '../options.js';
-import {
-  CLIOptionsFromAoParams,
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
-
-type JoinNetworkOptions = WalletOptions &
-  Partial<
-    CLIOptionsFromAoParams<
-      Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>
-    >
-  > & {
-    disableDelegatedStaking?: boolean;
-    disableAutoStake?: boolean;
-    skipConfirmation?: boolean;
-  };
 
 export async function joinNetwork(options: JoinNetworkOptions) {
   const jwk = requiredJwkFromOptions(options);
