@@ -332,7 +332,19 @@ export type AoBalanceParams = {
   address: WalletAddress;
 };
 
+export type AoPaginatedAddressParams = PaginationParams<AoAddressParams> & {
+  address: WalletAddress;
+};
+
 export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
+
+export type AoArNSAuctionPricesParams = {
+  name: string;
+  type: 'lease' | 'permabuy';
+  years?: number;
+  timestamp?: number;
+  intervalMs?: number;
+};
 
 // Interfaces
 
@@ -356,9 +368,6 @@ export interface AoIORead {
   }: AoAddressParams & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
     PaginationResult<AoGatewayDelegateWithAddress>
   >;
-  getGatewayDelegateAllowList( // todo
-    params?: PaginationParams<WalletAddress>,
-  ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   getGateways(
     params?: PaginationParams<AoGatewayWithAddress>,
@@ -366,14 +375,14 @@ export interface AoIORead {
   getDelegations(
     params: PaginationParams<AoDelegation> & { address: WalletAddress },
   ): Promise<PaginationResult<AoDelegation>>;
-  getAllowedDelegates( // todo
-    params: PaginationParams & { address: WalletAddress },
+  getAllowedDelegates(
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>>;
   getGatewayVaults(
     params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
   ): Promise<PaginationResult<AoGatewayVault>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
-  getBalances( // todo
+  getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>>;
   getArNSRecord({
@@ -402,14 +411,8 @@ export interface AoIORead {
     years,
     timestamp,
     intervalMs,
-  }: {
-    name: string;
-    type: 'lease' | 'permabuy';
-    years?: number;
-    timestamp?: number;
-    intervalMs?: number;
-  }): Promise<AoAuctionPriceData>;
-  getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
+  }: AoArNSAuctionPricesParams): Promise<AoAuctionPriceData>;
+  getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;

@@ -24,6 +24,7 @@ import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
   addressOptions,
+  epochOptions,
   getVaultOptions,
   globalOptions,
   joinNetworkOptions,
@@ -34,6 +35,7 @@ import {
 } from './options.js';
 import {
   AddressOptions,
+  EpochOptions,
   GetVaultOptions,
   GlobalOptions,
   NameOptions,
@@ -41,6 +43,7 @@ import {
   PaginationOptions,
 } from './types.js';
 import {
+  epochInputFromOptions,
   formatIOWithCommas,
   makeCommand,
   paginationParamsFromOptions,
@@ -175,6 +178,26 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'get-gateway-delegate-allow-list',
+  description: 'Get the allow list of a gateway delegate',
+  options: paginationAddressOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationAddressOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getAllowedDelegates({
+      address,
+      ...paginationParamsFromOptions(options),
+    });
+
+    return result.items?.length
+      ? result.items
+      : {
+          message: `No allow list found for gateway delegate ${address}`,
+        };
+  });
+});
+
+makeCommand({
   name: 'get-arns-record',
   description: '',
   options: nameOptions,
@@ -200,6 +223,378 @@ makeCommand({
   });
 });
 
+// getArNSReservedNames(
+makeCommand({
+  name: 'get-arns-reserved-names',
+  description: 'Get all reserved ArNS names',
+  options: paginationOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSReservedNames({
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items;
+  });
+});
+
+makeCommand({
+  name: 'get-arns-reserved-name',
+  description: 'Get a reserved ArNS name',
+  options: nameOptions,
+}).action(async (_, command) => {
+  await runCommand<NameOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSReservedName({
+      name: requiredNameFromOptions(options),
+    });
+    return (
+      result ?? { message: `No reserved name found for name ${options.name}` }
+    );
+  });
+});
+
+makeCommand({
+  name: 'get-arns-auctions',
+  description: 'Get all ArNS auctions',
+  options: paginationOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSAuctions({
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items;
+  });
+});
+
+makeCommand({
+  name: 'get-arns-auction',
+  description: 'Get an ArNS auction by name',
+  options: nameOptions,
+}).action(async (_, command) => {
+  await runCommand<NameOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSAuction({
+      name: requiredNameFromOptions(options),
+    });
+    return result ?? { message: `No auction found for name ${options.name}` };
+  });
+});
+
+// makeCommand({
+//   name: 'get-arns-auction-prices',
+//   description: 'Get ArNS auction prices',
+//   options: paginationOptions, // TODO: AoArNSAuctionPricesParams
+// }).action(async (_, command) => {
+//   await runCommand<PaginationOptions>(command, async (options) => {
+//     const result = await readIOFromOptions(options).getArNSAuctionPrices({
+//       ...paginationParamsFromOptions(options),
+//     });
+//     return result.items;
+//   });
+// });
+
+makeCommand({
+  name: 'get-epoch',
+  description: 'Get epoch data',
+  options: epochOptions,
+}).action(async (_, command) => {
+  await runCommand<EpochOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getEpoch(
+      epochInputFromOptions(options),
+    );
+    return result ?? { message: `No epoch found for provided input` };
+  });
+});
+
+makeCommand({
+  name: 'get-current-epoch',
+  description: 'Get current epoch data',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getCurrentEpoch();
+    return result;
+  });
+});
+
+makeCommand({
+  name: 'get-prescribed-observers',
+  description: 'Get prescribed observers for an epoch',
+  options: epochOptions,
+}).action(async (_, command) => {
+  await runCommand<EpochOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getPrescribedObservers(
+      epochInputFromOptions(options),
+    );
+
+    return result.length ? result : { message: `No observers found for epoch` };
+  });
+});
+
+makeCommand({
+  name: 'get-prescribed-names',
+  description: 'Get prescribed names for an epoch',
+  options: epochOptions,
+}).action(async (_, command) => {
+  await runCommand<EpochOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getPrescribedNames(
+      epochInputFromOptions(options),
+    );
+    return result.length ? result : { message: `No names found for epoch` };
+  });
+});
+
+makeCommand({
+  name: 'get-observations',
+  description: 'Get observations for an epoch',
+  options: epochOptions,
+}).action(async (_, command) => {
+  await runCommand<EpochOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getObservations(
+      epochInputFromOptions(options),
+    );
+    return result;
+  });
+});
+
+makeCommand({
+  name: 'get-distributions',
+  description: 'Get distributions for an epoch',
+  options: epochOptions,
+}).action(async (_, command) => {
+  await runCommand<EpochOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getDistributions(
+      epochInputFromOptions(options),
+    );
+    return result;
+  });
+});
+
+// TODO: get token cost options
+// makeCommand({
+//   name: 'get-token-cost',
+//   description: 'Get token cost',
+//   options: [],
+// }).action(async (_, command) => {
+//   await runCommand<GlobalOptions>(command, async (options) => {
+//     const result = await readIOFromOptions(options).getTokenCost();
+//     return result;
+//   });
+// });
+
+makeCommand({
+  name: 'get-registration-fees',
+  description: 'Get registration fees',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    return readIOFromOptions(options).getRegistrationFees();
+  });
+});
+
+makeCommand({
+  name: 'get-demand-factor',
+  description: 'Get demand factor',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    return readIOFromOptions(options).getDemandFactor();
+  });
+});
+
+makeCommand({
+  name: 'list-vaults',
+  description: 'Get all wallet vaults',
+  options: paginationOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getVaults({
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items.length ? result.items : { message: 'No vaults found' };
+  });
+});
+
+makeCommand({
+  name: 'get-vault',
+  description: 'Get a vault',
+  options: getVaultOptions,
+}).action(async (_, command) => {
+  await runCommand<GetVaultOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const vaultId = options.vaultId;
+    if (vaultId === undefined) {
+      throw new Error('--vault-id is required');
+    }
+    const result = await readIOFromOptions(options).getVault({
+      address,
+      vaultId,
+    });
+    return (
+      result ?? {
+        message: `No vault found for address ${address} and vault ID ${vaultId}`,
+      }
+    );
+  });
+});
+
+// TODO: initiator and name params
+// makeCommand({
+//   name: 'get-primary-name-request',
+//   description: 'Get primary name request',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).getPrimaryNameRequest({
+//       address,
+//     });
+//     return (
+//       result ?? {
+//         message: `No primary name request found for address ${address}`,
+//       }
+//     );
+//   });
+// });
+
+makeCommand({
+  name: 'get-primary-name-requests',
+  description: 'Get primary name requests',
+  options: paginationAddressOptions, // todo; add initiator
+}).action(async (_, command) => {
+  await runCommand<PaginationAddressOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getPrimaryNameRequests({
+      initiator: address,
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items.length
+      ? result.items
+      : { message: 'No requests found' };
+  });
+});
+
+makeCommand({
+  name: 'get-primary-name',
+  description: 'Get primary name',
+  options: addressOptions, // todo: or name
+}).action(async (_, command) => {
+  await runCommand<AddressOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getPrimaryName({
+      address,
+    });
+    return (
+      result ?? { message: `No primary name found for address ${address}` }
+    );
+  });
+});
+
+makeCommand({
+  name: 'get-primary-names',
+  description: 'Get primary names',
+  options: paginationOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getPrimaryNames({
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items;
+  });
+});
+
+makeCommand({
+  name: 'get-redelegation-fee',
+  description: 'Get redelegation fee',
+  options: addressOptions,
+}).action(async (_, command) => {
+  await runCommand<AddressOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getRedelegationFee({
+      address,
+    });
+    return result;
+  });
+});
+
+// makeCommand({
+//   name: 'delegate-stake',
+//   description: 'Delegate stake to a gateway',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).delegateStake({ address });
+//     return result;
+//   });
+// });
+
+// makeCommand({
+//   name: 'increase-operator-stake',
+//   description: 'Increase the stake of an operator',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).increaseOperatorStake({
+//       address,
+//     });
+//     return result;
+//   });
+// });
+
+// makeCommand({
+//   name: 'decrease-operator-stake',
+//   description: 'Decrease the stake of an operator',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).decreaseOperatorStake({
+//       address,
+//     });
+//     return result;
+//   });
+// });
+
+// makeCommand({
+//   name: 'withdraw-stake',
+//   description: 'Withdraw stake from a gateway',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).withdrawStake({ address });
+//     return result;
+//   });
+// });
+
+// makeCommand({
+//   name: 'update-gateway-settings',
+//   description: 'Update the settings of a gateway',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).updateGatewaySettings({
+//       address,
+//     });
+//     return result;
+//   });
+// });
+
+// makeCommand({
+//   name: 'redelegate-stake',
+//   description: 'Redelegate stake to another gateway',
+//   options: addressOptions,
+// }).action(async (_, command) => {
+//   await runCommand<AddressOptions>(command, async (options) => {
+//     const address = requiredAddressFromOptions(options);
+//     const result = await readIOFromOptions(options).redelegateStake({
+//       address,
+//     });
+//     return result;
+//   });
+// });
+
 makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',
@@ -214,6 +609,39 @@ makeCommand({
       mIOBalance: result,
       message: `Provided address current has a balance of ${formatIOWithCommas(new mIOToken(result).toIO())} IO`,
     };
+  });
+});
+
+makeCommand({
+  name: 'list-balances',
+  description: 'List all balances',
+  options: paginationOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getBalances({
+      ...paginationParamsFromOptions(options),
+    });
+    return result.items;
+  });
+});
+
+makeCommand({
+  name: 'get-gateway-vaults',
+  description: 'Get the vaults of a gateway',
+  options: paginationAddressOptions,
+}).action(async (_, command) => {
+  await runCommand<PaginationAddressOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getGatewayVaults({
+      address,
+      ...paginationParamsFromOptions(options),
+    });
+
+    return result.items?.length
+      ? result.items
+      : {
+          message: `No vaults found for gateway ${address}`,
+        };
   });
 });
 

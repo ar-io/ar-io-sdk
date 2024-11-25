@@ -53,6 +53,12 @@ export type PaginationOptions = GlobalOptions &
 export type AddressOptions = WalletOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
+export type EpochOptions = GlobalOptions &
+  CLIOptionsFromAoParams<{
+    epochIndex: number;
+    timestamp: number;
+  }>;
+
 export type PaginationAddressOptions = AddressOptions & PaginationOptions;
 
 export type NameOptions = GlobalOptions &

@@ -22,6 +22,7 @@ import {
   AoIOWrite,
   ArweaveSigner,
   ContractSigner,
+  EpochInput,
   IO,
   IOToken,
   IO_DEVNET_PROCESS_ID,
@@ -33,6 +34,7 @@ import {
 } from '../node/index.js';
 import {
   AddressOptions,
+  EpochOptions,
   GlobalOptions,
   JsonSerializable,
   NameOptions,
@@ -214,4 +216,14 @@ export function paginationParamsFromOptions(
     sortBy,
     sortOrder,
   };
+}
+
+export function epochInputFromOptions(options: EpochOptions): EpochInput {
+  if (options.epochIndex !== undefined) {
+    return { epochIndex: +options.epochIndex };
+  }
+  if (options.timestamp !== undefined) {
+    return { timestamp: +options.timestamp };
+  }
+  return undefined;
 }

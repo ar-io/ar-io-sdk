@@ -122,6 +122,14 @@ export const optionMap = {
     alias: '--name <name>',
     description: 'The ArNS name to interact with',
   },
+  epochIndex: {
+    alias: '--epoch-index <epochIndex>',
+    description: 'The epoch index to interact with',
+  },
+  timestamp: {
+    alias: '--timestamp <timestamp>',
+    description: 'The timestamp to interact with',
+  },
   cursor: {
     alias: '--cursor <cursor>',
     description: 'The cursor for pagination',
@@ -160,6 +168,12 @@ export const paginationOptions = [
   optionMap.limit,
   optionMap.sortBy,
   optionMap.sortOrder,
+];
+
+export const epochOptions = [
+  ...globalOptions,
+  optionMap.epochIndex,
+  optionMap.timestamp,
 ];
 
 export const addressOptions = [...walletOptions, optionMap.address];

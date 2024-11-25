@@ -314,23 +314,6 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getGatewayDelegateAllowList({
-    address,
-    ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<WalletAddress>): Promise<
-    PaginationResult<WalletAddress>
-  > {
-    return this.process.read<PaginationResult<WalletAddress>>({
-      tags: [
-        { name: 'Action', value: 'Paginated-Allowed-Delegates' },
-        { name: 'Address', value: address },
-        ...paginationParamsToTags<WalletAddress>(pageParams),
-      ],
-    });
-  }
-
   async getGateways(
     pageParams?: PaginationParams<AoGatewayWithAddress>,
   ): Promise<PaginationResult<AoGatewayWithAddress>> {
