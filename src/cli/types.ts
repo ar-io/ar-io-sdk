@@ -17,6 +17,7 @@ import {
   AoAddressParams,
   AoGetArNSNameParams,
   AoJoinNetworkParams,
+  PaginationParams,
 } from '../types/io.js';
 
 export type GlobalOptions = {
@@ -46,10 +47,15 @@ export type CLIOptionsFromAoParams<T> = Partial<{
   [K in keyof T]: T[K] extends number ? string : T[K];
 }>;
 
+export type PaginationOptions = GlobalOptions &
+  CLIOptionsFromAoParams<PaginationParams>;
+
 export type AddressOptions = WalletOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
-export type NameOptions = WalletOptions &
+export type PaginationAddressOptions = AddressOptions & PaginationOptions;
+
+export type NameOptions = GlobalOptions &
   CLIOptionsFromAoParams<AoGetArNSNameParams>;
 
 export type GetVaultOptions = AddressOptions & {

@@ -122,6 +122,22 @@ export const optionMap = {
     alias: '--name <name>',
     description: 'The ArNS name to interact with',
   },
+  cursor: {
+    alias: '--cursor <cursor>',
+    description: 'The cursor for pagination',
+  },
+  limit: {
+    alias: '--limit <limit>',
+    description: 'The limit for pagination',
+  },
+  sortBy: {
+    alias: '--sort-by <sortBy>',
+    description: 'The field to sort by',
+  },
+  sortOrder: {
+    alias: '--sort-order <sortOrder>',
+    description: 'The order to sort by, either "asc" or "desc"',
+  },
 };
 
 export const globalOptions = [
@@ -138,7 +154,20 @@ export const walletOptions = [
   optionMap.privateKey,
 ];
 
+export const paginationOptions = [
+  ...walletOptions,
+  optionMap.cursor,
+  optionMap.limit,
+  optionMap.sortBy,
+  optionMap.sortOrder,
+];
+
 export const addressOptions = [...walletOptions, optionMap.address];
+
+export const paginationAddressOptions = [
+  ...addressOptions,
+  ...paginationOptions,
+];
 
 export const nameOptions = [optionMap.name];
 
@@ -152,7 +181,7 @@ export const transferOptions = [
 
 export const joinNetworkOptions = [
   ...walletOptions,
-  // optionMap.quantity,
+  optionMap.operatorStake,
   optionMap.disableAutoStake,
   optionMap.disableDelegatedStaking,
   optionMap.minDelegatedStake,
@@ -160,7 +189,7 @@ export const joinNetworkOptions = [
   optionMap.label,
   optionMap.note,
   optionMap.properties,
-  // optionMap.observer,
+  optionMap.observerAddress,
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,

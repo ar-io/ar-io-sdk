@@ -28,6 +28,8 @@ import {
   globalOptions,
   joinNetworkOptions,
   nameOptions,
+  paginationAddressOptions,
+  paginationOptions,
   transferOptions,
 } from './options.js';
 import {
@@ -35,10 +37,13 @@ import {
   GetVaultOptions,
   GlobalOptions,
   NameOptions,
+  PaginationAddressOptions,
+  PaginationOptions,
 } from './types.js';
 import {
   formatIOWithCommas,
   makeCommand,
+  paginationParamsFromOptions,
   readIOFromOptions,
   requiredAddressFromOptions,
   requiredNameFromOptions,
@@ -113,26 +118,31 @@ makeCommand({
 makeCommand({
   name: 'get-gateways',
   description: 'Get the gateways of the network',
-  options: [],
+  options: paginationOptions,
 }).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    // TODO: Pagination from CLI
-    return (await readIOFromOptions(options).getGateways()).items;
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getGateways({
+      ...paginationParamsFromOptions(options),
+    });
+
+    return result.items.length
+      ? result.items
+      : { message: 'No gateways found' };
   });
 });
 
 makeCommand({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
-  options: addressOptions,
+  options: paginationAddressOptions,
 }).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
+  await runCommand<PaginationAddressOptions>(command, async (options) => {
     const address = requiredAddressFromOptions(options);
     const result = await readIOFromOptions(options).getGatewayDelegates({
       address,
+      ...paginationParamsFromOptions(options),
     });
 
-    // TODO: Paginate from CLI
     return result.items?.length
       ? result.items
       : {
@@ -146,17 +156,22 @@ makeCommand({
   description: 'Get all stake delegated to gateways from this address',
   options: addressOptions,
 }).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getDelegations({ address });
+  await runCommand<AddressOptions & PaginationOptions>(
+    command,
+    async (options) => {
+      const address = requiredAddressFromOptions(options);
+      const result = await readIOFromOptions(options).getDelegations({
+        address,
+        ...paginationParamsFromOptions(options),
+      });
 
-    // TODO: Paginate from CLI
-    return result.items?.length
-      ? result.items
-      : {
-          message: `No delegations found for address ${address}`,
-        };
-  });
+      return result.items?.length
+        ? result.items
+        : {
+            message: `No delegations found for address ${address}`,
+          };
+    },
+  );
 });
 
 makeCommand({
@@ -174,13 +189,13 @@ makeCommand({
 
 makeCommand({
   name: 'list-arns-records',
-  description: '',
-  options: [],
+  description: 'List all ArNS records',
+  options: paginationOptions,
 }).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSRecords({});
-    console.log('result', result);
-    // TODO: Paginate params from CLI -- cursor is `name`
+  await runCommand<PaginationOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSRecords({
+      ...paginationParamsFromOptions(options),
+    });
     return result.items;
   });
 });

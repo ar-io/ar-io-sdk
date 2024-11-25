@@ -27,6 +27,7 @@ import {
   IO_DEVNET_PROCESS_ID,
   IO_TESTNET_PROCESS_ID,
   Logger,
+  PaginationParams,
   fromB64Url,
   sha256B64Url,
 } from '../node/index.js';
@@ -35,6 +36,7 @@ import {
   GlobalOptions,
   JsonSerializable,
   NameOptions,
+  PaginationOptions,
   WalletOptions,
 } from './types.js';
 
@@ -159,6 +161,15 @@ export function writeIOFromOptions(
   });
 }
 
+export function formatIOWithCommas(value: IOToken): string {
+  const [integerPart, decimalPart] = value.toString().split('.');
+  const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (decimalPart === undefined) {
+    return integerWithCommas;
+  }
+  return integerWithCommas + '.' + decimalPart;
+}
+
 export function requiredAddressFromOptions(options: AddressOptions): string {
   if (options.address !== undefined) {
     return options.address;
@@ -180,11 +191,27 @@ export function requiredNameFromOptions(options: NameOptions): string {
   throw new Error('No name provided. Use `--name "my-name"`');
 }
 
-export function formatIOWithCommas(value: IOToken): string {
-  const [integerPart, decimalPart] = value.toString().split('.');
-  const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  if (decimalPart === undefined) {
-    return integerWithCommas;
+const defaultCliPaginationLimit = 10; // more friendly UX than 100
+export function paginationParamsFromOptions(
+  options: PaginationOptions,
+  // TODO: Use a type for sortBy and we could assert against arrays of the fields we want sort by
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): PaginationParams & { sortBy: any } {
+  const { cursor, limit, sortBy, sortOrder } = options;
+  if (sortOrder !== undefined && !['asc', 'desc'].includes(sortOrder)) {
+    throw new Error(
+      `Invalid sort order: ${sortOrder}, must be "asc" or "desc"`,
+    );
   }
-  return integerWithCommas + '.' + decimalPart;
+
+  const numberLimit = limit !== undefined ? +limit : defaultCliPaginationLimit;
+  if (isNaN(numberLimit) || numberLimit <= 0) {
+    throw new Error(`Invalid limit: ${numberLimit}, must be a positive number`);
+  }
+  return {
+    cursor,
+    limit: numberLimit,
+    sortBy,
+    sortOrder,
+  };
 }

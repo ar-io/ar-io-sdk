@@ -328,6 +328,12 @@ export type AoAddressParams = {
   address: WalletAddress;
 };
 
+export type AoBalanceParams = {
+  address: WalletAddress;
+};
+
+export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
+
 // Interfaces
 
 export interface AoIORead {
@@ -376,7 +382,7 @@ export interface AoIORead {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
   getArNSRecords(
-    params?: PaginationParams<AoArNSNameDataWithName>,
+    params?: AoGetArNSRecordsParams,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(
     params?: PaginationParams<AoArNSReservedNameDataWithName>,
