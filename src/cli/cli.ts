@@ -73,29 +73,20 @@ makeCommand({
 makeCommand({
   name: 'info',
   description: 'Get network info',
-  options: [],
-}).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    return readIOFromOptions(options).getInfo();
-  });
+  action: (options) => readIOFromOptions(options).getInfo(),
 });
 
 makeCommand({
   name: 'token-supply',
   description: 'Get the total token supply',
-  options: [],
-}).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    return readIOFromOptions(options).getTokenSupply();
-  });
+  action: (options) => readIOFromOptions(options).getTokenSupply(),
 });
 
-makeCommand({
+makeCommand<GetVaultOptions>({
   name: 'get-vault',
   description: 'Get the vault of provided address and vault ID',
   options: getVaultOptions,
-}).action(async (_, command) => {
-  await runCommand<GetVaultOptions>(command, async (options) => {
+  action: async (options) => {
     const address = requiredAddressFromOptions(options);
     const vaultId = options.vaultId;
     if (vaultId === undefined) {
@@ -108,7 +99,7 @@ makeCommand({
         message: `No vault found for address ${address} and vault ID ${vaultId}`,
       }
     );
-  });
+  },
 });
 
 makeCommand({
@@ -127,32 +118,30 @@ makeCommand({
   });
 });
 
-makeCommand({
+makeCommand<PaginationOptions>({
   name: 'get-gateways',
   description: 'Get the gateways of the network',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getGateways({
-      ...paginationParamsFromOptions(options),
-    });
+  action: async (o) => {
+    const result = await readIOFromOptions(o).getGateways(
+      paginationParamsFromOptions(o),
+    );
 
     return result.items.length
       ? result.items
       : { message: 'No gateways found' };
-  });
+  },
 });
 
-makeCommand({
+makeCommand<PaginationAddressOptions>({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
   options: paginationAddressOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationAddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getGatewayDelegates({
+  action: async (o) => {
+    const address = requiredAddressFromOptions(o);
+    const result = await readIOFromOptions(o).getGatewayDelegates({
       address,
-      ...paginationParamsFromOptions(options),
+      ...paginationParamsFromOptions(o),
     });
 
     return result.items?.length
@@ -160,7 +149,7 @@ makeCommand({
       : {
           message: `No delegates found for gateway ${address}`,
         };
-  });
+  },
 });
 
 makeCommand({
@@ -186,16 +175,15 @@ makeCommand({
   );
 });
 
-makeCommand({
+makeCommand<PaginationAddressOptions>({
   name: 'get-gateway-delegate-allow-list',
   description: 'Get the allow list of a gateway delegate',
   options: paginationAddressOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationAddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getAllowedDelegates({
+  action: async (o) => {
+    const address = requiredAddressFromOptions(o);
+    const result = await readIOFromOptions(o).getAllowedDelegates({
       address,
-      ...paginationParamsFromOptions(options),
+      ...paginationParamsFromOptions(o),
     });
 
     return result.items?.length
@@ -203,7 +191,7 @@ makeCommand({
       : {
           message: `No allow list found for gateway delegate ${address}`,
         };
-  });
+  },
 });
 
 makeCommand({

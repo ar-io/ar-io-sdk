@@ -90,17 +90,23 @@ function applyOptions(command: Command, options: CommanderOption[]): Command {
   return command;
 }
 
-export function makeCommand({
+export function makeCommand<O extends OptionValues = GlobalOptions>({
   description,
   name,
-  options,
+  options = [],
+  action,
 }: {
   name: string;
   description: string;
-  options: CommanderOption[];
+  action?: (options: O) => Promise<JsonSerializable>;
+  options?: CommanderOption[];
 }): Command {
   const command = program.command(name).description(description);
-  return applyOptions(command, options);
+  const appliedCommand = applyOptions(command, options);
+  if (action !== undefined) {
+    appliedCommand.action(() => runCommand<O>(appliedCommand, action));
+  }
+  return appliedCommand;
 }
 
 function processIdFromOptions({ processId, dev }: GlobalOptions): string {
