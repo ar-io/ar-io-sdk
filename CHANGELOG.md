@@ -1,3 +1,11 @@
+## [2.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1-alpha.2...v2.5.1-alpha.3) (2024-11-25)
+
+
+### Bug Fixes
+
+* **io:** fix tag for `requestPrimaryName` API ([bdaeaaf](https://github.com/ar-io/ar-io-sdk/commit/bdaeaafb8b07383711751e334dd7f679617e8a01))
+* **io:** updated types and fixed apis for primary name requests ([a297628](https://github.com/ar-io/ar-io-sdk/commit/a2976282247403b533ac129eaf76bd35c7af56cc))
+
 ## [2.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1-alpha.1...v2.5.1-alpha.2) (2024-11-25)
 
 
