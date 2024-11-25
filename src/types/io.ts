@@ -346,6 +346,26 @@ export type AoArNSAuctionPricesParams = {
   intervalMs?: number;
 };
 
+export const validIntents = [
+  'Buy-Record',
+  'Extend-Lease',
+  'Increase-Undername-Limit',
+  'Upgrade-Name',
+];
+export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'];
+export type Intent = (typeof validIntents)[number];
+export const isValidIntent = (intent: string): intent is Intent => {
+  return validIntents.indexOf(intent) !== -1;
+};
+
+export type AoTokenCostParams = {
+  intent: Intent;
+  type?: 'permabuy' | 'lease';
+  years?: number;
+  name: string;
+  quantity?: number;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -424,13 +444,7 @@ export interface AoIORead {
     years,
     name,
     quantity,
-  }: {
-    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    name?: string;
-    quantity?: number;
-  }): Promise<number>;
+  }: AoTokenCostParams): Promise<number>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getVaults(

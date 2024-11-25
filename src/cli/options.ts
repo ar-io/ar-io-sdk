@@ -130,6 +130,27 @@ export const optionMap = {
     alias: '--timestamp <timestamp>',
     description: 'The timestamp to interact with',
   },
+  initiator: {
+    alias: '--initiator <initiator>',
+    description: 'The initiator of the action',
+  },
+  intent: {
+    alias: '--intent <intent>',
+    description: 'The intent for the cost details action',
+  },
+  type: {
+    alias: '--type <type>',
+    description:
+      'The type for the cost details action. Either "lease" or "permabuy"',
+  },
+  years: {
+    alias: '--years <years>',
+    description: 'The number of years for the cost details action',
+  },
+  intervalMs: {
+    alias: '--interval-ms <intervalMs>',
+    description: 'The interval in milliseconds for the action',
+  },
   cursor: {
     alias: '--cursor <cursor>',
     description: 'The cursor for pagination',
@@ -179,11 +200,14 @@ export const epochOptions = [
 export const addressOptions = [...walletOptions, optionMap.address];
 
 export const paginationAddressOptions = [
-  ...addressOptions,
+  optionMap.address,
   ...paginationOptions,
 ];
 
 export const nameOptions = [optionMap.name];
+
+export const initiatorOptions = [optionMap.initiator];
+export const initiatorAndNameOptions = [...initiatorOptions, ...nameOptions];
 
 export const getVaultOptions = [...addressOptions, optionMap.vaultId];
 
@@ -191,6 +215,24 @@ export const transferOptions = [
   ...walletOptions,
   optionMap.quantity,
   optionMap.target,
+];
+
+export const tokenCostOptions = [
+  ...globalOptions,
+  optionMap.name,
+  optionMap.intent,
+  optionMap.type,
+  optionMap.years,
+  optionMap.quantity,
+];
+
+export const arNSAuctionPricesOptions = [
+  ...globalOptions,
+  optionMap.name,
+  optionMap.type,
+  optionMap.years,
+  optionMap.timestamp,
+  optionMap.intervalMs,
 ];
 
 export const joinNetworkOptions = [

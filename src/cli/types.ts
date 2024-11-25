@@ -15,8 +15,10 @@
  */
 import {
   AoAddressParams,
+  AoArNSAuctionPricesParams,
   AoGetArNSNameParams,
   AoJoinNetworkParams,
+  AoTokenCostParams,
   PaginationParams,
 } from '../types/io.js';
 
@@ -53,11 +55,23 @@ export type PaginationOptions = GlobalOptions &
 export type AddressOptions = WalletOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
+export type InitiatorAndNameOptions = GlobalOptions &
+  CLIOptionsFromAoParams<{
+    initiator: string;
+    name: string;
+  }>;
+
 export type EpochOptions = GlobalOptions &
   CLIOptionsFromAoParams<{
     epochIndex: number;
     timestamp: number;
   }>;
+
+export type GetTokenCostOptions = GlobalOptions &
+  CLIOptionsFromAoParams<AoTokenCostParams>;
+
+export type AuctionPricesOptions = GlobalOptions &
+  CLIOptionsFromAoParams<AoArNSAuctionPricesParams>;
 
 export type PaginationAddressOptions = AddressOptions & PaginationOptions;
 

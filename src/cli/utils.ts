@@ -36,6 +36,7 @@ import {
   AddressOptions,
   EpochOptions,
   GlobalOptions,
+  InitiatorAndNameOptions,
   JsonSerializable,
   NameOptions,
   PaginationOptions,
@@ -226,4 +227,17 @@ export function epochInputFromOptions(options: EpochOptions): EpochInput {
     return { timestamp: +options.timestamp };
   }
   return undefined;
+}
+
+export function primaryNameRequestParamsFromOptions(
+  options: InitiatorAndNameOptions,
+): { initiator: string } | { name: string } {
+  if (options.initiator !== undefined) {
+    return { initiator: options.initiator };
+  }
+  if (options.name !== undefined) {
+    return { name: options.name };
+  }
+
+  throw new Error('No initiator or name provided');
 }

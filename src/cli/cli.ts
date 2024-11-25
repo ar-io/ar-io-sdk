@@ -18,26 +18,33 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
+import { intentsUsingYears, isValidIntent, validIntents } from '../types/io.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import {
   addressOptions,
+  arNSAuctionPricesOptions,
   epochOptions,
   getVaultOptions,
   globalOptions,
+  initiatorAndNameOptions,
   joinNetworkOptions,
   nameOptions,
   paginationAddressOptions,
   paginationOptions,
+  tokenCostOptions,
   transferOptions,
 } from './options.js';
 import {
   AddressOptions,
+  AuctionPricesOptions,
   EpochOptions,
+  GetTokenCostOptions,
   GetVaultOptions,
   GlobalOptions,
+  InitiatorAndNameOptions,
   NameOptions,
   PaginationAddressOptions,
   PaginationOptions,
@@ -47,6 +54,7 @@ import {
   formatIOWithCommas,
   makeCommand,
   paginationParamsFromOptions,
+  primaryNameRequestParamsFromOptions,
   readIOFromOptions,
   requiredAddressFromOptions,
   requiredNameFromOptions,
@@ -278,18 +286,29 @@ makeCommand({
   });
 });
 
-// makeCommand({
-//   name: 'get-arns-auction-prices',
-//   description: 'Get ArNS auction prices',
-//   options: paginationOptions, // TODO: AoArNSAuctionPricesParams
-// }).action(async (_, command) => {
-//   await runCommand<PaginationOptions>(command, async (options) => {
-//     const result = await readIOFromOptions(options).getArNSAuctionPrices({
-//       ...paginationParamsFromOptions(options),
-//     });
-//     return result.items;
-//   });
-// });
+makeCommand({
+  name: 'get-arns-auction-prices',
+  description: 'Get ArNS auction prices',
+  options: arNSAuctionPricesOptions,
+}).action(async (_, command) => {
+  await runCommand<AuctionPricesOptions>(command, async (options) => {
+    options.type ??= 'lease';
+    if (options.type !== 'lease' && options.type !== 'permabuy') {
+      throw new Error(`Invalid type. Valid types are: lease, permabuy`);
+    }
+
+    const result = await readIOFromOptions(options).getArNSAuctionPrices({
+      name: requiredNameFromOptions(options),
+      type: options.type,
+      intervalMs:
+        options.intervalMs !== undefined ? +options.intervalMs : undefined,
+      timestamp:
+        options.timestamp !== undefined ? +options.timestamp : undefined,
+      years: options.years !== undefined ? +options.years : undefined,
+    });
+    return result ?? { message: `No auction prices found` };
+  });
+});
 
 makeCommand({
   name: 'get-epoch',
@@ -368,17 +387,50 @@ makeCommand({
   });
 });
 
-// TODO: get token cost options
-// makeCommand({
-//   name: 'get-token-cost',
-//   description: 'Get token cost',
-//   options: [],
-// }).action(async (_, command) => {
-//   await runCommand<GlobalOptions>(command, async (options) => {
-//     const result = await readIOFromOptions(options).getTokenCost();
-//     return result;
-//   });
-// });
+makeCommand({
+  name: 'get-token-cost',
+  description: 'Get token cost',
+  options: tokenCostOptions,
+}).action(async (_, command) => {
+  await runCommand<GetTokenCostOptions>(command, async (options) => {
+    options.intent ??= 'Buy-Record';
+    options.type ??= 'lease';
+
+    if (!isValidIntent(options.intent)) {
+      throw new Error(
+        `Invalid intent. Valid intents are: ${validIntents.join(', ')}`,
+      );
+    }
+
+    if (options.type !== 'lease' && options.type !== 'permabuy') {
+      throw new Error(`Invalid type. Valid types are: lease, permabuy`);
+    }
+
+    if (
+      options.type === 'lease' &&
+      intentsUsingYears.includes(options.intent) &&
+      options.years === undefined
+    ) {
+      throw new Error('Years is required for lease type');
+    }
+
+    const tokenCost = await readIOFromOptions(options).getTokenCost({
+      type: options.type,
+      quantity: options.quantity !== undefined ? +options.quantity : undefined,
+      years: options.years !== undefined ? +options.years : undefined,
+      intent: options.intent,
+      name: requiredNameFromOptions(options),
+    });
+
+    const output = {
+      mIOTokenCost: tokenCost,
+      message: `The cost of the provided action is ${formatIOWithCommas(
+        new mIOToken(tokenCost).toIO(),
+      )} IO`,
+    };
+    return output;
+  });
+});
 
 makeCommand({
   name: 'get-registration-fees',
@@ -414,46 +466,21 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'get-vault',
-  description: 'Get a vault',
-  options: getVaultOptions,
+  name: 'get-primary-name-request',
+  description: 'Get primary name request',
+  options: initiatorAndNameOptions,
 }).action(async (_, command) => {
-  await runCommand<GetVaultOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const vaultId = options.vaultId;
-    if (vaultId === undefined) {
-      throw new Error('--vault-id is required');
-    }
-    const result = await readIOFromOptions(options).getVault({
-      address,
-      vaultId,
-    });
+  await runCommand<InitiatorAndNameOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getPrimaryNameRequest(
+      primaryNameRequestParamsFromOptions(options),
+    );
     return (
       result ?? {
-        message: `No vault found for address ${address} and vault ID ${vaultId}`,
+        message: `No primary name request found`,
       }
     );
   });
 });
-
-// TODO: initiator and name params
-// makeCommand({
-//   name: 'get-primary-name-request',
-//   description: 'Get primary name request',
-//   options: addressOptions,
-// }).action(async (_, command) => {
-//   await runCommand<AddressOptions>(command, async (options) => {
-//     const address = requiredAddressFromOptions(options);
-//     const result = await readIOFromOptions(options).getPrimaryNameRequest({
-//       address,
-//     });
-//     return (
-//       result ?? {
-//         message: `No primary name request found for address ${address}`,
-//       }
-//     );
-//   });
-// });
 
 makeCommand({
   name: 'get-primary-name-requests',
