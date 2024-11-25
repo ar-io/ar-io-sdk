@@ -2030,7 +2030,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
-  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
   ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
 });
 ```
