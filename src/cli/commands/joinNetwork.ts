@@ -23,7 +23,7 @@ import {
 } from '../../node/index.js';
 import { WalletOptions } from '../options.js';
 import {
-  StringAllNumberTypes,
+  CLIOptionsFromAoParams,
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
@@ -32,7 +32,7 @@ import {
 
 type JoinNetworkOptions = WalletOptions &
   Partial<
-    StringAllNumberTypes<
+    CLIOptionsFromAoParams<
       Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>
     >
   > & {

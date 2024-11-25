@@ -27,11 +27,13 @@ import {
   GetGatewayOptions,
   GetVaultOptions,
   GlobalOptions,
+  NameOptions,
   balanceOptions,
   getGatewayOptions,
   getVaultOptions,
   globalOptions,
   joinNetworkOptions,
+  nameOptions,
   transferOptions,
 } from './options.js';
 import {
@@ -39,6 +41,7 @@ import {
   makeCommand,
   readIOFromOptions,
   requiredAddressFromOptions,
+  requiredNameFromOptions,
   runCommand,
 } from './utils.js';
 
@@ -138,6 +141,49 @@ makeCommand({
   });
 });
 
+makeCommand({
+  name: 'get-delegations',
+  description: 'Get all stake delegated to gateways from this address',
+  options: getGatewayOptions,
+}).action(async (_, command) => {
+  await runCommand<GetGatewayOptions>(command, async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const result = await readIOFromOptions(options).getDelegations({ address });
+
+    // TODO: Paginate from CLI
+    return result.items?.length
+      ? result.items
+      : {
+          message: `No delegations found for address ${address}`,
+        };
+  });
+});
+
+makeCommand({
+  name: 'get-arns-record',
+  description: '',
+  options: nameOptions,
+}).action(async (_, command) => {
+  await runCommand<NameOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSRecord({
+      name: requiredNameFromOptions(options),
+    });
+    return result ?? { message: `No record found for name ${options.name}` };
+  });
+});
+
+makeCommand({
+  name: 'list-arns-records',
+  description: '',
+  options: [],
+}).action(async (_, command) => {
+  await runCommand<GlobalOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getArNSRecords({});
+    console.log('result', result);
+    // TODO: Paginate params from CLI -- cursor is `name`
+    return result.items;
+  });
+});
 makeCommand({
   name: 'balance',
   description: 'Get the balance of an address',

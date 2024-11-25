@@ -320,6 +320,10 @@ export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
 
+export type AoGetArNSNameParams = {
+  name: string;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -348,7 +352,7 @@ export interface AoIORead {
   } & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
     PaginationResult<AoGatewayDelegateWithAddress>
   >;
-  getGatewayDelegateAllowList(
+  getGatewayDelegateAllowList( // todo
     params?: PaginationParams<WalletAddress>,
   ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
@@ -358,14 +362,14 @@ export interface AoIORead {
   getDelegations(
     params: PaginationParams<AoDelegation> & { address: WalletAddress },
   ): Promise<PaginationResult<AoDelegation>>;
-  getAllowedDelegates(
+  getAllowedDelegates( // todo
     params: PaginationParams & { address: WalletAddress },
   ): Promise<PaginationResult<WalletAddress>>;
   getGatewayVaults(
     params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
   ): Promise<PaginationResult<AoGatewayVault>>;
   getBalance(params: { address: WalletAddress }): Promise<number>;
-  getBalances(
+  getBalances( // todo
     params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>>;
   getArNSRecord({

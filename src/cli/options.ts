@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { AoGetArNSNameParams } from '../types/io.js';
+import { CLIOptionsFromAoParams } from './utils.js';
 
 export const optionMap = {
   walletFile: {
@@ -118,6 +120,10 @@ export const optionMap = {
     alias: '--operator-stake <operatorStake>',
     description: 'The operator stake to interact with',
   },
+  name: {
+    alias: '--name <name>',
+    description: 'The ArNS name to interact with',
+  },
 };
 
 export const globalOptions = [
@@ -145,10 +151,14 @@ export type WalletOptions = GlobalOptions & {
   privateKey: string | undefined;
 };
 
-const addressOptions = [...walletOptions, optionMap.address];
+export const addressOptions = [...walletOptions, optionMap.address];
 export type AddressOptions = WalletOptions & {
   address: string | undefined;
 };
+
+export const nameOptions = [optionMap.name];
+export type NameOptions = CLIOptionsFromAoParams<AoGetArNSNameParams> &
+  WalletOptions;
 
 export const balanceOptions = addressOptions;
 export type BalanceOptions = AddressOptions;

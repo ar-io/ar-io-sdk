@@ -30,12 +30,26 @@ import {
   fromB64Url,
   sha256B64Url,
 } from '../node/index.js';
-import { AddressOptions, GlobalOptions, WalletOptions } from './options.js';
+import {
+  AddressOptions,
+  GlobalOptions,
+  NameOptions,
+  WalletOptions,
+} from './options.js';
 
-/** Type helper to turn each `number` type into `string` types */
-export type StringAllNumberTypes<T> = {
+/**
+ * Type helper to turn a set of parameters that have `number` types
+ * into `string` types and makes all parameters optional.
+ *
+ * Intended to be used to represent how `commander` parsed out CLI options.
+ * @example
+ * ```ts
+ * export type MyNewCommandOptions = CLIOptionsFromAoParams<MyNewAoMethodParams> & GlobalOptions;
+ * ```
+ */
+export type CLIOptionsFromAoParams<T> = Partial<{
   [K in keyof T]: T[K] extends number ? string : T[K];
-};
+}>;
 
 type JsonSerializable =
   | string
@@ -177,6 +191,14 @@ export function requiredAddressFromOptions(options: AddressOptions): string {
   }
 
   throw new Error('No address provided. Use --address or --wallet-file');
+}
+
+export function requiredNameFromOptions(options: NameOptions): string {
+  if (options.name !== undefined) {
+    return options.name;
+  }
+  // TODO: Could optimistically check for names from address or wallet if provided?
+  throw new Error('No name provided. Use `--name "my-name"`');
 }
 
 export function formatIOWithCommas(value: IOToken): string {
