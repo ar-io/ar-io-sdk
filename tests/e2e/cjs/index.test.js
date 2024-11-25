@@ -84,10 +84,8 @@ describe('e2e cjs tests', async () => {
     });
 
     it('should be able to instantiate AoANTReadable', async () => {
-      for (const signer of signers) {
-        const ant = ANT.init({ processId });
-        assert(ant instanceof AoANTReadable);
-      }
+      const ant = ANT.init({ processId });
+      assert(ant instanceof AoANTReadable);
     });
   });
 });

@@ -66,6 +66,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
     - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
     - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
     - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
@@ -1593,6 +1594,31 @@ const { id: txId } = await io.requestPrimaryName({
 });
 ```
 
+#### `getPrimaryNameRequest({ initiator })`
+
+Retrieves the primary name request for a a wallet address.
+
+```typescript
+const io = IO.init();
+const request = await io.getPrimaryNameRequest({
+  initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "initiator": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  "name": "arns",
+  "startTimestamp": 1728067635857,
+  "endTimestamp": 1735843635857
+}
+```
+
+</details>
+
 #### `redelegateStake({ target, source, stakeQty, vaultId })`
 
 Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
@@ -1829,43 +1855,21 @@ const records = await ant.getRecords();
   <summary>Output</summary>
 
 ```json
-[
-  {
-    "name": "@",
-    "transactionId": "nOXJjj_vk0Dc1yCgdWD8kti_1iHruGzLQLNNBHVpN0Y",
+{
+  "@": {
+    "transactionId": "UyC5P5qKPZaltMmmZAWdakhlDXsBF6qmyrbWYFchRTk",
     "ttlSeconds": 3600
   },
-  {
-    "name": "cn",
-    "transactionId": "_HquerT6pfGFXrVxRxQTkJ7PV5RciZCqvMjLtUY0C1k",
-    "ttlSeconds": 3300
+  "zed": {
+    "transactionId": "-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI",
+    "ttlSeconds": 900
   },
-  {
-    "name": "dapp",
-    "transactionId": "hxlxVgAG0K4o3fVD9T6Q4VBWpPmMZwMWgRh1kcuh3WU",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "logo",
-    "transactionId": "KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og",
-    "transactionId": "YzD_Pm5VAfYpMD3zQCgMUcKKuleGhEH7axlrnrDCKBo",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og_dapp",
-    "transactionId": "5iR4wBu4KUV1pUz1YpYE1ARXSRHUT5G2ptMuoN2JDlI",
-    "ttlSeconds": 3600
-  },
-  {
-    "name": "og_logo",
-    "transactionId": "TB2wJyKrPnkAW79DAwlJYwpgdHKpijEJWQfcwX715Co",
-    "ttlSeconds": 3600
+
+  "ardrive": {
+    "transactionId": "-cucucachoodwedwedoiwepodiwpodiwpoidpwoiedp",
+    "ttlSeconds": 900
   }
-]
+}
 ```
 
 </details>
@@ -2052,7 +2056,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
-  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
   ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
 });
 ```

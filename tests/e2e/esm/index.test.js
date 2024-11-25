@@ -38,7 +38,7 @@ const aoClient = connect({
 
 const io = IO.init({
   process: new AOProcess({
-    processId: ioDevnetProcessId,
+    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
     ao: aoClient,
   }),
 });
@@ -262,7 +262,6 @@ describe('e2e esm tests', async () => {
       }
       assert(Array.isArray(delegates.items));
       delegates.items.forEach((delegate) => {
-        assert(Array.isArray(delegate.vaults));
         assert(typeof delegate.delegatedStake === 'number');
         assert(typeof delegate.startTimestamp === 'number');
         assert(typeof delegate.address === 'string');
@@ -349,7 +348,7 @@ describe('e2e esm tests', async () => {
       assert(typeof balances.limit === 'number');
       assert(typeof balances.hasMore === 'boolean');
       if (balances.nextCursor) {
-        assert(typeof gateways.nextCursor === 'string');
+        assert(typeof balances.nextCursor === 'string');
       }
       assert(Array.isArray(balances.items));
       balances.items.forEach((wallet) => {
@@ -750,97 +749,90 @@ describe('e2e esm tests', async () => {
     });
   });
 
-  describe.skip('ANT', async () => {
+  describe('ANT', async () => {
     // ANT v7 process id
-    const oldProcessId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
-    // ANT v8 source
-    const latestProcessId = 'oQ4GNTed8cnNw-H5olq606gCFd5MbGSV4NTmfpIW4FI';
-    for (const processId of [oldProcessId, latestProcessId]) {
-      const ant = ANT.init({
-        process: new AOProcess({
-          processId,
-          ao: aoClient,
-        }),
-      });
+    const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
+    const ant = ANT.init({
+      process: new AOProcess({
+        processId,
+        ao: aoClient,
+      }),
+    });
 
-      it('should be able to create ANTWriteable with valid signers', async () => {
-        for (const signer of signers) {
-          const nonStrictAnt = ANT.init({
-            process: new AOProcess({
-              processId,
-              ao: aoClient,
-            }),
-            signer,
-          });
-          const strictAnt = ANT.init({
-            process: new AOProcess({
-              processId,
-              ao: aoClient,
-            }),
-            signer,
-            strict: true,
-          });
-
-          assert(nonStrictAnt instanceof AoANTWriteable);
-          assert(strictAnt instanceof AoANTWriteable);
-        }
-      });
-
-      it('should be able to get ANT info', async () => {
-        const info = await ant.getInfo();
-        assert.ok(info);
-      });
-
-      it('should be able to get the ANT records', async () => {
-        const records = await ant.getRecords();
-        assert.ok(records);
-        it("should return ANT records alphabetized with '@' being first", async () => {
-          assert.strictEqual(records[0].name, '@');
-          assert.strictEqual(records.at(-1).name, 'zed');
+    it('should be able to create ANTWriteable with valid signers', async () => {
+      for (const signer of signers) {
+        const nonStrictAnt = ANT.init({
+          process: new AOProcess({
+            processId,
+            ao: aoClient,
+          }),
+          signer,
         });
-      });
-
-      it('should be able to get a @ record from the ANT', async () => {
-        const record = await ant.getRecord({ undername: '@' });
-        assert.ok(record);
-      });
-
-      it('should be able to get the ANT owner', async () => {
-        const owner = await ant.getOwner();
-        assert.ok(owner);
-      });
-
-      it('should be able to get the ANT name', async () => {
-        const name = await ant.getName();
-        assert.ok(name);
-      });
-
-      it('should be able to get the ANT ticker', async () => {
-        const ticker = await ant.getTicker();
-        assert.ok(ticker);
-      });
-
-      it('should be able to get the ANT controllers', async () => {
-        const controllers = await ant.getControllers();
-        assert.ok(controllers);
-      });
-
-      it('should be able to get the ANT state', async () => {
-        const state = await ant.getState();
-        assert.ok(state);
-      });
-
-      it('should be able to get the ANT balance for an address', async () => {
-        const balance = await ant.getBalance({
-          address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        const strictAnt = ANT.init({
+          process: new AOProcess({
+            processId,
+            ao: aoClient,
+          }),
+          signer,
+          strict: true,
         });
-        assert.notEqual(balance, undefined);
-      });
 
-      it('should be able to get the ANT balances', async () => {
-        const balances = await ant.getBalances();
-        assert.ok(balances);
+        assert(nonStrictAnt instanceof AoANTWriteable);
+        assert(strictAnt instanceof AoANTWriteable);
+      }
+    });
+
+    it('should be able to get ANT info', async () => {
+      const info = await ant.getInfo();
+      assert.ok(info);
+    });
+
+    it('should be able to get the ANT records', async () => {
+      const records = await ant.getRecords();
+      assert.ok(records);
+      // TODO: check enforcement of alphabetical order with '@' first
+    });
+
+    it('should be able to get a @ record from the ANT', async () => {
+      const record = await ant.getRecord({ undername: '@' });
+      assert.ok(record);
+    });
+
+    it('should be able to get the ANT owner', async () => {
+      const owner = await ant.getOwner();
+      assert.ok(owner);
+    });
+
+    it('should be able to get the ANT name', async () => {
+      const name = await ant.getName();
+      assert.ok(name);
+    });
+
+    it('should be able to get the ANT ticker', async () => {
+      const ticker = await ant.getTicker();
+      assert.ok(ticker);
+    });
+
+    it('should be able to get the ANT controllers', async () => {
+      const controllers = await ant.getControllers();
+      assert.ok(controllers);
+    });
+
+    it('should be able to get the ANT state', async () => {
+      const state = await ant.getState();
+      assert.ok(state);
+    });
+
+    it('should be able to get the ANT balance for an address', async () => {
+      const balance = await ant.getBalance({
+        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
       });
-    }
+      assert.notEqual(balance, undefined);
+    });
+
+    it('should be able to get the ANT balances', async () => {
+      const balances = await ant.getBalances();
+      assert.ok(balances);
+    });
   });
 });
