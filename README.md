@@ -66,6 +66,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
     - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
     - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
     - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
@@ -1593,6 +1594,31 @@ const { id: txId } = await io.requestPrimaryName({
 });
 ```
 
+#### `getPrimaryNameRequest({ initiator })`
+
+Retrieves the primary name request for a a wallet address.
+
+```typescript
+const io = IO.init();
+const request = await io.getPrimaryNameRequest({
+  initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "initiator": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  "name": "arns",
+  "startTimestamp": 1728067635857,
+  "endTimestamp": 1735843635857
+}
+```
+
+</details>
+
 #### `redelegateStake({ target, source, stakeQty, vaultId })`
 
 Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
@@ -2030,7 +2056,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
-  owner: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
   ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
 });
 ```

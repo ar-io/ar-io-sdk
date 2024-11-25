@@ -59,6 +59,7 @@ export type AoMessageResult = { id: string };
 
 export type AoPrimaryNameRequest = {
   name: string;
+  initiator: WalletAddress;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
 };
