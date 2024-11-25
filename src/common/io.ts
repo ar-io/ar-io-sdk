@@ -1205,7 +1205,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     return this.process.send({
       signer: this.signer,
       tags: [
-        { name: 'Action', value: 'Primary-Name-Request' },
+        { name: 'Action', value: 'Request-Primary-Name' },
         { name: 'Name', value: params.name },
       ],
     });
