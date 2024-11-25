@@ -66,6 +66,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
     - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
     - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
     - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
@@ -1592,6 +1593,31 @@ const { id: txId } = await io.requestPrimaryName({
   name: 'arns',
 });
 ```
+
+#### `getPrimaryNameRequest({ initiator })`
+
+Retrieves the primary name request for a a wallet address.
+
+```typescript
+const io = IO.init();
+const request = await io.getPrimaryNameRequest({
+  initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "initiator": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  "name": "arns",
+  "startTimestamp": 1728067635857,
+  "endTimestamp": 1735843635857
+}
+```
+
+</details>
 
 #### `redelegateStake({ target, source, stakeQty, vaultId })`
 
