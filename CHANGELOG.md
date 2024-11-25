@@ -1,3 +1,10 @@
+## [2.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1-alpha.1...v2.5.1-alpha.2) (2024-11-25)
+
+
+### Bug Fixes
+
+* **readme:** update readme with correct param for approving primary name ([1dcbcc5](https://github.com/ar-io/ar-io-sdk/commit/1dcbcc5a231581ec2bd2a3bc9815853aac7bbdf5))
+
 # [2.5.0](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0...v2.5.0) (2024-11-22)
 
 
