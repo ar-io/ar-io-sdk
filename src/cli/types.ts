@@ -55,6 +55,17 @@ export type PaginationOptions = GlobalOptions &
 export type AddressOptions = WalletOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
+export type InitiatorOptions = AddressOptions &
+  CLIOptionsFromAoParams<{
+    initiator: string;
+  }>;
+
+export type AddressAndNameOptions = GlobalOptions &
+  CLIOptionsFromAoParams<{
+    address: string;
+    name: string;
+  }>;
+
 export type InitiatorAndNameOptions = GlobalOptions &
   CLIOptionsFromAoParams<{
     initiator: string;

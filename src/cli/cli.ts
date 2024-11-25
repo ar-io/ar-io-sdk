@@ -32,6 +32,7 @@ import {
   initiatorAndNameOptions,
   joinNetworkOptions,
   nameOptions,
+  optionMap,
   paginationAddressOptions,
   paginationOptions,
   tokenCostOptions,
@@ -44,7 +45,7 @@ import {
   GetTokenCostOptions,
   GetVaultOptions,
   GlobalOptions,
-  InitiatorAndNameOptions,
+  InitiatorOptions,
   NameOptions,
   PaginationAddressOptions,
   PaginationOptions,
@@ -54,9 +55,9 @@ import {
   formatIOWithCommas,
   makeCommand,
   paginationParamsFromOptions,
-  primaryNameRequestParamsFromOptions,
   readIOFromOptions,
   requiredAddressFromOptions,
+  requiredInitiatorFromOptions,
   requiredNameFromOptions,
   runCommand,
 } from './utils.js';
@@ -470,10 +471,10 @@ makeCommand({
   description: 'Get primary name request',
   options: initiatorAndNameOptions,
 }).action(async (_, command) => {
-  await runCommand<InitiatorAndNameOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrimaryNameRequest(
-      primaryNameRequestParamsFromOptions(options),
-    );
+  await runCommand<InitiatorOptions>(command, async (options) => {
+    const result = await readIOFromOptions(options).getPrimaryNameRequest({
+      initiator: requiredInitiatorFromOptions(options),
+    });
     return (
       result ?? {
         message: `No primary name request found`,
@@ -485,12 +486,10 @@ makeCommand({
 makeCommand({
   name: 'get-primary-name-requests',
   description: 'Get primary name requests',
-  options: paginationAddressOptions, // todo; add initiator
+  options: paginationOptions,
 }).action(async (_, command) => {
-  await runCommand<PaginationAddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
+  await runCommand<PaginationOptions>(command, async (options) => {
     const result = await readIOFromOptions(options).getPrimaryNameRequests({
-      initiator: address,
       ...paginationParamsFromOptions(options),
     });
     return result.items.length
@@ -502,7 +501,7 @@ makeCommand({
 makeCommand({
   name: 'get-primary-name',
   description: 'Get primary name',
-  options: addressOptions, // todo: or name
+  options: [...addressOptions, optionMap.name], // todo: or name
 }).action(async (_, command) => {
   await runCommand<AddressOptions>(command, async (options) => {
     const address = requiredAddressFromOptions(options);
