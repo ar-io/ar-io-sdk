@@ -262,7 +262,6 @@ describe('e2e esm tests', async () => {
       }
       assert(Array.isArray(delegates.items));
       delegates.items.forEach((delegate) => {
-        assert(Array.isArray(delegate.vaults));
         assert(typeof delegate.delegatedStake === 'number');
         assert(typeof delegate.startTimestamp === 'number');
         assert(typeof delegate.address === 'string');

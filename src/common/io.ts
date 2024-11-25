@@ -640,21 +640,14 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  async getPrimaryNameRequest(
-    params:
-      | {
-          initiator: WalletAddress;
-        }
-      | {
-          name: string;
-        },
-  ): Promise<AoPrimaryNameRequest> {
+  async getPrimaryNameRequest(params: {
+    initiator: WalletAddress;
+  }): Promise<AoPrimaryNameRequest> {
     const allTags = [
       { name: 'Action', value: 'Primary-Name-Request' },
-      { name: 'Name', value: (params as { name: string }).name },
       {
         name: 'Initiator',
-        value: (params as { initiator: WalletAddress }).initiator,
+        value: params.initiator,
       },
     ];
 
@@ -1212,7 +1205,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     return this.process.send({
       signer: this.signer,
       tags: [
-        { name: 'Action', value: 'Primary-Name-Request' },
+        { name: 'Action', value: 'Request-Primary-Name' },
         { name: 'Name', value: params.name },
       ],
     });

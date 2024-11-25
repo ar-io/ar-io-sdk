@@ -1,6 +1,5 @@
 ## [2.5.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0...v2.5.1) (2024-11-22)
 
-
 ### Bug Fixes
 
 * **primary names:** update type for getPrimaryNameRequest ([bdd3a9f](https://github.com/ar-io/ar-io-sdk/commit/bdd3a9f63f90688453208804c242622b1f583ec7))

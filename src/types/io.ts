@@ -435,13 +435,11 @@ export interface AoIORead {
     address: WalletAddress;
     vaultId: string;
   }): Promise<AoVaultData>;
-  getPrimaryNameRequest(
-    params: { initiator: WalletAddress } | { name: string },
-  ): Promise<AoPrimaryNameRequest>;
+  getPrimaryNameRequest(params: {
+    initiator: WalletAddress;
+  }): Promise<AoPrimaryNameRequest>;
   getPrimaryNameRequests(
-    params: PaginationParams<AoPrimaryNameRequest> & {
-      initiator?: WalletAddress;
-    },
+    params: PaginationParams<AoPrimaryNameRequest>,
   ): Promise<PaginationResult<AoPrimaryNameRequest>>;
   getPrimaryName(
     params: { address: WalletAddress } | { name: string },
