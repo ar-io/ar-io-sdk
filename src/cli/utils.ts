@@ -54,8 +54,8 @@ function exitWithErrorLog(error: unknown, debug = false) {
   let errorLog: string;
   if (error instanceof Error) {
     errorLog = error.message;
-    if (debug) {
-      errorLog += '\n' + JSON.stringify(error.stack, null, 2);
+    if (debug && error.stack !== undefined) {
+      errorLog = error.stack;
     }
   } else {
     errorLog = JSON.stringify(error, null, 2);
