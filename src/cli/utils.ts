@@ -73,7 +73,7 @@ export async function runCommand<O extends OptionValues>(
     logCommandOutput(output);
     process.exit(0);
   } catch (error) {
-    exitWithErrorLog(error);
+    exitWithErrorLog(error, options.debug);
   }
 }
 
