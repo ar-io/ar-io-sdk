@@ -41,9 +41,9 @@ export type PaginationParams<T = Record<string, never>> = {
 
 export type PaginationResult<T> = {
   items: T[];
-  nextCursor: string | undefined;
+  nextCursor?: string;
   totalItems: number;
-  sortBy?: keyof T;
+  sortBy?: T extends string ? string : keyof T;
   sortOrder: 'asc' | 'desc';
   hasMore: boolean;
 };
@@ -465,7 +465,7 @@ export interface AoIORead {
   ): Promise<PaginationResult<AoPrimaryNameRequest>>;
   getPrimaryName(
     params: { address: WalletAddress } | { name: string },
-  ): Promise<AoPrimaryName>;
+  ): Promise<AoPrimaryName | undefined>;
   getPrimaryNames(
     params?: PaginationParams<AoPrimaryName>,
   ): Promise<PaginationResult<AoPrimaryName>>;

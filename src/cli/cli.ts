@@ -29,7 +29,7 @@ import {
   epochOptions,
   getVaultOptions,
   globalOptions,
-  initiatorAndNameOptions,
+  initiatorOptions,
   joinNetworkOptions,
   nameOptions,
   optionMap,
@@ -39,6 +39,7 @@ import {
   transferOptions,
 } from './options.js';
 import {
+  AddressAndNameOptions,
   AddressOptions,
   AuctionPricesOptions,
   EpochOptions,
@@ -51,6 +52,7 @@ import {
   PaginationOptions,
 } from './types.js';
 import {
+  addressFromOptions,
   epochInputFromOptions,
   formatIOWithCommas,
   makeCommand,
@@ -82,6 +84,18 @@ makeCommand({
   action: (options) => readIOFromOptions(options).getTokenSupply(),
 });
 
+makeCommand({
+  name: 'get-registration-fees',
+  description: 'Get registration fees',
+  action: (options) => readIOFromOptions(options).getRegistrationFees(),
+});
+
+makeCommand({
+  name: 'get-demand-factor',
+  description: 'Get demand factor',
+  action: (options) => readIOFromOptions(options).getDemandFactor(),
+});
+
 makeCommand<GetVaultOptions>({
   name: 'get-vault',
   description: 'Get the vault of provided address and vault ID',
@@ -102,35 +116,31 @@ makeCommand<GetVaultOptions>({
   },
 });
 
-makeCommand({
+makeCommand<AddressOptions>({
   name: 'get-gateway',
   description: 'Get the gateway of an address',
   options: addressOptions,
-}).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getGateway({ address });
-    return (
-      result ?? {
-        message: `No gateway found for address ${address}`,
-      }
-    );
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getGateway({ address: requiredAddressFromOptions(o) })
+      .then(
+        (r) =>
+          r ?? {
+            message: `No gateway found`,
+          },
+      ),
 });
 
 makeCommand<PaginationOptions>({
-  name: 'get-gateways',
-  description: 'Get the gateways of the network',
+  name: 'list-gateways',
+  description: 'List the gateways of the network',
   options: paginationOptions,
-  action: async (o) => {
-    const result = await readIOFromOptions(o).getGateways(
-      paginationParamsFromOptions(o),
-    );
-
-    return result.items.length
-      ? result.items
-      : { message: 'No gateways found' };
-  },
+  action: (o) =>
+    readIOFromOptions(o)
+      .getGateways(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No gateways found' },
+      ),
 });
 
 makeCommand<PaginationAddressOptions>({
@@ -152,27 +162,23 @@ makeCommand<PaginationAddressOptions>({
   },
 });
 
-makeCommand({
+makeCommand<PaginationAddressOptions>({
   name: 'get-delegations',
   description: 'Get all stake delegated to gateways from this address',
   options: addressOptions,
-}).action(async (_, command) => {
-  await runCommand<AddressOptions & PaginationOptions>(
-    command,
-    async (options) => {
-      const address = requiredAddressFromOptions(options);
-      const result = await readIOFromOptions(options).getDelegations({
-        address,
-        ...paginationParamsFromOptions(options),
-      });
+  action: async (o) => {
+    const address = requiredAddressFromOptions(o);
+    const result = await readIOFromOptions(o).getDelegations({
+      address,
+      ...paginationParamsFromOptions(o),
+    });
 
-      return result.items?.length
-        ? result.items
-        : {
-            message: `No delegations found for address ${address}`,
-          };
-    },
-  );
+    return result.items?.length
+      ? result
+      : {
+          message: `No delegations found for address ${address}`,
+        };
+  },
 });
 
 makeCommand<PaginationAddressOptions>({
@@ -187,92 +193,84 @@ makeCommand<PaginationAddressOptions>({
     });
 
     return result.items?.length
-      ? result.items
+      ? result
       : {
           message: `No allow list found for gateway delegate ${address}`,
         };
   },
 });
 
-makeCommand({
+makeCommand<NameOptions>({
   name: 'get-arns-record',
-  description: '',
+  description: 'Get an ArNS record by name',
   options: nameOptions,
-}).action(async (_, command) => {
-  await runCommand<NameOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSRecord({
-      name: requiredNameFromOptions(options),
-    });
-    return result ?? { message: `No record found for name ${options.name}` };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSRecord({ name: requiredNameFromOptions(o) })
+      .then(
+        (result) => result ?? { message: `No record found for provided name` },
+      ),
 });
 
-makeCommand({
+makeCommand<PaginationOptions>({
   name: 'list-arns-records',
   description: 'List all ArNS records',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSRecords({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items;
-  });
-});
-
-// getArNSReservedNames(
-makeCommand({
-  name: 'get-arns-reserved-names',
-  description: 'Get all reserved ArNS names',
-  options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSReservedNames({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items;
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSRecords(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No records found' },
+      ),
 });
 
 makeCommand({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
   options: nameOptions,
-}).action(async (_, command) => {
-  await runCommand<NameOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSReservedName({
-      name: requiredNameFromOptions(options),
-    });
-    return (
-      result ?? { message: `No reserved name found for name ${options.name}` }
-    );
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSReservedName({ name: requiredNameFromOptions(o) })
+      .then(
+        (result) =>
+          result ?? { message: `No reserved name found for provided name` },
+      ),
 });
 
 makeCommand({
-  name: 'get-arns-auctions',
-  description: 'Get all ArNS auctions',
+  name: 'list-arns-reserved-names',
+  description: 'Get all reserved ArNS names',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSAuctions({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items;
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSReservedNames(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No reserved names found' },
+      ),
 });
 
 makeCommand({
   name: 'get-arns-auction',
   description: 'Get an ArNS auction by name',
   options: nameOptions,
-}).action(async (_, command) => {
-  await runCommand<NameOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getArNSAuction({
-      name: requiredNameFromOptions(options),
-    });
-    return result ?? { message: `No auction found for name ${options.name}` };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSAuction({ name: requiredNameFromOptions(o) })
+      .then(
+        (result) => result ?? { message: `No auction found for provided name` },
+      ),
+});
+
+makeCommand({
+  name: 'list-arns-auctions',
+  description: 'Get all ArNS auctions',
+  options: paginationOptions,
+  action: (o) =>
+    readIOFromOptions(o)
+      .getArNSAuctions(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No auctions found' },
+      ),
 });
 
 makeCommand({
@@ -421,112 +419,94 @@ makeCommand({
   });
 });
 
-makeCommand({
-  name: 'get-registration-fees',
-  description: 'Get registration fees',
-  options: [],
-}).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    return readIOFromOptions(options).getRegistrationFees();
-  });
-});
-
-makeCommand({
-  name: 'get-demand-factor',
-  description: 'Get demand factor',
-  options: [],
-}).action(async (_, command) => {
-  await runCommand<GlobalOptions>(command, async (options) => {
-    return readIOFromOptions(options).getDemandFactor();
-  });
-});
-
-makeCommand({
+makeCommand<PaginationOptions>({
   name: 'list-vaults',
   description: 'Get all wallet vaults',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getVaults({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items.length ? result.items : { message: 'No vaults found' };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getVaults(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No vaults found' },
+      ),
 });
 
-makeCommand({
+makeCommand<InitiatorOptions>({
   name: 'get-primary-name-request',
   description: 'Get primary name request',
-  options: initiatorAndNameOptions,
-}).action(async (_, command) => {
-  await runCommand<InitiatorOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrimaryNameRequest({
-      initiator: requiredInitiatorFromOptions(options),
-    });
-    return (
-      result ?? {
-        message: `No primary name request found`,
-      }
-    );
-  });
+  options: initiatorOptions,
+  action: (o) =>
+    readIOFromOptions(o)
+      .getPrimaryNameRequest({
+        initiator: requiredInitiatorFromOptions(o),
+      })
+      .then(
+        (result) =>
+          result ?? {
+            message: `No primary name request found`,
+          },
+      ),
 });
 
-makeCommand({
-  name: 'get-primary-name-requests',
+makeCommand<PaginationOptions>({
+  name: 'list-primary-name-requests',
   description: 'Get primary name requests',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrimaryNameRequests({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items.length
-      ? result.items
-      : { message: 'No requests found' };
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getPrimaryNameRequests(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No requests found' },
+      ),
 });
 
-makeCommand({
+makeCommand<AddressAndNameOptions>({
   name: 'get-primary-name',
   description: 'Get primary name',
-  options: [...addressOptions, optionMap.name], // todo: or name
-}).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getPrimaryName({
-      address,
-    });
+  options: [...addressOptions, optionMap.name],
+  action: async (o) => {
+    const address = addressFromOptions(o);
+    const name = o.name;
+
+    const params =
+      name !== undefined
+        ? { name }
+        : address !== undefined
+          ? { address }
+          : undefined;
+    if (params === undefined) {
+      throw new Error('Either --address or --name is required');
+    }
+
+    const result = await readIOFromOptions(o).getPrimaryName(params);
     return (
-      result ?? { message: `No primary name found for address ${address}` }
+      result ?? {
+        message: `No primary name found`,
+      }
     );
-  });
+  },
 });
 
-makeCommand({
-  name: 'get-primary-names',
+makeCommand<PaginationOptions>({
+  name: 'list-primary-names',
   description: 'Get primary names',
   options: paginationOptions,
-}).action(async (_, command) => {
-  await runCommand<PaginationOptions>(command, async (options) => {
-    const result = await readIOFromOptions(options).getPrimaryNames({
-      ...paginationParamsFromOptions(options),
-    });
-    return result.items;
-  });
+  action: (o) =>
+    readIOFromOptions(o)
+      .getPrimaryNames(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No names found' },
+      ),
 });
 
-makeCommand({
+makeCommand<AddressOptions>({
   name: 'get-redelegation-fee',
   description: 'Get redelegation fee',
   options: addressOptions,
-}).action(async (_, command) => {
-  await runCommand<AddressOptions>(command, async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const result = await readIOFromOptions(options).getRedelegationFee({
-      address,
-    });
-    return result;
-  });
+  action: (options) =>
+    readIOFromOptions(options).getRedelegationFee({
+      address: requiredAddressFromOptions(options),
+    }),
 });
 
 // makeCommand({

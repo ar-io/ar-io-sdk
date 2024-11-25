@@ -167,6 +167,12 @@ export const optionMap = {
     alias: '--sort-order <sortOrder>',
     description: 'The order to sort by, either "asc" or "desc"',
   },
+  tags: {
+    description:
+      'An array of additional tags for the write action, in "--tags name1 value1 name2 value2" format',
+    alias: '--tags <tags...>',
+    type: 'array',
+  },
 };
 
 export const globalOptions = [
@@ -207,15 +213,8 @@ export const paginationAddressOptions = [
 export const nameOptions = [optionMap.name];
 
 export const initiatorOptions = [optionMap.initiator];
-export const initiatorAndNameOptions = [...initiatorOptions, ...nameOptions];
 
 export const getVaultOptions = [...addressOptions, optionMap.vaultId];
-
-export const transferOptions = [
-  ...walletOptions,
-  optionMap.quantity,
-  optionMap.target,
-];
 
 export const tokenCostOptions = [
   ...globalOptions,
@@ -235,8 +234,15 @@ export const arNSAuctionPricesOptions = [
   optionMap.intervalMs,
 ];
 
+export const writeActionOptions = [...walletOptions, optionMap.tags];
+export const transferOptions = [
+  ...writeActionOptions,
+  optionMap.quantity,
+  optionMap.target,
+];
+
 export const joinNetworkOptions = [
-  ...walletOptions,
+  ...writeActionOptions,
   optionMap.operatorStake,
   optionMap.disableAutoStake,
   optionMap.disableDelegatedStaking,

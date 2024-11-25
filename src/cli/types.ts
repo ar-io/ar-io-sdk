@@ -60,15 +60,9 @@ export type InitiatorOptions = AddressOptions &
     initiator: string;
   }>;
 
-export type AddressAndNameOptions = GlobalOptions &
+export type AddressAndNameOptions = WalletOptions &
   CLIOptionsFromAoParams<{
     address: string;
-    name: string;
-  }>;
-
-export type InitiatorAndNameOptions = GlobalOptions &
-  CLIOptionsFromAoParams<{
-    initiator: string;
     name: string;
   }>;
 

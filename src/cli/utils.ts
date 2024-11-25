@@ -36,7 +36,6 @@ import {
   AddressOptions,
   EpochOptions,
   GlobalOptions,
-  InitiatorAndNameOptions,
   InitiatorOptions,
   JsonSerializable,
   NameOptions,
@@ -180,7 +179,9 @@ export function formatIOWithCommas(value: IOToken): string {
   return integerWithCommas + '.' + decimalPart;
 }
 
-export function requiredAddressFromOptions(options: AddressOptions): string {
+export function addressFromOptions(
+  options: AddressOptions,
+): string | undefined {
   if (options.address !== undefined) {
     return options.address;
   }
@@ -189,7 +190,14 @@ export function requiredAddressFromOptions(options: AddressOptions): string {
   if (jwk !== undefined) {
     return jwkToAddress(jwk);
   }
+  return undefined;
+}
 
+export function requiredAddressFromOptions(options: AddressOptions): string {
+  const address = addressFromOptions(options);
+  if (address !== undefined) {
+    return address;
+  }
   throw new Error('No address provided. Use --address or --wallet-file');
 }
 
@@ -243,17 +251,4 @@ export function requiredInitiatorFromOptions(
     return options.initiator;
   }
   return requiredAddressFromOptions(options);
-}
-
-export function primaryNameRequestParamsFromOptions(
-  options: InitiatorAndNameOptions,
-): { initiator: string } | { name: string } {
-  if (options.initiator !== undefined) {
-    return { initiator: options.initiator };
-  }
-  if (options.name !== undefined) {
-    return { name: options.name };
-  }
-
-  throw new Error('No initiator or name provided');
 }
