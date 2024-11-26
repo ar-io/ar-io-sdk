@@ -104,6 +104,11 @@ export type TransferOptions = WriteActionOptions & {
 
 export type DelegateStakeOptions = TransferOptions;
 
+export type RedelegateStakeOptions = TransferOptions & {
+  source?: string;
+  vaultId?: string;
+};
+
 export type OperatorStakeOptions = WriteActionOptions & {
   operatorStake?: string;
 };

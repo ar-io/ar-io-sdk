@@ -20,6 +20,7 @@ import { readFileSync } from 'fs';
 import {
   AoIORead,
   AoIOWrite,
+  AoRedelegateStakeParams,
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
@@ -32,6 +33,7 @@ import {
   PaginationParams,
   WriteOptions,
   fromB64Url,
+  mIOToken,
   sha256B64Url,
 } from '../node/index.js';
 import {
@@ -43,6 +45,7 @@ import {
   NameOptions,
   OperatorStakeOptions,
   PaginationOptions,
+  RedelegateStakeOptions,
   TransferOptions,
   UpdateGatewaySettingsOptions,
   VaultIdOptions,
@@ -342,6 +345,23 @@ export function requiredTargetAndQuantityFromOptions(
   return {
     target: options.target,
     ioQuantity: new IOToken(+options.quantity),
+  };
+}
+
+export function redelegateParamsFromOptions(
+  options: RedelegateStakeOptions,
+): AoRedelegateStakeParams & { stakeQty: mIOToken } {
+  const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
+  const source = options.source;
+  if (source === undefined) {
+    throw new Error('No source provided. Use --source');
+  }
+
+  return {
+    target,
+    source,
+    vaultId: options.vaultId,
+    stakeQty: ioQuantity.toMIO(),
   };
 }
 

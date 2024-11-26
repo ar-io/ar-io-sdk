@@ -46,8 +46,12 @@ export const optionMap = {
     description: 'The address to interact with',
   },
   target: {
-    alias: '-t, --target <target>',
+    alias: '--target <target>',
     description: 'The target address to interact with',
+  },
+  source: {
+    alias: '--source <source>',
+    description: 'The source address to interact with',
   },
   quantity: {
     alias: '-q, --quantity <quantity>',
@@ -253,6 +257,8 @@ export const operatorStakeOptions = [
   ...writeActionOptions,
   optionMap.operatorStake,
 ];
+
+export const redelegateStakeOptions = [...transferOptions, optionMap.source];
 
 export const delegateStakeOptions = transferOptions;
 

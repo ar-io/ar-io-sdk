@@ -41,6 +41,7 @@ import {
   optionMap,
   paginationAddressOptions,
   paginationOptions,
+  redelegateStakeOptions,
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
@@ -60,6 +61,7 @@ import {
   OperatorStakeOptions,
   PaginationAddressOptions,
   PaginationOptions,
+  RedelegateStakeOptions,
   WalletOptions,
 } from './types.js';
 import {
@@ -69,6 +71,7 @@ import {
   makeCommand,
   paginationParamsFromOptions,
   readIOFromOptions,
+  redelegateParamsFromOptions,
   requiredAddressFromOptions,
   requiredInitiatorFromOptions,
   requiredNameFromOptions,
@@ -579,7 +582,6 @@ makeCommand({
 
 // save-observations
 
-// increase-operator-stake
 makeCommand<OperatorStakeOptions>({
   name: 'increase-operator-stake',
   description: 'Increase operator stake',
@@ -591,7 +593,6 @@ makeCommand<OperatorStakeOptions>({
     }),
 });
 
-// decrease-operator-stake
 makeCommand<OperatorStakeOptions>({
   name: 'decrease-operator-stake',
   description: 'Decrease operator stake',
@@ -672,6 +673,32 @@ makeCommand<DecreaseDelegateStakeOptions>({
 });
 
 // redelegate-stake
+makeCommand<RedelegateStakeOptions>({
+  name: 'redelegate-stake',
+  description: 'Redelegate stake to another gateway',
+  options: redelegateStakeOptions,
+  action: async (options) => {
+    const io = writeIOFromOptions(options);
+    const params = redelegateParamsFromOptions(options);
+
+    // TODO: Could assert target gateway exists
+    // TODO: Could do assertion on source has enough stake to redelegate
+    // TODO: Could do assertions on source/target min delegate stakes are met
+
+    const result = await io.redelegateStake(params);
+
+    const output = {
+      sourceGateway: params.source,
+      targetGateway: params.target,
+      redelegateStakeResult: result,
+      message: `Successfully re-delegated stake of ${formatIOWithCommas(
+        params.stakeQty.toIO(),
+      )} IO from ${params.source} to ${params.target}`,
+    };
+
+    return output;
+  },
+});
 
 // buy-record
 

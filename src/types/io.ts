@@ -349,6 +349,13 @@ export type AoArNSAuctionPricesParams = {
   intervalMs?: number;
 };
 
+export type AoRedelegateStakeParams = {
+  target: string;
+  source: string;
+  stakeQty: number | mIOToken;
+  vaultId?: string;
+};
+
 export const validIntents = [
   'Buy-Record',
   'Extend-Lease',
@@ -594,12 +601,7 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
   redelegateStake(
-    params: {
-      target: string;
-      source: string;
-      stakeQty: number | mIOToken;
-      vaultId?: string;
-    },
+    params: AoRedelegateStakeParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
 }
