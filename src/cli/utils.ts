@@ -42,6 +42,7 @@ import {
   JsonSerializable,
   NameOptions,
   PaginationOptions,
+  TransferOptions,
   UpdateGatewaySettingsOptions,
   VaultIdOptions,
   WalletOptions,
@@ -325,5 +326,20 @@ export function gatewaySettingsFromOptions({
     note,
     port: port !== undefined ? +port : undefined,
     properties,
+  };
+}
+
+export function requiredTargetAndQuantityFromOptions(
+  options: TransferOptions,
+): { target: string; ioQuantity: IOToken } {
+  if (options.target === undefined) {
+    throw new Error('No target provided. Use --target');
+  }
+  if (options.quantity === undefined) {
+    throw new Error('No quantity provided. Use --quantity');
+  }
+  return {
+    target: options.target,
+    ioQuantity: new IOToken(+options.quantity),
   };
 }

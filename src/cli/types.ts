@@ -96,9 +96,11 @@ export type WriteActionOptions = WalletOptions & {
 };
 
 export type TransferOptions = WriteActionOptions & {
-  quantity: number | undefined;
+  quantity: string | undefined;
   target: string | undefined;
 };
+
+export type DelegateStakeOptions = TransferOptions;
 
 export type JoinNetworkOptions = WriteActionOptions &
   CLIOptionsFromAoParams<

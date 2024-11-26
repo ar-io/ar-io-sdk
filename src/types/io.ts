@@ -330,12 +330,13 @@ export type AoAddressParams = {
   address: WalletAddress;
 };
 
-export type AoBalanceParams = {
-  address: WalletAddress;
-};
+export type AoBalanceParams = AoAddressParams;
 
-export type AoPaginatedAddressParams = PaginationParams & {
-  address: WalletAddress;
+export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
+
+export type AoDelegateStakeParams = {
+  target: WalletAddress;
+  stakeQty: number | mIOToken;
 };
 
 export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;

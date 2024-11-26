@@ -21,12 +21,14 @@ import { program } from 'commander';
 import { intentsUsingYears, isValidIntent, validIntents } from '../types/io.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
+import { delegateStake } from './commands/delegateStake.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
 import {
   addressOptions,
   arNSAuctionPricesOptions,
+  delegateStakeOptions,
   epochOptions,
   getVaultOptions,
   globalOptions,
@@ -38,6 +40,8 @@ import {
   paginationOptions,
   tokenCostOptions,
   transferOptions,
+  updateGatewaySettingsOptions,
+  walletOptions,
 } from './options.js';
 import {
   AddressAndNameOptions,
@@ -50,6 +54,7 @@ import {
   NameOptions,
   PaginationAddressOptions,
   PaginationOptions,
+  WalletOptions,
 } from './types.js';
 import {
   addressFromOptions,
@@ -63,6 +68,7 @@ import {
   requiredNameFromOptions,
   requiredVaultIdFromOptions,
   runCommand,
+  writeIOFromOptions,
 } from './utils.js';
 
 makeCommand({
@@ -163,7 +169,7 @@ makeCommand<PaginationAddressOptions>({
 });
 
 makeCommand<PaginationAddressOptions>({
-  name: 'get-gateway-delegate-allow-list',
+  name: 'get-allowed-delegates',
   description: 'Get the allow list of a gateway delegate',
   options: paginationAddressOptions,
   action: async (o) => {
@@ -548,14 +554,27 @@ makeCommand({
   action: joinNetwork,
 });
 
+makeCommand<WalletOptions>({
+  name: 'leave-network',
+  description: 'Leave a gateway from the AR.IO network',
+  options: walletOptions,
+  // TODO: Add a confirmation prompt? Could get settings, display, then confirm prompt
+  action: (options) => writeIOFromOptions(options).leaveNetwork(),
+});
+
 makeCommand({
   name: 'update-gateway-settings',
   description: 'Update AR.IO gateway settings',
-  options: joinNetworkOptions,
+  options: updateGatewaySettingsOptions,
   action: updateGatewaySettings,
 });
 
-// delegate-stake
+makeCommand({
+  name: 'delegate-stake',
+  description: 'Delegate stake to a gateway',
+  options: delegateStakeOptions,
+  action: delegateStake,
+});
 
 // increase-operator-stake
 
