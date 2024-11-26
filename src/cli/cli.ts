@@ -35,6 +35,7 @@ import {
   initiatorOptions,
   joinNetworkOptions,
   nameOptions,
+  operatorStakeOptions,
   optionMap,
   paginationAddressOptions,
   paginationOptions,
@@ -52,6 +53,7 @@ import {
   GetVaultOptions,
   InitiatorOptions,
   NameOptions,
+  OperatorStakeOptions,
   PaginationAddressOptions,
   PaginationOptions,
   WalletOptions,
@@ -66,6 +68,7 @@ import {
   requiredAddressFromOptions,
   requiredInitiatorFromOptions,
   requiredNameFromOptions,
+  requiredOperatorStakeFromOptions,
   requiredVaultIdFromOptions,
   runCommand,
   writeIOFromOptions,
@@ -577,8 +580,28 @@ makeCommand({
 });
 
 // increase-operator-stake
+makeCommand<OperatorStakeOptions>({
+  name: 'increase-operator-stake',
+  description: 'Increase operator stake',
+  options: operatorStakeOptions,
+  action: (options) =>
+    // TODO: Can assert balance is sufficient
+    writeIOFromOptions(options).increaseOperatorStake({
+      increaseQty: requiredOperatorStakeFromOptions(options).toMIO(),
+    }),
+});
 
 // decrease-operator-stake
+makeCommand<OperatorStakeOptions>({
+  name: 'decrease-operator-stake',
+  description: 'Decrease operator stake',
+  options: operatorStakeOptions,
+  action: (options) =>
+    // TODO: Can assert stake is sufficient for action, and new target stake meets contract minimum
+    writeIOFromOptions(options).decreaseOperatorStake({
+      decreaseQty: requiredOperatorStakeFromOptions(options).toMIO(),
+    }),
+});
 
 // withdraw-stake
 

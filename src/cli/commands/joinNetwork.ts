@@ -15,13 +15,14 @@
  */
 import prompts from 'prompts';
 
-import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
+import { ArweaveSigner, mIOToken } from '../../node/index.js';
 import { JoinNetworkOptions } from '../types.js';
 import {
   formatIOWithCommas,
   gatewaySettingsFromOptions,
   jwkToAddress,
   requiredJwkFromOptions,
+  requiredOperatorStakeFromOptions,
   writeIOFromOptions,
   writeOptionsFromOptions,
 } from '../utils.js';
@@ -37,7 +38,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
     );
   }
 
-  const ioQuantity = new IOToken(+options.operatorStake);
+  const ioQuantity = requiredOperatorStakeFromOptions(options);
   const mIOOperatorStake = ioQuantity.toMIO().valueOf();
 
   const settings = {

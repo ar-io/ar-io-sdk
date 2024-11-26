@@ -102,6 +102,10 @@ export type TransferOptions = WriteActionOptions & {
 
 export type DelegateStakeOptions = TransferOptions;
 
+export type OperatorStakeOptions = WriteActionOptions & {
+  operatorStake?: string;
+};
+
 export type JoinNetworkOptions = WriteActionOptions &
   CLIOptionsFromAoParams<
     Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>

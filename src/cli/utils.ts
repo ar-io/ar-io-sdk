@@ -41,6 +41,7 @@ import {
   InitiatorOptions,
   JsonSerializable,
   NameOptions,
+  OperatorStakeOptions,
   PaginationOptions,
   TransferOptions,
   UpdateGatewaySettingsOptions,
@@ -342,4 +343,15 @@ export function requiredTargetAndQuantityFromOptions(
     target: options.target,
     ioQuantity: new IOToken(+options.quantity),
   };
+}
+
+export function requiredOperatorStakeFromOptions(
+  options: OperatorStakeOptions,
+): IOToken {
+  if (options.operatorStake === undefined) {
+    throw new Error(
+      'Operator stake is required. Please provide an --operator-stake denominated in IO',
+    );
+  }
+  return new IOToken(+options.operatorStake);
 }

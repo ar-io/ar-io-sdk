@@ -242,6 +242,11 @@ export const transferOptions = [
   optionMap.target,
 ];
 
+export const operatorStakeOptions = [
+  ...writeActionOptions,
+  optionMap.operatorStake,
+];
+
 export const delegateStakeOptions = transferOptions;
 
 export const updateGatewaySettingsOptions = [
