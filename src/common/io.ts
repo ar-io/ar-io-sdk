@@ -1001,6 +1001,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async decreaseOperatorStake(
     params: {
       decreaseQty: number | mIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1011,6 +1012,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         ...tags,
         { name: 'Action', value: 'Decrease-Operator-Stake' },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
     });
   }

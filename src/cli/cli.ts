@@ -26,8 +26,10 @@ import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
 import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
 import {
+  addressAndVaultIdOptions,
   addressOptions,
   arNSAuctionPricesOptions,
+  decreaseDelegateStakeOptions,
   delegateStakeOptions,
   epochOptions,
   getVaultOptions,
@@ -46,8 +48,10 @@ import {
 } from './options.js';
 import {
   AddressAndNameOptions,
+  AddressAndVaultIdOptions,
   AddressOptions,
   AuctionPricesOptions,
+  DecreaseDelegateStakeOptions,
   EpochOptions,
   GetTokenCostOptions,
   GetVaultOptions,
@@ -69,6 +73,7 @@ import {
   requiredInitiatorFromOptions,
   requiredNameFromOptions,
   requiredOperatorStakeFromOptions,
+  requiredTargetAndQuantityFromOptions,
   requiredVaultIdFromOptions,
   runCommand,
   writeIOFromOptions,
@@ -572,12 +577,7 @@ makeCommand({
   action: updateGatewaySettings,
 });
 
-makeCommand({
-  name: 'delegate-stake',
-  description: 'Delegate stake to a gateway',
-  options: delegateStakeOptions,
-  action: delegateStake,
-});
+// save-observations
 
 // increase-operator-stake
 makeCommand<OperatorStakeOptions>({
@@ -603,9 +603,87 @@ makeCommand<OperatorStakeOptions>({
     }),
 });
 
-// withdraw-stake
+makeCommand<AddressAndVaultIdOptions>({
+  name: 'instant-withdrawal',
+  description: 'Instantly withdraw stake from a vault',
+  options: addressAndVaultIdOptions,
+  action: (options) =>
+    // TODO: Could assert vault exists with stake
+    writeIOFromOptions(options).instantWithdrawal({
+      gatewayAddress: addressFromOptions(options),
+      vaultId: requiredVaultIdFromOptions(options),
+    }),
+});
+
+makeCommand<AddressAndVaultIdOptions>({
+  name: 'cancel-withdrawal',
+  description: 'Cancel a pending withdrawal',
+  options: addressAndVaultIdOptions,
+  action: (options) => {
+    const io = writeIOFromOptions(options);
+    const address = addressFromOptions(options);
+
+    // TODO: Could assert withdrawal exists
+
+    return io.cancelWithdrawal({
+      gatewayAddress: address,
+      vaultId: requiredVaultIdFromOptions(options),
+    });
+  },
+});
+
+makeCommand({
+  name: 'delegate-stake',
+  description: 'Delegate stake to a gateway',
+  options: delegateStakeOptions,
+  action: delegateStake,
+});
+
+makeCommand<DecreaseDelegateStakeOptions>({
+  name: 'decrease-delegate-stake',
+  description: 'Decrease delegated stake',
+  options: decreaseDelegateStakeOptions,
+  action: async (options) => {
+    const io = writeIOFromOptions(options);
+    const { target, ioQuantity } =
+      requiredTargetAndQuantityFromOptions(options);
+    const instant = options.instant ?? false;
+
+    // TODO: Could assert sender is a delegate with enough stake to decrease
+    // TODO: Could assert new target stake meets contract and target gateway minimums
+    // TODO: Could present confirmation prompt with any fee for instant withdrawal (50% of the stake is put back into protocol??)
+
+    const result = await io.decreaseDelegateStake({
+      target,
+      decreaseQty: ioQuantity.toMIO(),
+      instant,
+    });
+
+    const output = {
+      targetGateway: target,
+      decreaseDelegateStakeResult: result,
+      message: `Successfully decreased delegated stake of ${formatIOWithCommas(
+        ioQuantity,
+      )} IO to ${target}`,
+    };
+
+    return output;
+  },
+});
 
 // redelegate-stake
+
+// buy-record
+
+// upgrade-record
+
+// extend-lease
+
+// increase-undername-limit
+
+// submit-auction-bid
+
+// request-primary-name
 
 if (
   process.argv[1].includes('bin/ar.io') || // Running from global .bin

@@ -84,8 +84,10 @@ export type PaginationAddressOptions = AddressOptions & PaginationOptions;
 export type NameOptions = GlobalOptions &
   CLIOptionsFromAoParams<AoGetArNSNameParams>;
 
-export type GetVaultOptions = CLIOptionsFromAoParams<AoGetVaultParams> &
-  WalletOptions;
+export type AddressAndVaultIdOptions =
+  CLIOptionsFromAoParams<AoGetVaultParams> & WalletOptions;
+
+export type GetVaultOptions = AddressAndVaultIdOptions;
 
 export type VaultIdOptions = {
   vaultId?: string;
@@ -104,6 +106,10 @@ export type DelegateStakeOptions = TransferOptions;
 
 export type OperatorStakeOptions = WriteActionOptions & {
   operatorStake?: string;
+};
+
+export type DecreaseDelegateStakeOptions = DelegateStakeOptions & {
+  instant: boolean;
 };
 
 export type JoinNetworkOptions = WriteActionOptions &

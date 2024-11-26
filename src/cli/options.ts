@@ -173,6 +173,11 @@ export const optionMap = {
     alias: '--tags <tags...>',
     type: 'array',
   },
+  instant: {
+    alias: '--instant',
+    description: 'Use the instant transaction method',
+    type: 'boolean',
+  },
 };
 
 export const globalOptions = [
@@ -214,7 +219,9 @@ export const nameOptions = [optionMap.name];
 
 export const initiatorOptions = [optionMap.initiator];
 
-export const getVaultOptions = [...addressOptions, optionMap.vaultId];
+export const addressAndVaultIdOptions = [...addressOptions, optionMap.vaultId];
+
+export const getVaultOptions = addressAndVaultIdOptions;
 
 export const tokenCostOptions = [
   ...globalOptions,
@@ -248,6 +255,11 @@ export const operatorStakeOptions = [
 ];
 
 export const delegateStakeOptions = transferOptions;
+
+export const decreaseDelegateStakeOptions = [
+  ...delegateStakeOptions,
+  optionMap.instant,
+];
 
 export const updateGatewaySettingsOptions = [
   ...writeActionOptions,
