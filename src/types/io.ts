@@ -332,7 +332,7 @@ export type AoBalanceParams = {
   address: WalletAddress;
 };
 
-export type AoPaginatedAddressParams = PaginationParams<AoAddressParams> & {
+export type AoPaginatedAddressParams = PaginationParams & {
   address: WalletAddress;
 };
 
@@ -393,6 +393,9 @@ export interface AoIORead {
   }: AoAddressParams & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
     PaginationResult<AoGatewayDelegateWithAddress>
   >;
+  getGatewayDelegateAllowList(
+    params: AoPaginatedAddressParams,
+  ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   getGateways(
     params?: PaginationParams<AoGatewayWithAddress>,

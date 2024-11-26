@@ -54,6 +54,7 @@ import {
   AoGatewayVault,
   AoIORead,
   AoIOWrite,
+  AoPaginatedAddressParams,
   AoRegistrationFees,
   AoVaultData,
   AoWalletVault,
@@ -310,6 +311,19 @@ export class IOReadable implements AoIORead {
         { name: 'Action', value: 'Paginated-Delegates' },
         { name: 'Address', value: address },
         ...paginationParamsToTags<AoGatewayDelegateWithAddress>(pageParams),
+      ],
+    });
+  }
+
+  async getGatewayDelegateAllowList({
+    address,
+    ...pageParams
+  }: AoPaginatedAddressParams): Promise<PaginationResult<WalletAddress>> {
+    return this.process.read<PaginationResult<WalletAddress>>({
+      tags: [
+        { name: 'Action', value: 'Paginated-Allowed-Delegates' },
+        { name: 'Address', value: address },
+        ...paginationParamsToTags(pageParams),
       ],
     });
   }
@@ -600,15 +614,9 @@ export class IOReadable implements AoIORead {
   }
 
   async getAllowedDelegates(
-    params: PaginationParams & { address: WalletAddress },
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>> {
-    return this.process.read<PaginationResult<WalletAddress>>({
-      tags: [
-        { name: 'Action', value: 'Paginated-Allowed-Delegates' },
-        { name: 'Address', value: params.address },
-        ...paginationParamsToTags(params),
-      ],
-    });
+    return this.getGatewayDelegateAllowList(params);
   }
 
   async getGatewayVaults(
