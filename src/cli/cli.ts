@@ -29,6 +29,7 @@ import {
   addressAndVaultIdOptions,
   addressOptions,
   arNSAuctionPricesOptions,
+  buyRecordOptions,
   decreaseDelegateStakeOptions,
   delegateStakeOptions,
   epochOptions,
@@ -700,7 +701,17 @@ makeCommand<RedelegateStakeOptions>({
   },
 });
 
-// buy-record
+makeCommand({
+  name: 'buy-record',
+  description: 'Buy a record',
+  options: buyRecordOptions,
+  action: async (options) => {
+    const io = writeIOFromOptions(options);
+    console.log('io', io);
+
+    return { message: 'TODO' };
+  },
+});
 
 // upgrade-record
 

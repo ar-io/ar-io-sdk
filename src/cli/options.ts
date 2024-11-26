@@ -32,6 +32,10 @@ export const optionMap = {
     description: 'Run against the AR.IO devnet process',
     type: 'boolean',
   },
+  ioProcessId: {
+    alias: '--io-process-id',
+    description: 'Run against a custom AR.IO process id',
+  },
   processId: {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
@@ -187,8 +191,7 @@ export const optionMap = {
 export const globalOptions = [
   optionMap.dev,
   optionMap.debug,
-  optionMap.processId,
-  optionMap.skipConfirmation,
+  optionMap.ioProcessId,
 ];
 
 export const walletOptions = [
@@ -196,6 +199,12 @@ export const walletOptions = [
   optionMap.walletFile,
   // optionMap.mnemonic,
   optionMap.privateKey,
+];
+
+export const writeActionOptions = [
+  ...walletOptions,
+  optionMap.skipConfirmation,
+  optionMap.tags,
 ];
 
 export const paginationOptions = [
@@ -245,8 +254,6 @@ export const arNSAuctionPricesOptions = [
   optionMap.intervalMs,
 ];
 
-export const writeActionOptions = [...walletOptions, optionMap.tags];
-
 export const transferOptions = [
   ...writeActionOptions,
   optionMap.quantity,
@@ -286,4 +293,12 @@ export const updateGatewaySettingsOptions = [
 export const joinNetworkOptions = [
   ...updateGatewaySettingsOptions,
   optionMap.operatorStake,
+];
+
+export const buyRecordOptions = [
+  ...writeActionOptions,
+  optionMap.name,
+  optionMap.quantity,
+  optionMap.years,
+  optionMap.processId,
 ];

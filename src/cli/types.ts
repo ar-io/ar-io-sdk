@@ -26,14 +26,18 @@ import {
 export type GlobalOptions = {
   dev: boolean;
   debug: boolean;
-  processId: string | undefined;
-  skipConfirmation: boolean;
+  processId?: string;
 };
 
 export type WalletOptions = GlobalOptions & {
-  walletFile: string | undefined;
-  // mnemonic: string | undefined;
-  privateKey: string | undefined;
+  walletFile?: string;
+  // mnemonic?: string;
+  privateKey?: string;
+};
+
+export type WriteActionOptions = WalletOptions & {
+  tags?: string[];
+  skipConfirmation?: boolean;
 };
 
 /**
@@ -93,13 +97,9 @@ export type VaultIdOptions = {
   vaultId?: string;
 };
 
-export type WriteActionOptions = WalletOptions & {
-  tags: string[] | undefined;
-};
-
 export type TransferOptions = WriteActionOptions & {
-  quantity: string | undefined;
-  target: string | undefined;
+  quantity?: string;
+  target?: string;
 };
 
 export type DelegateStakeOptions = TransferOptions;
