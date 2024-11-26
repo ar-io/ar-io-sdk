@@ -20,6 +20,7 @@ import { readFileSync } from 'fs';
 import {
   AoIORead,
   AoIOWrite,
+  AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
   EpochInput,
@@ -41,6 +42,7 @@ import {
   JsonSerializable,
   NameOptions,
   PaginationOptions,
+  UpdateGatewaySettingsOptions,
   VaultIdOptions,
   WalletOptions,
   WriteActionOptions,
@@ -288,5 +290,40 @@ export function writeOptionsFromOptions<O extends WriteActionOptions>(
 
   return {
     tags,
+  };
+}
+
+export function gatewaySettingsFromOptions({
+  disableDelegatedStaking,
+  disableAutoStake,
+  delegateRewardShareRatio,
+  fqdn,
+  label,
+  minDelegatedStake,
+  note,
+  observerAddress,
+  port,
+  properties,
+  allowedDelegates,
+}: UpdateGatewaySettingsOptions): AoUpdateGatewaySettingsParams {
+  return {
+    observerAddress,
+    allowDelegatedStaking:
+      disableDelegatedStaking === undefined
+        ? undefined
+        : !disableDelegatedStaking,
+    autoStake: disableAutoStake === undefined ? undefined : !disableAutoStake,
+    delegateRewardShareRatio:
+      delegateRewardShareRatio !== undefined
+        ? +delegateRewardShareRatio
+        : undefined,
+    allowedDelegates,
+    fqdn,
+    label,
+    minDelegatedStake:
+      minDelegatedStake !== undefined ? +minDelegatedStake : undefined,
+    note,
+    port: port !== undefined ? +port : undefined,
+    properties,
   };
 }

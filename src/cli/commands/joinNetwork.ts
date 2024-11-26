@@ -19,6 +19,7 @@ import { ArweaveSigner, IOToken, mIOToken } from '../../node/index.js';
 import { JoinNetworkOptions } from '../types.js';
 import {
   formatIOWithCommas,
+  gatewaySettingsFromOptions,
   jwkToAddress,
   requiredJwkFromOptions,
   writeIOFromOptions,
@@ -30,59 +31,28 @@ export async function joinNetwork(options: JoinNetworkOptions) {
   const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options, new ArweaveSigner(jwk));
 
-  const {
-    disableDelegatedStaking,
-    disableAutoStake,
-    delegateRewardShareRatio,
-    fqdn,
-    label,
-    minDelegatedStake,
-    note,
-    observerAddress,
-    port,
-    properties,
-    operatorStake,
-    allowedDelegates,
-  } = options;
-
-  if (label === undefined) {
-    throw new Error(
-      'Label is required. Please provide a --label for your node.',
-    );
-  }
-  if (fqdn === undefined) {
-    throw new Error('FQDN is required. Please provide a --fqdn for your node.');
-  }
-  if (operatorStake === undefined) {
+  if (options.operatorStake === undefined) {
     throw new Error(
       'Operator stake is required. Please provide a --operator-stake denominated in IO for your node.',
     );
   }
 
-  const ioQuantity = new IOToken(+operatorStake);
+  const ioQuantity = new IOToken(+options.operatorStake);
   const mIOOperatorStake = ioQuantity.toMIO().valueOf();
 
   const settings = {
-    observerAddress,
+    ...gatewaySettingsFromOptions(options),
     operatorStake: mIOOperatorStake,
-    allowDelegatedStaking:
-      disableDelegatedStaking === undefined
-        ? undefined
-        : !disableDelegatedStaking,
-    autoStake: disableAutoStake === undefined ? undefined : !disableAutoStake,
-    delegateRewardShareRatio:
-      delegateRewardShareRatio !== undefined
-        ? +delegateRewardShareRatio
-        : undefined,
-    allowedDelegates,
-    fqdn,
-    label,
-    minDelegatedStake:
-      minDelegatedStake !== undefined ? +minDelegatedStake : undefined,
-    note,
-    port: port !== undefined ? +port : undefined,
-    properties,
   };
+
+  if (settings.label === undefined) {
+    throw new Error(
+      'Label is required. Please provide a --label for your node.',
+    );
+  }
+  if (settings.fqdn === undefined) {
+    throw new Error('FQDN is required. Please provide a --fqdn for your node.');
+  }
 
   if (!options.skipConfirmation) {
     const balance = await io.getBalance({ address });

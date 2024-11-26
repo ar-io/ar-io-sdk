@@ -318,7 +318,9 @@ export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
     observerAddress?: WalletAddress;
   };
 
-export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
+export type AoUpdateGatewaySettingsParams = AtLeastOne<
+  Omit<AoJoinNetworkParams, 'operatorStake'>
+>;
 
 export type AoGetArNSNameParams = {
   name: string;

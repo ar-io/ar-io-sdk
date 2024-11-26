@@ -102,7 +102,7 @@ export const optionMap = {
   allowedDelegates: {
     alias: '--allowed-delegates <allowedDelegates...>',
     description:
-      'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake',
+      'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake unless delegating is explicitly disallowed by the gateway',
     type: 'array',
   },
   skipConfirmation: {
@@ -242,11 +242,11 @@ export const transferOptions = [
   optionMap.target,
 ];
 
-export const joinNetworkOptions = [
+export const updateGatewaySettingsOptions = [
   ...writeActionOptions,
-  optionMap.operatorStake,
   optionMap.disableAutoStake,
   optionMap.disableDelegatedStaking,
+  optionMap.allowedDelegates,
   optionMap.minDelegatedStake,
   optionMap.delegateRewardShareRatio,
   optionMap.label,
@@ -256,4 +256,9 @@ export const joinNetworkOptions = [
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
+];
+
+export const joinNetworkOptions = [
+  ...updateGatewaySettingsOptions,
+  optionMap.operatorStake,
 ];

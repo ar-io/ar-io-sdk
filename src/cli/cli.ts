@@ -23,6 +23,7 @@ import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { joinNetwork } from './commands/joinNetwork.js';
 import { transfer } from './commands/transfer.js';
+import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
 import {
   addressOptions,
   arNSAuctionPricesOptions,
@@ -46,11 +47,9 @@ import {
   GetTokenCostOptions,
   GetVaultOptions,
   InitiatorOptions,
-  JoinNetworkOptions,
   NameOptions,
   PaginationAddressOptions,
   PaginationOptions,
-  TransferOptions,
 } from './types.js';
 import {
   addressFromOptions,
@@ -535,18 +534,25 @@ makeCommand<PaginationAddressOptions>({
   },
 });
 
-makeCommand<TransferOptions>({
+makeCommand({
   name: 'transfer',
   description: 'Transfer IO to another address',
   options: transferOptions,
-  action: (o) => transfer(o),
+  action: transfer,
 });
 
-makeCommand<JoinNetworkOptions>({
+makeCommand({
   name: 'join-network',
-  description: 'Join the AR.IO network',
+  description: 'Join a gateway to the AR.IO network',
   options: joinNetworkOptions,
-  action: (options) => joinNetwork(options),
+  action: joinNetwork,
+});
+
+makeCommand({
+  name: 'update-gateway-settings',
+  description: 'Update AR.IO gateway settings',
+  options: joinNetworkOptions,
+  action: updateGatewaySettings,
 });
 
 // delegate-stake
@@ -556,8 +562,6 @@ makeCommand<JoinNetworkOptions>({
 // decrease-operator-stake
 
 // withdraw-stake
-
-// update-gateway-settings
 
 // redelegate-stake
 

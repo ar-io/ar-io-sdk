@@ -109,6 +109,11 @@ export type JoinNetworkOptions = WriteActionOptions &
     skipConfirmation?: boolean;
   };
 
+export type UpdateGatewaySettingsOptions = Omit<
+  JoinNetworkOptions,
+  'operatorStake'
+>;
+
 export type JsonSerializable =
   | string
   | number
