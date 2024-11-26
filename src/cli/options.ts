@@ -57,14 +57,14 @@ export const optionMap = {
     alias: '-q, --quantity <quantity>',
     description: 'The quantity of IO to interact with',
   },
-  disableAutoStake: {
-    alias: '--disable-auto-stake',
-    description: 'Disallow auto-staking of operator rewards',
+  autoStake: {
+    alias: '--auto-stake',
+    description: 'Enable auto-staking of operator rewards',
     type: 'boolean',
   },
-  disableDelegatedStaking: {
-    alias: '--disable-delegated-staking',
-    description: 'Disallow delegating stake to the gateway',
+  allowDelegatedStaking: {
+    alias: '--allow-delegated-staking',
+    description: 'Allow delegating stake to the gateway',
     type: 'boolean',
   },
   minDelegatedStake: {
@@ -269,8 +269,8 @@ export const decreaseDelegateStakeOptions = [
 
 export const updateGatewaySettingsOptions = [
   ...writeActionOptions,
-  optionMap.disableAutoStake,
-  optionMap.disableDelegatedStaking,
+  optionMap.autoStake,
+  optionMap.allowDelegatedStaking,
   optionMap.allowedDelegates,
   optionMap.minDelegatedStake,
   optionMap.delegateRewardShareRatio,

@@ -86,7 +86,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
   const output = {
     joinNetworkResult: result,
     joinedAddress: address,
-    message: `Congratulations!\nYou have successfully joined the AR.IO network  (;`,
+    message: `Congratulations! You have successfully joined the AR.IO network  (;`,
   };
 
   return output;

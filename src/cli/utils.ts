@@ -299,8 +299,8 @@ export function writeOptionsFromOptions<O extends WriteActionOptions>(
 }
 
 export function gatewaySettingsFromOptions({
-  disableDelegatedStaking,
-  disableAutoStake,
+  allowDelegatedStaking,
+  autoStake,
   delegateRewardShareRatio,
   fqdn,
   label,
@@ -313,11 +313,8 @@ export function gatewaySettingsFromOptions({
 }: UpdateGatewaySettingsOptions): AoUpdateGatewaySettingsParams {
   return {
     observerAddress,
-    allowDelegatedStaking:
-      disableDelegatedStaking === undefined
-        ? undefined
-        : !disableDelegatedStaking,
-    autoStake: disableAutoStake === undefined ? undefined : !disableAutoStake,
+    allowDelegatedStaking,
+    autoStake,
     delegateRewardShareRatio:
       delegateRewardShareRatio !== undefined
         ? +delegateRewardShareRatio

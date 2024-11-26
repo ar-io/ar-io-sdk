@@ -118,13 +118,7 @@ export type DecreaseDelegateStakeOptions = DelegateStakeOptions & {
 };
 
 export type JoinNetworkOptions = WriteActionOptions &
-  CLIOptionsFromAoParams<
-    Omit<AoJoinNetworkParams, 'allowDelegatedStaking' | 'autoStake'>
-  > & {
-    disableDelegatedStaking?: boolean;
-    disableAutoStake?: boolean;
-    skipConfirmation?: boolean;
-  };
+  CLIOptionsFromAoParams<AoJoinNetworkParams>;
 
 export type UpdateGatewaySettingsOptions = Omit<
   JoinNetworkOptions,
