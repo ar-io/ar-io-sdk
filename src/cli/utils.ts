@@ -116,9 +116,12 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   return appliedCommand;
 }
 
-function processIdFromOptions({ processId, dev }: GlobalCLIOptions): string {
-  return processId !== undefined
-    ? processId
+function ioProcessIdFromOptions({
+  ioProcessId,
+  dev,
+}: GlobalCLIOptions): string {
+  return ioProcessId !== undefined
+    ? ioProcessId
     : dev
       ? IO_DEVNET_PROCESS_ID
       : IO_TESTNET_PROCESS_ID;
@@ -163,7 +166,7 @@ export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
   setLoggerIfDebug(options);
 
   return IO.init({
-    processId: processIdFromOptions(options),
+    processId: ioProcessIdFromOptions(options),
   });
 }
 
@@ -175,7 +178,7 @@ export function writeIOFromOptions(
   setLoggerIfDebug(options);
 
   return IO.init({
-    processId: processIdFromOptions(options),
+    processId: ioProcessIdFromOptions(options),
     signer,
   });
 }

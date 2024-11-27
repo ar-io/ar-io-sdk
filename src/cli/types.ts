@@ -30,7 +30,7 @@ import {
 export type GlobalCLIOptions = {
   dev: boolean;
   debug: boolean;
-  processId?: string;
+  ioProcessId?: string;
 };
 
 export type WalletCLIOptions = GlobalCLIOptions & {
