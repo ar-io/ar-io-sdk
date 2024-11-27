@@ -23,52 +23,57 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [IOToken & mIOToken](#iotoken--miotoken)
   - [Converting IO to mIO](#converting-io-to-mio)
 - [IO Process](#io-process)
-  - [APIs](#apis)
+  - [General](#general)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
     - [`getTokenSupply()`](#gettokensupply)
     - [`getBalance({ address })`](#getbalance-address-)
     - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
+    - [`transfer({ target, qty })`](#transfer-target-qty-)
+  - [Vaults](#vaults)
     - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
+  - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
-    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
-    - [`getArNSRecord({ name })`](#getarnsrecord-name-)
-    - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
-    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
-    - [`getArNSAuction({ name })`](#getarnsauction-name-)
-    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
-    - [`getDemandFactor()`](#getdemandfactor)
-    - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
-    - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
-    - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
-    - [`getCurrentEpoch()`](#getcurrentepoch)
-    - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
-    - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`leaveNetwork()`](#leavenetwork)
-    - [`updateGatewaySettings(gatewaySettings)`](#updategatewaysettingsgatewaysettings)
+    - [`updateGatewaySettings({ ...settings })`](#updategatewaysettings-settings-)
     - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
     - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
     - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
+    - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
+    - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
     - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
-    - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
-    - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
-    - [`transfer({ target, qty })`](#transfer-target-qty-)
+    - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
+    - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
+  - [Arweave Name System (ArNS)](#arweave-name-system-arns)
+    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
+    - [`getArNSRecord({ name })`](#getarnsrecord-name-)
+    - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
-    - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
+    - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
+    - [`getDemandFactor()`](#getdemandfactor)
+    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
+    - [`getArNSAuction({ name })`](#getarnsauction-name-)
+    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
     - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+  - [Epochs](#epochs)
+    - [`getCurrentEpoch()`](#getcurrentepoch)
+    - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
+    - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
+    - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
+    - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
+    - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
+  - [Primary Names](#primary-names)
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
     - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
     - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
-    - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
-    - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
   - [ANT APIs](#ant-apis)
@@ -99,7 +104,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Pagination](#pagination)
 - [Resources](#resources)
   - [Bundling](#bundling)
-  - [Gateways](#gateways)
+  - [Gateways](#gateways-1)
   - [Running a Gateway](#running-a-gateway)
   - [AO](#ao)
 - [Developers](#developers)
@@ -272,7 +277,7 @@ const ioValue = new mIOToken(mIOValue).toIO();
 
 ## IO Process
 
-### APIs
+### General
 
 #### `init({ signer })`
 
@@ -411,7 +416,27 @@ const balances = await io.getBalances({
 ```
 
 </details>
- 
+
+#### `transfer({ target, qty })`
+
+Transfers `mIO` to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.transfer(
+  {
+    target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    qty: new IOToken(1000).toMIO(),
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+### Vaults
+
 #### `getVault({ address, vaultId })`
 
 Retrieves the locked-balance user vault of the IO process by the specified wallet address and vault ID.
@@ -482,6 +507,8 @@ const vaults = await io.getVaults({
 ```
 
 </details>
+
+### Gateways
 
 #### `getGateway({ address })`
 
@@ -595,6 +622,366 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 
 </details>
 
+#### `joinNetwork(params)`
+
+Joins a gateway to the ar.io network via its associated wallet.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.joinNetwork(
+  {
+    qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
+    autoStake: true, // auto-stake operator rewards to the gateway
+    allowDelegatedStaking: true, // allows delegated staking
+    minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
+    delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
+    label: 'john smith', // min 1, max 64 characters
+    note: 'The example gateway', // max 256 characters
+    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
+    observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
+    fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
+    port: 443, // port number
+    protocol: 'https', // only 'https' is supported
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `leaveNetwork()`
+
+Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `IO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.leaveNetwork(
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `updateGatewaySettings({ ...settings })`
+
+Writes new gateway settings to the callers gateway configuration.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.updateGatewaySettings(
+  {
+    // any other settings you want to update
+    minDelegatedStake: new IOToken(100).toMIO(),
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `increaseDelegateStake({ target, qty })`
+
+Increases the callers stake on the target gateway.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.increaseDelegateStake(
+  {
+    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    qty: new IOToken(100).toMIO(),
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `decreaseDelegateStake({ target, qty, instant })`
+
+Decreases the callers stake on the target gateway. Can instantly decrease stake by setting instant to `true`.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseDelegateStake(
+  {
+    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+```
+
+Pay the early withdrawal fee and withdraw instantly.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseDelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  qty: new IOToken(100).toMIO(),
+  instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
+});
+```
+
+#### `getDelegations({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getDelegations({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
+  limit: 2,
+  sortBy: 'startTimestamp',
+  sortOrder: 'asc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "asc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 2,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "type": "stake",
+      "startTimestamp": 1727815440632,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1727815440632",
+      "balance": 1383212512
+    },
+    {
+      "type": "vault",
+      "startTimestamp": 1730996691117,
+      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117",
+      "vaultId": "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g",
+      "balance": 50000000,
+      "endTimestamp": 1733588691117
+    }
+  ],
+  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
+}
+```
+
+</details>
+
+#### `instantWithdrawal({ gatewayAddress, vaultId })`
+
+Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+// removes a delegated vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
+  {
+    // gateway address where delegate vault exists
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // delegated vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+// removes an operator vault from a gateway
+const { id: txId } = await io.instantWithdrawal(
+  {
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+);
+```
+
+#### `cancelWithdrawal({ gatewayAddress, vaultId })`
+
+Cancels an existing vault on a gateway. The vaulted stake will be returned to the callers stake. If no `gatewayAddress` is provided, the signer's address will be used.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+// cancels a delegated vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
+  {
+    // gateway address where vault exists
+    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    // vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+// cancels an operator vault from a gateway
+const { id: txId } = await io.cancelWithdrawal(
+  {
+    // operator vault id to cancel
+    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  },
+);
+```
+
+#### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
+
+```typescript
+const io = IO.init();
+const allowedDelegates = await io.getAllowedDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 4,
+  "limit": 100,
+  "items": [
+    "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+    "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
+    "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
+    "31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8"
+  ]
+}
+```
+
+</details>
+
+#### `getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
+
+```typescript
+const io = IO.init();
+const vaults = await io.getGatewayVaults({
+  address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": false,
+  "totalItems": 1,
+  "limit": 100,
+  "sortBy": "endTimestamp",
+  "items": [
+    {
+      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_1728067635857",
+      "startTimestamp": 1728067635857,
+      "balance": 50000000000,
+      "vaultId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "endTimestamp": 1735843635857
+    }
+  ]
+}
+```
+
+</details>
+
+#### `increaseOperatorStake({ qty })`
+
+Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.increaseOperatorStake(
+  {
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+```
+
+#### `decreaseOperatorStake({ qty })`
+
+Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.decreaseOperatorStake(
+  {
+    qty: new IOToken(100).toMIO(),
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
+```
+
+#### `redelegateStake({ target, source, stakeQty, vaultId })`
+
+Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
+
+e.g: If 1000 mIO is redelegated and the fee rate is 10%, the fee will be 100 mIO. Resulting in 900 mIO being redelegated to the new gateway and 100 mIO being deducted back to the protocol balance.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await io.redelegateStake({
+  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+  stakeQty: new IOToken(1000).toMIO(),
+  vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+});
+```
+
+#### `getRedelegationFee({ address })`
+
+Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
+
+```typescript
+const io = IO.init();
+
+const fee = await io.getRedelegationFee({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "redelegationFeeRate": 10,
+  "feeResetTimestamp": 1730996691117
+}
+```
+
+</details>
+
+### Arweave Name System (ArNS)
+
 #### `buyRecord({ name, type, years, processId })`
 
 Purchases a new ArNS record with the specified name, type, and duration.
@@ -706,6 +1093,81 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
   "sortBy": "startTimestamp",
   "sortOrder": "desc"
 }
+```
+
+</details>
+
+#### `increaseUndernameLimit({ name, qty })`
+
+Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.increaseUndernameLimit(
+  {
+    name: 'ar-io',
+    qty: 420,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `extendLease({ name, years })`
+
+Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.extendLease(
+  {
+    name: 'ar-io',
+    years: 1,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `getTokenCost({ intent, ...args })`
+
+Calculates the price in mIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
+
+```typescript
+const price = await io
+  .getTokenCost({
+    intent: 'Buy-Record',
+    name: 'ar-io',
+    type: 'permabuy',
+  })
+  .then((p) => new mIOToken(p).toIO()); // convert to IO for readability
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+1642.34
+```
+
+</details>
+
+#### `getDemandFactor()`
+
+Retrieves the current demand factor of the network. The demand factor is a multiplier applied to the cost of ArNS interactions based on the current network demand.
+
+```typescript
+const io = IO.init();
+const demandFactor = await io.getDemandFactor();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+1.05256
 ```
 
 </details>
@@ -840,31 +1302,41 @@ const priceCurve = await io.getArNSAuctionPrices({
 
 </details>
 
-#### `getDemandFactor()`
+#### `submitAuctionBid({ name, type, years, processId })`
 
-Retrieves the current demand factor of the network. The demand factor is a multiplier applied to the cost of ArNS interactions based on the current network demand.
+Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+
+const auction = await io.getArNSAuction({ name: 'permalink' });
+
+// check the current price is under some threshold
+if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
+  const { id: txId } = await io.submitAuctionBid(
+    {
+      name: 'permalink',
+      type: 'lease',
+      years: 1,
+      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    },
+    // optional additional tags
+    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  );
+}
+```
+
+### Epochs
+
+#### `getCurrentEpoch()`
+
+Returns the current epoch data.
 
 ```typescript
 const io = IO.init();
-const demandFactor = await io.getDemandFactor();
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-1.05256
-```
-
-</details>
-
-#### `getObservations({ epochIndex })`
-
-Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
-
-```typescript
-const io = IO.init();
-const observations = await io.getObservations();
+const epoch = await io.getCurrentEpoch();
 ```
 
 <details>
@@ -872,53 +1344,40 @@ const observations = await io.getObservations();
 
 ```json
 {
-  "0": {
+  "epochIndex": 0,
+  "startTimestamp": 1720720621424,
+  "endTimestamp": 1752256702026,
+  "startHeight": 1350700,
+  "distributionTimestamp": 1711122739,
+  "observations": {
     "failureSummaries": {
       "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
-        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA",
         "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
       ]
     },
     "reports": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
-      "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
-      "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
-      "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4"
     }
-  }
-}
-```
-
-</details>
-
-#### `getDistributions({ epochIndex })`
-
-Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
-
-```typescript
-const io = IO.init();
-const distributions = await io.getDistributions({ epochIndex: 0 });
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "totalEligibleGateways": 1,
-  "totalEligibleRewards": 100000000,
-  "totalEligibleObserverReward": 100000000,
-  "totalEligibleGatewayReward": 100000000,
-  "totalDistributedRewards": 100000000,
-  "distributedTimestamp": 1720720621424,
-  "rewards": {
-    "eligible": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
-        "operatorReward": 100000000,
-        "delegateRewards": {}
-      }
-    },
-    "distributed": {
+  },
+  "prescribedNames": ["ardrive", "ar-io", "arweave", "fwd", "ao"],
+  "prescribedObservers": [
+    {
+      "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
+      "stake": 10000000000,
+      "start": 1292450,
+      "stakeWeight": 1,
+      "tenureWeight": 0.4494598765432099,
+      "gatewayRewardRatioWeight": 1,
+      "observerRewardRatioWeight": 1,
+      "compositeWeight": 0.4494598765432099,
+      "normalizedCompositeWeight": 0.002057032496835938
+    }
+  ],
+  "distributions": {
+    "distributedTimestamp": 1711122739,
+    "totalEligibleRewards": 100000000,
+    "rewards": {
       "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
     }
   }
@@ -995,13 +1454,13 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
 
 </details>
 
-#### `getCurrentEpoch()`
+#### `getObservations({ epochIndex })`
 
-Returns the current epoch data.
+Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
 const io = IO.init();
-const epoch = await io.getCurrentEpoch();
+const observations = await io.getObservations();
 ```
 
 <details>
@@ -1009,44 +1468,76 @@ const epoch = await io.getCurrentEpoch();
 
 ```json
 {
-  "epochIndex": 0,
-  "startTimestamp": 1720720621424,
-  "endTimestamp": 1752256702026,
-  "startHeight": 1350700,
-  "distributionTimestamp": 1711122739,
-  "observations": {
+  "0": {
     "failureSummaries": {
       "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA",
         "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
       ]
     },
     "reports": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4"
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
+      "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
+      "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
+      "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
     }
-  },
-  "prescribedNames": ["ardrive", "ar-io", "arweave", "fwd", "ao"],
-  "prescribedObservers": [
-    {
-      "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "stake": 10000000000,
-      "start": 1292450,
-      "stakeWeight": 1,
-      "tenureWeight": 0.4494598765432099,
-      "gatewayRewardRatioWeight": 1,
-      "observerRewardRatioWeight": 1,
-      "compositeWeight": 0.4494598765432099,
-      "normalizedCompositeWeight": 0.002057032496835938
-    }
-  ],
-  "distributions": {
-    "distributedTimestamp": 1711122739,
-    "totalEligibleRewards": 100000000,
-    "rewards": {
+  }
+}
+```
+
+</details>
+
+#### `getDistributions({ epochIndex })`
+
+Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
+
+```typescript
+const io = IO.init();
+const distributions = await io.getDistributions({ epochIndex: 0 });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "totalEligibleGateways": 1,
+  "totalEligibleRewards": 100000000,
+  "totalEligibleObserverReward": 100000000,
+  "totalEligibleGatewayReward": 100000000,
+  "totalDistributedRewards": 100000000,
+  "distributedTimestamp": 1720720621424,
+  "rewards": {
+    "eligible": {
+      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
+        "operatorReward": 100000000,
+        "delegateRewards": {}
+      }
+    },
+    "distributed": {
       "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
     }
   }
 }
+```
+
+#### `saveObservations({ reportTxId, failedGateways })`
+
+Saves the observations of the current epoch. Requires `signer` to be provided on `IO.init` to sign the transaction.
+
+_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+
+```typescript
+const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await io.saveObservations(
+  {
+    reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+    failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
+  },
+  {
+    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+  },
+);
 ```
 
 </details>
@@ -1082,442 +1573,7 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 
 </details>
 
-#### `getTokenCost({ intent, ...args })`
-
-Calculates the price in mIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
-
-```typescript
-const price = await io
-  .getTokenCost({
-    intent: 'Buy-Record',
-    name: 'ar-io',
-    type: 'permabuy',
-  })
-  .then((p) => new mIOToken(p).toIO()); // convert to IO for readability
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-1642.34
-```
-
-</details>
-
-#### `joinNetwork(params)`
-
-Joins a gateway to the ar.io network via its associated wallet.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.joinNetwork(
-  {
-    qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
-    autoStake: true, // auto-stake operator rewards to the gateway
-    allowDelegatedStaking: true, // allows delegated staking
-    minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
-    delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
-    label: 'john smith', // min 1, max 64 characters
-    note: 'The example gateway', // max 256 characters
-    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
-    observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
-    fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
-    port: 443, // port number
-    protocol: 'https', // only 'https' is supported
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `leaveNetwork()`
-
-Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `IO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-
-const { id: txId } = await io.leaveNetwork(
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `updateGatewaySettings(gatewaySettings)`
-
-Writes new gateway settings to the callers gateway configuration.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.updateGatewaySettings(
-  {
-    // any other settings you want to update
-    minDelegatedStake: new IOToken(100).toMIO(),
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `increaseDelegateStake({ target, qty })`
-
-Increases the callers stake on the target gateway.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseDelegateStake(
-  {
-    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    qty: new IOToken(100).toMIO(),
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `decreaseDelegateStake({ target, qty, instant })`
-
-Decreases the callers stake on the target gateway. Can instantly decrease stake by setting instant to `true`.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseDelegateStake(
-  {
-    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    qty: new IOToken(100).toMIO(),
-  },
-  {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-  },
-);
-```
-
-Pay the early withdrawal fee and withdraw instantly.
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseDelegateStake({
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO(),
-  instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
-});
-```
-
-#### `getDelegations({ address, cursor, limit, sortBy, sortOrder })`
-
-Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
-
-```typescript
-const io = IO.init();
-const vaults = await io.getDelegations({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
-  limit: 2,
-  sortBy: 'startTimestamp',
-  sortOrder: 'asc',
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "sortOrder": "asc",
-  "hasMore": true,
-  "totalItems": 95,
-  "limit": 2,
-  "sortBy": "startTimestamp",
-  "items": [
-    {
-      "type": "stake",
-      "startTimestamp": 1727815440632,
-      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1727815440632",
-      "balance": 1383212512
-    },
-    {
-      "type": "vault",
-      "startTimestamp": 1730996691117,
-      "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
-      "delegationId": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117",
-      "vaultId": "_sGDS7X1hyLCVpfe40GWioH9BSOb7f0XWbhHBa1q4-g",
-      "balance": 50000000,
-      "endTimestamp": 1733588691117
-    }
-  ],
-  "nextCursor": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_1730996691117"
-}
-```
-
-</details>
-
-#### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
-
-Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
-
-```typescript
-const io = IO.init();
-const allowedDelegates = await io.getAllowedDelegates({
-  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "sortOrder": "desc",
-  "hasMore": false,
-  "totalItems": 4,
-  "limit": 100,
-  "items": [
-    "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
-    "N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI",
-    "JcC4ZLUY76vmWha5y6RwKsFqYTrMZhbockl8iM9p5lQ",
-    "31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8"
-  ]
-}
-```
-
-</details>
-
-#### `getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`
-
-Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
-
-```typescript
-const io = IO.init();
-const vaults = await io.getGatewayVaults({
-  address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "sortOrder": "desc",
-  "hasMore": false,
-  "totalItems": 1,
-  "limit": 100,
-  "sortBy": "endTimestamp",
-  "items": [
-    {
-      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_1728067635857",
-      "startTimestamp": 1728067635857,
-      "balance": 50000000000,
-      "vaultId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
-      "endTimestamp": 1735843635857
-    }
-  ]
-}
-```
-
-</details>
-
-#### `instantWithdrawal({ gatewayAddress, vaultId })`
-
-Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-// removes a delegated vault from a gateway
-const { id: txId } = await io.instantWithdrawal(
-  {
-    // gateway address where delegate vault exists
-    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    // delegated vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-  // optional additional tags
-  {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-  },
-);
-// removes an operator vault from a gateway
-const { id: txId } = await io.instantWithdrawal(
-  {
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-);
-```
-
-#### `increaseOperatorStake({ qty })`
-
-Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseOperatorStake(
-  {
-    qty: new IOToken(100).toMIO(),
-  },
-  {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-  },
-);
-```
-
-#### `decreaseOperatorStake({ qty })`
-
-Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseOperatorStake(
-  {
-    qty: new IOToken(100).toMIO(),
-  },
-  {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-  },
-);
-```
-
-#### `saveObservations({ reportTxId, failedGateways })`
-
-Saves the observations of the current epoch. Requires `signer` to be provided on `IO.init` to sign the transaction.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.saveObservations(
-  {
-    reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-    failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
-  },
-  {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
-  },
-);
-```
-
-#### `transfer({ target, qty })`
-
-Transfers `mIO` to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.transfer(
-  {
-    target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-    qty: new IOToken(1000).toMIO(),
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `increaseUndernameLimit({ name, qty })`
-
-Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseUndernameLimit(
-  {
-    name: 'ar-io',
-    qty: 420,
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `extendLease({ name, years })`
-
-Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.extendLease(
-  {
-    name: 'ar-io',
-    years: 1,
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-```
-
-#### `cancelWithdrawal({ gatewayAddress, vaultId })`
-
-Cancels an existing vault on a gateway. The vaulted stake will be returned to the callers stake. If no `gatewayAddress` is provided, the signer's address will be used.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-// cancels a delegated vault from a gateway
-const { id: txId } = await io.cancelWithdrawal(
-  {
-    // gateway address where vault exists
-    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    // vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-  // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-);
-// cancels an operator vault from a gateway
-const { id: txId } = await io.cancelWithdrawal(
-  {
-    // operator vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-);
-```
-
-#### `submitAuctionBid({ name, type, years, processId })`
-
-Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-
-const auction = await io.getArNSAuction({ name: 'permalink' });
-
-// check the current price is under some threshold
-if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
-  const { id: txId } = await io.submitAuctionBid(
-    {
-      name: 'permalink',
-      type: 'lease',
-      years: 1,
-      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-    },
-    // optional additional tags
-    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-  );
-}
-```
+### Primary Names
 
 #### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
 
@@ -1614,47 +1670,6 @@ const request = await io.getPrimaryNameRequest({
   "name": "arns",
   "startTimestamp": 1728067635857,
   "endTimestamp": 1735843635857
-}
-```
-
-</details>
-
-#### `redelegateStake({ target, source, stakeQty, vaultId })`
-
-Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
-
-e.g: If 1000 mIO is redelegated and the fee rate is 10%, the fee will be 100 mIO. Resulting in 900 mIO being redelegated to the new gateway and 100 mIO being deducted back to the protocol balance.
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-
-const { id: txId } = await io.redelegateStake({
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-  stakeQty: new IOToken(1000).toMIO(),
-  vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-});
-```
-
-#### `getRedelegationFee({ address })`
-
-Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
-
-```typescript
-const io = IO.init();
-
-const fee = await io.getRedelegationFee({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "redelegationFeeRate": 10,
-  "feeResetTimestamp": 1730996691117
 }
 ```
 
