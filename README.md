@@ -1740,7 +1740,6 @@ const handlers = await ant.getHandlers();
 
 ```json
 [
-  "evolve",
   "_eval",
   "_default",
   "transfer",

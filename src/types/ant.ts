@@ -111,7 +111,6 @@ export const AntReadHandlers = [
 export type AoANTReadHandler = (typeof AntReadHandlers)[number];
 
 export const AntWriteHandlers = [
-  'evolve',
   '_eval',
   '_default',
   'transfer',

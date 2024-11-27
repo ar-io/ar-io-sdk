@@ -1,17 +1,31 @@
-## [2.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1-alpha.2...v2.5.1-alpha.3) (2024-11-25)
+## [2.5.3-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3-alpha.1...v2.5.3-alpha.2) (2024-11-27)
+
+
+### Bug Fixes
+
+* **ant:** update write handler types removes evolve handler name ([d9f5de4](https://github.com/ar-io/ar-io-sdk/commit/d9f5de438bd303078d1ccaa33198a9de4e36405d))
+
+## [2.5.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3-alpha.1) (2024-11-26)
+
+
+### Bug Fixes
+
+* **ant lua id:** update ant lua id ([54ff68b](https://github.com/ar-io/ar-io-sdk/commit/54ff68b03842f8382bbdfd28902f033857f25a39))
+
+## [2.5.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1...v2.5.2) (2024-11-25)
 
 
 ### Bug Fixes
 
 * **io:** fix tag for `requestPrimaryName` API ([bdaeaaf](https://github.com/ar-io/ar-io-sdk/commit/bdaeaafb8b07383711751e334dd7f679617e8a01))
 * **io:** updated types and fixed apis for primary name requests ([a297628](https://github.com/ar-io/ar-io-sdk/commit/a2976282247403b533ac129eaf76bd35c7af56cc))
+* **readme:** update readme with correct param for approving primary name ([1dcbcc5](https://github.com/ar-io/ar-io-sdk/commit/1dcbcc5a231581ec2bd2a3bc9815853aac7bbdf5))
 
-## [2.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1-alpha.1...v2.5.1-alpha.2) (2024-11-25)
-
+## [2.5.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0...v2.5.1) (2024-11-22)
 
 ### Bug Fixes
 
-* **readme:** update readme with correct param for approving primary name ([1dcbcc5](https://github.com/ar-io/ar-io-sdk/commit/1dcbcc5a231581ec2bd2a3bc9815853aac7bbdf5))
+* **primary names:** update type for getPrimaryNameRequest ([bdd3a9f](https://github.com/ar-io/ar-io-sdk/commit/bdd3a9f63f90688453208804c242622b1f583ec7))
 
 # [2.5.0](https://github.com/ar-io/ar-io-sdk/compare/v2.4.0...v2.5.0) (2024-11-22)
 
