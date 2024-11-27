@@ -126,6 +126,8 @@ export const AntWriteHandlers = [
   'initializeState',
   'releaseName',
   'reassignName',
+  'approvePrimaryName',
+  'removePrimaryNames',
 ] as const;
 
 export type AoANTWriteHandler = (typeof AntWriteHandlers)[number];
