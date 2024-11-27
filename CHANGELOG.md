@@ -1,17 +1,3 @@
-## [2.5.3-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3-alpha.1...v2.5.3-alpha.2) (2024-11-27)
-
-
-### Bug Fixes
-
-* **ant:** update write handler types removes evolve handler name ([d9f5de4](https://github.com/ar-io/ar-io-sdk/commit/d9f5de438bd303078d1ccaa33198a9de4e36405d))
-
-## [2.5.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3-alpha.1) (2024-11-26)
-
-
-### Bug Fixes
-
-* **ant lua id:** update ant lua id ([54ff68b](https://github.com/ar-io/ar-io-sdk/commit/54ff68b03842f8382bbdfd28902f033857f25a39))
-
 ## [2.5.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1...v2.5.2) (2024-11-25)
 
 
