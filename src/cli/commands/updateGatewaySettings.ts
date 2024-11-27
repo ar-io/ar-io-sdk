@@ -16,17 +16,17 @@
 import prompts from 'prompts';
 
 import { ArweaveSigner } from '../../node/index.js';
-import { UpdateGatewaySettingsOptions } from '../types.js';
+import { UpdateGatewaySettingsCLIOptions } from '../types.js';
 import {
   gatewaySettingsFromOptions,
   jwkToAddress,
   requiredJwkFromOptions,
+  writeActionTagsFromOptions,
   writeIOFromOptions,
-  writeOptionsFromOptions,
 } from '../utils.js';
 
 export async function updateGatewaySettings(
-  options: UpdateGatewaySettingsOptions,
+  options: UpdateGatewaySettingsCLIOptions,
 ) {
   const jwk = requiredJwkFromOptions(options);
   const address = jwkToAddress(jwk);
@@ -53,7 +53,7 @@ export async function updateGatewaySettings(
 
   const result = await io.updateGatewaySettings(
     gatewaySettings,
-    writeOptionsFromOptions(options),
+    writeActionTagsFromOptions(options),
   );
 
   const output = {

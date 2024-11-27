@@ -16,18 +16,18 @@
 import prompts from 'prompts';
 
 import { ArweaveSigner, mIOToken } from '../../node/index.js';
-import { JoinNetworkOptions } from '../types.js';
+import { JoinNetworkCLIOptions } from '../types.js';
 import {
   formatIOWithCommas,
   gatewaySettingsFromOptions,
   jwkToAddress,
   requiredJwkFromOptions,
   requiredOperatorStakeFromOptions,
+  writeActionTagsFromOptions,
   writeIOFromOptions,
-  writeOptionsFromOptions,
 } from '../utils.js';
 
-export async function joinNetwork(options: JoinNetworkOptions) {
+export async function joinNetwork(options: JoinNetworkCLIOptions) {
   const jwk = requiredJwkFromOptions(options);
   const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options, new ArweaveSigner(jwk));
@@ -80,7 +80,7 @@ export async function joinNetwork(options: JoinNetworkOptions) {
 
   const result = await io.joinNetwork(
     settings,
-    writeOptionsFromOptions(options),
+    writeActionTagsFromOptions(options),
   );
 
   const output = {

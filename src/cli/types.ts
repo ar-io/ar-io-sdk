@@ -16,114 +16,145 @@
 import {
   AoAddressParams,
   AoArNSAuctionPricesParams,
-  AoGetArNSNameParams,
+  AoArNSNameParams,
+  AoBuyRecordParams,
+  AoExtendLeaseParams,
   AoGetVaultParams,
+  AoIncreaseUndernameLimitParams,
   AoJoinNetworkParams,
+  AoSubmitAuctionBidParams,
   AoTokenCostParams,
   PaginationParams,
 } from '../types/io.js';
 
-export type GlobalOptions = {
+export type GlobalCLIOptions = {
   dev: boolean;
   debug: boolean;
   processId?: string;
 };
 
-export type WalletOptions = GlobalOptions & {
+export type WalletCLIOptions = GlobalCLIOptions & {
   walletFile?: string;
   // mnemonic?: string;
   privateKey?: string;
 };
 
-export type WriteActionOptions = WalletOptions & {
+export type WriteActionCLIOptions = WalletCLIOptions & {
   tags?: string[];
   skipConfirmation?: boolean;
 };
-
 /**
- * Type helper to turn a set of parameters that have `number` types
- * into `string` types and makes all parameters optional.
+ * A utility type to transform `number` properties in a type `T` to `string`
+ * properties, while preserving arrays, objects, and other types.
+ * Additionally, all properties are made optional.
  *
- * Intended to be used to represent how `commander` parsed out CLI options.
+ * This type is intended to represent how `commander` parses CLI options,
+ * where all values are strings, and nested objects are recursively processed.
+ *
  * @example
  * ```ts
  * export type MyNewCommandOptions = CLIOptionsFromAoParams<MyNewAoMethodParams> & GlobalOptions;
  * ```
  */
-export type CLIOptionsFromAoParams<T> = Partial<{
-  [K in keyof T]: T[K] extends number ? string : T[K];
-}>;
+export type CLIOptionsFromAoParams<T> = {
+  // Iterate over each key in the type `T`.
+  [K in keyof T]?: T[K] extends number | undefined // If the property is `number` or `number | undefined`, convert it to `string | undefined`.
+    ? string | undefined
+    : // If the property is a string-like type (string, boolean, symbol), convert it to `string`.
+      T[K] extends string | boolean | symbol
+      ? string
+      : // If the property is an array, retain the array structure with its element types unchanged.
+        T[K] extends ReadonlyArray<infer U>
+        ? ReadonlyArray<U>
+        : // If the property is an object, recursively apply the transformation to its properties.
+          T[K] extends object
+          ? CLIOptionsFromAoParams<T[K]>
+          : // Otherwise, retain the property's original type.
+            T[K];
+};
 
-export type PaginationOptions = GlobalOptions &
+export type PaginationCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<PaginationParams>;
 
-export type AddressOptions = WalletOptions &
+export type AddressCLIOptions = WalletCLIOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
-export type InitiatorOptions = AddressOptions &
+export type InitiatorCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<{
     initiator: string;
   }>;
 
-export type AddressAndNameOptions = WalletOptions &
+export type AddressAndNameCLIOptions = WalletCLIOptions &
   CLIOptionsFromAoParams<{
     address: string;
     name: string;
   }>;
 
-export type EpochOptions = GlobalOptions &
+export type EpochCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<{
     epochIndex: number;
     timestamp: number;
   }>;
 
-export type GetTokenCostOptions = GlobalOptions &
+export type GetTokenCostCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoTokenCostParams>;
 
-export type AuctionPricesOptions = GlobalOptions &
+export type AuctionPricesCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoArNSAuctionPricesParams>;
 
-export type PaginationAddressOptions = AddressOptions & PaginationOptions;
+export type PaginationAddressCLIOptions = AddressCLIOptions &
+  PaginationCLIOptions;
 
-export type NameOptions = GlobalOptions &
-  CLIOptionsFromAoParams<AoGetArNSNameParams>;
+export type NameCLIOptions = GlobalCLIOptions &
+  CLIOptionsFromAoParams<AoArNSNameParams>;
+export type NameWriteCLIOptions = WriteActionCLIOptions & NameCLIOptions;
 
-export type AddressAndVaultIdOptions =
-  CLIOptionsFromAoParams<AoGetVaultParams> & WalletOptions;
+export type AddressAndVaultIdCLIOptions =
+  CLIOptionsFromAoParams<AoGetVaultParams> & WalletCLIOptions;
 
-export type GetVaultOptions = AddressAndVaultIdOptions;
+export type GetVaultCLIOptions = AddressAndVaultIdCLIOptions;
 
-export type VaultIdOptions = {
-  vaultId?: string;
-};
-
-export type TransferOptions = WriteActionOptions & {
+export type TransferCLIOptions = WriteActionCLIOptions & {
   quantity?: string;
   target?: string;
 };
 
-export type DelegateStakeOptions = TransferOptions;
+export type JoinNetworkCLIOptions = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<AoJoinNetworkParams>;
 
-export type RedelegateStakeOptions = TransferOptions & {
+export type UpdateGatewaySettingsCLIOptions = Omit<
+  JoinNetworkCLIOptions,
+  'operatorStake'
+>;
+
+export type DelegateStakeCLIOptions = TransferCLIOptions;
+
+export type RedelegateStakeCLIOptions = TransferCLIOptions & {
   source?: string;
   vaultId?: string;
 };
 
-export type OperatorStakeOptions = WriteActionOptions & {
+export type OperatorStakeCLIOptions = WriteActionCLIOptions & {
   operatorStake?: string;
 };
 
-export type DecreaseDelegateStakeOptions = DelegateStakeOptions & {
+export type DecreaseDelegateStakeCLIOptions = DelegateStakeCLIOptions & {
   instant: boolean;
 };
 
-export type JoinNetworkOptions = WriteActionOptions &
-  CLIOptionsFromAoParams<AoJoinNetworkParams>;
+export type BuyRecordCLIOptions = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<AoBuyRecordParams>;
 
-export type UpdateGatewaySettingsOptions = Omit<
-  JoinNetworkOptions,
-  'operatorStake'
->;
+export type UpgradeRecordCLIOptions = NameWriteCLIOptions;
+
+export type ExtendLeaseCLIOptions = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<AoExtendLeaseParams>;
+
+export type IncreaseUndernameLimitCLIOptions = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<AoIncreaseUndernameLimitParams>;
+
+export type SubmitAuctionBidCLIOptions = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<AoSubmitAuctionBidParams>;
 
 export type JsonSerializable =
   | string

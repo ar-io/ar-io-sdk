@@ -38,6 +38,7 @@ import {
   initiatorOptions,
   joinNetworkOptions,
   nameOptions,
+  nameWriteOptions,
   operatorStakeOptions,
   optionMap,
   paginationAddressOptions,
@@ -47,23 +48,30 @@ import {
   transferOptions,
   updateGatewaySettingsOptions,
   walletOptions,
+  writeActionOptions,
 } from './options.js';
 import {
-  AddressAndNameOptions,
-  AddressAndVaultIdOptions,
-  AddressOptions,
-  AuctionPricesOptions,
-  DecreaseDelegateStakeOptions,
-  EpochOptions,
-  GetTokenCostOptions,
-  GetVaultOptions,
-  InitiatorOptions,
-  NameOptions,
-  OperatorStakeOptions,
-  PaginationAddressOptions,
-  PaginationOptions,
-  RedelegateStakeOptions,
-  WalletOptions,
+  AddressAndNameCLIOptions,
+  AddressAndVaultIdCLIOptions,
+  AddressCLIOptions,
+  AuctionPricesCLIOptions,
+  BuyRecordCLIOptions,
+  DecreaseDelegateStakeCLIOptions,
+  EpochCLIOptions,
+  ExtendLeaseCLIOptions,
+  GetTokenCostCLIOptions,
+  GetVaultCLIOptions,
+  IncreaseUndernameLimitCLIOptions,
+  InitiatorCLIOptions,
+  NameCLIOptions,
+  NameWriteCLIOptions,
+  OperatorStakeCLIOptions,
+  PaginationAddressCLIOptions,
+  PaginationCLIOptions,
+  RedelegateStakeCLIOptions,
+  SubmitAuctionBidCLIOptions,
+  UpgradeRecordCLIOptions,
+  WalletCLIOptions,
 } from './types.js';
 import {
   addressFromOptions,
@@ -74,13 +82,19 @@ import {
   readIOFromOptions,
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
+  requiredIncreaseCountFromOptions,
   requiredInitiatorFromOptions,
+  requiredMIOQuantityFromOptions,
   requiredNameFromOptions,
   requiredOperatorStakeFromOptions,
   requiredTargetAndQuantityFromOptions,
   requiredVaultIdFromOptions,
+  requiredYearsFromOptions,
   runCommand,
+  typeFromOptions,
+  writeActionTagsFromOptions,
   writeIOFromOptions,
+  yearsFromOptions,
 } from './utils.js';
 
 makeCommand({
@@ -115,7 +129,7 @@ makeCommand({
   action: (options) => readIOFromOptions(options).getDemandFactor(),
 });
 
-makeCommand<AddressOptions>({
+makeCommand<AddressCLIOptions>({
   name: 'get-gateway',
   description: 'Get the gateway of an address',
   options: addressOptions,
@@ -130,7 +144,7 @@ makeCommand<AddressOptions>({
       ),
 });
 
-makeCommand<PaginationOptions>({
+makeCommand<PaginationCLIOptions>({
   name: 'list-gateways',
   description: 'List the gateways of the network',
   options: paginationOptions,
@@ -142,7 +156,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand<PaginationAddressOptions>({
+makeCommand<PaginationAddressCLIOptions>({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
   options: paginationAddressOptions,
@@ -161,7 +175,7 @@ makeCommand<PaginationAddressOptions>({
   },
 });
 
-makeCommand<PaginationAddressOptions>({
+makeCommand<PaginationAddressCLIOptions>({
   name: 'get-delegations',
   description: 'Get all stake delegated to gateways from this address',
   options: addressOptions,
@@ -180,7 +194,7 @@ makeCommand<PaginationAddressOptions>({
   },
 });
 
-makeCommand<PaginationAddressOptions>({
+makeCommand<PaginationAddressCLIOptions>({
   name: 'get-allowed-delegates',
   description: 'Get the allow list of a gateway delegate',
   options: paginationAddressOptions,
@@ -199,7 +213,7 @@ makeCommand<PaginationAddressOptions>({
   },
 });
 
-makeCommand<NameOptions>({
+makeCommand<NameCLIOptions>({
   name: 'get-arns-record',
   description: 'Get an ArNS record by name',
   options: nameOptions,
@@ -211,7 +225,7 @@ makeCommand<NameOptions>({
       ),
 });
 
-makeCommand<PaginationOptions>({
+makeCommand<PaginationCLIOptions>({
   name: 'list-arns-records',
   description: 'List all ArNS records',
   options: paginationOptions,
@@ -223,7 +237,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand<NameOptions>({
+makeCommand<NameCLIOptions>({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
   options: nameOptions,
@@ -248,7 +262,7 @@ makeCommand({
       ),
 });
 
-makeCommand({
+makeCommand<NameCLIOptions>({
   name: 'get-arns-auction',
   description: 'Get an ArNS auction by name',
   options: nameOptions,
@@ -272,7 +286,7 @@ makeCommand({
       ),
 });
 
-makeCommand<AuctionPricesOptions>({
+makeCommand<AuctionPricesCLIOptions>({
   name: 'get-arns-auction-prices',
   description: 'Get ArNS auction prices',
   options: arNSAuctionPricesOptions,
@@ -295,7 +309,7 @@ makeCommand<AuctionPricesOptions>({
   },
 });
 
-makeCommand<EpochOptions>({
+makeCommand<EpochCLIOptions>({
   name: 'get-epoch',
   description: 'Get epoch data',
   options: epochOptions,
@@ -357,7 +371,7 @@ makeCommand({
   description: 'Get token cost',
   options: tokenCostOptions,
 }).action(async (_, command) => {
-  await runCommand<GetTokenCostOptions>(command, async (options) => {
+  await runCommand<GetTokenCostCLIOptions>(command, async (options) => {
     options.intent ??= 'Buy-Record';
     options.type ??= 'lease';
 
@@ -397,7 +411,7 @@ makeCommand({
   });
 });
 
-makeCommand<PaginationOptions>({
+makeCommand<PaginationCLIOptions>({
   name: 'list-vaults',
   description: 'Get all wallet vaults',
   options: paginationOptions,
@@ -409,7 +423,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand<InitiatorOptions>({
+makeCommand<InitiatorCLIOptions>({
   name: 'get-primary-name-request',
   description: 'Get primary name request',
   options: initiatorOptions,
@@ -426,7 +440,7 @@ makeCommand<InitiatorOptions>({
       ),
 });
 
-makeCommand<PaginationOptions>({
+makeCommand<PaginationCLIOptions>({
   name: 'list-primary-name-requests',
   description: 'Get primary name requests',
   options: paginationOptions,
@@ -438,7 +452,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand<AddressAndNameOptions>({
+makeCommand<AddressAndNameCLIOptions>({
   name: 'get-primary-name',
   description: 'Get primary name',
   options: [...addressOptions, optionMap.name],
@@ -465,7 +479,7 @@ makeCommand<AddressAndNameOptions>({
   },
 });
 
-makeCommand<PaginationOptions>({
+makeCommand<PaginationCLIOptions>({
   name: 'list-primary-names',
   description: 'Get primary names',
   options: paginationOptions,
@@ -477,7 +491,7 @@ makeCommand<PaginationOptions>({
       ),
 });
 
-makeCommand<AddressOptions>({
+makeCommand<AddressCLIOptions>({
   name: 'balance',
   description: 'Get the balance of an address',
   options: addressOptions,
@@ -505,7 +519,7 @@ makeCommand({
       ),
 });
 
-makeCommand<AddressOptions>({
+makeCommand<AddressCLIOptions>({
   name: 'get-redelegation-fee',
   description: 'Get redelegation fee',
   options: addressOptions,
@@ -515,7 +529,7 @@ makeCommand<AddressOptions>({
     }),
 });
 
-makeCommand<GetVaultOptions>({
+makeCommand<GetVaultCLIOptions>({
   name: 'get-vault',
   description: 'Get the vault of provided address and vault ID',
   options: getVaultOptions,
@@ -533,7 +547,7 @@ makeCommand<GetVaultOptions>({
       ),
 });
 
-makeCommand<PaginationAddressOptions>({
+makeCommand<PaginationAddressCLIOptions>({
   name: 'get-gateway-vaults',
   description: 'Get the vaults of a gateway',
   options: paginationAddressOptions,
@@ -566,7 +580,7 @@ makeCommand({
   action: joinNetwork,
 });
 
-makeCommand<WalletOptions>({
+makeCommand<WalletCLIOptions>({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
   options: walletOptions,
@@ -583,7 +597,7 @@ makeCommand({
 
 // save-observations
 
-makeCommand<OperatorStakeOptions>({
+makeCommand<OperatorStakeCLIOptions>({
   name: 'increase-operator-stake',
   description: 'Increase operator stake',
   options: operatorStakeOptions,
@@ -594,7 +608,7 @@ makeCommand<OperatorStakeOptions>({
     }),
 });
 
-makeCommand<OperatorStakeOptions>({
+makeCommand<OperatorStakeCLIOptions>({
   name: 'decrease-operator-stake',
   description: 'Decrease operator stake',
   options: operatorStakeOptions,
@@ -605,7 +619,7 @@ makeCommand<OperatorStakeOptions>({
     }),
 });
 
-makeCommand<AddressAndVaultIdOptions>({
+makeCommand<AddressAndVaultIdCLIOptions>({
   name: 'instant-withdrawal',
   description: 'Instantly withdraw stake from a vault',
   options: addressAndVaultIdOptions,
@@ -617,7 +631,7 @@ makeCommand<AddressAndVaultIdOptions>({
     }),
 });
 
-makeCommand<AddressAndVaultIdOptions>({
+makeCommand<AddressAndVaultIdCLIOptions>({
   name: 'cancel-withdrawal',
   description: 'Cancel a pending withdrawal',
   options: addressAndVaultIdOptions,
@@ -641,7 +655,7 @@ makeCommand({
   action: delegateStake,
 });
 
-makeCommand<DecreaseDelegateStakeOptions>({
+makeCommand<DecreaseDelegateStakeCLIOptions>({
   name: 'decrease-delegate-stake',
   description: 'Decrease delegated stake',
   options: decreaseDelegateStakeOptions,
@@ -674,7 +688,7 @@ makeCommand<DecreaseDelegateStakeOptions>({
 });
 
 // redelegate-stake
-makeCommand<RedelegateStakeOptions>({
+makeCommand<RedelegateStakeCLIOptions>({
   name: 'redelegate-stake',
   description: 'Redelegate stake to another gateway',
   options: redelegateStakeOptions,
@@ -701,27 +715,112 @@ makeCommand<RedelegateStakeOptions>({
   },
 });
 
-makeCommand({
+makeCommand<BuyRecordCLIOptions>({
   name: 'buy-record',
   description: 'Buy a record',
   options: buyRecordOptions,
   action: async (options) => {
     const io = writeIOFromOptions(options);
-    console.log('io', io);
 
-    return { message: 'TODO' };
+    // TODO: Assert balance is sufficient for action
+    // TODO: Assert record is not already owned
+
+    const processId = options.processId;
+    if (processId === undefined) {
+      // TODO: Spawn ANT process, register it to ANT registry, get process ID
+      throw new Error('Process ID must be provided for buy-record');
+    }
+
+    return io.buyRecord({
+      name: requiredNameFromOptions(options),
+      processId,
+      type: typeFromOptions(options),
+      years: yearsFromOptions(options),
+    });
   },
 });
 
-// upgrade-record
+makeCommand<UpgradeRecordCLIOptions>({
+  name: 'upgrade-record',
+  description: 'Upgrade the lease of a record to a permabuy',
+  options: [...nameOptions, ...writeActionOptions],
+  // TODO: assert record is leased by sender, assert balance is sufficient
+  action: (options) =>
+    writeIOFromOptions(options).upgradeRecord({
+      name: requiredNameFromOptions(options),
+    }),
+});
 
-// extend-lease
+makeCommand<ExtendLeaseCLIOptions>({
+  name: 'extend-lease',
+  description: 'Extend the lease of a record',
+  options: [...writeActionOptions, optionMap.name, optionMap.years],
+  action: (options) =>
+    writeIOFromOptions(options).extendLease(
+      {
+        name: requiredNameFromOptions(options),
+        years: requiredYearsFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    ),
+});
 
-// increase-undername-limit
+makeCommand<IncreaseUndernameLimitCLIOptions>({
+  name: 'increase-undername-limit',
+  description: 'Increase the limit of a name',
+  options: [...writeActionOptions, optionMap.name, optionMap.increaseCount],
+  action: (options) =>
+    writeIOFromOptions(options).increaseUndernameLimit(
+      {
+        name: requiredNameFromOptions(options),
+        increaseCount: requiredIncreaseCountFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    ),
+});
 
-// submit-auction-bid
+makeCommand<SubmitAuctionBidCLIOptions>({
+  name: 'submit-auction-bid',
+  description: 'Submit a bid to an auction',
+  options: [
+    ...writeActionOptions,
+    optionMap.name,
+    optionMap.quantity,
+    optionMap.type,
+    optionMap.years,
+  ],
+  action: (options) => {
+    // TODO: Assert auction exists
+    // TODO: Assert balance is sufficient for action
 
-// request-primary-name
+    if (options.processId === undefined) {
+      // TODO: Spawn ANT process, register it to ANT registry, get process ID
+      throw new Error('--process-id is required');
+    }
+
+    return writeIOFromOptions(options).submitAuctionBid({
+      name: requiredNameFromOptions(options),
+      processId: options.processId,
+      type: typeFromOptions(options),
+      quantity: requiredMIOQuantityFromOptions(options).valueOf(),
+      // TODO: Assert if 'lease' type, years is required
+      years: yearsFromOptions(options),
+    });
+  },
+});
+
+makeCommand<NameWriteCLIOptions>({
+  name: 'request-primary-name',
+  description: 'Request a primary name',
+  options: nameWriteOptions,
+  action: (options) =>
+    // TODO: Assert balance is sufficient for action?
+    // TODO: Assert name requested is not already owned
+    // TODO: More assertions?
+    writeIOFromOptions(options).requestPrimaryName({
+      name: requiredNameFromOptions(options),
+    }),
+});
 
 if (
   process.argv[1].includes('bin/ar.io') || // Running from global .bin

@@ -322,7 +322,7 @@ export type AoUpdateGatewaySettingsParams = AtLeastOne<
   Omit<AoJoinNetworkParams, 'operatorStake'>
 >;
 
-export type AoGetArNSNameParams = {
+export type AoArNSNameParams = {
   name: string;
 };
 
@@ -379,6 +379,27 @@ export type AoTokenCostParams = {
 export type AoGetVaultParams = {
   address: WalletAddress;
   vaultId: string;
+};
+
+export type AoBuyRecordParams = AoArNSNameParams & {
+  years?: number;
+  type: 'lease' | 'permabuy';
+  processId: string;
+};
+
+export type AoExtendLeaseParams = AoArNSNameParams & {
+  years: number;
+};
+
+export type AoIncreaseUndernameLimitParams = AoArNSNameParams & {
+  increaseCount: number;
+};
+
+export type AoSubmitAuctionBidParams = AoArNSNameParams & {
+  processId: string;
+  quantity?: number;
+  type?: 'lease' | 'permabuy';
+  years?: number;
 };
 
 // Interfaces
@@ -554,32 +575,19 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   buyRecord(
-    params: {
-      name: string;
-      years?: number;
-      type: 'lease' | 'permabuy';
-      processId: string;
-    },
+    params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   upgradeRecord(
-    params: {
-      name: string;
-    },
+    params: AoArNSNameParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   extendLease(
-    params: {
-      name: string;
-      years: number;
-    },
+    params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   increaseUndernameLimit(
-    params: {
-      name: string;
-      increaseCount: number;
-    },
+    params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   cancelWithdrawal(

@@ -16,17 +16,17 @@
 import prompts from 'prompts';
 
 import { mIOToken } from '../../types/token.js';
-import { TransferOptions } from '../types.js';
+import { TransferCLIOptions } from '../types.js';
 import {
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
   requiredTargetAndQuantityFromOptions,
+  writeActionTagsFromOptions,
   writeIOFromOptions,
-  writeOptionsFromOptions,
 } from '../utils.js';
 
-export async function transfer(options: TransferOptions) {
+export async function transfer(options: TransferCLIOptions) {
   const jwk = requiredJwkFromOptions(options);
   const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options);
@@ -58,7 +58,7 @@ export async function transfer(options: TransferOptions) {
       target,
       qty: ioQuantity.toMIO().valueOf(),
     },
-    writeOptionsFromOptions(options),
+    writeActionTagsFromOptions(options),
   );
 
   const output = {

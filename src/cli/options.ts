@@ -186,6 +186,10 @@ export const optionMap = {
     description: 'Use the instant transaction method',
     type: 'boolean',
   },
+  increaseCount: {
+    alias: '--increase-count',
+    description: 'Amount to increase the undername count of the record by',
+  },
 };
 
 export const globalOptions = [
@@ -195,7 +199,7 @@ export const globalOptions = [
 ];
 
 export const walletOptions = [
-  ...globalOptions,
+  // ...globalOptions,
   optionMap.walletFile,
   // optionMap.mnemonic,
   optionMap.privateKey,
@@ -229,6 +233,7 @@ export const paginationAddressOptions = [
 ];
 
 export const nameOptions = [optionMap.name];
+export const nameWriteOptions = [...writeActionOptions, optionMap.name];
 
 export const initiatorOptions = [optionMap.initiator];
 

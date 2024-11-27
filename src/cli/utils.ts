@@ -37,20 +37,18 @@ import {
   sha256B64Url,
 } from '../node/index.js';
 import {
-  AddressOptions,
-  EpochOptions,
-  GlobalOptions,
-  InitiatorOptions,
+  AddressCLIOptions,
+  EpochCLIOptions,
+  GlobalCLIOptions,
+  InitiatorCLIOptions,
   JsonSerializable,
-  NameOptions,
-  OperatorStakeOptions,
-  PaginationOptions,
-  RedelegateStakeOptions,
-  TransferOptions,
-  UpdateGatewaySettingsOptions,
-  VaultIdOptions,
-  WalletOptions,
-  WriteActionOptions,
+  OperatorStakeCLIOptions,
+  PaginationCLIOptions,
+  RedelegateStakeCLIOptions,
+  TransferCLIOptions,
+  UpdateGatewaySettingsCLIOptions,
+  WalletCLIOptions,
+  WriteActionCLIOptions,
 } from './types.js';
 
 function logCommandOutput(output: JsonSerializable) {
@@ -99,7 +97,7 @@ function applyOptions(command: Command, options: CommanderOption[]): Command {
   return command;
 }
 
-export function makeCommand<O extends OptionValues = GlobalOptions>({
+export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   description,
   name,
   options = [],
@@ -118,7 +116,7 @@ export function makeCommand<O extends OptionValues = GlobalOptions>({
   return appliedCommand;
 }
 
-function processIdFromOptions({ processId, dev }: GlobalOptions): string {
+function processIdFromOptions({ processId, dev }: GlobalCLIOptions): string {
   return processId !== undefined
     ? processId
     : dev
@@ -129,7 +127,7 @@ function processIdFromOptions({ processId, dev }: GlobalOptions): string {
 function jwkFromOptions({
   privateKey,
   walletFile,
-}: WalletOptions): JWKInterface | undefined {
+}: WalletCLIOptions): JWKInterface | undefined {
   if (privateKey !== undefined) {
     return JSON.parse(privateKey);
   }
@@ -139,7 +137,9 @@ function jwkFromOptions({
   return undefined;
 }
 
-export function requiredJwkFromOptions(options: WalletOptions): JWKInterface {
+export function requiredJwkFromOptions(
+  options: WalletCLIOptions,
+): JWKInterface {
   const jwk = jwkFromOptions(options);
   if (jwk === undefined) {
     throw new Error(
@@ -153,13 +153,13 @@ export function jwkToAddress(jwk: JWKInterface): string {
   return sha256B64Url(fromB64Url(jwk.n));
 }
 
-function setLoggerIfDebug(options: GlobalOptions) {
+function setLoggerIfDebug(options: GlobalCLIOptions) {
   if (options.debug) {
     Logger.default.setLogLevel('debug');
   }
 }
 
-export function readIOFromOptions(options: GlobalOptions): AoIORead {
+export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
   setLoggerIfDebug(options);
 
   return IO.init({
@@ -168,7 +168,7 @@ export function readIOFromOptions(options: GlobalOptions): AoIORead {
 }
 
 export function writeIOFromOptions(
-  options: WalletOptions,
+  options: WalletCLIOptions,
   signer?: ContractSigner,
 ): AoIOWrite {
   signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
@@ -189,8 +189,8 @@ export function formatIOWithCommas(value: IOToken): string {
   return integerWithCommas + '.' + decimalPart;
 }
 
-export function addressFromOptions(
-  options: AddressOptions,
+export function addressFromOptions<O extends AddressCLIOptions>(
+  options: O,
 ): string | undefined {
   if (options.address !== undefined) {
     return options.address;
@@ -203,7 +203,9 @@ export function addressFromOptions(
   return undefined;
 }
 
-export function requiredAddressFromOptions(options: AddressOptions): string {
+export function requiredAddressFromOptions<O extends AddressCLIOptions>(
+  options: O,
+): string {
   const address = addressFromOptions(options);
   if (address !== undefined) {
     return address;
@@ -211,7 +213,9 @@ export function requiredAddressFromOptions(options: AddressOptions): string {
   throw new Error('No address provided. Use --address or --wallet-file');
 }
 
-export function requiredNameFromOptions(options: NameOptions): string {
+export function requiredNameFromOptions<O extends { name?: string }>(
+  options: O,
+): string {
   if (options.name !== undefined) {
     return options.name;
   }
@@ -219,9 +223,32 @@ export function requiredNameFromOptions(options: NameOptions): string {
   throw new Error('No name provided. Use `--name "my-name"`');
 }
 
+export function yearsFromOptions<O extends { years?: string }>(
+  options: O,
+): number | undefined {
+  if (options.years === undefined) {
+    return undefined;
+  }
+  const years = +options.years;
+  if (isNaN(years) || years <= 0) {
+    throw new Error(`Invalid years: ${years}, must be a positive number`);
+  }
+  return years;
+}
+
+export function requiredYearsFromOptions<O extends { years?: string }>(
+  options: O,
+): number {
+  const years = yearsFromOptions(options);
+  if (years === undefined) {
+    throw new Error('No years provided. Use --years');
+  }
+  return years;
+}
+
 const defaultCliPaginationLimit = 10; // more friendly UX than 100
-export function paginationParamsFromOptions(
-  options: PaginationOptions,
+export function paginationParamsFromOptions<O extends PaginationCLIOptions>(
+  options: O,
   // TODO: Use a type for sortBy and we could assert against arrays of the fields we want sort by
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PaginationParams & { sortBy: any } {
@@ -244,7 +271,7 @@ export function paginationParamsFromOptions(
   };
 }
 
-export function epochInputFromOptions(options: EpochOptions): EpochInput {
+export function epochInputFromOptions(options: EpochCLIOptions): EpochInput {
   if (options.epochIndex !== undefined) {
     return { epochIndex: +options.epochIndex };
   }
@@ -255,7 +282,7 @@ export function epochInputFromOptions(options: EpochOptions): EpochInput {
 }
 
 export function requiredInitiatorFromOptions(
-  options: InitiatorOptions,
+  options: InitiatorCLIOptions,
 ): string {
   if (options.initiator !== undefined) {
     return options.initiator;
@@ -263,14 +290,16 @@ export function requiredInitiatorFromOptions(
   return requiredAddressFromOptions(options);
 }
 
-export function requiredVaultIdFromOptions(options: VaultIdOptions): string {
+export function requiredVaultIdFromOptions<O extends { vaultId?: string }>(
+  options: O,
+): string {
   if (options.vaultId !== undefined) {
     return options.vaultId;
   }
   throw new Error('--vault-id is required');
 }
 
-export function writeOptionsFromOptions<O extends WriteActionOptions>(
+export function writeActionTagsFromOptions<O extends WriteActionCLIOptions>(
   options: O,
 ): WriteOptions {
   if (options.tags === undefined) {
@@ -310,7 +339,7 @@ export function gatewaySettingsFromOptions({
   port,
   properties,
   allowedDelegates,
-}: UpdateGatewaySettingsOptions): AoUpdateGatewaySettingsParams {
+}: UpdateGatewaySettingsCLIOptions): AoUpdateGatewaySettingsParams {
   return {
     observerAddress,
     allowDelegatedStaking,
@@ -331,7 +360,7 @@ export function gatewaySettingsFromOptions({
 }
 
 export function requiredTargetAndQuantityFromOptions(
-  options: TransferOptions,
+  options: TransferCLIOptions,
 ): { target: string; ioQuantity: IOToken } {
   if (options.target === undefined) {
     throw new Error('No target provided. Use --target');
@@ -346,7 +375,7 @@ export function requiredTargetAndQuantityFromOptions(
 }
 
 export function redelegateParamsFromOptions(
-  options: RedelegateStakeOptions,
+  options: RedelegateStakeCLIOptions,
 ): AoRedelegateStakeParams & { stakeQty: mIOToken } {
   const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
   const source = options.source;
@@ -363,7 +392,7 @@ export function redelegateParamsFromOptions(
 }
 
 export function requiredOperatorStakeFromOptions(
-  options: OperatorStakeOptions,
+  options: OperatorStakeCLIOptions,
 ): IOToken {
   if (options.operatorStake === undefined) {
     throw new Error(
@@ -371,4 +400,38 @@ export function requiredOperatorStakeFromOptions(
     );
   }
   return new IOToken(+options.operatorStake);
+}
+
+export function requiredIncreaseCountFromOptions<
+  O extends { increaseCount?: string },
+>(options: O) {
+  if (options.increaseCount === undefined) {
+    throw new Error('No increase count provided. Use --increase-count');
+  }
+  const increaseCount = +options.increaseCount;
+  if (isNaN(increaseCount) || increaseCount <= 0) {
+    throw new Error(
+      `Invalid increase count: ${increaseCount}, must be a positive number`,
+    );
+  }
+  return increaseCount;
+}
+
+export function typeFromOptions<O extends { type?: string }>(
+  options: O,
+): 'lease' | 'permabuy' {
+  options.type ??= 'lease';
+  if (options.type !== 'lease' && options.type !== 'permabuy') {
+    throw new Error(`Invalid type. Valid types are: lease, permabuy`);
+  }
+  return options.type;
+}
+
+export function requiredMIOQuantityFromOptions<O extends { quantity?: string }>(
+  options: O,
+): mIOToken {
+  if (options.quantity === undefined) {
+    throw new Error('No quantity provided. Use --quantity denominated in IO');
+  }
+  return new IOToken(+options.quantity).toMIO();
 }
