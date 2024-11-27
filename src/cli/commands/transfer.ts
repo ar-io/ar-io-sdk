@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import prompts from 'prompts';
-
-import { mIOToken } from '../../types/token.js';
 import { TransferCLIOptions } from '../types.js';
 import {
+  assertEnoughBalance,
+  confirmationPrompt,
   formatIOWithCommas,
   jwkToAddress,
   requiredJwkFromOptions,
@@ -34,22 +33,13 @@ export async function transfer(options: TransferCLIOptions) {
   const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
 
   if (!options.skipConfirmation) {
-    const balance = await io.getBalance({ address });
+    await assertEnoughBalance(io, address, ioQuantity);
 
-    if (balance < +ioQuantity.toMIO()) {
-      throw new Error(
-        `Insufficient IO balance for transfer. Balance available: ${new mIOToken(balance).toIO()} IO`,
-      );
-    }
-
-    const { confirm } = await prompts({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Are you sure you want to transfer ${formatIOWithCommas(ioQuantity)} IO to ${target}?`,
-    });
-
+    const confirm = await confirmationPrompt(
+      `Are you sure you want to transfer ${formatIOWithCommas(ioQuantity)} IO to ${target}?`,
+    );
     if (!confirm) {
-      return { message: 'Transfer aborted' };
+      return { message: 'Transfer aborted by user' };
     }
   }
 

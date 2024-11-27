@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import prompts from 'prompts';
-
 import { ArweaveSigner, mIOToken } from '../../node/index.js';
 import { JoinNetworkCLIOptions } from '../types.js';
 import {
+  assertEnoughBalance,
+  confirmationPrompt,
   formatIOWithCommas,
   gatewaySettingsFromOptions,
   jwkToAddress,
@@ -31,12 +31,6 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
   const jwk = requiredJwkFromOptions(options);
   const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options, new ArweaveSigner(jwk));
-
-  if (options.operatorStake === undefined) {
-    throw new Error(
-      'Operator stake is required. Please provide a --operator-stake denominated in IO for your node.',
-    );
-  }
 
   const ioQuantity = requiredOperatorStakeFromOptions(options);
   const mIOOperatorStake = ioQuantity.toMIO().valueOf();
@@ -56,22 +50,19 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
   }
 
   if (!options.skipConfirmation) {
-    const balance = await io.getBalance({ address });
-
-    // TODO: Could get current minimum stake and assert from contract
-
-    if (balance < mIOOperatorStake) {
+    const settings = await io.getGatewayRegistrySettings();
+    if (settings.operators.minStake > mIOOperatorStake) {
       throw new Error(
-        `Insufficient balance. Required: ${formatIOWithCommas(ioQuantity)} IO, available: ${formatIOWithCommas(new mIOToken(balance).toIO())} IO`,
+        `The minimum operator stake is ${formatIOWithCommas(
+          new mIOToken(settings.operators.minStake).toIO(),
+        )} IO. Please provide a higher stake.`,
       );
     }
+    assertEnoughBalance(io, address, ioQuantity);
 
-    const { confirm } = await prompts({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(ioQuantity)} IO to join the AR.IO network\nAre you sure?\n`,
-      initial: true,
-    });
+    const confirm = await confirmationPrompt(
+      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(ioQuantity)} IO to join the AR.IO network\nAre you sure?\n`,
+    );
 
     if (!confirm) {
       return { message: 'Aborted join-network command by user' };

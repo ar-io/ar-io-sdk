@@ -16,6 +16,7 @@
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
 import { readFileSync } from 'fs';
+import prompts from 'prompts';
 
 import {
   AoIORead,
@@ -438,4 +439,27 @@ export function requiredMIOQuantityFromOptions<O extends { quantity?: string }>(
     throw new Error('No quantity provided. Use --quantity denominated in IO');
   }
   return new IOToken(+options.quantity).toMIO();
+}
+
+export async function assertEnoughBalance(
+  io: AoIORead,
+  address: string,
+  ioQuantity: IOToken,
+) {
+  const balance = await io.getBalance({ address });
+
+  if (balance < ioQuantity.toMIO().valueOf()) {
+    throw new Error(
+      `Insufficient IO balance for action. Balance available: ${new mIOToken(balance).toIO()} IO`,
+    );
+  }
+}
+
+export async function confirmationPrompt(message: string): Promise<boolean> {
+  const { confirm } = await prompts({
+    type: 'confirm',
+    name: 'confirm',
+    message,
+  });
+  return confirm;
 }

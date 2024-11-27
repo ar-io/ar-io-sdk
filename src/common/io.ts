@@ -51,6 +51,7 @@ import {
   AoEpochSettings,
   AoGateway,
   AoGatewayDelegateWithAddress,
+  AoGatewayRegistrySettings,
   AoGatewayVault,
   AoIORead,
   AoIOWrite,
@@ -701,6 +702,12 @@ export class IOReadable implements AoIORead {
         { name: 'Action', value: 'Redelegation-Fee' },
         { name: 'Address', value: params.address },
       ],
+    });
+  }
+
+  async getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings> {
+    return this.process.read({
+      tags: [{ name: 'Action', value: 'Gateway-Registry-Settings' }],
     });
   }
 }
