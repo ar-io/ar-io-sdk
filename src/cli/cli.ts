@@ -18,11 +18,29 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { intentsUsingYears, isValidIntent, validIntents } from '../types/io.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { delegateStake } from './commands/delegateStake.js';
 import { joinNetwork } from './commands/joinNetwork.js';
+import {
+  getAllowedDelegates,
+  getArNSAuction,
+  getArNSAuctionPrices,
+  getArNSRecord,
+  getArNSReservedName,
+  getDelegations,
+  getEpoch,
+  getGateway,
+  getGatewayDelegates,
+  getPrescribedNames,
+  getPrescribedObservers,
+  getPrimaryName,
+  getTokenCost,
+  listArNSAuctions,
+  listArNSRecords,
+  listArNSReservedNames,
+  listGateways,
+} from './commands/readCommands.js';
 import { transfer } from './commands/transfer.js';
 import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
 import {
@@ -52,16 +70,12 @@ import {
   AddressAndNameCLIOptions,
   AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
-  AuctionPricesCLIOptions,
   BuyRecordCLIOptions,
   DecreaseDelegateStakeCLIOptions,
-  EpochCLIOptions,
   ExtendLeaseCLIOptions,
-  GetTokenCostCLIOptions,
   GetVaultCLIOptions,
   IncreaseUndernameLimitCLIOptions,
   InitiatorCLIOptions,
-  NameCLIOptions,
   NameWriteCLIOptions,
   OperatorStakeCLIOptions,
   PaginationAddressCLIOptions,
@@ -69,9 +83,9 @@ import {
   RedelegateStakeCLIOptions,
   SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
+  WriteActionCLIOptions,
 } from './types.js';
 import {
-  addressFromOptions,
   epochInputFromOptions,
   formatIOWithCommas,
   makeCommand,
@@ -87,7 +101,6 @@ import {
   requiredTargetAndQuantityFromOptions,
   requiredVaultIdFromOptions,
   requiredYearsFromOptions,
-  runCommand,
   typeFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
@@ -125,196 +138,95 @@ makeCommand({
   action: (options) => readIOFromOptions(options).getDemandFactor(),
 });
 
-makeCommand<AddressCLIOptions>({
+makeCommand({
   name: 'get-gateway',
   description: 'Get the gateway of an address',
   options: addressOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getGateway({ address: requiredAddressFromOptions(o) })
-      .then(
-        (r) =>
-          r ?? {
-            message: `No gateway found`,
-          },
-      ),
+  action: getGateway,
 });
 
-makeCommand<PaginationCLIOptions>({
+makeCommand({
   name: 'list-gateways',
   description: 'List the gateways of the network',
   options: paginationOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getGateways(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No gateways found' },
-      ),
+  action: listGateways,
 });
 
-makeCommand<PaginationAddressCLIOptions>({
+makeCommand({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
   options: paginationAddressOptions,
-  action: async (o) => {
-    const address = requiredAddressFromOptions(o);
-    const result = await readIOFromOptions(o).getGatewayDelegates({
-      address,
-      ...paginationParamsFromOptions(o),
-    });
-
-    return result.items?.length
-      ? result
-      : {
-          message: `No delegates found for gateway ${address}`,
-        };
-  },
+  action: getGatewayDelegates,
 });
 
-makeCommand<PaginationAddressCLIOptions>({
+makeCommand({
   name: 'get-delegations',
   description: 'Get all stake delegated to gateways from this address',
   options: addressOptions,
-  action: async (o) => {
-    const address = requiredAddressFromOptions(o);
-    const result = await readIOFromOptions(o).getDelegations({
-      address,
-      ...paginationParamsFromOptions(o),
-    });
-
-    return result.items?.length
-      ? result
-      : {
-          message: `No delegations found for address ${address}`,
-        };
-  },
+  action: getDelegations,
 });
 
-makeCommand<PaginationAddressCLIOptions>({
+makeCommand({
   name: 'get-allowed-delegates',
   description: 'Get the allow list of a gateway delegate',
   options: paginationAddressOptions,
-  action: async (o) => {
-    const address = requiredAddressFromOptions(o);
-    const result = await readIOFromOptions(o).getAllowedDelegates({
-      address,
-      ...paginationParamsFromOptions(o),
-    });
-
-    return result.items?.length
-      ? result
-      : {
-          message: `No allow list found for gateway delegate ${address}`,
-        };
-  },
+  action: getAllowedDelegates,
 });
 
-makeCommand<NameCLIOptions>({
+makeCommand({
   name: 'get-arns-record',
   description: 'Get an ArNS record by name',
   options: nameOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSRecord({ name: requiredNameFromOptions(o) })
-      .then(
-        (result) => result ?? { message: `No record found for provided name` },
-      ),
+  action: getArNSRecord,
 });
 
-makeCommand<PaginationCLIOptions>({
+makeCommand({
   name: 'list-arns-records',
   description: 'List all ArNS records',
   options: paginationOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSRecords(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No records found' },
-      ),
+  action: listArNSRecords,
 });
 
-makeCommand<NameCLIOptions>({
+makeCommand({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
   options: nameOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSReservedName({ name: requiredNameFromOptions(o) })
-      .then(
-        (result) =>
-          result ?? { message: `No reserved name found for provided name` },
-      ),
+  action: getArNSReservedName,
 });
 
 makeCommand({
   name: 'list-arns-reserved-names',
   description: 'Get all reserved ArNS names',
   options: paginationOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSReservedNames(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No reserved names found' },
-      ),
+  action: listArNSReservedNames,
 });
 
-makeCommand<NameCLIOptions>({
+makeCommand({
   name: 'get-arns-auction',
   description: 'Get an ArNS auction by name',
   options: nameOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSAuction({ name: requiredNameFromOptions(o) })
-      .then(
-        (result) => result ?? { message: `No auction found for provided name` },
-      ),
+  action: getArNSAuction,
 });
 
 makeCommand({
   name: 'list-arns-auctions',
   description: 'Get all ArNS auctions',
   options: paginationOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getArNSAuctions(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No auctions found' },
-      ),
+  action: listArNSAuctions,
 });
 
-makeCommand<AuctionPricesCLIOptions>({
+makeCommand({
   name: 'get-arns-auction-prices',
   description: 'Get ArNS auction prices',
   options: arNSAuctionPricesOptions,
-  action: async (options) => {
-    options.type ??= 'lease';
-    if (options.type !== 'lease' && options.type !== 'permabuy') {
-      throw new Error(`Invalid type. Valid types are: lease, permabuy`);
-    }
-
-    const result = await readIOFromOptions(options).getArNSAuctionPrices({
-      name: requiredNameFromOptions(options),
-      type: options.type,
-      intervalMs:
-        options.intervalMs !== undefined ? +options.intervalMs : undefined,
-      timestamp:
-        options.timestamp !== undefined ? +options.timestamp : undefined,
-      years: options.years !== undefined ? +options.years : undefined,
-    });
-    return result ?? { message: `No auction prices found` };
-  },
+  action: getArNSAuctionPrices,
 });
 
-makeCommand<EpochCLIOptions>({
+makeCommand({
   name: 'get-epoch',
   description: 'Get epoch data',
   options: epochOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getEpoch(epochInputFromOptions(o))
-      .then(
-        (result) => result ?? { message: `No epoch found for provided input` },
-      ),
+  action: getEpoch,
 });
 
 makeCommand({
@@ -327,24 +239,14 @@ makeCommand({
   name: 'get-prescribed-observers',
   description: 'Get prescribed observers for an epoch',
   options: epochOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getPrescribedObservers(epochInputFromOptions(o))
-      .then((result) =>
-        result.length ? result : { message: `No observers found for epoch` },
-      ),
+  action: getPrescribedObservers,
 });
 
 makeCommand({
   name: 'get-prescribed-names',
   description: 'Get prescribed names for an epoch',
   options: epochOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getPrescribedNames(epochInputFromOptions(o))
-      .then((result) =>
-        result.length ? result : { message: `No names found for epoch` },
-      ),
+  action: getPrescribedNames,
 });
 
 makeCommand({
@@ -366,45 +268,7 @@ makeCommand({
   name: 'get-token-cost',
   description: 'Get token cost',
   options: tokenCostOptions,
-}).action(async (_, command) => {
-  await runCommand<GetTokenCostCLIOptions>(command, async (options) => {
-    options.intent ??= 'Buy-Record';
-    options.type ??= 'lease';
-
-    if (!isValidIntent(options.intent)) {
-      throw new Error(
-        `Invalid intent. Valid intents are: ${validIntents.join(', ')}`,
-      );
-    }
-
-    if (options.type !== 'lease' && options.type !== 'permabuy') {
-      throw new Error(`Invalid type. Valid types are: lease, permabuy`);
-    }
-
-    if (
-      options.type === 'lease' &&
-      intentsUsingYears.includes(options.intent) &&
-      options.years === undefined
-    ) {
-      throw new Error('Years is required for lease type');
-    }
-
-    const tokenCost = await readIOFromOptions(options).getTokenCost({
-      type: options.type,
-      quantity: options.quantity !== undefined ? +options.quantity : undefined,
-      years: options.years !== undefined ? +options.years : undefined,
-      intent: options.intent,
-      name: requiredNameFromOptions(options),
-    });
-
-    const output = {
-      mIOTokenCost: tokenCost,
-      message: `The cost of the provided action is ${formatIOWithCommas(
-        new mIOToken(tokenCost).toIO(),
-      )} IO`,
-    };
-    return output;
-  });
+  action: getTokenCost,
 });
 
 makeCommand<PaginationCLIOptions>({
@@ -452,27 +316,7 @@ makeCommand<AddressAndNameCLIOptions>({
   name: 'get-primary-name',
   description: 'Get primary name',
   options: [...addressOptions, optionMap.name],
-  action: async (o) => {
-    const address = addressFromOptions(o);
-    const name = o.name;
-
-    const params =
-      name !== undefined
-        ? { name }
-        : address !== undefined
-          ? { address }
-          : undefined;
-    if (params === undefined) {
-      throw new Error('Either --address or --name is required');
-    }
-
-    const result = await readIOFromOptions(o).getPrimaryName(params);
-    return (
-      result ?? {
-        message: `No primary name found`,
-      }
-    );
-  },
+  action: getPrimaryName,
 });
 
 makeCommand<PaginationCLIOptions>({
@@ -614,32 +458,36 @@ makeCommand<OperatorStakeCLIOptions>({
     }),
 });
 
-makeCommand<AddressAndVaultIdCLIOptions>({
+makeCommand<AddressAndVaultIdCLIOptions & WriteActionCLIOptions>({
   name: 'instant-withdrawal',
   description: 'Instantly withdraw stake from a vault',
   options: addressAndVaultIdOptions,
-  action: (options) =>
+  action: (options) => {
     // TODO: Could assert vault exists with stake
-    writeIOFromOptions(options).instantWithdrawal({
-      gatewayAddress: addressFromOptions(options),
-      vaultId: requiredVaultIdFromOptions(options),
-    }),
+    return writeIOFromOptions(options).instantWithdrawal(
+      {
+        gatewayAddress: requiredAddressFromOptions(options),
+        vaultId: requiredVaultIdFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
 });
 
-makeCommand<AddressAndVaultIdCLIOptions>({
+makeCommand<AddressAndVaultIdCLIOptions & WriteActionCLIOptions>({
   name: 'cancel-withdrawal',
   description: 'Cancel a pending withdrawal',
   options: addressAndVaultIdOptions,
   action: (options) => {
-    const io = writeIOFromOptions(options);
-    const address = addressFromOptions(options);
-
     // TODO: Could assert withdrawal exists
 
-    return io.cancelWithdrawal({
-      gatewayAddress: address,
-      vaultId: requiredVaultIdFromOptions(options),
-    });
+    return writeIOFromOptions(options).cancelWithdrawal(
+      {
+        gatewayAddress: requiredAddressFromOptions(options),
+        vaultId: requiredVaultIdFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    );
   },
 });
 
