@@ -1,3 +1,10 @@
+## [2.5.3-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3-alpha.2...v2.5.3-alpha.3) (2024-11-27)
+
+
+### Bug Fixes
+
+* **handler names:** add primary name handlers ([5192c09](https://github.com/ar-io/ar-io-sdk/commit/5192c093ca75b5c6e05d446d3b711406849a9a9a))
+
 ## [2.5.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1...v2.5.2) (2024-11-25)
 
 
