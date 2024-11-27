@@ -34,7 +34,6 @@ import {
   delegateStakeOptions,
   epochOptions,
   getVaultOptions,
-  globalOptions,
   initiatorOptions,
   joinNetworkOptions,
   nameOptions,
@@ -47,7 +46,6 @@ import {
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
-  walletOptions,
   writeActionOptions,
 } from './options.js';
 import {
@@ -71,7 +69,6 @@ import {
   RedelegateStakeCLIOptions,
   SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
-  WalletCLIOptions,
 } from './types.js';
 import {
   addressFromOptions,
@@ -100,7 +97,6 @@ import {
 makeCommand({
   name: 'ar.io', // TODO: can it be ar.io?
   description: 'AR.IO Network CLI',
-  options: globalOptions,
 })
   .version(version)
   .helpCommand(true);
@@ -580,10 +576,9 @@ makeCommand({
   action: joinNetwork,
 });
 
-makeCommand<WalletCLIOptions>({
+makeCommand({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
-  options: walletOptions,
   // TODO: Add a confirmation prompt? Could get settings, display, then confirm prompt
   action: (options) => writeIOFromOptions(options).leaveNetwork(),
 });

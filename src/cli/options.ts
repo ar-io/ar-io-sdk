@@ -192,57 +192,46 @@ export const optionMap = {
   },
 };
 
-export const globalOptions = [
-  optionMap.dev,
-  optionMap.debug,
-  optionMap.ioProcessId,
-];
-
 export const walletOptions = [
-  // ...globalOptions,
   optionMap.walletFile,
   // optionMap.mnemonic,
   optionMap.privateKey,
 ];
 
-export const writeActionOptions = [
+export const globalOptions = [
   ...walletOptions,
-  optionMap.skipConfirmation,
-  optionMap.tags,
+  optionMap.dev,
+  optionMap.debug,
+  optionMap.ioProcessId,
 ];
 
+export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
+
+export const addressOptions = [optionMap.address];
+export const nameOptions = [optionMap.name];
+export const initiatorOptions = [optionMap.initiator];
+
+export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];
+
+export const addressAndVaultIdOptions = [...addressOptions, optionMap.vaultId];
+
+export const nameWriteOptions = [...writeActionOptions, optionMap.name];
+
 export const paginationOptions = [
-  ...walletOptions,
   optionMap.cursor,
   optionMap.limit,
   optionMap.sortBy,
   optionMap.sortOrder,
 ];
 
-export const epochOptions = [
-  ...globalOptions,
-  optionMap.epochIndex,
-  optionMap.timestamp,
-];
-
-export const addressOptions = [...walletOptions, optionMap.address];
-
 export const paginationAddressOptions = [
   optionMap.address,
   ...paginationOptions,
 ];
 
-export const nameOptions = [optionMap.name];
-export const nameWriteOptions = [...writeActionOptions, optionMap.name];
-
-export const initiatorOptions = [optionMap.initiator];
-
-export const addressAndVaultIdOptions = [...addressOptions, optionMap.vaultId];
-
 export const getVaultOptions = addressAndVaultIdOptions;
 
 export const tokenCostOptions = [
-  ...globalOptions,
   optionMap.name,
   optionMap.intent,
   optionMap.type,
@@ -251,7 +240,6 @@ export const tokenCostOptions = [
 ];
 
 export const arNSAuctionPricesOptions = [
-  ...globalOptions,
   optionMap.name,
   optionMap.type,
   optionMap.years,

@@ -27,22 +27,23 @@ import {
   PaginationParams,
 } from '../types/io.js';
 
-export type GlobalCLIOptions = {
-  dev: boolean;
-  debug: boolean;
-  ioProcessId?: string;
-};
-
-export type WalletCLIOptions = GlobalCLIOptions & {
+export type WalletCLIOptions = {
   walletFile?: string;
   // mnemonic?: string;
   privateKey?: string;
 };
 
-export type WriteActionCLIOptions = WalletCLIOptions & {
+export type GlobalCLIOptions = WalletCLIOptions & {
+  dev: boolean;
+  debug: boolean;
+  ioProcessId?: string;
+};
+
+export type WriteActionCLIOptions = GlobalCLIOptions & {
   tags?: string[];
   skipConfirmation?: boolean;
 };
+
 /**
  * A utility type to transform `number` properties in a type `T` to `string`
  * properties, while preserving arrays, objects, and other types.
@@ -76,7 +77,7 @@ export type CLIOptionsFromAoParams<T> = {
 export type PaginationCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<PaginationParams>;
 
-export type AddressCLIOptions = WalletCLIOptions &
+export type AddressCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
 export type InitiatorCLIOptions = GlobalCLIOptions &
@@ -84,7 +85,7 @@ export type InitiatorCLIOptions = GlobalCLIOptions &
     initiator: string;
   }>;
 
-export type AddressAndNameCLIOptions = WalletCLIOptions &
+export type AddressAndNameCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<{
     address: string;
     name: string;
@@ -110,7 +111,7 @@ export type NameCLIOptions = GlobalCLIOptions &
 export type NameWriteCLIOptions = WriteActionCLIOptions & NameCLIOptions;
 
 export type AddressAndVaultIdCLIOptions =
-  CLIOptionsFromAoParams<AoGetVaultParams> & WalletCLIOptions;
+  CLIOptionsFromAoParams<AoGetVaultParams> & GlobalCLIOptions;
 
 export type GetVaultCLIOptions = AddressAndVaultIdCLIOptions;
 

@@ -36,6 +36,7 @@ import {
   mIOToken,
   sha256B64Url,
 } from '../node/index.js';
+import { globalOptions } from './options.js';
 import {
   AddressCLIOptions,
   EpochCLIOptions,
@@ -109,7 +110,7 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   options?: CommanderOption[];
 }): Command {
   const command = program.command(name).description(description);
-  const appliedCommand = applyOptions(command, options);
+  const appliedCommand = applyOptions(command, [...options, ...globalOptions]);
   if (action !== undefined) {
     appliedCommand.action(() => runCommand<O>(appliedCommand, action));
   }
@@ -171,7 +172,7 @@ export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
 }
 
 export function writeIOFromOptions(
-  options: WalletCLIOptions,
+  options: GlobalCLIOptions,
   signer?: ContractSigner,
 ): AoIOWrite {
   signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
