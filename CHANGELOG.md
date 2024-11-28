@@ -1,3 +1,10 @@
+## [2.5.4](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3...v2.5.4) (2024-11-28)
+
+
+### Bug Fixes
+
+* **primary:** support primary name in token cost API ([b4edf47](https://github.com/ar-io/ar-io-sdk/commit/b4edf4768ed6d22325bb3328d9724703fa17c89a))
+
 ## [2.5.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3) (2024-11-27)
 
 
