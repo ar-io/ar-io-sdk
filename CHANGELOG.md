@@ -1,9 +1,11 @@
-## [2.5.3-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3-alpha.3...v2.5.3-alpha.4) (2024-11-28)
+## [2.5.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3) (2024-11-27)
 
 
 ### Bug Fixes
 
-* **primary:** support primary name in token cost API ([b4edf47](https://github.com/ar-io/ar-io-sdk/commit/b4edf4768ed6d22325bb3328d9724703fa17c89a))
+* **ant lua id:** update ant lua id ([54ff68b](https://github.com/ar-io/ar-io-sdk/commit/54ff68b03842f8382bbdfd28902f033857f25a39))
+* **ant:** update write handler types removes evolve handler name ([d9f5de4](https://github.com/ar-io/ar-io-sdk/commit/d9f5de438bd303078d1ccaa33198a9de4e36405d))
+* **handler names:** add primary name handlers ([5192c09](https://github.com/ar-io/ar-io-sdk/commit/5192c093ca75b5c6e05d446d3b711406849a9a9a))
 
 ## [2.5.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1...v2.5.2) (2024-11-25)
 
