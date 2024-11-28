@@ -625,7 +625,7 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 
 #### `getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`
 
-Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId from the previous request.
+Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegate address from the previous request.
 
 ```typescript
 const io = IO.init();
