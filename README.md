@@ -1577,13 +1577,15 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 
 #### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all primary names across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
+Retrieves all primary names paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
 
 ```typescript
 const io = IO.init();
 const names = await io.getPrimaryNames({
-  cursor: 'ar-io',
-  limit: 2,
+  cursor: 'ao', // this is the last name from the previous request
+  limit: 1,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
 });
 ```
 
@@ -1593,10 +1595,11 @@ const names = await io.getPrimaryNames({
 ```json
 {
   "sortOrder": "desc",
-  "hasMore": false,
-  "totalItems": 1,
-  "limit": 100,
-  "sortBy": "name",
+  "hasMore": true,
+  "totalItems": 100,
+  "limit": 1,
+  "sortBy": "startTimestamp",
+  "cursor": "arns",
   "items": [
     {
       "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
