@@ -36,6 +36,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getgatewaydelegates-address-cursor-limit-sortby-sortorder-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings({ ...settings })`](#updategatewaysettings-settings-)
@@ -617,6 +618,53 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
   "totalItems": 316,
   "sortBy": "operatorStake",
   "sortOrder": "desc"
+}
+```
+
+</details>
+
+#### `getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId from the previous request.
+
+```typescript
+const io = IO.init();
+const delegates = await io.getGatewayDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  limit: 3,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "nextCursor": "ScEtph9-vfY7lgqlUWwUwOmm99ySeZGQhOX0MFAyFEs",
+  "limit": 3,
+  "sortBy": "startTimestamp",
+  "totalItems": 32,
+  "sortOrder": "desc",
+  "hasMore": true,
+  "items": [
+    {
+      "delegatedStake": 600000000,
+      "address": "qD5VLaMYyIHlT6vH59TgYIs6g3EFlVjlPqljo6kqVxk",
+      "startTimestamp": 1732716956301
+    },
+    {
+      "delegatedStake": 508999038,
+      "address": "KG8TlcWk-8pvroCjiLD2J5zkG9rqC6yYaBuZNqHEyY4",
+      "startTimestamp": 1731828123742
+    },
+    {
+      "delegatedStake": 510926479,
+      "address": "ScEtph9-vfY7lgqlUWwUwOmm99ySeZGQhOX0MFAyFEs",
+      "startTimestamp": 1731689356040
+    }
+  ]
 }
 ```
 

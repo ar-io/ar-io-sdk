@@ -234,7 +234,6 @@ export type AoGatewayWithAddress = AoGateway & {
 export type AoGatewayDelegate = {
   delegatedStake: number;
   startTimestamp: Timestamp;
-  vaults: Record<WalletAddress, AoVaultData>;
 };
 
 export type AoGatewayDelegateWithAddress = AoGatewayDelegate & {
