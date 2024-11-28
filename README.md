@@ -1599,6 +1599,7 @@ const names = await io.getPrimaryNames({
   "totalItems": 100,
   "limit": 1,
   "sortBy": "startTimestamp",
+  "cursor": "arns",
   "items": [
     {
       "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
