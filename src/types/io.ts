@@ -417,12 +417,17 @@ export interface AoIORead {
     name,
     quantity,
   }: {
-    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
+    intent:
+      | 'Buy-Record'
+      | 'Extend-Lease'
+      | 'Increase-Undername-Limit'
+      | 'Upgrade-Name'
+      | 'Primary-Name-Request';
     type?: 'permabuy' | 'lease';
     years?: number;
-    name?: string;
+    name: string;
     quantity?: number;
-  }): Promise<number>;
+  }): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getVaults(

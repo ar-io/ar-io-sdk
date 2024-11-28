@@ -454,6 +454,14 @@ export class IOReadable implements AoIORead {
     quantity: number;
     name: string;
   }): Promise<number>;
+  async getTokenCost(params: {
+    intent: 'Upgrade-Name';
+    name: string;
+  }): Promise<number>;
+  async getTokenCost(params: {
+    intent: 'Primary-Name-Request';
+    name: string;
+  }): Promise<number>;
   async getTokenCost({
     intent,
     type,
@@ -461,10 +469,15 @@ export class IOReadable implements AoIORead {
     name,
     quantity,
   }: {
-    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
+    intent:
+      | 'Buy-Record'
+      | 'Extend-Lease'
+      | 'Increase-Undername-Limit'
+      | 'Upgrade-Name'
+      | 'Primary-Name-Request';
     type?: 'permabuy' | 'lease';
     years?: number;
-    name?: string;
+    name: string;
     quantity?: number;
   }): Promise<number> {
     const allTags = [
