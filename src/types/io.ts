@@ -323,6 +323,26 @@ export type AoJoinNetworkParams = Pick<
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
 
+export type AoGatewayRegistrySettings = {
+  delegates: {
+    minStake: number;
+    withdrawLengthMs: number;
+  };
+  observers: {
+    tenureWeightDays: number;
+    tenureWeightPeriod: number;
+    maxTenureWeight: number;
+    maxPerEpoch: number;
+  };
+  operators: {
+    minStake: number;
+    withdrawLengthMs: number;
+    leaveLengthMs: number;
+    failedEpochCountMax: number;
+    failedEpochSlashRate: number;
+  };
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -455,6 +475,7 @@ export interface AoIORead {
   getRedelegationFee(params: {
     address: WalletAddress;
   }): Promise<AoRedelegationFeeInfo>;
+  getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
 }
 
 export interface AoIOWrite extends AoIORead {
