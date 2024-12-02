@@ -361,6 +361,7 @@ export const validIntents = [
   'Extend-Lease',
   'Increase-Undername-Limit',
   'Upgrade-Name',
+  'Primary-Name-Request',
 ];
 export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'];
 export type Intent = (typeof validIntents)[number];
@@ -503,7 +504,7 @@ export interface AoIORead {
     years,
     name,
     quantity,
-  }: AoTokenCostParams): Promise<number>;
+  }: AoTokenCostParams): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getVaults(
