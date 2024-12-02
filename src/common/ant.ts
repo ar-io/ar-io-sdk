@@ -528,7 +528,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       tags: [
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Set-Keywords' },
-        { name: 'Description', value: JSON.stringify(keywords) },
+        { name: 'Keywords', value: JSON.stringify(keywords) },
       ],
       signer: this.signer,
     });
