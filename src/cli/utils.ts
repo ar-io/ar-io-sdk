@@ -19,6 +19,9 @@ import { readFileSync } from 'fs';
 import prompts from 'prompts';
 
 import {
+  ANT,
+  AoANTRead,
+  AoANTWrite,
   AoIORead,
   AoIOWrite,
   AoRedelegateStakeParams,
@@ -46,6 +49,7 @@ import {
   JsonSerializable,
   OperatorStakeCLIOptions,
   PaginationCLIOptions,
+  ProcessIdCLIOptions,
   RedelegateStakeCLIOptions,
   TransferCLIOptions,
   UpdateGatewaySettingsCLIOptions,
@@ -118,7 +122,7 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   return appliedCommand;
 }
 
-function ioProcessIdFromOptions({
+export function ioProcessIdFromOptions({
   ioProcessId,
   dev,
 }: GlobalCLIOptions): string {
@@ -162,6 +166,11 @@ function setLoggerIfDebug(options: GlobalCLIOptions) {
   if (options.debug) {
     Logger.default.setLogLevel('debug');
   }
+}
+
+export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
+  setLoggerIfDebug(options);
+  return Logger.default;
 }
 
 export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
@@ -462,4 +471,60 @@ export async function confirmationPrompt(message: string): Promise<boolean> {
     message,
   });
   return confirm;
+}
+
+export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
+  o: O,
+): string {
+  if (o.processId === undefined) {
+    throw new Error('--process-id is required');
+  }
+  return o.processId;
+}
+
+export function readableANTFromOptions(
+  options: ProcessIdCLIOptions,
+): AoANTRead {
+  return ANT.init({
+    processId: requiredProcessIdFromOptions(options),
+  });
+}
+
+export function writeableANTFromOptions(
+  options: ProcessIdCLIOptions,
+  signer?: ContractSigner,
+): AoANTWrite {
+  // TODO: ETH signer, SOL signer, etc.
+  signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
+
+  return ANT.init({
+    processId: requiredProcessIdFromOptions(options),
+    signer,
+  });
+}
+
+export function requiredStringFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): string {
+  const value = options[key];
+  if (value === undefined) {
+    throw new Error(`--${key} is required`);
+  }
+  return value;
+}
+
+export function requiredStringArrayFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): string[] {
+  const value = options[key];
+  if (value === undefined) {
+    throw new Error(`--${key} is required`);
+  }
+  if (!Array.isArray(value)) {
+    throw new Error(`--${key} must be an array`);
+  }
+  console.log('value', value);
+  return value;
 }

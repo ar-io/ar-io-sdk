@@ -19,11 +19,7 @@
 import { program } from 'commander';
 
 import {
-  ANT,
-  ANTRegistry,
-  ANT_REGISTRY_ID,
   ArweaveSigner,
-  Logger,
   createAoSigner,
   initANTStateForAddress,
   spawnANT,
@@ -92,6 +88,7 @@ import {
   PaginationAddressCLIOptions,
   PaginationCLIOptions,
   ProcessIdCLIOptions,
+  ProcessIdWriteActionCLIOptions,
   RedelegateStakeCLIOptions,
   SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
@@ -100,24 +97,29 @@ import {
 import {
   epochInputFromOptions,
   formatIOWithCommas,
+  getLoggerFromOptions,
+  ioProcessIdFromOptions,
   jwkToAddress,
   makeCommand,
   paginationParamsFromOptions,
   readIOFromOptions,
+  readableANTFromOptions,
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
   requiredIncreaseCountFromOptions,
-  requiredInitiatorFromOptions,
   requiredJwkFromOptions,
   requiredMIOQuantityFromOptions,
   requiredNameFromOptions,
   requiredOperatorStakeFromOptions,
+  requiredStringArrayFromOptions,
+  requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
   requiredVaultIdFromOptions,
   requiredYearsFromOptions,
   typeFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
+  writeableANTFromOptions,
   yearsFromOptions,
 } from './utils.js';
 
@@ -297,6 +299,8 @@ makeCommand<PaginationCLIOptions>({
       ),
 });
 
+// TODO: Could assert valid arweave addresses at CLI level
+
 makeCommand<InitiatorCLIOptions>({
   name: 'get-primary-name-request',
   description: 'Get primary name request',
@@ -304,7 +308,7 @@ makeCommand<InitiatorCLIOptions>({
   action: (o) =>
     readIOFromOptions(o)
       .getPrimaryNameRequest({
-        initiator: requiredInitiatorFromOptions(o),
+        initiator: requiredStringFromOptions(o, 'initiator'),
       })
       .then(
         (result) =>
@@ -448,7 +452,7 @@ makeCommand({
   action: updateGatewaySettings,
 });
 
-// save-observations
+// TODO: save-observations
 
 makeCommand<OperatorStakeCLIOptions>({
   name: 'increase-operator-stake',
@@ -679,7 +683,6 @@ makeCommand<NameWriteCLIOptions>({
     }),
 });
 
-// TODO: Pass debug logger down to spawn/ANTRegistry
 makeCommand<
   GlobalCLIOptions & {
     target?: string;
@@ -694,27 +697,18 @@ makeCommand<
     const signer = createAoSigner(new ArweaveSigner(jwk));
     const target = options.target;
 
-    const logger = Logger.default;
-    if (options.debug === true) {
-      logger.setLogLevel('debug');
-    }
+    // TODO: pass state from any provided ANT state options
 
+    const state = initANTStateForAddress(address, target);
     const antProcessId = await spawnANT({
-      state: initANTStateForAddress(address, target),
+      state,
       signer,
-      logger,
-    });
-
-    const antRegistry = ANTRegistry.init({
-      signer,
-      processId: ANT_REGISTRY_ID,
-    });
-    await antRegistry.register({
-      processId: antProcessId,
+      logger: getLoggerFromOptions(options),
     });
 
     return {
       processId: antProcessId,
+      state,
       message: `Spawned ANT process with process ID ${antProcessId}`,
     };
   },
@@ -725,13 +719,344 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the state of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    if (options.processId === undefined) {
-      throw new Error('--process-id is required');
-    }
+    return readableANTFromOptions(options).getState();
+  },
+});
 
-    return ANT.init({
-      processId: options.processId,
-    }).getState();
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-info',
+  description: 'Get the info of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getInfo();
+  },
+});
+
+makeCommand<
+  ProcessIdCLIOptions & {
+    undername?: string;
+  }
+>({
+  name: 'get-ant-record',
+  description: 'Get a record of an ANT process',
+  options: [optionMap.processId, optionMap.undername],
+  action: async (options) => {
+    if (options.undername === undefined) {
+      throw new Error('--undername is required');
+    }
+    return (
+      (await readableANTFromOptions(options).getRecord({
+        undername: options.undername,
+      })) ?? { message: 'No record found' }
+    );
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'list-ant-records',
+  description: 'Get the records of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getRecords();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-owner',
+  description: 'Get the owner of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getOwner();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'list-ant-controllers',
+  description: 'List the controllers of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getControllers();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-name',
+  description: 'Get the name of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getName();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-ticker',
+  description: 'Get the ticker of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getTicker();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions & { address?: string }>({
+  name: 'get-ant-balance',
+  description: 'Get the balance of an ANT process',
+  options: [optionMap.processId, optionMap.address],
+  action: async (options) => {
+    return readableANTFromOptions(options).getBalance({
+      address: requiredAddressFromOptions(options),
+    });
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'list-ant-balances',
+  description: 'Get the balances of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readableANTFromOptions(options).getBalances();
+  },
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    target?: string;
+  }
+>({
+  name: 'transfer-ant-ownership',
+  description: 'Transfer ownership of an ANT process',
+  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).transfer(
+      {
+        target: requiredStringFromOptions(options, 'target'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdCLIOptions & { controller?: string }>({
+  name: 'add-ant-controller',
+  description: 'Add a controller to an ANT process',
+  options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).addController(
+      {
+        controller: requiredStringFromOptions(options, 'controller'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdCLIOptions & { controller?: string }>({
+  name: 'remove-ant-controller',
+  description: 'Remove a controller from an ANT process',
+  options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).removeController(
+      {
+        controller: requiredStringFromOptions(options, 'controller'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    undername?: string;
+    transactionId?: string;
+    ttlSeconds?: number;
+  }
+>({
+  name: 'set-ant-record',
+  description: 'Set a record of an ANT process',
+  options: [
+    optionMap.processId,
+    optionMap.undername,
+    optionMap.transactionId,
+    optionMap.ttlSeconds,
+    ...writeActionOptions,
+  ],
+  action: async (options) => {
+    options.ttlSeconds ??= 3600;
+    return writeableANTFromOptions(options).setRecord(
+      {
+        undername: requiredStringFromOptions(options, 'undername'),
+        transactionId: requiredStringFromOptions(options, 'transactionId'),
+        ttlSeconds: options.ttlSeconds,
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
+  name: 'remove-ant-record',
+  description: 'Remove a record from an ANT process',
+  options: [optionMap.processId, optionMap.undername, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).removeRecord(
+      {
+        undername: requiredStringFromOptions(options, 'undername'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
+  name: 'set-ant-ticker',
+  description: 'Set the ticker of an ANT process',
+  options: [optionMap.processId, optionMap.ticker, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).setTicker(
+      {
+        ticker: requiredStringFromOptions(options, 'ticker'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { name?: string }>({
+  name: 'set-ant-name',
+  description: 'Set the name of an ANT process',
+  options: [optionMap.processId, optionMap.name, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).setName(
+      {
+        name: requiredStringFromOptions(options, 'name'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { description?: string }>({
+  name: 'set-ant-description',
+  description: 'Set the description of an ANT process',
+  options: [optionMap.processId, optionMap.description, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).setDescription(
+      {
+        description: requiredStringFromOptions(options, 'description'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { keywords?: string[] }>({
+  name: 'set-ant-keywords',
+  description: 'Set the keywords of an ANT process',
+  options: [optionMap.processId, optionMap.keywords, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).setKeywords(
+      {
+        keywords: requiredStringArrayFromOptions(options, 'keywords'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
+  name: 'set-ant-logo',
+  description: 'Set the logo of an ANT process',
+  options: [
+    optionMap.processId,
+    optionMap.transactionId,
+    ...writeActionOptions,
+  ],
+  action: async (options) => {
+    return writeableANTFromOptions(options).setLogo(
+      {
+        txId: requiredStringFromOptions(options, 'transactionId'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    name?: string;
+  }
+>({
+  name: 'release-name',
+  description: 'Release the name of an ANT process',
+  options: [optionMap.processId, optionMap.name, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).releaseName(
+      {
+        name: requiredStringFromOptions(options, 'name'),
+        ioProcessId: ioProcessIdFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    name?: string;
+    target?: string;
+  }
+>({
+  name: 'reassign-name',
+  description: 'Reassign the name of an ANT process to another ANT process',
+  options: [
+    optionMap.processId,
+    optionMap.name,
+    optionMap.target,
+    ...writeActionOptions,
+  ],
+  action: async (options) => {
+    return writeableANTFromOptions(options).reassignName(
+      {
+        name: requiredStringFromOptions(options, 'name'),
+        ioProcessId: ioProcessIdFromOptions(options),
+        antProcessId: requiredStringFromOptions(options, 'target'),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    name?: string;
+    target?: string;
+  }
+>({
+  name: 'approve-primary-name-request',
+  description: 'Approve a primary name request',
+  options: [
+    optionMap.processId,
+    optionMap.name,
+    optionMap.target,
+    ...writeActionOptions,
+  ],
+});
+
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    names?: string[];
+  }
+>({
+  name: 'remove-primary-names',
+  description: 'Remove primary names',
+  options: [optionMap.processId, optionMap.names, ...writeActionOptions],
+  action: async (options) => {
+    return writeableANTFromOptions(options).removePrimaryNames(
+      {
+        names: requiredStringArrayFromOptions(options, 'names'),
+        ioProcessId: ioProcessIdFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    );
   },
 });
 

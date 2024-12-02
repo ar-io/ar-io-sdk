@@ -44,6 +44,10 @@ export type WriteActionCLIOptions = GlobalCLIOptions & {
   skipConfirmation?: boolean;
 };
 
+export type ProcessIdWriteActionCLIOptions = WriteActionCLIOptions & {
+  processId?: string;
+};
+
 /**
  * A utility type to transform `number` properties in a type `T` to `string`
  * properties, while preserving arrays, objects, and other types.
@@ -81,7 +85,7 @@ export type AddressCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
 export type ProcessIdCLIOptions = GlobalCLIOptions & {
-  processId: string;
+  processId?: string;
 };
 
 export type InitiatorCLIOptions = GlobalCLIOptions &

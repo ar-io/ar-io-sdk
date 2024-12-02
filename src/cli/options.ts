@@ -187,8 +187,42 @@ export const optionMap = {
     type: 'boolean',
   },
   increaseCount: {
-    alias: '--increase-count',
+    alias: '--increase-count <increaseCount>',
     description: 'Amount to increase the undername count of the record by',
+  },
+  undername: {
+    alias: '--undername <undername>',
+    description: 'The undername to interact with',
+  },
+  controller: {
+    alias: '--controller <controller>',
+    description: 'The controller to interact with',
+  },
+  transactionId: {
+    alias: '--transaction-id <transactionId>',
+    description: 'The transaction ID to interact with',
+  },
+  ttlSeconds: {
+    alias: '--ttl-seconds <ttlSeconds>',
+    description: 'The TTL in seconds for the record',
+  },
+  ticker: {
+    alias: '--ticker <ticker>',
+    description: 'The ticker for the ANT',
+  },
+  description: {
+    alias: '--description <description>',
+    description: 'The description for the ANT',
+  },
+  keywords: {
+    alias: '--keywords <keywords...>',
+    description: 'The keywords for the ANT',
+    type: 'array',
+  },
+  names: {
+    alias: '--names <names...>',
+    description: 'The names to interact with',
+    type: 'array',
   },
 };
 
