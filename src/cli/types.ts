@@ -80,6 +80,10 @@ export type PaginationCLIOptions = GlobalCLIOptions &
 export type AddressCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoAddressParams>;
 
+export type ProcessIdCLIOptions = GlobalCLIOptions & {
+  processId: string;
+};
+
 export type InitiatorCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<{
     initiator: string;

@@ -58,7 +58,7 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
         )} IO. Please provide a higher stake.`,
       );
     }
-    assertEnoughBalance(io, address, ioQuantity);
+    await assertEnoughBalance(io, address, ioQuantity);
 
     const confirm = await confirmationPrompt(
       `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(ioQuantity)} IO to join the AR.IO network\nAre you sure?\n`,

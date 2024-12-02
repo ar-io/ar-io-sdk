@@ -34,6 +34,17 @@ import {
   WalletAddress,
 } from '../types/index.js';
 
+export type SpawnANTState = {
+  owner: WalletAddress;
+  controllers: WalletAddress[];
+  name: string;
+  description: string;
+  keywords: string[];
+  ticker: string;
+  records: Record<string, AoANTRecord>;
+  balances: Record<WalletAddress, number>;
+};
+
 export async function spawnANT({
   signer,
   module = AOS_MODULE_ID,
@@ -51,14 +62,7 @@ export async function spawnANT({
   luaCodeTxId?: string;
   ao?: AoClient;
   scheduler?: string;
-  state?: {
-    owner: WalletAddress;
-    controllers: WalletAddress[];
-    name: string;
-    ticker: string;
-    records: Record<string, AoANTRecord>;
-    balances: Record<WalletAddress, number>;
-  };
+  state?: SpawnANTState;
   stateContractTxId?: string;
   antRegistryId?: string;
   logger?: Logger;
@@ -110,7 +114,7 @@ export async function spawnANT({
     signer,
   });
 
-  logger.info(`Spawned ANT`, {
+  logger.debug(`Spawned ANT`, {
     processId,
     module,
     scheduler,
@@ -129,7 +133,7 @@ export async function spawnANT({
       data: JSON.stringify(state),
       signer,
     });
-    logger.info(`Initialized ANT`, {
+    logger.debug(`Initialized ANT`, {
       processId,
       module,
       scheduler,
@@ -141,7 +145,7 @@ export async function spawnANT({
     processId,
   });
 
-  logger.info(`Registered ANT to ANT Registry`, {
+  logger.debug(`Registered ANT to ANT Registry`, {
     processId,
     module,
     scheduler,
@@ -188,7 +192,7 @@ export async function evolveANT({
     data: luaString,
     signer,
   });
-  logger.info(`Evolved ANT`, {
+  logger.debug(`Evolved ANT`, {
     processId,
     luaCodeTxId,
     evalMsgId: evolveMsgId,
@@ -256,4 +260,45 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
+}
+
+export const defaultTargetManifestId =
+  '-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI';
+
+export function createDefaultAntState(
+  state: Partial<SpawnANTState> = {},
+): SpawnANTState {
+  return {
+    ticker: 'aos',
+    name: 'ANT',
+    controllers: [],
+    balances: {},
+    owner: '',
+    description: '',
+    keywords: [],
+    records: {
+      ['@']: {
+        transactionId: defaultTargetManifestId.toString(),
+        ttlSeconds: 3600,
+      },
+    },
+    ...state,
+  };
+}
+
+export function initANTStateForAddress(
+  owner: WalletAddress,
+  targetId?: string,
+) {
+  return createDefaultAntState({
+    owner: owner,
+    controllers: [owner],
+    balances: { [owner]: 1 },
+    records: {
+      ['@']: {
+        transactionId: targetId ?? defaultTargetManifestId.toString(),
+        ttlSeconds: 3600,
+      },
+    },
+  });
 }

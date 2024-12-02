@@ -18,6 +18,16 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
+import {
+  ANT,
+  ANTRegistry,
+  ANT_REGISTRY_ID,
+  ArweaveSigner,
+  Logger,
+  createAoSigner,
+  initANTStateForAddress,
+  spawnANT,
+} from '../node/index.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { delegateStake } from './commands/delegateStake.js';
@@ -74,12 +84,14 @@ import {
   DecreaseDelegateStakeCLIOptions,
   ExtendLeaseCLIOptions,
   GetVaultCLIOptions,
+  GlobalCLIOptions,
   IncreaseUndernameLimitCLIOptions,
   InitiatorCLIOptions,
   NameWriteCLIOptions,
   OperatorStakeCLIOptions,
   PaginationAddressCLIOptions,
   PaginationCLIOptions,
+  ProcessIdCLIOptions,
   RedelegateStakeCLIOptions,
   SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
@@ -88,6 +100,7 @@ import {
 import {
   epochInputFromOptions,
   formatIOWithCommas,
+  jwkToAddress,
   makeCommand,
   paginationParamsFromOptions,
   readIOFromOptions,
@@ -95,6 +108,7 @@ import {
   requiredAddressFromOptions,
   requiredIncreaseCountFromOptions,
   requiredInitiatorFromOptions,
+  requiredJwkFromOptions,
   requiredMIOQuantityFromOptions,
   requiredNameFromOptions,
   requiredOperatorStakeFromOptions,
@@ -663,6 +677,62 @@ makeCommand<NameWriteCLIOptions>({
     writeIOFromOptions(options).requestPrimaryName({
       name: requiredNameFromOptions(options),
     }),
+});
+
+// TODO: Pass debug logger down to spawn/ANTRegistry
+makeCommand<
+  GlobalCLIOptions & {
+    target?: string;
+  }
+>({
+  name: 'spawn-ant',
+  description: 'Spawn an ANT process',
+  options: [...writeActionOptions, optionMap.target],
+  action: async (options) => {
+    const jwk = requiredJwkFromOptions(options);
+    const address = jwkToAddress(jwk);
+    const signer = createAoSigner(new ArweaveSigner(jwk));
+    const target = options.target;
+
+    const logger = Logger.default;
+    if (options.debug === true) {
+      logger.setLogLevel('debug');
+    }
+
+    const antProcessId = await spawnANT({
+      state: initANTStateForAddress(address, target),
+      signer,
+      logger,
+    });
+
+    const antRegistry = ANTRegistry.init({
+      signer,
+      processId: ANT_REGISTRY_ID,
+    });
+    await antRegistry.register({
+      processId: antProcessId,
+    });
+
+    return {
+      processId: antProcessId,
+      message: `Spawned ANT process with process ID ${antProcessId}`,
+    };
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-state',
+  description: 'Get the state of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    if (options.processId === undefined) {
+      throw new Error('--process-id is required');
+    }
+
+    return ANT.init({
+      processId: options.processId,
+    }).getState();
+  },
 });
 
 if (
