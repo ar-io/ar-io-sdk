@@ -1,3 +1,10 @@
+## [2.5.4-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4-alpha.1...v2.5.4-alpha.2) (2024-12-02)
+
+
+### Bug Fixes
+
+* use `Keywords` for setKeywords ([99cccd4](https://github.com/ar-io/ar-io-sdk/commit/99cccd499de0254f07e43ae68f4214b2775fa7b8))
+
 ## [2.5.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3) (2024-11-27)
 
 
