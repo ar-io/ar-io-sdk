@@ -1,3 +1,10 @@
+# [2.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2024-12-02)
+
+
+### Bug Fixes
+
+* **io:** update gateway delegates api, add to README ([65aa6a8](https://github.com/ar-io/ar-io-sdk/commit/65aa6a8e280a6d0b6044caf9ba88f47a61d08022))
+
 ## [2.5.5](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4...v2.5.5) (2024-11-28)
 
 
