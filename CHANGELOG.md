@@ -1,3 +1,10 @@
+# [2.6.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4-alpha.2...v2.6.0-alpha.1) (2024-12-02)
+
+
+### Features
+
+* init get gateway registry settings PE-6895 ([bb7b6b4](https://github.com/ar-io/ar-io-sdk/commit/bb7b6b4581f2b5e39c800749f0d7e2414fb9dd1c))
+
 ## [2.5.4-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4-alpha.1...v2.5.4-alpha.2) (2024-12-02)
 
 
