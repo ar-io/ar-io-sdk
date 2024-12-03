@@ -422,26 +422,6 @@ export type AoGatewayRegistrySettings = {
   };
 };
 
-export type AoGatewayRegistrySettings = {
-  delegates: {
-    minStake: number;
-    withdrawLengthMs: number;
-  };
-  observers: {
-    tenureWeightDays: number;
-    tenureWeightPeriod: number;
-    maxTenureWeight: number;
-    maxPerEpoch: number;
-  };
-  operators: {
-    minStake: number;
-    withdrawLengthMs: number;
-    leaveLengthMs: number;
-    failedEpochCountMax: number;
-    failedEpochSlashRate: number;
-  };
-};
-
 // Interfaces
 
 export interface AoIORead {
