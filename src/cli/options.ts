@@ -228,6 +228,11 @@ export const optionMap = {
     description: 'The names to interact with',
     type: 'array',
   },
+  failedGateways: {
+    alias: '--failed-gateways <failedGateways...>',
+    description: 'Include failed gateways in the list',
+    type: 'array',
+  },
 };
 
 export const walletOptions = [

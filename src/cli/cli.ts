@@ -452,7 +452,20 @@ makeCommand({
   action: updateGatewaySettings,
 });
 
-// TODO: save-observations
+makeCommand({
+  name: 'save-observations',
+  description: 'Save observations',
+  options: [
+    optionMap.failedGateways,
+    optionMap.transactionId,
+    ...writeActionOptions,
+  ],
+  action: (options) =>
+    writeIOFromOptions(options).saveObservations({
+      failedGateways: requiredStringArrayFromOptions(options, 'failedGateways'),
+      reportTxId: requiredStringFromOptions(options, 'transactionId'),
+    }),
+});
 
 makeCommand<OperatorStakeCLIOptions>({
   name: 'increase-operator-stake',
@@ -973,6 +986,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
   action: async (options) => {
     return writeANTFromOptions(options).setLogo(
       {
+        // TODO: Could take a logo file, upload it to Arweave, get transaction ID
         txId: requiredStringFromOptions(options, 'transactionId'),
       },
       writeActionTagsFromOptions(options),
