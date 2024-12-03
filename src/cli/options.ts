@@ -36,6 +36,10 @@ export const optionMap = {
     alias: '--io-process-id',
     description: 'Run against a custom AR.IO process id',
   },
+  cuUrl: {
+    alias: '--cu-url <cuUrl>',
+    description: 'The URL for a custom compute unit',
+  },
   processId: {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
@@ -237,6 +241,7 @@ export const globalOptions = [
   optionMap.dev,
   optionMap.debug,
   optionMap.ioProcessId,
+  optionMap.cuUrl,
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];

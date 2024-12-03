@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { connect } from '@permaweb/aoconnect';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
 import { readFileSync } from 'fs';
@@ -20,6 +21,7 @@ import prompts from 'prompts';
 
 import {
   ANT,
+  AOProcess,
   AoANTRead,
   AoANTWrite,
   AoIORead,
@@ -173,11 +175,20 @@ export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
   return Logger.default;
 }
 
+function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
+  return new AOProcess({
+    processId: ioProcessIdFromOptions(options),
+    ao: connect({
+      CU_URL: options.cuUrl,
+    }),
+  });
+}
+
 export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
   setLoggerIfDebug(options);
 
   return IO.init({
-    processId: ioProcessIdFromOptions(options),
+    process: aoProcessFromOptions(options),
   });
 }
 
@@ -189,7 +200,7 @@ export function writeIOFromOptions(
   setLoggerIfDebug(options);
 
   return IO.init({
-    processId: ioProcessIdFromOptions(options),
+    process: aoProcessFromOptions(options),
     signer,
   });
 }
@@ -482,15 +493,22 @@ export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
   return o.processId;
 }
 
-export function readableANTFromOptions(
-  options: ProcessIdCLIOptions,
-): AoANTRead {
-  return ANT.init({
+function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
+  return new AOProcess({
     processId: requiredProcessIdFromOptions(options),
+    ao: connect({
+      CU_URL: options.cuUrl,
+    }),
   });
 }
 
-export function writeableANTFromOptions(
+export function readANTFromOptions(options: ProcessIdCLIOptions): AoANTRead {
+  return ANT.init({
+    process: ANTProcessFromOptions(options),
+  });
+}
+
+export function writeANTFromOptions(
   options: ProcessIdCLIOptions,
   signer?: ContractSigner,
 ): AoANTWrite {
@@ -498,7 +516,7 @@ export function writeableANTFromOptions(
   signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
 
   return ANT.init({
-    processId: requiredProcessIdFromOptions(options),
+    process: ANTProcessFromOptions(options),
     signer,
   });
 }
