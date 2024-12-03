@@ -18,12 +18,7 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import {
-  ArweaveSigner,
-  createAoSigner,
-  initANTStateForAddress,
-  spawnANT,
-} from '../node/index.js';
+import { spawnANT } from '../node/index.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { delegateStake } from './commands/delegateStake.js';
@@ -52,6 +47,7 @@ import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
 import {
   addressAndVaultIdOptions,
   addressOptions,
+  antStateOptions,
   arNSAuctionPricesOptions,
   buyRecordOptions,
   decreaseDelegateStakeOptions,
@@ -73,6 +69,7 @@ import {
   writeActionOptions,
 } from './options.js';
 import {
+  ANTStateCLIOptions,
   AddressAndNameCLIOptions,
   AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
@@ -80,7 +77,6 @@ import {
   DecreaseDelegateStakeCLIOptions,
   ExtendLeaseCLIOptions,
   GetVaultCLIOptions,
-  GlobalCLIOptions,
   IncreaseUndernameLimitCLIOptions,
   InitiatorCLIOptions,
   NameWriteCLIOptions,
@@ -95,32 +91,30 @@ import {
   WriteActionCLIOptions,
 } from './types.js';
 import {
+  assertConfirmationPrompt,
   epochInputFromOptions,
   formatIOWithCommas,
+  getANTStateFromOptions,
   getLoggerFromOptions,
   ioProcessIdFromOptions,
-  jwkToAddress,
   makeCommand,
   paginationParamsFromOptions,
+  positiveIntegerFromOptions,
   readANTFromOptions,
   readIOFromOptions,
+  recordTypeFromOptions,
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
-  requiredIncreaseCountFromOptions,
-  requiredJwkFromOptions,
-  requiredMIOQuantityFromOptions,
-  requiredNameFromOptions,
-  requiredOperatorStakeFromOptions,
+  requiredAoSignerFromOptions,
+  requiredMIOFromOptions,
+  requiredPositiveIntegerFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
   requiredVaultIdFromOptions,
-  requiredYearsFromOptions,
-  typeFromOptions,
   writeANTFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
-  yearsFromOptions,
 } from './utils.js';
 
 makeCommand({
@@ -438,11 +432,17 @@ makeCommand({
   action: joinNetwork,
 });
 
-makeCommand({
+makeCommand<WriteActionCLIOptions>({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
   // TODO: Add a confirmation prompt? Could get settings, display, then confirm prompt
-  action: (options) => writeIOFromOptions(options).leaveNetwork(),
+  action: async (options) => {
+    await assertConfirmationPrompt(
+      'Are you sure you want to leave the AR.IO network?',
+      options,
+    );
+    return writeIOFromOptions(options).leaveNetwork();
+  },
 });
 
 makeCommand({
@@ -474,7 +474,7 @@ makeCommand<OperatorStakeCLIOptions>({
   action: (options) =>
     // TODO: Can assert balance is sufficient
     writeIOFromOptions(options).increaseOperatorStake({
-      increaseQty: requiredOperatorStakeFromOptions(options).toMIO(),
+      increaseQty: requiredMIOFromOptions(options, 'operatorStake'),
     }),
 });
 
@@ -485,7 +485,7 @@ makeCommand<OperatorStakeCLIOptions>({
   action: (options) =>
     // TODO: Can assert stake is sufficient for action, and new target stake meets contract minimum
     writeIOFromOptions(options).decreaseOperatorStake({
-      decreaseQty: requiredOperatorStakeFromOptions(options).toMIO(),
+      decreaseQty: requiredMIOFromOptions(options, 'operatorStake'),
     }),
 });
 
@@ -509,13 +509,20 @@ makeCommand<AddressAndVaultIdCLIOptions & WriteActionCLIOptions>({
   name: 'cancel-withdrawal',
   description: 'Cancel a pending withdrawal',
   options: addressAndVaultIdOptions,
-  action: (options) => {
+  action: async (options) => {
+    const gatewayAddress = requiredAddressFromOptions(options);
+    const vaultId = requiredVaultIdFromOptions(options);
+
     // TODO: Could assert withdrawal exists
+    await assertConfirmationPrompt(
+      `Are you sure you want to cancel the pending withdrawal of stake from vault ${vaultId} on gateway ${gatewayAddress}?`,
+      options,
+    );
 
     return writeIOFromOptions(options).cancelWithdrawal(
       {
-        gatewayAddress: requiredAddressFromOptions(options),
-        vaultId: requiredVaultIdFromOptions(options),
+        gatewayAddress,
+        vaultId,
       },
       writeActionTagsFromOptions(options),
     );
@@ -543,6 +550,11 @@ makeCommand<DecreaseDelegateStakeCLIOptions>({
     // TODO: Could assert new target stake meets contract and target gateway minimums
     // TODO: Could present confirmation prompt with any fee for instant withdrawal (50% of the stake is put back into protocol??)
 
+    await assertConfirmationPrompt(
+      `Are you sure you'd like to decrease delegated stake of ${formatIOWithCommas(ioQuantity)} IO on gateway ${target}?`,
+      options,
+    );
+
     const result = await io.decreaseDelegateStake({
       target,
       decreaseQty: ioQuantity.toMIO(),
@@ -561,7 +573,6 @@ makeCommand<DecreaseDelegateStakeCLIOptions>({
   },
 });
 
-// redelegate-stake
 makeCommand<RedelegateStakeCLIOptions>({
   name: 'redelegate-stake',
   description: 'Redelegate stake to another gateway',
@@ -573,6 +584,11 @@ makeCommand<RedelegateStakeCLIOptions>({
     // TODO: Could assert target gateway exists
     // TODO: Could do assertion on source has enough stake to redelegate
     // TODO: Could do assertions on source/target min delegate stakes are met
+
+    await assertConfirmationPrompt(
+      `Are you sure you'd like to redelegate stake of ${formatIOWithCommas(params.stakeQty.toIO())} IO from ${params.source} to ${params.target}?`,
+      options,
+    );
 
     const result = await io.redelegateStake(params);
 
@@ -595,6 +611,9 @@ makeCommand<BuyRecordCLIOptions>({
   options: buyRecordOptions,
   action: async (options) => {
     const io = writeIOFromOptions(options);
+    const name = requiredStringFromOptions(options, 'name');
+    const type = recordTypeFromOptions(options);
+    const years = positiveIntegerFromOptions(options, 'years');
 
     // TODO: Assert balance is sufficient for action
     // TODO: Assert record is not already owned
@@ -605,11 +624,16 @@ makeCommand<BuyRecordCLIOptions>({
       throw new Error('Process ID must be provided for buy-record');
     }
 
+    await assertConfirmationPrompt(
+      `Are you sure you want to ${type} the record ${name}?`,
+      options,
+    );
+
     return io.buyRecord({
-      name: requiredNameFromOptions(options),
+      name: requiredStringFromOptions(options, 'name'),
       processId,
-      type: typeFromOptions(options),
-      years: yearsFromOptions(options),
+      type,
+      years,
     });
   },
 });
@@ -618,41 +642,69 @@ makeCommand<UpgradeRecordCLIOptions>({
   name: 'upgrade-record',
   description: 'Upgrade the lease of a record to a permabuy',
   options: [...nameOptions, ...writeActionOptions],
-  // TODO: assert record is leased by sender, assert balance is sufficient
-  action: (options) =>
-    writeIOFromOptions(options).upgradeRecord({
-      name: requiredNameFromOptions(options),
-    }),
+  // TODO: could assert record is leased by sender, assert balance is sufficient
+  action: async (options) => {
+    const name = requiredStringFromOptions(options, 'name');
+    await assertConfirmationPrompt(
+      `Are you sure you want to upgrade the lease of ${name} to a permabuy?`,
+      options,
+    );
+    return writeIOFromOptions(options).upgradeRecord({
+      name,
+    });
+  },
 });
 
 makeCommand<ExtendLeaseCLIOptions>({
   name: 'extend-lease',
   description: 'Extend the lease of a record',
   options: [...writeActionOptions, optionMap.name, optionMap.years],
-  action: (options) =>
-    writeIOFromOptions(options).extendLease(
+  action: async (options) => {
+    const name = requiredStringFromOptions(options, 'name');
+    const years = requiredPositiveIntegerFromOptions(options, 'years');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to extend the lease of ${name} by ${years}?`,
+      options,
+    );
+
+    return writeIOFromOptions(options).extendLease(
       {
-        name: requiredNameFromOptions(options),
-        years: requiredYearsFromOptions(options),
+        name,
+        years,
       },
       writeActionTagsFromOptions(options),
-    ),
+    );
+  },
 });
 
 makeCommand<IncreaseUndernameLimitCLIOptions>({
   name: 'increase-undername-limit',
   description: 'Increase the limit of a name',
   options: [...writeActionOptions, optionMap.name, optionMap.increaseCount],
-  action: (options) =>
-    writeIOFromOptions(options).increaseUndernameLimit(
+  action: async (options) => {
+    const name = requiredStringFromOptions(options, 'name');
+    const increaseCount = requiredPositiveIntegerFromOptions(
+      options,
+      'increaseCount',
+    );
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to increase the undername limit of ${name} by ${increaseCount}?`,
+      options,
+    );
+
+    return writeIOFromOptions(options).increaseUndernameLimit(
       {
-        name: requiredNameFromOptions(options),
-        increaseCount: requiredIncreaseCountFromOptions(options),
+        name,
+        increaseCount,
       },
       writeActionTagsFromOptions(options),
-    ),
+    );
+  },
 });
 
+// @deprecated -- submit auction bid will be removed for recently released names
 makeCommand<SubmitAuctionBidCLIOptions>({
   name: 'submit-auction-bid',
   description: 'Submit a bid to an auction',
@@ -673,12 +725,12 @@ makeCommand<SubmitAuctionBidCLIOptions>({
     }
 
     return writeIOFromOptions(options).submitAuctionBid({
-      name: requiredNameFromOptions(options),
+      name: requiredStringFromOptions(options, 'name'),
       processId: options.processId,
-      type: typeFromOptions(options),
-      quantity: requiredMIOQuantityFromOptions(options).valueOf(),
+      type: recordTypeFromOptions(options),
+      quantity: requiredMIOFromOptions(options, 'quantity').valueOf(),
       // TODO: Assert if 'lease' type, years is required
-      years: yearsFromOptions(options),
+      years: positiveIntegerFromOptions(options, 'years'),
     });
   },
 });
@@ -687,35 +739,32 @@ makeCommand<NameWriteCLIOptions>({
   name: 'request-primary-name',
   description: 'Request a primary name',
   options: nameWriteOptions,
-  action: (options) =>
+  action: async (options) => {
     // TODO: Assert balance is sufficient for action?
     // TODO: Assert name requested is not already owned
     // TODO: More assertions?
-    writeIOFromOptions(options).requestPrimaryName({
-      name: requiredNameFromOptions(options),
-    }),
+    const name = requiredStringFromOptions(options, 'name');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to request the primary name ${name}?`,
+      options,
+    );
+
+    return writeIOFromOptions(options).requestPrimaryName({
+      name,
+    });
+  },
 });
 
-makeCommand<
-  GlobalCLIOptions & {
-    target?: string;
-  }
->({
+makeCommand<ANTStateCLIOptions>({
   name: 'spawn-ant',
   description: 'Spawn an ANT process',
-  options: [...writeActionOptions, optionMap.target],
+  options: antStateOptions,
   action: async (options) => {
-    const jwk = requiredJwkFromOptions(options);
-    const address = jwkToAddress(jwk);
-    const signer = createAoSigner(new ArweaveSigner(jwk));
-    const target = options.target;
-
-    // TODO: pass state from any provided ANT state options
-
-    const state = initANTStateForAddress(address, target);
+    const state = getANTStateFromOptions(options);
     const antProcessId = await spawnANT({
       state,
-      signer,
+      signer: requiredAoSignerFromOptions(options),
       logger: getLoggerFromOptions(options),
     });
 
@@ -754,12 +803,9 @@ makeCommand<
   description: 'Get a record of an ANT process',
   options: [optionMap.processId, optionMap.undername],
   action: async (options) => {
-    if (options.undername === undefined) {
-      throw new Error('--undername is required');
-    }
     return (
       (await readANTFromOptions(options).getRecord({
-        undername: options.undername,
+        undername: requiredStringFromOptions(options, 'undername'),
       })) ?? { message: 'No record found' }
     );
   },
@@ -839,20 +885,30 @@ makeCommand<
   description: 'Transfer ownership of an ANT process',
   options: [optionMap.processId, optionMap.target, ...writeActionOptions],
   action: async (options) => {
+    const target = requiredStringFromOptions(options, 'target');
+    await assertConfirmationPrompt(
+      `Are you sure you want to transfer ANT ownership to ${target}?`,
+      options,
+    );
     return writeANTFromOptions(options).transfer(
       {
-        target: requiredStringFromOptions(options, 'target'),
+        target,
       },
       writeActionTagsFromOptions(options),
     );
   },
 });
 
-makeCommand<ProcessIdCLIOptions & { controller?: string }>({
+makeCommand<ProcessIdWriteActionCLIOptions & { controller?: string }>({
   name: 'add-ant-controller',
   description: 'Add a controller to an ANT process',
   options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
   action: async (options) => {
+    const controller = requiredStringFromOptions(options, 'controller');
+    await assertConfirmationPrompt(
+      `Are you sure you want to add ${controller} as a controller?`,
+      options,
+    );
     return writeANTFromOptions(options).addController(
       {
         controller: requiredStringFromOptions(options, 'controller'),
@@ -893,12 +949,24 @@ makeCommand<
     ...writeActionOptions,
   ],
   action: async (options) => {
-    options.ttlSeconds ??= 3600;
+    const ttlSeconds = options.ttlSeconds ?? 3600;
+    const undername = requiredStringFromOptions(options, 'undername');
+    const transactionId = requiredStringFromOptions(options, 'transactionId');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set this record?\n${JSON.stringify(
+        { undername, transactionId, ttlSeconds },
+        null,
+        2,
+      )}`,
+      options,
+    );
+
     return writeANTFromOptions(options).setRecord(
       {
-        undername: requiredStringFromOptions(options, 'undername'),
-        transactionId: requiredStringFromOptions(options, 'transactionId'),
-        ttlSeconds: options.ttlSeconds,
+        undername,
+        transactionId,
+        ttlSeconds,
       },
       writeActionTagsFromOptions(options),
     );
@@ -910,9 +978,16 @@ makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
   description: 'Remove a record from an ANT process',
   options: [optionMap.processId, optionMap.undername, ...writeActionOptions],
   action: async (options) => {
+    const undername = requiredStringFromOptions(options, 'undername');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to remove the record with undername ${undername}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).removeRecord(
       {
-        undername: requiredStringFromOptions(options, 'undername'),
+        undername,
       },
       writeActionTagsFromOptions(options),
     );
@@ -924,9 +999,16 @@ makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
   description: 'Set the ticker of an ANT process',
   options: [optionMap.processId, optionMap.ticker, ...writeActionOptions],
   action: async (options) => {
+    const ticker = requiredStringFromOptions(options, 'ticker');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the ticker to ${ticker}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).setTicker(
       {
-        ticker: requiredStringFromOptions(options, 'ticker'),
+        ticker,
       },
       writeActionTagsFromOptions(options),
     );
@@ -938,9 +1020,19 @@ makeCommand<ProcessIdWriteActionCLIOptions & { name?: string }>({
   description: 'Set the name of an ANT process',
   options: [optionMap.processId, optionMap.name, ...writeActionOptions],
   action: async (options) => {
+    const name = requiredStringFromOptions(options, 'name');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the name to ${requiredStringFromOptions(
+        options,
+        'name',
+      )}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).setName(
       {
-        name: requiredStringFromOptions(options, 'name'),
+        name,
       },
       writeActionTagsFromOptions(options),
     );
@@ -952,9 +1044,16 @@ makeCommand<ProcessIdWriteActionCLIOptions & { description?: string }>({
   description: 'Set the description of an ANT process',
   options: [optionMap.processId, optionMap.description, ...writeActionOptions],
   action: async (options) => {
+    const description = requiredStringFromOptions(options, 'description');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the ANT description to ${description}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).setDescription(
       {
-        description: requiredStringFromOptions(options, 'description'),
+        description,
       },
       writeActionTagsFromOptions(options),
     );
@@ -966,9 +1065,15 @@ makeCommand<ProcessIdWriteActionCLIOptions & { keywords?: string[] }>({
   description: 'Set the keywords of an ANT process',
   options: [optionMap.processId, optionMap.keywords, ...writeActionOptions],
   action: async (options) => {
+    const keywords = requiredStringArrayFromOptions(options, 'keywords');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the ANT keywords to ${keywords}?`,
+      options,
+    );
     return writeANTFromOptions(options).setKeywords(
       {
-        keywords: requiredStringArrayFromOptions(options, 'keywords'),
+        keywords,
       },
       writeActionTagsFromOptions(options),
     );
@@ -984,10 +1089,16 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
     ...writeActionOptions,
   ],
   action: async (options) => {
+    const txId = requiredStringFromOptions(options, 'transactionId');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the ANT logo to target Arweave TxID ${txId}?`,
+      options,
+    );
     return writeANTFromOptions(options).setLogo(
       {
         // TODO: Could take a logo file, upload it to Arweave, get transaction ID
-        txId: requiredStringFromOptions(options, 'transactionId'),
+        txId,
       },
       writeActionTagsFromOptions(options),
     );
@@ -1003,9 +1114,16 @@ makeCommand<
   description: 'Release the name of an ANT process',
   options: [optionMap.processId, optionMap.name, ...writeActionOptions],
   action: async (options) => {
+    const name = requiredStringFromOptions(options, 'name');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to release the name ${name} back to the protocol?`,
+      options,
+    );
+
     return writeANTFromOptions(options).releaseName(
       {
-        name: requiredStringFromOptions(options, 'name'),
+        name,
         ioProcessId: ioProcessIdFromOptions(options),
       },
       writeActionTagsFromOptions(options),
@@ -1028,11 +1146,19 @@ makeCommand<
     ...writeActionOptions,
   ],
   action: async (options) => {
+    const targetProcess = requiredStringFromOptions(options, 'target');
+    const name = requiredStringFromOptions(options, 'name');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to reassign the name ${name} to ANT process ${targetProcess}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).reassignName(
       {
-        name: requiredStringFromOptions(options, 'name'),
+        name,
         ioProcessId: ioProcessIdFromOptions(options),
-        antProcessId: requiredStringFromOptions(options, 'target'),
+        antProcessId: targetProcess,
       },
       writeActionTagsFromOptions(options),
     );
@@ -1050,9 +1176,27 @@ makeCommand<
   options: [
     optionMap.processId,
     optionMap.name,
-    optionMap.target,
+    optionMap.address,
     ...writeActionOptions,
   ],
+  action: async (options) => {
+    const address = requiredAddressFromOptions(options);
+    const name = requiredStringFromOptions(options, 'name');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to approve the primary name request ${name} to ${address}?`,
+      options,
+    );
+
+    return writeANTFromOptions(options).approvePrimaryNameRequest(
+      {
+        name,
+        address,
+        ioProcessId: ioProcessIdFromOptions(options),
+      },
+      writeActionTagsFromOptions(options),
+    );
+  },
 });
 
 makeCommand<
@@ -1064,9 +1208,15 @@ makeCommand<
   description: 'Remove primary names',
   options: [optionMap.processId, optionMap.names, ...writeActionOptions],
   action: async (options) => {
+    const names = requiredStringArrayFromOptions(options, 'names');
+    await assertConfirmationPrompt(
+      `Are you sure you want to remove the primary names ${names}?`,
+      options,
+    );
+
     return writeANTFromOptions(options).removePrimaryNames(
       {
-        names: requiredStringArrayFromOptions(options, 'names'),
+        names,
         ioProcessId: ioProcessIdFromOptions(options),
       },
       writeActionTagsFromOptions(options),

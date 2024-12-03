@@ -267,40 +267,33 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
 export const defaultTargetManifestId =
   '-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI';
 
-export function createDefaultAntState(
-  state: Partial<SpawnANTState> = {},
-): SpawnANTState {
+export function initANTStateForAddress({
+  owner,
+  targetId,
+  ttlSeconds = 3600,
+  keywords = [],
+  controllers = [],
+  description = '',
+  ticker = 'aos',
+  name = 'ANT',
+}: Partial<SpawnANTState> & {
+  targetId?: string;
+  ttlSeconds?: number;
+  owner: WalletAddress;
+}): SpawnANTState {
   return {
-    ticker: 'aos',
-    name: 'ANT',
-    controllers: [],
-    balances: {},
-    owner: '',
-    description: '',
-    keywords: [],
-    records: {
-      ['@']: {
-        transactionId: defaultTargetManifestId.toString(),
-        ttlSeconds: 3600,
-      },
-    },
-    ...state,
-  };
-}
-
-export function initANTStateForAddress(
-  owner: WalletAddress,
-  targetId?: string,
-) {
-  return createDefaultAntState({
-    owner: owner,
-    controllers: [owner],
+    ticker,
+    name,
+    description,
+    keywords,
+    owner,
+    controllers: [owner, ...controllers],
     balances: { [owner]: 1 },
     records: {
       ['@']: {
         transactionId: targetId ?? defaultTargetManifestId.toString(),
-        ttlSeconds: 3600,
+        ttlSeconds,
       },
     },
-  });
+  };
 }

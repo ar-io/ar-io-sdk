@@ -34,10 +34,10 @@ import {
   epochInputFromOptions,
   formatIOWithCommas,
   paginationParamsFromOptions,
+  positiveIntegerFromOptions,
   readIOFromOptions,
   requiredAddressFromOptions,
-  requiredNameFromOptions,
-  yearsFromOptions,
+  requiredStringFromOptions,
 } from '../utils.js';
 
 export async function getGateway(o: AddressCLIOptions) {
@@ -98,7 +98,7 @@ export async function getAllowedDelegates(o: PaginationAddressCLIOptions) {
 }
 
 export async function getArNSRecord(o: NameCLIOptions) {
-  const name = requiredNameFromOptions(o);
+  const name = requiredStringFromOptions(o, 'name');
   return (
     (await readIOFromOptions(o).getArNSRecord({
       name,
@@ -114,7 +114,7 @@ export async function listArNSRecords(o: PaginationCLIOptions) {
 }
 
 export async function getArNSReservedName(o: NameCLIOptions) {
-  const name = requiredNameFromOptions(o);
+  const name = requiredStringFromOptions(o, 'name');
   return (
     (await readIOFromOptions(o).getArNSReservedName({
       name,
@@ -132,7 +132,7 @@ export async function listArNSReservedNames(o: PaginationCLIOptions) {
 }
 
 export async function getArNSAuction(o: NameCLIOptions) {
-  const name = requiredNameFromOptions(o);
+  const name = requiredStringFromOptions(o, 'name');
   const result = await readIOFromOptions(o).getArNSAuction({ name });
   return result ?? { message: `No auction found for name ${name}` };
 }
@@ -153,7 +153,7 @@ export async function getArNSAuctionPrices(o: AuctionPricesCLIOptions) {
   }
 
   const result = await readIOFromOptions(o).getArNSAuctionPrices({
-    name: requiredNameFromOptions(o),
+    name: requiredStringFromOptions(o, 'name'),
     type: o.type,
     // TODO: intervalMS helper, assert and format
     intervalMs: o.intervalMs !== undefined ? +o.intervalMs : undefined,
@@ -161,7 +161,7 @@ export async function getArNSAuctionPrices(o: AuctionPricesCLIOptions) {
 
     timestamp: o.timestamp !== undefined ? +o.timestamp : undefined,
     // todo: assert years if 'lease'
-    years: yearsFromOptions(o),
+    years: positiveIntegerFromOptions(o, 'years'),
   });
   return result ?? { message: `No auction prices found` };
 }
@@ -216,7 +216,7 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
     quantity: o.quantity !== undefined ? +o.quantity : undefined,
     years: o.years !== undefined ? +o.years : undefined,
     intent: o.intent,
-    name: requiredNameFromOptions(o),
+    name: requiredStringFromOptions(o, 'name'),
   });
 
   const output = {
@@ -249,8 +249,3 @@ export async function getPrimaryName(o: AddressAndNameCLIOptions) {
     }
   );
 }
-
-// export async function
-// export async function
-// export async function
-// export async function

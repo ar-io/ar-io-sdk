@@ -27,6 +27,7 @@ import {
   AoIORead,
   AoIOWrite,
   AoRedelegateStakeParams,
+  AoSigner,
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
@@ -37,19 +38,22 @@ import {
   IO_TESTNET_PROCESS_ID,
   Logger,
   PaginationParams,
+  SpawnANTState,
   WriteOptions,
+  createAoSigner,
   fromB64Url,
+  initANTStateForAddress,
   mIOToken,
   sha256B64Url,
 } from '../node/index.js';
 import { globalOptions } from './options.js';
 import {
+  ANTStateCLIOptions,
   AddressCLIOptions,
   EpochCLIOptions,
   GlobalCLIOptions,
   InitiatorCLIOptions,
   JsonSerializable,
-  OperatorStakeCLIOptions,
   PaginationCLIOptions,
   ProcessIdCLIOptions,
   RedelegateStakeCLIOptions,
@@ -214,6 +218,7 @@ export function formatIOWithCommas(value: IOToken): string {
   return integerWithCommas + '.' + decimalPart;
 }
 
+/** helper to get address from --address option first, then check wallet options  */
 export function addressFromOptions<O extends AddressCLIOptions>(
   options: O,
 ): string | undefined {
@@ -236,39 +241,6 @@ export function requiredAddressFromOptions<O extends AddressCLIOptions>(
     return address;
   }
   throw new Error('No address provided. Use --address or --wallet-file');
-}
-
-export function requiredNameFromOptions<O extends { name?: string }>(
-  options: O,
-): string {
-  if (options.name !== undefined) {
-    return options.name;
-  }
-  // TODO: Could optimistically check for names from address or wallet if provided?
-  throw new Error('No name provided. Use `--name "my-name"`');
-}
-
-export function yearsFromOptions<O extends { years?: string }>(
-  options: O,
-): number | undefined {
-  if (options.years === undefined) {
-    return undefined;
-  }
-  const years = +options.years;
-  if (isNaN(years) || years <= 0) {
-    throw new Error(`Invalid years: ${years}, must be a positive number`);
-  }
-  return years;
-}
-
-export function requiredYearsFromOptions<O extends { years?: string }>(
-  options: O,
-): number {
-  const years = yearsFromOptions(options);
-  if (years === undefined) {
-    throw new Error('No years provided. Use --years');
-  }
-  return years;
 }
 
 const defaultCliPaginationLimit = 10; // more friendly UX than 100
@@ -416,33 +388,7 @@ export function redelegateParamsFromOptions(
   };
 }
 
-export function requiredOperatorStakeFromOptions(
-  options: OperatorStakeCLIOptions,
-): IOToken {
-  if (options.operatorStake === undefined) {
-    throw new Error(
-      'Operator stake is required. Please provide an --operator-stake denominated in IO',
-    );
-  }
-  return new IOToken(+options.operatorStake);
-}
-
-export function requiredIncreaseCountFromOptions<
-  O extends { increaseCount?: string },
->(options: O) {
-  if (options.increaseCount === undefined) {
-    throw new Error('No increase count provided. Use --increase-count');
-  }
-  const increaseCount = +options.increaseCount;
-  if (isNaN(increaseCount) || increaseCount <= 0) {
-    throw new Error(
-      `Invalid increase count: ${increaseCount}, must be a positive number`,
-    );
-  }
-  return increaseCount;
-}
-
-export function typeFromOptions<O extends { type?: string }>(
+export function recordTypeFromOptions<O extends { type?: string }>(
   options: O,
 ): 'lease' | 'permabuy' {
   options.type ??= 'lease';
@@ -452,13 +398,14 @@ export function typeFromOptions<O extends { type?: string }>(
   return options.type;
 }
 
-export function requiredMIOQuantityFromOptions<O extends { quantity?: string }>(
+export function requiredMIOFromOptions<O extends GlobalCLIOptions>(
   options: O,
+  key: string,
 ): mIOToken {
-  if (options.quantity === undefined) {
-    throw new Error('No quantity provided. Use --quantity denominated in IO');
+  if (options[key] === undefined) {
+    throw new Error(`No ${key} provided. Use --${key} denominated in IO`);
   }
-  return new IOToken(+options.quantity).toMIO();
+  return new IOToken(+options[key]).toMIO();
 }
 
 export async function assertEnoughBalance(
@@ -482,6 +429,15 @@ export async function confirmationPrompt(message: string): Promise<boolean> {
     message,
   });
   return confirm;
+}
+
+export async function assertConfirmationPrompt<
+  O extends { skipConfirmation?: boolean },
+>(message: string, options: O): Promise<boolean> {
+  if (options.skipConfirmation) {
+    return true;
+  }
+  return confirmationPrompt(message);
 }
 
 export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
@@ -512,9 +468,7 @@ export function writeANTFromOptions(
   options: ProcessIdCLIOptions,
   signer?: ContractSigner,
 ): AoANTWrite {
-  // TODO: ETH signer, SOL signer, etc.
-  signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
-
+  signer ??= requiredContractSignerFromOptions(options);
   return ANT.init({
     process: ANTProcessFromOptions(options),
     signer,
@@ -543,6 +497,59 @@ export function requiredStringArrayFromOptions<O extends GlobalCLIOptions>(
   if (!Array.isArray(value)) {
     throw new Error(`--${key} must be an array`);
   }
-  console.log('value', value);
   return value;
+}
+
+export function positiveIntegerFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): number | undefined {
+  const value = options[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  const numberValue = +value;
+  if (isNaN(numberValue) || numberValue <= 0) {
+    throw new Error(`Invalid ${key}: ${value}, must be a positive number`);
+  }
+  return numberValue;
+}
+
+export function requiredPositiveIntegerFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): number {
+  const value = positiveIntegerFromOptions(options, key);
+  if (value === undefined) {
+    throw new Error(`--${key} is required`);
+  }
+  return value;
+}
+
+export function getANTStateFromOptions(
+  options: ANTStateCLIOptions,
+): SpawnANTState {
+  return initANTStateForAddress({
+    owner: requiredAddressFromOptions(options),
+    targetId: options.target,
+    controllers: options.controllers,
+    description: options.description,
+    ticker: options.ticker,
+    name: options.name,
+    keywords: options.keywords,
+    ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 0,
+  });
+}
+
+export function requiredContractSignerFromOptions(
+  options: WalletCLIOptions,
+): ContractSigner {
+  // TODO: Support other wallet types
+  return new ArweaveSigner(requiredJwkFromOptions(options));
+}
+
+export function requiredAoSignerFromOptions(
+  options: WalletCLIOptions,
+): AoSigner {
+  return createAoSigner(requiredContractSignerFromOptions(options));
 }

@@ -166,6 +166,16 @@ export type IncreaseUndernameLimitCLIOptions = WriteActionCLIOptions &
 export type SubmitAuctionBidCLIOptions = WriteActionCLIOptions &
   CLIOptionsFromAoParams<AoSubmitAuctionBidParams>;
 
+export type ANTStateCLIOptions = WriteActionCLIOptions & {
+  target?: string;
+  keywords?: string[];
+  ticker?: string;
+  name?: string;
+  description?: string;
+  controllers?: string[];
+  ttlSeconds?: string;
+};
+
 export type JsonSerializable =
   | string
   | number

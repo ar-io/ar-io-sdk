@@ -22,7 +22,7 @@ import {
   gatewaySettingsFromOptions,
   jwkToAddress,
   requiredJwkFromOptions,
-  requiredOperatorStakeFromOptions,
+  requiredMIOFromOptions as requiredMARIOFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
@@ -32,12 +32,11 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
   const address = jwkToAddress(jwk);
   const io = writeIOFromOptions(options, new ArweaveSigner(jwk));
 
-  const ioQuantity = requiredOperatorStakeFromOptions(options);
-  const mIOOperatorStake = ioQuantity.toMIO().valueOf();
+  const mARIOQuantity = requiredMARIOFromOptions(options, 'operatorStake');
 
   const settings = {
     ...gatewaySettingsFromOptions(options),
-    operatorStake: mIOOperatorStake,
+    operatorStake: mARIOQuantity.valueOf(),
   };
 
   if (settings.label === undefined) {
@@ -51,17 +50,17 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
 
   if (!options.skipConfirmation) {
     const settings = await io.getGatewayRegistrySettings();
-    if (settings.operators.minStake > mIOOperatorStake) {
+    if (settings.operators.minStake > mARIOQuantity.valueOf()) {
       throw new Error(
         `The minimum operator stake is ${formatIOWithCommas(
           new mIOToken(settings.operators.minStake).toIO(),
         )} IO. Please provide a higher stake.`,
       );
     }
-    await assertEnoughBalance(io, address, ioQuantity);
+    await assertEnoughBalance(io, address, mARIOQuantity.toIO());
 
     const confirm = await confirmationPrompt(
-      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(ioQuantity)} IO to join the AR.IO network\nAre you sure?\n`,
+      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(mARIOQuantity.toIO())} IO to join the AR.IO network\nAre you sure?\n`,
     );
 
     if (!confirm) {

@@ -202,6 +202,11 @@ export const optionMap = {
     alias: '--controller <controller>',
     description: 'The controller to interact with',
   },
+  controllers: {
+    alias: '--controllers <controllers...>',
+    description: 'The controller to interact with',
+    type: 'array',
+  },
   transactionId: {
     alias: '--transaction-id <transactionId>',
     description: 'The transaction ID to interact with',
@@ -338,4 +343,15 @@ export const buyRecordOptions = [
   optionMap.quantity,
   optionMap.years,
   optionMap.processId,
+];
+
+export const antStateOptions = [
+  ...writeActionOptions,
+  optionMap.target,
+  optionMap.keywords,
+  optionMap.ticker,
+  optionMap.name,
+  optionMap.description,
+  optionMap.controllers,
+  optionMap.ttlSeconds,
 ];
