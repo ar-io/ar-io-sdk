@@ -341,6 +341,7 @@ export const buyRecordOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.quantity,
+  optionMap.type,
   optionMap.years,
   optionMap.processId,
 ];
