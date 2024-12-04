@@ -234,7 +234,6 @@ export type AoGatewayWithAddress = AoGateway & {
 export type AoGatewayDelegate = {
   delegatedStake: number;
   startTimestamp: Timestamp;
-  vaults: Record<WalletAddress, AoVaultData>;
 };
 
 export type AoGatewayDelegateWithAddress = AoGatewayDelegate & {
@@ -322,6 +321,26 @@ export type AoJoinNetworkParams = Pick<
   Partial<AoGatewaySettings>;
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
+
+export type AoGatewayRegistrySettings = {
+  delegates: {
+    minStake: number;
+    withdrawLengthMs: number;
+  };
+  observers: {
+    tenureWeightDays: number;
+    tenureWeightPeriod: number;
+    maxTenureWeight: number;
+    maxPerEpoch: number;
+  };
+  operators: {
+    minStake: number;
+    withdrawLengthMs: number;
+    leaveLengthMs: number;
+    failedEpochCountMax: number;
+    failedEpochSlashRate: number;
+  };
+};
 
 // Interfaces
 
@@ -417,12 +436,17 @@ export interface AoIORead {
     name,
     quantity,
   }: {
-    intent: 'Buy-Record' | 'Extend-Lease' | 'Increase-Undername-Limit';
+    intent:
+      | 'Buy-Record'
+      | 'Extend-Lease'
+      | 'Increase-Undername-Limit'
+      | 'Upgrade-Name'
+      | 'Primary-Name-Request';
     type?: 'permabuy' | 'lease';
     years?: number;
-    name?: string;
+    name: string;
     quantity?: number;
-  }): Promise<number>;
+  }): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getVaults(
@@ -450,6 +474,7 @@ export interface AoIORead {
   getRedelegationFee(params: {
     address: WalletAddress;
   }): Promise<AoRedelegationFeeInfo>;
+  getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
 }
 
 export interface AoIOWrite extends AoIORead {

@@ -36,6 +36,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
+    - [`getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getgatewaydelegates-address-cursor-limit-sortby-sortorder-)
     - [`joinNetwork(params)`](#joinnetworkparams)
     - [`leaveNetwork()`](#leavenetwork)
     - [`updateGatewaySettings({ ...settings })`](#updategatewaysettings-settings-)
@@ -72,7 +73,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Primary Names](#primary-names)
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
-    - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`requestPrimaryName({ name })`](#requestprimaryname-name-)
     - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
@@ -617,6 +618,53 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
   "totalItems": 316,
   "sortBy": "operatorStake",
   "sortOrder": "desc"
+}
+```
+
+</details>
+
+#### `getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegate address from the previous request.
+
+```typescript
+const io = IO.init();
+const delegates = await io.getGatewayDelegates({
+  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  limit: 3,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "nextCursor": "ScEtph9-vfY7lgqlUWwUwOmm99ySeZGQhOX0MFAyFEs",
+  "limit": 3,
+  "sortBy": "startTimestamp",
+  "totalItems": 32,
+  "sortOrder": "desc",
+  "hasMore": true,
+  "items": [
+    {
+      "delegatedStake": 600000000,
+      "address": "qD5VLaMYyIHlT6vH59TgYIs6g3EFlVjlPqljo6kqVxk",
+      "startTimestamp": 1732716956301
+    },
+    {
+      "delegatedStake": 508999038,
+      "address": "KG8TlcWk-8pvroCjiLD2J5zkG9rqC6yYaBuZNqHEyY4",
+      "startTimestamp": 1731828123742
+    },
+    {
+      "delegatedStake": 510926479,
+      "address": "ScEtph9-vfY7lgqlUWwUwOmm99ySeZGQhOX0MFAyFEs",
+      "startTimestamp": 1731689356040
+    }
+  ]
 }
 ```
 
@@ -1577,13 +1625,15 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 
 #### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all primary names across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
+Retrieves all primary names paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
 
 ```typescript
 const io = IO.init();
 const names = await io.getPrimaryNames({
-  cursor: 'ar-io',
-  limit: 2,
+  cursor: 'ao', // this is the last name from the previous request
+  limit: 1,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
 });
 ```
 
@@ -1593,10 +1643,11 @@ const names = await io.getPrimaryNames({
 ```json
 {
   "sortOrder": "desc",
-  "hasMore": false,
-  "totalItems": 1,
-  "limit": 100,
-  "sortBy": "name",
+  "hasMore": true,
+  "totalItems": 100,
+  "limit": 1,
+  "sortBy": "startTimestamp",
+  "cursor": "arns",
   "items": [
     {
       "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
@@ -1637,7 +1688,7 @@ const name = await io.getPrimaryName({
 
 </details>
 
-#### `requestPrimaryName({ name, address })`
+#### `requestPrimaryName({ name })`
 
 Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
 

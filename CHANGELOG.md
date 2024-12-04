@@ -1,3 +1,33 @@
+# [2.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2024-12-02)
+
+
+### Bug Fixes
+
+* **io:** update gateway delegates api, add to README ([65aa6a8](https://github.com/ar-io/ar-io-sdk/commit/65aa6a8e280a6d0b6044caf9ba88f47a61d08022))
+
+## [2.5.5](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4...v2.5.5) (2024-11-28)
+
+
+### Bug Fixes
+
+* **io:** update gateway delegates api, add to README ([65aa6a8](https://github.com/ar-io/ar-io-sdk/commit/65aa6a8e280a6d0b6044caf9ba88f47a61d08022))
+
+## [2.5.4](https://github.com/ar-io/ar-io-sdk/compare/v2.5.3...v2.5.4) (2024-11-28)
+
+
+### Bug Fixes
+
+* **primary:** support primary name in token cost API ([b4edf47](https://github.com/ar-io/ar-io-sdk/commit/b4edf4768ed6d22325bb3328d9724703fa17c89a))
+
+## [2.5.3](https://github.com/ar-io/ar-io-sdk/compare/v2.5.2...v2.5.3) (2024-11-27)
+
+
+### Bug Fixes
+
+* **ant lua id:** update ant lua id ([54ff68b](https://github.com/ar-io/ar-io-sdk/commit/54ff68b03842f8382bbdfd28902f033857f25a39))
+* **ant:** update write handler types removes evolve handler name ([d9f5de4](https://github.com/ar-io/ar-io-sdk/commit/d9f5de438bd303078d1ccaa33198a9de4e36405d))
+* **handler names:** add primary name handlers ([5192c09](https://github.com/ar-io/ar-io-sdk/commit/5192c093ca75b5c6e05d446d3b711406849a9a9a))
+
 ## [2.5.2](https://github.com/ar-io/ar-io-sdk/compare/v2.5.1...v2.5.2) (2024-11-25)
 
 
@@ -5,7 +35,6 @@
 
 * **io:** fix tag for `requestPrimaryName` API ([bdaeaaf](https://github.com/ar-io/ar-io-sdk/commit/bdaeaafb8b07383711751e334dd7f679617e8a01))
 * **io:** updated types and fixed apis for primary name requests ([a297628](https://github.com/ar-io/ar-io-sdk/commit/a2976282247403b533ac129eaf76bd35c7af56cc))
-* **readme:** update readme with correct param for approving primary name ([1dcbcc5](https://github.com/ar-io/ar-io-sdk/commit/1dcbcc5a231581ec2bd2a3bc9815853aac7bbdf5))
 
 ## [2.5.1](https://github.com/ar-io/ar-io-sdk/compare/v2.5.0...v2.5.1) (2024-11-22)
 
