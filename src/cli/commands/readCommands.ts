@@ -21,6 +21,7 @@ import {
 import { mIOToken } from '../../types/token.js';
 import {
   AddressAndNameCLIOptions,
+  AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
   AuctionPricesCLIOptions,
   EpochCLIOptions,
@@ -248,4 +249,32 @@ export async function getPrimaryName(o: AddressAndNameCLIOptions) {
       message: `No primary name found`,
     }
   );
+}
+
+export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
+  const address = requiredAddressFromOptions(o);
+  const result = await readIOFromOptions(o).getGatewayVaults({
+    address,
+    ...paginationParamsFromOptions(o),
+  });
+
+  return result.items?.length
+    ? result
+    : {
+        message: `No vaults found for gateway ${address}`,
+      };
+}
+
+export async function getVault(o: AddressAndVaultIdCLIOptions) {
+  return readIOFromOptions(o)
+    .getVault({
+      address: requiredAddressFromOptions(o),
+      vaultId: requiredStringFromOptions(o, 'vaultId'),
+    })
+    .then(
+      (r) =>
+        r ?? {
+          message: `No vault found for provided address and vault ID`,
+        },
+    );
 }

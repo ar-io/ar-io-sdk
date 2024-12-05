@@ -19,23 +19,19 @@ import { mIOToken } from '../../types/token.js';
 import { TransferCLIOptions } from '../types.js';
 import {
   formatIOWithCommas,
-  jwkToAddress,
-  requiredJwkFromOptions,
   requiredTargetAndQuantityFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
 
 export async function delegateStake(options: TransferCLIOptions) {
-  const jwk = requiredJwkFromOptions(options);
-  const address = jwkToAddress(jwk);
-  const io = writeIOFromOptions(options);
+  const { io, signerAddress } = writeIOFromOptions(options);
 
   const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
   const mIOQuantity = ioQuantity.toMIO();
 
   if (!options.skipConfirmation) {
-    const balance = await io.getBalance({ address });
+    const balance = await io.getBalance({ address: signerAddress });
 
     if (balance < mIOQuantity.valueOf()) {
       throw new Error(
@@ -75,7 +71,7 @@ export async function delegateStake(options: TransferCLIOptions) {
   );
 
   const output = {
-    senderAddress: address,
+    senderAddress: signerAddress,
     transferResult: result,
     message: `Successfully delegated ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
   };

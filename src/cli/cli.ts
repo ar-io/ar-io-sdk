@@ -22,7 +22,16 @@ import { spawnANT } from '../node/index.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import { delegateStake } from './commands/delegateStake.js';
-import { joinNetwork } from './commands/joinNetwork.js';
+import {
+  cancelWithdrawal,
+  decreaseOperatorStake,
+  increaseOperatorStake,
+  instantWithdrawal,
+  joinNetwork,
+  leaveNetwork,
+  saveObservations,
+  updateGatewaySettings,
+} from './commands/gatewayWriteCommands.js';
 import {
   getAllowedDelegates,
   getArNSAuction,
@@ -33,17 +42,19 @@ import {
   getEpoch,
   getGateway,
   getGatewayDelegates,
+  getGatewayVaults,
   getPrescribedNames,
   getPrescribedObservers,
   getPrimaryName,
   getTokenCost,
+  getVault,
   listArNSAuctions,
   listArNSRecords,
   listArNSReservedNames,
   listGateways,
 } from './commands/readCommands.js';
 import { transfer } from './commands/transfer.js';
-import { updateGatewaySettings } from './commands/updateGatewaySettings.js';
+import './commands/updateGatewaySettings.js';
 import {
   addressAndVaultIdOptions,
   addressOptions,
@@ -71,16 +82,13 @@ import {
 import {
   ANTStateCLIOptions,
   AddressAndNameCLIOptions,
-  AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
   BuyRecordCLIOptions,
   DecreaseDelegateStakeCLIOptions,
   ExtendLeaseCLIOptions,
-  GetVaultCLIOptions,
   IncreaseUndernameLimitCLIOptions,
   InitiatorCLIOptions,
   NameWriteCLIOptions,
-  OperatorStakeCLIOptions,
   PaginationAddressCLIOptions,
   PaginationCLIOptions,
   ProcessIdCLIOptions,
@@ -88,7 +96,6 @@ import {
   RedelegateStakeCLIOptions,
   SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
-  WriteActionCLIOptions,
 } from './types.js';
 import {
   assertConfirmationPrompt,
@@ -111,7 +118,6 @@ import {
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
-  requiredVaultIdFromOptions,
   writeANTFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
@@ -293,7 +299,7 @@ makeCommand<PaginationCLIOptions>({
       ),
 });
 
-// TODO: Could assert valid arweave addresses at CLI level
+// TODO: Could assert valid arweave (or ETH) addresses at CLI level when coming from options (no need from wallet)
 
 makeCommand<InitiatorCLIOptions>({
   name: 'get-primary-name-request',
@@ -381,41 +387,18 @@ makeCommand<AddressCLIOptions>({
     }),
 });
 
-makeCommand<GetVaultCLIOptions>({
+makeCommand({
   name: 'get-vault',
   description: 'Get the vault of provided address and vault ID',
   options: getVaultOptions,
-  action: (o) =>
-    readIOFromOptions(o)
-      .getVault({
-        address: requiredAddressFromOptions(o),
-        vaultId: requiredVaultIdFromOptions(o),
-      })
-      .then(
-        (r) =>
-          r ?? {
-            message: `No vault found for provided address and vault ID`,
-          },
-      ),
+  action: getVault,
 });
 
 makeCommand<PaginationAddressCLIOptions>({
   name: 'get-gateway-vaults',
   description: 'Get the vaults of a gateway',
   options: paginationAddressOptions,
-  action: async (o) => {
-    const address = requiredAddressFromOptions(o);
-    const result = await readIOFromOptions(o).getGatewayVaults({
-      address,
-      ...paginationParamsFromOptions(o),
-    });
-
-    return result.items?.length
-      ? result
-      : {
-          message: `No vaults found for gateway ${address}`,
-        };
-  },
+  action: getGatewayVaults,
 });
 
 makeCommand({
@@ -432,17 +415,10 @@ makeCommand({
   action: joinNetwork,
 });
 
-makeCommand<WriteActionCLIOptions>({
+makeCommand({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
-  // TODO: Add a confirmation prompt? Could get settings, display, then confirm prompt
-  action: async (options) => {
-    await assertConfirmationPrompt(
-      'Are you sure you want to leave the AR.IO network?',
-      options,
-    );
-    return writeIOFromOptions(options).leaveNetwork();
-  },
+  action: leaveNetwork,
 });
 
 makeCommand({
@@ -460,73 +436,36 @@ makeCommand({
     optionMap.transactionId,
     ...writeActionOptions,
   ],
-  action: (options) =>
-    writeIOFromOptions(options).saveObservations({
-      failedGateways: requiredStringArrayFromOptions(options, 'failedGateways'),
-      reportTxId: requiredStringFromOptions(options, 'transactionId'),
-    }),
+  action: saveObservations,
 });
 
-makeCommand<OperatorStakeCLIOptions>({
+makeCommand({
   name: 'increase-operator-stake',
   description: 'Increase operator stake',
   options: operatorStakeOptions,
-  action: (options) =>
-    // TODO: Can assert balance is sufficient
-    writeIOFromOptions(options).increaseOperatorStake({
-      increaseQty: requiredMIOFromOptions(options, 'operatorStake'),
-    }),
+  action: increaseOperatorStake,
 });
 
-makeCommand<OperatorStakeCLIOptions>({
+makeCommand({
   name: 'decrease-operator-stake',
   description: 'Decrease operator stake',
   options: operatorStakeOptions,
-  action: (options) =>
-    // TODO: Can assert stake is sufficient for action, and new target stake meets contract minimum
-    writeIOFromOptions(options).decreaseOperatorStake({
-      decreaseQty: requiredMIOFromOptions(options, 'operatorStake'),
-    }),
+  action: decreaseOperatorStake,
 });
 
-makeCommand<AddressAndVaultIdCLIOptions & WriteActionCLIOptions>({
+makeCommand({
   name: 'instant-withdrawal',
-  description: 'Instantly withdraw stake from a vault',
+  description:
+    'Instantly withdraw stake from an existing gateway withdrawal vault',
   options: addressAndVaultIdOptions,
-  action: (options) => {
-    // TODO: Could assert vault exists with stake
-    return writeIOFromOptions(options).instantWithdrawal(
-      {
-        gatewayAddress: requiredAddressFromOptions(options),
-        vaultId: requiredVaultIdFromOptions(options),
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+  action: instantWithdrawal,
 });
 
-makeCommand<AddressAndVaultIdCLIOptions & WriteActionCLIOptions>({
+makeCommand({
   name: 'cancel-withdrawal',
-  description: 'Cancel a pending withdrawal',
+  description: 'Cancel a pending gateway withdrawal vault',
   options: addressAndVaultIdOptions,
-  action: async (options) => {
-    const gatewayAddress = requiredAddressFromOptions(options);
-    const vaultId = requiredVaultIdFromOptions(options);
-
-    // TODO: Could assert withdrawal exists
-    await assertConfirmationPrompt(
-      `Are you sure you want to cancel the pending withdrawal of stake from vault ${vaultId} on gateway ${gatewayAddress}?`,
-      options,
-    );
-
-    return writeIOFromOptions(options).cancelWithdrawal(
-      {
-        gatewayAddress,
-        vaultId,
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+  action: cancelWithdrawal,
 });
 
 makeCommand({
@@ -541,7 +480,7 @@ makeCommand<DecreaseDelegateStakeCLIOptions>({
   description: 'Decrease delegated stake',
   options: decreaseDelegateStakeOptions,
   action: async (options) => {
-    const io = writeIOFromOptions(options);
+    const io = writeIOFromOptions(options).io;
     const { target, ioQuantity } =
       requiredTargetAndQuantityFromOptions(options);
     const instant = options.instant ?? false;
@@ -578,7 +517,7 @@ makeCommand<RedelegateStakeCLIOptions>({
   description: 'Redelegate stake to another gateway',
   options: redelegateStakeOptions,
   action: async (options) => {
-    const io = writeIOFromOptions(options);
+    const io = writeIOFromOptions(options).io;
     const params = redelegateParamsFromOptions(options);
 
     // TODO: Could assert target gateway exists
@@ -610,7 +549,7 @@ makeCommand<BuyRecordCLIOptions>({
   description: 'Buy a record',
   options: buyRecordOptions,
   action: async (options) => {
-    const io = writeIOFromOptions(options);
+    const io = writeIOFromOptions(options).io;
     const name = requiredStringFromOptions(options, 'name');
     const type = recordTypeFromOptions(options);
     const years = positiveIntegerFromOptions(options, 'years');
@@ -649,7 +588,7 @@ makeCommand<UpgradeRecordCLIOptions>({
       `Are you sure you want to upgrade the lease of ${name} to a permabuy?`,
       options,
     );
-    return writeIOFromOptions(options).upgradeRecord({
+    return writeIOFromOptions(options).io.upgradeRecord({
       name,
     });
   },
@@ -668,7 +607,7 @@ makeCommand<ExtendLeaseCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).extendLease(
+    return writeIOFromOptions(options).io.extendLease(
       {
         name,
         years,
@@ -694,7 +633,7 @@ makeCommand<IncreaseUndernameLimitCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).increaseUndernameLimit(
+    return writeIOFromOptions(options).io.increaseUndernameLimit(
       {
         name,
         increaseCount,
@@ -724,7 +663,7 @@ makeCommand<SubmitAuctionBidCLIOptions>({
       throw new Error('--process-id is required');
     }
 
-    return writeIOFromOptions(options).submitAuctionBid({
+    return writeIOFromOptions(options).io.submitAuctionBid({
       name: requiredStringFromOptions(options, 'name'),
       processId: options.processId,
       type: recordTypeFromOptions(options),
@@ -750,7 +689,7 @@ makeCommand<NameWriteCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).requestPrimaryName({
+    return writeIOFromOptions(options).io.requestPrimaryName({
       name,
     });
   },

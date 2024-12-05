@@ -63,8 +63,14 @@ import {
   WriteActionCLIOptions,
 } from './types.js';
 
+export function stringifyJsonForCLIDisplay(
+  json: JsonSerializable | unknown,
+): string {
+  return JSON.stringify(json, null, 2);
+}
+
 function logCommandOutput(output: JsonSerializable) {
-  console.log(JSON.stringify(output, null, 2));
+  console.log(stringifyJsonForCLIDisplay(output));
 }
 
 function exitWithErrorLog(error: unknown, debug = false) {
@@ -75,7 +81,7 @@ function exitWithErrorLog(error: unknown, debug = false) {
       errorLog = error.stack;
     }
   } else {
-    errorLog = JSON.stringify(error, null, 2);
+    errorLog = stringifyJsonForCLIDisplay(error);
   }
   console.error(errorLog);
   process.exit(1);
@@ -196,17 +202,36 @@ export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
   });
 }
 
-export function writeIOFromOptions(
-  options: GlobalCLIOptions,
-  signer?: ContractSigner,
-): AoIOWrite {
-  signer ??= new ArweaveSigner(requiredJwkFromOptions(options));
+export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
+  signer: ContractSigner;
+  signerAddress: string;
+} {
+  // TODO: Support other wallet types
+  const jwk = requiredJwkFromOptions(options);
+  const signer = new ArweaveSigner(jwk);
+  return { signer, signerAddress: jwkToAddress(jwk) };
+}
+
+export function requiredAoSignerFromOptions(
+  options: WalletCLIOptions,
+): AoSigner {
+  return createAoSigner(requiredContractSignerFromOptions(options).signer);
+}
+
+export function writeIOFromOptions(options: GlobalCLIOptions): {
+  io: AoIOWrite;
+  signerAddress: string;
+} {
+  const { signer, signerAddress } = requiredContractSignerFromOptions(options);
   setLoggerIfDebug(options);
 
-  return IO.init({
-    process: aoProcessFromOptions(options),
-    signer,
-  });
+  return {
+    io: IO.init({
+      process: aoProcessFromOptions(options),
+      signer,
+    }),
+    signerAddress,
+  };
 }
 
 export function formatIOWithCommas(value: IOToken): string {
@@ -285,15 +310,6 @@ export function requiredInitiatorFromOptions(
     return options.initiator;
   }
   return requiredAddressFromOptions(options);
-}
-
-export function requiredVaultIdFromOptions<O extends { vaultId?: string }>(
-  options: O,
-): string {
-  if (options.vaultId !== undefined) {
-    return options.vaultId;
-  }
-  throw new Error('--vault-id is required');
 }
 
 export function writeActionTagsFromOptions<O extends WriteActionCLIOptions>(
@@ -468,7 +484,7 @@ export function writeANTFromOptions(
   options: ProcessIdCLIOptions,
   signer?: ContractSigner,
 ): AoANTWrite {
-  signer ??= requiredContractSignerFromOptions(options);
+  signer ??= requiredContractSignerFromOptions(options).signer;
   return ANT.init({
     process: ANTProcessFromOptions(options),
     signer,
@@ -539,17 +555,4 @@ export function getANTStateFromOptions(
     keywords: options.keywords,
     ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 0,
   });
-}
-
-export function requiredContractSignerFromOptions(
-  options: WalletCLIOptions,
-): ContractSigner {
-  // TODO: Support other wallet types
-  return new ArweaveSigner(requiredJwkFromOptions(options));
-}
-
-export function requiredAoSignerFromOptions(
-  options: WalletCLIOptions,
-): AoSigner {
-  return createAoSigner(requiredContractSignerFromOptions(options));
 }

@@ -122,7 +122,8 @@ export type NameWriteCLIOptions = WriteActionCLIOptions & NameCLIOptions;
 export type AddressAndVaultIdCLIOptions =
   CLIOptionsFromAoParams<AoGetVaultParams> & GlobalCLIOptions;
 
-export type GetVaultCLIOptions = AddressAndVaultIdCLIOptions;
+export type AddressAndVaultIdCLIWriteOptions = WriteActionCLIOptions &
+  AddressAndVaultIdCLIOptions;
 
 export type TransferCLIOptions = WriteActionCLIOptions & {
   quantity?: string;

@@ -18,22 +18,17 @@ import {
   assertEnoughBalance,
   confirmationPrompt,
   formatIOWithCommas,
-  jwkToAddress,
-  requiredJwkFromOptions,
   requiredTargetAndQuantityFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
 } from '../utils.js';
 
 export async function transfer(options: TransferCLIOptions) {
-  const jwk = requiredJwkFromOptions(options);
-  const address = jwkToAddress(jwk);
-  const io = writeIOFromOptions(options);
-
   const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
+  const { io, signerAddress } = writeIOFromOptions(options);
 
   if (!options.skipConfirmation) {
-    await assertEnoughBalance(io, address, ioQuantity);
+    await assertEnoughBalance(io, signerAddress, ioQuantity);
 
     const confirm = await confirmationPrompt(
       `Are you sure you want to transfer ${formatIOWithCommas(ioQuantity)} IO to ${target}?`,
@@ -52,7 +47,7 @@ export async function transfer(options: TransferCLIOptions) {
   );
 
   const output = {
-    senderAddress: address,
+    senderAddress: signerAddress,
     transferResult: result,
     message: `Successfully transferred ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
   };
