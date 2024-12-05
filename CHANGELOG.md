@@ -1,3 +1,10 @@
+# [2.7.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.2...v2.7.0-alpha.3) (2024-12-05)
+
+
+### Bug Fixes
+
+* **ar.io cli:** use global program from cli.ts scope for ar.io command PE-5854 ([3e83298](https://github.com/ar-io/ar-io-sdk/commit/3e83298bf07bd2ca0eb800ac74ab675bdbb766d0))
+
 # [2.7.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.1...v2.7.0-alpha.2) (2024-12-05)
 
 
