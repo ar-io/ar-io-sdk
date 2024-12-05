@@ -1,3 +1,10 @@
+# [2.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.3...v2.6.0-alpha.4) (2024-12-05)
+
+
+### Features
+
+* **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
+
 # [2.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.2...v2.6.0-alpha.3) (2024-12-05)
 
 
