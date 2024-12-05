@@ -21,14 +21,16 @@ import { program } from 'commander';
 import { spawnANT } from '../node/index.js';
 import { mIOToken } from '../types/token.js';
 import { version } from '../version.js';
-import { delegateStake } from './commands/delegateStake.js';
 import {
   cancelWithdrawal,
+  decreaseDelegateStake,
   decreaseOperatorStake,
+  delegateStake,
   increaseOperatorStake,
   instantWithdrawal,
   joinNetwork,
   leaveNetwork,
+  redelegateStake,
   saveObservations,
   updateGatewaySettings,
 } from './commands/gatewayWriteCommands.js';
@@ -93,8 +95,6 @@ import {
   PaginationCLIOptions,
   ProcessIdCLIOptions,
   ProcessIdWriteActionCLIOptions,
-  RedelegateStakeCLIOptions,
-  SubmitAuctionBidCLIOptions,
   UpgradeRecordCLIOptions,
 } from './types.js';
 import {
@@ -110,14 +110,11 @@ import {
   readANTFromOptions,
   readIOFromOptions,
   recordTypeFromOptions,
-  redelegateParamsFromOptions,
   requiredAddressFromOptions,
   requiredAoSignerFromOptions,
-  requiredMIOFromOptions,
   requiredPositiveIntegerFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
-  requiredTargetAndQuantityFromOptions,
   writeANTFromOptions,
   writeActionTagsFromOptions,
   writeIOFromOptions,
@@ -479,69 +476,14 @@ makeCommand<DecreaseDelegateStakeCLIOptions>({
   name: 'decrease-delegate-stake',
   description: 'Decrease delegated stake',
   options: decreaseDelegateStakeOptions,
-  action: async (options) => {
-    const io = writeIOFromOptions(options).io;
-    const { target, ioQuantity } =
-      requiredTargetAndQuantityFromOptions(options);
-    const instant = options.instant ?? false;
-
-    // TODO: Could assert sender is a delegate with enough stake to decrease
-    // TODO: Could assert new target stake meets contract and target gateway minimums
-    // TODO: Could present confirmation prompt with any fee for instant withdrawal (50% of the stake is put back into protocol??)
-
-    await assertConfirmationPrompt(
-      `Are you sure you'd like to decrease delegated stake of ${formatIOWithCommas(ioQuantity)} IO on gateway ${target}?`,
-      options,
-    );
-
-    const result = await io.decreaseDelegateStake({
-      target,
-      decreaseQty: ioQuantity.toMIO(),
-      instant,
-    });
-
-    const output = {
-      targetGateway: target,
-      decreaseDelegateStakeResult: result,
-      message: `Successfully decreased delegated stake of ${formatIOWithCommas(
-        ioQuantity,
-      )} IO to ${target}`,
-    };
-
-    return output;
-  },
+  action: decreaseDelegateStake,
 });
 
-makeCommand<RedelegateStakeCLIOptions>({
+makeCommand({
   name: 'redelegate-stake',
   description: 'Redelegate stake to another gateway',
   options: redelegateStakeOptions,
-  action: async (options) => {
-    const io = writeIOFromOptions(options).io;
-    const params = redelegateParamsFromOptions(options);
-
-    // TODO: Could assert target gateway exists
-    // TODO: Could do assertion on source has enough stake to redelegate
-    // TODO: Could do assertions on source/target min delegate stakes are met
-
-    await assertConfirmationPrompt(
-      `Are you sure you'd like to redelegate stake of ${formatIOWithCommas(params.stakeQty.toIO())} IO from ${params.source} to ${params.target}?`,
-      options,
-    );
-
-    const result = await io.redelegateStake(params);
-
-    const output = {
-      sourceGateway: params.source,
-      targetGateway: params.target,
-      redelegateStakeResult: result,
-      message: `Successfully re-delegated stake of ${formatIOWithCommas(
-        params.stakeQty.toIO(),
-      )} IO from ${params.source} to ${params.target}`,
-    };
-
-    return output;
-  },
+  action: redelegateStake,
 });
 
 makeCommand<BuyRecordCLIOptions>({
@@ -640,37 +582,6 @@ makeCommand<IncreaseUndernameLimitCLIOptions>({
       },
       writeActionTagsFromOptions(options),
     );
-  },
-});
-
-// @deprecated -- submit auction bid will be removed for recently released names
-makeCommand<SubmitAuctionBidCLIOptions>({
-  name: 'submit-auction-bid',
-  description: 'Submit a bid to an auction',
-  options: [
-    ...writeActionOptions,
-    optionMap.name,
-    optionMap.quantity,
-    optionMap.type,
-    optionMap.years,
-  ],
-  action: (options) => {
-    // TODO: Assert auction exists
-    // TODO: Assert balance is sufficient for action
-
-    if (options.processId === undefined) {
-      // TODO: Spawn ANT process, register it to ANT registry, get process ID
-      throw new Error('--process-id is required');
-    }
-
-    return writeIOFromOptions(options).io.submitAuctionBid({
-      name: requiredStringFromOptions(options, 'name'),
-      processId: options.processId,
-      type: recordTypeFromOptions(options),
-      quantity: requiredMIOFromOptions(options, 'quantity').valueOf(),
-      // TODO: Assert if 'lease' type, years is required
-      years: positiveIntegerFromOptions(options, 'years'),
-    });
   },
 });
 
