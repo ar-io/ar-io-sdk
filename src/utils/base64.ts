@@ -51,5 +51,5 @@ export function toB64Url(buffer: Buffer): string {
 }
 
 export function sha256B64Url(input: Buffer): string {
-  return toB64Url(createHash('sha256').update(input).digest());
+  return toB64Url(createHash('sha256').update(Uint8Array.from(input)).digest());
 }

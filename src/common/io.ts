@@ -55,6 +55,7 @@ import {
   AoGatewayVault,
   AoIORead,
   AoIOWrite,
+  AoPaginatedAddressParams,
   AoRegistrationFees,
   AoVaultData,
   AoWalletVault,
@@ -319,16 +320,12 @@ export class IOReadable implements AoIORead {
   async getGatewayDelegateAllowList({
     address,
     ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<WalletAddress>): Promise<
-    PaginationResult<WalletAddress>
-  > {
+  }: AoPaginatedAddressParams): Promise<PaginationResult<WalletAddress>> {
     return this.process.read<PaginationResult<WalletAddress>>({
       tags: [
         { name: 'Action', value: 'Paginated-Allowed-Delegates' },
         { name: 'Address', value: address },
-        ...paginationParamsToTags<WalletAddress>(pageParams),
+        ...paginationParamsToTags(pageParams),
       ],
     });
   }
@@ -638,15 +635,9 @@ export class IOReadable implements AoIORead {
   }
 
   async getAllowedDelegates(
-    params: PaginationParams & { address: WalletAddress },
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>> {
-    return this.process.read<PaginationResult<WalletAddress>>({
-      tags: [
-        { name: 'Action', value: 'Paginated-Allowed-Delegates' },
-        { name: 'Address', value: params.address },
-        ...paginationParamsToTags(params),
-      ],
-    });
+    return this.getGatewayDelegateAllowList(params);
   }
 
   async getGatewayVaults(
@@ -1037,6 +1028,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async decreaseOperatorStake(
     params: {
       decreaseQty: number | mIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1047,6 +1039,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         ...tags,
         { name: 'Action', value: 'Decrease-Operator-Stake' },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
     });
   }
