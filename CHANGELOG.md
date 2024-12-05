@@ -1,3 +1,10 @@
+# [2.7.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.1...v2.7.0-alpha.2) (2024-12-05)
+
+
+### Bug Fixes
+
+* remove un-used import ([5db9ac0](https://github.com/ar-io/ar-io-sdk/commit/5db9ac07f690231c326ca68ac91d14cae2329c1a))
+
 # [2.7.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0...v2.7.0-alpha.1) (2024-12-05)
 
 
