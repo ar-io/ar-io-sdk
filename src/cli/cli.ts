@@ -56,7 +56,6 @@ import {
   listGateways,
 } from './commands/readCommands.js';
 import { transfer } from './commands/transfer.js';
-import './commands/updateGatewaySettings.js';
 import {
   addressAndVaultIdOptions,
   addressOptions,
