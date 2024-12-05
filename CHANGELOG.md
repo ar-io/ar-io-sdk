@@ -1,3 +1,10 @@
+# [2.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.2...v2.6.0-alpha.3) (2024-12-05)
+
+
+### Bug Fixes
+
+* **lua id:** bump lua id for ANT 9 ([9e8e7e8](https://github.com/ar-io/ar-io-sdk/commit/9e8e7e83deb7aef9fc6d94f294d6087840ade3e0))
+
 # [2.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2024-12-02)
 
 
