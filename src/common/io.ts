@@ -59,6 +59,7 @@ import {
   AoRegistrationFees,
   AoVaultData,
   AoWalletVault,
+  DemandFactorSettings,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -529,6 +530,12 @@ export class IOReadable implements AoIORead {
   async getDemandFactor(): Promise<number> {
     return this.process.read<number>({
       tags: [{ name: 'Action', value: 'Demand-Factor' }],
+    });
+  }
+
+  async getDemandFactorSettings(): Promise<DemandFactorSettings> {
+    return this.process.read<DemandFactorSettings>({
+      tags: [{ name: 'Action', value: 'Demand-Factor-Settings' }],
     });
   }
 

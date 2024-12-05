@@ -1,3 +1,31 @@
+# [2.6.0](https://github.com/ar-io/ar-io-sdk/compare/v2.5.5...v2.6.0) (2024-12-05)
+
+
+### Bug Fixes
+
+* **lua id:** bump lua id for ANT 9 ([9e8e7e8](https://github.com/ar-io/ar-io-sdk/commit/9e8e7e83deb7aef9fc6d94f294d6087840ade3e0))
+* use `Keywords` for setKeywords ([99cccd4](https://github.com/ar-io/ar-io-sdk/commit/99cccd499de0254f07e43ae68f4214b2775fa7b8))
+
+
+### Features
+
+* **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
+* init get gateway registry settings PE-6895 ([bb7b6b4](https://github.com/ar-io/ar-io-sdk/commit/bb7b6b4581f2b5e39c800749f0d7e2414fb9dd1c))
+
+# [2.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.3...v2.6.0-alpha.4) (2024-12-05)
+
+
+### Features
+
+* **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
+
+# [2.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.2...v2.6.0-alpha.3) (2024-12-05)
+
+
+### Bug Fixes
+
+* **lua id:** bump lua id for ANT 9 ([9e8e7e8](https://github.com/ar-io/ar-io-sdk/commit/9e8e7e83deb7aef9fc6d94f294d6087840ade3e0))
+
 # [2.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2024-12-02)
 
 
