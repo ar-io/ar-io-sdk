@@ -66,6 +66,7 @@ import {
   delegateStakeOptions,
   epochOptions,
   getVaultOptions,
+  globalOptions,
   initiatorOptions,
   joinNetworkOptions,
   nameOptions,
@@ -97,6 +98,7 @@ import {
   UpgradeRecordCLIOptions,
 } from './types.js';
 import {
+  applyOptions,
   assertConfirmationPrompt,
   epochInputFromOptions,
   formatIOWithCommas,
@@ -119,12 +121,14 @@ import {
   writeIOFromOptions,
 } from './utils.js';
 
-makeCommand({
-  name: 'ar.io', // TODO: can it be ar.io?
-  description: 'AR.IO Network CLI',
-})
-  .version(version)
-  .helpCommand(true);
+applyOptions(
+  program
+    .name('ar.io')
+    .version(version)
+    .description('AR.IO Network CLI')
+    .helpCommand(true),
+  globalOptions,
+);
 
 makeCommand({
   name: 'info',

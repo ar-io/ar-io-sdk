@@ -108,7 +108,10 @@ export interface CommanderOption {
   default?: string | boolean;
 }
 
-function applyOptions(command: Command, options: CommanderOption[]): Command {
+export function applyOptions(
+  command: Command,
+  options: CommanderOption[],
+): Command {
   [...options].forEach((option) => {
     command.option(option.alias, option.description, option.default);
   });
