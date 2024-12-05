@@ -342,6 +342,18 @@ export type AoGatewayRegistrySettings = {
   };
 };
 
+export type DemandFactorSettings = {
+  periodZeroStartTimestamp: number;
+  movingAvgPeriodCount: number;
+  periodLengthMs: number;
+  demandFactorBaseValue: number;
+  demandFactorMin: number;
+  demandFactorUpAdjustment: number;
+  demandFactorDownAdjustment: number;
+  stepDownThreshold: number;
+  criteria: string;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -449,6 +461,7 @@ export interface AoIORead {
   }): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+  getDemandFactorSettings(): Promise<DemandFactorSettings>;
   getVaults(
     params?: PaginationParams<AoWalletVault>,
   ): Promise<PaginationResult<AoWalletVault>>;
