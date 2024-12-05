@@ -322,6 +322,38 @@ export type AoJoinNetworkParams = Pick<
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
 
+export type AoGatewayRegistrySettings = {
+  delegates: {
+    minStake: number;
+    withdrawLengthMs: number;
+  };
+  observers: {
+    tenureWeightDays: number;
+    tenureWeightPeriod: number;
+    maxTenureWeight: number;
+    maxPerEpoch: number;
+  };
+  operators: {
+    minStake: number;
+    withdrawLengthMs: number;
+    leaveLengthMs: number;
+    failedEpochCountMax: number;
+    failedEpochSlashRate: number;
+  };
+};
+
+export type DemandFactorSettings = {
+  periodZeroStartTimestamp: number;
+  movingAvgPeriodCount: number;
+  periodLengthMs: number;
+  demandFactorBaseValue: number;
+  demandFactorMin: number;
+  demandFactorUpAdjustment: number;
+  demandFactorDownAdjustment: number;
+  stepDownThreshold: number;
+  criteria: string;
+};
+
 // Interfaces
 
 export interface AoIORead {
@@ -429,6 +461,7 @@ export interface AoIORead {
   }): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
+  getDemandFactorSettings(): Promise<DemandFactorSettings>;
   getVaults(
     params?: PaginationParams<AoWalletVault>,
   ): Promise<PaginationResult<AoWalletVault>>;
@@ -454,6 +487,7 @@ export interface AoIORead {
   getRedelegationFee(params: {
     address: WalletAddress;
   }): Promise<AoRedelegationFeeInfo>;
+  getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
 }
 
 export interface AoIOWrite extends AoIORead {

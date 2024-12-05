@@ -51,12 +51,14 @@ import {
   AoEpochSettings,
   AoGateway,
   AoGatewayDelegateWithAddress,
+  AoGatewayRegistrySettings,
   AoGatewayVault,
   AoIORead,
   AoIOWrite,
   AoRegistrationFees,
   AoVaultData,
   AoWalletVault,
+  DemandFactorSettings,
   EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
@@ -534,6 +536,12 @@ export class IOReadable implements AoIORead {
     });
   }
 
+  async getDemandFactorSettings(): Promise<DemandFactorSettings> {
+    return this.process.read<DemandFactorSettings>({
+      tags: [{ name: 'Action', value: 'Demand-Factor-Settings' }],
+    });
+  }
+
   // Auctions
   async getArNSAuctions(
     params?: PaginationParams<AoAuction>,
@@ -723,6 +731,12 @@ export class IOReadable implements AoIORead {
         { name: 'Action', value: 'Redelegation-Fee' },
         { name: 'Address', value: params.address },
       ],
+    });
+  }
+
+  async getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings> {
+    return this.process.read({
+      tags: [{ name: 'Action', value: 'Gateway-Registry-Settings' }],
     });
   }
 }

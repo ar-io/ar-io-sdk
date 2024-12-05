@@ -143,6 +143,29 @@ describe('e2e esm tests', async () => {
       assert.ok(epochSettings);
     });
 
+    it('should be able to get demand factor settings', async () => {
+      const demandFactorSettings = await io.getDemandFactorSettings();
+      assert.ok(demandFactorSettings);
+      assert.equal(
+        typeof demandFactorSettings.periodZeroStartTimestamp,
+        'number',
+      );
+      assert.equal(typeof demandFactorSettings.movingAvgPeriodCount, 'number');
+      assert.equal(typeof demandFactorSettings.periodLengthMs, 'number');
+      assert.equal(typeof demandFactorSettings.demandFactorBaseValue, 'number');
+      assert.equal(typeof demandFactorSettings.demandFactorMin, 'number');
+      assert.equal(
+        typeof demandFactorSettings.demandFactorUpAdjustment,
+        'number',
+      );
+      assert.equal(
+        typeof demandFactorSettings.demandFactorDownAdjustment,
+        'number',
+      );
+      assert.equal(typeof demandFactorSettings.stepDownThreshold, 'number');
+      assert.equal(typeof demandFactorSettings.criteria, 'string');
+    });
+
     it('should be able to get reserved names', async () => {
       const reservedNames = await io.getArNSReservedNames();
       assert.ok(reservedNames);
@@ -717,6 +740,34 @@ describe('e2e esm tests', async () => {
       assert.ok(redelegationFee);
       assert.equal(redelegationFee.redelegationFeeRate, 0);
       assert.equal(redelegationFee.feeResetTimestamp, undefined);
+    });
+
+    it('should be able to get gateway registry settings', async () => {
+      const registrySettings = await io.getGatewayRegistrySettings();
+      assert.ok(registrySettings);
+      assert.ok(typeof registrySettings.delegates.minStake === 'number');
+      assert.ok(
+        typeof registrySettings.delegates.withdrawLengthMs === 'number',
+      );
+      assert.ok(typeof registrySettings.observers.maxPerEpoch === 'number');
+      assert.ok(typeof registrySettings.observers.maxTenureWeight === 'number');
+      assert.ok(
+        typeof registrySettings.observers.tenureWeightDays === 'number',
+      );
+      assert.ok(
+        typeof registrySettings.observers.tenureWeightPeriod === 'number',
+      );
+      assert.ok(
+        typeof registrySettings.operators.failedEpochCountMax === 'number',
+      );
+      assert.ok(
+        typeof registrySettings.operators.failedEpochSlashRate === 'number',
+      );
+      assert.ok(typeof registrySettings.operators.leaveLengthMs === 'number');
+      assert.ok(typeof registrySettings.operators.minStake === 'number');
+      assert.ok(
+        typeof registrySettings.operators.withdrawLengthMs === 'number',
+      );
     });
   });
 

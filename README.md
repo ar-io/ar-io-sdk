@@ -73,7 +73,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Primary Names](#primary-names)
     - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
     - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
-    - [`requestPrimaryName({ name, address })`](#requestprimaryname-name-address-)
+    - [`requestPrimaryName({ name })`](#requestprimaryname-name-)
     - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
   - [Configuration](#configuration)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
@@ -1688,7 +1688,7 @@ const name = await io.getPrimaryName({
 
 </details>
 
-#### `requestPrimaryName({ name, address })`
+#### `requestPrimaryName({ name })`
 
 Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
 
