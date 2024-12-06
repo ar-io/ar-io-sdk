@@ -1,3 +1,80 @@
+# [2.7.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.2...v2.7.0-alpha.3) (2024-12-05)
+
+
+### Bug Fixes
+
+* **ar.io cli:** use global program from cli.ts scope for ar.io command PE-5854 ([3e83298](https://github.com/ar-io/ar-io-sdk/commit/3e83298bf07bd2ca0eb800ac74ab675bdbb766d0))
+
+# [2.7.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.1...v2.7.0-alpha.2) (2024-12-05)
+
+
+### Bug Fixes
+
+* remove un-used import ([5db9ac0](https://github.com/ar-io/ar-io-sdk/commit/5db9ac07f690231c326ca68ac91d14cae2329c1a))
+
+# [2.7.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0...v2.7.0-alpha.1) (2024-12-05)
+
+
+### Bug Fixes
+
+* use `Keywords` for setKeywords ([19ab3ad](https://github.com/ar-io/ar-io-sdk/commit/19ab3adaa58f0b322261ca5ed4b4cc6174cc66ad))
+
+
+### Features
+
+* **ar-io cli:** init balance command and CLI setup ([94c630b](https://github.com/ar-io/ar-io-sdk/commit/94c630b3b89fb3cf1d58afadcf424d2c464a39b3))
+* **ar-io cli:** init join-network command ([fc9dc07](https://github.com/ar-io/ar-io-sdk/commit/fc9dc07d331677af8e88ada479d833757001abc8))
+* **ar.io cli:** add --cu-url global parameter PE-5854 ([2346f5b](https://github.com/ar-io/ar-io-sdk/commit/2346f5bca1b51ef9893447d1e86fd6dfc57302cb))
+* **ar.io cli:** enable confirmation prompts on each write action PE-5854 ([9ac88bb](https://github.com/ar-io/ar-io-sdk/commit/9ac88bb73f6a386d3b0989e2ca8678d83399af82))
+* **ar.io cli:** include --tags input in write actions PE-5854 ([4b9d03e](https://github.com/ar-io/ar-io-sdk/commit/4b9d03e81839dc618b9adc8f9919929530bae504))
+* **ar.io cli:** init buy/upgrade/extend-record, inc-undernames, sub-auc-bid, req-prim-name PE-5854 ([5eb3df2](https://github.com/ar-io/ar-io-sdk/commit/5eb3df2dc89c4176b35b4d84747920c917d35dde))
+* **ar.io cli:** init decrease-delegate-stake instant/cancel-withdraw commands PE-5854 ([f0e7b9e](https://github.com/ar-io/ar-io-sdk/commit/f0e7b9e5e5525ce99c570ceb315cf09eb1ff7d33))
+* **ar.io cli:** init epoch read commands PE-5854 ([61e0fc3](https://github.com/ar-io/ar-io-sdk/commit/61e0fc3606a6b0f0b24fd82c212a2875bb421b57))
+* **ar.io cli:** init get token cost and auction prices PE-5854 ([867807d](https://github.com/ar-io/ar-io-sdk/commit/867807da1c9689d7372a91046139ee79552084c3))
+* **ar.io cli:** init get-delegations, get-arns-record, list-arns-records commands PE-5854 ([d7cbde3](https://github.com/ar-io/ar-io-sdk/commit/d7cbde356e620d2cf074ede94031e231ec5e2a6a))
+* **ar.io cli:** init get-gateway-delegates and get-gateways commands PE-5854 ([35a33ef](https://github.com/ar-io/ar-io-sdk/commit/35a33efca920fbad3ee3aa93e051acaa1a854927))
+* **ar.io cli:** init get-vault and get-gateway commands ([d262243](https://github.com/ar-io/ar-io-sdk/commit/d262243bde31d68cab0a6efaa2ada6795cdf14f1))
+* **ar.io cli:** init increase/decrease-operator-stake commands PE-5854 ([1312860](https://github.com/ar-io/ar-io-sdk/commit/131286024b18c86eabab0a326d3f42dd27ce63b6))
+* **ar.io cli:** init info command ([c721374](https://github.com/ar-io/ar-io-sdk/commit/c7213740954a2d5a15742a756aae8ac79497a5d9))
+* **ar.io cli:** init leave-network, delegate-stake PE-5854 ([40ebe06](https://github.com/ar-io/ar-io-sdk/commit/40ebe065673b881a3e23b275ea29423aa260259f))
+* **ar.io cli:** init pagination from CLI layer PE-5854 ([f52ce1f](https://github.com/ar-io/ar-io-sdk/commit/f52ce1fbb8bda21b35b985d21b3fa3fa9a6e825d))
+* **ar.io cli:** init read/write ANT commands PE-5854 ([392a9ef](https://github.com/ar-io/ar-io-sdk/commit/392a9ef5d20bd77809ee3a6a2bbac909739189eb))
+* **ar.io cli:** init redelegate-stake PE-5854 ([7bf4a8e](https://github.com/ar-io/ar-io-sdk/commit/7bf4a8e49b4e7e319dd013632db0dbd8ca2c1eaf))
+* **ar.io cli:** init save-observations PE-5854 ([f80bb8c](https://github.com/ar-io/ar-io-sdk/commit/f80bb8c607d67bb37278c9e600cee1c1493f3ea1))
+* **ar.io cli:** init spawn-ant and get-ant-state PE-5854 ([119c765](https://github.com/ar-io/ar-io-sdk/commit/119c765a866c385688b92eacc13b6cefdb4eb341))
+* **ar.io cli:** init token-supply command ([b58d782](https://github.com/ar-io/ar-io-sdk/commit/b58d782462e8725ef10686a13e4f52be69894741))
+* **ar.io cli:** init transfer command ([5553584](https://github.com/ar-io/ar-io-sdk/commit/5553584811cae1d9eb9ac12dbfa77734e5c80892))
+* **ar.io cli:** init update-gateway-settings PE-5854 ([7a6aa4b](https://github.com/ar-io/ar-io-sdk/commit/7a6aa4b0d3f7e1ade858b561f438d85b663f7a5c))
+* **ar.io cli:** stringify outputs for command line compatibility ([3c04cac](https://github.com/ar-io/ar-io-sdk/commit/3c04cac952189cc3c8265327bec6362616bea3b4))
+
+# [2.6.0](https://github.com/ar-io/ar-io-sdk/compare/v2.5.5...v2.6.0) (2024-12-05)
+
+
+### Bug Fixes
+
+* **lua id:** bump lua id for ANT 9 ([9e8e7e8](https://github.com/ar-io/ar-io-sdk/commit/9e8e7e83deb7aef9fc6d94f294d6087840ade3e0))
+* use `Keywords` for setKeywords ([99cccd4](https://github.com/ar-io/ar-io-sdk/commit/99cccd499de0254f07e43ae68f4214b2775fa7b8))
+
+
+### Features
+
+* **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
+* init get gateway registry settings PE-6895 ([bb7b6b4](https://github.com/ar-io/ar-io-sdk/commit/bb7b6b4581f2b5e39c800749f0d7e2414fb9dd1c))
+
+# [2.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.3...v2.6.0-alpha.4) (2024-12-05)
+
+
+### Features
+
+* **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
+
+# [2.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.2...v2.6.0-alpha.3) (2024-12-05)
+
+
+### Bug Fixes
+
+* **lua id:** bump lua id for ANT 9 ([9e8e7e8](https://github.com/ar-io/ar-io-sdk/commit/9e8e7e83deb7aef9fc6d94f294d6087840ade3e0))
+
 # [2.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2024-12-02)
 
 

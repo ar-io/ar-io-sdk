@@ -143,6 +143,29 @@ describe('e2e esm tests', async () => {
       assert.ok(epochSettings);
     });
 
+    it('should be able to get demand factor settings', async () => {
+      const demandFactorSettings = await io.getDemandFactorSettings();
+      assert.ok(demandFactorSettings);
+      assert.equal(
+        typeof demandFactorSettings.periodZeroStartTimestamp,
+        'number',
+      );
+      assert.equal(typeof demandFactorSettings.movingAvgPeriodCount, 'number');
+      assert.equal(typeof demandFactorSettings.periodLengthMs, 'number');
+      assert.equal(typeof demandFactorSettings.demandFactorBaseValue, 'number');
+      assert.equal(typeof demandFactorSettings.demandFactorMin, 'number');
+      assert.equal(
+        typeof demandFactorSettings.demandFactorUpAdjustment,
+        'number',
+      );
+      assert.equal(
+        typeof demandFactorSettings.demandFactorDownAdjustment,
+        'number',
+      );
+      assert.equal(typeof demandFactorSettings.stepDownThreshold, 'number');
+      assert.equal(typeof demandFactorSettings.criteria, 'string');
+    });
+
     it('should be able to get reserved names', async () => {
       const reservedNames = await io.getArNSReservedNames();
       assert.ok(reservedNames);
