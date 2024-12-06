@@ -1,3 +1,10 @@
+# [2.7.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.3...v2.7.0-alpha.4) (2024-12-06)
+
+
+### Bug Fixes
+
+* **lua id:** change lua id ([d4907db](https://github.com/ar-io/ar-io-sdk/commit/d4907db2b74be1ddc8d61ecd2b24944654a2e1b5))
+
 # [2.7.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.2...v2.7.0-alpha.3) (2024-12-05)
 
 
