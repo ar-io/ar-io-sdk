@@ -15,7 +15,7 @@
  */
 import prompts from 'prompts';
 
-import { mIOToken } from '../../node/index.js';
+import { mARIOToken } from '../../node/index.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
   DecreaseDelegateStakeCLIOptions,
@@ -29,7 +29,7 @@ import {
 import {
   assertConfirmationPrompt,
   assertEnoughBalance,
-  formatIOWithCommas,
+  formatARIOWithCommas,
   gatewaySettingsFromOptions,
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
@@ -38,12 +38,12 @@ import {
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
   stringifyJsonForCLIDisplay,
+  writeARIOFromOptions,
   writeActionTagsFromOptions,
-  writeIOFromOptions,
 } from '../utils.js';
 
 export async function joinNetwork(options: JoinNetworkCLIOptions) {
-  const { io, signerAddress } = writeIOFromOptions(options);
+  const { ario, signerAddress } = writeARIOFromOptions(options);
 
   const mARIOQuantity = requiredMARIOFromOptions(options, 'operatorStake');
 
@@ -62,23 +62,23 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
   }
 
   if (!options.skipConfirmation) {
-    const settings = await io.getGatewayRegistrySettings();
+    const settings = await ario.getGatewayRegistrySettings();
     if (settings.operators.minStake > mARIOQuantity.valueOf()) {
       throw new Error(
-        `The minimum operator stake is ${formatIOWithCommas(
-          new mIOToken(settings.operators.minStake).toIO(),
+        `The minimum operator stake is ${formatARIOWithCommas(
+          new mARIOToken(settings.operators.minStake).toARIO(),
         )} IO. Please provide a higher stake.`,
       );
     }
-    await assertEnoughBalance(io, signerAddress, mARIOQuantity.toIO());
+    await assertEnoughBalance(ario, signerAddress, mARIOQuantity.toARIO());
 
     await assertConfirmationPrompt(
-      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatIOWithCommas(mARIOQuantity.toIO())} IO to join the AR.IO network\nAre you sure?\n`,
+      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatARIOWithCommas(mARIOQuantity.toARIO())} IO to join the AR.IO network\nAre you sure?\n`,
       options,
     );
   }
 
-  const result = await io.joinNetwork(
+  const result = await ario.joinNetwork(
     settings,
     writeActionTagsFromOptions(options),
   );
@@ -95,7 +95,7 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
 export async function updateGatewaySettings(
   options: UpdateGatewaySettingsCLIOptions,
 ) {
-  const { io, signerAddress } = writeIOFromOptions(options);
+  const { ario, signerAddress } = writeARIOFromOptions(options);
   const gatewaySettings = gatewaySettingsFromOptions(options);
 
   if (Object.keys(gatewaySettings).length === 0) {
@@ -108,7 +108,7 @@ export async function updateGatewaySettings(
     options,
   );
 
-  const result = await io.updateGatewaySettings(
+  const result = await ario.updateGatewaySettings(
     gatewaySettings,
     writeActionTagsFromOptions(options),
   );
@@ -123,10 +123,10 @@ export async function updateGatewaySettings(
 }
 
 export async function leaveNetwork(options: WriteActionCLIOptions) {
-  const { io, signerAddress } = writeIOFromOptions(options);
+  const { ario, signerAddress } = writeARIOFromOptions(options);
 
   if (!options.skipConfirmation) {
-    const gateway = await io.getGateway({ address: signerAddress });
+    const gateway = await ario.getGateway({ address: signerAddress });
     if (!gateway) {
       throw new Error(`Gateway not found for address: ${signerAddress}`);
     }
@@ -140,7 +140,7 @@ export async function leaveNetwork(options: WriteActionCLIOptions) {
     );
   }
 
-  return writeIOFromOptions(options).io.leaveNetwork(
+  return writeARIOFromOptions(options).ario.leaveNetwork(
     writeActionTagsFromOptions(options),
   );
 }
@@ -161,7 +161,7 @@ export async function saveObservations(
     o,
   );
 
-  return writeIOFromOptions(o).io.saveObservations(
+  return writeARIOFromOptions(o).ario.saveObservations(
     {
       failedGateways: requiredStringArrayFromOptions(o, 'failedGateways'),
       reportTxId: requiredStringFromOptions(o, 'transactionId'),
@@ -174,14 +174,14 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
   const increaseQty = requiredMARIOFromOptions(o, 'operatorStake');
 
   await assertConfirmationPrompt(
-    `You are about to increase your operator stake by ${formatIOWithCommas(
-      increaseQty.toIO(),
+    `You are about to increase your operator stake by ${formatARIOWithCommas(
+      increaseQty.toARIO(),
     )} IO\nAre you sure?`,
     o,
   );
 
   return (
-    writeIOFromOptions(o).io.increaseOperatorStake({
+    writeARIOFromOptions(o).ario.increaseOperatorStake({
       increaseQty,
     }),
     writeActionTagsFromOptions(o)
@@ -194,13 +194,13 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
   // TODO: Can assert stake is sufficient for action, and new target stake meets contract minimum
 
   await assertConfirmationPrompt(
-    `You are about to decrease your operator stake by ${formatIOWithCommas(
-      decreaseQty.toIO(),
+    `You are about to decrease your operator stake by ${formatARIOWithCommas(
+      decreaseQty.toARIO(),
     )} IO\nAre you sure?`,
     o,
   );
 
-  return writeIOFromOptions(o).io.decreaseOperatorStake(
+  return writeARIOFromOptions(o).ario.decreaseOperatorStake(
     {
       decreaseQty,
     },
@@ -217,7 +217,7 @@ export async function instantWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  return writeIOFromOptions(o).io.instantWithdrawal(
+  return writeARIOFromOptions(o).ario.instantWithdrawal(
     {
       vaultId,
       gatewayAddress,
@@ -235,7 +235,7 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  return writeIOFromOptions(o).io.cancelWithdrawal(
+  return writeARIOFromOptions(o).ario.cancelWithdrawal(
     {
       vaultId,
       gatewayAddress,
@@ -245,21 +245,22 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
 }
 
 export async function delegateStake(options: TransferCLIOptions) {
-  const { io, signerAddress } = writeIOFromOptions(options);
+  const { ario, signerAddress } = writeARIOFromOptions(options);
 
-  const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
-  const mIOQuantity = ioQuantity.toMIO();
+  const { target, arioQuantity } =
+    requiredTargetAndQuantityFromOptions(options);
+  const mARIOQuantity = arioQuantity.toMARIO();
 
   if (!options.skipConfirmation) {
-    const balance = await io.getBalance({ address: signerAddress });
+    const balance = await ario.getBalance({ address: signerAddress });
 
-    if (balance < mIOQuantity.valueOf()) {
+    if (balance < mARIOQuantity.valueOf()) {
       throw new Error(
-        `Insufficient IO balance for delegating stake. Balance available: ${new mIOToken(balance).toIO()} IO`,
+        `Insufficient ARIO balance for delegating stake. Balance available: ${new mARIOToken(balance).toARIO()} ARIO`,
       );
     }
 
-    const targetGateway = await io.getGateway({ address: target });
+    const targetGateway = await ario.getGateway({ address: target });
     if (targetGateway === undefined) {
       throw new Error(`Gateway not found for address: ${target}`);
     }
@@ -274,7 +275,7 @@ export async function delegateStake(options: TransferCLIOptions) {
     const { confirm } = await prompts({
       type: 'confirm',
       name: 'confirm',
-      message: `Target Gateway:\n${JSON.stringify(targetGateway, null, 2)}\n\nAre you sure you want to delegate ${formatIOWithCommas(ioQuantity)} IO to ${target}?`,
+      message: `Target Gateway:\n${JSON.stringify(targetGateway, null, 2)}\n\nAre you sure you want to delegate ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}?`,
     });
 
     if (!confirm) {
@@ -282,10 +283,10 @@ export async function delegateStake(options: TransferCLIOptions) {
     }
   }
 
-  const result = await io.delegateStake(
+  const result = await ario.delegateStake(
     {
       target,
-      stakeQty: ioQuantity.toMIO(),
+      stakeQty: arioQuantity.toMARIO(),
     },
     writeActionTagsFromOptions(options),
   );
@@ -293,7 +294,7 @@ export async function delegateStake(options: TransferCLIOptions) {
   const output = {
     senderAddress: signerAddress,
     transferResult: result,
-    message: `Successfully delegated ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
+    message: `Successfully delegated ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}`,
   };
 
   return output;
@@ -302,8 +303,9 @@ export async function delegateStake(options: TransferCLIOptions) {
 export async function decreaseDelegateStake(
   options: DecreaseDelegateStakeCLIOptions,
 ) {
-  const io = writeIOFromOptions(options).io;
-  const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
+  const ario = writeARIOFromOptions(options).ario;
+  const { target, arioQuantity } =
+    requiredTargetAndQuantityFromOptions(options);
   const instant = options.instant ?? false;
 
   // TODO: Could assert sender is a delegate with enough stake to decrease
@@ -311,29 +313,29 @@ export async function decreaseDelegateStake(
   // TODO: Could present confirmation prompt with any fee for instant withdrawal (50% of the stake is put back into protocol??)
 
   await assertConfirmationPrompt(
-    `Are you sure you'd like to decrease delegated stake of ${formatIOWithCommas(ioQuantity)} IO on gateway ${target}?`,
+    `Are you sure you'd like to decrease delegated stake of ${formatARIOWithCommas(arioQuantity)} ARIO on gateway ${target}?`,
     options,
   );
 
-  const result = await io.decreaseDelegateStake({
+  const result = await ario.decreaseDelegateStake({
     target,
-    decreaseQty: ioQuantity.toMIO(),
+    decreaseQty: arioQuantity.toMARIO(),
     instant,
   });
 
   const output = {
     targetGateway: target,
     decreaseDelegateStakeResult: result,
-    message: `Successfully decreased delegated stake of ${formatIOWithCommas(
-      ioQuantity,
-    )} IO to ${target}`,
+    message: `Successfully decreased delegated stake of ${formatARIOWithCommas(
+      arioQuantity,
+    )} ARIO to ${target}`,
   };
 
   return output;
 }
 
 export async function redelegateStake(options: RedelegateStakeCLIOptions) {
-  const io = writeIOFromOptions(options).io;
+  const ario = writeARIOFromOptions(options).ario;
   const params = redelegateParamsFromOptions(options);
 
   // TODO: Could assert target gateway exists
@@ -341,19 +343,19 @@ export async function redelegateStake(options: RedelegateStakeCLIOptions) {
   // TODO: Could do assertions on source/target min delegate stakes are met
 
   await assertConfirmationPrompt(
-    `Are you sure you'd like to redelegate stake of ${formatIOWithCommas(params.stakeQty.toIO())} IO from ${params.source} to ${params.target}?`,
+    `Are you sure you'd like to redelegate stake of ${formatARIOWithCommas(params.stakeQty.toARIO())} ARIO from ${params.source} to ${params.target}?`,
     options,
   );
 
-  const result = await io.redelegateStake(params);
+  const result = await ario.redelegateStake(params);
 
   const output = {
     sourceGateway: params.source,
     targetGateway: params.target,
     redelegateStakeResult: result,
-    message: `Successfully re-delegated stake of ${formatIOWithCommas(
-      params.stakeQty.toIO(),
-    )} IO from ${params.source} to ${params.target}`,
+    message: `Successfully re-delegated stake of ${formatARIOWithCommas(
+      params.stakeQty.toARIO(),
+    )} ARIO from ${params.source} to ${params.target}`,
   };
 
   return output;

@@ -34,7 +34,7 @@ export type WalletCLIOptions = {
 export type GlobalCLIOptions = WalletCLIOptions & {
   dev: boolean;
   debug: boolean;
-  ioProcessId?: string;
+  arioProcessId?: string;
   cuUrl?: string;
 };
 

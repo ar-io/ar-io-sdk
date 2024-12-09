@@ -22,20 +22,20 @@ import prompts from 'prompts';
 import {
   ANT,
   AOProcess,
+  ARIO,
+  ARIOToken,
+  ARIO_DEVNET_PROCESS_ID,
+  ARIO_TESTNET_PROCESS_ID,
   AoANTRead,
   AoANTWrite,
-  AoIORead,
-  AoIOWrite,
+  AoARIORead,
+  AoARIOWrite,
   AoRedelegateStakeParams,
   AoSigner,
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
   EpochInput,
-  IO,
-  IOToken,
-  IO_DEVNET_PROCESS_ID,
-  IO_TESTNET_PROCESS_ID,
   Logger,
   PaginationParams,
   SpawnANTState,
@@ -43,7 +43,7 @@ import {
   createAoSigner,
   fromB64Url,
   initANTStateForAddress,
-  mIOToken,
+  mARIOToken,
   sha256B64Url,
 } from '../node/index.js';
 import { globalOptions } from './options.js';
@@ -137,15 +137,15 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   return appliedCommand;
 }
 
-export function ioProcessIdFromOptions({
-  ioProcessId,
+export function arioProcessIdFromOptions({
+  arioProcessId,
   dev,
 }: GlobalCLIOptions): string {
-  return ioProcessId !== undefined
-    ? ioProcessId
+  return arioProcessId !== undefined
+    ? arioProcessId
     : dev
-      ? IO_DEVNET_PROCESS_ID
-      : IO_TESTNET_PROCESS_ID;
+      ? ARIO_DEVNET_PROCESS_ID
+      : ARIO_TESTNET_PROCESS_ID;
 }
 
 function jwkFromOptions({
@@ -190,17 +190,17 @@ export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
 
 function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
   return new AOProcess({
-    processId: ioProcessIdFromOptions(options),
+    processId: arioProcessIdFromOptions(options),
     ao: connect({
       CU_URL: options.cuUrl,
     }),
   });
 }
 
-export function readIOFromOptions(options: GlobalCLIOptions): AoIORead {
+export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   setLoggerIfDebug(options);
 
-  return IO.init({
+  return ARIO.init({
     process: aoProcessFromOptions(options),
   });
 }
@@ -221,15 +221,15 @@ export function requiredAoSignerFromOptions(
   return createAoSigner(requiredContractSignerFromOptions(options).signer);
 }
 
-export function writeIOFromOptions(options: GlobalCLIOptions): {
-  io: AoIOWrite;
+export function writeARIOFromOptions(options: GlobalCLIOptions): {
+  ario: AoARIOWrite;
   signerAddress: string;
 } {
   const { signer, signerAddress } = requiredContractSignerFromOptions(options);
   setLoggerIfDebug(options);
 
   return {
-    io: IO.init({
+    ario: ARIO.init({
       process: aoProcessFromOptions(options),
       signer,
     }),
@@ -237,7 +237,7 @@ export function writeIOFromOptions(options: GlobalCLIOptions): {
   };
 }
 
-export function formatIOWithCommas(value: IOToken): string {
+export function formatARIOWithCommas(value: ARIOToken): string {
   const [integerPart, decimalPart] = value.toString().split('.');
   const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   if (decimalPart === undefined) {
@@ -377,7 +377,7 @@ export function gatewaySettingsFromOptions({
 
 export function requiredTargetAndQuantityFromOptions(
   options: TransferCLIOptions,
-): { target: string; ioQuantity: IOToken } {
+): { target: string; arioQuantity: ARIOToken } {
   if (options.target === undefined) {
     throw new Error('No target provided. Use --target');
   }
@@ -386,14 +386,15 @@ export function requiredTargetAndQuantityFromOptions(
   }
   return {
     target: options.target,
-    ioQuantity: new IOToken(+options.quantity),
+    arioQuantity: new ARIOToken(+options.quantity),
   };
 }
 
 export function redelegateParamsFromOptions(
   options: RedelegateStakeCLIOptions,
-): AoRedelegateStakeParams & { stakeQty: mIOToken } {
-  const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
+): AoRedelegateStakeParams & { stakeQty: mARIOToken } {
+  const { target, arioQuantity: aRIOQuantity } =
+    requiredTargetAndQuantityFromOptions(options);
   const source = options.source;
   if (source === undefined) {
     throw new Error('No source provided. Use --source');
@@ -403,7 +404,7 @@ export function redelegateParamsFromOptions(
     target,
     source,
     vaultId: options.vaultId,
-    stakeQty: ioQuantity.toMIO(),
+    stakeQty: aRIOQuantity.toMARIO(),
   };
 }
 
@@ -420,23 +421,23 @@ export function recordTypeFromOptions<O extends { type?: string }>(
 export function requiredMIOFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
-): mIOToken {
+): mARIOToken {
   if (options[key] === undefined) {
     throw new Error(`No ${key} provided. Use --${key} denominated in IO`);
   }
-  return new IOToken(+options[key]).toMIO();
+  return new ARIOToken(+options[key]).toMARIO();
 }
 
 export async function assertEnoughBalance(
-  io: AoIORead,
+  io: AoARIORead,
   address: string,
-  ioQuantity: IOToken,
+  ioQuantity: ARIOToken,
 ) {
   const balance = await io.getBalance({ address });
 
-  if (balance < ioQuantity.toMIO().valueOf()) {
+  if (balance < ioQuantity.toMARIO().valueOf()) {
     throw new Error(
-      `Insufficient IO balance for action. Balance available: ${new mIOToken(balance).toIO()} IO`,
+      `Insufficient IO balance for action. Balance available: ${new mARIOToken(balance).toARIO()} IO`,
     );
   }
 }

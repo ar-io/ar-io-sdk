@@ -1,10 +1,10 @@
 import {
+  ARIO_DEVNET_PROCESS_ID,
   AoArNSNameDataWithName,
   AoGatewayWithAddress,
   AoReturnedName,
   AoWeightedObserver,
   IO,
-  IO_DEVNET_PROCESS_ID,
   PaginationResult,
 } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ import {
 
 import './App.css';
 
-const io = IO.init({ processId: IO_DEVNET_PROCESS_ID });
+const ario = IO.init({ processId: ARIO_DEVNET_PROCESS_ID });
 
 type ReturnedNameWithPrices = AoReturnedName & {
   currentPrice: number;
@@ -42,43 +42,45 @@ function App() {
 
   useEffect(() => {
     // fetch first page of arns names
-    io.getArNSRecords({ limit: 10 }).then(
-      (page: PaginationResult<AoArNSNameDataWithName>) => {
+    ario
+      .getArNSRecords({ limit: 10 })
+      .then((page: PaginationResult<AoArNSNameDataWithName>) => {
         setNames(page.items);
         setTotalNames(page.totalItems);
-      },
-    );
+      });
 
     // fetch first page of gateways
-    io.getGateways({ limit: 10 }).then(
-      (page: PaginationResult<AoGatewayWithAddress>) => {
+    ario
+      .getGateways({ limit: 10 })
+      .then((page: PaginationResult<AoGatewayWithAddress>) => {
         setGateways(page.items);
         setTotalGateways(page.totalItems);
-      },
-    );
+      });
 
     // get returned names and prices for each returned name
-    io.getArNSReturnedNames({ limit: 10 }).then(
-      (page: PaginationResult<AoReturnedName>) => {
+    ario
+      .getArNSReturnedNames({ limit: 10 })
+      .then((page: PaginationResult<AoReturnedName>) => {
         setReturnedNames(page.items);
         setTotalReturnedNames(page.totalItems);
         page.items.forEach((returnedName: AoReturnedName) => {
-          io.getTokenCost({
-            name: returnedName.name,
-            intent: 'Buy-Record',
-            type: 'lease',
-            intervalMs: 1000 * 60 * 60 * 24, // 1 day
-          }).then((price: number) => {
-            setSelectedReturnedName({
-              ...returnedName,
-              currentPrice: price / 10 ** 6,
+          ario
+            .getTokenCost({
+              name: returnedName.name,
+              intent: 'Buy-Record',
+              type: 'lease',
+              intervalMs: 1000 * 60 * 60 * 24, // 1 day
+            })
+            .then((price: number) => {
+              setSelectedReturnedName({
+                ...returnedName,
+                currentPrice: price / 10 ** 6,
+              });
             });
-          });
         });
-      },
-    );
+      });
 
-    io.getPrescribedObservers().then((observers: AoWeightedObserver[]) => {
+    ario.getPrescribedObservers().then((observers: AoWeightedObserver[]) => {
       setPrescribedObservers(observers);
     });
   }, []);

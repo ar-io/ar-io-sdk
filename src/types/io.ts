@@ -28,7 +28,7 @@ import {
   WalletAddress,
   WriteOptions,
 } from './index.js';
-import { mIOToken } from './token.js';
+import { mARIOToken } from './token.js';
 
 // Pagination
 
@@ -66,7 +66,7 @@ export type EpochInput =
     }
   | undefined;
 
-// AO/IO Contract
+// AO/ARIO Contract
 export type AoBalances = Record<WalletAddress, number>;
 export type AoRegistrationFees = Record<
   number,
@@ -318,7 +318,7 @@ export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
 
 export type AoDelegateStakeParams = {
   target: WalletAddress;
-  stakeQty: number | mIOToken;
+  stakeQty: number | mARIOToken;
 };
 
 export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
@@ -326,7 +326,7 @@ export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
 export type AoRedelegateStakeParams = {
   target: string;
   source: string;
-  stakeQty: number | mIOToken;
+  stakeQty: number | mARIOToken;
   vaultId?: string;
 };
 
@@ -404,7 +404,7 @@ export type DemandFactorSettings = {
 
 // Interfaces
 
-export interface AoIORead {
+export interface AoARIORead {
   // read interactions
   getInfo(): Promise<{
     Ticker: string;
@@ -509,7 +509,7 @@ export interface AoIORead {
   getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
 }
 
-export interface AoIOWrite extends AoIORead {
+export interface AoARIOWrite extends AoARIORead {
   // write interactions
   transfer(
     {
@@ -533,13 +533,13 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   increaseOperatorStake(
     params: {
-      increaseQty: number | mIOToken;
+      increaseQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   decreaseOperatorStake(
     params: {
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,
@@ -547,14 +547,14 @@ export interface AoIOWrite extends AoIORead {
   delegateStake(
     params: {
       target: WalletAddress;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   decreaseDelegateStake(
     params: {
       target: WalletAddress;
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,

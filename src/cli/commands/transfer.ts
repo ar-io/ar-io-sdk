@@ -17,31 +17,32 @@ import { TransferCLIOptions } from '../types.js';
 import {
   assertEnoughBalance,
   confirmationPrompt,
-  formatIOWithCommas,
+  formatARIOWithCommas,
   requiredTargetAndQuantityFromOptions,
+  writeARIOFromOptions,
   writeActionTagsFromOptions,
-  writeIOFromOptions,
 } from '../utils.js';
 
 export async function transfer(options: TransferCLIOptions) {
-  const { target, ioQuantity } = requiredTargetAndQuantityFromOptions(options);
-  const { io, signerAddress } = writeIOFromOptions(options);
+  const { target, arioQuantity } =
+    requiredTargetAndQuantityFromOptions(options);
+  const { ario, signerAddress } = writeARIOFromOptions(options);
 
   if (!options.skipConfirmation) {
-    await assertEnoughBalance(io, signerAddress, ioQuantity);
+    await assertEnoughBalance(ario, signerAddress, arioQuantity);
 
     const confirm = await confirmationPrompt(
-      `Are you sure you want to transfer ${formatIOWithCommas(ioQuantity)} IO to ${target}?`,
+      `Are you sure you want to transfer ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}?`,
     );
     if (!confirm) {
       return { message: 'Transfer aborted by user' };
     }
   }
 
-  const result = await io.transfer(
+  const result = await ario.transfer(
     {
       target,
-      qty: ioQuantity.toMIO().valueOf(),
+      qty: arioQuantity.toMARIO().valueOf(),
     },
     writeActionTagsFromOptions(options),
   );
@@ -49,7 +50,7 @@ export async function transfer(options: TransferCLIOptions) {
   const output = {
     senderAddress: signerAddress,
     transferResult: result,
-    message: `Successfully transferred ${formatIOWithCommas(ioQuantity)} IO to ${target}`,
+    message: `Successfully transferred ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}`,
   };
 
   return output;

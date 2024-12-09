@@ -32,8 +32,8 @@ export const optionMap = {
     description: 'Run against the AR.IO devnet process',
     type: 'boolean',
   },
-  ioProcessId: {
-    alias: '--io-process-id',
+  arioProcessId: {
+    alias: '--ario-process-id <arioProcessId>',
     description: 'Run against a custom AR.IO process id',
   },
   cuUrl: {
@@ -250,7 +250,7 @@ export const globalOptions = [
   ...walletOptions,
   optionMap.dev,
   optionMap.debug,
-  optionMap.ioProcessId,
+  optionMap.arioProcessId,
   optionMap.cuUrl,
 ];
 
