@@ -28,7 +28,7 @@ import {
   WalletAddress,
   WriteOptions,
 } from './index.js';
-import { mIOToken } from './token.js';
+import { mARIOToken } from './token.js';
 
 // Pagination
 
@@ -41,9 +41,9 @@ export type PaginationParams<T = Record<string, never>> = {
 
 export type PaginationResult<T> = {
   items: T[];
-  nextCursor: string | undefined;
+  nextCursor?: string;
   totalItems: number;
-  sortBy?: keyof T;
+  sortBy?: T extends string ? string : keyof T;
   sortOrder: 'asc' | 'desc';
   hasMore: boolean;
 };
@@ -66,7 +66,7 @@ export type EpochInput =
     }
   | undefined;
 
-// AO/IO Contract
+// AO/ARIO Contract
 export type AoBalances = Record<WalletAddress, number>;
 export type AoRegistrationFees = Record<
   number,
@@ -174,11 +174,9 @@ export type AoGatewayService = {
   port: number;
 };
 
-export type AoGatewayServices =
-  | {
-      bundlers: AoGatewayService[];
-    }
-  | undefined; // not required, for now
+export type AoGatewayServices = {
+  bundlers: AoGatewayService[];
+};
 
 export type AoGatewayDelegates = Record<WalletAddress, AoGatewayDelegate>;
 export type AoGatewayDelegateAllowList = WalletAddress[];
@@ -198,7 +196,7 @@ export type AoGateway = {
   operatorStake: number;
   status: 'joined' | 'leaving';
   weights: AoGatewayWeights;
-  services: AoGatewayServices;
+  services?: AoGatewayServices;
 };
 
 export type AoGatewayStats = {
@@ -259,29 +257,12 @@ export type AoBalanceWithAddress = {
   balance: number;
 };
 
-// Auctions
-export type AoAuctionSettings = {
-  durationMs: number;
-  decayRate: number;
-  scalingExponent: number;
-  startPriceMultiplier: number;
-};
-
-export type AoAuction = {
+export type AoReturnedName = {
   name: string;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   initiator: string;
-  baseFee: number;
-  demandFactor: number;
-  settings: AoAuctionSettings;
-};
-
-export type AoAuctionPriceData = {
-  type: 'lease' | 'permabuy';
-  years?: number;
-  prices: Record<string, number>;
-  currentPrice: number;
+  premiumMultiplier: number;
 };
 
 export type AoDelegationBase = {
@@ -314,13 +295,80 @@ export type AoGatewayVault = {
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
-export type AoJoinNetworkParams = Pick<
-  AoGateway,
-  'operatorStake' | 'observerAddress'
-> &
-  Partial<AoGatewaySettings>;
+export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
+  Partial<AoGatewaySettings> & {
+    observerAddress?: WalletAddress;
+  };
 
-export type AoUpdateGatewaySettingsParams = AtLeastOne<AoJoinNetworkParams>;
+export type AoUpdateGatewaySettingsParams = AtLeastOne<
+  Omit<AoJoinNetworkParams, 'operatorStake'>
+>;
+
+export type AoArNSNameParams = {
+  name: string;
+};
+
+export type AoAddressParams = {
+  address: WalletAddress;
+};
+
+export type AoBalanceParams = AoAddressParams;
+
+export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
+
+export type AoDelegateStakeParams = {
+  target: WalletAddress;
+  stakeQty: number | mARIOToken;
+};
+
+export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
+
+export type AoRedelegateStakeParams = {
+  target: string;
+  source: string;
+  stakeQty: number | mARIOToken;
+  vaultId?: string;
+};
+
+export const validIntents = [
+  'Buy-Record',
+  'Extend-Lease',
+  'Increase-Undername-Limit',
+  'Upgrade-Name',
+  'Primary-Name-Request',
+];
+export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'];
+export type Intent = (typeof validIntents)[number];
+export const isValidIntent = (intent: string): intent is Intent => {
+  return validIntents.indexOf(intent) !== -1;
+};
+
+export type AoTokenCostParams = {
+  intent: Intent;
+  type?: 'permabuy' | 'lease';
+  years?: number;
+  name: string;
+  quantity?: number;
+};
+
+export type AoGetVaultParams = {
+  address: WalletAddress;
+  vaultId: string;
+};
+
+export type AoBuyRecordParams = AoArNSNameParams & {
+  years?: number;
+  type: 'lease' | 'permabuy';
+  processId: string;
+};
+
+export type AoExtendLeaseParams = AoArNSNameParams & {
+  years: number;
+};
+
+export type AoIncreaseUndernameLimitParams = AoArNSNameParams & {
+  increaseCount: number;
+};
 
 export type AoGatewayRegistrySettings = {
   delegates: {
@@ -356,7 +404,7 @@ export type DemandFactorSettings = {
 
 // Interfaces
 
-export interface AoIORead {
+export interface AoARIORead {
   // read interactions
   getInfo(): Promise<{
     Ticker: string;
@@ -368,22 +416,16 @@ export interface AoIORead {
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
-  getGateway({
-    address,
-  }: {
-    address: WalletAddress;
-  }): Promise<AoGateway | undefined>;
+  getGateway({ address }: AoAddressParams): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates({
     address,
     ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
+  }: AoAddressParams & PaginationParams<AoGatewayDelegateWithAddress>): Promise<
     PaginationResult<AoGatewayDelegateWithAddress>
   >;
   getGatewayDelegateAllowList(
-    params?: PaginationParams<WalletAddress>,
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   getGateways(
@@ -393,7 +435,7 @@ export interface AoIORead {
     params: PaginationParams<AoDelegation> & { address: WalletAddress },
   ): Promise<PaginationResult<AoDelegation>>;
   getAllowedDelegates(
-    params: PaginationParams & { address: WalletAddress },
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>>;
   getGatewayVaults(
     params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
@@ -408,7 +450,7 @@ export interface AoIORead {
     name: string;
   }): Promise<AoArNSNameData | undefined>;
   getArNSRecords(
-    params?: PaginationParams<AoArNSNameDataWithName>,
+    params?: AoGetArNSRecordsParams,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(
     params?: PaginationParams<AoArNSReservedNameDataWithName>,
@@ -418,24 +460,15 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined>;
-  getArNSAuctions(
-    params?: PaginationParams<AoAuction>,
-  ): Promise<PaginationResult<AoAuction>>;
-  getArNSAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
-  getArNSAuctionPrices({
+  getArNSReturnedNames(
+    params?: PaginationParams<AoReturnedName>,
+  ): Promise<PaginationResult<AoReturnedName>>;
+  getArNSReturnedName({
     name,
-    type,
-    years,
-    timestamp,
-    intervalMs,
   }: {
     name: string;
-    type: 'lease' | 'permabuy';
-    years?: number;
-    timestamp?: number;
-    intervalMs?: number;
-  }): Promise<AoAuctionPriceData>;
-  getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
+  }): Promise<AoReturnedName | undefined>;
+  getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
@@ -447,18 +480,7 @@ export interface AoIORead {
     years,
     name,
     quantity,
-  }: {
-    intent:
-      | 'Buy-Record'
-      | 'Extend-Lease'
-      | 'Increase-Undername-Limit'
-      | 'Upgrade-Name'
-      | 'Primary-Name-Request';
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    name: string;
-    quantity?: number;
-  }): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
+  }: AoTokenCostParams): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getDemandFactorSettings(): Promise<DemandFactorSettings>;
@@ -468,10 +490,7 @@ export interface AoIORead {
   getVault({
     address,
     vaultId,
-  }: {
-    address: WalletAddress;
-    vaultId: string;
-  }): Promise<AoVaultData>;
+  }: AoGetVaultParams): Promise<AoVaultData | undefined>;
   getPrimaryNameRequest(params: {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest>;
@@ -480,7 +499,7 @@ export interface AoIORead {
   ): Promise<PaginationResult<AoPrimaryNameRequest>>;
   getPrimaryName(
     params: { address: WalletAddress } | { name: string },
-  ): Promise<AoPrimaryName>;
+  ): Promise<AoPrimaryName | undefined>;
   getPrimaryNames(
     params?: PaginationParams<AoPrimaryName>,
   ): Promise<PaginationResult<AoPrimaryName>>;
@@ -490,7 +509,7 @@ export interface AoIORead {
   getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
 }
 
-export interface AoIOWrite extends AoIORead {
+export interface AoARIOWrite extends AoARIORead {
   // write interactions
   transfer(
     {
@@ -514,27 +533,28 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   increaseOperatorStake(
     params: {
-      increaseQty: number | mIOToken;
+      increaseQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   decreaseOperatorStake(
     params: {
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   delegateStake(
     params: {
       target: WalletAddress;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   decreaseDelegateStake(
     params: {
       target: WalletAddress;
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,
@@ -555,32 +575,19 @@ export interface AoIOWrite extends AoIORead {
   ): Promise<AoMessageResult>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
   buyRecord(
-    params: {
-      name: string;
-      years?: number;
-      type: 'lease' | 'permabuy';
-      processId: string;
-    },
+    params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   upgradeRecord(
-    params: {
-      name: string;
-    },
+    params: AoArNSNameParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   extendLease(
-    params: {
-      name: string;
-      years: number;
-    },
+    params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   increaseUndernameLimit(
-    params: {
-      name: string;
-      increaseCount: number;
-    },
+    params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   cancelWithdrawal(
@@ -590,24 +597,9 @@ export interface AoIOWrite extends AoIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  submitAuctionBid(
-    params: {
-      name: string;
-      processId: string;
-      quantity?: number;
-      type?: 'lease' | 'permabuy';
-      years?: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
   requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
   redelegateStake(
-    params: {
-      target: string;
-      source: string;
-      stakeQty: number | mIOToken;
-      vaultId?: string;
-    },
+    params: AoRedelegateStakeParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
 }

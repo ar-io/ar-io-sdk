@@ -1,15 +1,15 @@
 import {
   ANT,
-  IO,
-  IO_TESTNET_PROCESS_ID,
+  ARIO,
+  ARIO_TESTNET_PROCESS_ID,
   getANTProcessesOwnedByWallet,
 } from '@ar.io/sdk';
 
 (async () => {
-  const arIO = IO.init();
+  const arIO = ARIO.init();
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: IO_TESTNET_PROCESS_ID,
+    address: ARIO_TESTNET_PROCESS_ID,
   });
   const contractInfo = await arIO.getInfo();
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });

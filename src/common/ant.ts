@@ -558,16 +558,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
-   * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
+   * @param name @type {string} The name you want to release. The name will be put up for as a recently returned name on the ARIO contract. 50% of the winning bid will be distributed to the ANT owner at the time of purchase. If no purchase in the recently returned name period (14 epochs), the name will be released and can be reregistered by anyone.
+   * @param arioProcessId @type {string} The processId of the ARIO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.releaseName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID });
+   * ant.releaseName({ name: "ardrive", arioProcessId: AR_TESTNET_PROCESS_ID });
    * ```
    */
   async releaseName(
-    { name, ioProcessId }: { name: string; ioProcessId: string },
+    { name, arioProcessId }: { name: string; arioProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -575,29 +575,30 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Release-Name' },
         { name: 'Name', value: name },
-        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'IO-Process-Id', value: arioProcessId },
+        { name: 'ARIO-Process-Id', value: arioProcessId },
       ],
       signer: this.signer,
     });
   }
 
   /**
-   * Sends a message to the IO contract to reassign the name to a new ANT. This can only be done by the current owner of the ANT.
+   * Sends a message to the ARIO contract to reassign the name to a new ANT. This can only be done by the current owner of the ANT.
    * @param name @type {string} The name you want to reassign.
-   * @param ioProcessId @type {string} The processId of the IO contract.
+   * @param arioProcessId @type {string} The processId of the ARIO contract.
    * @param antProcessId @type {string} The processId of the ANT contract.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.reassignName({ name: "ardrive", ioProcessId: IO_TESTNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
+   * ant.reassignName({ name: "ardrive", arioProcessId: ARIO_TESTNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
    * ```
    */
   async reassignName(
     {
       name,
-      ioProcessId,
+      arioProcessId,
       antProcessId,
-    }: { name: string; ioProcessId: string; antProcessId: string },
+    }: { name: string; arioProcessId: string; antProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -605,7 +606,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Reassign-Name' },
         { name: 'Name', value: name },
-        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'IO-Process-Id', value: arioProcessId },
+        { name: 'ARIO-Process-Id', value: arioProcessId },
         { name: 'Process-Id', value: antProcessId },
       ],
       signer: this.signer,
@@ -619,8 +621,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     {
       name,
       address,
-      ioProcessId,
-    }: { name: string; address: WalletAddress; ioProcessId: string },
+      arioProcessId,
+    }: { name: string; address: WalletAddress; arioProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -629,14 +631,15 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Action', value: 'Approve-Primary-Name' },
         { name: 'Name', value: name },
         { name: 'Recipient', value: address },
-        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'IO-Process-Id', value: arioProcessId },
+        { name: 'ARIO-Process-Id', value: arioProcessId },
       ],
       signer: this.signer,
     });
   }
 
   async removePrimaryNames(
-    { names, ioProcessId }: { names: string[]; ioProcessId: string },
+    { names, arioProcessId }: { names: string[]; arioProcessId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -644,7 +647,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         ...(options?.tags ?? []),
         { name: 'Action', value: 'Remove-Primary-Names' },
         { name: 'Names', value: names.join(',') },
-        { name: 'IO-Process-Id', value: ioProcessId },
+        { name: 'IO-Process-Id', value: arioProcessId },
+        { name: 'ARIO-Process-Id', value: arioProcessId },
       ],
       signer: this.signer,
     });

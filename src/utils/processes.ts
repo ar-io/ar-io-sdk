@@ -18,14 +18,14 @@ import { pLimit } from 'plimit-lit';
 
 import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
-import { IO } from '../common/io.js';
+import { ARIO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
-import { IO_TESTNET_PROCESS_ID } from '../constants.js';
+import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import { AoANTRegistryRead } from '../types/ant-registry.js';
 import { AoANTState } from '../types/ant.js';
 import {
+  AoARIORead,
   AoArNSNameData,
-  AoIORead,
   ProcessId,
   WalletAddress,
 } from '../types/index.js';
@@ -63,21 +63,21 @@ function timeout(ms: number, promise) {
 }
 
 export class ArNSEventEmitter extends EventEmitter {
-  protected contract: AoIORead;
+  protected contract: AoARIORead;
   private timeoutMs: number; // timeout for each request to 3 seconds
   private throttle;
   private logger: ILogger;
   private strict: boolean;
   constructor({
-    contract = IO.init({
-      processId: IO_TESTNET_PROCESS_ID,
+    contract = ARIO.init({
+      processId: ARIO_TESTNET_PROCESS_ID,
     }),
     timeoutMs = 60_000,
     concurrency = 30,
     logger = Logger.default,
     strict = false,
   }: {
-    contract?: AoIORead;
+    contract?: AoARIORead;
     timeoutMs?: number;
     concurrency?: number;
     logger?: ILogger;
@@ -181,14 +181,14 @@ export class ArNSEventEmitter extends EventEmitter {
 }
 
 export const fetchAllArNSRecords = async ({
-  contract = IO.init({
-    processId: IO_TESTNET_PROCESS_ID,
+  contract = ARIO.init({
+    processId: ARIO_TESTNET_PROCESS_ID,
   }),
   emitter,
   logger = Logger.default,
   pageSize = 50_000,
 }: {
-  contract?: AoIORead;
+  contract?: AoARIORead;
   emitter?: EventEmitter;
   logger?: ILogger;
   pageSize?: number;

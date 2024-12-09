@@ -34,6 +34,30 @@ import {
   WalletAddress,
 } from '../types/index.js';
 
+export type SpawnANTState = {
+  owner: WalletAddress;
+  controllers: WalletAddress[];
+  name: string;
+  description: string;
+  keywords: string[];
+  ticker: string;
+  records: Record<string, AoANTRecord>;
+  balances: Record<WalletAddress, number>;
+};
+
+export type SpawnANTParams = {
+  signer: AoSigner;
+  module?: string;
+  luaCodeTxId?: string;
+  ao?: AoClient;
+  scheduler?: string;
+  state?: SpawnANTState;
+  stateContractTxId?: string;
+  antRegistryId?: string;
+  logger?: Logger;
+  arweave?: Arweave;
+};
+
 export async function spawnANT({
   signer,
   module = AOS_MODULE_ID,
@@ -45,33 +69,7 @@ export async function spawnANT({
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   arweave = defaultArweave,
-}: {
-  signer: AoSigner;
-  module?: string;
-  luaCodeTxId?: string;
-  ao?: AoClient;
-  scheduler?: string;
-  state?: {
-    owner: WalletAddress;
-    controllers: WalletAddress[];
-    name: string;
-    ticker: string;
-    records: Record<string, AoANTRecord>;
-    balances: Record<WalletAddress, number>;
-  };
-  stateContractTxId?: string;
-  antRegistryId?: string;
-  logger?: Logger;
-  arweave?: Arweave;
-}): Promise<string> {
-  const registryClient = ANTRegistry.init({
-    process: new AOProcess({
-      processId: antRegistryId,
-      ao,
-      logger,
-    }),
-    signer: signer,
-  });
+}: SpawnANTParams): Promise<string> {
   //TODO: cache locally and only fetch if not cached
   const luaString = (await arweave.transactions.getData(luaCodeTxId, {
     decode: true,
@@ -110,7 +108,7 @@ export async function spawnANT({
     signer,
   });
 
-  logger.info(`Spawned ANT`, {
+  logger.debug(`Spawned ANT`, {
     processId,
     module,
     scheduler,
@@ -129,7 +127,7 @@ export async function spawnANT({
       data: JSON.stringify(state),
       signer,
     });
-    logger.info(`Initialized ANT`, {
+    logger.debug(`Initialized ANT`, {
       processId,
       module,
       scheduler,
@@ -137,11 +135,19 @@ export async function spawnANT({
     });
   }
 
+  const registryClient = ANTRegistry.init({
+    process: new AOProcess({
+      processId: antRegistryId,
+      ao,
+      logger,
+    }),
+    signer: signer,
+  });
   const { id: antRegistrationMsgId } = await registryClient.register({
     processId,
   });
 
-  logger.info(`Registered ANT to ANT Registry`, {
+  logger.debug(`Registered ANT to ANT Registry`, {
     processId,
     module,
     scheduler,
@@ -188,7 +194,7 @@ export async function evolveANT({
     data: luaString,
     signer,
   });
-  logger.info(`Evolved ANT`, {
+  logger.debug(`Evolved ANT`, {
     processId,
     luaCodeTxId,
     evalMsgId: evolveMsgId,
@@ -256,4 +262,38 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
   };
 
   return aoSigner;
+}
+
+export const defaultTargetManifestId =
+  '-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI';
+
+export function initANTStateForAddress({
+  owner,
+  targetId,
+  ttlSeconds = 3600,
+  keywords = [],
+  controllers = [],
+  description = '',
+  ticker = 'aos',
+  name = 'ANT',
+}: Partial<SpawnANTState> & {
+  targetId?: string;
+  ttlSeconds?: number;
+  owner: WalletAddress;
+}): SpawnANTState {
+  return {
+    ticker,
+    name,
+    description,
+    keywords,
+    owner,
+    controllers: [owner, ...controllers],
+    balances: { [owner]: 1 },
+    records: {
+      ['@']: {
+        transactionId: targetId ?? defaultTargetManifestId.toString(),
+        ttlSeconds,
+      },
+    },
+  };
 }

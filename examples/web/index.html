@@ -24,25 +24,25 @@
 
     <script type="module" defer>
       import {
-        IO,
-        ioDevnetProcessId,
-        mIOToken,
+        ARIO,
+        arioDevnetProcessId,
+        mARIOToken,
       } from 'https://unpkg.com/@ar.io/sdk@1.2.0-alpha.17/bundles/web.bundle.min.js';
 
-      const arIO = IO.init();
+      const ario = ARIO.init();
 
       // fetch data on page load
       async function init() {
-        const gateways = await arIO.getGateways();
-        const balance = await arIO
+        const gateways = await ario.getGateways();
+        const balance = await ario
           .getBalance({
-            address: ioDevnetProcessId,
+            address: arioDevnetProcessId,
           })
-          .then((mIO) => new mIOToken(mIO).toIO());
-        const record = await arIO.getArNSRecord({ name: 'ardrive' });
-        const records = await arIO.getArNSRecords();
-        const observations = await arIO.getObservations();
-        const distributions = await arIO.getDistributions();
+          .then((mIO) => new mARIOToken(mIO).toARIO());
+        const record = await ario.getArNSRecord({ name: 'ardrive' });
+        const records = await ario.getArNSRecords();
+        const observations = await ario.getObservations();
+        const distributions = await ario.getDistributions();
 
         //  update the UI
 
@@ -54,14 +54,14 @@
               <tr>
                 <td class="border border-surface px-4 py-2 text-primary" style="width: fit-content"><a href="https://${gateway.settings.fqdn}" target="_blank">${gateway.settings.fqdn}</a></td>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/address/${gatewayOwner}" target="_blank">${gatewayOwner}</a></td>
-                <td class="border border-surface px-4 py-2">${gateway.operatorStake} IO</td>
+                <td class="border border-surface px-4 py-2">${gateway.operatorStake} ARIO</td>
               </tr>
             `;
           })
           .join('');
 
         document.getElementById('balance-result').textContent =
-          `Balance: ${balance} IO`;
+          `Balance: ${balance} ARIO`;
 
         document.getElementById('record-result').textContent = JSON.stringify(
           record,

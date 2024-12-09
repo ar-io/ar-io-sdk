@@ -1,16 +1,17 @@
-import { IO } from '@ar.io/sdk/web';
+import { ARIO } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import './App.css';
 
-const io = IO.init();
+const ario = ARIO.init();
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
 
   useEffect(() => {
-    io.getInfo()
+    ario
+      .getInfo()
       .then((state) => {
         setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
       })
