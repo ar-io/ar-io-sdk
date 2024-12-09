@@ -1,3 +1,10 @@
+# [2.7.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.4...v2.7.0-alpha.5) (2024-12-09)
+
+
+### Bug Fixes
+
+* expose instant param for decreaseOperatorStake function arg type ([2fd1f5d](https://github.com/ar-io/ar-io-sdk/commit/2fd1f5df34b9c8f3a7d62d9fea56d5399c53f3b8))
+
 # [2.7.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.3...v2.7.0-alpha.4) (2024-12-06)
 
 
