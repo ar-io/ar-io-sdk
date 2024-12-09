@@ -1,3 +1,10 @@
+# [2.7.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.6...v2.7.0-alpha.7) (2024-12-09)
+
+
+### Features
+
+* **returned names:** remove/replace auction APIs in favor returned names ([2c9826f](https://github.com/ar-io/ar-io-sdk/commit/2c9826fd1e3c3d4534ba2d50e650affa5d7a35aa))
+
 # [2.7.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.5...v2.7.0-alpha.6) (2024-12-09)
 
 
