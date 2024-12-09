@@ -353,7 +353,7 @@ makeCommand<AddressCLIOptions>({
         mIOBalance: result,
         message: `Provided address current has a balance of ${formatARIOWithCommas(
           new mARIOToken(result).toARIO(),
-        )} IO`,
+        )} ARIO`,
       })),
 });
 
@@ -395,7 +395,7 @@ makeCommand<PaginationAddressCLIOptions>({
 
 makeCommand({
   name: 'transfer',
-  description: 'Transfer IO to another address',
+  description: 'Transfer ARIO to another address',
   options: transferOptions,
   action: transfer,
 });
