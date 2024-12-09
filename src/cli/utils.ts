@@ -556,6 +556,6 @@ export function getANTStateFromOptions(
     ticker: options.ticker,
     name: options.name,
     keywords: options.keywords,
-    ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 0,
+    ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 3600,
   });
 }
