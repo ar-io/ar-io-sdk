@@ -15,7 +15,7 @@
  */
 import Arweave from 'arweave';
 
-import { IO_TESTNET_PROCESS_ID } from '../constants.js';
+import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
@@ -43,6 +43,8 @@ import {
   WriteOptions,
 } from '../types/index.js';
 import {
+  AoARIORead,
+  AoARIOWrite,
   AoArNSNameData,
   AoArNSReservedNameDataWithName,
   AoDelegation,
@@ -52,8 +54,6 @@ import {
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
-  AoIORead,
-  AoIOWrite,
   AoPaginatedAddressParams,
   AoRegistrationFees,
   AoVaultData,
@@ -63,7 +63,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/io.js';
-import { AoSigner, mIOToken } from '../types/token.js';
+import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
 import {
   getCurrentBlockUnixTimestampMs,
@@ -74,19 +74,19 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
-export class IO {
-  static init(): AoIORead;
-  static init({ process }: { process: AOProcess }): AoIORead;
+export class ARIO {
+  static init(): AoARIORead;
+  static init({ process }: { process: AOProcess }): AoARIORead;
   static init({
     process,
     signer,
-  }: WithSigner<{ process: AOProcess }>): AoIOWrite;
+  }: WithSigner<{ process: AOProcess }>): AoARIOWrite;
   static init({
     processId,
     signer,
   }: WithSigner<{
     processId: string;
-  }>): AoIOWrite;
+  }>): AoARIOWrite;
   static init({
     processId,
     signer,
@@ -94,29 +94,29 @@ export class IO {
     signer?: ContractSigner | undefined;
     processId: string;
   });
-  static init({ processId }: { processId: string }): AoIORead;
+  static init({ processId }: { processId: string }): AoARIORead;
   static init(
     config?: OptionalSigner<ProcessConfiguration>,
-  ): AoIORead | AoIOWrite {
+  ): AoARIORead | AoARIOWrite {
     if (config && config.signer) {
       const { signer, ...rest } = config;
-      return new IOWriteable({
+      return new ARIOWriteable({
         ...rest,
         signer,
       });
     }
-    return new IOReadable(config);
+    return new ARIOReadable(config);
   }
 }
 
-export class IOReadable implements AoIORead {
+export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
   constructor(config?: ProcessConfiguration, arweave = defaultArweave) {
     if (!config) {
       this.process = new AOProcess({
-        processId: IO_TESTNET_PROCESS_ID,
+        processId: ARIO_TESTNET_PROCESS_ID,
       });
     } else if (isProcessConfiguration(config)) {
       this.process = config.process;
@@ -676,7 +676,7 @@ export class IOReadable implements AoIORead {
   }
 }
 
-export class IOWriteable extends IOReadable implements AoIOWrite {
+export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
   constructor({
@@ -691,7 +691,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     if (Object.keys(config).length === 0) {
       super({
         process: new AOProcess({
-          processId: IO_TESTNET_PROCESS_ID,
+          processId: ARIO_TESTNET_PROCESS_ID,
         }),
       });
       this.signer = createAoSigner(signer);
@@ -716,7 +716,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       qty,
     }: {
       target: string;
-      qty: number | mIOToken;
+      qty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -884,7 +884,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async delegateStake(
     params: {
       target: string;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -903,7 +903,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async decreaseDelegateStake(
     params: {
       target: string;
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,
@@ -954,7 +954,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
 
   async increaseOperatorStake(
     params: {
-      increaseQty: number | mIOToken;
+      increaseQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -971,7 +971,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
 
   async decreaseOperatorStake(
     params: {
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,
@@ -1163,7 +1163,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       source: string;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
       vaultId?: string;
     },
     options?: WriteOptions,

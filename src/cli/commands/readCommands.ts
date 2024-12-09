@@ -18,7 +18,7 @@ import {
   isValidIntent,
   validIntents,
 } from '../../types/io.js';
-import { mIOToken } from '../../types/token.js';
+import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndNameCLIOptions,
   AddressAndVaultIdCLIOptions,
@@ -32,23 +32,23 @@ import {
 import {
   addressFromOptions,
   epochInputFromOptions,
-  formatIOWithCommas,
+  formatARIOWithCommas,
   paginationParamsFromOptions,
-  readIOFromOptions,
+  readARIOFromOptions,
   requiredAddressFromOptions,
   requiredStringFromOptions,
 } from '../utils.js';
 
 export async function getGateway(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const gateway = await readIOFromOptions(o).getGateway({
+  const gateway = await readARIOFromOptions(o).getGateway({
     address,
   });
   return gateway ?? { message: `No gateway found for address ${address}` };
 }
 
 export async function listGateways(o: PaginationCLIOptions) {
-  const gateways = await readIOFromOptions(o).getGateways(
+  const gateways = await readARIOFromOptions(o).getGateways(
     paginationParamsFromOptions(o),
   );
   return gateways.items.length ? gateways : { message: 'No gateways found' };
@@ -56,7 +56,7 @@ export async function listGateways(o: PaginationCLIOptions) {
 
 export async function getGatewayDelegates(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readIOFromOptions(o).getGatewayDelegates({
+  const result = await readARIOFromOptions(o).getGatewayDelegates({
     address,
     ...paginationParamsFromOptions(o),
   });
@@ -70,7 +70,7 @@ export async function getGatewayDelegates(o: AddressCLIOptions) {
 
 export async function getDelegations(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readIOFromOptions(o).getDelegations({
+  const result = await readARIOFromOptions(o).getDelegations({
     address,
     ...paginationParamsFromOptions(o),
   });
@@ -84,7 +84,7 @@ export async function getDelegations(o: PaginationAddressCLIOptions) {
 
 export async function getAllowedDelegates(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readIOFromOptions(o).getAllowedDelegates({
+  const result = await readARIOFromOptions(o).getAllowedDelegates({
     address,
     ...paginationParamsFromOptions(o),
   });
@@ -99,14 +99,14 @@ export async function getAllowedDelegates(o: PaginationAddressCLIOptions) {
 export async function getArNSRecord(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
   return (
-    (await readIOFromOptions(o).getArNSRecord({
+    (await readARIOFromOptions(o).getArNSRecord({
       name,
     })) ?? { message: `No record found for name ${name}` }
   );
 }
 
 export async function listArNSRecords(o: PaginationCLIOptions) {
-  const records = await readIOFromOptions(o).getArNSRecords(
+  const records = await readARIOFromOptions(o).getArNSRecords(
     paginationParamsFromOptions(o),
   );
   return records.items.length ? records : { message: 'No records found' };
@@ -115,14 +115,14 @@ export async function listArNSRecords(o: PaginationCLIOptions) {
 export async function getArNSReservedName(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
   return (
-    (await readIOFromOptions(o).getArNSReservedName({
+    (await readARIOFromOptions(o).getArNSReservedName({
       name,
     })) ?? { message: `No reserved name found for name ${name}` }
   );
 }
 
 export async function listArNSReservedNames(o: PaginationCLIOptions) {
-  const reservedNames = await readIOFromOptions(o).getArNSReservedNames(
+  const reservedNames = await readARIOFromOptions(o).getArNSReservedNames(
     paginationParamsFromOptions(o),
   );
   return reservedNames.items.length
@@ -132,12 +132,12 @@ export async function listArNSReservedNames(o: PaginationCLIOptions) {
 
 export async function getArNSReturnedName(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
-  const result = await readIOFromOptions(o).getArNSReturnedName({ name });
+  const result = await readARIOFromOptions(o).getArNSReturnedName({ name });
   return result ?? { message: `No returned name found for name ${name}` };
 }
 
 export async function listArNSReturnedNames(o: PaginationCLIOptions) {
-  const returnedNames = await readIOFromOptions(o).getArNSReturnedNames(
+  const returnedNames = await readARIOFromOptions(o).getArNSReturnedNames(
     paginationParamsFromOptions(o),
   );
   return returnedNames.items.length
@@ -146,13 +146,13 @@ export async function listArNSReturnedNames(o: PaginationCLIOptions) {
 }
 
 export async function getEpoch(o: EpochCLIOptions) {
-  const epoch = await readIOFromOptions(o).getEpoch(epochInputFromOptions(o));
+  const epoch = await readARIOFromOptions(o).getEpoch(epochInputFromOptions(o));
   return epoch ?? { message: `No epoch found for provided input` };
 }
 
 export async function getPrescribedObservers(o: EpochCLIOptions) {
   const epoch = epochInputFromOptions(o);
-  const result = await readIOFromOptions(o).getPrescribedObservers(epoch);
+  const result = await readARIOFromOptions(o).getPrescribedObservers(epoch);
   return result?.length
     ? result
     : { message: `No prescribed observers found for epoch ${epoch}` };
@@ -160,7 +160,7 @@ export async function getPrescribedObservers(o: EpochCLIOptions) {
 
 export async function getPrescribedNames(o: EpochCLIOptions) {
   const epoch = epochInputFromOptions(o);
-  const result = await readIOFromOptions(o).getPrescribedNames(
+  const result = await readARIOFromOptions(o).getPrescribedNames(
     epochInputFromOptions(o),
   );
   return result?.length
@@ -190,7 +190,7 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
     throw new Error('Years is required for lease type');
   }
 
-  const tokenCost = await readIOFromOptions(o).getTokenCost({
+  const tokenCost = await readARIOFromOptions(o).getTokenCost({
     type: o.type,
     quantity: o.quantity !== undefined ? +o.quantity : undefined,
     years: o.years !== undefined ? +o.years : undefined,
@@ -200,9 +200,9 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
 
   const output = {
     mIOTokenCost: tokenCost,
-    message: `The cost of the provided action is ${formatIOWithCommas(
-      new mIOToken(tokenCost).toIO(),
-    )} IO`,
+    message: `The cost of the provided action is ${formatARIOWithCommas(
+      new mARIOToken(tokenCost).toARIO(),
+    )} ARIO`,
   };
   return output;
 }
@@ -221,7 +221,7 @@ export async function getPrimaryName(o: AddressAndNameCLIOptions) {
     throw new Error('Either --address or --name is required');
   }
 
-  const result = await readIOFromOptions(o).getPrimaryName(params);
+  const result = await readARIOFromOptions(o).getPrimaryName(params);
   return (
     result ?? {
       message: `No primary name found`,
@@ -231,7 +231,7 @@ export async function getPrimaryName(o: AddressAndNameCLIOptions) {
 
 export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readIOFromOptions(o).getGatewayVaults({
+  const result = await readARIOFromOptions(o).getGatewayVaults({
     address,
     ...paginationParamsFromOptions(o),
   });
@@ -244,7 +244,7 @@ export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
 }
 
 export async function getVault(o: AddressAndVaultIdCLIOptions) {
-  return readIOFromOptions(o)
+  return readARIOFromOptions(o)
     .getVault({
       address: requiredAddressFromOptions(o),
       vaultId: requiredStringFromOptions(o, 'vaultId'),

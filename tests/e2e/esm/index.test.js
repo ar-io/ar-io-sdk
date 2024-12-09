@@ -7,13 +7,13 @@ import {
   ANTRegistry,
   ANT_REGISTRY_ID,
   AOProcess,
+  ARIO,
+  ARIOWriteable,
   AoANTRegistryWriteable,
   AoANTWriteable,
   ArweaveSigner,
-  IO,
-  IOWriteable,
+  arioDevnetProcessId,
   createAoSigner,
-  ioDevnetProcessId,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import { strict as assert } from 'node:assert';
@@ -36,9 +36,9 @@ const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
 
-const io = IO.init({
+const ario = ARIO.init({
   process: new AOProcess({
-    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+    processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
     ao: aoClient,
   }),
 });
@@ -59,9 +59,9 @@ describe('e2e esm tests', async () => {
     await compose.down();
   });
 
-  describe('IO', async () => {
+  describe('ARIO', async () => {
     it('should be able to get the process information', async () => {
-      const info = await io.getInfo();
+      const info = await ario.getInfo();
       assert.ok(info);
       assert(typeof info.Name === 'string');
       assert(typeof info.Ticker === 'string');
@@ -72,7 +72,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to return a specific page of arns records', async () => {
-      const records = await io.getArNSRecords({
+      const records = await ario.getArNSRecords({
         cursor: 'ardrive',
         limit: 5,
         sortOrder: 'desc',
@@ -100,12 +100,12 @@ describe('e2e esm tests', async () => {
       });
     });
     it('should be able to get a single arns record', async () => {
-      const arns = await io.getArNSRecord({ name: 'ardrive' });
+      const arns = await ario.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
     });
 
     it('should be able to get reserved names', async () => {
-      const reservedNames = await io.getArNSReservedNames({
+      const reservedNames = await ario.getArNSReservedNames({
         limit: 1,
         sortBy: 'name',
         sortOrder: 'asc',
@@ -129,22 +129,22 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a single reserved name', async () => {
-      const reservedName = await io.getArNSReservedName({ name: 'www' });
+      const reservedName = await ario.getArNSReservedName({ name: 'www' });
       assert.ok(reservedName);
     });
 
     it('should be able to get the current epoch', async () => {
-      const epoch = await io.getCurrentEpoch();
+      const epoch = await ario.getCurrentEpoch();
       assert.ok(epoch);
     });
 
     it('should be able to get epoch-settings', async () => {
-      const epochSettings = await io.getEpochSettings();
+      const epochSettings = await ario.getEpochSettings();
       assert.ok(epochSettings);
     });
 
     it('should be able to get demand factor settings', async () => {
-      const demandFactorSettings = await io.getDemandFactorSettings();
+      const demandFactorSettings = await ario.getDemandFactorSettings();
       assert.ok(demandFactorSettings);
       assert.equal(
         typeof demandFactorSettings.periodZeroStartTimestamp,
@@ -167,17 +167,17 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get reserved names', async () => {
-      const reservedNames = await io.getArNSReservedNames();
+      const reservedNames = await ario.getArNSReservedNames();
       assert.ok(reservedNames);
     });
 
     it('should be able to get a single reserved name', async () => {
-      const reservedNames = await io.getArNSReservedNames({ name: 'www ' });
+      const reservedNames = await ario.getArNSReservedNames({ name: 'www ' });
       assert.ok(reservedNames);
     });
 
     it('should be able to get first page of gateways', async () => {
-      const gateways = await io.getGateways();
+      const gateways = await ario.getGateways();
       assert.ok(gateways);
       assert(gateways.limit === 100);
       assert(gateways.sortOrder === 'desc');
@@ -215,7 +215,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a specific page of gateways', async () => {
-      const gateways = await io.getGateways({
+      const gateways = await ario.getGateways({
         cursor: 1000000,
         limit: 1,
         sortBy: 'operatorStake',
@@ -258,14 +258,14 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a single gateway', async () => {
-      const gateway = await io.getGateway({
+      const gateway = await ario.getGateway({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
       assert.ok(gateway);
     });
 
     it('should be able to get gateway delegates', async () => {
-      const delegates = await io.getGatewayDelegates({
+      const delegates = await ario.getGatewayDelegates({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
         limit: 1,
         sortBy: 'startTimestamp',
@@ -292,7 +292,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able get list of allowed gateway delegate addresses, if applicable', async () => {
-      const allowedDelegates = await io.getAllowedDelegates({
+      const allowedDelegates = await ario.getAllowedDelegates({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
       assert.ok(allowedDelegates);
@@ -310,7 +310,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get gateway vaults', async () => {
-      const vaults = await io.getGatewayVaults({
+      const vaults = await ario.getGatewayVaults({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
       assert.ok(vaults);
@@ -336,7 +336,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get gateway delegate allow list', async () => {
-      const allowList = await io.getGatewayDelegateAllowList({
+      const allowList = await ario.getGatewayDelegateAllowList({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
         limit: 1,
         sortBy: 'startTimestamp',
@@ -360,7 +360,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get balances, defaulting to first page', async () => {
-      const balances = await io.getBalances();
+      const balances = await ario.getBalances();
       assert.ok(balances);
       assert(balances.limit === 100);
       assert(balances.sortOrder === 'desc');
@@ -381,7 +381,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get balances of a specific to first page', async () => {
-      const balances = await io.getBalances({
+      const balances = await ario.getBalances({
         cursor: 1000000,
         limit: 1,
         sortBy: 'address',
@@ -407,19 +407,19 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a single balance', async () => {
-      const balances = await io.getBalance({
+      const balances = await ario.getBalance({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
       assert.ok(balances);
     });
 
     it('should be able to get prescribed names', async () => {
-      const prescribedNames = await io.getPrescribedNames();
+      const prescribedNames = await ario.getPrescribedNames();
       assert.ok(prescribedNames);
     });
 
     it('should return the prescribed observers for a given epoch', async () => {
-      const observers = await io.getPrescribedObservers();
+      const observers = await ario.getPrescribedObservers();
       assert.ok(observers);
       for (const observer of observers) {
         assert(typeof observer.gatewayAddress === 'string');
@@ -435,7 +435,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get token cost for leasing a name', async () => {
-      const tokenCost = await io.getTokenCost({
+      const tokenCost = await ario.getTokenCost({
         intent: 'Buy-Record',
         name: 'new-name',
         years: 1,
@@ -444,7 +444,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get token cost for buying a name name', async () => {
-      const tokenCost = await io.getTokenCost({
+      const tokenCost = await ario.getTokenCost({
         intent: 'Buy-Record',
         name: 'new-name',
         type: 'permabuy',
@@ -453,7 +453,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get registration fees', async () => {
-      const registrationFees = await io.getRegistrationFees();
+      const registrationFees = await ario.getRegistrationFees();
       assert(registrationFees);
       assert.equal(Object.keys(registrationFees).length, 51);
       for (const nameLength of Object.keys(registrationFees)) {
@@ -468,57 +468,57 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get current epoch distributions', async () => {
-      const distributions = await io.getDistributions();
+      const distributions = await ario.getDistributions();
       assert.ok(distributions);
     });
 
     it('should be able to get epoch distributions at a specific epoch', async () => {
-      const distributions = await io.getDistributions({ epochIndex: 0 });
+      const distributions = await ario.getDistributions({ epochIndex: 0 });
       assert.ok(distributions);
     });
 
     it('should be able to get current epoch observations', async () => {
-      const observations = await io.getObservations();
+      const observations = await ario.getObservations();
       assert.ok(observations);
     });
 
     it('should be able to get epoch observations at a specific epoch', async () => {
-      const observations = await io.getObservations({ epochIndex: 0 });
+      const observations = await ario.getObservations({ epochIndex: 0 });
       assert.ok(observations);
     });
 
     it('should be able to get current demand factor', async () => {
-      const demandFactor = await io.getDemandFactor();
+      const demandFactor = await ario.getDemandFactor();
       assert.ok(demandFactor);
     });
 
     it('should be able to get current returned names', async () => {
-      const { items: returnedNames } = await io.getArNSReturnedNames();
+      const { items: returnedNames } = await ario.getArNSReturnedNames();
       assert.ok(returnedNames);
     });
 
     it('should be able to get a specific returned name', async () => {
-      const { items: returnedNames } = await io.getArNSReturnedNames();
+      const { items: returnedNames } = await ario.getArNSReturnedNames();
       if (returnedNames.length === 0) {
         return;
       }
-      const returnedName = await io.getArNSReturnedName({
+      const returnedName = await ario.getArNSReturnedName({
         name: returnedNames[0].name,
       });
       assert.ok(returnedName);
     });
 
-    it('should be able to create IOWriteable with valid signers', async () => {
+    it('should be able to create ARIOWriteable with valid signers', async () => {
       for (const signer of signers) {
-        const io = IO.init({ signer });
+        const ario = ARIO.init({ signer });
 
-        assert(io instanceof IOWriteable);
+        assert(ario instanceof ARIOWriteable);
       }
     });
 
     // TODO: Make a vault within this test environment's context to cover this
     // it('should be able to get a specific vault', async () => {
-    //   const vault = await io.getVault({
+    //   const vault = await ario.getVault({
     //     address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
     //     vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
     //   });
@@ -530,7 +530,7 @@ describe('e2e esm tests', async () => {
     // });
 
     it('should throw an error when unable to get a specific vault', async () => {
-      const error = await io
+      const error = await ario
         .getVault({
           address: '31LPFYoow2G7j-eSSsrIh8OlNaARZ84-80J-8ba68d8',
           vaultId: 'Dmsrp1YIYUY5hA13euO-pAGbT1QPazfj1bKD9EpiZeo',
@@ -542,7 +542,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated vaults', async () => {
-      const vaults = await io.getVaults();
+      const vaults = await ario.getVaults();
       assert.ok(vaults);
       assert(vaults.limit === 100);
       assert(vaults.sortOrder === 'desc');
@@ -568,7 +568,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated vaults with custom sort', async () => {
-      const vaults = await io.getVaults({
+      const vaults = await ario.getVaults({
         sortBy: 'balance',
         sortOrder: 'asc',
       });
@@ -597,7 +597,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated delegations for a delegate address', async () => {
-      const delegations = await io.getDelegations({
+      const delegations = await ario.getDelegations({
         address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
         limit: 1,
       });
@@ -638,7 +638,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated delegations for a delegate address with custom sort', async () => {
-      const delegations = await io.getDelegations({
+      const delegations = await ario.getDelegations({
         address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
         limit: 1,
         sortBy: 'balance',
@@ -681,12 +681,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated primary names', async () => {
-      const primaryNames = await io.getPrimaryNames();
+      const primaryNames = await ario.getPrimaryNames();
       assert.ok(primaryNames);
     });
 
     it('should be able to get paginated primary names with custom sort', async () => {
-      const primaryNames = await io.getPrimaryNames({
+      const primaryNames = await ario.getPrimaryNames({
         sortBy: 'startTimestamp',
         sortOrder: 'desc',
       });
@@ -694,7 +694,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a specific primary name by address', async () => {
-      const primaryName = await io.getPrimaryName({
+      const primaryName = await ario.getPrimaryName({
         address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
       });
       assert.ok(primaryName);
@@ -706,7 +706,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a specific primary name by name', async () => {
-      const primaryName = await io.getPrimaryName({
+      const primaryName = await ario.getPrimaryName({
         name: 'arns',
       });
       assert.ok(primaryName);
@@ -718,12 +718,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get paginated primary name requests', async () => {
-      const primaryNameRequests = await io.getPrimaryNameRequests();
+      const primaryNameRequests = await ario.getPrimaryNameRequests();
       assert.ok(primaryNameRequests);
     });
 
     it('should be able to get current redelegation fee', async () => {
-      const redelegationFee = await io.getRedelegationFee({
+      const redelegationFee = await ario.getRedelegationFee({
         address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
       });
       assert.ok(redelegationFee);
@@ -732,7 +732,7 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get gateway registry settings', async () => {
-      const registrySettings = await io.getGatewayRegistrySettings();
+      const registrySettings = await ario.getGatewayRegistrySettings();
       assert.ok(registrySettings);
       assert.ok(typeof registrySettings.delegates.minStake === 'number');
       assert.ok(

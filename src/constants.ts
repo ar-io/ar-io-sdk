@@ -30,15 +30,15 @@ export const ARNS_TESTNET_REGISTRY_TX =
 export const ARNS_DEVNET_REGISTRY_TX =
   '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
 
-export const IO_DEVNET_PROCESS_ID =
+export const ARIO_DEVNET_PROCESS_ID =
   'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
 // backwards compatibility - TODO: remove in v2.0.0
-export const ioDevnetProcessId = IO_DEVNET_PROCESS_ID;
-export const IO_TESTNET_PROCESS_ID =
+export const arioDevnetProcessId = ARIO_DEVNET_PROCESS_ID;
+export const ARIO_TESTNET_PROCESS_ID =
   'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
 
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
-export const MIO_PER_IO = 1_000_000;
+export const MARIO_PER_ARIO = 1_000_000;
 export const AOS_MODULE_ID = 'cbn0KKrBZH7hdNkNokuXLtGryrWM--PjSTBqIzw9Kkk';
 export const ANT_LUA_ID = '16_FyX-V2QU0RPSh1GIaEETSaUjNb0oVjCFpVbAfQq4';
 export const DEFAULT_SCHEDULER_ID =

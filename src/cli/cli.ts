@@ -19,7 +19,7 @@
 import { program } from 'commander';
 
 import { spawnANT } from '../node/index.js';
-import { mIOToken } from '../types/token.js';
+import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
   cancelWithdrawal,
@@ -97,17 +97,17 @@ import {
 } from './types.js';
 import {
   applyOptions,
+  arioProcessIdFromOptions,
   assertConfirmationPrompt,
   epochInputFromOptions,
-  formatIOWithCommas,
+  formatARIOWithCommas,
   getANTStateFromOptions,
   getLoggerFromOptions,
-  ioProcessIdFromOptions,
   makeCommand,
   paginationParamsFromOptions,
   positiveIntegerFromOptions,
   readANTFromOptions,
-  readIOFromOptions,
+  readARIOFromOptions,
   recordTypeFromOptions,
   requiredAddressFromOptions,
   requiredAoSignerFromOptions,
@@ -115,8 +115,8 @@ import {
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
+  writeARIOFromOptions,
   writeActionTagsFromOptions,
-  writeIOFromOptions,
 } from './utils.js';
 
 applyOptions(
@@ -131,25 +131,25 @@ applyOptions(
 makeCommand({
   name: 'info',
   description: 'Get network info',
-  action: (options) => readIOFromOptions(options).getInfo(),
+  action: (options) => readARIOFromOptions(options).getInfo(),
 });
 
 makeCommand({
   name: 'token-supply',
   description: 'Get the total token supply',
-  action: (options) => readIOFromOptions(options).getTokenSupply(),
+  action: (options) => readARIOFromOptions(options).getTokenSupply(),
 });
 
 makeCommand({
   name: 'get-registration-fees',
   description: 'Get registration fees',
-  action: (options) => readIOFromOptions(options).getRegistrationFees(),
+  action: (options) => readARIOFromOptions(options).getRegistrationFees(),
 });
 
 makeCommand({
   name: 'get-demand-factor',
   description: 'Get demand factor',
-  action: (options) => readIOFromOptions(options).getDemandFactor(),
+  action: (options) => readARIOFromOptions(options).getDemandFactor(),
 });
 
 makeCommand({
@@ -239,7 +239,7 @@ makeCommand({
 makeCommand({
   name: 'get-current-epoch',
   description: 'Get current epoch data',
-  action: (options) => readIOFromOptions(options).getCurrentEpoch(),
+  action: (options) => readARIOFromOptions(options).getCurrentEpoch(),
 });
 
 makeCommand({
@@ -260,7 +260,8 @@ makeCommand({
   name: 'get-observations',
   description: 'Get observations for an epoch',
   options: epochOptions,
-  action: (o) => readIOFromOptions(o).getObservations(epochInputFromOptions(o)),
+  action: (o) =>
+    readARIOFromOptions(o).getObservations(epochInputFromOptions(o)),
 });
 
 makeCommand({
@@ -268,7 +269,7 @@ makeCommand({
   description: 'Get distributions for an epoch',
   options: epochOptions,
   action: (o) =>
-    readIOFromOptions(o).getDistributions(epochInputFromOptions(o)),
+    readARIOFromOptions(o).getDistributions(epochInputFromOptions(o)),
 });
 
 makeCommand({
@@ -283,7 +284,7 @@ makeCommand<PaginationCLIOptions>({
   description: 'Get all wallet vaults',
   options: paginationOptions,
   action: (o) =>
-    readIOFromOptions(o)
+    readARIOFromOptions(o)
       .getVaults(paginationParamsFromOptions(o))
       .then((result) =>
         result.items.length ? result : { message: 'No vaults found' },
@@ -297,7 +298,7 @@ makeCommand<InitiatorCLIOptions>({
   description: 'Get primary name request',
   options: initiatorOptions,
   action: (o) =>
-    readIOFromOptions(o)
+    readARIOFromOptions(o)
       .getPrimaryNameRequest({
         initiator: requiredStringFromOptions(o, 'initiator'),
       })
@@ -314,7 +315,7 @@ makeCommand<PaginationCLIOptions>({
   description: 'Get primary name requests',
   options: paginationOptions,
   action: (o) =>
-    readIOFromOptions(o)
+    readARIOFromOptions(o)
       .getPrimaryNameRequests(paginationParamsFromOptions(o))
       .then((result) =>
         result.items.length ? result : { message: 'No requests found' },
@@ -333,7 +334,7 @@ makeCommand<PaginationCLIOptions>({
   description: 'Get primary names',
   options: paginationOptions,
   action: (o) =>
-    readIOFromOptions(o)
+    readARIOFromOptions(o)
       .getPrimaryNames(paginationParamsFromOptions(o))
       .then((result) =>
         result.items.length ? result : { message: 'No names found' },
@@ -345,14 +346,14 @@ makeCommand<AddressCLIOptions>({
   description: 'Get the balance of an address',
   options: addressOptions,
   action: (options) =>
-    readIOFromOptions(options)
+    readARIOFromOptions(options)
       .getBalance({ address: requiredAddressFromOptions(options) })
       .then((result) => ({
         address: requiredAddressFromOptions(options),
         mIOBalance: result,
-        message: `Provided address current has a balance of ${formatIOWithCommas(
-          new mIOToken(result).toIO(),
-        )} IO`,
+        message: `Provided address current has a balance of ${formatARIOWithCommas(
+          new mARIOToken(result).toARIO(),
+        )} ARIO`,
       })),
 });
 
@@ -361,7 +362,7 @@ makeCommand({
   description: 'List all balances',
   options: paginationOptions,
   action: (o) =>
-    readIOFromOptions(o)
+    readARIOFromOptions(o)
       .getBalances(paginationParamsFromOptions(o))
       .then((result) =>
         result.items.length ? result : { message: 'No balances found' },
@@ -373,7 +374,7 @@ makeCommand<AddressCLIOptions>({
   description: 'Get redelegation fee',
   options: addressOptions,
   action: (options) =>
-    readIOFromOptions(options).getRedelegationFee({
+    readARIOFromOptions(options).getRedelegationFee({
       address: requiredAddressFromOptions(options),
     }),
 });
@@ -394,7 +395,7 @@ makeCommand<PaginationAddressCLIOptions>({
 
 makeCommand({
   name: 'transfer',
-  description: 'Transfer IO to another address',
+  description: 'Transfer ARIO to another address',
   options: transferOptions,
   action: transfer,
 });
@@ -485,7 +486,7 @@ makeCommand<BuyRecordCLIOptions>({
   description: 'Buy a record',
   options: buyRecordOptions,
   action: async (options) => {
-    const io = writeIOFromOptions(options).io;
+    const ario = writeARIOFromOptions(options).ario;
     const name = requiredStringFromOptions(options, 'name');
     const type = recordTypeFromOptions(options);
     const years = positiveIntegerFromOptions(options, 'years');
@@ -504,7 +505,7 @@ makeCommand<BuyRecordCLIOptions>({
       options,
     );
 
-    return io.buyRecord({
+    return ario.buyRecord({
       name: requiredStringFromOptions(options, 'name'),
       processId,
       type,
@@ -524,7 +525,7 @@ makeCommand<UpgradeRecordCLIOptions>({
       `Are you sure you want to upgrade the lease of ${name} to a permabuy?`,
       options,
     );
-    return writeIOFromOptions(options).io.upgradeRecord({
+    return writeARIOFromOptions(options).ario.upgradeRecord({
       name,
     });
   },
@@ -543,7 +544,7 @@ makeCommand<ExtendLeaseCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).io.extendLease(
+    return writeARIOFromOptions(options).ario.extendLease(
       {
         name,
         years,
@@ -569,7 +570,7 @@ makeCommand<IncreaseUndernameLimitCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).io.increaseUndernameLimit(
+    return writeARIOFromOptions(options).ario.increaseUndernameLimit(
       {
         name,
         increaseCount,
@@ -594,7 +595,7 @@ makeCommand<NameWriteCLIOptions>({
       options,
     );
 
-    return writeIOFromOptions(options).io.requestPrimaryName({
+    return writeARIOFromOptions(options).ario.requestPrimaryName({
       name,
     });
   },
@@ -968,7 +969,7 @@ makeCommand<
     return writeANTFromOptions(options).releaseName(
       {
         name,
-        ioProcessId: ioProcessIdFromOptions(options),
+        arioProcessId: arioProcessIdFromOptions(options),
       },
       writeActionTagsFromOptions(options),
     );
@@ -1001,7 +1002,7 @@ makeCommand<
     return writeANTFromOptions(options).reassignName(
       {
         name,
-        ioProcessId: ioProcessIdFromOptions(options),
+        arioProcessId: arioProcessIdFromOptions(options),
         antProcessId: targetProcess,
       },
       writeActionTagsFromOptions(options),
@@ -1036,7 +1037,7 @@ makeCommand<
       {
         name,
         address,
-        ioProcessId: ioProcessIdFromOptions(options),
+        arioProcessId: arioProcessIdFromOptions(options),
       },
       writeActionTagsFromOptions(options),
     );
@@ -1061,7 +1062,7 @@ makeCommand<
     return writeANTFromOptions(options).removePrimaryNames(
       {
         names,
-        ioProcessId: ioProcessIdFromOptions(options),
+        arioProcessId: arioProcessIdFromOptions(options),
       },
       writeActionTagsFromOptions(options),
     );
