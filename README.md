@@ -59,10 +59,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
     - [`getDemandFactor()`](#getdemandfactor)
-    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
-    - [`getArNSAuction({ name })`](#getarnsauction-name-)
-    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
-    - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+    - [`getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`](#getarnsreturnednames-cursor-limit-sortby-sortorder-)
+    - [`getArNSReturnedName({ name })`](#getarnsreturnedname-name-)
   - [Epochs](#epochs)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
@@ -1220,16 +1218,16 @@ const demandFactor = await io.getDemandFactor();
 
 </details>
 
-#### `getArNSAuctions({ cursor, limit, sortBy, sortOrder })`
+#### `getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all active auctions of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last auction name from the previous request.
+Retrieves all active returned names of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last returned name from the previous request.
 
 ```typescript
 const io = IO.init();
-const auctions = await io.getArNSAuctions({
+const returnedNames = await io.getArNSReturnedNames({
   limit: 100,
   sortBy: 'endTimestamp',
-  sortOrder: 'asc', // return the auctions ending soonest first
+  sortOrder: 'asc', // return the returned names ending soonest first
 });
 ```
 
@@ -1263,13 +1261,13 @@ const auctions = await io.getArNSAuctions({
 
 </details>
 
-#### `getArNSAuction({ name })`
+#### `getArNSReturnedName({ name })`
 
-Retrieves the auction data for the specified auction name.
+Retrieves the returned name data for the specified returned name.
 
 ```typescript
 const io = IO.init();
-const auction = await io.getArNSAuction({ name: 'permalink' });
+const returnedName = await io.getArNSReturnedName({ name: 'permalink' });
 ```
 
 <details>
@@ -1293,88 +1291,6 @@ const auction = await io.getArNSAuction({ name: 'permalink' });
 ```
 
 </details>
-
-#### `getArNSAuctionPrices({ name, type, years, intervalMs })`
-
-Retrieves the auction price curve of the specified auction name for the specified type, duration, and interval. The `intervalMs` is the number of milliseconds between price points on the curve. The default interval is 15 minutes.
-
-```typescript
-const io = IO.init();
-const priceCurve = await io.getArNSAuctionPrices({
-  name: 'permalink',
-  type: 'lease',
-  years: 1,
-  intervalMs: 3600000, // 1 hour price intervals (default is 15 minutes)
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "name": "permalink",
-  "type": "lease",
-  "currentPrice": 12582015000,
-  "years": 1,
-  "prices": {
-    "1730412841349": 1618516789,
-    "1729908841349": 8210426826,
-    "1730722441349": 592768907,
-    "1730859241349": 379659914,
-    "1730866441349": 370850139,
-    "1730884441349": 349705277,
-    "1730150041349": 3780993370,
-    "1730031241349": 5541718397,
-    "1730603641349": 872066253,
-    "1730715241349": 606815377,
-    "1730942041349": 289775172,
-    "1730916841349": 314621977,
-    "1730484841349": 1281957300,
-    "1730585641349": 924535164,
-    "1730232841349": 2895237473,
-    "1730675641349": 690200977,
-    "1730420041349": 1581242331,
-    "1729786441349": 12154428186,
-    "1730308441349": 2268298483,
-    "1730564041349": 991657913,
-    "1730081641349": 4712427282,
-    "1730909641349": 322102563,
-    "1730945641349": 286388732,
-    "1730024041349": 5671483398,
-    "1729937641349": 7485620175
-    // ...
-  }
-}
-```
-
-</details>
-
-#### `submitAuctionBid({ name, type, years, processId })`
-
-Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-
-const auction = await io.getArNSAuction({ name: 'permalink' });
-
-// check the current price is under some threshold
-if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
-  const { id: txId } = await io.submitAuctionBid(
-    {
-      name: 'permalink',
-      type: 'lease',
-      years: 1,
-      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-    },
-    // optional additional tags
-    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-  );
-}
-```
 
 ### Epochs
 
@@ -2087,14 +2003,14 @@ const { id: txId } = await ant.setLogo(
 
 #### `releaseName({ name, ioProcessId })`
 
-Releases a name from the auction and makes it available for auction on the IO contract. The name must be permanently owned by the releasing wallet. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+Releases a name from the current owner and makes it available for purchase on the IO contract. The name must be permanently owned by the releasing wallet. If purchased within the recently returned name period (14 epochs), 50% of the purchase amount will be distributed to the ANT owner at the time of release. If no purchases in the recently returned name period, the name can be reregistered by anyone for the normal fee.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.releaseName({
   name: 'permalink',
-  ioProcessId: IO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to auction on the IO contract
+  ioProcessId: IO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to recently returned names on the IO contract
 });
 ```
 

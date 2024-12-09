@@ -1,9 +1,7 @@
 import {
-  ANT,
   AoArNSNameDataWithName,
-  AoAuction,
-  AoAuctionPriceData,
   AoGatewayWithAddress,
+  AoReturnedName,
   AoWeightedObserver,
   IO,
   IO_DEVNET_PROCESS_ID,
@@ -25,20 +23,19 @@ import './App.css';
 
 const io = IO.init({ processId: IO_DEVNET_PROCESS_ID });
 
-type AuctionWithPrices = AoAuction & {
-  prices: { timestamp: string; price: number }[];
+type ReturnedNameWithPrices = AoReturnedName & {
   currentPrice: number;
 };
 
 function App() {
-  const [auctions, setAuctions] = useState<AoAuction[]>([]);
-  const [selectedAuction, setSelectedAuction] =
-    useState<AuctionWithPrices | null>(null);
+  const [returnedNames, setReturnedNames] = useState<AoReturnedName[]>([]);
+  const [selectedReturnedName, setSelectedReturnedName] =
+    useState<ReturnedNameWithPrices | null>(null);
   const [names, setNames] = useState<AoArNSNameDataWithName[]>([]);
   const [gateways, setGateways] = useState<AoGatewayWithAddress[]>([]);
   const [totalGateways, setTotalGateways] = useState<number>(0);
   const [totalNames, setTotalNames] = useState<number>(0);
-  const [totalAuctions, setTotalAuctions] = useState<number>(0);
+  const [totalReturnedNames, setTotalReturnedNames] = useState<number>(0);
   const [prescribedObservers, setPrescribedObservers] = useState<
     AoWeightedObserver[]
   >([]);
@@ -60,35 +57,22 @@ function App() {
       },
     );
 
-    // get auction and prices for each auction
-    io.getArNSAuctions({ limit: 10 }).then(
-      (page: PaginationResult<AoAuction>) => {
-        setAuctions(page.items);
-        setTotalAuctions(page.totalItems);
-        page.items.forEach((auction: AoAuction) => {
-          io.getArNSAuctionPrices({
-            name: auction.name,
+    // get returned names and prices for each returned name
+    io.getArNSReturnedNames({ limit: 10 }).then(
+      (page: PaginationResult<AoReturnedName>) => {
+        setReturnedNames(page.items);
+        setTotalReturnedNames(page.totalItems);
+        page.items.forEach((returnedName: AoReturnedName) => {
+          io.getTokenCost({
+            name: returnedName.name,
+            intent: 'Buy-Record',
             type: 'lease',
             intervalMs: 1000 * 60 * 60 * 24, // 1 day
-          }).then((price: AoAuctionPriceData) => {
-            const arrayOfPrices = Object.entries(price.prices)
-              .sort(([timestampA], [timestampB]) => +timestampA - +timestampB)
-              .map(([timestamp, price]) => ({
-                timestamp: new Date(+timestamp).toLocaleString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false,
-                }),
-                price: price / 10 ** 6,
-              }));
-            const auctionWithPrices = {
-              ...auction,
-              prices: arrayOfPrices,
-              currentPrice: price.currentPrice / 10 ** 6,
-            };
-            setSelectedAuction(auctionWithPrices);
+          }).then((price: number) => {
+            setSelectedReturnedName({
+              ...returnedName,
+              currentPrice: price / 10 ** 6,
+            });
           });
         });
       },
@@ -220,9 +204,9 @@ function App() {
           style={{ paddingLeft: '75px', paddingRight: '75px', width: '75%' }}
         >
           {' '}
-          <h3>Active Auctions</h3>
+          <h3>Active Returned names</h3>
           <div>
-            <strong>Total Auctions:</strong> {totalAuctions}
+            <strong>Total Returned names:</strong> {totalReturnedNames}
           </div>
           <div
             style={{
@@ -249,35 +233,37 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {auctions.map((auction) => (
+                {returnedNames.map((returnedName) => (
                   <tr
-                    key={auction.name}
+                    key={returnedName.name}
                     style={{ borderBottom: '1px solid #eee' }}
                   >
-                    <td style={{ padding: '10px' }}>{auction.name}</td>
+                    <td style={{ padding: '10px' }}>{returnedName.name}</td>
                     <td style={{ padding: '10px' }}>
-                      {new Date(auction.startTimestamp).toLocaleDateString()}
+                      {new Date(
+                        returnedName.startTimestamp,
+                      ).toLocaleDateString()}
                     </td>
                     <td style={{ padding: '10px' }}>
-                      {new Date(auction.endTimestamp).toLocaleDateString()}
+                      {new Date(returnedName.endTimestamp).toLocaleDateString()}
                     </td>
                     <td style={{ padding: '10px' }}>
-                      {auction.baseFee / 10 ** 6}
+                      {returnedName.premiumMultiplier}
                     </td>
                     <td style={{ padding: '10px' }}>
-                      {auction.initiator.slice(0, 8)}...
+                      {returnedName.initiator.slice(0, 8)}...
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {selectedAuction && (
+          {selectedReturnedName && (
             <div style={{ margin: '0 auto' }}>
               <ResponsiveContainer width="50%" height={500}>
                 <LineChart
-                  data={selectedAuction.prices}
-                  title={`Auction Prices for ${auctions[0].name}`}
+                  data={selectedReturnedName.prices}
+                  title={`Prices for ${returnedNames[0].name}`}
                 >
                   <XAxis dataKey="timestamp" tick={{ fontSize: 12 }}>
                     <Label value="Date" offset={-5} position="insideBottom" />
@@ -297,10 +283,11 @@ function App() {
                   </Line>
                   <ReferenceLine
                     y={
-                      selectedAuction.prices[selectedAuction.prices.length - 1]
-                        .price
+                      selectedReturnedName.prices[
+                        selectedReturnedName.prices.length - 1
+                      ].price
                     }
-                    label={`Floor Price: ${selectedAuction.prices[selectedAuction.prices.length - 1].price}`}
+                    label={`Floor Price: ${selectedReturnedName.prices[selectedReturnedName.prices.length - 1].price}`}
                     stroke="red"
                     strokeDasharray="3 3"
                   />

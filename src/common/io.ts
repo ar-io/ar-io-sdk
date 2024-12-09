@@ -19,7 +19,6 @@ import { IO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
-  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -29,6 +28,7 @@ import {
   AoPrimaryName,
   AoPrimaryNameRequest,
   AoRedelegationFeeInfo,
+  AoReturnedName,
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
@@ -45,7 +45,6 @@ import {
 import {
   AoArNSNameData,
   AoArNSReservedNameDataWithName,
-  AoAuctionPriceData,
   AoDelegation,
   AoEpochData,
   AoEpochSettings,
@@ -539,84 +538,29 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  // Auctions
-  async getArNSAuctions(
-    params?: PaginationParams<AoAuction>,
-  ): Promise<PaginationResult<AoAuction>> {
-    return this.process.read<PaginationResult<AoAuction>>({
+  async getArNSReturnedNames(
+    params?: PaginationParams<AoReturnedName>,
+  ): Promise<PaginationResult<AoReturnedName>> {
+    return this.process.read<PaginationResult<AoReturnedName>>({
       tags: [
-        { name: 'Action', value: 'Auctions' },
-        ...paginationParamsToTags<AoAuction>(params),
+        { name: 'Action', value: 'Returned-Names' },
+        ...paginationParamsToTags<AoReturnedName>(params),
       ],
     });
   }
 
-  async getArNSAuction({
+  async getArNSReturnedName({
     name,
   }: {
     name: string;
-  }): Promise<AoAuction | undefined> {
+  }): Promise<AoReturnedName | undefined> {
     const allTags = [
-      { name: 'Action', value: 'Auction-Info' },
+      { name: 'Action', value: 'Returned-Name' },
       { name: 'Name', value: name },
     ];
 
-    return this.process.read<AoAuction>({
+    return this.process.read<AoReturnedName>({
       tags: allTags,
-    });
-  }
-
-  /**
-   * Get auction prices for a given auction at the provided intervals
-   *
-   * @param {Object} params - The parameters for fetching auction prices
-   * @param {string} params.name - The name of the auction
-   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
-   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
-   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
-   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
-   * @returns {Promise<AoAuctionPriceData>} The auction price data
-   */
-  async getArNSAuctionPrices({
-    name,
-    type,
-    years,
-    timestamp,
-    intervalMs,
-  }: {
-    name: string;
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    timestamp?: number;
-    intervalMs?: number;
-  }): Promise<AoAuctionPriceData> {
-    const prunedPriceTags: { name: string; value: string }[] = [
-      { name: 'Action', value: 'Auction-Prices' },
-      { name: 'Name', value: name },
-      {
-        name: 'Timestamp',
-        value:
-          timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
-      },
-      { name: 'Purchase-Type', value: type ?? 'lease' },
-      {
-        name: 'Years',
-        value:
-          type == undefined || type === 'lease'
-            ? years?.toString() ?? '1'
-            : undefined,
-      },
-      {
-        name: 'Price-Interval-Ms',
-        value: intervalMs?.toString() ?? '900000',
-      },
-    ].filter(
-      (tag): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
-    return this.process.read<AoAuctionPriceData>({
-      tags: prunedPriceTags,
     });
   }
 
@@ -1186,33 +1130,6 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       { name: 'Action', value: 'Cancel-Withdrawal' },
       { name: 'Vault-Id', value: params.vaultId },
       { name: 'Address', value: params.gatewayAddress },
-    ];
-
-    return this.process.send({
-      signer: this.signer,
-      tags: pruneTags(allTags),
-    });
-  }
-
-  async submitAuctionBid(
-    params: {
-      name: string;
-      processId: string;
-      quantity?: number;
-      type?: 'lease' | 'permabuy';
-      years?: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult> {
-    const { tags = [] } = options || {};
-    const allTags = [
-      ...tags,
-      { name: 'Action', value: 'Auction-Bid' },
-      { name: 'Name', value: params.name },
-      { name: 'Process-Id', value: params.processId },
-      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
-      { name: 'Purchase-Type', value: params.type || 'lease' },
-      { name: 'Years', value: params.years?.toString() ?? undefined },
     ];
 
     return this.process.send({

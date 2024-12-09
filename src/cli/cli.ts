@@ -36,10 +36,9 @@ import {
 } from './commands/gatewayWriteCommands.js';
 import {
   getAllowedDelegates,
-  getArNSAuction,
-  getArNSAuctionPrices,
   getArNSRecord,
   getArNSReservedName,
+  getArNSReturnedName,
   getDelegations,
   getEpoch,
   getGateway,
@@ -50,9 +49,9 @@ import {
   getPrimaryName,
   getTokenCost,
   getVault,
-  listArNSAuctions,
   listArNSRecords,
   listArNSReservedNames,
+  listArNSReturnedNames,
   listGateways,
 } from './commands/readCommands.js';
 import { transfer } from './commands/transfer.js';
@@ -60,7 +59,6 @@ import {
   addressAndVaultIdOptions,
   addressOptions,
   antStateOptions,
-  arNSAuctionPricesOptions,
   buyRecordOptions,
   decreaseDelegateStakeOptions,
   delegateStakeOptions,
@@ -218,24 +216,17 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'get-arns-auction',
-  description: 'Get an ArNS auction by name',
+  name: 'get-arns-returned-name',
+  description: 'Get an ArNS returned name by name',
   options: nameOptions,
-  action: getArNSAuction,
+  action: getArNSReturnedName,
 });
 
 makeCommand({
-  name: 'list-arns-auctions',
-  description: 'Get all ArNS auctions',
+  name: 'list-arns-returned-names',
+  description: 'Get all ArNS recently returned names',
   options: paginationOptions,
-  action: listArNSAuctions,
-});
-
-makeCommand({
-  name: 'get-arns-auction-prices',
-  description: 'Get ArNS auction prices',
-  options: arNSAuctionPricesOptions,
-  action: getArNSAuctionPrices,
+  action: listArNSReturnedNames,
 });
 
 makeCommand({

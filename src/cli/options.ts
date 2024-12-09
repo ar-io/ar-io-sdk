@@ -288,14 +288,6 @@ export const tokenCostOptions = [
   optionMap.quantity,
 ];
 
-export const arNSAuctionPricesOptions = [
-  optionMap.name,
-  optionMap.type,
-  optionMap.years,
-  optionMap.timestamp,
-  optionMap.intervalMs,
-];
-
 export const transferOptions = [
   ...writeActionOptions,
   optionMap.quantity,

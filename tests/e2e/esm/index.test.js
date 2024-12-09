@@ -492,31 +492,20 @@ describe('e2e esm tests', async () => {
       assert.ok(demandFactor);
     });
 
-    it('should be able to get current auctions', async () => {
-      const { items: auctions } = await io.getArNSAuctions();
-      assert.ok(auctions);
+    it('should be able to get current returned names', async () => {
+      const { items: returnedNames } = await io.getArNSReturnedNames();
+      assert.ok(returnedNames);
     });
 
-    it('should be able to get a specific auction', async () => {
-      const { items: auctions } = await io.getArNSAuctions();
-      if (auctions.length === 0) {
+    it('should be able to get a specific returned name', async () => {
+      const { items: returnedNames } = await io.getArNSReturnedNames();
+      if (returnedNames.length === 0) {
         return;
       }
-      const auction = await io.getArNSAuction({ name: auctions[0].name });
-      assert.ok(auction);
-    });
-
-    it('should be able to get auction prices for an existing auction', async () => {
-      const { items: auctions } = await io.getArNSAuctions();
-      if (auctions.length === 0) {
-        return;
-      }
-      const auctionPrices = await io.getArNSAuctionPrices({
-        name: auctions[0].name,
-        type: 'lease',
-        years: 1,
+      const returnedName = await io.getArNSReturnedName({
+        name: returnedNames[0].name,
       });
-      assert.ok(auctionPrices);
+      assert.ok(returnedName);
     });
 
     it('should be able to create IOWriteable with valid signers', async () => {

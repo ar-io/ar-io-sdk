@@ -257,29 +257,12 @@ export type AoBalanceWithAddress = {
   balance: number;
 };
 
-// Auctions
-export type AoAuctionSettings = {
-  durationMs: number;
-  decayRate: number;
-  scalingExponent: number;
-  startPriceMultiplier: number;
-};
-
-export type AoAuction = {
+export type AoReturnedName = {
   name: string;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   initiator: string;
-  baseFee: number;
-  demandFactor: number;
-  settings: AoAuctionSettings;
-};
-
-export type AoAuctionPriceData = {
-  type: 'lease' | 'permabuy';
-  years?: number;
-  prices: Record<string, number>;
-  currentPrice: number;
+  premiumMultiplier: number;
 };
 
 export type AoDelegationBase = {
@@ -340,14 +323,6 @@ export type AoDelegateStakeParams = {
 
 export type AoGetArNSRecordsParams = PaginationParams<AoArNSNameDataWithName>;
 
-export type AoArNSAuctionPricesParams = {
-  name: string;
-  type: 'lease' | 'permabuy';
-  years?: number;
-  timestamp?: number;
-  intervalMs?: number;
-};
-
 export type AoRedelegateStakeParams = {
   target: string;
   source: string;
@@ -393,13 +368,6 @@ export type AoExtendLeaseParams = AoArNSNameParams & {
 
 export type AoIncreaseUndernameLimitParams = AoArNSNameParams & {
   increaseCount: number;
-};
-
-export type AoSubmitAuctionBidParams = AoArNSNameParams & {
-  processId: string;
-  quantity?: number;
-  type?: 'lease' | 'permabuy';
-  years?: number;
 };
 
 export type AoGatewayRegistrySettings = {
@@ -492,17 +460,14 @@ export interface AoIORead {
   }: {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined>;
-  getArNSAuctions(
-    params?: PaginationParams<AoAuction>,
-  ): Promise<PaginationResult<AoAuction>>;
-  getArNSAuction({ name }: { name: string }): Promise<AoAuction | undefined>;
-  getArNSAuctionPrices({
+  getArNSReturnedNames(
+    params?: PaginationParams<AoReturnedName>,
+  ): Promise<PaginationResult<AoReturnedName>>;
+  getArNSReturnedName({
     name,
-    type,
-    years,
-    timestamp,
-    intervalMs,
-  }: AoArNSAuctionPricesParams): Promise<AoAuctionPriceData>;
+  }: {
+    name: string;
+  }): Promise<AoReturnedName | undefined>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
@@ -629,16 +594,6 @@ export interface AoIOWrite extends AoIORead {
     params: {
       gatewayAddress?: WalletAddress;
       vaultId: string;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  submitAuctionBid(
-    params: {
-      name: string;
-      processId: string;
-      quantity?: number;
-      type?: 'lease' | 'permabuy';
-      years?: number;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;

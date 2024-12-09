@@ -15,14 +15,12 @@
  */
 import {
   AoAddressParams,
-  AoArNSAuctionPricesParams,
   AoArNSNameParams,
   AoBuyRecordParams,
   AoExtendLeaseParams,
   AoGetVaultParams,
   AoIncreaseUndernameLimitParams,
   AoJoinNetworkParams,
-  AoSubmitAuctionBidParams,
   AoTokenCostParams,
   PaginationParams,
 } from '../types/io.js';
@@ -109,9 +107,6 @@ export type EpochCLIOptions = GlobalCLIOptions &
 export type GetTokenCostCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<AoTokenCostParams>;
 
-export type AuctionPricesCLIOptions = GlobalCLIOptions &
-  CLIOptionsFromAoParams<AoArNSAuctionPricesParams>;
-
 export type PaginationAddressCLIOptions = AddressCLIOptions &
   PaginationCLIOptions;
 
@@ -163,9 +158,6 @@ export type ExtendLeaseCLIOptions = WriteActionCLIOptions &
 
 export type IncreaseUndernameLimitCLIOptions = WriteActionCLIOptions &
   CLIOptionsFromAoParams<AoIncreaseUndernameLimitParams>;
-
-export type SubmitAuctionBidCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoSubmitAuctionBidParams>;
 
 export type ANTStateCLIOptions = WriteActionCLIOptions & {
   target?: string;
