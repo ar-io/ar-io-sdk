@@ -1,3 +1,19 @@
+# [3.0.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.7...v3.0.0-alpha.1) (2024-12-09)
+
+
+### Features
+
+* **ARIO token:** change all IO references to ARIO ([4f8135d](https://github.com/ar-io/ar-io-sdk/commit/4f8135d53912c1156dc43c21686207820883e445))
+* **ARIO token:** update all IO refernces to ARIO ([8fb2188](https://github.com/ar-io/ar-io-sdk/commit/8fb2188fecd673ed6ad1c66fc710f2fdc6cc70eb))
+
+
+### BREAKING CHANGES
+
+* **ARIO token:** All exported IO and IOToken are now repleced with
+ARIO and ARIOToken respectively
+
+PE-7225
+
 # [2.7.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.6...v2.7.0-alpha.7) (2024-12-09)
 
 
