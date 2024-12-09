@@ -558,7 +558,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * @param name @type {string} The name you want to release. The name will be put up for auction on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+   * @param name @type {string} The name you want to release. The name will be put up for as a recently returned name on the IO contract. 50% of the winning bid will be distributed to the ANT owner at the time of purchase. If no purchase in the recently returned name period (14 epochs), the name will be released and can be reregistered by anyone.
    * @param ioProcessId @type {string} The processId of the IO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example

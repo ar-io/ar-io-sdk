@@ -23,7 +23,6 @@ import {
   AddressAndNameCLIOptions,
   AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
-  AuctionPricesCLIOptions,
   EpochCLIOptions,
   GetTokenCostCLIOptions,
   NameCLIOptions,
@@ -35,7 +34,6 @@ import {
   epochInputFromOptions,
   formatIOWithCommas,
   paginationParamsFromOptions,
-  positiveIntegerFromOptions,
   readIOFromOptions,
   requiredAddressFromOptions,
   requiredStringFromOptions,
@@ -132,39 +130,19 @@ export async function listArNSReservedNames(o: PaginationCLIOptions) {
     : { message: 'No reserved names found' };
 }
 
-export async function getArNSAuction(o: NameCLIOptions) {
+export async function getArNSReturnedName(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
-  const result = await readIOFromOptions(o).getArNSAuction({ name });
-  return result ?? { message: `No auction found for name ${name}` };
+  const result = await readIOFromOptions(o).getArNSReturnedName({ name });
+  return result ?? { message: `No returned name found for name ${name}` };
 }
 
-export async function listArNSAuctions(o: PaginationCLIOptions) {
-  const auctions = await readIOFromOptions(o).getArNSAuctions(
+export async function listArNSReturnedNames(o: PaginationCLIOptions) {
+  const returnedNames = await readIOFromOptions(o).getArNSReturnedNames(
     paginationParamsFromOptions(o),
   );
-  return auctions.items.length ? auctions : { message: 'No auctions found' };
-}
-
-export async function getArNSAuctionPrices(o: AuctionPricesCLIOptions) {
-  o.type ??= 'lease';
-  if (o.type !== 'lease' && o.type !== 'permabuy') {
-    throw new Error(`Invalid type. Valid types are: lease, permabuy`);
-
-    // TODY: type and years helper
-  }
-
-  const result = await readIOFromOptions(o).getArNSAuctionPrices({
-    name: requiredStringFromOptions(o, 'name'),
-    type: o.type,
-    // TODO: intervalMS helper, assert and format
-    intervalMs: o.intervalMs !== undefined ? +o.intervalMs : undefined,
-    // TODO: timestamp helper, assert and format
-
-    timestamp: o.timestamp !== undefined ? +o.timestamp : undefined,
-    // todo: assert years if 'lease'
-    years: positiveIntegerFromOptions(o, 'years'),
-  });
-  return result ?? { message: `No auction prices found` };
+  return returnedNames.items.length
+    ? returnedNames
+    : { message: 'No returned names found' };
 }
 
 export async function getEpoch(o: EpochCLIOptions) {
