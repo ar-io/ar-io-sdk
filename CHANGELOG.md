@@ -1,3 +1,10 @@
+# [2.7.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.5...v2.7.0-alpha.6) (2024-12-09)
+
+
+### Bug Fixes
+
+* **spawn-ant:** use a valid default ttlSeconds ([aea4aa7](https://github.com/ar-io/ar-io-sdk/commit/aea4aa7bc61a1af644f8215b75f5eef82e5c9480))
+
 # [2.7.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v2.7.0-alpha.4...v2.7.0-alpha.5) (2024-12-09)
 
 
