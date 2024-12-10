@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { MIO_PER_IO } from '../constants.js';
+import { MARIO_PER_ARIO } from '../constants.js';
 
 interface Equatable<T> {
   equals(other: T): boolean;
@@ -95,11 +95,11 @@ class PositiveFiniteInteger implements Equatable<PositiveFiniteInteger> {
   }
 }
 
-export class IOToken {
+export class ARIOToken {
   protected value: number;
   constructor(value: number) {
     if (!Number.isFinite(value) || value < 0) {
-      throw new Error('IOToken must be a non-negative finite number');
+      throw new Error('ARIOToken must be a non-negative finite number');
     }
     this.value = +value.toFixed(6);
   }
@@ -108,8 +108,8 @@ export class IOToken {
     return this.value;
   }
 
-  toMIO(): mIOToken {
-    return new mIOToken(Math.floor(this.value * MIO_PER_IO));
+  toMARIO(): mARIOToken {
+    return new mARIOToken(Math.floor(this.value * MARIO_PER_ARIO));
   }
 
   toString(): string {
@@ -117,39 +117,39 @@ export class IOToken {
   }
 }
 
-export class mIOToken extends PositiveFiniteInteger {
+export class mARIOToken extends PositiveFiniteInteger {
   constructor(value: number) {
     super(value);
   }
 
-  multiply(multiplier: mIOToken | number): mIOToken {
+  multiply(multiplier: mARIOToken | number): mARIOToken {
     // always round down on multiplication and division
     const result = Math.floor(this.valueOf() * multiplier.valueOf());
-    return new mIOToken(result);
+    return new mARIOToken(result);
   }
 
-  divide(divisor: mIOToken | number): mIOToken {
+  divide(divisor: mARIOToken | number): mARIOToken {
     if (divisor.valueOf() === 0) {
       // TODO: how should we handle this
       throw new Error('Cannot divide by zero');
     }
     // always round down on multiplication and division
     const result = Math.floor(this.valueOf() / divisor.valueOf());
-    return new mIOToken(result);
+    return new mARIOToken(result);
   }
 
-  plus(addend: mIOToken): mIOToken {
+  plus(addend: mARIOToken): mARIOToken {
     const result = super.plus(addend);
-    return new mIOToken(result.valueOf());
+    return new mARIOToken(result.valueOf());
   }
 
-  minus(subtractHend: mIOToken): mIOToken {
+  minus(subtractHend: mARIOToken): mARIOToken {
     const result = super.minus(subtractHend);
-    return new mIOToken(result.valueOf());
+    return new mARIOToken(result.valueOf());
   }
 
-  toIO(): IOToken {
-    return new IOToken(this.valueOf() / MIO_PER_IO);
+  toARIO(): ARIOToken {
+    return new ARIOToken(this.valueOf() / MARIO_PER_ARIO);
   }
 }
 

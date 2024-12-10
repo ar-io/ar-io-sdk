@@ -11,19 +11,19 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const {
-  IO,
-  ioDevnetProcessId,
+  ARIO,
+  arioDevnetProcessId,
   ANTRegistry,
   ANT,
   createAoSigner,
   ArweaveSigner,
-  IOWriteable,
+  ARIOWriteable,
   AoANTWriteable,
   AoANTRegistryWriteable,
   AoANTRegistryReadable,
   AoANTReadable,
   AOProcess,
-  IOReadable,
+  ARIOReadable,
 } = require('@ar.io/sdk');
 
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
@@ -35,25 +35,25 @@ const signers = [
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
 describe('e2e cjs tests', async () => {
-  describe('IO client works ', async () => {
-    it('should able to instantiate IOReadable', async () => {
-      const io = IO.init({
+  describe('ARIO client works ', async () => {
+    it('should able to instantiate ARIOReadable', async () => {
+      const ario = ARIO.init({
         process: new AOProcess({
-          processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+          processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
         }),
       });
-      assert(io instanceof IOReadable);
+      assert(ario instanceof ARIOReadable);
     });
 
     for (const signer of signers) {
-      it(`should be able to instantiate IOWriteable with ${signer.constructor.name}`, async () => {
-        const io = IO.init({
+      it(`should be able to instantiate ARIOWriteable with ${signer.constructor.name}`, async () => {
+        const ario = ARIO.init({
           process: new AOProcess({
-            processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+            processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
           }),
           signer,
         });
-        assert(io instanceof IOWriteable);
+        assert(ario instanceof ARIOWriteable);
       });
     }
   });

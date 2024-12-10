@@ -2,8 +2,8 @@ import {
   ANTRegistry,
   ANT_REGISTRY_ID,
   AOProcess,
-  IO,
-  ioDevnetProcessId,
+  ARIO,
+  arioDevnetProcessId,
 } from '@ar.io/sdk/web';
 import { connect } from '@permaweb/aoconnect';
 import { useEffect, useState } from 'react';
@@ -12,9 +12,9 @@ import remarkGfm from 'remark-gfm';
 
 import './App.css';
 
-const io = IO.init({
+const ario = ARIO.init({
   process: new AOProcess({
-    processId: process.env.IO_PROCESS_ID || ioDevnetProcessId,
+    processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
     ao: connect({
       CU_URL: 'http://localhost:6363',
     }),
@@ -24,22 +24,23 @@ const antRegistry = ANTRegistry.init();
 function App() {
   const [contract, setContract] = useState<string>('Loading...');
   const [ants, setAnts] = useState<string>('Loading...');
-  const [ioContractSuccess, setIoContractSuccess] = useState<boolean>(false);
+  const [arioContractSuccess, setArioContractSuccess] =
+    useState<boolean>(false);
   const [antRegistrySuccess, setAntRegistrySuccess] = useState<boolean>(false);
   const [loaded, setLoaded] = useState<boolean>(false);
   const [registryLoaded, setRegistryLoaded] = useState<boolean>(false);
 
   useEffect(() => {
     Promise.all([
-      io
+      ario
         .getInfo()
         .then((state: any) => {
           setContract(`\`\`\`json\n${JSON.stringify(state, null, 2)}`);
-          setIoContractSuccess(true);
+          setArioContractSuccess(true);
         })
         .catch((error: any) => {
           console.error(error);
-          setIoContractSuccess(false);
+          setArioContractSuccess(false);
           setContract('Error loading contract state');
         })
         .finally(() => {
@@ -68,7 +69,7 @@ function App() {
     <div className="App">
       <div>
         {loaded && (
-          <div data-testid="load-info-result">{`${ioContractSuccess}`}</div>
+          <div data-testid="load-info-result">{`${arioContractSuccess}`}</div>
         )}
         <Markdown className="markdown" remarkPlugins={[remarkGfm]}>
           {contract}

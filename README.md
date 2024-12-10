@@ -20,9 +20,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [ESM (NodeNext)](#esm-nodenext)
     - [CJS](#cjs)
   - [Typescript](#typescript)
-- [IOToken & mIOToken](#iotoken--miotoken)
-  - [Converting IO to mIO](#converting-io-to-mio)
-- [IO Process](#io-process)
+- [ARIOToken & mARIOToken](#ariotoken--mariotoken)
+  - [Converting ARIO to mARIO](#converting-ario-to-mario)
+- [ARIO Process](#ario-process)
   - [General](#general)
     - [`init({ signer })`](#init-signer-)
     - [`getInfo()`](#getinfo)
@@ -59,10 +59,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
     - [`getDemandFactor()`](#getdemandfactor)
-    - [`getArNSAuctions({ cursor, limit, sortBy, sortOrder })`](#getarnsauctions-cursor-limit-sortby-sortorder-)
-    - [`getArNSAuction({ name })`](#getarnsauction-name-)
-    - [`getArNSAuctionPrices({ name, type, years, intervalMs })`](#getarnsauctionprices-name-type-years-intervalms-)
-    - [`submitAuctionBid({ name, type, years, processId })`](#submitauctionbid-name-type-years-processid-)
+    - [`getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`](#getarnsreturnednames-cursor-limit-sortby-sortorder-)
+    - [`getArNSReturnedName({ name })`](#getarnsreturnedname-name-)
   - [Epochs](#epochs)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
@@ -95,10 +93,10 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setDescription({ description })`](#setdescription-description-)
     - [`setKeywords({ keywords })`](#setkeywords-keywords-)
     - [`setLogo({ txId })`](#setlogo-txid-)
-    - [`releaseName({ name, ioProcessId })`](#releasename-name-ioprocessid-)
-    - [`reassignName({ name, ioProcessId, antProcessId })`](#reassignname-name-ioprocessid-antprocessid-)
-    - [`approvePrimaryNameRequest({ name, address, ioProcessId })`](#approveprimarynamerequest-name-address-ioprocessid-)
-    - [`removePrimaryNames({ names, ioProcessId })`](#removeprimarynames-names-ioprocessid-)
+    - [`releaseName({ name, arioProcessId })`](#releasename-name-arioprocessid-)
+    - [`reassignName({ name, arioProcessId, antProcessId })`](#reassignname-name-arioprocessid-antprocessid-)
+    - [`approvePrimaryNameRequest({ name, address, arioProcessId })`](#approveprimarynamerequest-name-address-arioprocessid-)
+    - [`removePrimaryNames({ names, arioProcessId })`](#removeprimarynames-names-arioprocessid-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
   - [Configuration](#configuration-2)
@@ -140,10 +138,10 @@ yarn add @ar.io/sdk --ignore-engines
 ## Quick Start
 
 ```typescript
-import { IO } from '@ar.io/sdk';
+import { ARIO } from '@ar.io/sdk';
 
-const io = IO.init();
-const gateways = await io.getGateways();
+const ario = ARIO.init();
+const gateways = await ario.getGateways();
 ```
 
 <details>
@@ -203,12 +201,12 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-import { IO } from '@ar.io/sdk/web';
+import { ARIO } from '@ar.io/sdk/web';
 
 // set up client
-const io = IO.init();
+const ario = ARIO.init();
 // fetch gateways
-const gateways = await io.getGateways();
+const gateways = await ario.getGateways();
 ```
 
 > [!WARNING]
@@ -218,12 +216,12 @@ const gateways = await io.getGateways();
 
 ```html
 <script type="module">
-  import { IO } from 'https://unpkg.com/@ar.io/sdk';
+  import { ARIO } from 'https://unpkg.com/@ar.io/sdk';
 
   // set up client
-  const io = IO.init();
+  const ario = ARIO.init();
   // fetch gateways
-  const gateways = await io.getGateways();
+  const gateways = await ario.getGateways();
 </script>
 ```
 
@@ -232,23 +230,23 @@ const gateways = await io.getGateways();
 #### ESM (NodeNext)
 
 ```javascript
-import { IO } from '@ar.io/sdk/node';
+import { ARIO } from '@ar.io/sdk/node';
 
 // set up client
-const io = IO.init();
+const ario = ARIO.init();
 // fetch gateways
-const gateways = await io.getGateways();
+const gateways = await ario.getGateways();
 ```
 
 #### CJS
 
 ```javascript
-import { IO } from '@ar.io/sdk';
+import { ARIO } from '@ar.io/sdk';
 
 // set up client
-const io = IO.init();
+const ario = ARIO.init();
 // fetch gateways
-const gateways = await io.getGateways();
+const gateways = await ario.getGateways();
 ```
 
 ### Typescript
@@ -258,25 +256,25 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 > [!NOTE]
 > Typescript version 5.3 or higher is recommended.
 
-## IOToken & mIOToken
+## ARIOToken & mARIOToken
 
-The IO process stores all values as mIO (milli-IO) to avoid floating-point arithmetic issues. The SDK provides an `IOToken` and `mIOToken` classes to handle the conversion between IO and mIO, along with rounding logic for precision.
+The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
 
-**All process interactions expect values in mIO. If numbers are provided as inputs, they are assumed to be in raw mIO values.**
+**All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
 
-### Converting IO to mIO
+### Converting ARIO to mARIO
 
 ```typescript
-import { IOToken, mIOToken } from '@ar.io/sdk';
+import { ARIOToken, mARIOToken } from '@ar.io/sdk';
 
-const ioValue = 1;
-const mIOValue = new IOToken(ioValue).toMIO();
+const arioValue = 1;
+const mARIOValue = new ARIOToken(arioValue).toMARIO();
 
-const mIOValue = 1_000_000;
-const ioValue = new mIOToken(mIOValue).toIO();
+const mARIOValue = 1_000_000;
+const arioValue = new mARIOToken(mARIOValue).toARIO();
 ```
 
-## IO Process
+## ARIO Process
 
 ### General
 
@@ -286,23 +284,23 @@ Factory function to that creates a read-only or writeable client. By providing a
 
 ```typescript
 // read-only client
-const io = IO.init()
+const ario = ARIO.init()
 
 // read-write client for browser environments
-const io = IO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
+const ario = ARIO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
 
 // read-write client for node environments
-const io = IO.init({ signer: new ArweaveSigner(JWK) });
+const ario = ARIO.init({ signer: new ArweaveSigner(JWK) });
 
 ```
 
 #### `getInfo()`
 
-Retrieves the information of the IO process.
+Retrieves the information of the ARIO process.
 
 ```typescript
-const io = IO.init();
-const info = await io.getInfo();
+const ario = ARIO.init();
+const info = await ario.getInfo();
 ```
 
 <details>
@@ -310,8 +308,8 @@ const info = await io.getInfo();
 
 ```json
 {
-  "Name": "Testnet IO",
-  "Ticker": "tIO",
+  "Name": "Testnet ARIO",
+  "Ticker": "tARIO",
   "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
   "Denomination": 6,
   "Handlers": ["_eval", "_default_"], // full list of handlers, useful for debugging
@@ -323,7 +321,7 @@ const info = await io.getInfo();
 
 #### `getTokenSupply()`
 
-Retrieves the total supply of tokens, returned in mIO. The total supply includes the following:
+Retrieves the total supply of tokens, returned in mARIO. The total supply includes the following:
 
 - `total` - the total supply of all tokens
 - `circulating` - the total supply minus locked, withdrawn, delegated, and staked
@@ -334,8 +332,8 @@ Retrieves the total supply of tokens, returned in mIO. The total supply includes
 - `protocolBalance` - tokens that are held in the protocol's treasury. This is included in the circulating supply.
 
 ```typescript
-const io = IO.init();
-const supply = await io.getTokenSupply();
+const ario = ARIO.init();
+const supply = await ario.getTokenSupply();
 ```
 
 <details>
@@ -360,13 +358,13 @@ const supply = await io.getTokenSupply();
 Retrieves the balance of the specified wallet address.
 
 ```typescript
-const io = IO.init();
-// the balance will be returned in mIO as a value
-const balance = await io
+const ario = ARIO.init();
+// the balance will be returned in mARIO as a value
+const balance = await ario
   .getBalance({
     address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   })
-  .then((balance: number) => new mIOToken(balance).toIO()); // convert it to IO for readability
+  .then((balance: number) => new mARIOToken(balance).toARIO()); // convert it to ARIO for readability
 ```
 
 <details>
@@ -380,11 +378,11 @@ const balance = await io
 
 #### `getBalances({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves the balances of the IO process in `mIO`, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+Retrieves the balances of the ARIO process in `mARIO`, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
 
 ```typescript
-const io = IO.init();
-const balances = await io.getBalances({
+const ario = ARIO.init();
+const balances = await ario.getBalances({
   cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
   limit: 100,
   sortBy: 'balance',
@@ -420,16 +418,16 @@ const balances = await io.getBalances({
 
 #### `transfer({ target, qty })`
 
-Transfers `mIO` to the designated `target` recipient address. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Transfers `mARIO` to the designated `target` recipient address. Requires `signer` to be provided on `ARIO.init` to sign the transaction.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.transfer(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.transfer(
   {
     target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-    qty: new IOToken(1000).toMIO(),
+    qty: new ARIOToken(1000).toMARIO(),
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -440,11 +438,11 @@ const { id: txId } = await io.transfer(
 
 #### `getVault({ address, vaultId })`
 
-Retrieves the locked-balance user vault of the IO process by the specified wallet address and vault ID.
+Retrieves the locked-balance user vault of the ARIO process by the specified wallet address and vault ID.
 
 ```typescript
-const io = IO.init();
-const vault = await io.getVault({
+const ario = ARIO.init();
+const vault = await ario.getVault({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   vaultId: 'vaultIdOne',
 });
@@ -465,11 +463,11 @@ const vault = await io.getVault({
 
 #### `getVaults({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all locked-balance user vaults of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
+Retrieves all locked-balance user vaults of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
 
 ```typescript
-const io = IO.init();
-const vaults = await io.getVaults({
+const ario = ARIO.init();
+const vaults = await ario.getVaults({
   cursor: '0',
   limit: 100,
   sortBy: 'balance',
@@ -516,8 +514,8 @@ const vaults = await io.getVaults({
 Retrieves a gateway's info by its staking wallet address.
 
 ```typescript
-const io = IO.init();
-const gateway = await io.getGateway({
+const ario = ARIO.init();
+const gateway = await ario.getGateway({
   address: '-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck',
 });
 ```
@@ -562,11 +560,11 @@ const gateway = await io.getGateway({
 
 #### `getGateways({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves registered gateways of the IO process, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last gateway address from the previous request.
+Retrieves registered gateways of the ARIO process, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last gateway address from the previous request.
 
 ```typescript
-const io = IO.init();
-const gateways = await io.getGateways({
+const ario = ARIO.init();
+const gateways = await ario.getGateways({
   limit: 100,
   sortOrder: 'desc',
   sortBy: 'operatorStake',
@@ -628,8 +626,8 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegate address from the previous request.
 
 ```typescript
-const io = IO.init();
-const delegates = await io.getGatewayDelegates({
+const ario = ARIO.init();
+const delegates = await ario.getGatewayDelegates({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   limit: 3,
   sortBy: 'startTimestamp',
@@ -674,16 +672,16 @@ const delegates = await io.getGatewayDelegates({
 
 Joins a gateway to the ar.io network via its associated wallet.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.joinNetwork(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.joinNetwork(
   {
-    qty: new IOToken(10_000).toMIO(), // minimum operator stake allowed
+    qty: new ARIOToken(10_000).toMARIO(), // minimum operator stake allowed
     autoStake: true, // auto-stake operator rewards to the gateway
     allowDelegatedStaking: true, // allows delegated staking
-    minDelegatedStake: new IOToken(100).toMIO(), // minimum delegated stake allowed
+    minDelegatedStake: new ARIOToken(100).toMARIO(), // minimum delegated stake allowed
     delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
     label: 'john smith', // min 1, max 64 characters
     note: 'The example gateway', // max 256 characters
@@ -700,14 +698,14 @@ const { id: txId } = await io.joinNetwork(
 
 #### `leaveNetwork()`
 
-Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `IO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
+Sets the gateway as `leaving` on the ar.io network. Requires `signer` to be provided on `ARIO.init` to sign the transaction. The gateways operator and delegate stakes are vaulted and will be returned after leave periods. The gateway will be removed from the network after the leave period.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 
-const { id: txId } = await io.leaveNetwork(
+const { id: txId } = await ario.leaveNetwork(
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
@@ -717,14 +715,14 @@ const { id: txId } = await io.leaveNetwork(
 
 Writes new gateway settings to the callers gateway configuration.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.updateGatewaySettings(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.updateGatewaySettings(
   {
     // any other settings you want to update
-    minDelegatedStake: new IOToken(100).toMIO(),
+    minDelegatedStake: new ARIOToken(100).toMARIO(),
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -735,14 +733,14 @@ const { id: txId } = await io.updateGatewaySettings(
 
 Increases the callers stake on the target gateway.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseDelegateStake(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.increaseDelegateStake(
   {
     target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    qty: new IOToken(100).toMIO(),
+    qty: new ARIOToken(100).toMARIO(),
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -753,14 +751,14 @@ const { id: txId } = await io.increaseDelegateStake(
 
 Decreases the callers stake on the target gateway. Can instantly decrease stake by setting instant to `true`.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseDelegateStake(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.decreaseDelegateStake(
   {
     target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-    qty: new IOToken(100).toMIO(),
+    qty: new ARIOToken(100).toMARIO(),
   },
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
@@ -771,10 +769,10 @@ const { id: txId } = await io.decreaseDelegateStake(
 Pay the early withdrawal fee and withdraw instantly.
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseDelegateStake({
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.decreaseDelegateStake({
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  qty: new IOToken(100).toMIO(),
+  qty: new ARIOToken(100).toMARIO(),
   instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
 });
 ```
@@ -784,8 +782,8 @@ const { id: txId } = await io.decreaseDelegateStake({
 Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
 
 ```typescript
-const io = IO.init();
-const vaults = await io.getDelegations({
+const ario = ARIO.init();
+const vaults = await ario.getDelegations({
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
   limit: 2,
@@ -832,12 +830,12 @@ const vaults = await io.getDelegations({
 
 Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is provided, the signer's address will be used.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 // removes a delegated vault from a gateway
-const { id: txId } = await io.instantWithdrawal(
+const { id: txId } = await ario.instantWithdrawal(
   {
     // gateway address where delegate vault exists
     gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
@@ -850,7 +848,7 @@ const { id: txId } = await io.instantWithdrawal(
   },
 );
 // removes an operator vault from a gateway
-const { id: txId } = await io.instantWithdrawal(
+const { id: txId } = await ario.instantWithdrawal(
   {
     vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
   },
@@ -861,12 +859,12 @@ const { id: txId } = await io.instantWithdrawal(
 
 Cancels an existing vault on a gateway. The vaulted stake will be returned to the callers stake. If no `gatewayAddress` is provided, the signer's address will be used.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 // cancels a delegated vault from a gateway
-const { id: txId } = await io.cancelWithdrawal(
+const { id: txId } = await ario.cancelWithdrawal(
   {
     // gateway address where vault exists
     gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
@@ -877,7 +875,7 @@ const { id: txId } = await io.cancelWithdrawal(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 // cancels an operator vault from a gateway
-const { id: txId } = await io.cancelWithdrawal(
+const { id: txId } = await ario.cancelWithdrawal(
   {
     // operator vault id to cancel
     vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
@@ -890,8 +888,8 @@ const { id: txId } = await io.cancelWithdrawal(
 Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
 
 ```typescript
-const io = IO.init();
-const allowedDelegates = await io.getAllowedDelegates({
+const ario = ARIO.init();
+const allowedDelegates = await ario.getAllowedDelegates({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
 });
 ```
@@ -921,8 +919,8 @@ const allowedDelegates = await io.getAllowedDelegates({
 Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
 
 ```typescript
-const io = IO.init();
-const vaults = await io.getGatewayVaults({
+const ario = ARIO.init();
+const vaults = await ario.getGatewayVaults({
   address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
 });
 ```
@@ -955,13 +953,13 @@ const vaults = await io.getGatewayVaults({
 
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseOperatorStake(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.increaseOperatorStake(
   {
-    qty: new IOToken(100).toMIO(),
+    qty: new ARIOToken(100).toMARIO(),
   },
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
@@ -971,15 +969,15 @@ const { id: txId } = await io.increaseOperatorStake(
 
 #### `decreaseOperatorStake({ qty })`
 
-Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Decreases the callers operator stake. Must be executed with a wallet registered as a gateway operator. Requires `signer` to be provided on `ARIO.init` to sign the transaction.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.decreaseOperatorStake(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.decreaseOperatorStake(
   {
-    qty: new IOToken(100).toMIO(),
+    qty: new ARIOToken(100).toMARIO(),
   },
   {
     tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
@@ -991,15 +989,15 @@ const { id: txId } = await io.decreaseOperatorStake(
 
 Redelegates the stake of a specific address to a new gateway. Vault ID may be optionally included in order to redelegate from an existing withdrawal vault. The redelegation fee is calculated based on the fee rate and the stake amount. Users are allowed one free redelegation every seven epochs. Each additional redelegation beyond the free redelegation will increase the fee by 10%, capping at a 60% redelegation fee.
 
-e.g: If 1000 mIO is redelegated and the fee rate is 10%, the fee will be 100 mIO. Resulting in 900 mIO being redelegated to the new gateway and 100 mIO being deducted back to the protocol balance.
+e.g: If 1000 mARIO is redelegated and the fee rate is 10%, the fee will be 100 mARIO. Resulting in 900 mARIO being redelegated to the new gateway and 100 mARIO being deducted back to the protocol balance.
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 
-const { id: txId } = await io.redelegateStake({
+const { id: txId } = await ario.redelegateStake({
   target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-  stakeQty: new IOToken(1000).toMIO(),
+  stakeQty: new ARIOToken(1000).toMARIO(),
   vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
 });
 ```
@@ -1009,9 +1007,9 @@ const { id: txId } = await io.redelegateStake({
 Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
 
 ```typescript
-const io = IO.init();
+const ario = ARIO.init();
 
-const fee = await io.getRedelegationFee({
+const fee = await ario.getRedelegationFee({
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
 });
 ```
@@ -1034,11 +1032,11 @@ const fee = await io.getRedelegationFee({
 
 Purchases a new ArNS record with the specified name, type, and duration.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ processId: IO_DEVNET_PROCESS_ID, signer });
-const record = await io.buyRecord(
+const ario = ARIO.init({ processId: ARIO_DEVNET_PROCESS_ID, signer });
+const record = await ario.buyRecord(
   { name: 'ardrive', type: 'lease', years: 1 },
   {
     // optional tags
@@ -1052,8 +1050,8 @@ const record = await io.buyRecord(
 Retrieves the record info of the specified ArNS name.
 
 ```typescript
-const io = IO.init();
-const record = await io.getArNSRecord({ name: 'ardrive' });
+const ario = ARIO.init();
+const record = await ario.getArNSRecord({ name: 'ardrive' });
 ```
 
 <details>
@@ -1073,12 +1071,12 @@ const record = await io.getArNSRecord({ name: 'ardrive' });
 
 #### `getArNSRecords({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all registered ArNS records of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous request.
+Retrieves all registered ArNS records of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous request.
 
 ```typescript
-const io = IO.init();
+const ario = ARIO.init();
 // get the newest 100 names
-const records = await io.getArNSRecords({
+const records = await ario.getArNSRecords({
   limit: 100,
   sortBy: 'startTimestamp',
   sortOrder: 'desc',
@@ -1149,11 +1147,11 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.increaseUndernameLimit(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.increaseUndernameLimit(
   {
     name: 'ar-io',
     qty: 420,
@@ -1168,8 +1166,8 @@ const { id: txId } = await io.increaseUndernameLimit(
 Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.extendLease(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.extendLease(
   {
     name: 'ar-io',
     years: 1,
@@ -1181,16 +1179,16 @@ const { id: txId } = await io.extendLease(
 
 #### `getTokenCost({ intent, ...args })`
 
-Calculates the price in mIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
+Calculates the price in mARIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
 
 ```typescript
-const price = await io
+const price = await ario
   .getTokenCost({
     intent: 'Buy-Record',
     name: 'ar-io',
     type: 'permabuy',
   })
-  .then((p) => new mIOToken(p).toIO()); // convert to IO for readability
+  .then((p) => new mARIOToken(p).toARIO()); // convert to ARIO for readability
 ```
 
 <details>
@@ -1207,8 +1205,8 @@ const price = await io
 Retrieves the current demand factor of the network. The demand factor is a multiplier applied to the cost of ArNS interactions based on the current network demand.
 
 ```typescript
-const io = IO.init();
-const demandFactor = await io.getDemandFactor();
+const ario = ARIO.init();
+const demandFactor = await ario.getDemandFactor();
 ```
 
 <details>
@@ -1220,16 +1218,16 @@ const demandFactor = await io.getDemandFactor();
 
 </details>
 
-#### `getArNSAuctions({ cursor, limit, sortBy, sortOrder })`
+#### `getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all active auctions of the IO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last auction name from the previous request.
+Retrieves all active returned names of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last returned name from the previous request.
 
 ```typescript
-const io = IO.init();
-const auctions = await io.getArNSAuctions({
+const ario = ARIO.init();
+const returnedNames = await ario.getArNSReturnedNames({
   limit: 100,
   sortBy: 'endTimestamp',
-  sortOrder: 'asc', // return the auctions ending soonest first
+  sortOrder: 'asc', // return the returned names ending soonest first
 });
 ```
 
@@ -1263,13 +1261,13 @@ const auctions = await io.getArNSAuctions({
 
 </details>
 
-#### `getArNSAuction({ name })`
+#### `getArNSReturnedName({ name })`
 
-Retrieves the auction data for the specified auction name.
+Retrieves the returned name data for the specified returned name.
 
 ```typescript
-const io = IO.init();
-const auction = await io.getArNSAuction({ name: 'permalink' });
+const ario = ARIO.init();
+const returnedName = await ario.getArNSReturnedName({ name: 'permalink' });
 ```
 
 <details>
@@ -1294,88 +1292,6 @@ const auction = await io.getArNSAuction({ name: 'permalink' });
 
 </details>
 
-#### `getArNSAuctionPrices({ name, type, years, intervalMs })`
-
-Retrieves the auction price curve of the specified auction name for the specified type, duration, and interval. The `intervalMs` is the number of milliseconds between price points on the curve. The default interval is 15 minutes.
-
-```typescript
-const io = IO.init();
-const priceCurve = await io.getArNSAuctionPrices({
-  name: 'permalink',
-  type: 'lease',
-  years: 1,
-  intervalMs: 3600000, // 1 hour price intervals (default is 15 minutes)
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-{
-  "name": "permalink",
-  "type": "lease",
-  "currentPrice": 12582015000,
-  "years": 1,
-  "prices": {
-    "1730412841349": 1618516789,
-    "1729908841349": 8210426826,
-    "1730722441349": 592768907,
-    "1730859241349": 379659914,
-    "1730866441349": 370850139,
-    "1730884441349": 349705277,
-    "1730150041349": 3780993370,
-    "1730031241349": 5541718397,
-    "1730603641349": 872066253,
-    "1730715241349": 606815377,
-    "1730942041349": 289775172,
-    "1730916841349": 314621977,
-    "1730484841349": 1281957300,
-    "1730585641349": 924535164,
-    "1730232841349": 2895237473,
-    "1730675641349": 690200977,
-    "1730420041349": 1581242331,
-    "1729786441349": 12154428186,
-    "1730308441349": 2268298483,
-    "1730564041349": 991657913,
-    "1730081641349": 4712427282,
-    "1730909641349": 322102563,
-    "1730945641349": 286388732,
-    "1730024041349": 5671483398,
-    "1729937641349": 7485620175
-    // ...
-  }
-}
-```
-
-</details>
-
-#### `submitAuctionBid({ name, type, years, processId })`
-
-Submit a bid for the current auction. If the bid is accepted, the name will be leased for the specified duration and assigned the specified type and processId.
-
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
-
-```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-
-const auction = await io.getArNSAuction({ name: 'permalink' });
-
-// check the current price is under some threshold
-if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
-  const { id: txId } = await io.submitAuctionBid(
-    {
-      name: 'permalink',
-      type: 'lease',
-      years: 1,
-      processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
-    },
-    // optional additional tags
-    { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
-  );
-}
-```
-
 ### Epochs
 
 #### `getCurrentEpoch()`
@@ -1383,8 +1299,8 @@ if (auction && auction.currentPrice <= new IOToken(20_000).toMIO().valueOf()) {
 Returns the current epoch data.
 
 ```typescript
-const io = IO.init();
-const epoch = await io.getCurrentEpoch();
+const ario = ARIO.init();
+const epoch = await ario.getCurrentEpoch();
 ```
 
 <details>
@@ -1439,8 +1355,8 @@ const epoch = await io.getCurrentEpoch();
 Returns the epoch data for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const io = IO.init();
-const epoch = await io.getEpoch({ epochIndex: 0 });
+const ario = ARIO.init();
+const epoch = await ario.getEpoch({ epochIndex: 0 });
 ```
 
 <details>
@@ -1468,7 +1384,7 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
     {
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "stake": 10000000000, // value in mIO
+      "stake": 10000000000, // value in mARIO
       "startTimestamp": 1720720620813,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
@@ -1507,8 +1423,8 @@ const epoch = await io.getEpoch({ epochIndex: 0 });
 Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const io = IO.init();
-const observations = await io.getObservations();
+const ario = ARIO.init();
+const observations = await ario.getObservations();
 ```
 
 <details>
@@ -1540,8 +1456,8 @@ const observations = await io.getObservations();
 Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const io = IO.init();
-const distributions = await io.getDistributions({ epochIndex: 0 });
+const ario = ARIO.init();
+const distributions = await ario.getDistributions({ epochIndex: 0 });
 ```
 
 <details>
@@ -1571,13 +1487,13 @@ const distributions = await io.getDistributions({ epochIndex: 0 });
 
 #### `saveObservations({ reportTxId, failedGateways })`
 
-Saves the observations of the current epoch. Requires `signer` to be provided on `IO.init` to sign the transaction.
+Saves the observations of the current epoch. Requires `signer` to be provided on `ARIO.init` to sign the transaction.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.saveObservations(
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.saveObservations(
   {
     reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
     failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
@@ -1592,11 +1508,11 @@ const { id: txId } = await io.saveObservations(
 
 #### `getPrescribedObservers({ epochIndex })`
 
-Retrieves the prescribed observers of the IO process. To fetch prescribed observers for a previous epoch set the `epochIndex` to the desired epoch index.
+Retrieves the prescribed observers of the ARIO process. To fetch prescribed observers for a previous epoch set the `epochIndex` to the desired epoch index.
 
 ```typescript
-const io = IO.init();
-const observers = await io.getPrescribedObservers({ epochIndex: 0 });
+const ario = ARIO.init();
+const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
 ```
 
 <details>
@@ -1607,7 +1523,7 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
   {
     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-    "stake": 10000000000, // value in mIO
+    "stake": 10000000000, // value in mARIO
     "start": 1296976,
     "stakeWeight": 1,
     "tenureWeight": 0.41453703703703704,
@@ -1628,8 +1544,8 @@ const observers = await io.getPrescribedObservers({ epochIndex: 0 });
 Retrieves all primary names paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
 
 ```typescript
-const io = IO.init();
-const names = await io.getPrimaryNames({
+const ario = ARIO.init();
+const names = await ario.getPrimaryNames({
   cursor: 'ao', // this is the last name from the previous request
   limit: 1,
   sortBy: 'startTimestamp',
@@ -1665,12 +1581,12 @@ const names = await io.getPrimaryNames({
 Retrieves the primary name for a given name or address.
 
 ```typescript
-const io = IO.init();
-const name = await io.getPrimaryName({
+const ario = ARIO.init();
+const name = await ario.getPrimaryName({
   name: 'arns',
 });
 // or
-const name = await io.getPrimaryName({
+const name = await ario.getPrimaryName({
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
 });
 ```
@@ -1692,11 +1608,11 @@ const name = await io.getPrimaryName({
 
 Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
 
-_Note: Requires `signer` to be provided on `IO.init` to sign the transaction._
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const io = IO.init({ signer: new ArweaveSigner(jwk) });
-const { id: txId } = await io.requestPrimaryName({
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.requestPrimaryName({
   name: 'arns',
 });
 ```
@@ -1706,8 +1622,8 @@ const { id: txId } = await io.requestPrimaryName({
 Retrieves the primary name request for a a wallet address.
 
 ```typescript
-const io = IO.init();
-const request = await io.getPrimaryNameRequest({
+const ario = ARIO.init();
+const request = await ario.getPrimaryNameRequest({
   initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
 });
 ```
@@ -1728,13 +1644,13 @@ const request = await io.getPrimaryNameRequest({
 
 ### Configuration
 
-The IO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [IO Network Spec]. By default, it will use the current [IO Testnet Process]. Refer to [AO Connect] for more information on how to configure an IO process to use specific AO infrastructure.
+The ARIO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [ARIO Network Spec]. By default, it will use the current [ARIO Testnet Process]. Refer to [AO Connect] for more information on how to configure an ARIO process to use specific AO infrastructure.
 
 ```typescript
 // provide a custom ao infrastructure and process id
-const io = IO.init({
+const ario = ARIO.init({
   process: new AoProcess({
-    processId: 'IO_PROCESS_ID'
+    processId: 'ARIO_PROCESS_ID'
     ao: connect({
       MU_URL: 'https://mu-testnet.xyz',
       CU_URL: 'https://cu-testnet.xyz',
@@ -2085,20 +2001,20 @@ const { id: txId } = await ant.setLogo(
 );
 ```
 
-#### `releaseName({ name, ioProcessId })`
+#### `releaseName({ name, arioProcessId })`
 
-Releases a name from the auction and makes it available for auction on the IO contract. The name must be permanently owned by the releasing wallet. 50% of the winning bid will be distributed to the ANT owner at the time of release. If no bids, the name will be released and can be reregistered by anyone.
+Releases a name from the current owner and makes it available for purchase on the ARIO contract. The name must be permanently owned by the releasing wallet. If purchased within the recently returned name period (14 epochs), 50% of the purchase amount will be distributed to the ANT owner at the time of release. If no purchases in the recently returned name period, the name can be reregistered by anyone for the normal fee.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.releaseName({
   name: 'permalink',
-  ioProcessId: IO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to auction on the IO contract
+  arioProcessId: ARIO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to recently returned names on the ARIO contract
 });
 ```
 
-#### `reassignName({ name, ioProcessId, antProcessId })`
+#### `reassignName({ name, arioProcessId, antProcessId })`
 
 Reassigns a name to a new ANT. This can only be done by the current owner of the ANT.
 
@@ -2107,12 +2023,12 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.reassignName({
   name: 'ardrive',
-  ioProcessId: IO_TESTNET_PROCESS_ID,
+  arioProcessId: ARIO_TESTNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
 });
 ```
 
-#### `approvePrimaryNameRequest({ name, address, ioProcessId })`
+#### `approvePrimaryNameRequest({ name, address, arioProcessId })`
 
 Approves a primary name request for a given name or address.
 
@@ -2122,11 +2038,11 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
-  ioProcessId: IO_TESTNET_PROCESS_ID, // the IO process id to use for the request
+  arioProcessId: ARIO_TESTNET_PROCESS_ID, // the ARIO process id to use for the request
 });
 ```
 
-#### `removePrimaryNames({ names, ioProcessId })`
+#### `removePrimaryNames({ names, arioProcessId })`
 
 Removes primary names from the ANT process.
 
@@ -2135,7 +2051,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.removePrimaryNames({
   names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
-  ioProcessId: IO_TESTNET_PROCESS_ID,
+  arioProcessId: ARIO_TESTNET_PROCESS_ID,
 });
 ```
 
@@ -2194,7 +2110,7 @@ let hasMore = true;
 let cursor: string | undefined;
 const gateaways = [];
 while (hasMore) {
-  const page = await io.getGateways({ limit: 100, cursor });
+  const page = await ario.getGateways({ limit: 100, cursor });
   gateaways.push(...items);
   cursor = page.nextCursor;
   hasMore = page.hasMore;
@@ -2274,8 +2190,8 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [examples/vite]: ./examples/vite
 [CONTRIBUTING.md]: ./CONTRIBUTING.md
 [AO Connect]: https://github.com/permaweb/ao/tree/main/connect
-[IO Testnet Process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
-[IO Network Spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
+[ARIO Testnet Process]: https://www.ao.link/#/entity/agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA
+[ARIO Network Spec]: https://github.com/ar-io/ar-io-network-process?tab=readme-ov-file#contract-spec
 [Winston]: https://www.npmjs.com/package/winston
 [AO]: https://github.com/permaweb/ao
 [ar-io-node repository]: https://github.com/ar-io/ar-io-node

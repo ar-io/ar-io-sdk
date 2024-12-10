@@ -15,11 +15,10 @@
  */
 import Arweave from 'arweave';
 
-import { IO_TESTNET_PROCESS_ID } from '../constants.js';
+import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
-  AoAuction,
   AoBalanceWithAddress,
   AoEpochDistributionData,
   AoEpochObservationData,
@@ -29,6 +28,7 @@ import {
   AoPrimaryName,
   AoPrimaryNameRequest,
   AoRedelegationFeeInfo,
+  AoReturnedName,
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
@@ -43,9 +43,10 @@ import {
   WriteOptions,
 } from '../types/index.js';
 import {
+  AoARIORead,
+  AoARIOWrite,
   AoArNSNameData,
   AoArNSReservedNameDataWithName,
-  AoAuctionPriceData,
   AoDelegation,
   AoEpochData,
   AoEpochSettings,
@@ -53,8 +54,7 @@ import {
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
-  AoIORead,
-  AoIOWrite,
+  AoPaginatedAddressParams,
   AoRegistrationFees,
   AoVaultData,
   AoWalletVault,
@@ -63,7 +63,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/io.js';
-import { AoSigner, mIOToken } from '../types/token.js';
+import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
 import {
   getCurrentBlockUnixTimestampMs,
@@ -74,19 +74,19 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
-export class IO {
-  static init(): AoIORead;
-  static init({ process }: { process: AOProcess }): AoIORead;
+export class ARIO {
+  static init(): AoARIORead;
+  static init({ process }: { process: AOProcess }): AoARIORead;
   static init({
     process,
     signer,
-  }: WithSigner<{ process: AOProcess }>): AoIOWrite;
+  }: WithSigner<{ process: AOProcess }>): AoARIOWrite;
   static init({
     processId,
     signer,
   }: WithSigner<{
     processId: string;
-  }>): AoIOWrite;
+  }>): AoARIOWrite;
   static init({
     processId,
     signer,
@@ -94,29 +94,29 @@ export class IO {
     signer?: ContractSigner | undefined;
     processId: string;
   });
-  static init({ processId }: { processId: string }): AoIORead;
+  static init({ processId }: { processId: string }): AoARIORead;
   static init(
     config?: OptionalSigner<ProcessConfiguration>,
-  ): AoIORead | AoIOWrite {
+  ): AoARIORead | AoARIOWrite {
     if (config && config.signer) {
       const { signer, ...rest } = config;
-      return new IOWriteable({
+      return new ARIOWriteable({
         ...rest,
         signer,
       });
     }
-    return new IOReadable(config);
+    return new ARIOReadable(config);
   }
 }
 
-export class IOReadable implements AoIORead {
+export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   private arweave: Arweave;
 
   constructor(config?: ProcessConfiguration, arweave = defaultArweave) {
     if (!config) {
       this.process = new AOProcess({
-        processId: IO_TESTNET_PROCESS_ID,
+        processId: ARIO_TESTNET_PROCESS_ID,
       });
     } else if (isProcessConfiguration(config)) {
       this.process = config.process;
@@ -319,16 +319,12 @@ export class IOReadable implements AoIORead {
   async getGatewayDelegateAllowList({
     address,
     ...pageParams
-  }: {
-    address: WalletAddress;
-  } & PaginationParams<WalletAddress>): Promise<
-    PaginationResult<WalletAddress>
-  > {
+  }: AoPaginatedAddressParams): Promise<PaginationResult<WalletAddress>> {
     return this.process.read<PaginationResult<WalletAddress>>({
       tags: [
         { name: 'Action', value: 'Paginated-Allowed-Delegates' },
         { name: 'Address', value: address },
-        ...paginationParamsToTags<WalletAddress>(pageParams),
+        ...paginationParamsToTags(pageParams),
       ],
     });
   }
@@ -542,84 +538,29 @@ export class IOReadable implements AoIORead {
     });
   }
 
-  // Auctions
-  async getArNSAuctions(
-    params?: PaginationParams<AoAuction>,
-  ): Promise<PaginationResult<AoAuction>> {
-    return this.process.read<PaginationResult<AoAuction>>({
+  async getArNSReturnedNames(
+    params?: PaginationParams<AoReturnedName>,
+  ): Promise<PaginationResult<AoReturnedName>> {
+    return this.process.read<PaginationResult<AoReturnedName>>({
       tags: [
-        { name: 'Action', value: 'Auctions' },
-        ...paginationParamsToTags<AoAuction>(params),
+        { name: 'Action', value: 'Returned-Names' },
+        ...paginationParamsToTags<AoReturnedName>(params),
       ],
     });
   }
 
-  async getArNSAuction({
+  async getArNSReturnedName({
     name,
   }: {
     name: string;
-  }): Promise<AoAuction | undefined> {
+  }): Promise<AoReturnedName | undefined> {
     const allTags = [
-      { name: 'Action', value: 'Auction-Info' },
+      { name: 'Action', value: 'Returned-Name' },
       { name: 'Name', value: name },
     ];
 
-    return this.process.read<AoAuction>({
+    return this.process.read<AoReturnedName>({
       tags: allTags,
-    });
-  }
-
-  /**
-   * Get auction prices for a given auction at the provided intervals
-   *
-   * @param {Object} params - The parameters for fetching auction prices
-   * @param {string} params.name - The name of the auction
-   * @param {('permabuy'|'lease')} [params.type='lease'] - The type of purchase
-   * @param {number} [params.years=1] - The number of years for lease (only applicable if type is 'lease')
-   * @param {number} [params.timestamp=Date.now()] - The timestamp to fetch prices for
-   * @param {number} [params.intervalMs=900000] - The interval in milliseconds between price points (default is 15 minutes)
-   * @returns {Promise<AoAuctionPriceData>} The auction price data
-   */
-  async getArNSAuctionPrices({
-    name,
-    type,
-    years,
-    timestamp,
-    intervalMs,
-  }: {
-    name: string;
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    timestamp?: number;
-    intervalMs?: number;
-  }): Promise<AoAuctionPriceData> {
-    const prunedPriceTags: { name: string; value: string }[] = [
-      { name: 'Action', value: 'Auction-Prices' },
-      { name: 'Name', value: name },
-      {
-        name: 'Timestamp',
-        value:
-          timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
-      },
-      { name: 'Purchase-Type', value: type ?? 'lease' },
-      {
-        name: 'Years',
-        value:
-          type == undefined || type === 'lease'
-            ? years?.toString() ?? '1'
-            : undefined,
-      },
-      {
-        name: 'Price-Interval-Ms',
-        value: intervalMs?.toString() ?? '900000',
-      },
-    ].filter(
-      (tag): tag is { name: string; value: string } => tag.value !== undefined,
-    );
-
-    return this.process.read<AoAuctionPriceData>({
-      tags: prunedPriceTags,
     });
   }
 
@@ -638,15 +579,9 @@ export class IOReadable implements AoIORead {
   }
 
   async getAllowedDelegates(
-    params: PaginationParams & { address: WalletAddress },
+    params: AoPaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>> {
-    return this.process.read<PaginationResult<WalletAddress>>({
-      tags: [
-        { name: 'Action', value: 'Paginated-Allowed-Delegates' },
-        { name: 'Address', value: params.address },
-        ...paginationParamsToTags(params),
-      ],
-    });
+    return this.getGatewayDelegateAllowList(params);
   }
 
   async getGatewayVaults(
@@ -741,7 +676,7 @@ export class IOReadable implements AoIORead {
   }
 }
 
-export class IOWriteable extends IOReadable implements AoIOWrite {
+export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
   constructor({
@@ -756,7 +691,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     if (Object.keys(config).length === 0) {
       super({
         process: new AOProcess({
-          processId: IO_TESTNET_PROCESS_ID,
+          processId: ARIO_TESTNET_PROCESS_ID,
         }),
       });
       this.signer = createAoSigner(signer);
@@ -781,7 +716,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
       qty,
     }: {
       target: string;
-      qty: number | mIOToken;
+      qty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -949,7 +884,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async delegateStake(
     params: {
       target: string;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -968,7 +903,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
   async decreaseDelegateStake(
     params: {
       target: string;
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
       instant?: boolean;
     },
     options?: WriteOptions,
@@ -1019,7 +954,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
 
   async increaseOperatorStake(
     params: {
-      increaseQty: number | mIOToken;
+      increaseQty: number | mARIOToken;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1036,7 +971,8 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
 
   async decreaseOperatorStake(
     params: {
-      decreaseQty: number | mIOToken;
+      decreaseQty: number | mARIOToken;
+      instant?: boolean;
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1047,6 +983,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
         ...tags,
         { name: 'Action', value: 'Decrease-Operator-Stake' },
         { name: 'Quantity', value: params.decreaseQty.valueOf().toString() },
+        { name: 'Instant', value: `${params.instant || false}` },
       ],
     });
   }
@@ -1201,33 +1138,6 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     });
   }
 
-  async submitAuctionBid(
-    params: {
-      name: string;
-      processId: string;
-      quantity?: number;
-      type?: 'lease' | 'permabuy';
-      years?: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult> {
-    const { tags = [] } = options || {};
-    const allTags = [
-      ...tags,
-      { name: 'Action', value: 'Auction-Bid' },
-      { name: 'Name', value: params.name },
-      { name: 'Process-Id', value: params.processId },
-      { name: 'Quantity', value: params.quantity?.toString() ?? undefined },
-      { name: 'Purchase-Type', value: params.type || 'lease' },
-      { name: 'Years', value: params.years?.toString() ?? undefined },
-    ];
-
-    return this.process.send({
-      signer: this.signer,
-      tags: pruneTags(allTags),
-    });
-  }
-
   async requestPrimaryName(params: { name: string }): Promise<AoMessageResult> {
     return this.process.send({
       signer: this.signer,
@@ -1253,7 +1163,7 @@ export class IOWriteable extends IOReadable implements AoIOWrite {
     params: {
       target: string;
       source: string;
-      stakeQty: number | mIOToken;
+      stakeQty: number | mARIOToken;
       vaultId?: string;
     },
     options?: WriteOptions,
