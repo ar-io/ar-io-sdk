@@ -127,7 +127,7 @@
     "@dha-team/arbundles": "^1.0.1",
     "@permaweb/aoconnect": "^0.0.57",
     "arweave": "1.14.4",
-    "axios": "1.7.8",
+    "axios": "1.7.9",
     "axios-retry": "^4.3.0",
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
