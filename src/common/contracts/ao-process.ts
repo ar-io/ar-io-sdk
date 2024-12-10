@@ -130,6 +130,11 @@ export class AOProcess implements AOContract {
         });
 
         // TODO: do a read as a dry run to check if the process supports the action
+        const randomLetter = String.fromCharCode(
+          65 + Math.floor(Math.random() * 26),
+        );
+        // anchor is a random string produce non-deterministic messages IDs
+        const anchor = Date.now().toString().padEnd(32, randomLetter);
 
         const messageId = await this.ao.message({
           process: this.processId,
@@ -137,11 +142,13 @@ export class AOProcess implements AOContract {
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
           data,
           signer,
+          anchor,
         });
 
         this.logger.debug(`Sent message to process`, {
           messageId,
           processId: this.processId,
+          anchor,
         });
 
         // check the result of the send interaction
