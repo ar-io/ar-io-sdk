@@ -1,14 +1,14 @@
-const { IO, Logger, IO_TESTNET_PROCESS_ID } = require('@ar.io/sdk');
+const { ARIO, Logger, ARIO_TESTNET_PROCESS_ID } = require('@ar.io/sdk');
 
 (async () => {
   // set the log level for the SDK
   Logger.default.setLogLevel('info');
 
-  const arIO = IO.init();
+  const arIO = ARIO.init();
   // testnet gateways
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: IO_TESTNET_PROCESS_ID,
+    address: ARIO_TESTNET_PROCESS_ID,
   });
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
   const partialRecords = await arIO.getArNSRecords({

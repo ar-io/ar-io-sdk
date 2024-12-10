@@ -67,13 +67,13 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
       throw new Error(
         `The minimum operator stake is ${formatARIOWithCommas(
           new mARIOToken(settings.operators.minStake).toARIO(),
-        )} IO. Please provide a higher stake.`,
+        )} ARIO. Please provide a higher stake.`,
       );
     }
     await assertEnoughBalance(ario, signerAddress, mARIOQuantity.toARIO());
 
     await assertConfirmationPrompt(
-      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatARIOWithCommas(mARIOQuantity.toARIO())} IO to join the AR.IO network\nAre you sure?\n`,
+      `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatARIOWithCommas(mARIOQuantity.toARIO())} ARIO to join the AR.IO network\nAre you sure?\n`,
       options,
     );
   }
@@ -176,7 +176,7 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
   await assertConfirmationPrompt(
     `You are about to increase your operator stake by ${formatARIOWithCommas(
       increaseQty.toARIO(),
-    )} IO\nAre you sure?`,
+    )} ARIO\nAre you sure?`,
     o,
   );
 
@@ -196,7 +196,7 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
   await assertConfirmationPrompt(
     `You are about to decrease your operator stake by ${formatARIOWithCommas(
       decreaseQty.toARIO(),
-    )} IO\nAre you sure?`,
+    )} ARIO\nAre you sure?`,
     o,
   );
 

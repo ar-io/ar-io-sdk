@@ -1,10 +1,10 @@
 import {
+  ARIO,
   ARIO_DEVNET_PROCESS_ID,
   AoArNSNameDataWithName,
   AoGatewayWithAddress,
   AoReturnedName,
   AoWeightedObserver,
-  IO,
   PaginationResult,
 } from '@ar.io/sdk/web';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ import {
 
 import './App.css';
 
-const ario = IO.init({ processId: ARIO_DEVNET_PROCESS_ID });
+const ario = ARIO.init({ processId: ARIO_DEVNET_PROCESS_ID });
 
 type ReturnedNameWithPrices = AoReturnedName & {
   currentPrice: number;
@@ -173,10 +173,10 @@ function App() {
                     Status
                   </th>
                   <th style={{ padding: '10px', textAlign: 'center' }}>
-                    Operator Stake (IO)
+                    Operator Stake (ARIO)
                   </th>
                   <th style={{ padding: '10px', textAlign: 'center' }}>
-                    Total Delegated Stake (IO)
+                    Total Delegated Stake (ARIO)
                   </th>
                 </tr>
               </thead>

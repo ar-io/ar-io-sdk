@@ -38,7 +38,7 @@
           .getBalance({
             address: arioDevnetProcessId,
           })
-          .then((mIO) => new mARIOToken(mIO).toARIO());
+          .then((mARIO) => new mARIOToken(mARIO).toARIO());
         const record = await ario.getArNSRecord({ name: 'ardrive' });
         const records = await ario.getArNSRecords();
         const observations = await ario.getObservations();

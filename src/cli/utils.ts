@@ -423,21 +423,21 @@ export function requiredMIOFromOptions<O extends GlobalCLIOptions>(
   key: string,
 ): mARIOToken {
   if (options[key] === undefined) {
-    throw new Error(`No ${key} provided. Use --${key} denominated in IO`);
+    throw new Error(`No ${key} provided. Use --${key} denominated in ARIO`);
   }
   return new ARIOToken(+options[key]).toMARIO();
 }
 
 export async function assertEnoughBalance(
-  io: AoARIORead,
+  ario: AoARIORead,
   address: string,
-  ioQuantity: ARIOToken,
+  arioQuantity: ARIOToken,
 ) {
-  const balance = await io.getBalance({ address });
+  const balance = await ario.getBalance({ address });
 
-  if (balance < ioQuantity.toMARIO().valueOf()) {
+  if (balance < arioQuantity.toMARIO().valueOf()) {
     throw new Error(
-      `Insufficient IO balance for action. Balance available: ${new mARIOToken(balance).toARIO()} IO`,
+      `Insufficient ARIO balance for action. Balance available: ${new mARIOToken(balance).toARIO()} ARIO`,
     );
   }
 }
