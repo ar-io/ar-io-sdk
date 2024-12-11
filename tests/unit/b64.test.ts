@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fromB64Url, toB64Url } from '../../src/utils/base64.js';
+import { fromB64Url, getRandomText, toB64Url } from '../../src/utils/base64.js';
 
 describe('b64utils', () => {
   it('should convert various strings to base64url and back', () => {
@@ -64,5 +64,21 @@ describe('b64utils', () => {
         `Failed for edge case: ${testCase}`,
       );
     }
+  });
+
+  it('should generate random text', () => {
+    const randomText = getRandomText();
+    assert.strictEqual(randomText.length, 32);
+    const randomText2 = getRandomText();
+    assert.strictEqual(randomText2.length, 32);
+
+    assert.notStrictEqual(randomText, randomText2);
+
+    const smallRandomText = getRandomText(16);
+    assert.strictEqual(smallRandomText.length, 16);
+    const smallRandomText2 = getRandomText();
+    assert.strictEqual(smallRandomText2.length, 16);
+
+    assert.notStrictEqual(smallRandomText, smallRandomText2);
   });
 });

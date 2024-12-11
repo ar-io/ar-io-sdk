@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createHash, getRandomValues } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 // safely encodes and decodes base64url strings to and from buffers
 const BASE64_CHAR_62 = '+';
@@ -54,10 +54,11 @@ export function sha256B64Url(input: Buffer): string {
   return toB64Url(createHash('sha256').update(Uint8Array.from(input)).digest());
 }
 
-export function getRandomText(length = 32) {
-  const array = new Uint8Array(length);
-  getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0'))
+export function getRandomText(length = 32): string {
+  // Generate a buffer of random bytes
+  const buffer = randomBytes(length);
+  // Convert bytes to hexadecimal string
+  return Array.from(buffer, (byte) => byte.toString(16).padStart(2, '0'))
     .join('')
     .slice(0, length);
 }
