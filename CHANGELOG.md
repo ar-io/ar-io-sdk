@@ -1,3 +1,10 @@
+## [3.0.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.0.0...v3.0.1-alpha.1) (2024-12-11)
+
+
+### Bug Fixes
+
+* **eth signer:** use a unique anchor in ans-104 headers ([8cd5587](https://github.com/ar-io/ar-io-sdk/commit/8cd5587630141b8eb048505ffa424e9a37add80f))
+
 # [3.0.0](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0...v3.0.0) (2024-12-10)
 
 
