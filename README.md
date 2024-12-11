@@ -1203,7 +1203,7 @@ const price = await ario
 
 #### `getCostDetails({ intent, fromAddress, fundFrom, ...args})`
 
-Calculates the expanded cost details for the interaction in question, e.g a 'Buy-record' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
+Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Record' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
 
 ```typescript
 const costDetails = await ario.getCostDetails({
