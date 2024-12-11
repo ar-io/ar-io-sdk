@@ -44,11 +44,11 @@ export class AOProcess implements AOContract {
   async read<K>({
     tags,
     retries = 3,
-    Owner,
+    fromAddress,
   }: {
     tags?: Array<{ name: string; value: string }>;
     retries?: number;
-    Owner?: string;
+    fromAddress?: string;
   }): Promise<K> {
     let attempts = 0;
     let lastError: Error | undefined;
@@ -62,8 +62,8 @@ export class AOProcess implements AOContract {
           process: this.processId,
           tags,
         };
-        if (Owner !== undefined) {
-          dryRunInput['Owner'] = Owner;
+        if (fromAddress !== undefined) {
+          dryRunInput['Owner'] = fromAddress;
         }
         const result = await this.ao.dryrun(dryRunInput);
         this.logger.debug(`Read interaction result`, {

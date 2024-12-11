@@ -510,7 +510,7 @@ export class ARIOReadable implements AoARIORead {
 
     return this.process.read<number>({
       tags: pruneTags(allTags),
-      Owner: fromAddress,
+      fromAddress,
     });
   }
 
@@ -567,7 +567,7 @@ export class ARIOReadable implements AoARIORead {
 
     return this.process.read<CostDetailsResult>({
       tags: pruneTags(allTags),
-      Owner: fromAddress,
+      fromAddress,
     });
   }
 
