@@ -43,14 +43,17 @@ import {
   createAoSigner,
   fromB64Url,
   initANTStateForAddress,
+  isValidIntent,
   mARIOToken,
   sha256B64Url,
+  validIntents,
 } from '../node/index.js';
 import { globalOptions } from './options.js';
 import {
   ANTStateCLIOptions,
   AddressCLIOptions,
   EpochCLIOptions,
+  GetTokenCostCLIOptions,
   GlobalCLIOptions,
   InitiatorCLIOptions,
   JsonSerializable,
@@ -495,6 +498,10 @@ export function writeANTFromOptions(
   });
 }
 
+export function stringFromOptions(options: GlobalCLIOptions, key: string) {
+  return options[key] ?? undefined;
+}
+
 export function requiredStringFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
@@ -559,4 +566,29 @@ export function getANTStateFromOptions(
     keywords: options.keywords,
     ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 3600,
   });
+}
+
+export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
+  o.intent ??= 'Buy-Record';
+  o.type ??= 'lease';
+  o.years ??= '1';
+
+  if (!isValidIntent(o.intent)) {
+    throw new Error(
+      `Invalid intent. Valid intents are: ${validIntents.join(', ')}`,
+    );
+  }
+
+  if (o.type !== 'lease' && o.type !== 'permabuy') {
+    throw new Error(`Invalid type. Valid types are: lease, permabuy`);
+  }
+
+  return {
+    type: o.type,
+    quantity: o.quantity !== undefined ? +o.quantity : undefined,
+    years: +o.years,
+    intent: o.intent,
+    name: requiredStringFromOptions(o, 'name'),
+    fromAddress: addressFromOptions(o),
+  };
 }
