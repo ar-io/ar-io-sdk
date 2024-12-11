@@ -336,11 +336,11 @@ export const validIntents = [
   'Increase-Undername-Limit',
   'Upgrade-Name',
   'Primary-Name-Request',
-];
-export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'];
+] as const;
+export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'] as const;
 export type Intent = (typeof validIntents)[number];
 export const isValidIntent = (intent: string): intent is Intent => {
-  return validIntents.indexOf(intent) !== -1;
+  return validIntents.indexOf(intent as Intent) !== -1;
 };
 
 export type AoTokenCostParams = {
@@ -352,10 +352,10 @@ export type AoTokenCostParams = {
   fromAddress?: WalletAddress;
 };
 
-export const fundFromOptions = ['balance', 'stakes', 'any'];
+export const fundFromOptions = ['balance', 'stakes', 'any'] as const;
 export type FundFrom = (typeof fundFromOptions)[number];
 export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
-  return fundFromOptions.indexOf(fundFrom) !== -1;
+  return fundFromOptions.indexOf(fundFrom as FundFrom) !== -1;
 };
 
 export type AoGetCostDetailsParams = AoTokenCostParams & {
