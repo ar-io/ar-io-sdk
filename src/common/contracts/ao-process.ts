@@ -16,6 +16,7 @@
 import { connect } from '@permaweb/aoconnect';
 
 import { AOContract, AoClient, AoSigner } from '../../types/index.js';
+import { getRandomText } from '../../utils/base64.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -130,6 +131,8 @@ export class AOProcess implements AOContract {
         });
 
         // TODO: do a read as a dry run to check if the process supports the action
+        // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
+        const anchor = getRandomText(32);
 
         const messageId = await this.ao.message({
           process: this.processId,
@@ -137,11 +140,13 @@ export class AOProcess implements AOContract {
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
           data,
           signer,
+          anchor,
         });
 
         this.logger.debug(`Sent message to process`, {
           messageId,
           processId: this.processId,
+          anchor,
         });
 
         // check the result of the send interaction
