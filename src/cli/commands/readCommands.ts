@@ -177,7 +177,7 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
   );
 
   const output = {
-    mIOTokenCost: tokenCost,
+    mARIOTokenCost: tokenCost,
     message: `The cost of the provided action is ${formatARIOWithCommas(
       new mARIOToken(tokenCost).toARIO(),
     )} ARIO`,

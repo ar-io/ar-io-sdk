@@ -358,7 +358,7 @@ makeCommand<AddressCLIOptions>({
       .getBalance({ address: requiredAddressFromOptions(options) })
       .then((result) => ({
         address: requiredAddressFromOptions(options),
-        mIOBalance: result,
+        mARIOBalance: result,
         message: `Provided address current has a balance of ${formatARIOWithCommas(
           new mARIOToken(result).toARIO(),
         )} ARIO`,
