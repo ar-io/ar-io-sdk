@@ -68,15 +68,15 @@ describe('b64utils', () => {
 
   it('should generate random text', () => {
     const randomText = getRandomText();
-    assert.strictEqual(randomText.length, 32);
     const randomText2 = getRandomText();
+    assert.strictEqual(randomText.length, 32);
     assert.strictEqual(randomText2.length, 32);
 
     assert.notStrictEqual(randomText, randomText2);
 
     const smallRandomText = getRandomText(16);
+    const smallRandomText2 = getRandomText(16);
     assert.strictEqual(smallRandomText.length, 16);
-    const smallRandomText2 = getRandomText();
     assert.strictEqual(smallRandomText2.length, 16);
 
     assert.notStrictEqual(smallRandomText, smallRandomText2);
