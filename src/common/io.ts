@@ -54,10 +54,13 @@ import {
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
+  AoGetCostDetailsParams,
   AoPaginatedAddressParams,
   AoRegistrationFees,
+  AoTokenCostParams,
   AoVaultData,
   AoWalletVault,
+  CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
   isProcessConfiguration,
@@ -466,18 +469,8 @@ export class ARIOReadable implements AoARIORead {
     years,
     name,
     quantity,
-  }: {
-    intent:
-      | 'Buy-Record'
-      | 'Extend-Lease'
-      | 'Increase-Undername-Limit'
-      | 'Upgrade-Name'
-      | 'Primary-Name-Request';
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    name: string;
-    quantity?: number;
-  }): Promise<number> {
+    fromAddress,
+  }: AoTokenCostParams): Promise<number> {
     const allTags = [
       { name: 'Action', value: 'Token-Cost' },
       {
@@ -517,6 +510,64 @@ export class ARIOReadable implements AoARIORead {
 
     return this.process.read<number>({
       tags: pruneTags(allTags),
+      Owner: fromAddress,
+    });
+  }
+
+  // TODO: Can overload this function to refine different types of cost details params
+  async getCostDetails({
+    intent,
+    type,
+    years,
+    name,
+    quantity,
+    fromAddress,
+    fundFrom,
+  }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
+    const allTags = [
+      { name: 'Action', value: 'Get-Cost-Details-For-Action' },
+      {
+        name: 'Intent',
+        value: intent,
+      },
+      {
+        name: 'Name',
+        value: name,
+      },
+      {
+        name: 'Years',
+        value: years?.toString(),
+      },
+      {
+        name: 'Quantity',
+        value: quantity?.toString(),
+      },
+      {
+        name: 'Purchase-Type',
+        value: type,
+      },
+      {
+        name: 'Fund-From',
+        value: fundFrom,
+      },
+      {
+        name: 'Timestamp',
+        value: (
+          await this.arweave.blocks
+            .getCurrent()
+            .then((block) => {
+              return { timestamp: block.timestamp * 1000 };
+            })
+            .catch(() => {
+              return { timestamp: Date.now() }; // fallback to current time
+            })
+        ).timestamp.toString(),
+      },
+    ];
+
+    return this.process.read<CostDetailsResult>({
+      tags: pruneTags(allTags),
+      Owner: fromAddress,
     });
   }
 

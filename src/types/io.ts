@@ -349,6 +349,43 @@ export type AoTokenCostParams = {
   years?: number;
   name: string;
   quantity?: number;
+  fromAddress?: WalletAddress;
+};
+
+export const fundFromOptions = ['balance', 'stakes', 'any'];
+export type FundFrom = (typeof fundFromOptions)[number];
+export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
+  return fundFromOptions.indexOf(fundFrom) !== -1;
+};
+
+export type AoGetCostDetailsParams = AoTokenCostParams & {
+  fundFrom?: FundFrom;
+};
+
+export type AoFundingPlan = {
+  address: WalletAddress;
+  balance: number;
+  stakes: Record<
+    WalletAddress,
+    {
+      vaults: string[];
+      delegatedStake: number;
+    }
+  >;
+  /** Any remaining shortfall will indicate an insufficient balance for the action */
+  shortfall: number;
+};
+
+export type CostDiscount = {
+  name: string;
+  discountTotal: number;
+  multiplier: number;
+};
+
+export type CostDetailsResult = {
+  tokenCost: number;
+  discounts: CostDiscount[];
+  fundingPlan?: AoFundingPlan;
 };
 
 export type AoGetVaultParams = {
@@ -480,7 +517,15 @@ export interface AoARIORead {
     years,
     name,
     quantity,
-  }: AoTokenCostParams): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
+  }: AoTokenCostParams): Promise<number>;
+  getCostDetails({
+    intent,
+    type,
+    years,
+    name,
+    quantity,
+    fundFrom,
+  }: AoGetCostDetailsParams): Promise<CostDetailsResult>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getDemandFactorSettings(): Promise<DemandFactorSettings>;
