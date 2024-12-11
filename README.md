@@ -1210,7 +1210,7 @@ const costDetails = await ario.getCostDetails({
   intent: 'Buy-Record',
   fromAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   fundFrom: 'stakes',
-  name: 'ar.io',
+  name: 'ar-io',
   type: 'permabuy',
 });
 ```
