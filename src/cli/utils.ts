@@ -498,10 +498,6 @@ export function writeANTFromOptions(
   });
 }
 
-export function stringFromOptions(options: GlobalCLIOptions, key: string) {
-  return options[key] ?? undefined;
-}
-
 export function requiredStringFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
