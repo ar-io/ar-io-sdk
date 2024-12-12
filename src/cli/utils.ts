@@ -30,19 +30,23 @@ import {
   AoANTWrite,
   AoARIORead,
   AoARIOWrite,
+  AoGetCostDetailsParams,
   AoRedelegateStakeParams,
   AoSigner,
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
   EpochInput,
+  FundFrom,
   Logger,
   PaginationParams,
   SpawnANTState,
   WriteOptions,
   createAoSigner,
   fromB64Url,
+  fundFromOptions,
   initANTStateForAddress,
+  isValidFundFrom,
   isValidIntent,
   mARIOToken,
   sha256B64Url,
@@ -249,6 +253,10 @@ export function formatARIOWithCommas(value: ARIOToken): string {
   return integerWithCommas + '.' + decimalPart;
 }
 
+export function formatMARIOToARIOWithCommas(value: mARIOToken): string {
+  return formatARIOWithCommas(value.toARIO());
+}
+
 /** helper to get address from --address option first, then check wallet options  */
 export function addressFromOptions<O extends AddressCLIOptions>(
   options: O,
@@ -421,7 +429,7 @@ export function recordTypeFromOptions<O extends { type?: string }>(
   return options.type;
 }
 
-export function requiredMIOFromOptions<O extends GlobalCLIOptions>(
+export function requiredMARIOFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
 ): mARIOToken {
@@ -431,16 +439,52 @@ export function requiredMIOFromOptions<O extends GlobalCLIOptions>(
   return new ARIOToken(+options[key]).toMARIO();
 }
 
-export async function assertEnoughBalance(
-  ario: AoARIORead,
-  address: string,
-  arioQuantity: ARIOToken,
-) {
+export async function assertEnoughBalanceForArNSPurchase({
+  ario,
+  address,
+  costDetailsParams,
+}: {
+  ario: AoARIORead;
+  address: string;
+  costDetailsParams: AoGetCostDetailsParams;
+}) {
+  const costDetails = await ario.getCostDetails(costDetailsParams);
+  if (costDetails.fundingPlan) {
+    if (costDetails.fundingPlan.shortfall > 0) {
+      throw new Error(
+        `Insufficient balance for action. Shortfall: ${formatMARIOToARIOWithCommas(
+          new mARIOToken(costDetails.fundingPlan.shortfall),
+        )}\n${JSON.stringify(costDetails, null, 2)}`,
+      );
+    }
+  } else {
+    await assertEnoughMARIOBalance({
+      ario,
+      address,
+      mARIOQuantity: costDetails.tokenCost,
+    });
+  }
+}
+
+export async function assertEnoughMARIOBalance({
+  address,
+  ario,
+  mARIOQuantity,
+}: {
+  ario: AoARIORead;
+  address: string;
+  mARIOQuantity: mARIOToken | number;
+}) {
+  if (typeof mARIOQuantity === 'number') {
+    mARIOQuantity = new mARIOToken(mARIOQuantity);
+  }
   const balance = await ario.getBalance({ address });
 
-  if (balance < arioQuantity.toMARIO().valueOf()) {
+  if (balance < mARIOQuantity.valueOf()) {
     throw new Error(
-      `Insufficient ARIO balance for action. Balance available: ${new mARIOToken(balance).toARIO()} ARIO`,
+      `Insufficient ARIO balance for action. Balance available: ${formatMARIOToARIOWithCommas(
+        new mARIOToken(balance),
+      )} ARIO`,
     );
   }
 }
@@ -587,4 +631,19 @@ export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
     name: requiredStringFromOptions(o, 'name'),
     fromAddress: addressFromOptions(o),
   };
+}
+
+export function fundFromFromOptions<
+  O extends {
+    fundFrom?: string;
+  },
+>(o: O): FundFrom {
+  if (o.fundFrom !== undefined) {
+    if (!isValidFundFrom(o.fundFrom)) {
+      throw new Error(
+        `Invalid fund from: ${o.fundFrom}. Please use one of ${fundFromOptions.join(', ')}`,
+      );
+    }
+  }
+  return o.fundFrom ?? 'balance';
 }

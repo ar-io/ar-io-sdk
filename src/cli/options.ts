@@ -261,13 +261,15 @@ export const globalOptions = [
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
 
-export const addressOptions = [optionMap.address];
-export const nameOptions = [optionMap.name];
-export const initiatorOptions = [optionMap.initiator];
+export const arNSPurchaseOptions = [
+  ...writeActionOptions,
+  optionMap.name,
+  optionMap.fundFrom,
+];
 
 export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];
 
-export const addressAndVaultIdOptions = [...addressOptions, optionMap.vaultId];
+export const addressAndVaultIdOptions = [optionMap.address, optionMap.vaultId];
 
 export const nameWriteOptions = [...writeActionOptions, optionMap.name];
 
@@ -337,8 +339,7 @@ export const joinNetworkOptions = [
 ];
 
 export const buyRecordOptions = [
-  ...writeActionOptions,
-  optionMap.name,
+  ...arNSPurchaseOptions,
   optionMap.quantity,
   optionMap.type,
   optionMap.years,
