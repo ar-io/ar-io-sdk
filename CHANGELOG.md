@@ -1,3 +1,11 @@
+# [3.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.0.1-alpha.1...v3.1.0-alpha.1) (2024-12-12)
+
+
+### Features
+
+* **cost-details:** init cli command get-cost-details PE-7114 ([674626e](https://github.com/ar-io/ar-io-sdk/commit/674626eaef7863b1601452e15b84c82f1f2a621c))
+* **cost-details:** init new cost method for exposing fundingPlan and discounts PE-7114 ([c6910c8](https://github.com/ar-io/ar-io-sdk/commit/c6910c85b9cb801c86b2f5f754e567f0fe0c35d3))
+
 ## [3.0.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.0.0...v3.0.1-alpha.1) (2024-12-11)
 
 
