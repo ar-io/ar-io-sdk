@@ -393,17 +393,21 @@ export type AoGetVaultParams = {
   vaultId: string;
 };
 
-export type AoBuyRecordParams = AoArNSNameParams & {
+export type AoArNSPurchaseParams = AoArNSNameParams & {
+  fundFrom?: FundFrom;
+};
+
+export type AoBuyRecordParams = AoArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
   processId: string;
 };
 
-export type AoExtendLeaseParams = AoArNSNameParams & {
+export type AoExtendLeaseParams = AoArNSPurchaseParams & {
   years: number;
 };
 
-export type AoIncreaseUndernameLimitParams = AoArNSNameParams & {
+export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
 };
 
@@ -624,7 +628,7 @@ export interface AoARIOWrite extends AoARIORead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   upgradeRecord(
-    params: AoArNSNameParams,
+    params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   extendLease(
@@ -642,7 +646,10 @@ export interface AoARIOWrite extends AoARIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
+  requestPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   redelegateStake(
     params: AoRedelegateStakeParams,
     options?: WriteOptions,

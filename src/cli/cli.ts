@@ -22,6 +22,13 @@ import { spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
+  buyRecordCLICommand,
+  extendLeaseCLICommand,
+  increaseUndernameLimitCLICommand,
+  requestPrimaryNameCLICommand,
+  upgradeRecordCLICommand,
+} from './commands/arnsPurchaseCommands.js';
+import {
   cancelWithdrawal,
   decreaseDelegateStake,
   decreaseOperatorStake,
@@ -58,18 +65,15 @@ import {
 import { transfer } from './commands/transfer.js';
 import {
   addressAndVaultIdOptions,
-  addressOptions,
   antStateOptions,
+  arnsPurchaseOptions,
   buyRecordOptions,
   decreaseDelegateStakeOptions,
   delegateStakeOptions,
   epochOptions,
   getVaultOptions,
   globalOptions,
-  initiatorOptions,
   joinNetworkOptions,
-  nameOptions,
-  nameWriteOptions,
   operatorStakeOptions,
   optionMap,
   paginationAddressOptions,
@@ -84,17 +88,12 @@ import {
   ANTStateCLIOptions,
   AddressAndNameCLIOptions,
   AddressCLIOptions,
-  BuyRecordCLIOptions,
   DecreaseDelegateStakeCLIOptions,
-  ExtendLeaseCLIOptions,
-  IncreaseUndernameLimitCLIOptions,
   InitiatorCLIOptions,
-  NameWriteCLIOptions,
   PaginationAddressCLIOptions,
   PaginationCLIOptions,
   ProcessIdCLIOptions,
   ProcessIdWriteActionCLIOptions,
-  UpgradeRecordCLIOptions,
 } from './types.js';
 import {
   applyOptions,
@@ -106,17 +105,13 @@ import {
   getLoggerFromOptions,
   makeCommand,
   paginationParamsFromOptions,
-  positiveIntegerFromOptions,
   readANTFromOptions,
   readARIOFromOptions,
-  recordTypeFromOptions,
   requiredAddressFromOptions,
   requiredAoSignerFromOptions,
-  requiredPositiveIntegerFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
-  writeARIOFromOptions,
   writeActionTagsFromOptions,
 } from './utils.js';
 
@@ -156,7 +151,7 @@ makeCommand({
 makeCommand({
   name: 'get-gateway',
   description: 'Get the gateway of an address',
-  options: addressOptions,
+  options: [optionMap.address],
   action: getGateway,
 });
 
@@ -177,7 +172,7 @@ makeCommand({
 makeCommand({
   name: 'get-delegations',
   description: 'Get all stake delegated to gateways from this address',
-  options: addressOptions,
+  options: [optionMap.address],
   action: getDelegations,
 });
 
@@ -191,7 +186,7 @@ makeCommand({
 makeCommand({
   name: 'get-arns-record',
   description: 'Get an ArNS record by name',
-  options: nameOptions,
+  options: [optionMap.name],
   action: getArNSRecord,
 });
 
@@ -205,7 +200,7 @@ makeCommand({
 makeCommand({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
-  options: nameOptions,
+  options: [optionMap.name],
   action: getArNSReservedName,
 });
 
@@ -219,7 +214,7 @@ makeCommand({
 makeCommand({
   name: 'get-arns-returned-name',
   description: 'Get an ArNS returned name by name',
-  options: nameOptions,
+  options: [optionMap.name],
   action: getArNSReturnedName,
 });
 
@@ -304,7 +299,7 @@ makeCommand<PaginationCLIOptions>({
 makeCommand<InitiatorCLIOptions>({
   name: 'get-primary-name-request',
   description: 'Get primary name request',
-  options: initiatorOptions,
+  options: [optionMap.initiator],
   action: (o) =>
     readARIOFromOptions(o)
       .getPrimaryNameRequest({
@@ -333,7 +328,7 @@ makeCommand<PaginationCLIOptions>({
 makeCommand<AddressAndNameCLIOptions>({
   name: 'get-primary-name',
   description: 'Get primary name',
-  options: [...addressOptions, optionMap.name],
+  options: [optionMap.address, optionMap.name],
   action: getPrimaryName,
 });
 
@@ -352,7 +347,7 @@ makeCommand<PaginationCLIOptions>({
 makeCommand<AddressCLIOptions>({
   name: 'balance',
   description: 'Get the balance of an address',
-  options: addressOptions,
+  options: [optionMap.address],
   action: (options) =>
     readARIOFromOptions(options)
       .getBalance({ address: requiredAddressFromOptions(options) })
@@ -380,7 +375,7 @@ makeCommand({
 makeCommand<AddressCLIOptions>({
   name: 'get-redelegation-fee',
   description: 'Get redelegation fee',
-  options: addressOptions,
+  options: [optionMap.address],
   action: (options) =>
     readARIOFromOptions(options).getRedelegationFee({
       address: requiredAddressFromOptions(options),
@@ -489,124 +484,39 @@ makeCommand({
   action: redelegateStake,
 });
 
-makeCommand<BuyRecordCLIOptions>({
+makeCommand({
   name: 'buy-record',
   description: 'Buy a record',
   options: buyRecordOptions,
-  action: async (options) => {
-    const ario = writeARIOFromOptions(options).ario;
-    const name = requiredStringFromOptions(options, 'name');
-    const type = recordTypeFromOptions(options);
-    const years = positiveIntegerFromOptions(options, 'years');
-
-    // TODO: Assert balance is sufficient for action
-    // TODO: Assert record is not already owned
-
-    const processId = options.processId;
-    if (processId === undefined) {
-      // TODO: Spawn ANT process, register it to ANT registry, get process ID
-      throw new Error('Process ID must be provided for buy-record');
-    }
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to ${type} the record ${name}?`,
-      options,
-    );
-
-    return ario.buyRecord({
-      name: requiredStringFromOptions(options, 'name'),
-      processId,
-      type,
-      years,
-    });
-  },
+  action: buyRecordCLICommand,
 });
 
-makeCommand<UpgradeRecordCLIOptions>({
+makeCommand({
   name: 'upgrade-record',
   description: 'Upgrade the lease of a record to a permabuy',
-  options: [...nameOptions, ...writeActionOptions],
-  // TODO: could assert record is leased by sender, assert balance is sufficient
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
-    await assertConfirmationPrompt(
-      `Are you sure you want to upgrade the lease of ${name} to a permabuy?`,
-      options,
-    );
-    return writeARIOFromOptions(options).ario.upgradeRecord({
-      name,
-    });
-  },
+  options: arnsPurchaseOptions,
+  action: upgradeRecordCLICommand,
 });
 
-makeCommand<ExtendLeaseCLIOptions>({
+makeCommand({
   name: 'extend-lease',
   description: 'Extend the lease of a record',
-  options: [...writeActionOptions, optionMap.name, optionMap.years],
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
-    const years = requiredPositiveIntegerFromOptions(options, 'years');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to extend the lease of ${name} by ${years}?`,
-      options,
-    );
-
-    return writeARIOFromOptions(options).ario.extendLease(
-      {
-        name,
-        years,
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+  options: [...arnsPurchaseOptions, optionMap.years],
+  action: extendLeaseCLICommand,
 });
 
-makeCommand<IncreaseUndernameLimitCLIOptions>({
+makeCommand({
   name: 'increase-undername-limit',
   description: 'Increase the limit of a name',
-  options: [...writeActionOptions, optionMap.name, optionMap.increaseCount],
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
-    const increaseCount = requiredPositiveIntegerFromOptions(
-      options,
-      'increaseCount',
-    );
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to increase the undername limit of ${name} by ${increaseCount}?`,
-      options,
-    );
-
-    return writeARIOFromOptions(options).ario.increaseUndernameLimit(
-      {
-        name,
-        increaseCount,
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+  options: [...arnsPurchaseOptions, optionMap.increaseCount],
+  action: increaseUndernameLimitCLICommand,
 });
 
-makeCommand<NameWriteCLIOptions>({
+makeCommand({
   name: 'request-primary-name',
   description: 'Request a primary name',
-  options: nameWriteOptions,
-  action: async (options) => {
-    // TODO: Assert balance is sufficient for action?
-    // TODO: Assert name requested is not already owned
-    // TODO: More assertions?
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to request the primary name ${name}?`,
-      options,
-    );
-
-    return writeARIOFromOptions(options).ario.requestPrimaryName({
-      name,
-    });
-  },
+  options: arnsPurchaseOptions,
+  action: requestPrimaryNameCLICommand,
 });
 
 makeCommand<ANTStateCLIOptions>({

@@ -46,15 +46,19 @@ import {
   AoARIORead,
   AoARIOWrite,
   AoArNSNameData,
+  AoArNSPurchaseParams,
   AoArNSReservedNameDataWithName,
+  AoBuyRecordParams,
   AoDelegation,
   AoEpochData,
   AoEpochSettings,
+  AoExtendLeaseParams,
   AoGateway,
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
   AoGetCostDetailsParams,
+  AoIncreaseUndernameLimitParams,
   AoPaginatedAddressParams,
   AoRegistrationFees,
   AoTokenCostParams,
@@ -1065,12 +1069,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   }
 
   async buyRecord(
-    params: {
-      name: string;
-      years?: number;
-      type: 'lease' | 'permabuy';
-      processId: string;
-    },
+    params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
@@ -1081,6 +1080,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Years', value: params.years?.toString() ?? '1' },
       { name: 'Process-Id', value: params.processId },
       { name: 'Purchase-Type', value: params.type || 'lease' },
+      { name: 'Fund-From', value: params.fundFrom },
     ];
 
     return this.process.send({
@@ -1098,19 +1098,19 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
    * @returns {Promise<AoMessageResult>} The result of the upgrade
    */
   async upgradeRecord(
-    params: {
-      name: string;
-    },
+    params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+      { name: 'Name', value: params.name },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
-        { name: 'Name', value: params.name },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1124,40 +1124,38 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
    * @returns {Promise<AoMessageResult>} The result of the extension
    */
   async extendLease(
-    params: {
-      name: string;
-      years: number;
-    },
+    params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Extend-Lease' },
+      { name: 'Name', value: params.name },
+      { name: 'Years', value: params.years.toString() },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Extend-Lease' },
-        { name: 'Name', value: params.name },
-        { name: 'Years', value: params.years.toString() },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
   async increaseUndernameLimit(
-    params: {
-      name: string;
-      increaseCount: number;
-    },
+    params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Increase-Undername-Limit' },
+      { name: 'Name', value: params.name },
+      { name: 'Quantity', value: params.increaseCount.toString() },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Increase-Undername-Limit' },
-        { name: 'Name', value: params.name },
-        { name: 'Quantity', value: params.increaseCount.toString() },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1189,13 +1187,19 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  async requestPrimaryName(params: { name: string }): Promise<AoMessageResult> {
+  async requestPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Request-Primary-Name' },
+      { name: 'Name', value: params.name },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        { name: 'Action', value: 'Request-Primary-Name' },
-        { name: 'Name', value: params.name },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 

@@ -28,12 +28,12 @@ import {
 } from '../types.js';
 import {
   assertConfirmationPrompt,
-  assertEnoughBalance,
+  assertEnoughMARIOBalance,
   formatARIOWithCommas,
   gatewaySettingsFromOptions,
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
-  requiredMIOFromOptions as requiredMARIOFromOptions,
+  requiredMARIOFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
@@ -70,7 +70,11 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
         )} ARIO. Please provide a higher stake.`,
       );
     }
-    await assertEnoughBalance(ario, signerAddress, mARIOQuantity.toARIO());
+    await assertEnoughMARIOBalance({
+      ario,
+      address: signerAddress,
+      mARIOQuantity,
+    });
 
     await assertConfirmationPrompt(
       `Gateway Settings:\n\n${JSON.stringify(settings, null, 2)}\n\nYou are about to stake ${formatARIOWithCommas(mARIOQuantity.toARIO())} ARIO to join the AR.IO network\nAre you sure?\n`,

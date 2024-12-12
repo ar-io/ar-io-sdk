@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  AoGetCostDetailsParams,
-  fundFromOptions,
-  isValidFundFrom,
-} from '../../types/io.js';
+import { AoGetCostDetailsParams } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndNameCLIOptions,
@@ -35,6 +31,7 @@ import {
   addressFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
+  fundFromFromOptions,
   getTokenCostParamsFromOptions,
   paginationParamsFromOptions,
   readARIOFromOptions,
@@ -188,16 +185,9 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
 export async function getCostDetails(
   o: GlobalCLIOptions & CLIOptionsFromAoParams<AoGetCostDetailsParams>,
 ) {
-  if (o.fundFrom !== undefined) {
-    if (!isValidFundFrom(o.fundFrom)) {
-      throw new Error(
-        `Invalid fund from: ${o.fundFrom}. Please use one of ${fundFromOptions.join(', ')}`,
-      );
-    }
-  }
   const costDetails = await readARIOFromOptions(o).getCostDetails({
     ...getTokenCostParamsFromOptions(o),
-    fundFrom: o.fundFrom,
+    fundFrom: fundFromFromOptions(o),
   });
 
   const output = {
