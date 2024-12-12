@@ -1,3 +1,10 @@
+# [3.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.1...v3.1.0-alpha.2) (2024-12-12)
+
+
+### Features
+
+* **fund-from:** add Fund-From tag to eligible methods/commands PE-7291 ([4d47270](https://github.com/ar-io/ar-io-sdk/commit/4d4727082f408c523be5c2f01d21907c93e2e098))
+
 # [3.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.0.1-alpha.1...v3.1.0-alpha.1) (2024-12-12)
 
 
