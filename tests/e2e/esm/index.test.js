@@ -442,7 +442,6 @@ describe('e2e esm tests', async () => {
       });
       assert.ok(tokenCost);
     });
-
     it('should be able to get token cost for buying a name name', async () => {
       const tokenCost = await ario.getTokenCost({
         intent: 'Buy-Record',
@@ -450,6 +449,37 @@ describe('e2e esm tests', async () => {
         type: 'permabuy',
       });
       assert.ok(tokenCost);
+      assert.ok(typeof tokenCost === 'number');
+    });
+
+    it('should be able to get cost details for buying a name', async () => {
+      const costDetails = await ario.getCostDetails({
+        intent: 'Buy-Record',
+        name: 'new-name',
+        type: 'permabuy',
+        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fundFrom: undefined,
+      });
+      assert.ok(costDetails);
+      assert.equal(typeof costDetails.tokenCost, 'number');
+      assert.equal(typeof costDetails.discounts, 'object');
+      assert.equal(typeof costDetails.fundingPlan, 'undefined'); // no funding plan with absence of fundFrom
+    });
+
+    it('should be able to get cost details for leasing a name', async () => {
+      const costDetails = await ario.getCostDetails({
+        intent: 'Buy-Record',
+        name: 'new-name',
+        years: 1,
+        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fundFrom: 'stakes',
+      });
+      assert.ok(costDetails);
+      assert.equal(typeof costDetails.tokenCost, 'number');
+      assert.equal(typeof costDetails.discounts, 'object');
+      assert.equal(typeof costDetails.fundingPlan.balance, 'number');
+      assert.equal(typeof costDetails.fundingPlan.shortfall, 'number');
+      assert.equal(typeof costDetails.fundingPlan.stakes, 'object');
     });
 
     it('should be able to get registration fees', async () => {

@@ -39,6 +39,7 @@ import {
   getArNSRecord,
   getArNSReservedName,
   getArNSReturnedName,
+  getCostDetails,
   getDelegations,
   getEpoch,
   getGateway,
@@ -274,9 +275,16 @@ makeCommand({
 
 makeCommand({
   name: 'get-token-cost',
-  description: 'Get token cost',
+  description: 'Get token cost for an intended action',
   options: tokenCostOptions,
   action: getTokenCost,
+});
+
+makeCommand({
+  name: 'get-cost-details',
+  description: 'Get expanded cost details for an intended action',
+  options: tokenCostOptions,
+  action: getCostDetails,
 });
 
 makeCommand<PaginationCLIOptions>({
@@ -350,7 +358,7 @@ makeCommand<AddressCLIOptions>({
       .getBalance({ address: requiredAddressFromOptions(options) })
       .then((result) => ({
         address: requiredAddressFromOptions(options),
-        mIOBalance: result,
+        mARIOBalance: result,
         message: `Provided address current has a balance of ${formatARIOWithCommas(
           new mARIOToken(result).toARIO(),
         )} ARIO`,

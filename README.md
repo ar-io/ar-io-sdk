@@ -58,6 +58,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
     - [`extendLease({ name, years })`](#extendlease-name-years-)
     - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
+    - [`getCostDetails({ intent, fromAddress, fundFrom, ...args})`](#getcostdetails-intent-fromaddress-fundfrom-args)
     - [`getDemandFactor()`](#getdemandfactor)
     - [`getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`](#getarnsreturnednames-cursor-limit-sortby-sortorder-)
     - [`getArNSReturnedName({ name })`](#getarnsreturnedname-name-)
@@ -1196,6 +1197,43 @@ const price = await ario
 
 ```json
 1642.34
+```
+
+</details>
+
+#### `getCostDetails({ intent, fromAddress, fundFrom, ...args})`
+
+Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Record' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
+
+```typescript
+const costDetails = await ario.getCostDetails({
+  intent: 'Buy-Record',
+  fromAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  fundFrom: 'stakes',
+  name: 'ar-io',
+  type: 'permabuy',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "tokenCost": 2384252273,
+  "fundingPlan": {
+    "address": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+    "balance": 0,
+    "stakes": {
+      "Rc80LG6h27Y3p9TN6J5hwDeG5M51cu671YwZpU9uAVE": {
+        "vaults": [],
+        "delegatedStake": 2384252273
+      }
+    },
+    "shortfall": 0
+  },
+  "discounts": []
+}
 ```
 
 </details>

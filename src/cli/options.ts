@@ -238,6 +238,11 @@ export const optionMap = {
     description: 'Include failed gateways in the list',
     type: 'array',
   },
+  fundFrom: {
+    alias: '--fund-from <fundFrom>',
+    description:
+      'Where to fund the action from. e.g. "balance", "stakes", or "any',
+  },
 };
 
 export const walletOptions = [
@@ -286,6 +291,8 @@ export const tokenCostOptions = [
   optionMap.type,
   optionMap.years,
   optionMap.quantity,
+  optionMap.address,
+  optionMap.fundFrom,
 ];
 
 export const transferOptions = [
