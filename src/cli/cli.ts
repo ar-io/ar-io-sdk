@@ -328,7 +328,7 @@ makeCommand<PaginationCLIOptions>({
 makeCommand<AddressAndNameCLIOptions>({
   name: 'get-primary-name',
   description: 'Get primary name',
-  options: [...[optionMap.address], optionMap.name],
+  options: [optionMap.address, optionMap.name],
   action: getPrimaryName,
 });
 
