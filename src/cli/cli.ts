@@ -27,7 +27,7 @@ import {
   increaseUndernameLimitCLICommand,
   requestPrimaryNameCLICommand,
   upgradeRecordCLICommand,
-} from './commands/arNSWriteCommands.js';
+} from './commands/arnsPurchaseCommands.js';
 import {
   cancelWithdrawal,
   decreaseDelegateStake,
@@ -66,7 +66,7 @@ import { transfer } from './commands/transfer.js';
 import {
   addressAndVaultIdOptions,
   antStateOptions,
-  arNSPurchaseOptions,
+  arnsPurchaseOptions,
   buyRecordOptions,
   decreaseDelegateStakeOptions,
   delegateStakeOptions,
@@ -494,28 +494,28 @@ makeCommand({
 makeCommand({
   name: 'upgrade-record',
   description: 'Upgrade the lease of a record to a permabuy',
-  options: arNSPurchaseOptions,
+  options: arnsPurchaseOptions,
   action: upgradeRecordCLICommand,
 });
 
 makeCommand({
   name: 'extend-lease',
   description: 'Extend the lease of a record',
-  options: [...arNSPurchaseOptions, optionMap.years],
+  options: [...arnsPurchaseOptions, optionMap.years],
   action: extendLeaseCLICommand,
 });
 
 makeCommand({
   name: 'increase-undername-limit',
   description: 'Increase the limit of a name',
-  options: [...arNSPurchaseOptions, optionMap.increaseCount],
+  options: [...arnsPurchaseOptions, optionMap.increaseCount],
   action: increaseUndernameLimitCLICommand,
 });
 
 makeCommand({
   name: 'request-primary-name',
   description: 'Request a primary name',
-  options: arNSPurchaseOptions,
+  options: arnsPurchaseOptions,
   action: requestPrimaryNameCLICommand,
 });
 

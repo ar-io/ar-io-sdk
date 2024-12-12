@@ -261,7 +261,7 @@ export const globalOptions = [
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
 
-export const arNSPurchaseOptions = [
+export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
@@ -339,7 +339,7 @@ export const joinNetworkOptions = [
 ];
 
 export const buyRecordOptions = [
-  ...arNSPurchaseOptions,
+  ...arnsPurchaseOptions,
   optionMap.quantity,
   optionMap.type,
   optionMap.years,
