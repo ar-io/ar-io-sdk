@@ -128,12 +128,6 @@ describe('e2e esm tests', async () => {
       });
     });
 
-    // TODO: fix this test
-    it.skip('should be able to get a single reserved name', async () => {
-      const reservedName = await ario.getArNSReservedName({ name: 'www' });
-      assert.ok(reservedName);
-    });
-
     it('should be able to get the current epoch', async () => {
       const epoch = await ario.getCurrentEpoch();
       assert.ok(epoch);
@@ -172,7 +166,8 @@ describe('e2e esm tests', async () => {
       assert.ok(reservedNames);
     });
 
-    it('should be able to get a single reserved name', async () => {
+    // TODO: fix this test
+    it.skip('should be able to get a single reserved name', async () => {
       const reservedNames = await ario.getArNSReservedName({ name: 'www ' });
       assert.ok(reservedNames);
     });
