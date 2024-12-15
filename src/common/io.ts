@@ -92,7 +92,7 @@ export class ARIO {
     processId,
     signer,
   }: WithSigner<{
-    processId: string;
+    processId?: string;
   }>): AoARIOWrite;
   static init({
     processId,
@@ -668,7 +668,7 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getPrimaryNameRequests(
-    params: PaginationParams<AoPrimaryNameRequest>,
+    params?: PaginationParams<AoPrimaryNameRequest>,
   ): Promise<PaginationResult<AoPrimaryNameRequest>> {
     return this.process.read<PaginationResult<AoPrimaryNameRequest>>({
       tags: [
