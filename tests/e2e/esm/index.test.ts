@@ -720,6 +720,7 @@ describe('e2e esm tests', async () => {
         owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
         name: 'arns',
         startTimestamp: 1719356032297,
+        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
       });
     });
 
@@ -732,6 +733,7 @@ describe('e2e esm tests', async () => {
         owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
         name: 'arns',
         startTimestamp: 1719356032297,
+        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
       });
     });
 
