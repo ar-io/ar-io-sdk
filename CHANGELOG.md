@@ -1,3 +1,10 @@
+# [3.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.2...v3.1.0-alpha.3) (2024-12-16)
+
+
+### Features
+
+* **primary names:** add processID to read APIs PE-7307 ([e01e6ce](https://github.com/ar-io/ar-io-sdk/commit/e01e6cee4e39c2e17eb38a04818e28770f7cbf97))
+
 # [3.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.1...v3.1.0-alpha.2) (2024-12-12)
 
 
