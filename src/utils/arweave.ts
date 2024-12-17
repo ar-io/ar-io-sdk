@@ -27,6 +27,11 @@ export function isBlockHeight(height: string | number): height is BlockHeight {
   return height !== undefined && !isNaN(parseInt(height.toString()));
 }
 
+/**
+ * Prune tags that are undefined or empty.
+ * @param tags - The tags to prune.
+ * @returns The pruned tags.
+ */
 export const pruneTags = (
   tags: { name: string; value: string | undefined }[],
 ): { name: string; value: string }[] => {
@@ -34,7 +39,8 @@ export const pruneTags = (
     (tag: {
       name: string;
       value: string | undefined;
-    }): tag is { name: string; value: string } => tag.value !== undefined,
+    }): tag is { name: string; value: string } =>
+      tag.value !== undefined && tag.value !== '',
   );
 };
 
