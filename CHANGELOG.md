@@ -1,3 +1,10 @@
+# [3.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.4...v3.1.0-alpha.5) (2024-12-17)
+
+
+### Bug Fixes
+
+* **tags:** prune out empty tags ([de0ec83](https://github.com/ar-io/ar-io-sdk/commit/de0ec83803ad536121cb8e1a2c269e50dec9341f))
+
 # [3.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.3...v3.1.0-alpha.4) (2024-12-17)
 
 
