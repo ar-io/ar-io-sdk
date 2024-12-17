@@ -1,3 +1,10 @@
+# [3.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.3...v3.1.0-alpha.4) (2024-12-17)
+
+
+### Bug Fixes
+
+* dont return null when stringified null is found in message data on ao.read ([c5873e6](https://github.com/ar-io/ar-io-sdk/commit/c5873e6b686efa547b006e248337fcca0793446d))
+
 # [3.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.2...v3.1.0-alpha.3) (2024-12-16)
 
 
