@@ -207,7 +207,7 @@ export class ARIOReadable implements AoARIORead {
   }: {
     name: string;
   }): Promise<AoArNSNameData | undefined> {
-    return this.process.read<AoArNSNameData>({
+    return this.process.read<AoArNSNameData | undefined>({
       tags: [
         { name: 'Action', value: 'Record' },
         { name: 'Name', value: name },
@@ -242,7 +242,7 @@ export class ARIOReadable implements AoARIORead {
   }: {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined> {
-    return this.process.read<AoArNSReservedNameData>({
+    return this.process.read<AoArNSReservedNameData | undefined>({
       tags: [
         { name: 'Action', value: 'Reserved-Name' },
         { name: 'Name', value: name },
@@ -276,8 +276,8 @@ export class ARIOReadable implements AoARIORead {
   }: {
     address: WalletAddress;
     vaultId: string;
-  }): Promise<AoVaultData> {
-    return this.process.read<AoVaultData>({
+  }): Promise<AoVaultData | undefined> {
+    return this.process.read<AoVaultData | undefined>({
       tags: [
         { name: 'Action', value: 'Vault' },
         { name: 'Address', value: address },

@@ -41,6 +41,15 @@ export class AOProcess implements AOContract {
     this.ao = ao;
   }
 
+  private isMessageDataEmpty(messageData: string | null | undefined): boolean {
+    return (
+      messageData === undefined ||
+      messageData === 'null' || // This is what the CU returns for 'nil' values that are json.encoded
+      messageData === '' ||
+      messageData === null
+    );
+  }
+
   async read<K>({
     tags,
     retries = 3,
@@ -90,9 +99,9 @@ export class AOProcess implements AOContract {
           throw new Error(`${error}${messageData ? `: ${messageData}` : ''}`);
         }
 
-        // return empty object if no data is returned
-        if (messageData === undefined) {
-          return {} as K;
+        // return undefined if no data is returned
+        if (this.isMessageDataEmpty(messageData)) {
+          return undefined as K;
         }
 
         const response: K = safeDecode<K>(result.Messages[0].Data);
@@ -187,7 +196,7 @@ export class AOProcess implements AOContract {
           );
         }
 
-        if (output.Messages[0].Data === undefined) {
+        if (this.isMessageDataEmpty(output.Messages[0].Data)) {
           return { id: messageId };
         }
 
