@@ -1,3 +1,10 @@
+# [3.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.5...v3.1.0-alpha.6) (2024-12-17)
+
+
+### Bug Fixes
+
+* **io:** fix `AoEpochData` type, add prescribedNames ([1ba3588](https://github.com/ar-io/ar-io-sdk/commit/1ba358814d7019475ce049e0d5d8af1f76c429fc))
+
 # [3.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.4...v3.1.0-alpha.5) (2024-12-17)
 
 
