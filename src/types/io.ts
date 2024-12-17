@@ -82,6 +82,7 @@ export type AoEpochObservationData = {
   failureSummaries: Record<WalletAddress, WalletAddress[]>;
   reports: Record<WalletAddress, TransactionId>;
 };
+export type AoEpochPrescribedObservers = Record<WalletAddress, WalletAddress[]>;
 
 export type AoVaultData = {
   balance: number;
@@ -151,7 +152,8 @@ export type AoEpochData = {
   epochIndex: AoEpochIndex;
   startHeight: BlockHeight;
   observations: AoEpochObservationData;
-  prescribedObservers: AoWeightedObserver[];
+  prescribedObservers: AoEpochPrescribedObservers;
+  prescribedNames: string[];
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
