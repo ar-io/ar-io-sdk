@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Arweave from 'arweave';
-
 import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
@@ -72,12 +70,7 @@ import {
 } from '../types/io.js';
 import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
-import {
-  getCurrentBlockUnixTimestampMs,
-  paginationParamsToTags,
-  pruneTags,
-} from '../utils/arweave.js';
-import { defaultArweave } from './arweave.js';
+import { paginationParamsToTags, pruneTags } from '../utils/arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
@@ -118,9 +111,8 @@ export class ARIO {
 
 export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
-  private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = defaultArweave) {
+  constructor(config?: ProcessConfiguration) {
     if (!config) {
       this.process = new AOProcess({
         processId: ARIO_TESTNET_PROCESS_ID,
@@ -134,7 +126,6 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.arweave = arweave;
   }
 
   async getInfo(): Promise<{
@@ -170,7 +161,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (params as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -189,7 +180,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -349,15 +340,7 @@ export class ARIOReadable implements AoARIORead {
 
   async getCurrentEpoch(): Promise<AoEpochData> {
     return this.process.read<AoEpochData>({
-      tags: [
-        { name: 'Action', value: 'Epoch' },
-        {
-          name: 'Timestamp',
-          value: (
-            await getCurrentBlockUnixTimestampMs(this.arweave)
-          ).toString(),
-        },
-      ],
+      tags: [{ name: 'Action', value: 'Epoch' }],
     });
   }
 
@@ -370,7 +353,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -390,7 +373,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -410,7 +393,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -430,7 +413,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -497,19 +480,6 @@ export class ARIOReadable implements AoARIORead {
         name: 'Purchase-Type',
         value: type,
       },
-      {
-        name: 'Timestamp',
-        value: (
-          await this.arweave.blocks
-            .getCurrent()
-            .then((block) => {
-              return { timestamp: block.timestamp * 1000 };
-            })
-            .catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
-        ).timestamp.toString(),
-      },
     ];
 
     return this.process.read<number>({
@@ -553,19 +523,6 @@ export class ARIOReadable implements AoARIORead {
       {
         name: 'Fund-From',
         value: fundFrom,
-      },
-      {
-        name: 'Timestamp',
-        value: (
-          await this.arweave.blocks
-            .getCurrent()
-            .then((block) => {
-              return { timestamp: block.timestamp * 1000 };
-            })
-            .catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
-        ).timestamp.toString(),
       },
     ];
 

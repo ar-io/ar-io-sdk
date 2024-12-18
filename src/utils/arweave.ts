@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Arweave from 'arweave';
-
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { BlockHeight, Timestamp } from '../types/common.js';
+import { BlockHeight } from '../types/common.js';
 import { PaginationParams } from '../types/io.js';
 
 export const validateArweaveId = (id: string): boolean => {
@@ -42,19 +40,6 @@ export const pruneTags = (
     }): tag is { name: string; value: string } =>
       tag.value !== undefined && tag.value !== '',
   );
-};
-
-export const getCurrentBlockUnixTimestampMs = async (
-  arweave: Arweave,
-): Promise<Timestamp> => {
-  return await arweave.blocks
-    .getCurrent()
-    .then((block) => {
-      return block.timestamp * 1000;
-    })
-    .catch(() => {
-      return Date.now(); // fallback to current time
-    });
 };
 
 export const paginationParamsToTags = <T>(
