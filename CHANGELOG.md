@@ -1,3 +1,10 @@
+# [3.1.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.8...v3.1.0-alpha.9) (2024-12-18)
+
+
+### Bug Fixes
+
+* dont get old arweave block timestamps on read actions ([1792ee8](https://github.com/ar-io/ar-io-sdk/commit/1792ee81c2edd33514271415aa84b4453ff1a804))
+
 # [3.1.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.7...v3.1.0-alpha.8) (2024-12-18)
 
 
