@@ -1,3 +1,10 @@
+# [3.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.6...v3.1.0-alpha.7) (2024-12-18)
+
+
+### Bug Fixes
+
+* **types:** revert prescribedObserver type ([ca60f6f](https://github.com/ar-io/ar-io-sdk/commit/ca60f6f493f34976753a33a8917e68ac1951a3f9))
+
 # [3.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.5...v3.1.0-alpha.6) (2024-12-17)
 
 
