@@ -1,11 +1,7 @@
-import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import {
-  getCurrentBlockUnixTimestampMs,
-  pruneTags,
-} from '../../src/utils/arweave.js';
+import { pruneTags } from '../../src/utils/arweave.js';
 
 describe('pruneTags', () => {
   it('should remove tags with undefined values', () => {
@@ -50,17 +46,5 @@ describe('pruneTags', () => {
     const tags: { name: string; value: string | undefined }[] = [];
     const prunedTags = pruneTags(tags);
     assert.deepEqual(prunedTags, []);
-  });
-});
-
-describe('getCurrentBlockUnixTimestamp', () => {
-  it('should return the current block timestamp', async () => {
-    const arweave = Arweave.init({});
-    // cheap way to check the returned timestamp is within the boundaries of the async call
-    const minTimestamp = Date.now();
-    const timestamp = await getCurrentBlockUnixTimestampMs(arweave);
-    const maxTimestamp = Date.now();
-    assert.ok(timestamp >= minTimestamp);
-    assert.ok(timestamp <= maxTimestamp);
   });
 });

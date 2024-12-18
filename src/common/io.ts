@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Arweave from 'arweave';
-
 import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
@@ -46,18 +44,25 @@ import {
   AoARIORead,
   AoARIOWrite,
   AoArNSNameData,
+  AoArNSPurchaseParams,
   AoArNSReservedNameDataWithName,
+  AoBuyRecordParams,
   AoDelegation,
   AoEpochData,
   AoEpochSettings,
+  AoExtendLeaseParams,
   AoGateway,
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
+  AoGetCostDetailsParams,
+  AoIncreaseUndernameLimitParams,
   AoPaginatedAddressParams,
   AoRegistrationFees,
+  AoTokenCostParams,
   AoVaultData,
   AoWalletVault,
+  CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
   isProcessConfiguration,
@@ -65,12 +70,7 @@ import {
 } from '../types/io.js';
 import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
-import {
-  getCurrentBlockUnixTimestampMs,
-  paginationParamsToTags,
-  pruneTags,
-} from '../utils/arweave.js';
-import { defaultArweave } from './arweave.js';
+import { paginationParamsToTags, pruneTags } from '../utils/arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
@@ -85,7 +85,7 @@ export class ARIO {
     processId,
     signer,
   }: WithSigner<{
-    processId: string;
+    processId?: string;
   }>): AoARIOWrite;
   static init({
     processId,
@@ -111,9 +111,8 @@ export class ARIO {
 
 export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
-  private arweave: Arweave;
 
-  constructor(config?: ProcessConfiguration, arweave = defaultArweave) {
+  constructor(config?: ProcessConfiguration) {
     if (!config) {
       this.process = new AOProcess({
         processId: ARIO_TESTNET_PROCESS_ID,
@@ -127,7 +126,6 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.arweave = arweave;
   }
 
   async getInfo(): Promise<{
@@ -163,7 +161,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (params as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -182,7 +180,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -200,7 +198,7 @@ export class ARIOReadable implements AoARIORead {
   }: {
     name: string;
   }): Promise<AoArNSNameData | undefined> {
-    return this.process.read<AoArNSNameData>({
+    return this.process.read<AoArNSNameData | undefined>({
       tags: [
         { name: 'Action', value: 'Record' },
         { name: 'Name', value: name },
@@ -235,7 +233,7 @@ export class ARIOReadable implements AoARIORead {
   }: {
     name: string;
   }): Promise<AoArNSReservedNameData | undefined> {
-    return this.process.read<AoArNSReservedNameData>({
+    return this.process.read<AoArNSReservedNameData | undefined>({
       tags: [
         { name: 'Action', value: 'Reserved-Name' },
         { name: 'Name', value: name },
@@ -269,8 +267,8 @@ export class ARIOReadable implements AoARIORead {
   }: {
     address: WalletAddress;
     vaultId: string;
-  }): Promise<AoVaultData> {
-    return this.process.read<AoVaultData>({
+  }): Promise<AoVaultData | undefined> {
+    return this.process.read<AoVaultData | undefined>({
       tags: [
         { name: 'Action', value: 'Vault' },
         { name: 'Address', value: address },
@@ -342,15 +340,7 @@ export class ARIOReadable implements AoARIORead {
 
   async getCurrentEpoch(): Promise<AoEpochData> {
     return this.process.read<AoEpochData>({
-      tags: [
-        { name: 'Action', value: 'Epoch' },
-        {
-          name: 'Timestamp',
-          value: (
-            await getCurrentBlockUnixTimestampMs(this.arweave)
-          ).toString(),
-        },
-      ],
+      tags: [{ name: 'Action', value: 'Epoch' }],
     });
   }
 
@@ -363,7 +353,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -383,7 +373,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -403,7 +393,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -423,7 +413,7 @@ export class ARIOReadable implements AoARIORead {
         name: 'Timestamp',
         value:
           (epoch as { timestamp?: number })?.timestamp?.toString() ??
-          (await getCurrentBlockUnixTimestampMs(this.arweave)).toString(),
+          Date.now().toString(),
       },
       {
         name: 'Epoch-Index',
@@ -466,18 +456,8 @@ export class ARIOReadable implements AoARIORead {
     years,
     name,
     quantity,
-  }: {
-    intent:
-      | 'Buy-Record'
-      | 'Extend-Lease'
-      | 'Increase-Undername-Limit'
-      | 'Upgrade-Name'
-      | 'Primary-Name-Request';
-    type?: 'permabuy' | 'lease';
-    years?: number;
-    name: string;
-    quantity?: number;
-  }): Promise<number> {
+    fromAddress,
+  }: AoTokenCostParams): Promise<number> {
     const allTags = [
       { name: 'Action', value: 'Token-Cost' },
       {
@@ -500,23 +480,55 @@ export class ARIOReadable implements AoARIORead {
         name: 'Purchase-Type',
         value: type,
       },
-      {
-        name: 'Timestamp',
-        value: (
-          await this.arweave.blocks
-            .getCurrent()
-            .then((block) => {
-              return { timestamp: block.timestamp * 1000 };
-            })
-            .catch(() => {
-              return { timestamp: Date.now() }; // fallback to current time
-            })
-        ).timestamp.toString(),
-      },
     ];
 
     return this.process.read<number>({
       tags: pruneTags(allTags),
+      fromAddress,
+    });
+  }
+
+  // TODO: Can overload this function to refine different types of cost details params
+  async getCostDetails({
+    intent,
+    type,
+    years,
+    name,
+    quantity,
+    fromAddress,
+    fundFrom,
+  }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
+    const allTags = [
+      { name: 'Action', value: 'Get-Cost-Details-For-Action' },
+      {
+        name: 'Intent',
+        value: intent,
+      },
+      {
+        name: 'Name',
+        value: name,
+      },
+      {
+        name: 'Years',
+        value: years?.toString(),
+      },
+      {
+        name: 'Quantity',
+        value: quantity?.toString(),
+      },
+      {
+        name: 'Purchase-Type',
+        value: type,
+      },
+      {
+        name: 'Fund-From',
+        value: fundFrom,
+      },
+    ];
+
+    return this.process.read<CostDetailsResult>({
+      tags: pruneTags(allTags),
+      fromAddress,
     });
   }
 
@@ -613,7 +625,7 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getPrimaryNameRequests(
-    params: PaginationParams<AoPrimaryNameRequest>,
+    params?: PaginationParams<AoPrimaryNameRequest>,
   ): Promise<PaginationResult<AoPrimaryNameRequest>> {
     return this.process.read<PaginationResult<AoPrimaryNameRequest>>({
       tags: [
@@ -1014,12 +1026,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   }
 
   async buyRecord(
-    params: {
-      name: string;
-      years?: number;
-      type: 'lease' | 'permabuy';
-      processId: string;
-    },
+    params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
@@ -1030,6 +1037,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Years', value: params.years?.toString() ?? '1' },
       { name: 'Process-Id', value: params.processId },
       { name: 'Purchase-Type', value: params.type || 'lease' },
+      { name: 'Fund-From', value: params.fundFrom },
     ];
 
     return this.process.send({
@@ -1047,19 +1055,19 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
    * @returns {Promise<AoMessageResult>} The result of the upgrade
    */
   async upgradeRecord(
-    params: {
-      name: string;
-    },
+    params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+      { name: 'Name', value: params.name },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
-        { name: 'Name', value: params.name },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1073,40 +1081,38 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
    * @returns {Promise<AoMessageResult>} The result of the extension
    */
   async extendLease(
-    params: {
-      name: string;
-      years: number;
-    },
+    params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Extend-Lease' },
+      { name: 'Name', value: params.name },
+      { name: 'Years', value: params.years.toString() },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Extend-Lease' },
-        { name: 'Name', value: params.name },
-        { name: 'Years', value: params.years.toString() },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
   async increaseUndernameLimit(
-    params: {
-      name: string;
-      increaseCount: number;
-    },
+    params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Increase-Undername-Limit' },
+      { name: 'Name', value: params.name },
+      { name: 'Quantity', value: params.increaseCount.toString() },
+      { name: 'Fund-From', value: params.fundFrom },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        ...tags,
-        { name: 'Action', value: 'Increase-Undername-Limit' },
-        { name: 'Name', value: params.name },
-        { name: 'Quantity', value: params.increaseCount.toString() },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 
@@ -1138,13 +1144,19 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  async requestPrimaryName(params: { name: string }): Promise<AoMessageResult> {
+  async requestPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    const allTags = [
+      ...tags,
+      { name: 'Action', value: 'Request-Primary-Name' },
+      { name: 'Name', value: params.name },
+    ];
     return this.process.send({
       signer: this.signer,
-      tags: [
-        { name: 'Action', value: 'Request-Primary-Name' },
-        { name: 'Name', value: params.name },
-      ],
+      tags: pruneTags(allTags),
     });
   }
 

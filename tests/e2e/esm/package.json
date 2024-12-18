@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "postinstall": "yarn link @ar.io/sdk",
-    "test": "node --enable-source-maps index.test.js && echo '\nNode ESM Integration ✅'"
+    "test": "cross-env NODE_OPTIONS=\"--import=../../../register.mjs\" node --trace-warnings --test index.test.ts && echo '\nNode ESM Integration ✅'"
   },
   "dependencies": {
     "@ar.io/sdk": "*",
-    "@permaweb/aoconnect": "^0.0.59"
+    "@permaweb/aoconnect": "^0.0.59",
+    "cross-env": "^7.0.3",
+    "ts-node": "^10.9.2"
   },
   "license": "AGPL-3.0-or-later"
 }

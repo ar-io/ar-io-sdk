@@ -16,10 +16,7 @@
 import {
   AoAddressParams,
   AoArNSNameParams,
-  AoBuyRecordParams,
-  AoExtendLeaseParams,
   AoGetVaultParams,
-  AoIncreaseUndernameLimitParams,
   AoJoinNetworkParams,
   AoTokenCostParams,
   PaginationParams,
@@ -76,6 +73,12 @@ export type CLIOptionsFromAoParams<T> = {
           : // Otherwise, retain the property's original type.
             T[K];
 };
+
+export type CLIReadOptionsFromAoParams<T> = CLIOptionsFromAoParams<T> &
+  GlobalCLIOptions;
+
+export type CLIWriteOptionsFromAoParams<T> = WriteActionCLIOptions &
+  CLIOptionsFromAoParams<T>;
 
 export type PaginationCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<PaginationParams>;
@@ -147,17 +150,6 @@ export type OperatorStakeCLIOptions = WriteActionCLIOptions & {
 export type DecreaseDelegateStakeCLIOptions = DelegateStakeCLIOptions & {
   instant: boolean;
 };
-
-export type BuyRecordCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoBuyRecordParams>;
-
-export type UpgradeRecordCLIOptions = NameWriteCLIOptions;
-
-export type ExtendLeaseCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoExtendLeaseParams>;
-
-export type IncreaseUndernameLimitCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoIncreaseUndernameLimitParams>;
 
 export type ANTStateCLIOptions = WriteActionCLIOptions & {
   target?: string;
