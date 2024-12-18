@@ -402,7 +402,8 @@ describe('e2e esm tests', async () => {
       assert.ok(prescribedNames);
     });
 
-    it('should return the prescribed observers for a given epoch', async () => {
+    // TODO: come back to this once the observer contract is updated
+    it.skip('should return the prescribed observers for a given epoch', async () => {
       const observers = await ario.getPrescribedObservers();
       assert.ok(observers);
       for (const observer of observers) {
