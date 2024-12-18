@@ -79,6 +79,11 @@ export class AOProcess implements AOContract {
           result,
         });
 
+        const error = errorMessageFromOutput(result);
+        if (error !== undefined) {
+          throw new Error(error);
+        }
+
         if (result.Messages === undefined || result.Messages.length === 0) {
           this.logger.debug(
             `Process ${this.processId} does not support provided action.`,
@@ -89,15 +94,7 @@ export class AOProcess implements AOContract {
             `Process ${this.processId} does not support provided action.`,
           );
         }
-
-        const tagsOutput = result.Messages?.[0]?.Tags;
         const messageData = result.Messages?.[0]?.Data;
-        const errorData = result.Error;
-        const error =
-          errorData || tagsOutput?.find((tag) => tag.name === 'Error')?.value;
-        if (error) {
-          throw new Error(`${error}${messageData ? `: ${messageData}` : ''}`);
-        }
 
         // return undefined if no data is returned
         if (this.isMessageDataEmpty(messageData)) {
@@ -109,7 +106,7 @@ export class AOProcess implements AOContract {
       } catch (e) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
-          error: e,
+          error: e instanceof Error ? e.message : e,
           tags,
         });
         lastError = e;
@@ -176,12 +173,8 @@ export class AOProcess implements AOContract {
           processId: this.processId,
         });
 
-        const errorData = output.Error;
-        const error =
-          errorData ||
-          output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')
-            ?.value;
-        if (error) {
+        const error = errorMessageFromOutput(output);
+        if (error !== undefined) {
           throw new WriteInteractionError(error);
         }
 
@@ -234,4 +227,29 @@ export class AOProcess implements AOContract {
     }
     throw lastError;
   }
+}
+
+function errorMessageFromOutput(output: {
+  Error?: string;
+  Messages?: { Tags?: { name: string; value: string }[] }[];
+}): string | undefined {
+  const errorData = output.Error;
+  if (errorData !== undefined) {
+    // TODO: Could clean this one up too, current error is verbose, but not always deterministic for parsing
+    // Throw the whole raw error if AO process level error
+    return errorData;
+  }
+
+  const error = output.Messages?.[0]?.Tags?.find(
+    (tag) => tag.name === 'Error',
+  )?.value;
+  if (error !== undefined) {
+    // from [string "aos"]:6846: Name is already registered
+    const lineNumber = error.match(/\d+/)?.[0];
+    const message = error.replace(/\[string "aos"\]:\d+:/, '');
+    // to more user friendly: Name is already registered (line 6846)
+    return `${message} (line ${lineNumber})`.trim();
+  }
+
+  return undefined;
 }
