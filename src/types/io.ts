@@ -152,14 +152,14 @@ export type AoEpochData = {
   epochIndex: AoEpochIndex;
   startHeight: BlockHeight;
   observations: AoEpochObservationData;
-  prescribedObservers: AoEpochPrescribedObservers;
+  prescribedObservers: AoWeightedObserver[];
   prescribedNames: string[];
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
+  // @deprecated - use `getDistributions` to get distribution data for a given epoch
   distributions: AoEpochDistributionData;
 };
-
 export type AoTokenSupplyData = {
   total: number;
   circulating: number;
