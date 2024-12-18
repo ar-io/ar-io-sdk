@@ -1,3 +1,10 @@
+# [3.1.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.7...v3.1.0-alpha.8) (2024-12-18)
+
+
+### Bug Fixes
+
+* format process errors to be more user friendly PE-7327 ([3449e32](https://github.com/ar-io/ar-io-sdk/commit/3449e324572355817469ec7bb3c99c4909437a21))
+
 # [3.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.6...v3.1.0-alpha.7) (2024-12-18)
 
 
