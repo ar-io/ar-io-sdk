@@ -111,6 +111,7 @@ export class ARIO {
 
 export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
+  protected epochSettings: AoEpochSettings | undefined;
 
   constructor(config?: ProcessConfiguration) {
     if (!config) {
@@ -179,7 +180,6 @@ export class ARIOReadable implements AoARIORead {
     return undefined;
   }
 
-  private epochSettings: AoEpochSettings | undefined;
   async getEpochSettings(): Promise<AoEpochSettings> {
     if (this.epochSettings) {
       return this.epochSettings;
