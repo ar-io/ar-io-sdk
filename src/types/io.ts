@@ -146,6 +146,8 @@ export type AoEpochSettings = {
   rewardPercentage: number;
   maxObservers: number;
   distributionDelayMs: number;
+  epochZeroTimestamp: Timestamp;
+  pruneEpochsCount: number;
 };
 
 export type AoEpochData = {
@@ -459,7 +461,7 @@ export interface AoARIORead {
     LastTickedEpochIndex: number;
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
-  getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
+  getEpochSettings(): Promise<AoEpochSettings>;
   getGateway({ address }: AoAddressParams): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates({
