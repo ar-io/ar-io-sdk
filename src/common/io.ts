@@ -180,15 +180,12 @@ export class ARIOReadable implements AoARIORead {
   }
 
   private epochSettings: AoEpochSettings | undefined;
-  async getEpochSettings(params?: EpochInput): Promise<AoEpochSettings> {
+  async getEpochSettings(): Promise<AoEpochSettings> {
     if (this.epochSettings) {
       return this.epochSettings;
     }
 
-    const allTags = [
-      { name: 'Action', value: 'Epoch-Settings' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(params) },
-    ];
+    const allTags = [{ name: 'Action', value: 'Epoch-Settings' }];
 
     const epochSettings = await this.process.read<AoEpochSettings>({
       tags: pruneTags(allTags),
