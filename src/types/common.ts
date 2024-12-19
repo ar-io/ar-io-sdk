@@ -66,6 +66,7 @@ export type AoPrimaryNameRequest = {
 
 export type AoPrimaryName = {
   owner: WalletAddress;
+  processId: ProcessId;
   name: string;
   startTimestamp: Timestamp;
 };

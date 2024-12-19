@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  intentsUsingYears,
-  isValidIntent,
-  validIntents,
-} from '../../types/io.js';
+import { AoGetCostDetailsParams } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndNameCLIOptions,
   AddressAndVaultIdCLIOptions,
   AddressCLIOptions,
+  CLIOptionsFromAoParams,
   EpochCLIOptions,
   GetTokenCostCLIOptions,
+  GlobalCLIOptions,
   NameCLIOptions,
   PaginationAddressCLIOptions,
   PaginationCLIOptions,
@@ -33,6 +31,8 @@ import {
   addressFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
+  fundFromFromOptions,
+  getTokenCostParamsFromOptions,
   paginationParamsFromOptions,
   readARIOFromOptions,
   requiredAddressFromOptions,
@@ -169,40 +169,36 @@ export async function getPrescribedNames(o: EpochCLIOptions) {
 }
 
 export async function getTokenCost(o: GetTokenCostCLIOptions) {
-  o.intent ??= 'Buy-Record';
-  o.type ??= 'lease';
-
-  if (!isValidIntent(o.intent)) {
-    throw new Error(
-      `Invalid intent. Valid intents are: ${validIntents.join(', ')}`,
-    );
-  }
-
-  if (o.type !== 'lease' && o.type !== 'permabuy') {
-    throw new Error(`Invalid type. Valid types are: lease, permabuy`);
-  }
-
-  if (
-    o.type === 'lease' &&
-    intentsUsingYears.includes(o.intent) &&
-    o.years === undefined
-  ) {
-    throw new Error('Years is required for lease type');
-  }
-
-  const tokenCost = await readARIOFromOptions(o).getTokenCost({
-    type: o.type,
-    quantity: o.quantity !== undefined ? +o.quantity : undefined,
-    years: o.years !== undefined ? +o.years : undefined,
-    intent: o.intent,
-    name: requiredStringFromOptions(o, 'name'),
-  });
+  const tokenCost = await readARIOFromOptions(o).getTokenCost(
+    getTokenCostParamsFromOptions(o),
+  );
 
   const output = {
-    mIOTokenCost: tokenCost,
+    mARIOTokenCost: tokenCost,
     message: `The cost of the provided action is ${formatARIOWithCommas(
       new mARIOToken(tokenCost).toARIO(),
     )} ARIO`,
+  };
+  return output;
+}
+
+export async function getCostDetails(
+  o: GlobalCLIOptions & CLIOptionsFromAoParams<AoGetCostDetailsParams>,
+) {
+  const costDetails = await readARIOFromOptions(o).getCostDetails({
+    ...getTokenCostParamsFromOptions(o),
+    fundFrom: fundFromFromOptions(o),
+  });
+
+  const output = {
+    ...costDetails,
+    message: `The cost of the provided action is ${formatARIOWithCommas(
+      new mARIOToken(costDetails.tokenCost).toARIO(),
+    )} ARIO${
+      costDetails.fundingPlan && costDetails.fundingPlan.shortfall > 0
+        ? `. Insufficient funds for action. There is a shortfall of ${formatARIOWithCommas(new mARIOToken(costDetails.fundingPlan.shortfall).toARIO())} ARIO`
+        : ''
+    }`,
   };
   return output;
 }

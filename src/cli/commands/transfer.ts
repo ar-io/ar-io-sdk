@@ -15,7 +15,7 @@
  */
 import { TransferCLIOptions } from '../types.js';
 import {
-  assertEnoughBalance,
+  assertEnoughMARIOBalance,
   confirmationPrompt,
   formatARIOWithCommas,
   requiredTargetAndQuantityFromOptions,
@@ -29,7 +29,11 @@ export async function transfer(options: TransferCLIOptions) {
   const { ario, signerAddress } = writeARIOFromOptions(options);
 
   if (!options.skipConfirmation) {
-    await assertEnoughBalance(ario, signerAddress, arioQuantity);
+    await assertEnoughMARIOBalance({
+      ario,
+      address: signerAddress,
+      mARIOQuantity: arioQuantity.toMARIO(),
+    });
 
     const confirm = await confirmationPrompt(
       `Are you sure you want to transfer ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}?`,
