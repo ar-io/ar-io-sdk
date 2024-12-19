@@ -1,3 +1,10 @@
+# [3.1.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.9...v3.1.0-alpha.10) (2024-12-19)
+
+
+### Features
+
+* remove usage of Tags.Timestamp in favor of computing epoch indexes PE-7338 ([ee1bea0](https://github.com/ar-io/ar-io-sdk/commit/ee1bea0ea1b196f43a82558e79a30c4658f97a7e))
+
 # [3.1.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.8...v3.1.0-alpha.9) (2024-12-18)
 
 
