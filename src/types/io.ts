@@ -146,6 +146,8 @@ export type AoEpochSettings = {
   rewardPercentage: number;
   maxObservers: number;
   distributionDelayMs: number;
+  epochZeroTimestamp: Timestamp;
+  pruneEpochsCount: number;
 };
 
 export type AoEpochData = {

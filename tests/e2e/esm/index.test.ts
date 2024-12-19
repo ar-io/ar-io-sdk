@@ -136,6 +136,15 @@ describe('e2e esm tests', async () => {
     it('should be able to get epoch-settings', async () => {
       const epochSettings = await ario.getEpochSettings();
       assert.ok(epochSettings);
+
+      assert.equal(typeof epochSettings.maxObservers, 'number');
+      assert.equal(typeof epochSettings.durationMs, 'number');
+      assert.equal(typeof epochSettings.prescribedNameCount, 'number');
+      assert.equal(typeof epochSettings.distributionDelayMs, 'number');
+      assert.equal(typeof epochSettings.epochZeroTimestamp, 'number');
+      assert.equal(typeof epochSettings.rewardPercentage, 'number');
+      assert.equal(typeof epochSettings.epochZeroStartTimestamp, 'number');
+      assert.equal(typeof epochSettings.pruneEpochsCount, 'number');
     });
 
     it('should be able to get demand factor settings', async () => {
