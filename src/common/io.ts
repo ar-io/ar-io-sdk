@@ -163,33 +163,31 @@ export class ARIOReadable implements AoARIORead {
     return Math.floor((timestamp - epochZeroStartTimestamp) / epochLengthMs);
   }
 
-  private async epochInputToEpochIndexTag(
+  private async computeEpochIndex(
     params?: EpochInput,
-  ): Promise<{ name: string; value: string }> {
+  ): Promise<string | undefined> {
     const epochIndex = (params as { epochIndex?: number })?.epochIndex;
-
     if (epochIndex !== undefined) {
-      return { name: 'Epoch-Index', value: epochIndex.toString() };
+      return epochIndex.toString();
     }
+
     const timestamp = (params as { timestamp?: number })?.timestamp;
     if (timestamp !== undefined) {
-      return {
-        name: 'Epoch-Index',
-        value: (await this.computeEpochIndexForTimestamp(timestamp)).toString(),
-      };
+      return (await this.computeEpochIndexForTimestamp(timestamp)).toString();
     }
-    return { name: 'Epoch-Index', value: '' };
+
+    return undefined;
   }
+
   private epochSettings: AoEpochSettings | undefined;
   async getEpochSettings(params?: EpochInput): Promise<AoEpochSettings> {
     if (this.epochSettings) {
       return this.epochSettings;
     }
 
-    const epochInputTag = await this.epochInputToEpochIndexTag(params);
     const allTags = [
       { name: 'Action', value: 'Epoch-Settings' },
-      epochInputTag,
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(params) },
     ];
 
     const epochSettings = await this.process.read<AoEpochSettings>({
@@ -200,8 +198,10 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
-    const epochInputTag = await this.epochInputToEpochIndexTag(epoch);
-    const allTags = [{ name: 'Action', value: 'Epoch' }, epochInputTag];
+    const allTags = [
+      { name: 'Action', value: 'Epoch' },
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+    ];
 
     return this.process.read<AoEpochData>({
       tags: pruneTags(allTags),
@@ -362,10 +362,9 @@ export class ARIOReadable implements AoARIORead {
   async getPrescribedObservers(
     epoch?: EpochInput,
   ): Promise<AoWeightedObserver[]> {
-    const epochInputTag = await this.epochInputToEpochIndexTag(epoch);
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
-      epochInputTag,
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
     ];
 
     return this.process.read<AoWeightedObserver[]>({
@@ -374,10 +373,9 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getPrescribedNames(epoch?: EpochInput): Promise<string[]> {
-    const epochInputTag = await this.epochInputToEpochIndexTag(epoch);
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Names' },
-      epochInputTag,
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
     ];
 
     return this.process.read<string[]>({
@@ -386,10 +384,9 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getObservations(epoch?: EpochInput): Promise<AoEpochObservationData> {
-    const epochInputTag = await this.epochInputToEpochIndexTag(epoch);
     const allTags = [
       { name: 'Action', value: 'Epoch-Observations' },
-      epochInputTag,
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
     ];
 
     return this.process.read<AoEpochObservationData>({
@@ -398,10 +395,9 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData> {
-    const epochInputTag = await this.epochInputToEpochIndexTag(epoch);
     const allTags = [
       { name: 'Action', value: 'Epoch-Distributions' },
-      epochInputTag,
+      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
     ];
 
     return this.process.read<AoEpochDistributionData>({
