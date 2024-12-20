@@ -373,7 +373,7 @@ export type AoFundingPlan = {
   stakes: Record<
     WalletAddress,
     {
-      vaults: string[];
+      vaults: Record<string, number>[];
       delegatedStake: number;
     }
   >;
