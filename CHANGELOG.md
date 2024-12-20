@@ -1,3 +1,10 @@
+# [3.1.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.10...v3.1.0-alpha.11) (2024-12-20)
+
+
+### Bug Fixes
+
+* **types:** fix funding plan vaults type ([1cea7db](https://github.com/ar-io/ar-io-sdk/commit/1cea7dbd75a8da6a3a7352cb40edbc49aa20f8a0))
+
 # [3.1.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0-alpha.9...v3.1.0-alpha.10) (2024-12-19)
 
 
