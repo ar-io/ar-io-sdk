@@ -400,15 +400,21 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a single balance', async () => {
-      const balances = await ario.getBalance({
+      const balance = await ario.getBalance({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
       });
-      assert.ok(balances);
+      assert.ok(balance);
+      assert(typeof balance === 'number');
+      assert(balance >= 0);
     });
 
     it('should be able to get prescribed names', async () => {
       const prescribedNames = await ario.getPrescribedNames();
       assert.ok(prescribedNames);
+      assert(Array.isArray(prescribedNames));
+      for (const name of prescribedNames) {
+        assert(typeof name === 'string');
+      }
     });
 
     it('should return the prescribed observers for a given epoch', async () => {
