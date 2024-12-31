@@ -244,7 +244,17 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
     return createDataItemSigner(signer) as AoSigner;
   }
 
-  const aoSigner = async ({ data, tags, target, anchor }) => {
+  const aoSigner = async ({
+    data,
+    tags,
+    target,
+    anchor,
+  }: {
+    data: string | Uint8Array<ArrayBufferLike>;
+    tags?: { name: string; value: string }[];
+    target?: string;
+    anchor?: string;
+  }): Promise<{ id: string; raw: Buffer }> => {
     // ensure appropriate permissions are granted with injected signers.
     if (
       signer.publicKey === undefined &&

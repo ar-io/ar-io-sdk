@@ -154,8 +154,8 @@ export class mARIOToken extends PositiveFiniteInteger {
 }
 
 export type AoSigner = (args: {
-  data: string | Buffer;
+  data: string | Uint8Array<ArrayBufferLike>;
   tags?: { name: string; value: string }[];
   target?: string;
   anchor?: string;
-}) => Promise<{ id: string; raw: ArrayBuffer }>;
+}) => Promise<{ id: string; raw: Buffer }>;
