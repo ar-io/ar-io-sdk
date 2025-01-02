@@ -42,6 +42,7 @@ export type PaginationParams<T = Record<string, never>> = {
 export type PaginationResult<T> = {
   items: T[];
   nextCursor?: string;
+  limit: number;
   totalItems: number;
   sortBy?: T extends string ? string : keyof T;
   sortOrder: 'asc' | 'desc';
@@ -81,6 +82,7 @@ export type AoEpochObservationData = {
   failureSummaries: Record<WalletAddress, WalletAddress[]>;
   reports: Record<WalletAddress, TransactionId>;
 };
+export type AoEpochPrescribedObservers = Record<WalletAddress, WalletAddress[]>;
 
 export type AoVaultData = {
   balance: number;
@@ -144,6 +146,8 @@ export type AoEpochSettings = {
   rewardPercentage: number;
   maxObservers: number;
   distributionDelayMs: number;
+  epochZeroTimestamp: Timestamp;
+  pruneEpochsCount: number;
 };
 
 export type AoEpochData = {
@@ -151,12 +155,13 @@ export type AoEpochData = {
   startHeight: BlockHeight;
   observations: AoEpochObservationData;
   prescribedObservers: AoWeightedObserver[];
+  prescribedNames: string[];
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
+  // @deprecated - use `getDistributions` to get distribution data for a given epoch
   distributions: AoEpochDistributionData;
 };
-
 export type AoTokenSupplyData = {
   total: number;
   circulating: number;
@@ -336,11 +341,11 @@ export const validIntents = [
   'Increase-Undername-Limit',
   'Upgrade-Name',
   'Primary-Name-Request',
-];
-export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'];
+] as const;
+export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'] as const;
 export type Intent = (typeof validIntents)[number];
 export const isValidIntent = (intent: string): intent is Intent => {
-  return validIntents.indexOf(intent) !== -1;
+  return validIntents.indexOf(intent as Intent) !== -1;
 };
 
 export type AoTokenCostParams = {
@@ -349,6 +354,43 @@ export type AoTokenCostParams = {
   years?: number;
   name: string;
   quantity?: number;
+  fromAddress?: WalletAddress;
+};
+
+export const fundFromOptions = ['balance', 'stakes', 'any'] as const;
+export type FundFrom = (typeof fundFromOptions)[number];
+export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
+  return fundFromOptions.indexOf(fundFrom as FundFrom) !== -1;
+};
+
+export type AoGetCostDetailsParams = AoTokenCostParams & {
+  fundFrom?: FundFrom;
+};
+
+export type AoFundingPlan = {
+  address: WalletAddress;
+  balance: number;
+  stakes: Record<
+    WalletAddress,
+    {
+      vaults: Record<string, number>[];
+      delegatedStake: number;
+    }
+  >;
+  /** Any remaining shortfall will indicate an insufficient balance for the action */
+  shortfall: number;
+};
+
+export type CostDiscount = {
+  name: string;
+  discountTotal: number;
+  multiplier: number;
+};
+
+export type CostDetailsResult = {
+  tokenCost: number;
+  discounts: CostDiscount[];
+  fundingPlan?: AoFundingPlan;
 };
 
 export type AoGetVaultParams = {
@@ -356,17 +398,21 @@ export type AoGetVaultParams = {
   vaultId: string;
 };
 
-export type AoBuyRecordParams = AoArNSNameParams & {
+export type AoArNSPurchaseParams = AoArNSNameParams & {
+  fundFrom?: FundFrom;
+};
+
+export type AoBuyRecordParams = AoArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
   processId: string;
 };
 
-export type AoExtendLeaseParams = AoArNSNameParams & {
+export type AoExtendLeaseParams = AoArNSPurchaseParams & {
   years: number;
 };
 
-export type AoIncreaseUndernameLimitParams = AoArNSNameParams & {
+export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
 };
 
@@ -415,7 +461,7 @@ export interface AoARIORead {
     LastTickedEpochIndex: number;
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
-  getEpochSettings(params?: EpochInput): Promise<AoEpochSettings>;
+  getEpochSettings(): Promise<AoEpochSettings>;
   getGateway({ address }: AoAddressParams): Promise<AoGateway | undefined>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates({
@@ -480,7 +526,15 @@ export interface AoARIORead {
     years,
     name,
     quantity,
-  }: AoTokenCostParams): Promise<number>; // TODO: add getCostDetails API that provides funding cost and discount details
+  }: AoTokenCostParams): Promise<number>;
+  getCostDetails({
+    intent,
+    type,
+    years,
+    name,
+    quantity,
+    fundFrom,
+  }: AoGetCostDetailsParams): Promise<CostDetailsResult>;
   getRegistrationFees(): Promise<AoRegistrationFees>;
   getDemandFactor(): Promise<number>;
   getDemandFactorSettings(): Promise<DemandFactorSettings>;
@@ -495,7 +549,7 @@ export interface AoARIORead {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest>;
   getPrimaryNameRequests(
-    params: PaginationParams<AoPrimaryNameRequest>,
+    params?: PaginationParams<AoPrimaryNameRequest>,
   ): Promise<PaginationResult<AoPrimaryNameRequest>>;
   getPrimaryName(
     params: { address: WalletAddress } | { name: string },
@@ -579,7 +633,7 @@ export interface AoARIOWrite extends AoARIORead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   upgradeRecord(
-    params: AoArNSNameParams,
+    params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   extendLease(
@@ -597,7 +651,10 @@ export interface AoARIOWrite extends AoARIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  requestPrimaryName(params: { name: string }): Promise<AoMessageResult>;
+  requestPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
   redelegateStake(
     params: AoRedelegateStakeParams,
     options?: WriteOptions,

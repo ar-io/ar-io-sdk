@@ -238,6 +238,11 @@ export const optionMap = {
     description: 'Include failed gateways in the list',
     type: 'array',
   },
+  fundFrom: {
+    alias: '--fund-from <fundFrom>',
+    description:
+      'Where to fund the action from. e.g. "balance", "stakes", or "any',
+  },
 };
 
 export const walletOptions = [
@@ -256,13 +261,15 @@ export const globalOptions = [
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
 
-export const addressOptions = [optionMap.address];
-export const nameOptions = [optionMap.name];
-export const initiatorOptions = [optionMap.initiator];
+export const arnsPurchaseOptions = [
+  ...writeActionOptions,
+  optionMap.name,
+  optionMap.fundFrom,
+];
 
 export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];
 
-export const addressAndVaultIdOptions = [...addressOptions, optionMap.vaultId];
+export const addressAndVaultIdOptions = [optionMap.address, optionMap.vaultId];
 
 export const nameWriteOptions = [...writeActionOptions, optionMap.name];
 
@@ -286,6 +293,8 @@ export const tokenCostOptions = [
   optionMap.type,
   optionMap.years,
   optionMap.quantity,
+  optionMap.address,
+  optionMap.fundFrom,
 ];
 
 export const transferOptions = [
@@ -330,8 +339,7 @@ export const joinNetworkOptions = [
 ];
 
 export const buyRecordOptions = [
-  ...writeActionOptions,
-  optionMap.name,
+  ...arnsPurchaseOptions,
   optionMap.quantity,
   optionMap.type,
   optionMap.years,
