@@ -1,3 +1,26 @@
+# [3.1.0](https://github.com/ar-io/ar-io-sdk/compare/v3.0.0...v3.1.0) (2025-01-02)
+
+
+### Bug Fixes
+
+* dont get old arweave block timestamps on read actions ([1792ee8](https://github.com/ar-io/ar-io-sdk/commit/1792ee81c2edd33514271415aa84b4453ff1a804))
+* dont return null when stringified null is found in message data on ao.read ([c5873e6](https://github.com/ar-io/ar-io-sdk/commit/c5873e6b686efa547b006e248337fcca0793446d))
+* **eth signer:** use a unique anchor in ans-104 headers ([8cd5587](https://github.com/ar-io/ar-io-sdk/commit/8cd5587630141b8eb048505ffa424e9a37add80f))
+* format process errors to be more user friendly PE-7327 ([3449e32](https://github.com/ar-io/ar-io-sdk/commit/3449e324572355817469ec7bb3c99c4909437a21))
+* **io:** fix `AoEpochData` type, add prescribedNames ([1ba3588](https://github.com/ar-io/ar-io-sdk/commit/1ba358814d7019475ce049e0d5d8af1f76c429fc))
+* **tags:** prune out empty tags ([de0ec83](https://github.com/ar-io/ar-io-sdk/commit/de0ec83803ad536121cb8e1a2c269e50dec9341f))
+* **types:** fix funding plan vaults type ([1cea7db](https://github.com/ar-io/ar-io-sdk/commit/1cea7dbd75a8da6a3a7352cb40edbc49aa20f8a0))
+* **types:** revert prescribedObserver type ([ca60f6f](https://github.com/ar-io/ar-io-sdk/commit/ca60f6f493f34976753a33a8917e68ac1951a3f9))
+
+
+### Features
+
+* **cost-details:** init cli command get-cost-details PE-7114 ([674626e](https://github.com/ar-io/ar-io-sdk/commit/674626eaef7863b1601452e15b84c82f1f2a621c))
+* **cost-details:** init new cost method for exposing fundingPlan and discounts PE-7114 ([c6910c8](https://github.com/ar-io/ar-io-sdk/commit/c6910c85b9cb801c86b2f5f754e567f0fe0c35d3))
+* **fund-from:** add Fund-From tag to eligible methods/commands PE-7291 ([4d47270](https://github.com/ar-io/ar-io-sdk/commit/4d4727082f408c523be5c2f01d21907c93e2e098))
+* **primary names:** add processID to read APIs PE-7307 ([e01e6ce](https://github.com/ar-io/ar-io-sdk/commit/e01e6cee4e39c2e17eb38a04818e28770f7cbf97))
+* remove usage of Tags.Timestamp in favor of computing epoch indexes PE-7338 ([ee1bea0](https://github.com/ar-io/ar-io-sdk/commit/ee1bea0ea1b196f43a82558e79a30c4658f97a7e))
+
 # [3.0.0](https://github.com/ar-io/ar-io-sdk/compare/v2.6.0...v3.0.0) (2024-12-10)
 
 
