@@ -639,7 +639,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   async removePrimaryNames(
-    { names, arioProcessId }: { names: string[]; arioProcessId: string },
+    {
+      names,
+      arioProcessId,
+      notifyOwners = false,
+    }: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -649,6 +653,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Names', value: names.join(',') },
         { name: 'IO-Process-Id', value: arioProcessId },
         { name: 'ARIO-Process-Id', value: arioProcessId },
+        { name: 'Notify-Owners', value: notifyOwners.toString() },
       ],
       signer: this.signer,
     });
