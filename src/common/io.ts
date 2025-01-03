@@ -993,7 +993,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  // @deprecated - use `buyArNSName` instead
+  /* @deprecated - use `buyArNSName` instead */
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
@@ -1048,7 +1048,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  // @deprecated - use `upgradeArNSName` instead
+  /* @deprecated - use `upgradeArNSName` instead */
   async upgradeRecord(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
