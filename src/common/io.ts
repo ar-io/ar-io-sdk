@@ -467,7 +467,7 @@ export class ARIOReadable implements AoARIORead {
     fundFrom,
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const allTags = [
-      { name: 'Action', value: 'Get-Cost-Details-For-Action' },
+      { name: 'Action', value: 'Cost-Details' },
       {
         name: 'Intent',
         value: intent,
@@ -502,7 +502,7 @@ export class ARIOReadable implements AoARIORead {
 
   async getRegistrationFees(): Promise<AoRegistrationFees> {
     return this.process.read<AoRegistrationFees>({
-      tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
+      tags: [{ name: 'Action', value: 'Registration-Fees' }],
     });
   }
 
