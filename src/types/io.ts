@@ -631,11 +631,21 @@ export interface AoARIOWrite extends AoARIORead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
+  // @deprecated - use `buyArNSName` instead
   buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  buyArNSName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  // @deprecated - use `upgradeArNSName` instead
   upgradeRecord(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  upgradeArNSName(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
