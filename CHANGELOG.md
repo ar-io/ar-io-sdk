@@ -1,3 +1,10 @@
+# [3.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0-alpha.1) (2025-01-06)
+
+
+### Features
+
+* **cost-details:** include returnedNameDetails when they exist on cost-details PE-7371 ([9edfb79](https://github.com/ar-io/ar-io-sdk/commit/9edfb794bc310f4059bbc782a5da8a1ab1f11641))
+
 # [3.1.0](https://github.com/ar-io/ar-io-sdk/compare/v3.0.0...v3.1.0) (2025-01-02)
 
 
