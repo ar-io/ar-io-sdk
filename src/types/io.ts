@@ -390,6 +390,9 @@ export type CostDiscount = {
 export type CostDetailsResult = {
   tokenCost: number;
   discounts: CostDiscount[];
+  returnedNameDetails?: AoReturnedName & {
+    basePrice: number;
+  };
   fundingPlan?: AoFundingPlan;
 };
 
