@@ -433,15 +433,25 @@ describe('e2e esm tests', async () => {
       }
     });
 
-    it('should be able to get token cost for leasing a name', async () => {
+    it('should be able to get token cost for leasing a name using `Buy-Record` intent', async () => {
       const tokenCost = await ario.getTokenCost({
-        intent: 'Buy-Record',
+        intent: 'Buy-Name',
         name: 'new-name',
         years: 1,
       });
       assert.ok(tokenCost);
     });
-    it('should be able to get token cost for buying a name name', async () => {
+
+    it('should be able to get token cost for buying a name using `Buy-Name` intent', async () => {
+      const tokenCost = await ario.getTokenCost({
+        intent: 'Buy-Record',
+        name: 'new-name',
+        type: 'permabuy',
+      });
+      assert.ok(tokenCost);
+    });
+
+    it('should be able to get token cost for buying a name using `Buy-Record` intent', async () => {
       const tokenCost = await ario.getTokenCost({
         intent: 'Buy-Record',
         name: 'new-name',
