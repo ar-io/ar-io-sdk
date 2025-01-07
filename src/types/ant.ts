@@ -191,6 +191,7 @@ export interface AoANTRead {
   getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
   getTicker(opts?: AntReadOptions): Promise<string>;
+  getLogo(opts?: AntReadOptions): Promise<string>;
   getName(opts?: AntReadOptions): Promise<string>;
   getBalance(
     { address }: { address: WalletAddress },
@@ -257,7 +258,6 @@ export interface AoANTWrite extends AoANTRead {
     { txId }: { txId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  getLogo(opts?: AntReadOptions): Promise<string>;
   releaseName(
     { name, arioProcessId }: { name: string; arioProcessId: string },
     options?: WriteOptions,
