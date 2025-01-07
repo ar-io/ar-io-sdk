@@ -1,3 +1,10 @@
+# [3.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0-alpha.1...v3.2.0-alpha.2) (2025-01-07)
+
+
+### Bug Fixes
+
+* **ant:** add `getLogo` api ([eddc3a8](https://github.com/ar-io/ar-io-sdk/commit/eddc3a8212173c2dcbc80742b2d2637a8fe7d7d7))
+
 # [3.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0-alpha.1) (2025-01-06)
 
 
