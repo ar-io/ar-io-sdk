@@ -467,7 +467,7 @@ export class ARIOReadable implements AoARIORead {
     fundFrom,
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const allTags = [
-      { name: 'Action', value: 'Get-Cost-Details-For-Action' },
+      { name: 'Action', value: 'Cost-Details' },
       {
         name: 'Intent',
         value: intent,
@@ -502,7 +502,7 @@ export class ARIOReadable implements AoARIORead {
 
   async getRegistrationFees(): Promise<AoRegistrationFees> {
     return this.process.read<AoRegistrationFees>({
-      tags: [{ name: 'Action', value: 'Get-Registration-Fees' }],
+      tags: [{ name: 'Action', value: 'Registration-Fees' }],
     });
   }
 
@@ -1000,7 +1000,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'Buy-Record' },
+      { name: 'Action', value: 'Buy-Name' },
       { name: 'Name', value: params.name },
       { name: 'Years', value: params.years?.toString() ?? '1' },
       { name: 'Process-Id', value: params.processId },
@@ -1029,7 +1029,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+      { name: 'Action', value: 'Upgrade-Name' },
       { name: 'Name', value: params.name },
       { name: 'Fund-From', value: params.fundFrom },
     ];

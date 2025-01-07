@@ -433,15 +433,17 @@ describe('e2e esm tests', async () => {
       }
     });
 
-    it('should be able to get token cost for leasing a name', async () => {
+    it('should be able to get token cost for leasing a name using `Buy-Record` intent', async () => {
       const tokenCost = await ario.getTokenCost({
-        intent: 'Buy-Record',
+        intent: 'Buy-Name',
         name: 'new-name',
         years: 1,
       });
+      // it should have a token cost
       assert.ok(tokenCost);
     });
-    it('should be able to get token cost for buying a name name', async () => {
+
+    it('should be able to get token cost for buying a name using `Buy-Name` intent', async () => {
       const tokenCost = await ario.getTokenCost({
         intent: 'Buy-Record',
         name: 'new-name',
@@ -449,9 +451,35 @@ describe('e2e esm tests', async () => {
       });
       assert.ok(tokenCost);
       assert.ok(typeof tokenCost === 'number');
+      assert(tokenCost > 0);
+    });
+
+    it('should be able to get token cost for buying a name using `Buy-Record` intent', async () => {
+      const tokenCost = await ario.getTokenCost({
+        intent: 'Buy-Record',
+        name: 'new-name',
+        type: 'permabuy',
+      });
+      assert.ok(tokenCost);
+      assert.ok(typeof tokenCost === 'number');
+      assert(tokenCost > 0);
     });
 
     it('should be able to get cost details for buying a name', async () => {
+      const costDetails = await ario.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'new-name',
+        type: 'permabuy',
+        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fundFrom: undefined,
+      });
+      assert.ok(costDetails);
+      assert.equal(typeof costDetails.tokenCost, 'number');
+      assert.equal(typeof costDetails.discounts, 'object');
+      assert.equal(typeof costDetails.fundingPlan, 'undefined'); // no funding plan with absence of fundFrom
+    });
+
+    it('should be able to support `Buy-Record` intent for cost details', async () => {
       const costDetails = await ario.getCostDetails({
         intent: 'Buy-Record',
         name: 'new-name',

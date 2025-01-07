@@ -98,14 +98,13 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`releaseName({ name, arioProcessId })`](#releasename-name-arioprocessid-)
     - [`reassignName({ name, arioProcessId, antProcessId })`](#reassignname-name-arioprocessid-antprocessid-)
     - [`approvePrimaryNameRequest({ name, address, arioProcessId })`](#approveprimarynamerequest-name-address-arioprocessid-)
-    - [`removePrimaryNames({ names, arioProcessId })`](#removeprimarynames-names-arioprocessid-)
+    - [`removePrimaryNames({ names, arioProcessId, notifyOwners })`](#removeprimarynames-names-arioprocessid-notifyowners-)
   - [Configuration](#configuration-1)
 - [Logging](#logging)
-  - [Configuration](#configuration-2)
 - [Pagination](#pagination)
 - [Resources](#resources)
   - [Bundling](#bundling)
-  - [Gateways](#gateways-1)
+  - [AR.IO Gateways](#ario-gateways)
   - [Running a Gateway](#running-a-gateway)
   - [AO](#ao)
 - [Developers](#developers)
@@ -2089,7 +2088,7 @@ const { id: txId } = await ant.approvePrimaryNameRequest({
 });
 ```
 
-#### `removePrimaryNames({ names, arioProcessId })`
+#### `removePrimaryNames({ names, arioProcessId, notifyOwners })`
 
 Removes primary names from the ANT process.
 
@@ -2099,6 +2098,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 const { id: txId } = await ant.removePrimaryNames({
   names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
   arioProcessId: ARIO_TESTNET_PROCESS_ID,
+  notifyOwners: true, // if true, the owners of the removed names will be send AO messages to notify them of the removal
 });
 ```
 
@@ -2124,8 +2124,6 @@ const ant = ANT.init({
 ## Logging
 
 The library uses the [Winston] logger for node based projects, and `console` logger for web based projects by default. You can configure the log level via `setLogLevel()` API. Alternatively you can set a custom logger as the default logger so long as it satisfes the `ILogger` interface.
-
-### Configuration
 
 ```typescript
 import { Logger } from '@ar.io/sdk';
@@ -2170,7 +2168,7 @@ while (hasMore) {
 
 For [ANS-104] bundling compatible with ar.io gateways, we recommend using [turbo-sdk](https://github.com/ardriveapp/turbo-sdk). Turbo SDK provides efficient and reliable methods for creating and uploading data bundles to the Arweave network, which are fully compatible with ar.io gateways. Turbo supports fiat and crypto bundling and uploading with a focus on ease of use and reliability.
 
-### Gateways
+### AR.IO Gateways
 
 ### Running a Gateway
 

@@ -279,7 +279,11 @@ export interface AoANTWrite extends AoANTRead {
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
   removePrimaryNames(
-    { names, arioProcessId }: { names: string[]; arioProcessId: string },
+    {
+      names,
+      arioProcessId,
+      notifyOwners,
+    }: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
 }
