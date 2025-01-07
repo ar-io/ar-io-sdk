@@ -1,3 +1,17 @@
+# [3.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0-alpha.2...v3.2.0-alpha.3) (2025-01-07)
+
+
+### Bug Fixes
+
+* **ario:** use standardize tags for registration fees and cost details ([3f5fdbe](https://github.com/ar-io/ar-io-sdk/commit/3f5fdbe175277d5399bedf29d06dbcf7e96cd199))
+* **io:** remove new APIs ([d916ab6](https://github.com/ar-io/ar-io-sdk/commit/d916ab61b1d1b6823eaef91594d4e1e21a95fc2d))
+* **types:** add `Buy-Name` to supported intent types ([b5a6d01](https://github.com/ar-io/ar-io-sdk/commit/b5a6d01a2168fd6f5d8a4b278cabe27b751556be))
+
+
+### Features
+
+* **ario:** add new APIs to ario class, update ant removePrimaryNames tags ([61e0ee8](https://github.com/ar-io/ar-io-sdk/commit/61e0ee8f572fd87422357bab847400d558ee1d65))
+
 # [3.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0-alpha.1...v3.2.0-alpha.2) (2025-01-07)
 
 
