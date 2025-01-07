@@ -898,6 +898,12 @@ describe('e2e esm tests', async () => {
       assert.ok(state);
     });
 
+    it('should be able to get the ANT logo', async () => {
+      const logo = await ant.getLogo();
+      assert.ok(logo);
+      assert.equal(typeof logo, 'string');
+    });
+
     it('should be able to get the ANT balance for an address', async () => {
       const balance = await ant.getBalance({
         address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',

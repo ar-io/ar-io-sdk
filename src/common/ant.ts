@@ -129,6 +129,14 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
+   * Returns the TX ID of the logo set for the ANT.
+   */
+  async getLogo(): Promise<string> {
+    const info = await this.getInfo();
+    return info.Logo;
+  }
+
+  /**
    * @param undername @type {string} The domain name.
    * @returns {Promise<ANTRecord>} The record of the undername domain.
    * @example

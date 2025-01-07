@@ -93,6 +93,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`setTicker({ ticker })`](#setticker-ticker-)
     - [`setDescription({ description })`](#setdescription-description-)
     - [`setKeywords({ keywords })`](#setkeywords-keywords-)
+    - [`getLogo()`](#getlogo)
     - [`setLogo({ txId })`](#setlogo-txid-)
     - [`releaseName({ name, arioProcessId })`](#releasename-name-arioprocessid-)
     - [`reassignName({ name, arioProcessId, antProcessId })`](#reassignname-name-arioprocessid-antprocessid-)
@@ -2023,6 +2024,14 @@ const { id: txId } = await ant.setDescription(
   // optional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
+```
+
+#### `getLogo()`
+
+Returns the TX ID of the logo set for the ANT.
+
+```typescript
+const logoTxId = await ant.getLogo();
 ```
 
 #### `setLogo({ txId })`
