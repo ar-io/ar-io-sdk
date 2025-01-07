@@ -993,15 +993,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  /* @deprecated - use `buyArNSName` instead */
   async buyRecord(
-    params: AoBuyRecordParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult> {
-    return this.buyArNSName(params, options);
-  }
-
-  async buyArNSName(
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1030,15 +1022,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
    * @param {Object} [options] - The options for the upgrade
    * @returns {Promise<AoMessageResult>} The result of the upgrade
    */
-
-  async upgradeArNSName(
+  async upgradeRecord(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
-      { name: 'Action', value: 'Upgrade-Name' }, // TODO: align on Update-Record vs. Upgrade-Name (contract currently uses Upgrade-Name)
+      { name: 'Action', value: 'Upgrade-Name' },
       { name: 'Name', value: params.name },
       { name: 'Fund-From', value: params.fundFrom },
     ];
@@ -1046,14 +1037,6 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       signer: this.signer,
       tags: pruneTags(allTags),
     });
-  }
-
-  /* @deprecated - use `upgradeArNSName` instead */
-  async upgradeRecord(
-    params: AoArNSPurchaseParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult> {
-    return this.upgradeArNSName(params, options);
   }
 
   /**
