@@ -257,6 +257,7 @@ export interface AoANTWrite extends AoANTRead {
     { txId }: { txId: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  getLogo(opts?: AntReadOptions): Promise<string>;
   releaseName(
     { name, arioProcessId }: { name: string; arioProcessId: string },
     options?: WriteOptions,
