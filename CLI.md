@@ -32,6 +32,9 @@ or
 yarn global add @ar.io/sdk --ignore-engines
 ```
 
+> [!NOTE]
+> The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
+
 After installing the CLI, you can run the `ar.io --version` command to verify that the CLI was installed successfully.
 
 ```bash
@@ -62,7 +65,7 @@ For each command the AR.IO CLI provides a set of options that allow you to custo
 - `--ario-process-id <arioProcessId>`: Run against a custom AR.IO process id
 - `--cu-url <cuUrl>`: The URL for a custom compute unit
 - `-w, --wallet-file <walletFilePath>`: The file path to the wallet to use for the interaction
-- `--private-key <key>`: Private key to use with the action
+- `--private-key <key>`: Stringified private key to use with the action
 
 ## Commands
 
@@ -76,7 +79,7 @@ AR.IO Network CLI
 Options:
   -V, --version                           output the version number
   -w, --wallet-file <walletFilePath>      The file path to the wallet to use for the interaction
-  --private-key <key>                     Private key to use with the action
+  --private-key <key>                     Stringified private key to use with the action
   --dev                                   Run against the AR.IO devnet process
   --debug                                 Enable debug log output
   --ario-process-id <arioProcessId>       Run against a custom AR.IO process id
