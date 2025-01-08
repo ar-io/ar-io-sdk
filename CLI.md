@@ -2,6 +2,16 @@
 
 The AR.IO CLI is a Node.js command line interface for interacting with the AR.IO network. It allows you to perform various actions such as transferring ARIO, delegating stake, buying records, and more. The CLI is designed to be easy to use and provides detailed help information for each command. This document provides an overview of the CLI and its usage.
 
+<!-- toc -->
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Options](#options)
+- [Commands](#commands)
+- [Development](#development)
+
+<!-- tocstop -->
+
 ## Installation
 
 Ensure that you have Node.js installed on your system before installing the CLI. You can check if Node.js is installed by running:
