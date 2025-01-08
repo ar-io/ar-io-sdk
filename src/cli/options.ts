@@ -25,7 +25,7 @@ export const optionMap = {
   // },
   privateKey: {
     alias: '--private-key <key>',
-    description: 'Private key to use with the action',
+    description: 'Stringified private key to use with the action',
   },
   dev: {
     alias: '--dev',

@@ -466,7 +466,8 @@ export interface AoARIORead {
     Logo: string;
     Denomination: number;
     Handlers: string[];
-    LastTickedEpochIndex: number;
+    LastCreatedEpochIndex: number;
+    LastDistributedEpochIndex: number;
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(): Promise<AoEpochSettings>;
