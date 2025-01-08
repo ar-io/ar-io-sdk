@@ -68,7 +68,8 @@ describe('e2e esm tests', async () => {
       assert(typeof info.Logo === 'string');
       assert(typeof info.Denomination === 'number');
       assert(Array.isArray(info.Handlers));
-      assert(typeof info.LastTickedEpochIndex === 'number');
+      assert(typeof info.LastCreatedEpochIndex === 'number');
+      assert(typeof info.LastDistributedEpochIndex === 'number');
     });
 
     it('should be able to return a specific page of arns records', async () => {

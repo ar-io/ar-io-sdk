@@ -135,7 +135,8 @@ export class ARIOReadable implements AoARIORead {
     Logo: string;
     Denomination: number;
     Handlers: string[];
-    LastTickedEpochIndex: number;
+    LastCreatedEpochIndex: number;
+    LastDistributedEpochIndex: number;
   }> {
     return this.process.read<{
       Name: string;
@@ -143,7 +144,8 @@ export class ARIOReadable implements AoARIORead {
       Logo: string;
       Denomination: number;
       Handlers: string[];
-      LastTickedEpochIndex: number;
+      LastCreatedEpochIndex: number;
+      LastDistributedEpochIndex: number;
     }>({
       tags: [{ name: 'Action', value: 'Info' }],
     });

@@ -314,7 +314,8 @@ const info = await ario.getInfo();
   "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
   "Denomination": 6,
   "Handlers": ["_eval", "_default_"], // full list of handlers, useful for debugging
-  "LastTickedEpochIndex": 31 // epoch index of the last tick
+  "LastCreatedEpochIndex": 31, // epoch index of the last tick
+  "LastDistributedEpochIndex": 31 // epoch index of the last distribution
 }
 ```
 
