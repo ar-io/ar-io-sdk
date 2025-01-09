@@ -173,3 +173,5 @@ To iterate on the CLI and run it locally, you can use the following to after mak
 yarn build:esm
 node lib/esm/cli/cli.js <command>
 ```
+
+[permaweb/aoconnect]: https://github.com/permaweb/aoconnect
