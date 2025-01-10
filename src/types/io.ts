@@ -336,13 +336,18 @@ export type AoRedelegateStakeParams = {
 };
 
 export const validIntents = [
-  'Buy-Record',
+  'Buy-Name',
+  'Buy-Record', // for backwards compatibility
   'Extend-Lease',
   'Increase-Undername-Limit',
   'Upgrade-Name',
   'Primary-Name-Request',
 ] as const;
-export const intentsUsingYears = ['Buy-Record', 'Extend-Lease'] as const;
+export const intentsUsingYears = [
+  'Buy-Record', // for backwards compatibility
+  'Buy-Name',
+  'Extend-Lease',
+] as const;
 export type Intent = (typeof validIntents)[number];
 export const isValidIntent = (intent: string): intent is Intent => {
   return validIntents.indexOf(intent as Intent) !== -1;
@@ -390,6 +395,9 @@ export type CostDiscount = {
 export type CostDetailsResult = {
   tokenCost: number;
   discounts: CostDiscount[];
+  returnedNameDetails?: AoReturnedName & {
+    basePrice: number;
+  };
   fundingPlan?: AoFundingPlan;
 };
 
@@ -458,7 +466,8 @@ export interface AoARIORead {
     Logo: string;
     Denomination: number;
     Handlers: string[];
-    LastTickedEpochIndex: number;
+    LastCreatedEpochIndex: number;
+    LastDistributedEpochIndex: number;
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(): Promise<AoEpochSettings>;
