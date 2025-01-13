@@ -29,6 +29,7 @@ import {
 import { AoANTRecord } from '../types/ant.js';
 import {
   AoClient,
+  AoEpochData,
   AoSigner,
   ContractSigner,
   WalletAddress,
@@ -296,4 +297,22 @@ export function initANTStateForAddress({
       },
     },
   };
+}
+
+/**
+ * Uses zod schema to parse the epoch data
+ */
+export function parseAoEpochData(value: unknown): AoEpochData {
+  const epochDataSchema = z.object({
+    startTimestamp: z.number(),
+    startHeight: z.number(),
+    distributions: z.any(),
+    endTimestamp: z.number(),
+    prescribedObservers: z.any(),
+    prescribedNames: z.array(z.string()),
+    observations: z.any(),
+    distributionTimestamp: z.number(),
+    epochIndex: z.number(),
+  });
+  return epochDataSchema.parse(value) as AoEpochData;
 }
