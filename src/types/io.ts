@@ -668,6 +668,7 @@ export interface AoARIOWrite extends AoARIORead {
     params: AoRedelegateStakeParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  writeAction(options?: WriteOptions): Promise<AoMessageResult>;
 }
 
 // Typeguard functions

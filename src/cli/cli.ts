@@ -112,6 +112,7 @@ import {
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
+  writeARIOFromOptions,
   writeActionTagsFromOptions,
 } from './utils.js';
 
@@ -982,6 +983,17 @@ makeCommand<
         names,
         arioProcessId: arioProcessIdFromOptions(options),
       },
+      writeActionTagsFromOptions(options),
+    );
+  },
+});
+
+makeCommand({
+  name: 'write-action',
+  description: 'Send a write action to an AO Process',
+  options: writeActionOptions,
+  action: async (options) => {
+    return writeARIOFromOptions(options).ario.writeAction(
       writeActionTagsFromOptions(options),
     );
   },
