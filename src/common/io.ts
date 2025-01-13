@@ -1165,12 +1165,4 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       tags: pruneTags(allTags),
     });
   }
-
-  async writeAction(options?: WriteOptions): Promise<AoMessageResult> {
-    const { tags = [] } = options || {};
-    return this.process.send({
-      signer: this.signer,
-      tags,
-    });
-  }
 }

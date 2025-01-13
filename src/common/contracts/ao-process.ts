@@ -208,7 +208,7 @@ export class AOProcess implements AOContract {
           processId: this.processId,
           tags,
         });
-        // throw on write interaction errors. No point retrying wr ite interactions, waste of gas.
+        // throw on write interaction errors. No point retrying write interactions, waste of gas.
         if (error.message.includes('500')) {
           this.logger.debug('Retrying send interaction', {
             attempts,

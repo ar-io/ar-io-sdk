@@ -18,7 +18,7 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { spawnANT } from '../node/index.js';
+import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
@@ -109,10 +109,10 @@ import {
   readARIOFromOptions,
   requiredAddressFromOptions,
   requiredAoSignerFromOptions,
+  requiredProcessIdFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
-  writeARIOFromOptions,
   writeActionTagsFromOptions,
 } from './utils.js';
 
@@ -991,11 +991,15 @@ makeCommand<
 makeCommand({
   name: 'write-action',
   description: 'Send a write action to an AO Process',
-  options: writeActionOptions,
+  options: [...writeActionOptions, optionMap.processId],
   action: async (options) => {
-    return writeARIOFromOptions(options).ario.writeAction(
-      writeActionTagsFromOptions(options),
-    );
+    const process = new AOProcess({
+      processId: requiredProcessIdFromOptions(options),
+    });
+    return process.send<AoMessageResult>({
+      tags: writeActionTagsFromOptions(options).tags ?? [],
+      signer: requiredAoSignerFromOptions(options),
+    });
   },
 });
 
