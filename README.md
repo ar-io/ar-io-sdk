@@ -1031,7 +1031,7 @@ const fee = await ario.getRedelegationFee({
 
 #### `getAllDelegates({ cursor, limit, sortBy, sortOrder })`
 
-Retrieves all delegates across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is a `cursorKey` derived from delegate address and the gatewayAddress from the previous request. e.g `address_gatewayAddress`.
+Retrieves all delegates across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is a `cursorId` derived from delegate address and the gatewayAddress from the previous request. e.g `address_gatewayAddress`.
 
 ```typescript
 const ario = ARIO.init();
@@ -1055,7 +1055,7 @@ const delegates = await ario.getAllDelegates({
   "items": [
     {
       "startTimestamp": 1734709397622,
-      "cursorKey": "9jfM0uzGNc9Mkhjo1ixGoqM7ygSem9wx_EokiVgi0Bs_E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
+      "cursorId": "9jfM0uzGNc9Mkhjo1ixGoqM7ygSem9wx_EokiVgi0Bs_E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
       "gatewayAddress": "E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
       "address": "9jfM0uzGNc9Mkhjo1ixGoqM7ygSem9wx_EokiVgi0Bs",
       "delegatedStake": 2521349108,
@@ -1063,7 +1063,7 @@ const delegates = await ario.getAllDelegates({
     },
     {
       "startTimestamp": 1734593229454,
-      "cursorKey": "LtV0aSqgK3YI7c5FmfvZd-wG95TJ9sezj_a4syaLMS8_M0WP8KSzCvKpzC-HPF1WcddLgGaL9J4DGi76iMnhrN4",
+      "cursorId": "LtV0aSqgK3YI7c5FmfvZd-wG95TJ9sezj_a4syaLMS8_M0WP8KSzCvKpzC-HPF1WcddLgGaL9J4DGi76iMnhrN4",
       "gatewayAddress": "M0WP8KSzCvKpzC-HPF1WcddLgGaL9J4DGi76iMnhrN4",
       "address": "LtV0aSqgK3YI7c5FmfvZd-wG95TJ9sezj_a4syaLMS8",
       "delegatedStake": 1685148110,
