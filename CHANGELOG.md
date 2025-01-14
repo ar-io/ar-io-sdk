@@ -1,3 +1,16 @@
+# [3.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0-alpha.1) (2025-01-14)
+
+
+### Bug Fixes
+
+* **spawn:** spawn ANTs with a custom ANT module instead of aos module ([2359b5b](https://github.com/ar-io/ar-io-sdk/commit/2359b5bb2af7d09a95d07d051bca73631e5c01ac))
+* **test:** double test timeout ([4a52b81](https://github.com/ar-io/ar-io-sdk/commit/4a52b817bdc9781e58e524d7a04ebe161973b09a))
+
+
+### Features
+
+* **io:** fetch historical epoch data from gql ([b627d55](https://github.com/ar-io/ar-io-sdk/commit/b627d551587d8e77b4b95a1f224ad64a2465dd38))
+
 # [3.2.0](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0) (2025-01-13)
 
 
