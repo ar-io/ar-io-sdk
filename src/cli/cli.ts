@@ -258,7 +258,11 @@ makeCommand({
   description: 'Get observations for an epoch',
   options: epochOptions,
   action: (o) =>
-    readARIOFromOptions(o).getObservations(epochInputFromOptions(o)),
+    readARIOFromOptions(o)
+      .getObservations(epochInputFromOptions(o))
+      .then(
+        (result) => result ?? { message: 'No observations found for epoch' },
+      ),
 });
 
 makeCommand({
@@ -266,7 +270,11 @@ makeCommand({
   description: 'Get distributions for an epoch',
   options: epochOptions,
   action: (o) =>
-    readARIOFromOptions(o).getDistributions(epochInputFromOptions(o)),
+    readARIOFromOptions(o)
+      .getDistributions(epochInputFromOptions(o))
+      .then(
+        (result) => result ?? { message: 'No distributions found for epoch' },
+      ),
 });
 
 makeCommand({

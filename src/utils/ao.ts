@@ -29,6 +29,7 @@ import {
 import { AoANTRecord } from '../types/ant.js';
 import {
   AoClient,
+  AoEpochData,
   AoSigner,
   ContractSigner,
   WalletAddress,
@@ -48,34 +49,33 @@ export type SpawnANTState = {
 export type SpawnANTParams = {
   signer: AoSigner;
   module?: string;
-  luaCodeTxId?: string;
   ao?: AoClient;
   scheduler?: string;
   state?: SpawnANTState;
   stateContractTxId?: string;
   antRegistryId?: string;
   logger?: Logger;
+  /**
+   * @deprecated Compiled modules are now being used instead of luaCodeTxId
+   */
+  luaCodeTxId?: string;
+  /**
+   * @deprecated no longer in use due to compiled modules being preferred
+   */
   arweave?: Arweave;
 };
 
 export async function spawnANT({
   signer,
   module = AOS_MODULE_ID,
-  luaCodeTxId = ANT_LUA_ID,
   ao = connect(),
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
   stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
-  arweave = defaultArweave,
 }: SpawnANTParams): Promise<string> {
-  //TODO: cache locally and only fetch if not cached
-  const luaString = (await arweave.transactions.getData(luaCodeTxId, {
-    decode: true,
-    string: true,
-  })) as string;
-
+  // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
   const processId = await ao.spawn({
     module,
     scheduler,
@@ -84,10 +84,6 @@ export async function spawnANT({
       {
         name: 'ANT-Registry-Id',
         value: antRegistryId,
-      },
-      {
-        name: 'Source-Code-TX-ID', // utility for understanding what the original source id of the lua code was
-        value: luaCodeTxId,
       },
     ],
   });
@@ -98,22 +94,10 @@ export async function spawnANT({
     logger,
   });
 
-  const { id: evalId } = await aosClient.send({
-    tags: [
-      { name: 'Action', value: 'Eval' },
-      { name: 'App-Name', value: 'ArNS-ANT' },
-      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
-    ],
-    data: luaString,
-    signer,
-  });
-
   logger.debug(`Spawned ANT`, {
     processId,
     module,
     scheduler,
-    luaCodeTxId,
-    evalId,
   });
 
   if (state) {
@@ -134,7 +118,7 @@ export async function spawnANT({
       initializeMsgId,
     });
   }
-
+  // This could be done by the ANT in On-Boot to self-register with its tagged ANT registry
   const registryClient = ANTRegistry.init({
     process: new AOProcess({
       processId: antRegistryId,
@@ -296,4 +280,22 @@ export function initANTStateForAddress({
       },
     },
   };
+}
+
+/**
+ * Uses zod schema to parse the epoch data
+ */
+export function parseAoEpochData(value: unknown): AoEpochData {
+  const epochDataSchema = z.object({
+    startTimestamp: z.number(),
+    startHeight: z.number(),
+    distributions: z.any(),
+    endTimestamp: z.number(),
+    prescribedObservers: z.any(),
+    prescribedNames: z.array(z.string()),
+    observations: z.any(),
+    distributionTimestamp: z.number(),
+    epochIndex: z.number(),
+  });
+  return epochDataSchema.parse(value) as AoEpochData;
 }

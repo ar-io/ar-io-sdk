@@ -24,8 +24,8 @@ import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
   private logger: ILogger;
-  private processId: string;
   private ao: AoClient;
+  public readonly processId: string;
 
   constructor({
     processId,
