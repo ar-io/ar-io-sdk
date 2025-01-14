@@ -302,7 +302,8 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions>(
   return {
     cursor,
     limit: numberLimit,
-    sortBy,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sortBy: sortBy as any,
     sortOrder,
   };
 }

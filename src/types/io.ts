@@ -41,10 +41,16 @@ type NestedKeys<T> = T extends object
       }[keyof T & string]
   : never;
 
+type SortBy<T> = T extends string
+  ? string
+  : keyof T extends never
+    ? string
+    : NestedKeys<T>;
+
 export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: keyof T extends never ? string : NestedKeys<T>; // default to string if T is empty
+  sortBy?: SortBy<T>; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
 };
 
@@ -53,7 +59,7 @@ export type PaginationResult<T> = {
   nextCursor?: string;
   limit: number;
   totalItems: number;
-  sortBy?: T extends string ? string : keyof T;
+  sortBy?: SortBy<T>;
   sortOrder: 'asc' | 'desc';
   hasMore: boolean;
 };
