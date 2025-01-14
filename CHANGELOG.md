@@ -1,3 +1,11 @@
+# [3.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2025-01-14)
+
+
+### Features
+
+* **get all delegates:** init getAllDelegates type/handler PE-7221 ([b015582](https://github.com/ar-io/ar-io-sdk/commit/b01558282838582882afd6e64afb8efbdbb99d7a))
+* **get all delegates:** init list-all-delegates command PE-7221 ([a632563](https://github.com/ar-io/ar-io-sdk/commit/a6325639b79cbe2943625fc71c882ba2189c9cda))
+
 # [3.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2025-01-14)
 
 

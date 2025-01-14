@@ -57,6 +57,7 @@ import {
   getPrimaryName,
   getTokenCost,
   getVault,
+  listAllDelegatesCLICommand,
   listArNSRecords,
   listArNSReservedNames,
   listArNSReturnedNames,
@@ -161,6 +162,13 @@ makeCommand({
   description: 'List the gateways of the network',
   options: paginationOptions,
   action: listGateways,
+});
+
+makeCommand({
+  name: 'list-all-delegates',
+  description: 'List all paginated delegates from all gateways',
+  options: paginationOptions,
+  action: listAllDelegatesCLICommand,
 });
 
 makeCommand({
