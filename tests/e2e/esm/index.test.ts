@@ -9,6 +9,7 @@ import {
   AOProcess,
   ARIO,
   ARIOWriteable,
+  ARIO_TESTNET_PROCESS_ID,
   AoANTRegistryWriteable,
   AoANTWriteable,
   ArweaveSigner,
@@ -36,12 +37,16 @@ const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
 
+const processId = process.env.ARIO_PROCESS_ID || arioDevnetProcessId;
 const ario = ARIO.init({
   process: new AOProcess({
-    processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
+    processId,
     ao: aoClient,
   }),
 });
+
+// epochs with known distribution data notices
+const epochIndex = processId === ARIO_TESTNET_PROCESS_ID ? 189 : 200;
 
 describe('e2e esm tests', async () => {
   let compose;
@@ -531,8 +536,59 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get epoch distributions at a specific epoch', async () => {
-      const distributions = await ario.getDistributions({ epochIndex: 0 });
+      const distributions = await ario.getDistributions({ epochIndex });
       assert.ok(distributions);
+      assert(
+        typeof distributions === 'object',
+        'distributions is not an object',
+      );
+      assert(
+        typeof distributions.rewards === 'object',
+        'rewards is not an object',
+      );
+      assert(
+        typeof distributions.totalEligibleGateways === 'number',
+        'totalEligibleGateways is not a number',
+      );
+      assert(
+        typeof distributions.totalEligibleRewards === 'number',
+        'totalEligibleRewards is not a number',
+      );
+      assert(
+        typeof distributions.totalEligibleObserverReward === 'number',
+        'totalEligibleObserverReward is not a number',
+      );
+      assert(
+        typeof distributions.totalEligibleGatewayReward === 'number',
+        'totalEligibleGatewayReward is not a number',
+      );
+      assert(
+        typeof distributions.distributedTimestamp === 'number',
+        'distributedTimestamp is not a number',
+      );
+      assert(
+        typeof distributions.totalDistributedRewards === 'number',
+        'totalDistributedRewards is not a number',
+      );
+      for (const [gatewayAddress, rewards] of Object.entries(
+        distributions.rewards.eligible,
+      )) {
+        assert(typeof gatewayAddress === 'string');
+        assert(typeof rewards.delegateRewards === 'object');
+        assert(typeof rewards.operatorReward === 'number');
+        assert(
+          Object.entries(rewards.delegateRewards).every(
+            ([address, reward]) =>
+              typeof address === 'string' && typeof reward === 'number',
+          ),
+        );
+      }
+      for (const [gatewayAddress, rewards] of Object.entries(
+        distributions.rewards.distributed,
+      )) {
+        assert(typeof gatewayAddress === 'string');
+        assert(typeof rewards === 'number');
+      }
     });
 
     it('should be able to get current epoch observations', async () => {
@@ -541,8 +597,29 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get epoch observations at a specific epoch', async () => {
-      const observations = await ario.getObservations({ epochIndex: 0 });
+      const observations = await ario.getObservations({ epochIndex });
       assert.ok(observations);
+      // assert the type of the observations
+      assert(typeof observations === 'object');
+      assert.ok(observations.failureSummaries);
+      assert.ok(observations.reports);
+      // now validate the contents of both
+      for (const [gatewayAddress, failedByAddresses] of Object.entries(
+        observations.failureSummaries,
+      )) {
+        // should be
+        assert(typeof gatewayAddress === 'string');
+        assert(Array.isArray(failedByAddresses));
+        assert(
+          failedByAddresses.every((address) => typeof address === 'string'),
+        );
+      }
+      for (const [observerAddress, reportTxId] of Object.entries(
+        observations.reports,
+      )) {
+        assert(typeof observerAddress === 'string');
+        assert(typeof reportTxId === 'string');
+      }
     });
 
     it('should be able to get current demand factor', async () => {
