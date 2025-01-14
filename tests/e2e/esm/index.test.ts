@@ -332,6 +332,7 @@ describe('e2e esm tests', async () => {
         assert(typeof delegate.startTimestamp === 'number');
         assert(typeof delegate.address === 'string');
         assert(typeof delegate.gatewayAddress === 'string');
+        assert(typeof delegate.cursorKey === 'string');
         assert(typeof delegate.vaultedStake === 'number');
       });
     });

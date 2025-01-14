@@ -585,6 +585,7 @@ export type AoAllDelegates = {
   delegatedStake: number;
   startTimestamp: Timestamp;
   vaultedStake: number;
+  cursorKey: string;
 };
 
 export interface AoARIOWrite extends AoARIORead {
