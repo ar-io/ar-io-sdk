@@ -93,6 +93,7 @@ Commands:
   get-demand-factor [options]             Get demand factor
   get-gateway [options]                   Get the gateway of an address
   list-gateways [options]                 List the gateways of the network
+  list-all-delegates [options]            List all paginated delegates from all gateways
   get-gateway-delegates [options]         Get the delegates of a gateway
   get-delegations [options]               Get all stake delegated to gateways from this address
   get-allowed-delegates [options]         Get the allow list of a gateway delegate
