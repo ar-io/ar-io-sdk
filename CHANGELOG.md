@@ -1,3 +1,10 @@
+# [3.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2025-01-14)
+
+
+### Bug Fixes
+
+* **ids:** add module and code ids ([7474ccd](https://github.com/ar-io/ar-io-sdk/commit/7474ccd6ecb33a572f4991f42eb292adac76435f))
+
 # [3.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2025-01-14)
 
 
