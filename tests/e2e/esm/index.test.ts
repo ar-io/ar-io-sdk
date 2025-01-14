@@ -303,6 +303,34 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able to get the first page of all delegates', async () => {
+      const delegates = await ario.getAllDelegates({
+        limit: 1,
+        sortBy: 'startTimestamp',
+        sortOrder: 'desc',
+      });
+      assert.ok(delegates);
+      assert(delegates.limit === 1);
+      assert(delegates.sortOrder === 'desc');
+      assert(delegates.sortBy === 'startTimestamp');
+      assert(typeof delegates.totalItems === 'number');
+      assert(typeof delegates.sortBy === 'string');
+      assert(typeof delegates.sortOrder === 'string');
+      assert(typeof delegates.limit === 'number');
+      assert(typeof delegates.hasMore === 'boolean');
+      if (delegates.nextCursor) {
+        assert(typeof delegates.nextCursor === 'string');
+      }
+      assert(Array.isArray(delegates.items));
+      delegates.items.forEach((delegate) => {
+        assert(typeof delegate.delegatedStake === 'number');
+        assert(typeof delegate.startTimestamp === 'number');
+        assert(typeof delegate.address === 'string');
+        assert(typeof delegate.gatewayAddress === 'string');
+        assert(typeof delegate.vaultedStake === 'number');
+      });
+    });
+
     it('should be able to get gateway vaults', async () => {
       const vaults = await ario.getGatewayVaults({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
