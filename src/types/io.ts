@@ -31,11 +31,20 @@ import {
 import { mARIOToken } from './token.js';
 
 // Pagination
+type NestedKeys<T> = T extends object
+  ? T extends readonly unknown[] // Detect arrays precisely
+    ? never // Exclude arrays
+    : {
+        [K in keyof T & string]: T[K] extends object
+          ? `${K}.${NestedKeys<T[K]>}` | K
+          : K;
+      }[keyof T & string]
+  : never;
 
 export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: keyof T extends never ? string : keyof T; // default to string if T is empty
+  sortBy?: T extends Record<string, never> ? string : NestedKeys<T>;
   sortOrder?: 'asc' | 'desc';
 };
 
