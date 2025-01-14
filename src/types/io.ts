@@ -570,7 +570,18 @@ export interface AoARIORead {
     address: WalletAddress;
   }): Promise<AoRedelegationFeeInfo>;
   getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
+  getAllDelegates(
+    params?: PaginationParams<AoAllDelegates>,
+  ): Promise<PaginationResult<AoAllDelegates>>;
 }
+
+export type AoAllDelegates = {
+  address: WalletAddress;
+  gatewayAddress: WalletAddress;
+  delegatedStake: number;
+  startTimestamp: Timestamp;
+  vaultedStake: number;
+};
 
 export interface AoARIOWrite extends AoARIORead {
   // write interactions
