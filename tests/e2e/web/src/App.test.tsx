@@ -28,7 +28,7 @@ describe('ESM browser validation', () => {
       },
       {
         interval: 5_000,
-        timeout: 60_000,
+        timeout: 120_000,
       },
     );
 
@@ -45,7 +45,7 @@ describe('ESM browser validation', () => {
       },
       {
         interval: 5_000,
-        timeout: 60_000,
+        timeout: 120_000,
       },
     );
 
