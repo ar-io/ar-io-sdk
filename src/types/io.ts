@@ -527,8 +527,12 @@ export interface AoARIORead {
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
-  getObservations(epoch?: EpochInput): Promise<AoEpochObservationData>;
-  getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
+  getObservations(
+    epoch?: EpochInput,
+  ): Promise<AoEpochObservationData | undefined>;
+  getDistributions(
+    epoch?: EpochInput,
+  ): Promise<AoEpochDistributionData | undefined>;
   getTokenCost({
     intent,
     type,
