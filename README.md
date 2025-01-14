@@ -51,6 +51,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
     - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
+    - [`getAllDelegates({ cursor, limit, sortBy, sortOrder })`](#getalldelegates-cursor-limit-sortby-sortorder-)
   - [Arweave Name System (ArNS)](#arweave-name-system-arns)
     - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
     - [`getArNSRecord({ name })`](#getarnsrecord-name-)
@@ -1027,6 +1028,51 @@ const fee = await ario.getRedelegationFee({
 ```
 
 </details>
+
+#### `getAllDelegates({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all delegates across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is a `cursorKey` derived from delegate address and the gatewayAddress from the previous request. e.g `address_gatewayAddress`.
+
+```typescript
+const ario = ARIO.init();
+const delegates = await ario.getAllDelegates({
+  limit: 2,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 2,
+  "sortBy": "startTimestamp",
+  "items": [
+    {
+      "startTimestamp": 1734709397622,
+      "cursorKey": "9jfM0uzGNc9Mkhjo1ixGoqM7ygSem9wx_EokiVgi0Bs_E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
+      "gatewayAddress": "E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
+      "address": "9jfM0uzGNc9Mkhjo1ixGoqM7ygSem9wx_EokiVgi0Bs",
+      "delegatedStake": 2521349108,
+      "vaultedStake": 0
+    },
+    {
+      "startTimestamp": 1734593229454,
+      "cursorKey": "LtV0aSqgK3YI7c5FmfvZd-wG95TJ9sezj_a4syaLMS8_M0WP8KSzCvKpzC-HPF1WcddLgGaL9J4DGi76iMnhrN4",
+      "gatewayAddress": "M0WP8KSzCvKpzC-HPF1WcddLgGaL9J4DGi76iMnhrN4",
+      "address": "LtV0aSqgK3YI7c5FmfvZd-wG95TJ9sezj_a4syaLMS8",
+      "delegatedStake": 1685148110,
+      "vaultedStake": 10000000
+    }
+  ],
+  "nextCursor": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
+}
+```
 
 ### Arweave Name System (ArNS)
 
