@@ -77,6 +77,7 @@ import {
   paginationParamsToTags,
   pruneTags,
 } from '../utils/arweave.js';
+import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
@@ -127,11 +128,7 @@ export class ARIOReadable implements AoARIORead {
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
   constructor({
-    arweave = Arweave.init({
-      host: 'arweave.net',
-      port: 443,
-      protocol: 'https',
-    }),
+    arweave = defaultArweave,
     ...config
   }: ProcessConfiguration & { arweave?: Arweave }) {
     if (config === undefined) {
