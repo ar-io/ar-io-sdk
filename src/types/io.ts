@@ -36,7 +36,7 @@ type NestedKeys<T> = T extends object
     ? never // Exclude arrays
     : {
         [K in keyof T & string]: T[K] extends object
-          ? `${K}.${NestedKeys<T[K]>}` | K
+          ? `${K}.${NestedKeys<T[K]>}`
           : K;
       }[keyof T & string]
   : never;
