@@ -368,9 +368,7 @@ export class ARIOReadable implements AoARIORead {
       tags: [
         { name: 'Action', value: 'Paginated-Allowed-Delegates' },
         { name: 'Address', value: address },
-        ...paginationParamsToTags<WalletAddress>(
-          pageParams as PaginationParams<WalletAddress>,
-        ),
+        ...paginationParamsToTags<WalletAddress | undefined>(pageParams),
       ],
     });
   }

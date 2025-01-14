@@ -44,7 +44,7 @@ type NestedKeys<T> = T extends object
 export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: T extends Record<string, never> ? string : NestedKeys<T>;
+  sortBy?: keyof T extends never ? string : NestedKeys<T>; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
 };
 
