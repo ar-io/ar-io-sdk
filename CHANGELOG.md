@@ -1,3 +1,10 @@
+# [3.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2025-01-14)
+
+
+### Bug Fixes
+
+* **arweave:** use defaultArweave when fetching data ([acf3e02](https://github.com/ar-io/ar-io-sdk/commit/acf3e0227106ba29c6e874fcd134ce243aca3e41))
+
 # [3.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0-alpha.1) (2025-01-14)
 
 
