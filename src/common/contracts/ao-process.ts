@@ -228,33 +228,24 @@ export class AOProcess implements AOContract {
     throw lastError;
   }
 }
-
 function errorMessageFromOutput(output: {
   Error?: string;
   Messages?: { Tags?: { name: string; value: string }[] }[];
 }): string | undefined {
   const errorData = output.Error;
 
-  if (errorData?.includes('handling message with Action')) {
-    // Response includes CU AO Error Variant:
-    // "\u001b[31mError\u001b[90m handling message with Action = Register\u001b[0m\n\u001b[32m[string \".handlers\"]:723: [string \"aos\"]:761: Recipient not found for wallet address\u001b[0m\n\n\u001b[90mstack traceback:\n\t[string \".process\"]:871: in function '.process.handle'\u001b[0m\n\n\u001b[31merror:\n\u001b[0m[string \".handlers\"]:723: [string \"aos\"]:761: Recipient not found for wallet address
-
-    const errorsOnLine = errorData.split('\n')[1].split(':');
-    const errorMessage = errorsOnLine[errorsOnLine.length - 1].trim();
-    const lineNumber = errorsOnLine[errorsOnLine.length - 2].trim();
-
-    return `${errorMessage} (line ${lineNumber})`.trim();
-  }
-
+  // Attempt to extract error details from Messages.Tags if Error is undefined
   const error =
     errorData ??
     output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
+
   if (error !== undefined) {
-    // from [string "aos"]:6846: Name is already registered
-    const lineNumber = error.match(/\d+/)?.[0];
-    const message = error.replace(/\[string "aos"\]:\d+:/, '');
-    // to more user friendly: Name is already registered (line 6846)
-    return `${message} (line ${lineNumber})`.trim();
+    // Consolidated regex to match and extract line number and AO error message or Error Tags
+    const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
+    if (match) {
+      const [, lineNumber, errorMessage] = match;
+      return `${errorMessage.trim()} (line ${lineNumber.trim()})`.trim();
+    }
   }
 
   return undefined;
