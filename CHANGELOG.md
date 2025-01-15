@@ -1,3 +1,15 @@
+# [3.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2025-01-15)
+
+
+### Bug Fixes
+
+* **error handling:** use a consolidated regexp for msg.Error and msg.Tags.Error PE-7417 ([770a81e](https://github.com/ar-io/ar-io-sdk/commit/770a81e669463bc97e4401cd98d819623579459d))
+
+
+### Features
+
+* add writeAction sdk/cli command for utility PE-7417 ([1953504](https://github.com/ar-io/ar-io-sdk/commit/19535045e3a3c92850c7d3b8c101cbf9f3d82ff3))
+
 # [3.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2025-01-15)
 
 
