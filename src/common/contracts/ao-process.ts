@@ -253,9 +253,24 @@ function errorMessageFromOutput(output: {
     const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
     if (match) {
       const [, lineNumber, errorMessage] = match;
-      return `${errorMessage.trim()} (line ${lineNumber.trim()})`.trim();
+      const cleanError = removeUnicodeFromError(errorMessage);
+      return `${cleanError.trim()} (line ${lineNumber.trim()})`.trim();
     }
   }
 
   return undefined;
+}
+
+function removeUnicodeFromError(error: string): string {
+  //The regular expression /[\u001b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g is designed to match ANSI escape codes used for terminal formatting. These are sequences that begin with \u001b (ESC character) and are often followed by [ and control codes.
+  const ESC = String.fromCharCode(27); // Represents '\u001b' or '\x1b'
+  return error
+    .replace(
+      new RegExp(
+        `${ESC}[\\[\\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]`,
+        'g',
+      ),
+      '',
+    )
+    .trim();
 }
