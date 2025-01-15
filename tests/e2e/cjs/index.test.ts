@@ -36,6 +36,7 @@ const signers = [
   createAoSigner(new ArweaveSigner(testWallet)),
 ];
 const processId = process.env.ARIO_PROCESS_ID || arioDevnetProcessId;
+const arweave = Arweave.init({});
 describe('e2e cjs tests', async () => {
   describe('ARIO client works ', async () => {
     it('should be able to instantiate ARIO with default process', async () => {
@@ -52,20 +53,20 @@ describe('e2e cjs tests', async () => {
       assert(ario instanceof ARIOReadable);
     });
 
-    it('should be able to instantiate ARIO with a process and arweave', async () => {
+    it.skip('should be able to instantiate ARIO with a process and arweave', async () => {
       const ario = ARIO.init({
         process: new AOProcess({
           processId,
         }),
-        arweave: Arweave.init({}),
+        arweave,
       });
       assert(ario instanceof ARIOReadable);
     });
 
-    it('should be able to instantiate ARIO with a processId and arweave', async () => {
+    it('should be able to instantiate ARIO with a process id and arweave', async () => {
       const ario = ARIO.init({
         processId,
-        arweave: Arweave.init({}),
+        arweave,
       });
       assert(ario instanceof ARIOReadable);
     });

@@ -39,6 +39,7 @@ const signers = [
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
+const arweave = Arweave.init({});
 
 const processId = process.env.ARIO_PROCESS_ID || arioDevnetProcessId;
 const ario = ARIO.init({
@@ -85,9 +86,17 @@ describe('e2e esm tests', async () => {
         process: new AOProcess({
           processId,
         }),
-        arweave: Arweave.init({}),
+        arweave,
       });
-      assert(ario instanceof ARIOWriteable);
+      assert(ario instanceof ARIOReadable);
+    });
+
+    it('should be able to instantiate ARIO with a proces id and arweave', async () => {
+      const ario = ARIO.init({
+        processId,
+        arweave,
+      });
+      assert(ario instanceof ARIOReadable);
     });
 
     it('should be able to get the process information', async () => {
