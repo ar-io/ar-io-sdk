@@ -216,8 +216,9 @@ export class AOProcess implements AOContract {
           processId: this.processId,
           tags,
         });
-        // throw on write interaction errors. No point retrying wr ite interactions, waste of gas.
-        if (!error?.message?.includes('500')) {
+
+        // throw on write interaction errors. No point retrying write interactions, waste of gas.
+        if (error.message.includes('500')) {
           this.logger.debug('Retrying send interaction', {
             attempts,
             retries,
@@ -236,27 +237,24 @@ export class AOProcess implements AOContract {
     throw lastError;
   }
 }
-
 function errorMessageFromOutput(output: {
   Error?: string;
   Messages?: { Tags?: { name: string; value: string }[] }[];
 }): string | undefined {
   const errorData = output.Error;
-  if (errorData !== undefined) {
-    // TODO: Could clean this one up too, current error is verbose, but not always deterministic for parsing
-    // Throw the whole raw error if AO process level error
-    return errorData;
-  }
 
-  const error = output.Messages?.[0]?.Tags?.find(
-    (tag) => tag.name === 'Error',
-  )?.value;
+  // Attempt to extract error details from Messages.Tags if Error is undefined
+  const error =
+    errorData ??
+    output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
+
   if (error !== undefined) {
-    // from [string "aos"]:6846: Name is already registered
-    const lineNumber = error.match(/\d+/)?.[0];
-    const message = error.replace(/\[string "aos"\]:\d+:/, '');
-    // to more user friendly: Name is already registered (line 6846)
-    return `${message} (line ${lineNumber})`.trim();
+    // Consolidated regex to match and extract line number and AO error message or Error Tags
+    const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
+    if (match) {
+      const [, lineNumber, errorMessage] = match;
+      return `${errorMessage.trim()} (line ${lineNumber.trim()})`.trim();
+    }
   }
 
   return undefined;
