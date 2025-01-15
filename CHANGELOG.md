@@ -1,3 +1,10 @@
+# [3.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2025-01-15)
+
+
+### Bug Fixes
+
+* **logs:** add processId to read error logs, include stack trace ([51b7e38](https://github.com/ar-io/ar-io-sdk/commit/51b7e3811a5cc8cbe04a07da8fb2e47b9d1b6cb8))
+
 # [3.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2025-01-14)
 
 

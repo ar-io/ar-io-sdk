@@ -63,8 +63,9 @@ export class AOProcess implements AOContract {
     let lastError: Error | undefined;
     while (attempts < retries) {
       try {
-        this.logger.debug(`Evaluating read interaction on contract`, {
+        this.logger.debug(`Evaluating read interaction on process`, {
           tags,
+          processId: this.processId,
         });
         // map tags to inputs
         const dryRunInput = {
@@ -77,6 +78,7 @@ export class AOProcess implements AOContract {
         const result = await this.ao.dryrun(dryRunInput);
         this.logger.debug(`Read interaction result`, {
           result,
+          processId: this.processId,
         });
 
         const error = errorMessageFromOutput(result);
@@ -87,8 +89,11 @@ export class AOProcess implements AOContract {
         if (result.Messages === undefined || result.Messages.length === 0) {
           this.logger.debug(
             `Process ${this.processId} does not support provided action.`,
-            result,
-            tags,
+            {
+              result,
+              tags,
+              processId: this.processId,
+            },
           );
           throw new Error(
             `Process ${this.processId} does not support provided action.`,
@@ -101,15 +106,17 @@ export class AOProcess implements AOContract {
           return undefined as K;
         }
 
-        const response: K = safeDecode<K>(result.Messages[0].Data);
+        const response: K = safeDecode<K>(messageData);
         return response;
-      } catch (e) {
+      } catch (error: any) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
-          error: e instanceof Error ? e.message : e,
+          error: error?.message,
+          stack: error?.stack,
           tags,
+          processId: this.processId,
         });
-        lastError = e;
+        lastError = error;
 
         // exponential backoff
         await new Promise((resolve) =>
@@ -202,18 +209,20 @@ export class AOProcess implements AOContract {
         });
 
         return { id: messageId, result: resultData };
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error('Error sending message to process', {
-          error: error.message,
+          error: error?.message,
+          stack: error?.stack,
           processId: this.processId,
           tags,
         });
+
         // throw on write interaction errors. No point retrying write interactions, waste of gas.
         if (error.message.includes('500')) {
           this.logger.debug('Retrying send interaction', {
             attempts,
             retries,
-            error: error.message,
+            error: error?.message,
             processId: this.processId,
           });
           // exponential backoff
