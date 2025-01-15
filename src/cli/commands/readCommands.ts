@@ -54,6 +54,13 @@ export async function listGateways(o: PaginationCLIOptions) {
   return gateways.items.length ? gateways : { message: 'No gateways found' };
 }
 
+export async function listAllDelegatesCLICommand(o: PaginationCLIOptions) {
+  const delegates = await readARIOFromOptions(o).getAllDelegates(
+    paginationParamsFromOptions(o),
+  );
+  return delegates.items.length ? delegates : { message: 'No delegates found' };
+}
+
 export async function getGatewayDelegates(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getGatewayDelegates({

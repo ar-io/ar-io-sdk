@@ -23,6 +23,7 @@ import {
   spawn,
   unmonitor,
 } from '@permaweb/aoconnect';
+import Arweave from 'arweave';
 
 import { AoSigner } from './token.js';
 
@@ -33,7 +34,9 @@ export type WalletAddress = string;
 export type TransactionId = string;
 export type ProcessId = string;
 
-// TODO: append this with other configuration options (e.g. local vs. remote evaluation)
+export type OptionalArweave<T = NonNullable<unknown>> = {
+  arweave?: Arweave;
+} & T;
 export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;

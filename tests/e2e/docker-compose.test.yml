@@ -1,7 +1,6 @@
 services:
   ao-cu:
     image: ghcr.io/permaweb/ao-cu:latest
-    restart: on-failure
     volumes:
       - ${CU_WALLET_FILE:-./test-wallet.json}:/usr/app/test-wallet.json
     ports:

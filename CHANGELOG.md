@@ -1,3 +1,64 @@
+# [3.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2025-01-15)
+
+
+### Bug Fixes
+
+* **types:** simplify types for init functions, cleanup contructors ([2197d99](https://github.com/ar-io/ar-io-sdk/commit/2197d99e65e18dec2d3231d3e049af0929ae44b6))
+
+# [3.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2025-01-15)
+
+
+### Bug Fixes
+
+* **error handling:** use a consolidated regexp for msg.Error and msg.Tags.Error PE-7417 ([770a81e](https://github.com/ar-io/ar-io-sdk/commit/770a81e669463bc97e4401cd98d819623579459d))
+
+
+### Features
+
+* add writeAction sdk/cli command for utility PE-7417 ([1953504](https://github.com/ar-io/ar-io-sdk/commit/19535045e3a3c92850c7d3b8c101cbf9f3d82ff3))
+
+# [3.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2025-01-15)
+
+
+### Bug Fixes
+
+* **logs:** add processId to read error logs, include stack trace ([51b7e38](https://github.com/ar-io/ar-io-sdk/commit/51b7e3811a5cc8cbe04a07da8fb2e47b9d1b6cb8))
+
+# [3.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2025-01-14)
+
+
+### Features
+
+* **get all delegates:** init getAllDelegates type/handler PE-7221 ([b015582](https://github.com/ar-io/ar-io-sdk/commit/b01558282838582882afd6e64afb8efbdbb99d7a))
+* **get all delegates:** init list-all-delegates command PE-7221 ([a632563](https://github.com/ar-io/ar-io-sdk/commit/a6325639b79cbe2943625fc71c882ba2189c9cda))
+
+# [3.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2025-01-14)
+
+
+### Bug Fixes
+
+* **ids:** add module and code ids ([7474ccd](https://github.com/ar-io/ar-io-sdk/commit/7474ccd6ecb33a572f4991f42eb292adac76435f))
+
+# [3.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2025-01-14)
+
+
+### Bug Fixes
+
+* **arweave:** use defaultArweave when fetching data ([acf3e02](https://github.com/ar-io/ar-io-sdk/commit/acf3e0227106ba29c6e874fcd134ce243aca3e41))
+
+# [3.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0-alpha.1) (2025-01-14)
+
+
+### Bug Fixes
+
+* **spawn:** spawn ANTs with a custom ANT module instead of aos module ([2359b5b](https://github.com/ar-io/ar-io-sdk/commit/2359b5bb2af7d09a95d07d051bca73631e5c01ac))
+* **test:** double test timeout ([4a52b81](https://github.com/ar-io/ar-io-sdk/commit/4a52b817bdc9781e58e524d7a04ebe161973b09a))
+
+
+### Features
+
+* **io:** fetch historical epoch data from gql ([b627d55](https://github.com/ar-io/ar-io-sdk/commit/b627d551587d8e77b4b95a1f224ad64a2465dd38))
+
 # [3.2.0](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0) (2025-01-13)
 
 

@@ -18,7 +18,7 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { spawnANT } from '../node/index.js';
+import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
@@ -57,6 +57,7 @@ import {
   getPrimaryName,
   getTokenCost,
   getVault,
+  listAllDelegatesCLICommand,
   listArNSRecords,
   listArNSReservedNames,
   listArNSReturnedNames,
@@ -109,6 +110,7 @@ import {
   readARIOFromOptions,
   requiredAddressFromOptions,
   requiredAoSignerFromOptions,
+  requiredProcessIdFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
@@ -160,6 +162,13 @@ makeCommand({
   description: 'List the gateways of the network',
   options: paginationOptions,
   action: listGateways,
+});
+
+makeCommand({
+  name: 'list-all-delegates',
+  description: 'List all paginated delegates from all gateways',
+  options: paginationOptions,
+  action: listAllDelegatesCLICommand,
 });
 
 makeCommand({
@@ -257,7 +266,11 @@ makeCommand({
   description: 'Get observations for an epoch',
   options: epochOptions,
   action: (o) =>
-    readARIOFromOptions(o).getObservations(epochInputFromOptions(o)),
+    readARIOFromOptions(o)
+      .getObservations(epochInputFromOptions(o))
+      .then(
+        (result) => result ?? { message: 'No observations found for epoch' },
+      ),
 });
 
 makeCommand({
@@ -265,7 +278,11 @@ makeCommand({
   description: 'Get distributions for an epoch',
   options: epochOptions,
   action: (o) =>
-    readARIOFromOptions(o).getDistributions(epochInputFromOptions(o)),
+    readARIOFromOptions(o)
+      .getDistributions(epochInputFromOptions(o))
+      .then(
+        (result) => result ?? { message: 'No distributions found for epoch' },
+      ),
 });
 
 makeCommand({
@@ -984,6 +1001,21 @@ makeCommand<
       },
       writeActionTagsFromOptions(options),
     );
+  },
+});
+
+makeCommand({
+  name: 'write-action',
+  description: 'Send a write action to an AO Process',
+  options: [...writeActionOptions, optionMap.processId],
+  action: async (options) => {
+    const process = new AOProcess({
+      processId: requiredProcessIdFromOptions(options),
+    });
+    return process.send<AoMessageResult>({
+      tags: writeActionTagsFromOptions(options).tags ?? [],
+      signer: requiredAoSignerFromOptions(options),
+    });
   },
 });
 
