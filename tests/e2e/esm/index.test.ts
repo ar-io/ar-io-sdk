@@ -1077,7 +1077,7 @@ describe('e2e esm tests', async () => {
 
     describe('AoANTWriteable', () => {
       for (const signer of signers) {
-        it(`should be able to create ANTWriteable with valid signer ${signer}`, async () => {
+        it(`should be able to create ANTWriteable with valid signer ${signer.constructor.name}`, async () => {
           const ant = ANT.init({
             process: new AOProcess({
               processId,
@@ -1089,7 +1089,7 @@ describe('e2e esm tests', async () => {
           assert(ant instanceof AoANTWriteable);
         });
 
-        it(`should be able to create ANTWriteable with valid signer ${signer} and strict`, async () => {
+        it(`should be able to create ANTWriteable with valid signer ${signer.constructor.name} and strict`, async () => {
           const ant = ANT.init({
             processId,
             signer,
