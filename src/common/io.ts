@@ -32,8 +32,7 @@ import {
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
-  ContractSigner,
-  OptionalSigner,
+  OptionalArweave,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
@@ -82,45 +81,26 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
+type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
+type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
+
 export class ARIO {
+  // Overload: No arguments -> returns AoARIORead
   static init(): AoARIORead;
-  static init({ process }: { process: AOProcess }): AoARIORead;
-  static init({
-    process,
-    signer,
-  }: WithSigner<{ process: AOProcess }>): AoARIOWrite;
-  static init({
-    processId,
-    signer,
-  }: WithSigner<{
-    processId?: string;
-  }>): AoARIOWrite;
-  static init({
-    processId,
-    signer,
-  }: {
-    signer?: ContractSigner | undefined;
-    processId: string;
-  });
-  static init({ processId }: { processId: string }): AoARIORead;
-  static init({
-    arweave,
-    ...config
-  }: OptionalSigner<ProcessConfiguration> & { arweave?: Arweave } = {}):
-    | AoARIORead
-    | AoARIOWrite {
-    if (config !== undefined && config.signer) {
-      const { signer, ...rest } = config;
-      return new ARIOWriteable({
-        ...rest,
-        signer,
-        arweave,
-      });
+
+  // Overload: config with signer -> returns AoARIOWrite
+  static init(config: ARIOConfigWithSigner): AoARIOWrite;
+
+  // Overload: config without signer -> returns AoARIORead
+  static init(config: ARIOConfigNoSigner): AoARIORead;
+
+  // Implementation
+  static init(config?: ARIOConfig): AoARIORead | AoARIOWrite {
+    if (config !== undefined && 'signer' in config) {
+      return new ARIOWriteable(config);
     }
-    return new ARIOReadable({
-      arweave,
-      ...config,
-    });
+    return new ARIOReadable(config);
   }
 }
 
@@ -128,11 +108,9 @@ export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  constructor({
-    arweave = defaultArweave,
-    ...config
-  }: ProcessConfiguration & { arweave?: Arweave }) {
-    if (config === undefined) {
+  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+    this.arweave = config?.arweave ?? defaultArweave;
+    if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ARIO_TESTNET_PROCESS_ID,
       });
@@ -145,7 +123,6 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.arweave = arweave;
   }
 
   async getInfo(): Promise<{
@@ -740,38 +717,17 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  constructor({
-    signer,
-    arweave,
-    ...config
-  }: WithSigner<
-    | {
-        process?: AOProcess;
-      }
-    | { processId?: string }
-  > & { arweave?: Arweave }) {
-    if (Object.keys(config).length === 0) {
+  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+    if (config === undefined) {
       super({
         process: new AOProcess({
           processId: ARIO_TESTNET_PROCESS_ID,
         }),
-        arweave: arweave,
       });
-      this.signer = createAoSigner(signer);
-    } else if (isProcessConfiguration(config)) {
-      super({ process: config.process });
-      this.signer = createAoSigner(signer);
-    } else if (isProcessIdConfiguration(config)) {
-      super({
-        process: new AOProcess({
-          processId: config.processId,
-        }),
-        arweave: arweave,
-      });
-      this.signer = createAoSigner(signer);
     } else {
-      throw new InvalidContractConfigurationError();
+      super(config);
     }
+    this.signer = createAoSigner(signer);
   }
 
   async transfer(
