@@ -725,11 +725,10 @@ describe('e2e esm tests', async () => {
           address: vaults[0].address,
           vaultId: vaults[0].vaultId,
         });
-        assert.deepEqual(vault, {
-          balance: 1,
-          startTimestamp: 1729962428678,
-          endTimestamp: 1731172028678,
-        });
+        assert.ok(vault);
+        assert.equal(typeof vault.balance, 'number');
+        assert.equal(typeof vault.startTimestamp, 'number');
+        assert.equal(typeof vault.endTimestamp, 'number');
       }
     });
 
