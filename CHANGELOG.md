@@ -1,3 +1,10 @@
+# [3.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2025-01-17)
+
+
+### Bug Fixes
+
+* **module id:** update ant module id ([9e122af](https://github.com/ar-io/ar-io-sdk/commit/9e122afce22f5480252b35d2710e6f80e532a93c))
+
 # [3.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2025-01-15)
 
 
