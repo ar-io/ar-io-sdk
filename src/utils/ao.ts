@@ -24,6 +24,7 @@ import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
   AOS_MODULE_ID,
+  AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { AoANTRecord } from '../types/ant.js';
@@ -55,6 +56,7 @@ export type SpawnANTParams = {
   stateContractTxId?: string;
   antRegistryId?: string;
   logger?: Logger;
+  authority?: string;
   /**
    * @deprecated Compiled modules are now being used instead of luaCodeTxId
    */
@@ -74,6 +76,7 @@ export async function spawnANT({
   stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
+  authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
   // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
   const processId = await ao.spawn({
@@ -81,6 +84,11 @@ export async function spawnANT({
     scheduler,
     signer,
     tags: [
+      // Required for AOS to initialize the authorities table
+      {
+        name: 'Authority',
+        value: authority,
+      },
       {
         name: 'ANT-Registry-Id',
         value: antRegistryId,
