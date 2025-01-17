@@ -1,3 +1,24 @@
+# [3.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2025-01-17)
+
+
+### Bug Fixes
+
+* **arconnect:** use signDataItem method, signature is deprecated ([11e2378](https://github.com/ar-io/ar-io-sdk/commit/11e237867df80bc21e1c89abcfc469707dea5310))
+
+# [3.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2025-01-17)
+
+
+### Bug Fixes
+
+* **module id:** update ant module id ([9e122af](https://github.com/ar-io/ar-io-sdk/commit/9e122afce22f5480252b35d2710e6f80e532a93c))
+
+# [3.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2025-01-15)
+
+
+### Bug Fixes
+
+* **types:** simplify types for init functions, cleanup contructors ([2197d99](https://github.com/ar-io/ar-io-sdk/commit/2197d99e65e18dec2d3231d3e049af0929ae44b6))
+
 # [3.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2025-01-15)
 
 
