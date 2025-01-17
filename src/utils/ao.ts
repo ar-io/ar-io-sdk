@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createData } from '@dha-team/arbundles';
+import { ArconnectSigner, DataItem, createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
@@ -237,6 +237,21 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
     ) {
       await signer.setPublicKey();
     }
+    if (signer instanceof ArconnectSigner) {
+      // Sign using Arconnect signDataItem API
+      const signedDataItem = await signer['signer'].signDataItem({
+        data,
+        tags,
+        target,
+        anchor,
+      });
+      const dataItem = new DataItem(Buffer.from(signedDataItem));
+      return {
+        id: await dataItem.id,
+        raw: await dataItem.getRaw(),
+      };
+    }
+
     const dataItem = createData(data, signer, { tags, target, anchor });
     const signedData = dataItem.sign(signer).then(async () => ({
       id: await dataItem.id,
