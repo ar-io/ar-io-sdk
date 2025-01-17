@@ -238,25 +238,18 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
       await signer.setPublicKey();
     }
     if (signer instanceof ArconnectSigner) {
-      try {
-        // Sign using Arconnect signDataItem API
-        const signedDataItem = await signer['signer'].signDataItem({
-          data,
-          tags,
-          target,
-          anchor,
-        });
-        const dataItem = new DataItem(Buffer.from(signedDataItem));
-        return {
-          id: await dataItem.id,
-          raw: await dataItem.getRaw(),
-        };
-      } catch (e) {
-        console.error(
-          'Failed to sign data item, falling back to default signer method',
-          e,
-        );
-      }
+      // Sign using Arconnect signDataItem API
+      const signedDataItem = await signer['signer'].signDataItem({
+        data,
+        tags,
+        target,
+        anchor,
+      });
+      const dataItem = new DataItem(Buffer.from(signedDataItem));
+      return {
+        id: await dataItem.id,
+        raw: await dataItem.getRaw(),
+      };
     }
 
     const dataItem = createData(data, signer, { tags, target, anchor });
