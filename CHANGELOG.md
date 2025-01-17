@@ -1,3 +1,10 @@
+# [3.3.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2025-01-17)
+
+
+### Bug Fixes
+
+* **ants:** tag with ao authority ([f08af65](https://github.com/ar-io/ar-io-sdk/commit/f08af656909bb18d17367e7b1822cc547061818e))
+
 # [3.3.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2025-01-17)
 
 
