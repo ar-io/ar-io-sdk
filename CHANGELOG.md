@@ -1,3 +1,10 @@
+# [3.3.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2025-01-17)
+
+
+### Bug Fixes
+
+* **types:** simplify types for init functions, cleanup contructors ([cd0afa6](https://github.com/ar-io/ar-io-sdk/commit/cd0afa6815fad5a7a17321a792af9b7a3ab578ce))
+
 # [3.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2025-01-17)
 
 
