@@ -1,3 +1,50 @@
+# [3.3.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2025-01-17)
+
+
+### Bug Fixes
+
+* **ants:** tag with ao authority ([f08af65](https://github.com/ar-io/ar-io-sdk/commit/f08af656909bb18d17367e7b1822cc547061818e))
+
+# [3.3.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2025-01-17)
+
+
+### Bug Fixes
+
+* **types:** simplify types for init functions, cleanup contructors ([cd0afa6](https://github.com/ar-io/ar-io-sdk/commit/cd0afa6815fad5a7a17321a792af9b7a3ab578ce))
+
+# [3.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2025-01-17)
+
+
+### Bug Fixes
+
+* **arconnect:** use signDataItem method, signature is deprecated ([11e2378](https://github.com/ar-io/ar-io-sdk/commit/11e237867df80bc21e1c89abcfc469707dea5310))
+
+# [3.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2025-01-17)
+
+
+### Bug Fixes
+
+* **module id:** update ant module id ([9e122af](https://github.com/ar-io/ar-io-sdk/commit/9e122afce22f5480252b35d2710e6f80e532a93c))
+
+# [3.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2025-01-15)
+
+
+### Bug Fixes
+
+* **types:** simplify types for init functions, cleanup contructors ([2197d99](https://github.com/ar-io/ar-io-sdk/commit/2197d99e65e18dec2d3231d3e049af0929ae44b6))
+
+# [3.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2025-01-15)
+
+
+### Bug Fixes
+
+* **error handling:** use a consolidated regexp for msg.Error and msg.Tags.Error PE-7417 ([770a81e](https://github.com/ar-io/ar-io-sdk/commit/770a81e669463bc97e4401cd98d819623579459d))
+
+
+### Features
+
+* add writeAction sdk/cli command for utility PE-7417 ([1953504](https://github.com/ar-io/ar-io-sdk/commit/19535045e3a3c92850c7d3b8c101cbf9f3d82ff3))
+
 # [3.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2025-01-15)
 
 

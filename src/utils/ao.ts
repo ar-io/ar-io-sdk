@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createData } from '@dha-team/arbundles';
+import { ArconnectSigner, DataItem, createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
@@ -24,6 +24,7 @@ import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
   AOS_MODULE_ID,
+  AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { AoANTRecord } from '../types/ant.js';
@@ -55,6 +56,7 @@ export type SpawnANTParams = {
   stateContractTxId?: string;
   antRegistryId?: string;
   logger?: Logger;
+  authority?: string;
   /**
    * @deprecated Compiled modules are now being used instead of luaCodeTxId
    */
@@ -74,6 +76,7 @@ export async function spawnANT({
   stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
+  authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
   // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
   const processId = await ao.spawn({
@@ -81,6 +84,11 @@ export async function spawnANT({
     scheduler,
     signer,
     tags: [
+      // Required for AOS to initialize the authorities table
+      {
+        name: 'Authority',
+        value: authority,
+      },
       {
         name: 'ANT-Registry-Id',
         value: antRegistryId,
@@ -237,6 +245,21 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
     ) {
       await signer.setPublicKey();
     }
+    if (signer instanceof ArconnectSigner) {
+      // Sign using Arconnect signDataItem API
+      const signedDataItem = await signer['signer'].signDataItem({
+        data,
+        tags,
+        target,
+        anchor,
+      });
+      const dataItem = new DataItem(Buffer.from(signedDataItem));
+      return {
+        id: await dataItem.id,
+        raw: await dataItem.getRaw(),
+      };
+    }
+
     const dataItem = createData(data, signer, { tags, target, anchor });
     const signedData = dataItem.sign(signer).then(async () => ({
       id: await dataItem.id,

@@ -64,23 +64,25 @@ export type PaginationResult<T> = {
   hasMore: boolean;
 };
 
-// Configuration
-export type ProcessConfiguration =
-  | {
-      process?: AOProcess;
-    }
-  | {
-      processId?: string;
-    };
+export type ProcessIdConfig = {
+  processId?: string;
+};
 
-export type EpochInput =
-  | {
-      epochIndex: AoEpochIndex;
-    }
-  | {
-      timestamp: Timestamp;
-    }
-  | undefined;
+export type ProcessConfig = {
+  process?: AOProcess;
+};
+
+export type ProcessConfiguration = ProcessConfig | ProcessIdConfig;
+
+export type EpochTimestampInput = {
+  timestamp: Timestamp;
+};
+
+export type EpochIndexInput = {
+  epochIndex: AoEpochIndex;
+};
+
+export type EpochInput = EpochTimestampInput | EpochIndexInput | undefined;
 
 // AO/ARIO Contract
 export type AoBalances = Record<WalletAddress, number>;
@@ -174,7 +176,7 @@ export type AoEpochData = {
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
-  // @deprecated - use `getDistributions` to get distribution data for a given epoch
+  /** @deprecated - use `getDistributions` to get distribution data for a given epoch **/
   distributions: AoEpochDistributionData;
 };
 export type AoTokenSupplyData = {
@@ -704,13 +706,13 @@ export interface AoARIOWrite extends AoARIORead {
 // Typeguard functions
 export function isProcessConfiguration(
   config: object,
-): config is { process: AOProcess } {
+): config is Required<ProcessConfiguration> & Record<string, never> {
   return 'process' in config;
 }
 
 export function isProcessIdConfiguration(
   config: object,
-): config is { processId: string } {
+): config is Required<ProcessIdConfig> & Record<string, never> {
   return (
     'processId' in config &&
     typeof config.processId === 'string' &&
