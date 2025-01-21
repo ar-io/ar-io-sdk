@@ -1,3 +1,11 @@
+# [3.3.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2025-01-21)
+
+
+### Bug Fixes
+
+* **error handling:** trim escape codes from thrown error PE-7417 ([6dcf641](https://github.com/ar-io/ar-io-sdk/commit/6dcf64184c55e831fd18b8f6d195e6ab92e01c22))
+* **pagination:** allow nested keys in sortBy pagination params utility type PE-7428 ([8ae8d88](https://github.com/ar-io/ar-io-sdk/commit/8ae8d88003f0ba3392128953df9dcee16c8bed04))
+
 # [3.3.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2025-01-17)
 
 
