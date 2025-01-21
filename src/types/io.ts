@@ -41,7 +41,7 @@ type NestedKeys<T> = T extends object
       }[keyof T & string]
   : never;
 
-type SortBy<T> = T extends string
+export type SortBy<T> = T extends string
   ? string
   : keyof T extends never
     ? string
@@ -336,7 +336,8 @@ export type AoAddressParams = {
 
 export type AoBalanceParams = AoAddressParams;
 
-export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
+export type AoPaginatedAddressParams = PaginationParams<string> &
+  AoAddressParams;
 
 export type AoDelegateStakeParams = {
   target: WalletAddress;

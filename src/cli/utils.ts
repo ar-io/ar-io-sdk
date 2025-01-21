@@ -40,6 +40,7 @@ import {
   FundFrom,
   Logger,
   PaginationParams,
+  SortBy,
   SpawnANTState,
   WriteOptions,
   createAoSigner,
@@ -283,11 +284,11 @@ export function requiredAddressFromOptions<O extends AddressCLIOptions>(
 }
 
 const defaultCliPaginationLimit = 10; // more friendly UX than 100
-export function paginationParamsFromOptions<O extends PaginationCLIOptions>(
+export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
   options: O,
   // TODO: Use a type for sortBy and we could assert against arrays of the fields we want sort by
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): PaginationParams & { sortBy: any } {
+): PaginationParams<R> {
   const { cursor, limit, sortBy, sortOrder } = options;
   if (sortOrder !== undefined && !['asc', 'desc'].includes(sortOrder)) {
     throw new Error(
@@ -302,8 +303,7 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions>(
   return {
     cursor,
     limit: numberLimit,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    sortBy: sortBy as any,
+    sortBy: sortBy as SortBy<R>,
     sortOrder,
   };
 }
