@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoGetCostDetailsParams } from '../../types/io.js';
+import {
+  AoArNSNameData,
+  AoDelegation,
+  AoGatewayDelegateWithAddress,
+  AoGatewayVault,
+  AoGetCostDetailsParams,
+} from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndNameCLIOptions,
@@ -65,7 +71,10 @@ export async function getGatewayDelegates(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getGatewayDelegates({
     address,
-    ...paginationParamsFromOptions(o),
+    ...paginationParamsFromOptions<
+      AddressCLIOptions,
+      AoGatewayDelegateWithAddress
+    >(o),
   });
 
   return result.items?.length
@@ -79,7 +88,9 @@ export async function getDelegations(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getDelegations({
     address,
-    ...paginationParamsFromOptions(o),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoDelegation>(
+      o,
+    ),
   });
 
   return result.items?.length
@@ -93,7 +104,7 @@ export async function getAllowedDelegates(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getAllowedDelegates({
     address,
-    ...paginationParamsFromOptions(o),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, string>(o),
   });
 
   return result.items?.length
@@ -114,7 +125,7 @@ export async function getArNSRecord(o: NameCLIOptions) {
 
 export async function listArNSRecords(o: PaginationCLIOptions) {
   const records = await readARIOFromOptions(o).getArNSRecords(
-    paginationParamsFromOptions(o),
+    paginationParamsFromOptions<PaginationCLIOptions, AoArNSNameData>(o),
   );
   return records.items.length ? records : { message: 'No records found' };
 }
@@ -236,7 +247,9 @@ export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getGatewayVaults({
     address,
-    ...paginationParamsFromOptions(o),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoGatewayVault>(
+      o,
+    ),
   });
 
   return result.items?.length

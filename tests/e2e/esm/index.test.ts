@@ -294,6 +294,29 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able to get a page of gateways sorted by nested key like `weights.compositeWeight`', async () => {
+      const gateways = await ario.getGateways({
+        limit: 3,
+        sortBy: 'weights.compositeWeight',
+        sortOrder: 'desc',
+      });
+      assert.ok(gateways);
+      assert(gateways.limit === 3);
+      assert(gateways.sortOrder === 'desc');
+      assert(gateways.sortBy === 'weights.compositeWeight');
+      assert(typeof gateways.totalItems === 'number');
+      assert(Array.isArray(gateways.items));
+      let lastWeight = Infinity;
+      gateways.items.forEach((gateway) => {
+        assert(typeof gateway.weights === 'object');
+        assert(typeof gateway.weights.compositeWeight === 'number');
+
+        // Ensure the sort order is correct
+        assert(gateway.weights.compositeWeight <= lastWeight);
+        lastWeight = gateway.weights.compositeWeight;
+      });
+    });
+
     it('should be able to get a single gateway', async () => {
       const gateway = await ario.getGateway({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
@@ -405,11 +428,10 @@ describe('e2e esm tests', async () => {
       const allowList = await ario.getGatewayDelegateAllowList({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
         limit: 1,
-        sortBy: 'startTimestamp',
+        // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
         sortOrder: 'desc',
       });
       assert.ok(allowList);
-      // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
       assert(allowList.limit === 1);
       assert(allowList.sortOrder === 'desc');
       assert(typeof allowList.totalItems === 'number');

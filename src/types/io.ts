@@ -31,11 +31,26 @@ import {
 import { mARIOToken } from './token.js';
 
 // Pagination
+type NestedKeys<T> = T extends object
+  ? T extends readonly unknown[] // Detect arrays precisely
+    ? never // Exclude arrays
+    : {
+        [K in keyof T & string]: T[K] extends object
+          ? `${K}.${NestedKeys<T[K]>}`
+          : K;
+      }[keyof T & string]
+  : never;
+
+export type SortBy<T> = T extends string
+  ? string
+  : keyof T extends never
+    ? string
+    : NestedKeys<T>;
 
 export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: keyof T extends never ? string : keyof T; // default to string if T is empty
+  sortBy?: SortBy<T>; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
 };
 
@@ -44,7 +59,7 @@ export type PaginationResult<T> = {
   nextCursor?: string;
   limit: number;
   totalItems: number;
-  sortBy?: T extends string ? string : keyof T;
+  sortBy?: SortBy<T>;
   sortOrder: 'asc' | 'desc';
   hasMore: boolean;
 };
@@ -321,7 +336,8 @@ export type AoAddressParams = {
 
 export type AoBalanceParams = AoAddressParams;
 
-export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
+export type AoPaginatedAddressParams = PaginationParams<string> &
+  AoAddressParams;
 
 export type AoDelegateStakeParams = {
   target: WalletAddress;
