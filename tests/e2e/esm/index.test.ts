@@ -15,6 +15,7 @@ import {
   AoANTRegistryWriteable,
   AoANTWriteable,
   ArweaveSigner,
+  WriteInteractionError,
   arioDevnetProcessId,
   createAoSigner,
 } from '@ar.io/sdk';
@@ -34,7 +35,7 @@ const testWallet = JSON.parse(testWalletJSON);
 const signers = [
   new ArweaveSigner(testWallet),
   createAoSigner(new ArweaveSigner(testWallet)),
-];
+] as const;
 
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
@@ -1106,6 +1107,61 @@ describe('e2e esm tests', async () => {
           assert(ant instanceof AoANTWriteable);
         });
       }
+    });
+  });
+
+  describe('AOProcess', async () => {
+    it('catches errors that appear on msg.Error', async () => {
+      const processId = 'KF4wSJa5no2yyDjrDE3hxd5sJoGhLh0UEj8a6Rz3aX8'; // testnet airdrop
+      const process = new AOProcess({
+        processId,
+        ao: aoClient,
+      });
+
+      const error = await process
+        .send({
+          signer: signers[1],
+          tags: [
+            {
+              name: 'Action',
+              value: 'Register',
+            },
+          ],
+        })
+        .catch((e) => e);
+
+      assert.ok(error);
+      assert.ok(error instanceof WriteInteractionError);
+      assert.equal(
+        error.message.split('(')[0].trim(),
+        'Recipient not found for wallet address',
+      );
+    });
+
+    it('catches errors that appear on msg.Tags.Error', async () => {
+      const process = new AOProcess({
+        processId,
+        ao: aoClient,
+      });
+
+      const error = await process
+        .send({
+          signer: signers[1],
+          tags: [
+            {
+              name: 'Action',
+              value: 'Buy-Name',
+            },
+          ],
+        })
+        .catch((e) => e);
+
+      assert.ok(error);
+      assert.ok(error instanceof WriteInteractionError);
+      assert.equal(
+        error.message.split('(')[0].trim(),
+        'Name is required and must be a string.',
+      );
     });
   });
 });
