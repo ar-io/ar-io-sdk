@@ -17,6 +17,7 @@ import { connect } from '@permaweb/aoconnect';
 
 import { AOContract, AoClient, AoSigner } from '../../types/index.js';
 import { getRandomText } from '../../utils/base64.js';
+import { errorMessageFromOutput } from '../../utils/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -236,26 +237,4 @@ export class AOProcess implements AOContract {
     }
     throw lastError;
   }
-}
-function errorMessageFromOutput(output: {
-  Error?: string;
-  Messages?: { Tags?: { name: string; value: string }[] }[];
-}): string | undefined {
-  const errorData = output.Error;
-
-  // Attempt to extract error details from Messages.Tags if Error is undefined
-  const error =
-    errorData ??
-    output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
-
-  if (error !== undefined) {
-    // Consolidated regex to match and extract line number and AO error message or Error Tags
-    const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
-    if (match) {
-      const [, lineNumber, errorMessage] = match;
-      return `${errorMessage.trim()} (line ${lineNumber.trim()})`.trim();
-    }
-  }
-
-  return undefined;
 }

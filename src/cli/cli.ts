@@ -1011,6 +1011,7 @@ makeCommand({
   action: async (options) => {
     const process = new AOProcess({
       processId: requiredProcessIdFromOptions(options),
+      logger: getLoggerFromOptions(options),
     });
     return process.send<AoMessageResult>({
       tags: writeActionTagsFromOptions(options).tags ?? [],
