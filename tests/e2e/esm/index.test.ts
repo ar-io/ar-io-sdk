@@ -34,7 +34,7 @@ const testWallet = JSON.parse(testWalletJSON);
 const signers = [
   new ArweaveSigner(testWallet),
   createAoSigner(new ArweaveSigner(testWallet)),
-];
+] as const;
 
 const aoClient = connect({
   CU_URL: 'http://localhost:6363',
