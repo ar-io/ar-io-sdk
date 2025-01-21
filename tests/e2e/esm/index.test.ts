@@ -1110,7 +1110,8 @@ describe('e2e esm tests', async () => {
     });
   });
 
-  describe('AOProcess', async () => {
+  // Skipping due to inconsistent results with spun up CU
+  describe.skip('AOProcess', async () => {
     it('catches errors that appear on msg.Error', async () => {
       const processId = 'KF4wSJa5no2yyDjrDE3hxd5sJoGhLh0UEj8a6Rz3aX8'; // testnet airdrop
       const process = new AOProcess({
