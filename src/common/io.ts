@@ -45,6 +45,7 @@ import {
   AoARIORead,
   AoARIOWrite,
   AoAllDelegates,
+  AoAllGatewayVaults,
   AoArNSNameData,
   AoArNSPurchaseParams,
   AoArNSReservedNameDataWithName,
@@ -708,6 +709,17 @@ export class ARIOReadable implements AoARIORead {
     return this.process.read({
       tags: [
         { name: 'Action', value: 'All-Paginated-Delegates' },
+        ...paginationParamsToTags(params),
+      ],
+    });
+  }
+
+  async getAllGatewayVaults(
+    params?: PaginationParams<AoAllGatewayVaults>,
+  ): Promise<PaginationResult<AoAllGatewayVaults>> {
+    return this.process.read({
+      tags: [
+        { name: 'Action', value: 'All-Gateway-Vaults' },
         ...paginationParamsToTags(params),
       ],
     });
