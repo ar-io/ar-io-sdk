@@ -424,6 +424,35 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able to get the first page of all gateway vaults', async () => {
+      const vaults = await ario.getAllGatewayVaults({
+        limit: 1,
+        sortBy: 'balance',
+        sortOrder: 'desc',
+      });
+      assert.ok(vaults);
+      assert(vaults.limit === 1);
+      assert(vaults.sortOrder === 'desc');
+      assert(vaults.sortBy === 'balance');
+      assert(typeof vaults.totalItems === 'number');
+      assert(typeof vaults.sortBy === 'string');
+      assert(typeof vaults.sortOrder === 'string');
+      assert(typeof vaults.limit === 'number');
+      assert(typeof vaults.hasMore === 'boolean');
+      if (vaults.nextCursor) {
+        assert(typeof vaults.nextCursor === 'string');
+      }
+      assert(Array.isArray(vaults.items));
+      vaults.items.forEach((vault) => {
+        assert(typeof vault.balance === 'number');
+        assert(typeof vault.startTimestamp === 'number');
+        assert(typeof vault.endTimestamp === 'number');
+        assert(typeof vault.gatewayAddress === 'string');
+        assert(typeof vault.cursorId === 'string');
+        assert(typeof vault.vaultId === 'string');
+      });
+    });
+
     it('should be able to get gateway delegate allow list', async () => {
       const allowList = await ario.getGatewayDelegateAllowList({
         address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
