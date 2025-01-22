@@ -259,6 +259,18 @@ export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
       };
 }
 
+export async function getAllGatewayVaults(o: PaginationCLIOptions) {
+  const result = await readARIOFromOptions(o).getAllGatewayVaults(
+    paginationParamsFromOptions(o),
+  );
+
+  return result.items?.length
+    ? result
+    : {
+        message: `No vaults found`,
+      };
+}
+
 export async function getVault(o: AddressAndVaultIdCLIOptions) {
   return readARIOFromOptions(o)
     .getVault({
