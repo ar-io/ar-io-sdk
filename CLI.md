@@ -121,6 +121,7 @@ Commands:
   get-redelegation-fee [options]          Get redelegation fee
   get-vault [options]                     Get the vault of provided address and vault ID
   get-gateway-vaults [options]            Get the vaults of a gateway
+  list-all-gateway-vaults [options]       List vaults from all gateways
   transfer [options]                      Transfer ARIO to another address
   join-network [options]                  Join a gateway to the AR.IO network
   leave-network [options]                 Leave a gateway from the AR.IO network
@@ -163,6 +164,7 @@ Commands:
   reassign-name [options]                 Reassign the name of an ANT process to another ANT process
   approve-primary-name-request [options]  Approve a primary name request
   remove-primary-names [options]          Remove primary names
+  write-action [options]                  Send a write action to an AO Process
   help [command]                          display help for command
 ```
 

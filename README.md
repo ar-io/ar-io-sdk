@@ -47,6 +47,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
     - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
     - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
+    - [`getAllGatewayVaults({ cursor, limit, sortBy, sortOrder })`](#getallgatewayvaults-cursor-limit-sortby-sortorder-)
     - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
     - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
     - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
@@ -951,6 +952,43 @@ const vaults = await ario.getGatewayVaults({
 ```
 
 </details>
+
+#### `getAllGatewayVaults({ cursor, limit, sortBy, sortOrder })`
+
+Retrieves all vaults across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
+
+```typescript
+const ario = ARIO.init();
+const vaults = await ario.getAllGatewayVaults({
+  limit: 1,
+  sortBy: 'endTimestamp',
+  sortOrder: 'desc',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": true,
+  "totalItems": 95,
+  "limit": 1,
+  "sortBy": "endTimestamp",
+  "items": [
+    {
+      "cursorId": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
+      "gatewayAddress": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM",
+      "startTimestamp": 1728067635857,
+      "balance": 50000000000,
+      "vaultId": "E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc",
+      "endTimestamp": 1735843635857
+    }
+  ],
+  "nextCursor": "PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM_E-QVU3dta36Wia2uQw6tQLjQk7Qw5uN0Z6fUzsoqzUc"
+}
+```
 
 #### `increaseOperatorStake({ qty })`
 
