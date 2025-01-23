@@ -67,26 +67,46 @@ export const getEpochDataFromGql = async ({
   arweave,
   epochIndex,
   processId = ARIO_TESTNET_PROCESS_ID,
+  retries = 3,
 }: {
   arweave: Arweave;
   epochIndex: number;
   processId?: string;
+  retries?: number;
 }): Promise<AoEpochData | undefined> => {
   // fetch from gql
   const query = epochDistributionNoticeGqlQuery({ epochIndex, processId });
-  const response = await arweave.api.post('graphql', query);
-  // parse the nodes to get the id
-  if (response.data.data.transactions?.edges?.length === 0) {
-    return undefined;
+  // add three retries with exponential backoff
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await arweave.api.post('graphql', query);
+      // parse the nodes to get the id
+      if (response.data.data.transactions?.edges?.length === 0) {
+        return undefined;
+      }
+      const id = response.data.data.transactions.edges[0].node.id;
+      // fetch the transaction from arweave
+      const transaction = await arweave.api.get<AoEpochData>(id);
+      // assert it is the correct type
+      return parseAoEpochData(transaction.data);
+    } catch (error) {
+      if (i === retries - 1) throw error; // Re-throw on final attempt
+      // exponential backoff
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, i) * 1000),
+      );
+    }
   }
-  const id = response.data.data.transactions.edges[0].node.id;
-  // fetch the transaction from arweave
-  const transaction = await arweave.api.get<AoEpochData>(id);
-  const data = transaction.data;
-  // assert it is the correct type
-  return parseAoEpochData(data);
+  return undefined;
 };
 
+/**
+ * Get the epoch with distribution data for the current epoch
+ * @param arweave - The Arweave instance
+ * @param epochIndex - The index of the epoch
+ * @param processId - The process ID (optional, defaults to ARIO_TESTNET_PROCESS_ID)
+ * @returns string - The stringified GQL query
+ */
 export const epochDistributionNoticeGqlQuery = ({
   epochIndex,
   processId = ARIO_TESTNET_PROCESS_ID,
