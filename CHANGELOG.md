@@ -1,3 +1,10 @@
+# [3.3.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2025-01-23)
+
+
+### Bug Fixes
+
+* **gql:** add retries when fetching epoch distribution data from arweave ([42c1534](https://github.com/ar-io/ar-io-sdk/commit/42c153438cb0c45671ea68eebc4778b825885cc8))
+
 # [3.3.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2025-01-21)
 
 
