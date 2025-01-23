@@ -1,3 +1,11 @@
+# [3.3.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.13...v3.3.0-alpha.14) (2025-01-23)
+
+
+### Features
+
+* **get all vaults:** init command PE-7220 ([e74a6e4](https://github.com/ar-io/ar-io-sdk/commit/e74a6e41c1ec8c0d149844715b69e14123fa661d))
+* **get all vaults:** init type and ARIO method PE-7220 ([e8f5a74](https://github.com/ar-io/ar-io-sdk/commit/e8f5a749c550a3133decf7302f2947e5c755a390))
+
 # [3.3.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2025-01-23)
 
 
