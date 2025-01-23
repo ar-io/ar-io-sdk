@@ -260,6 +260,12 @@ export type AoGatewayDelegateWithAddress = AoGatewayDelegate & {
   address: WalletAddress;
 };
 
+export type AoAllDelegates = AoGatewayDelegateWithAddress & {
+  gatewayAddress: WalletAddress;
+  vaultedStake: number;
+  cursorId: string;
+};
+
 export type AoGatewaySettings = {
   allowDelegatedStaking: boolean | 'allowlist';
   delegateRewardShareRatio: number;
@@ -307,6 +313,7 @@ export type AoStakeDelegation = AoDelegationBase & {
 
 export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
 
+/** Operator stake being withdrawn from a given gateway */
 export type AoGatewayVault = {
   cursorId: string;
   vaultId: TransactionId;
@@ -314,6 +321,12 @@ export type AoGatewayVault = {
   endTimestamp: Timestamp;
   startTimestamp: Timestamp;
 };
+
+/** Operator stake being withdrawn from all gateway gateways */
+export type AoAllGatewayVaults = AoGatewayVault & {
+  gatewayAddress: WalletAddress;
+};
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -595,16 +608,10 @@ export interface AoARIORead {
   getAllDelegates(
     params?: PaginationParams<AoAllDelegates>,
   ): Promise<PaginationResult<AoAllDelegates>>;
+  getAllGatewayVaults(
+    params?: PaginationParams<AoAllGatewayVaults>,
+  ): Promise<PaginationResult<AoAllGatewayVaults>>;
 }
-
-export type AoAllDelegates = {
-  address: WalletAddress;
-  gatewayAddress: WalletAddress;
-  delegatedStake: number;
-  startTimestamp: Timestamp;
-  vaultedStake: number;
-  cursorId: string;
-};
 
 export interface AoARIOWrite extends AoARIORead {
   // write interactions

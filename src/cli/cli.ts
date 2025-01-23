@@ -42,6 +42,7 @@ import {
   updateGatewaySettings,
 } from './commands/gatewayWriteCommands.js';
 import {
+  getAllGatewayVaults,
   getAllowedDelegates,
   getArNSRecord,
   getArNSReservedName,
@@ -91,7 +92,6 @@ import {
   AddressCLIOptions,
   DecreaseDelegateStakeCLIOptions,
   InitiatorCLIOptions,
-  PaginationAddressCLIOptions,
   PaginationCLIOptions,
   ProcessIdCLIOptions,
   ProcessIdWriteActionCLIOptions,
@@ -406,11 +406,18 @@ makeCommand({
   action: getVault,
 });
 
-makeCommand<PaginationAddressCLIOptions>({
+makeCommand({
   name: 'get-gateway-vaults',
   description: 'Get the vaults of a gateway',
   options: paginationAddressOptions,
   action: getGatewayVaults,
+});
+
+makeCommand({
+  name: 'list-all-gateway-vaults',
+  description: 'List vaults from all gateways',
+  options: paginationAddressOptions,
+  action: getAllGatewayVaults,
 });
 
 makeCommand({
