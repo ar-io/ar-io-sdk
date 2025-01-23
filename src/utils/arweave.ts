@@ -81,7 +81,7 @@ export const getEpochDataFromGql = async ({
     try {
       const response = await arweave.api.post('graphql', query);
       // parse the nodes to get the id
-      if (response.data.data.transactions?.edges?.length === 0) {
+      if (response.data?.data?.transactions?.edges?.length === 0) {
         return undefined;
       }
       const id = response.data.data.transactions.edges[0].node.id;
