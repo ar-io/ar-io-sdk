@@ -1,115 +1,3 @@
-# [3.3.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.13...v3.3.0-alpha.14) (2025-01-23)
-
-
-### Features
-
-* **get all vaults:** init command PE-7220 ([e74a6e4](https://github.com/ar-io/ar-io-sdk/commit/e74a6e41c1ec8c0d149844715b69e14123fa661d))
-* **get all vaults:** init type and ARIO method PE-7220 ([e8f5a74](https://github.com/ar-io/ar-io-sdk/commit/e8f5a749c550a3133decf7302f2947e5c755a390))
-
-# [3.3.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.12...v3.3.0-alpha.13) (2025-01-23)
-
-
-### Bug Fixes
-
-* **gql:** add retries when fetching epoch distribution data from arweave ([42c1534](https://github.com/ar-io/ar-io-sdk/commit/42c153438cb0c45671ea68eebc4778b825885cc8))
-
-# [3.3.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.11...v3.3.0-alpha.12) (2025-01-21)
-
-
-### Bug Fixes
-
-* **error handling:** trim escape codes from thrown error PE-7417 ([6dcf641](https://github.com/ar-io/ar-io-sdk/commit/6dcf64184c55e831fd18b8f6d195e6ab92e01c22))
-* **pagination:** allow nested keys in sortBy pagination params utility type PE-7428 ([8ae8d88](https://github.com/ar-io/ar-io-sdk/commit/8ae8d88003f0ba3392128953df9dcee16c8bed04))
-
-# [3.3.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.10...v3.3.0-alpha.11) (2025-01-17)
-
-
-### Bug Fixes
-
-* **ants:** tag with ao authority ([f08af65](https://github.com/ar-io/ar-io-sdk/commit/f08af656909bb18d17367e7b1822cc547061818e))
-
-# [3.3.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.9...v3.3.0-alpha.10) (2025-01-17)
-
-
-### Bug Fixes
-
-* **types:** simplify types for init functions, cleanup contructors ([cd0afa6](https://github.com/ar-io/ar-io-sdk/commit/cd0afa6815fad5a7a17321a792af9b7a3ab578ce))
-
-# [3.3.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.8...v3.3.0-alpha.9) (2025-01-17)
-
-
-### Bug Fixes
-
-* **arconnect:** use signDataItem method, signature is deprecated ([11e2378](https://github.com/ar-io/ar-io-sdk/commit/11e237867df80bc21e1c89abcfc469707dea5310))
-
-# [3.3.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.7...v3.3.0-alpha.8) (2025-01-17)
-
-
-### Bug Fixes
-
-* **module id:** update ant module id ([9e122af](https://github.com/ar-io/ar-io-sdk/commit/9e122afce22f5480252b35d2710e6f80e532a93c))
-
-# [3.3.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.6...v3.3.0-alpha.7) (2025-01-15)
-
-
-### Bug Fixes
-
-* **types:** simplify types for init functions, cleanup contructors ([2197d99](https://github.com/ar-io/ar-io-sdk/commit/2197d99e65e18dec2d3231d3e049af0929ae44b6))
-
-# [3.3.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.5...v3.3.0-alpha.6) (2025-01-15)
-
-
-### Bug Fixes
-
-* **error handling:** use a consolidated regexp for msg.Error and msg.Tags.Error PE-7417 ([770a81e](https://github.com/ar-io/ar-io-sdk/commit/770a81e669463bc97e4401cd98d819623579459d))
-
-
-### Features
-
-* add writeAction sdk/cli command for utility PE-7417 ([1953504](https://github.com/ar-io/ar-io-sdk/commit/19535045e3a3c92850c7d3b8c101cbf9f3d82ff3))
-
-# [3.3.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.4...v3.3.0-alpha.5) (2025-01-15)
-
-
-### Bug Fixes
-
-* **logs:** add processId to read error logs, include stack trace ([51b7e38](https://github.com/ar-io/ar-io-sdk/commit/51b7e3811a5cc8cbe04a07da8fb2e47b9d1b6cb8))
-
-# [3.3.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.3...v3.3.0-alpha.4) (2025-01-14)
-
-
-### Features
-
-* **get all delegates:** init getAllDelegates type/handler PE-7221 ([b015582](https://github.com/ar-io/ar-io-sdk/commit/b01558282838582882afd6e64afb8efbdbb99d7a))
-* **get all delegates:** init list-all-delegates command PE-7221 ([a632563](https://github.com/ar-io/ar-io-sdk/commit/a6325639b79cbe2943625fc71c882ba2189c9cda))
-
-# [3.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.2...v3.3.0-alpha.3) (2025-01-14)
-
-
-### Bug Fixes
-
-* **ids:** add module and code ids ([7474ccd](https://github.com/ar-io/ar-io-sdk/commit/7474ccd6ecb33a572f4991f42eb292adac76435f))
-
-# [3.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.1...v3.3.0-alpha.2) (2025-01-14)
-
-
-### Bug Fixes
-
-* **arweave:** use defaultArweave when fetching data ([acf3e02](https://github.com/ar-io/ar-io-sdk/commit/acf3e0227106ba29c6e874fcd134ce243aca3e41))
-
-# [3.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0-alpha.1) (2025-01-14)
-
-
-### Bug Fixes
-
-* **spawn:** spawn ANTs with a custom ANT module instead of aos module ([2359b5b](https://github.com/ar-io/ar-io-sdk/commit/2359b5bb2af7d09a95d07d051bca73631e5c01ac))
-* **test:** double test timeout ([4a52b81](https://github.com/ar-io/ar-io-sdk/commit/4a52b817bdc9781e58e524d7a04ebe161973b09a))
-
-
-### Features
-
-* **io:** fetch historical epoch data from gql ([b627d55](https://github.com/ar-io/ar-io-sdk/commit/b627d551587d8e77b4b95a1f224ad64a2465dd38))
-
 # [3.2.0](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0) (2025-01-13)
 
 
@@ -117,7 +5,6 @@
 
 * **ant:** add `getLogo` api ([eddc3a8](https://github.com/ar-io/ar-io-sdk/commit/eddc3a8212173c2dcbc80742b2d2637a8fe7d7d7))
 * **ario:** use standardize tags for registration fees and cost details ([3f5fdbe](https://github.com/ar-io/ar-io-sdk/commit/3f5fdbe175277d5399bedf29d06dbcf7e96cd199))
-* **io:** remove new APIs ([d916ab6](https://github.com/ar-io/ar-io-sdk/commit/d916ab61b1d1b6823eaef91594d4e1e21a95fc2d))
 * **types:** add `Buy-Name` to supported intent types ([b5a6d01](https://github.com/ar-io/ar-io-sdk/commit/b5a6d01a2168fd6f5d8a4b278cabe27b751556be))
 
 
@@ -131,11 +18,11 @@
 
 ### Bug Fixes
 
-* dont get old arweave block timestamps on read actions ([1792ee8](https://github.com/ar-io/ar-io-sdk/commit/1792ee81c2edd33514271415aa84b4453ff1a804))
-* dont return null when stringified null is found in message data on ao.read ([c5873e6](https://github.com/ar-io/ar-io-sdk/commit/c5873e6b686efa547b006e248337fcca0793446d))
-* **eth signer:** use a unique anchor in ans-104 headers ([8cd5587](https://github.com/ar-io/ar-io-sdk/commit/8cd5587630141b8eb048505ffa424e9a37add80f))
-* format process errors to be more user friendly PE-7327 ([3449e32](https://github.com/ar-io/ar-io-sdk/commit/3449e324572355817469ec7bb3c99c4909437a21))
-* **io:** fix `AoEpochData` type, add prescribedNames ([1ba3588](https://github.com/ar-io/ar-io-sdk/commit/1ba358814d7019475ce049e0d5d8af1f76c429fc))
+* **ario** dont get old arweave block timestamps on read actions ([1792ee8](https://github.com/ar-io/ar-io-sdk/commit/1792ee81c2edd33514271415aa84b4453ff1a804))
+* **ario** dont return null when stringified null is found in message data on ao.read ([c5873e6](https://github.com/ar-io/ar-io-sdk/commit/c5873e6b686efa547b006e248337fcca0793446d))
+* **signer:** use a unique anchor in ans-104 headers ([8cd5587](https://github.com/ar-io/ar-io-sdk/commit/8cd5587630141b8eb048505ffa424e9a37add80f))
+* **errors**format process errors to be more user friendly PE-7327 ([3449e32](https://github.com/ar-io/ar-io-sdk/commit/3449e324572355817469ec7bb3c99c4909437a21))
+* **ario:** fix `AoEpochData` type, add prescribedNames ([1ba3588](https://github.com/ar-io/ar-io-sdk/commit/1ba358814d7019475ce049e0d5d8af1f76c429fc))
 * **tags:** prune out empty tags ([de0ec83](https://github.com/ar-io/ar-io-sdk/commit/de0ec83803ad536121cb8e1a2c269e50dec9341f))
 * **types:** fix funding plan vaults type ([1cea7db](https://github.com/ar-io/ar-io-sdk/commit/1cea7dbd75a8da6a3a7352cb40edbc49aa20f8a0))
 * **types:** revert prescribedObserver type ([ca60f6f](https://github.com/ar-io/ar-io-sdk/commit/ca60f6f493f34976753a33a8917e68ac1951a3f9))
