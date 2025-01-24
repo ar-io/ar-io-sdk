@@ -1115,6 +1115,7 @@ const delegates = await ario.getAllDelegates({
 ```
 
 </details>
+
 ### Arweave Name System (ArNS)
 
 #### `buyRecord({ name, type, years, processId })`
