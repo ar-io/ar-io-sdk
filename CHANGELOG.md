@@ -1,3 +1,36 @@
+# [3.3.0](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0) (2025-01-24)
+
+
+### Bug Fixes
+
+* **ants:** tag with ao authority ([f08af65](https://github.com/ar-io/ar-io-sdk/commit/f08af656909bb18d17367e7b1822cc547061818e))
+* **ao:** add ao client for ants in emitter ([489c040](https://github.com/ar-io/ar-io-sdk/commit/489c040dddc47f2da411be17c9a0e039ee296a78))
+* **arconnect:** use signDataItem method, signature is deprecated ([11e2378](https://github.com/ar-io/ar-io-sdk/commit/11e237867df80bc21e1c89abcfc469707dea5310))
+* **arweave:** use defaultArweave when fetching data ([acf3e02](https://github.com/ar-io/ar-io-sdk/commit/acf3e0227106ba29c6e874fcd134ce243aca3e41))
+* **error handling:** trim escape codes from thrown error PE-7417 ([6dcf641](https://github.com/ar-io/ar-io-sdk/commit/6dcf64184c55e831fd18b8f6d195e6ab92e01c22))
+* **error handling:** use a consolidated regexp for msg.Error and msg.Tags.Error PE-7417 ([770a81e](https://github.com/ar-io/ar-io-sdk/commit/770a81e669463bc97e4401cd98d819623579459d))
+* **gql:** add retries when fetching epoch distribution data from arweave ([42c1534](https://github.com/ar-io/ar-io-sdk/commit/42c153438cb0c45671ea68eebc4778b825885cc8))
+* **ids:** add module and code ids ([7474ccd](https://github.com/ar-io/ar-io-sdk/commit/7474ccd6ecb33a572f4991f42eb292adac76435f))
+* **import:** use import from file ([f8fe7b4](https://github.com/ar-io/ar-io-sdk/commit/f8fe7b4eda600055c8374c4c1c0b38a3d597640c))
+* **logs:** add processId to read error logs, include stack trace ([51b7e38](https://github.com/ar-io/ar-io-sdk/commit/51b7e3811a5cc8cbe04a07da8fb2e47b9d1b6cb8))
+* **module id:** update ant module id ([9e122af](https://github.com/ar-io/ar-io-sdk/commit/9e122afce22f5480252b35d2710e6f80e532a93c))
+* **pagination:** allow nested keys in sortBy pagination params utility type PE-7428 ([8ae8d88](https://github.com/ar-io/ar-io-sdk/commit/8ae8d88003f0ba3392128953df9dcee16c8bed04))
+* **spawn:** spawn ANTs with a custom ANT module instead of aos module ([2359b5b](https://github.com/ar-io/ar-io-sdk/commit/2359b5bb2af7d09a95d07d051bca73631e5c01ac))
+* **test:** double test timeout ([4a52b81](https://github.com/ar-io/ar-io-sdk/commit/4a52b817bdc9781e58e524d7a04ebe161973b09a))
+* **ts:** add root dir ([e33eba5](https://github.com/ar-io/ar-io-sdk/commit/e33eba5316638f98bd5b6fe09c4ad53d96bdf238))
+* **types:** simplify types for init functions, cleanup contructors ([2197d99](https://github.com/ar-io/ar-io-sdk/commit/2197d99e65e18dec2d3231d3e049af0929ae44b6))
+* **types:** simplify types for init functions, cleanup contructors ([cd0afa6](https://github.com/ar-io/ar-io-sdk/commit/cd0afa6815fad5a7a17321a792af9b7a3ab578ce))
+
+
+### Features
+
+* add writeAction sdk/cli command for utility PE-7417 ([1953504](https://github.com/ar-io/ar-io-sdk/commit/19535045e3a3c92850c7d3b8c101cbf9f3d82ff3))
+* **get all delegates:** init getAllDelegates type/handler PE-7221 ([b015582](https://github.com/ar-io/ar-io-sdk/commit/b01558282838582882afd6e64afb8efbdbb99d7a))
+* **get all delegates:** init list-all-delegates command PE-7221 ([a632563](https://github.com/ar-io/ar-io-sdk/commit/a6325639b79cbe2943625fc71c882ba2189c9cda))
+* **get all vaults:** init command PE-7220 ([e74a6e4](https://github.com/ar-io/ar-io-sdk/commit/e74a6e41c1ec8c0d149844715b69e14123fa661d))
+* **get all vaults:** init type and ARIO method PE-7220 ([e8f5a74](https://github.com/ar-io/ar-io-sdk/commit/e8f5a749c550a3133decf7302f2947e5c755a390))
+* **io:** fetch historical epoch data from gql ([b627d55](https://github.com/ar-io/ar-io-sdk/commit/b627d551587d8e77b4b95a1f224ad64a2465dd38))
+
 # [3.2.0](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0) (2025-01-13)
 
 
