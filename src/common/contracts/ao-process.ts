@@ -17,6 +17,7 @@ import { connect } from '@permaweb/aoconnect';
 
 import { AOContract, AoClient, AoSigner } from '../../types/index.js';
 import { getRandomText } from '../../utils/base64.js';
+import { errorMessageFromOutput } from '../../utils/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -24,8 +25,8 @@ import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
   private logger: ILogger;
-  private processId: string;
   private ao: AoClient;
+  public readonly processId: string;
 
   constructor({
     processId,
@@ -63,8 +64,9 @@ export class AOProcess implements AOContract {
     let lastError: Error | undefined;
     while (attempts < retries) {
       try {
-        this.logger.debug(`Evaluating read interaction on contract`, {
+        this.logger.debug(`Evaluating read interaction on process`, {
           tags,
+          processId: this.processId,
         });
         // map tags to inputs
         const dryRunInput = {
@@ -77,6 +79,7 @@ export class AOProcess implements AOContract {
         const result = await this.ao.dryrun(dryRunInput);
         this.logger.debug(`Read interaction result`, {
           result,
+          processId: this.processId,
         });
 
         const error = errorMessageFromOutput(result);
@@ -87,8 +90,11 @@ export class AOProcess implements AOContract {
         if (result.Messages === undefined || result.Messages.length === 0) {
           this.logger.debug(
             `Process ${this.processId} does not support provided action.`,
-            result,
-            tags,
+            {
+              result,
+              tags,
+              processId: this.processId,
+            },
           );
           throw new Error(
             `Process ${this.processId} does not support provided action.`,
@@ -101,15 +107,17 @@ export class AOProcess implements AOContract {
           return undefined as K;
         }
 
-        const response: K = safeDecode<K>(result.Messages[0].Data);
+        const response: K = safeDecode<K>(messageData);
         return response;
-      } catch (e) {
+      } catch (error: any) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
-          error: e instanceof Error ? e.message : e,
+          error: error?.message,
+          stack: error?.stack,
           tags,
+          processId: this.processId,
         });
-        lastError = e;
+        lastError = error;
 
         // exponential backoff
         await new Promise((resolve) =>
@@ -202,18 +210,20 @@ export class AOProcess implements AOContract {
         });
 
         return { id: messageId, result: resultData };
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error('Error sending message to process', {
-          error: error.message,
+          error: error?.message,
+          stack: error?.stack,
           processId: this.processId,
           tags,
         });
-        // throw on write interaction errors. No point retrying wr ite interactions, waste of gas.
+
+        // throw on write interaction errors. No point retrying write interactions, waste of gas.
         if (error.message.includes('500')) {
           this.logger.debug('Retrying send interaction', {
             attempts,
             retries,
-            error: error.message,
+            error: error?.message,
             processId: this.processId,
           });
           // exponential backoff
@@ -227,29 +237,4 @@ export class AOProcess implements AOContract {
     }
     throw lastError;
   }
-}
-
-function errorMessageFromOutput(output: {
-  Error?: string;
-  Messages?: { Tags?: { name: string; value: string }[] }[];
-}): string | undefined {
-  const errorData = output.Error;
-  if (errorData !== undefined) {
-    // TODO: Could clean this one up too, current error is verbose, but not always deterministic for parsing
-    // Throw the whole raw error if AO process level error
-    return errorData;
-  }
-
-  const error = output.Messages?.[0]?.Tags?.find(
-    (tag) => tag.name === 'Error',
-  )?.value;
-  if (error !== undefined) {
-    // from [string "aos"]:6846: Name is already registered
-    const lineNumber = error.match(/\d+/)?.[0];
-    const message = error.replace(/\[string "aos"\]:\d+:/, '');
-    // to more user friendly: Name is already registered (line 6846)
-    return `${message} (line ${lineNumber})`.trim();
-  }
-
-  return undefined;
 }

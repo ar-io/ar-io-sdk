@@ -13,9 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ARWEAVE_TX_REGEX } from '../constants.js';
+import Arweave from 'arweave';
+
+import { ARIO_TESTNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
 import { BlockHeight } from '../types/common.js';
-import { PaginationParams } from '../types/io.js';
+import { AoEpochData, PaginationParams } from '../types/io.js';
+import { parseAoEpochData } from './ao.js';
 
 export const validateArweaveId = (id: string): boolean => {
   return ARWEAVE_TX_REGEX.test(id);
@@ -53,4 +56,87 @@ export const paginationParamsToTags = <T>(
   ];
 
   return pruneTags(tags);
+};
+
+/**
+ * Get the epoch with distribution data for the current epoch
+ * @param arweave - The Arweave instance
+ * @returns The epoch with distribution data
+ */
+export const getEpochDataFromGql = async ({
+  arweave,
+  epochIndex,
+  processId = ARIO_TESTNET_PROCESS_ID,
+  retries = 3,
+}: {
+  arweave: Arweave;
+  epochIndex: number;
+  processId?: string;
+  retries?: number;
+}): Promise<AoEpochData | undefined> => {
+  // fetch from gql
+  const query = epochDistributionNoticeGqlQuery({ epochIndex, processId });
+  // add three retries with exponential backoff
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await arweave.api.post('graphql', query);
+      // parse the nodes to get the id
+      if (response.data?.data?.transactions?.edges?.length === 0) {
+        return undefined;
+      }
+      const id = response.data.data.transactions.edges[0].node.id;
+      // fetch the transaction from arweave
+      const transaction = await arweave.api.get<AoEpochData>(id);
+      // assert it is the correct type
+      return parseAoEpochData(transaction.data);
+    } catch (error) {
+      if (i === retries - 1) throw error; // Re-throw on final attempt
+      // exponential backoff
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, i) * 1000),
+      );
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Get the epoch with distribution data for the current epoch
+ * @param arweave - The Arweave instance
+ * @param epochIndex - The index of the epoch
+ * @param processId - The process ID (optional, defaults to ARIO_TESTNET_PROCESS_ID)
+ * @returns string - The stringified GQL query
+ */
+export const epochDistributionNoticeGqlQuery = ({
+  epochIndex,
+  processId = ARIO_TESTNET_PROCESS_ID,
+}: {
+  epochIndex: number;
+  processId?: string;
+}): string => {
+  // write the query
+  const gqlQuery = JSON.stringify({
+    query: `
+      query {
+        transactions(
+          tags: [
+            { name: "From-Process", values: ["${processId}"] }
+            { name: "Action", values: ["Epoch-Distribution-Notice"] }
+            { name: "Epoch-Index", values: ["${epochIndex}"] }
+            { name: "Data-Protocol", values: ["ao"] }
+          ],
+          owners: ["fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY"],
+          first: 1,
+          sort: HEIGHT_DESC
+        ) {
+          edges {
+            node {
+              id
+            }
+          }
+        }
+      }
+    `,
+  });
+  return gqlQuery;
 };

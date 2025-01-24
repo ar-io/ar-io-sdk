@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { connect } from '@permaweb/aoconnect';
 import { EventEmitter } from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
 
 import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
+import { AOProcess } from '../common/index.js';
 import { ARIO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
 import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
@@ -26,6 +28,7 @@ import { AoANTState } from '../types/ant.js';
 import {
   AoARIORead,
   AoArNSNameData,
+  AoClient,
   ProcessId,
   WalletAddress,
 } from '../types/index.js';
@@ -68,6 +71,7 @@ export class ArNSEventEmitter extends EventEmitter {
   private throttle;
   private logger: ILogger;
   private strict: boolean;
+  private antAoClient: AoClient;
   constructor({
     contract = ARIO.init({
       processId: ARIO_TESTNET_PROCESS_ID,
@@ -76,12 +80,14 @@ export class ArNSEventEmitter extends EventEmitter {
     concurrency = 30,
     logger = Logger.default,
     strict = false,
+    antAoClient = connect(),
   }: {
     contract?: AoARIORead;
     timeoutMs?: number;
     concurrency?: number;
     logger?: ILogger;
     strict?: boolean;
+    antAoClient?: AoClient;
   } = {}) {
     super();
     this.contract = contract;
@@ -89,6 +95,7 @@ export class ArNSEventEmitter extends EventEmitter {
     this.throttle = pLimit(concurrency);
     this.logger = logger;
     this.strict = strict;
+    this.antAoClient = antAoClient;
   }
 
   async fetchProcessesOwnedByWallet({
@@ -147,7 +154,10 @@ export class ArNSEventEmitter extends EventEmitter {
             return;
           }
           const ant = ANT.init({
-            processId,
+            process: new AOProcess({
+              processId,
+              ao: this.antAoClient,
+            }),
             strict: this.strict,
           });
           const state: AoANTState | undefined = (await timeout(

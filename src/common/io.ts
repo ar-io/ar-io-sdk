@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import Arweave from 'arweave';
+
 import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
@@ -30,8 +32,7 @@ import {
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
-  ContractSigner,
-  OptionalSigner,
+  OptionalArweave,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
@@ -43,6 +44,8 @@ import {
 import {
   AoARIORead,
   AoARIOWrite,
+  AoAllDelegates,
+  AoAllGatewayVaults,
   AoArNSNameData,
   AoArNSPurchaseParams,
   AoArNSReservedNameDataWithName,
@@ -70,40 +73,33 @@ import {
 } from '../types/io.js';
 import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
-import { paginationParamsToTags, pruneTags } from '../utils/arweave.js';
+import {
+  getEpochDataFromGql,
+  paginationParamsToTags,
+  pruneTags,
+} from '../utils/arweave.js';
+import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 
+type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
+type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
+
 export class ARIO {
+  // Overload: No arguments -> returns AoARIORead
   static init(): AoARIORead;
-  static init({ process }: { process: AOProcess }): AoARIORead;
-  static init({
-    process,
-    signer,
-  }: WithSigner<{ process: AOProcess }>): AoARIOWrite;
-  static init({
-    processId,
-    signer,
-  }: WithSigner<{
-    processId?: string;
-  }>): AoARIOWrite;
-  static init({
-    processId,
-    signer,
-  }: {
-    signer?: ContractSigner | undefined;
-    processId: string;
-  });
-  static init({ processId }: { processId: string }): AoARIORead;
-  static init(
-    config?: OptionalSigner<ProcessConfiguration>,
-  ): AoARIORead | AoARIOWrite {
-    if (config && config.signer) {
-      const { signer, ...rest } = config;
-      return new ARIOWriteable({
-        ...rest,
-        signer,
-      });
+
+  // Overload: config with signer -> returns AoARIOWrite
+  static init(config: ARIOConfigWithSigner): AoARIOWrite;
+
+  // Overload: config without signer -> returns AoARIORead
+  static init(config: ARIOConfigNoSigner): AoARIORead;
+
+  // Implementation
+  static init(config?: ARIOConfig): AoARIORead | AoARIOWrite {
+    if (config !== undefined && 'signer' in config) {
+      return new ARIOWriteable(config);
     }
     return new ARIOReadable(config);
   }
@@ -112,9 +108,10 @@ export class ARIO {
 export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
-
-  constructor(config?: ProcessConfiguration) {
-    if (!config) {
+  protected arweave: Arweave;
+  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+    this.arweave = config?.arweave ?? defaultArweave;
+    if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ARIO_TESTNET_PROCESS_ID,
       });
@@ -166,6 +163,16 @@ export class ARIOReadable implements AoARIORead {
     return Math.floor((timestamp - epochZeroStartTimestamp) / epochLengthMs);
   }
 
+  private async computeCurrentEpochIndex(): Promise<number> {
+    const epochSettings = await this.getEpochSettings();
+    const epochZeroStartTimestamp = epochSettings.epochZeroStartTimestamp;
+    const epochLengthMs = epochSettings.durationMs;
+    const currentTimestamp = Date.now();
+    return Math.floor(
+      (currentTimestamp - epochZeroStartTimestamp) / epochLengthMs,
+    );
+  }
+
   private async computeEpochIndex(
     params?: EpochInput,
   ): Promise<string | undefined> {
@@ -188,13 +195,24 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
+  async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: +epochIndex,
+        processId: this.process.processId,
+      });
+      return epochData;
+    }
+    // go to the process epoch and fetch the epoch data
     const allTags = [
       { name: 'Action', value: 'Epoch' },
       { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
     ];
 
-    return this.process.read<AoEpochData>({
+    return this.process.read<AoEpochData | undefined>({
       tags: pruneTags(allTags),
     });
   }
@@ -328,7 +346,7 @@ export class ARIOReadable implements AoARIORead {
       tags: [
         { name: 'Action', value: 'Paginated-Allowed-Delegates' },
         { name: 'Address', value: address },
-        ...paginationParamsToTags(pageParams),
+        ...paginationParamsToTags<WalletAddress | undefined>(pageParams),
       ],
     });
   }
@@ -374,7 +392,22 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getObservations(epoch?: EpochInput): Promise<AoEpochObservationData> {
+  // we need to find the epoch index for the epoch that is currently being distributed and fetch it from gql
+
+  async getObservations(
+    epoch?: EpochInput,
+  ): Promise<AoEpochObservationData | undefined> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: +epochIndex,
+        processId: this.process.processId,
+      });
+      return epochData?.observations;
+    }
+    // go to the process epoch and fetch the observations
     const allTags = [
       { name: 'Action', value: 'Epoch-Observations' },
       { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
@@ -385,7 +418,20 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData> {
+  async getDistributions(
+    epoch?: EpochInput,
+  ): Promise<AoEpochDistributionData | undefined> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: +epochIndex,
+        processId: this.process.processId,
+      });
+      return epochData?.distributions;
+    }
+    // go to the process epoch and fetch the distributions
     const allTags = [
       { name: 'Action', value: 'Epoch-Distributions' },
       { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
@@ -656,40 +702,44 @@ export class ARIOReadable implements AoARIORead {
       tags: [{ name: 'Action', value: 'Gateway-Registry-Settings' }],
     });
   }
+
+  async getAllDelegates(
+    params?: PaginationParams<AoAllDelegates>,
+  ): Promise<PaginationResult<AoAllDelegates>> {
+    return this.process.read({
+      tags: [
+        { name: 'Action', value: 'All-Paginated-Delegates' },
+        ...paginationParamsToTags(params),
+      ],
+    });
+  }
+
+  async getAllGatewayVaults(
+    params?: PaginationParams<AoAllGatewayVaults>,
+  ): Promise<PaginationResult<AoAllGatewayVaults>> {
+    return this.process.read({
+      tags: [
+        { name: 'Action', value: 'All-Gateway-Vaults' },
+        ...paginationParamsToTags(params),
+      ],
+    });
+  }
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  constructor({
-    signer,
-    ...config
-  }: WithSigner<
-    | {
-        process?: AOProcess;
-      }
-    | { processId?: string }
-  >) {
-    if (Object.keys(config).length === 0) {
+  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+    if (config === undefined) {
       super({
         process: new AOProcess({
           processId: ARIO_TESTNET_PROCESS_ID,
         }),
       });
-      this.signer = createAoSigner(signer);
-    } else if (isProcessConfiguration(config)) {
-      super({ process: config.process });
-      this.signer = createAoSigner(signer);
-    } else if (isProcessIdConfiguration(config)) {
-      super({
-        process: new AOProcess({
-          processId: config.processId,
-        }),
-      });
-      this.signer = createAoSigner(signer);
     } else {
-      throw new InvalidContractConfigurationError();
+      super(config);
     }
+    this.signer = createAoSigner(signer);
   }
 
   async transfer(

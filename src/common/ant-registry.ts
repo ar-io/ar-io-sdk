@@ -21,7 +21,6 @@ import {
 import {
   AoMessageResult,
   AoSigner,
-  OptionalSigner,
   ProcessConfiguration,
   WithSigner,
   isProcessConfiguration,
@@ -30,24 +29,25 @@ import {
 import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
+type ANTRegistryNoSigner = ProcessConfiguration;
+type ANTRegistryWithSigner = WithSigner<ProcessConfiguration>;
+type ANTRegistryConfig = ANTRegistryNoSigner | ANTRegistryWithSigner;
+
 export class ANTRegistry {
+  // by default give read
   static init(): AoANTRegistryRead;
+
+  // no signer give read
+  static init(config: ANTRegistryNoSigner): AoANTRegistryRead;
+
+  // with signer give write
+  static init(config: ANTRegistryWithSigner): AoANTRegistryWrite;
+
   static init(
-    config: Required<ProcessConfiguration> & { signer?: undefined },
-  ): AoANTRegistryRead;
-  static init({
-    signer,
-    ...config
-  }: WithSigner<Required<ProcessConfiguration>>): AoANTRegistryWrite;
-  static init(
-    config?: OptionalSigner<ProcessConfiguration>,
+    config?: ANTRegistryConfig,
   ): AoANTRegistryRead | AoANTRegistryWrite {
-    if (config && config.signer) {
-      const { signer, ...rest } = config;
-      return new AoANTRegistryWriteable({
-        ...rest,
-        signer,
-      });
+    if (config !== undefined && 'signer' in config) {
+      return new AoANTRegistryWriteable(config);
     }
     return new AoANTRegistryReadable(config);
   }
@@ -57,23 +57,18 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
   protected process: AOProcess;
 
   constructor(config?: ProcessConfiguration) {
-    if (
-      config &&
-      (isProcessIdConfiguration(config) || isProcessConfiguration(config))
-    ) {
-      if (isProcessConfiguration(config)) {
-        this.process = config.process;
-      } else if (isProcessIdConfiguration(config)) {
-        this.process = new AOProcess({
-          processId: config.processId,
-        });
-      } else {
-        throw new InvalidContractConfigurationError();
-      }
-    } else {
+    if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ANT_REGISTRY_ID,
       });
+    } else if (isProcessConfiguration(config)) {
+      this.process = config.process;
+    } else if (isProcessIdConfiguration(config)) {
+      this.process = new AOProcess({
+        processId: config.processId,
+      });
+    } else {
+      throw new InvalidContractConfigurationError();
     }
   }
 

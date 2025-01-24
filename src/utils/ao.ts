@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createData } from '@dha-team/arbundles';
+import { ArconnectSigner, DataItem, createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
@@ -24,11 +24,13 @@ import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
   AOS_MODULE_ID,
+  AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
 import { AoANTRecord } from '../types/ant.js';
 import {
   AoClient,
+  AoEpochData,
   AoSigner,
   ContractSigner,
   WalletAddress,
@@ -48,46 +50,48 @@ export type SpawnANTState = {
 export type SpawnANTParams = {
   signer: AoSigner;
   module?: string;
-  luaCodeTxId?: string;
   ao?: AoClient;
   scheduler?: string;
   state?: SpawnANTState;
   stateContractTxId?: string;
   antRegistryId?: string;
   logger?: Logger;
+  authority?: string;
+  /**
+   * @deprecated Compiled modules are now being used instead of luaCodeTxId
+   */
+  luaCodeTxId?: string;
+  /**
+   * @deprecated no longer in use due to compiled modules being preferred
+   */
   arweave?: Arweave;
 };
 
 export async function spawnANT({
   signer,
   module = AOS_MODULE_ID,
-  luaCodeTxId = ANT_LUA_ID,
   ao = connect(),
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
   stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
-  arweave = defaultArweave,
+  authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
-  //TODO: cache locally and only fetch if not cached
-  const luaString = (await arweave.transactions.getData(luaCodeTxId, {
-    decode: true,
-    string: true,
-  })) as string;
-
+  // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
   const processId = await ao.spawn({
     module,
     scheduler,
     signer,
     tags: [
+      // Required for AOS to initialize the authorities table
+      {
+        name: 'Authority',
+        value: authority,
+      },
       {
         name: 'ANT-Registry-Id',
         value: antRegistryId,
-      },
-      {
-        name: 'Source-Code-TX-ID', // utility for understanding what the original source id of the lua code was
-        value: luaCodeTxId,
       },
     ],
   });
@@ -98,22 +102,10 @@ export async function spawnANT({
     logger,
   });
 
-  const { id: evalId } = await aosClient.send({
-    tags: [
-      { name: 'Action', value: 'Eval' },
-      { name: 'App-Name', value: 'ArNS-ANT' },
-      { name: 'Source-Code-TX-ID', value: luaCodeTxId },
-    ],
-    data: luaString,
-    signer,
-  });
-
   logger.debug(`Spawned ANT`, {
     processId,
     module,
     scheduler,
-    luaCodeTxId,
-    evalId,
   });
 
   if (state) {
@@ -134,7 +126,7 @@ export async function spawnANT({
       initializeMsgId,
     });
   }
-
+  // This could be done by the ANT in On-Boot to self-register with its tagged ANT registry
   const registryClient = ANTRegistry.init({
     process: new AOProcess({
       processId: antRegistryId,
@@ -253,6 +245,21 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
     ) {
       await signer.setPublicKey();
     }
+    if (signer instanceof ArconnectSigner) {
+      // Sign using Arconnect signDataItem API
+      const signedDataItem = await signer['signer'].signDataItem({
+        data,
+        tags,
+        target,
+        anchor,
+      });
+      const dataItem = new DataItem(Buffer.from(signedDataItem));
+      return {
+        id: await dataItem.id,
+        raw: await dataItem.getRaw(),
+      };
+    }
+
     const dataItem = createData(data, signer, { tags, target, anchor });
     const signedData = dataItem.sign(signer).then(async () => ({
       id: await dataItem.id,
@@ -296,4 +303,62 @@ export function initANTStateForAddress({
       },
     },
   };
+}
+
+/**
+ * Uses zod schema to parse the epoch data
+ */
+export function parseAoEpochData(value: unknown): AoEpochData {
+  const epochDataSchema = z.object({
+    startTimestamp: z.number(),
+    startHeight: z.number(),
+    distributions: z.any(),
+    endTimestamp: z.number(),
+    prescribedObservers: z.any(),
+    prescribedNames: z.array(z.string()),
+    observations: z.any(),
+    distributionTimestamp: z.number(),
+    epochIndex: z.number(),
+  });
+  return epochDataSchema.parse(value) as AoEpochData;
+}
+
+export function errorMessageFromOutput(output: {
+  Error?: string;
+  Messages?: { Tags?: { name: string; value: string }[] }[];
+}): string | undefined {
+  const errorData = output.Error;
+
+  // Attempt to extract error details from Messages.Tags if Error is undefined
+  const error =
+    errorData ??
+    output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
+
+  if (error !== undefined) {
+    // Consolidated regex to match and extract line number and AO error message or Error Tags
+    const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
+    if (match) {
+      const [, lineNumber, errorMessage] = match;
+      const cleanError = removeUnicodeFromError(errorMessage);
+      return `${cleanError.trim()} (line ${lineNumber.trim()})`.trim();
+    }
+    // With no match, just remove unicode
+    return removeUnicodeFromError(error);
+  }
+
+  return undefined;
+}
+
+export function removeUnicodeFromError(error: string): string {
+  //The regular expression /[\u001b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g is designed to match ANSI escape codes used for terminal formatting. These are sequences that begin with \u001b (ESC character) and are often followed by [ and control codes.
+  const ESC = String.fromCharCode(27); // Represents '\u001b' or '\x1b'
+  return error
+    .replace(
+      new RegExp(
+        `${ESC}[\\[\\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]`,
+        'g',
+      ),
+      '',
+    )
+    .trim();
 }

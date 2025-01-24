@@ -33,7 +33,6 @@ import {
 import {
   AoMessageResult,
   AoSigner,
-  OptionalSigner,
   ProcessConfiguration,
   WalletAddress,
   WithSigner,
@@ -45,35 +44,26 @@ import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
-export class ANT {
-  static init(
-    config: Required<ProcessConfiguration> & {
-      signer?: undefined;
-      strict?: boolean;
-    },
-  ): AoANTRead;
-  static init({
-    signer,
-    ...config
-  }: WithSigner<Required<ProcessConfiguration>> & {
-    strict?: boolean;
-  }): AoANTWrite;
-  static init({
-    signer,
-    strict = false,
-    ...config
-  }: OptionalSigner<Required<ProcessConfiguration>> & { strict?: boolean }):
-    | AoANTRead
-    | AoANTWrite {
-    // ao supported implementation
-    if (isProcessConfiguration(config) || isProcessIdConfiguration(config)) {
-      if (!signer) {
-        return new AoANTReadable({ strict, ...config });
-      }
-      return new AoANTWriteable({ signer, strict, ...config });
-    }
+type ANTConfigOptionalStrict = Required<ProcessConfiguration> & {
+  strict?: boolean;
+};
+type ANTConfigNoSigner = ANTConfigOptionalStrict;
+type ANTConfigWithSigner = WithSigner<ANTConfigOptionalStrict>;
+type ANTConfig = ANTConfigNoSigner | ANTConfigWithSigner;
 
-    throw new InvalidContractConfigurationError();
+export class ANT {
+  // no signer give read
+  static init(config: ANTConfigNoSigner): AoANTRead;
+
+  // with signer give write
+  static init(config: ANTConfigWithSigner): AoANTWrite;
+
+  // implementation
+  static init(config: ANTConfig): AoANTRead | AoANTWrite {
+    if (config !== undefined && 'signer' in config) {
+      return new AoANTWriteable(config);
+    }
+    return new AoANTReadable(config);
   }
 }
 
@@ -81,7 +71,7 @@ export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
   private strict: boolean;
 
-  constructor(config: Required<ProcessConfiguration> & { strict?: boolean }) {
+  constructor(config: ANTConfigOptionalStrict) {
     this.strict = config.strict || false;
     if (isProcessConfiguration(config)) {
       this.process = config.process;

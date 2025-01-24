@@ -31,11 +31,26 @@ import {
 import { mARIOToken } from './token.js';
 
 // Pagination
+type NestedKeys<T> = T extends object
+  ? T extends readonly unknown[] // Detect arrays precisely
+    ? never // Exclude arrays
+    : {
+        [K in keyof T & string]: T[K] extends object
+          ? `${K}.${NestedKeys<T[K]>}`
+          : K;
+      }[keyof T & string]
+  : never;
+
+export type SortBy<T> = T extends string
+  ? string
+  : keyof T extends never
+    ? string
+    : NestedKeys<T>;
 
 export type PaginationParams<T = Record<string, never>> = {
   cursor?: string;
   limit?: number;
-  sortBy?: keyof T extends never ? string : keyof T; // default to string if T is empty
+  sortBy?: SortBy<T>; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
 };
 
@@ -44,28 +59,30 @@ export type PaginationResult<T> = {
   nextCursor?: string;
   limit: number;
   totalItems: number;
-  sortBy?: T extends string ? string : keyof T;
+  sortBy?: SortBy<T>;
   sortOrder: 'asc' | 'desc';
   hasMore: boolean;
 };
 
-// Configuration
-export type ProcessConfiguration =
-  | {
-      process?: AOProcess;
-    }
-  | {
-      processId?: string;
-    };
+export type ProcessIdConfig = {
+  processId?: string;
+};
 
-export type EpochInput =
-  | {
-      epochIndex: AoEpochIndex;
-    }
-  | {
-      timestamp: Timestamp;
-    }
-  | undefined;
+export type ProcessConfig = {
+  process?: AOProcess;
+};
+
+export type ProcessConfiguration = ProcessConfig | ProcessIdConfig;
+
+export type EpochTimestampInput = {
+  timestamp: Timestamp;
+};
+
+export type EpochIndexInput = {
+  epochIndex: AoEpochIndex;
+};
+
+export type EpochInput = EpochTimestampInput | EpochIndexInput | undefined;
 
 // AO/ARIO Contract
 export type AoBalances = Record<WalletAddress, number>;
@@ -159,7 +176,7 @@ export type AoEpochData = {
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
-  // @deprecated - use `getDistributions` to get distribution data for a given epoch
+  /** @deprecated - use `getDistributions` to get distribution data for a given epoch **/
   distributions: AoEpochDistributionData;
 };
 export type AoTokenSupplyData = {
@@ -243,6 +260,12 @@ export type AoGatewayDelegateWithAddress = AoGatewayDelegate & {
   address: WalletAddress;
 };
 
+export type AoAllDelegates = AoGatewayDelegateWithAddress & {
+  gatewayAddress: WalletAddress;
+  vaultedStake: number;
+  cursorId: string;
+};
+
 export type AoGatewaySettings = {
   allowDelegatedStaking: boolean | 'allowlist';
   delegateRewardShareRatio: number;
@@ -290,6 +313,7 @@ export type AoStakeDelegation = AoDelegationBase & {
 
 export type AoDelegation = AoStakeDelegation | AoVaultDelegation;
 
+/** Operator stake being withdrawn from a given gateway */
 export type AoGatewayVault = {
   cursorId: string;
   vaultId: TransactionId;
@@ -297,6 +321,12 @@ export type AoGatewayVault = {
   endTimestamp: Timestamp;
   startTimestamp: Timestamp;
 };
+
+/** Operator stake being withdrawn from all gateway gateways */
+export type AoAllGatewayVaults = AoGatewayVault & {
+  gatewayAddress: WalletAddress;
+};
+
 // Input types
 
 // TODO: confirm what is required or if all can be optional and defaults will be provided
@@ -319,7 +349,8 @@ export type AoAddressParams = {
 
 export type AoBalanceParams = AoAddressParams;
 
-export type AoPaginatedAddressParams = PaginationParams & AoAddressParams;
+export type AoPaginatedAddressParams = PaginationParams<string> &
+  AoAddressParams;
 
 export type AoDelegateStakeParams = {
   target: WalletAddress;
@@ -527,8 +558,12 @@ export interface AoARIORead {
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
   getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
-  getObservations(epoch?: EpochInput): Promise<AoEpochObservationData>;
-  getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
+  getObservations(
+    epoch?: EpochInput,
+  ): Promise<AoEpochObservationData | undefined>;
+  getDistributions(
+    epoch?: EpochInput,
+  ): Promise<AoEpochDistributionData | undefined>;
   getTokenCost({
     intent,
     type,
@@ -570,6 +605,12 @@ export interface AoARIORead {
     address: WalletAddress;
   }): Promise<AoRedelegationFeeInfo>;
   getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings>;
+  getAllDelegates(
+    params?: PaginationParams<AoAllDelegates>,
+  ): Promise<PaginationResult<AoAllDelegates>>;
+  getAllGatewayVaults(
+    params?: PaginationParams<AoAllGatewayVaults>,
+  ): Promise<PaginationResult<AoAllGatewayVaults>>;
 }
 
 export interface AoARIOWrite extends AoARIORead {
@@ -673,13 +714,13 @@ export interface AoARIOWrite extends AoARIORead {
 // Typeguard functions
 export function isProcessConfiguration(
   config: object,
-): config is { process: AOProcess } {
+): config is Required<ProcessConfiguration> & Record<string, never> {
   return 'process' in config;
 }
 
 export function isProcessIdConfiguration(
   config: object,
-): config is { processId: string } {
+): config is Required<ProcessIdConfig> & Record<string, never> {
   return (
     'processId' in config &&
     typeof config.processId === 'string' &&
