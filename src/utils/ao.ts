@@ -16,10 +16,11 @@
 import { ArconnectSigner, DataItem, createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
+import { Tag } from 'arweave/node/lib/transaction.js';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
-import { ANTRegistry, AOProcess, Logger } from '../common/index.js';
+import { AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
@@ -83,6 +84,7 @@ export async function spawnANT({
     module,
     scheduler,
     signer,
+    data: state ? JSON.stringify(state) : undefined,
     tags: [
       // Required for AOS to initialize the authorities table
       {
@@ -93,58 +95,17 @@ export async function spawnANT({
         name: 'ANT-Registry-Id',
         value: antRegistryId,
       },
+      ...([
+        { name: 'State-Contract-TX-ID', value: stateContractTxId },
+        { name: 'Initialize-State', value: state ? 'true' : undefined },
+      ].filter((tag) => tag.value !== undefined) as Tag[]),
     ],
-  });
-
-  const aosClient = new AOProcess({
-    processId,
-    ao,
-    logger,
   });
 
   logger.debug(`Spawned ANT`, {
     processId,
     module,
     scheduler,
-  });
-
-  if (state) {
-    const { id: initializeMsgId } = await aosClient.send({
-      tags: [
-        { name: 'Action', value: 'Initialize-State' },
-        ...(stateContractTxId !== undefined
-          ? [{ name: 'State-Contract-TX-ID', value: stateContractTxId }]
-          : []),
-      ],
-      data: JSON.stringify(state),
-      signer,
-    });
-    logger.debug(`Initialized ANT`, {
-      processId,
-      module,
-      scheduler,
-      initializeMsgId,
-    });
-  }
-  // This could be done by the ANT in On-Boot to self-register with its tagged ANT registry
-  const registryClient = ANTRegistry.init({
-    process: new AOProcess({
-      processId: antRegistryId,
-      ao,
-      logger,
-    }),
-    signer: signer,
-  });
-  const { id: antRegistrationMsgId } = await registryClient.register({
-    processId,
-  });
-
-  logger.debug(`Registered ANT to ANT Registry`, {
-    processId,
-    module,
-    scheduler,
-    antRegistrationMsgId,
-    antRegistryId,
   });
 
   return processId;
