@@ -1,12 +1,3 @@
-# [3.3.0-alpha.15](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0-alpha.14...v3.3.0-alpha.15) (2025-01-24)
-
-
-### Bug Fixes
-
-* **ao:** add ao client for ants in emitter ([489c040](https://github.com/ar-io/ar-io-sdk/commit/489c040dddc47f2da411be17c9a0e039ee296a78))
-* **import:** use import from file ([f8fe7b4](https://github.com/ar-io/ar-io-sdk/commit/f8fe7b4eda600055c8374c4c1c0b38a3d597640c))
-* **ts:** add root dir ([e33eba5](https://github.com/ar-io/ar-io-sdk/commit/e33eba5316638f98bd5b6fe09c4ad53d96bdf238))
-
 # [3.2.0](https://github.com/ar-io/ar-io-sdk/compare/v3.1.0...v3.2.0) (2025-01-13)
 
 
