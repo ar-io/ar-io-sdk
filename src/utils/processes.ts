@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoClient } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import { EventEmitter } from 'eventemitter3';
 import { pLimit } from 'plimit-lit';
@@ -29,6 +28,7 @@ import { AoANTState } from '../types/ant.js';
 import {
   AoARIORead,
   AoArNSNameData,
+  AoClient,
   ProcessId,
   WalletAddress,
 } from '../types/index.js';

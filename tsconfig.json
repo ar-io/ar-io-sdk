@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "rootDir": "src",
     "target": "esnext",
     "allowSyntheticDefaultImports": true,
     "lib": ["esnext"],
