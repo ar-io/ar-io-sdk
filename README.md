@@ -990,6 +990,8 @@ const vaults = await ario.getAllGatewayVaults({
 }
 ```
 
+</details>
+
 #### `increaseOperatorStake({ qty })`
 
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.
@@ -1112,6 +1114,7 @@ const delegates = await ario.getAllDelegates({
 }
 ```
 
+</details>
 ### Arweave Name System (ArNS)
 
 #### `buyRecord({ name, type, years, processId })`
