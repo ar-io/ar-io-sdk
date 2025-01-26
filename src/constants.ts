@@ -39,7 +39,7 @@ export const ARIO_TESTNET_PROCESS_ID =
 
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MARIO_PER_ARIO = 1_000_000;
-export const AOS_MODULE_ID = '_wSmbjfSlX3dZNcqE8JqKmj-DKum9uQ_jB08LwOKCyw';
+export const AOS_MODULE_ID = 'ra9B3DBMKv_Zm9ZoRpEea9Qknd_hwpTrVDWIvlAlpbo';
 export const ANT_LUA_ID = '1YqVEdJDvcpQ6qEWXYBEaVqB_NzAz4qPAsnUqLf5m3I';
 
 export const AO_AUTHORITY = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY';

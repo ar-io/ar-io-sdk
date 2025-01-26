@@ -16,7 +16,6 @@
 import { ArconnectSigner, DataItem, createData } from '@dha-team/arbundles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
-import { Tag } from 'arweave/node/lib/transaction.js';
 import { z } from 'zod';
 
 import { defaultArweave } from '../common/arweave.js';
@@ -74,7 +73,6 @@ export async function spawnANT({
   ao = connect(),
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
-  stateContractTxId,
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   authority = AO_AUTHORITY,
@@ -95,10 +93,6 @@ export async function spawnANT({
         name: 'ANT-Registry-Id',
         value: antRegistryId,
       },
-      ...([
-        { name: 'State-Contract-TX-ID', value: stateContractTxId },
-        { name: 'Initialize-State', value: state ? 'true' : undefined },
-      ].filter((tag) => tag.value !== undefined) as Tag[]),
     ],
   });
 
