@@ -1,24 +1,32 @@
 import '@testing-library/jest-dom';
 import { render, screen, waitFor } from '@testing-library/react';
 import { act } from 'react';
-import { DockerComposeEnvironment, Wait } from 'testcontainers';
-import { beforeAll, describe, expect, it } from 'vitest';
+import {
+  DockerComposeEnvironment,
+  StartedDockerComposeEnvironment,
+  Wait,
+} from 'testcontainers';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import App from './App';
 
 const projectRootPath = process.cwd();
 
 describe('ESM browser validation', () => {
-  let compose;
+  let compose: StartedDockerComposeEnvironment;
   beforeAll(async () => {
     compose = await new DockerComposeEnvironment(
       projectRootPath,
       '../docker-compose.test.yml',
     )
-      .withBuild()
       .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
       .up(['ao-cu']);
   }, 120_000);
+
+  afterAll(async () => {
+    await compose.down();
+  });
+
   it('should load the app and SDK', async () => {
     await act(async () => render(<App />));
 
