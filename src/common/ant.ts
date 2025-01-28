@@ -430,10 +430,10 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.setBaseName({ transactionId: "123", ttlSeconds: 100 });
+   * ant.setBaseNameRecord({ transactionId: "123", ttlSeconds: 100 });
    * ```
    */
-  async setBaseName({
+  async setBaseNameRecord({
     transactionId,
     ttlSeconds,
   }: {
@@ -463,7 +463,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setUndername({ undername: "dapp", transactionId: "123", ttlSeconds: 100 });
    * ```
    */
-  async setUndername({
+  async setUndernameRecord({
     undername,
     transactionId,
     ttlSeconds,
@@ -486,10 +486,10 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.removeUndername({ undername: "dapp" }); // removes dapp_ardrive.ar.io
+   * ant.removeUndernameRecord({ undername: "dapp" }); // removes dapp_ardrive.ar.io
    * ```
    */
-  async removeUndername({
+  async removeUndernameRecord({
     undername,
   }: {
     undername: string;
@@ -500,7 +500,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   /**
    * Removes a record from the ANT. This will remove the record from the ANT. If '@' is provided, the top level name will be removed.
    *
-   * @deprecated Use removeUndername instead.
+   * @deprecated Use removeUndernameRecord instead.
    * @param undername @type {string} The record you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example

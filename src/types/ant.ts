@@ -238,14 +238,14 @@ export interface AoANTWrite extends AoANTRead {
     { undername }: { undername: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
-  setBaseName({
+  setBaseNameRecord({
     transactionId,
     ttlSeconds,
   }: {
     transactionId: string;
     ttlSeconds: number;
   }): Promise<AoMessageResult>;
-  setUndername({
+  setUndernameRecord({
     undername,
     transactionId,
     ttlSeconds,
@@ -254,7 +254,7 @@ export interface AoANTWrite extends AoANTRead {
     transactionId: string;
     ttlSeconds: number;
   }): Promise<AoMessageResult>;
-  removeUndername({
+  removeUndernameRecord({
     undername,
   }: {
     undername: string;
