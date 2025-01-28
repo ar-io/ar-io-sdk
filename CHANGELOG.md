@@ -1,3 +1,10 @@
+## [3.3.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.2...v3.3.1-alpha.3) (2025-01-28)
+
+
+### Bug Fixes
+
+* **ant:** bumps ids ([8eb2e38](https://github.com/ar-io/ar-io-sdk/commit/8eb2e388fe15e18b049c735ab414b750b7aa439b))
+
 ## [3.3.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.1...v3.3.1-alpha.2) (2025-01-26)
 
 
