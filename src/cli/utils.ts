@@ -543,6 +543,13 @@ export function writeANTFromOptions(
   });
 }
 
+export function booleanFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): boolean {
+  return !!options[key];
+}
+
 export function requiredStringFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,

@@ -62,8 +62,10 @@ import {
   AoIncreaseUndernameLimitParams,
   AoPaginatedAddressParams,
   AoRegistrationFees,
+  AoRevokeVaultParams,
   AoTokenCostParams,
   AoVaultData,
+  AoVaultedTransferParams,
   AoWalletVault,
   CostDetailsResult,
   DemandFactorSettings,
@@ -765,6 +767,46 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           name: 'Quantity',
           value: qty.valueOf().toString(),
         },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async vaultedTransfer(
+    {
+      recipient,
+      quantity,
+      lockLengthMs,
+      revokable = false,
+    }: AoVaultedTransferParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+
+    return this.process.send({
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Vaulted-Transfer' },
+        { name: 'Recipient', value: recipient },
+        { name: 'Quantity', value: quantity.toString() },
+        { name: 'Lock-Length', value: lockLengthMs.toString() },
+        { name: 'Revokable', value: `${revokable}` },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async revokeVault(
+    { vaultId, recipient }: AoRevokeVaultParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Revoke-Vault' },
+        { name: 'Vault-Id', value: vaultId },
+        { name: 'Recipient', value: recipient },
       ],
       signer: this.signer,
     });

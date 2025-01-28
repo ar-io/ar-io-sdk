@@ -13,17 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TransferCLIOptions } from '../types.js';
+import {
+  AoRevokeVaultParams,
+  AoVaultedTransferParams,
+} from '../../types/io.js';
+import {
+  CLIWriteOptionsFromAoParams,
+  JsonSerializable,
+  TransferCLIOptions,
+} from '../types.js';
 import {
   assertEnoughMARIOBalance,
   confirmationPrompt,
   formatARIOWithCommas,
+  formatMARIOToARIOWithCommas,
+  requiredMARIOFromOptions,
+  requiredPositiveIntegerFromOptions,
+  requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
   writeARIOFromOptions,
   writeActionTagsFromOptions,
 } from '../utils.js';
 
-export async function transfer(options: TransferCLIOptions) {
+export async function transferCLICommand(options: TransferCLIOptions) {
   const { target, arioQuantity } =
     requiredTargetAndQuantityFromOptions(options);
   const { ario, signerAddress } = writeARIOFromOptions(options);
@@ -55,6 +67,88 @@ export async function transfer(options: TransferCLIOptions) {
     senderAddress: signerAddress,
     transferResult: result,
     message: `Successfully transferred ${formatARIOWithCommas(arioQuantity)} ARIO to ${target}`,
+  };
+
+  return output;
+}
+
+export async function vaultedTransferCLICommand(
+  o: CLIWriteOptionsFromAoParams<AoVaultedTransferParams>,
+): Promise<JsonSerializable> {
+  const mARIOQuantity = requiredMARIOFromOptions(o, 'quantity');
+  const recipient = requiredStringFromOptions(o, 'recipient');
+  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const lockLengthMs = requiredPositiveIntegerFromOptions(o, 'lockLengthMs');
+
+  if (!o.skipConfirmation) {
+    await assertEnoughMARIOBalance({
+      ario,
+      address: signerAddress,
+      mARIOQuantity,
+    });
+
+    const confirm = await confirmationPrompt(
+      `Are you sure you want transfer ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO to ${recipient}, locked in a ${o.revokable ? 'non-' : ''}revokable vault for ${lockLengthMs}ms?`,
+    );
+    if (!confirm) {
+      return { message: 'Transfer aborted by user' };
+    }
+  }
+
+  const result = await ario.vaultedTransfer(
+    {
+      recipient,
+      quantity: mARIOQuantity,
+      lockLengthMs,
+      revokable: o.revokable,
+    },
+    writeActionTagsFromOptions(o),
+  );
+
+  const output = {
+    senderAddress: signerAddress,
+    transferResult: result,
+    message: `Successfully vaulted transferred ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO to ${recipient}`,
+  };
+
+  return output;
+}
+
+export async function revokeVaultCLICommand(
+  o: CLIWriteOptionsFromAoParams<AoRevokeVaultParams>,
+): Promise<JsonSerializable> {
+  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const vaultId = requiredStringFromOptions(o, 'vaultId');
+  const recipient = requiredStringFromOptions(o, 'recipient');
+
+  if (!o.skipConfirmation) {
+    const vault = await ario.getVault({ vaultId, address: recipient });
+    if (!vault) {
+      throw new Error(
+        `Vault for recipient '${recipient}' with vault id '${vaultId}' not found`,
+      );
+    }
+
+    const confirm = await confirmationPrompt(
+      `Are you sure you want to revoke vault with id ${vaultId} from ${recipient}?`,
+    );
+    if (!confirm) {
+      return { message: 'Revoke aborted by user' };
+    }
+  }
+
+  const result = await ario.revokeVault(
+    {
+      vaultId,
+      recipient,
+    },
+    writeActionTagsFromOptions(o),
+  );
+
+  const output = {
+    senderAddress: signerAddress,
+    transferResult: result,
+    message: `Successfully revoked vault with id ${vaultId}`,
   };
 
   return output;
