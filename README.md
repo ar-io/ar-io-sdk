@@ -2071,7 +2071,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 // get the ant for the base name
-const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
 const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.setBaseNameRecord({
   transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
@@ -2090,7 +2090,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 > Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
 
 ```typescript
-const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
 const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.setUndernameRecord(
   {
@@ -2154,7 +2154,7 @@ Removes a record from the ANT process.
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
-const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
 const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.removeRecord(
   { undername: 'dapp' },
