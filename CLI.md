@@ -123,6 +123,8 @@ Commands:
   get-gateway-vaults [options]            Get the vaults of a gateway
   list-all-gateway-vaults [options]       List vaults from all gateways
   transfer [options]                      Transfer ARIO to another address
+  vaulted-transfer [options]              Transfer ARIO to another address into a locked vault
+  revoke-vault [options]                  Revoke a vaulted transfer as the controller
   join-network [options]                  Join a gateway to the AR.IO network
   leave-network [options]                 Leave a gateway from the AR.IO network
   update-gateway-settings [options]       Update AR.IO gateway settings

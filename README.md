@@ -33,6 +33,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Vaults](#vaults)
     - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
+    - [`vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`](#vaultedtransfer-recipient-quantity-locklengthms-revokable-)
+    - [`revokeVault({ recipient, vaultId })`](#revokevault-recipient-vaultid-)
   - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
@@ -510,6 +512,40 @@ const vaults = await ario.getVaults({
 ```
 
 </details>
+
+#### `vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`
+
+Transfers `mARIO` to the designated `recipient` address and locks the balance for the specified `lockLengthMs` milliseconds. The `revokable` flag determines if the vaulted transfer can be revoked by the sender.
+
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.vaultedTransfer(
+  {
+    recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    quantity: new ARIOToken(1000).toMARIO(),
+    lockLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+    revokable: true,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `revokeVault({ recipient, vaultId })`
+
+Revokes a vaulted transfer by the recipient address and vault ID. Only the sender of the vaulted transfer can revoke it.
+
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.revokeVault({
+  recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+  vaultId: 'IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs',
+});
+```
 
 ### Gateways
 
