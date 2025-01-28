@@ -420,6 +420,77 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the top level name of the ANT. This is the name that will be used to resolve the ANT (e.g. ardrive.ar.io)
+   * @param transactionId @type {string} The transactionId of the record.
+   * @param ttlSeconds @type {number} The time to live of the record.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setBaseName({ transactionId: "123", ttlSeconds: 100 });
+   * ```
+   */
+  async setBaseName({
+    transactionId,
+    ttlSeconds,
+  }: {
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Set-Record' },
+        { name: 'Sub-Domain', value: '@' },
+        { name: 'Transaction-Id', value: transactionId },
+        { name: 'TTL-Seconds', value: ttlSeconds.toString() },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * Adds or updates an undername of the ANT.
+   * @param undername @type {string} The undername of the ANT.
+   * @param transactionId @type {string} The transactionId of the record.
+   * @param ttlSeconds @type {number} The time to live of the record.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setUnderName({ undername: "ardrive", transactionId: "123", ttlSeconds: 100 });
+   * ```
+   */
+  async setUndername({
+    undername,
+    transactionId,
+    ttlSeconds,
+  }: {
+    undername: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult> {
+    return this.setRecord({
+      undername,
+      transactionId,
+      ttlSeconds,
+    });
+  }
+
+  /**
+   * @param undername @type {string} The undername you want to remove.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.removeUndername({ undername: "ardrive" });
+   * ```
+   */
+  async removeUndername({
+    undername,
+  }: {
+    undername: string;
+  }): Promise<AoMessageResult> {
+    return this.removeRecord({ undername });
+  }
+
+  /**
    * @param undername @type {string} The record you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example

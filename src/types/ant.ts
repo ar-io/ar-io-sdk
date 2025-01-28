@@ -238,6 +238,27 @@ export interface AoANTWrite extends AoANTRead {
     { undername }: { undername: string },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  setBaseName({
+    transactionId,
+    ttlSeconds,
+  }: {
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult>;
+  setUndername({
+    undername,
+    transactionId,
+    ttlSeconds,
+  }: {
+    undername: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult>;
+  removeUndername({
+    undername,
+  }: {
+    undername: string;
+  }): Promise<AoMessageResult>;
   setTicker(
     { ticker }: { ticker: string },
     options?: WriteOptions,
