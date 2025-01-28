@@ -386,6 +386,9 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the transactionId and ttlSeconds of a record (for updating the top level name, use undername "@".)
+   *
+   * @deprecated Use setUndername instead for undernames, and setBaseName instead for the top level name (e.g. "@")
    * @param undername @type {string} The record you want to set the transactionId and ttlSeconds of.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
@@ -421,6 +424,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
   /**
    * Sets the top level name of the ANT. This is the name that will be used to resolve the ANT (e.g. ardrive.ar.io)
+   *
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
@@ -448,14 +452,15 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * Adds or updates an undername of the ANT.
+   * Adds or updates an undername of the ANT. An undername is appended to the base name of the ANT (e.g. ardrive.ar.io) to form a fully qualified name (e.g. dapp_ardrive.ar.io)
+   *
    * @param undername @type {string} The undername of the ANT.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.setUnderName({ undername: "ardrive", transactionId: "123", ttlSeconds: 100 });
+   * ant.setUndername({ undername: "dapp", transactionId: "123", ttlSeconds: 100 });
    * ```
    */
   async setUndername({
@@ -475,11 +480,13 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Removes an undername from the ANT. This will remove the undername from the ANT and the fully qualified name (e.g. dapp_ardrive.ar.io)
+   *
    * @param undername @type {string} The undername you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.removeUndername({ undername: "ardrive" });
+   * ant.removeUndername({ undername: "dapp" }); // removes dapp_ardrive.ar.io
    * ```
    */
   async removeUndername({
@@ -491,11 +498,14 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Removes a record from the ANT. This will remove the record from the ANT. If '@' is provided, the top level name will be removed.
+   *
+   * @deprecated Use removeUndername instead.
    * @param undername @type {string} The record you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.removeRecord({ subDomain: "shorts" });
+   * ant.removeRecord({ undername: "dapp" }); // removes dapp_ardrive.ar.io
    * ```
    */
   async removeRecord(
