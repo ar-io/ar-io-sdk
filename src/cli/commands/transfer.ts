@@ -88,7 +88,7 @@ export async function vaultedTransferCLICommand(
     });
 
     const confirm = await confirmationPrompt(
-      `Are you sure you want transfer ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO to ${recipient}, locked in a ${o.revokable ? 'non-' : ''}revokable vault for ${lockLengthMs}ms?`,
+      `Are you sure you want transfer ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO to ${recipient}, locked in a ${o.revokable ? '' : 'non-'}revokable vault for ${lockLengthMs}ms?`,
     );
     if (!confirm) {
       return { message: 'Transfer aborted by user' };
