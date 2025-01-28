@@ -91,6 +91,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target })`](#transfer-target-)
     - [`setController({ controller })`](#setcontroller-controller-)
     - [`removeController({ controller })`](#removecontroller-controller-)
+    - [`setBaseNameRecord({ transactionId, ttlSeconds })`](#setbasenamerecord-transactionid-ttlseconds-)
+    - [`setUndernameRecord({ undername, transactionId, ttlSeconds })`](#setundernamerecord-undername-transactionid-ttlseconds-)
+    - [`removeUndernameRecord({ undername })`](#removeundernamerecord-undername-)
     - [`setRecord({ undername, transactionId, ttlSeconds })`](#setrecord-undername-transactionid-ttlseconds-)
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
@@ -2060,9 +2063,70 @@ const { id: txId } = await ant.removeController(
 );
 ```
 
+#### `setBaseNameRecord({ transactionId, ttlSeconds })`
+
+Adds or updates the base name record for the ANT. This is the top level name of the ANT (e.g. ardrive.ar.io)
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+// get the ant for the base name
+const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
+const { id: txId } = await ant.setBaseNameRecord({
+  transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+  ttlSeconds: 3600,
+});
+
+// ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+```
+
+#### `setUndernameRecord({ undername, transactionId, ttlSeconds })`
+
+Adds or updates an undername record for the ANT. An undername is appended to the base name of the ANT (e.g. dapp_ardrive.ar.io)
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+> Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
+
+```typescript
+const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
+const { id: txId } = await ant.setUndernameRecord(
+  {
+    undername: 'dapp',
+    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    ttlSeconds: 900,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+
+// dapp_ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+```
+
+#### `removeUndernameRecord({ undername })`
+
+Removes an undername record from the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.removeUndernameRecord(
+  { undername: 'dapp' },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+
+// dapp_ardrive.ar.io will no longer resolve to the provided transaction id
+```
+
 #### `setRecord({ undername, transactionId, ttlSeconds })`
 
-Updates or creates a record in the ANT process.
+> [!WARNING]
+> Deprecated: Use `setBaseNameRecord` or `setUndernameRecord` instead.
+
+Adds or updates a record for the ANT process. The `undername` parameter is used to specify the record name. Use `@` for the base name record.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
@@ -2082,16 +2146,23 @@ const { id: txId } = await ant.setRecord(
 
 #### `removeRecord({ undername })`
 
+> [!WARNING]
+> Deprecated: Use `removeUndernameRecord` instead.
+
 Removes a record from the ANT process.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
+const arnsName = await ario.getArNSName({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.removeRecord(
-  { undername: 'remove-domemain' },
+  { undername: 'dapp' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
+
+// dapp_ardrive.ar.io will no longer resolve to the provided transaction id
 ```
 
 #### `setName({ name })`
