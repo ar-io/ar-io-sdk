@@ -480,7 +480,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * Removes an undername from the ANT. This will remove the undername from the ANT and the fully qualified name (e.g. dapp_ardrive.ar.io)
+   * Removes an undername from the ANT. This will remove the undername from the ANT.
    *
    * @param undername @type {string} The undername you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
