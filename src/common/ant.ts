@@ -426,19 +426,18 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setBaseNameRecord({ transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", ttlSeconds: 100 }); // ardrive.ar.io will resolve to the provided transaction id and be cached for 100 seconds by clients
    * ```
    */
-  async setBaseNameRecord({
-    transactionId,
-    ttlSeconds,
-  }: AoANTSetBaseNameRecordParams): Promise<AoMessageResult> {
-    return this.process.send({
-      tags: [
-        { name: 'Action', value: 'Set-Record' },
-        { name: 'Sub-Domain', value: '@' },
-        { name: 'Transaction-Id', value: transactionId },
-        { name: 'TTL-Seconds', value: ttlSeconds.toString() },
-      ],
-      signer: this.signer,
-    });
+  async setBaseNameRecord(
+    { transactionId, ttlSeconds }: AoANTSetBaseNameRecordParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.setRecord(
+      {
+        transactionId,
+        ttlSeconds,
+        undername: '@',
+      },
+      options,
+    );
   }
 
   /**
@@ -453,16 +452,18 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ant.setUndernameRecord({ undername: "dapp", transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", ttlSeconds: 100 }); // dapp_ardrive.ar.io will resolve to the provided transaction id and be cached for 100 seconds by clients
    * ```
    */
-  async setUndernameRecord({
-    undername,
-    transactionId,
-    ttlSeconds,
-  }: AoANTSetUndernameRecordParams): Promise<AoMessageResult> {
-    return this.setRecord({
-      undername,
-      transactionId,
-      ttlSeconds,
-    });
+  async setUndernameRecord(
+    { undername, transactionId, ttlSeconds }: AoANTSetUndernameRecordParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.setRecord(
+      {
+        undername,
+        transactionId,
+        ttlSeconds,
+      },
+      options,
+    );
   }
 
   /**
