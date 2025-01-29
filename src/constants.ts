@@ -39,8 +39,8 @@ export const ARIO_TESTNET_PROCESS_ID =
 
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MARIO_PER_ARIO = 1_000_000;
-export const AOS_MODULE_ID = '9iW409pDKFzQ7vAdfgr9EHED5HM4CROqe7LTG-Lh2Os';
-export const ANT_LUA_ID = 'mwCMAjglwV_96oEMEIi5epg_QXElOMzEcLkCUeQyGGo';
+export const AOS_MODULE_ID = 'acdKHzHAG-RVC06nNVlX3jIXvomfiBnA5NZTEPYOMv8';
+export const ANT_LUA_ID = 'zh4at_Y_GKJMD3SOkZ5Yx7mG2JRRLc89huEOspPtHq4';
 
 export const AO_AUTHORITY = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY';
 export const DEFAULT_SCHEDULER_ID =
