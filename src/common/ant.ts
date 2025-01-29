@@ -386,6 +386,9 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the transactionId and ttlSeconds of a record (for updating the top level name, use undername "@".)
+   *
+   * @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@")
    * @param undername @type {string} The record you want to set the transactionId and ttlSeconds of.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
@@ -420,11 +423,89 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the top level name of the ANT. This is the name that will be used to resolve the ANT (e.g. ardrive.ar.io)
+   *
+   * @param transactionId @type {string} The transactionId of the record.
+   * @param ttlSeconds @type {number} The time to live of the record.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setBaseNameRecord({ transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", ttlSeconds: 100 }); // ardrive.ar.io will resolve to the provided transaction id and be cached for 100 seconds by clients
+   * ```
+   */
+  async setBaseNameRecord({
+    transactionId,
+    ttlSeconds,
+  }: {
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Set-Record' },
+        { name: 'Sub-Domain', value: '@' },
+        { name: 'Transaction-Id', value: transactionId },
+        { name: 'TTL-Seconds', value: ttlSeconds.toString() },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * Adds or updates an undername of the ANT. An undername is appended to the base name of the ANT (e.g. ardrive.ar.io) to form a fully qualified name (e.g. dapp_ardrive.ar.io)
+   *
+   * @param undername @type {string} The undername of the ANT.
+   * @param transactionId @type {string} The transactionId of the record.
+   * @param ttlSeconds @type {number} The time to live of the record.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.setUndernameRecord({ undername: "dapp", transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", ttlSeconds: 100 }); // dapp_ardrive.ar.io will resolve to the provided transaction id and be cached for 100 seconds by clients
+   * ```
+   */
+  async setUndernameRecord({
+    undername,
+    transactionId,
+    ttlSeconds,
+  }: {
+    undername: string;
+    transactionId: string;
+    ttlSeconds: number;
+  }): Promise<AoMessageResult> {
+    return this.setRecord({
+      undername,
+      transactionId,
+      ttlSeconds,
+    });
+  }
+
+  /**
+   * Removes an undername from the ANT. This will remove the undername from the ANT.
+   *
+   * @param undername @type {string} The undername you want to remove.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.removeUndernameRecord({ undername: "dapp" }); // removes dapp_ardrive.ar.io
+   * ```
+   */
+  async removeUndernameRecord({
+    undername,
+  }: {
+    undername: string;
+  }): Promise<AoMessageResult> {
+    return this.removeRecord({ undername });
+  }
+
+  /**
+   * Removes a record from the ANT. This will remove the record from the ANT. If '@' is provided, the top level name will be removed.
+   *
+   * @deprecated Use removeUndernameRecord instead.
    * @param undername @type {string} The record you want to remove.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.removeRecord({ subDomain: "shorts" });
+   * ant.removeRecord({ undername: "dapp" }); // removes dapp_ardrive.ar.io
    * ```
    */
   async removeRecord(
@@ -446,6 +527,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the ticker of the ANT. This is the abbreviation displayed in ecosystem apps.
+   *
    * @param ticker @type {string} Sets the ANT Ticker.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
@@ -467,6 +550,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     });
   }
   /**
+   * Sets the name of the ANT. This is the display name of the ANT. This is NOT the base name record.
+   *
    * @param name @type {string} Sets the Name of the ANT.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
@@ -489,6 +574,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the description of the ANT. This is the description of the ANT displayed in ecosystem apps.
+   *
    * @param description @type {string} Sets the ANT Description.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
@@ -511,6 +598,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the keywords of the ANT. This is the keywords of the ANT displayed in ecosystem apps.
+   *
    * @param keywords @type {string[]} Sets the ANT Keywords.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
@@ -533,6 +622,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Sets the logo of the ANT. This is the logo of the ANT displayed in ecosystem apps. Additionally, this logo is displayed for any primary names affiliated with the ANT.
+   *
    * @param txId @type {string} - Arweave transaction id of the logo we want to set
    * @param options @type {WriteOptions} - additional options to add to the write interaction (optional)
    * @returns {Promise<AoMessageResult>} The result of the interaction.
@@ -556,6 +647,9 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
+   * Releases an ArNS name associated with the ANT. This will release the name to the public and allow anyone to register it. All primary names must be removed before the name can be released.
+   *
+   *
    * @param name @type {string} The name you want to release. The name will be put up for as a recently returned name on the ARIO contract. 50% of the winning bid will be distributed to the ANT owner at the time of purchase. If no purchase in the recently returned name period (14 epochs), the name will be released and can be reregistered by anyone.
    * @param arioProcessId @type {string} The processId of the ARIO contract. This is where the ANT will send the message to release the name.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
@@ -581,7 +675,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }
 
   /**
-   * Sends a message to the ARIO contract to reassign the name to a new ANT. This can only be done by the current owner of the ANT.
+   * Sends a message to the ARIO contract to reassign the the base ArNS name to a new ANT. This can only be done by the current owner of the ANT.
+   *
    * @param name @type {string} The name you want to reassign.
    * @param arioProcessId @type {string} The processId of the ARIO contract.
    * @param antProcessId @type {string} The processId of the ANT contract.
@@ -614,6 +709,15 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
   /**
    * Approves a primary name request for a given name or address.
+   *
+   * @param name @type {string} The name you want to approve.
+   * @param address @type {WalletAddress} The address you want to approve.
+   * @param arioProcessId @type {string} The processId of the ARIO contract.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.approvePrimaryNameRequest({ name: "ardrive", address: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f", arioProcessId: ARIO_TESTNET_PROCESS_ID }); // approves the request for ardrive.ar.io to be registered by the address
+   * ```
    */
   async approvePrimaryNameRequest(
     {
@@ -636,6 +740,18 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     });
   }
 
+  /**
+   * Removes primary names from the ANT. This will remove the primary names associated with the base ArNS name controlled by this ANT. All primary names must be removed before the name can be released.
+   *
+   * @param names @type {string[]} The names you want to remove.
+   * @param arioProcessId @type {string} The processId of the ARIO contract.
+   * @param notifyOwners @type {boolean} Whether to notify the owners of the primary names.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.removePrimaryNames({ names: ["ardrive", "dapp_ardrive"], arioProcessId: ARIO_TESTNET_PROCESS_ID, notifyOwners: true }); // removes the primary names and associated wallet addresses assigned to "ardrive" and "dapp_ardrive"
+   * ```
+   */
   async removePrimaryNames(
     {
       names,
