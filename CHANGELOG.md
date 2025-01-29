@@ -1,3 +1,10 @@
+# [3.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.2...v3.4.0-alpha.3) (2025-01-29)
+
+
+### Features
+
+* **ant apis:** add commands for new methods ([931e621](https://github.com/ar-io/ar-io-sdk/commit/931e621cbb8b35e58dbfa64d8adaa898dbf74086))
+
 # [3.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-01-29)
 
 
