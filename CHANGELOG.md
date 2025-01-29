@@ -1,3 +1,10 @@
+# [3.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.4...v3.4.0-alpha.1) (2025-01-29)
+
+
+### Features
+
+* **revokable vaults:** init revokeVault and vaultedTransfer commands and methods PE-7514 ([6ca44a1](https://github.com/ar-io/ar-io-sdk/commit/6ca44a1e84d1bd14ded87a59cc408425c54ea2e4))
+
 ## [3.3.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.3...v3.3.1-alpha.4) (2025-01-29)
 
 
