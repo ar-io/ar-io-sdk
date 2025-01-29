@@ -181,6 +181,7 @@ export function isAoANTState(state: object): state is AoANTState {
 export type AntReadOptions = { strict?: boolean };
 
 export interface AoANTRead {
+  processId: string;
   getState(opts?: AntReadOptions): Promise<AoANTState>;
   getInfo(opts?: AntReadOptions): Promise<AoANTInfo>;
   getRecord(
@@ -202,109 +203,49 @@ export interface AoANTRead {
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer(
-    { target }: { target: WalletAddress },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  addController(
-    {
-      controller,
-    }: {
-      controller: WalletAddress;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  removeController(
-    {
-      controller,
-    }: {
-      controller: WalletAddress;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    }: {
-      undername: string;
-      transactionId: string;
-      ttlSeconds: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  removeRecord(
-    { undername }: { undername: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setBaseNameRecord({
-    transactionId,
-    ttlSeconds,
-  }: {
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult>;
-  setUndernameRecord({
-    undername,
-    transactionId,
-    ttlSeconds,
-  }: {
-    undername: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult>;
-  removeUndernameRecord({
-    undername,
-  }: {
-    undername: string;
-  }): Promise<AoMessageResult>;
-  setTicker(
-    { ticker }: { ticker: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setDescription(
-    { description }: { description: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setKeywords(
-    { keywords }: { keywords: string[] },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setName(
-    { name }: { name: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  setLogo(
-    { txId }: { txId: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  releaseName(
-    { name, arioProcessId }: { name: string; arioProcessId: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  reassignName(
-    {
-      name,
-      arioProcessId,
-      antProcessId,
-    }: { name: string; arioProcessId: string; antProcessId: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  approvePrimaryNameRequest(
-    {
-      name,
-      address,
-      arioProcessId,
-    }: { name: string; address: WalletAddress; arioProcessId: string },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  removePrimaryNames(
-    {
-      names,
-      arioProcessId,
-      notifyOwners,
-    }: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
+  transfer: WriteAction<{ target: WalletAddress }>;
+  addController: WriteAction<{ controller: WalletAddress }>;
+  removeController: WriteAction<{ controller: WalletAddress }>;
+  /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
+  setRecord: WriteAction<AoANTSetUndernameRecordParams>;
+  removeRecord: WriteAction<{ undername: string }>;
+  setBaseNameRecord: WriteAction<AoANTSetBaseNameRecordParams>;
+  setUndernameRecord: WriteAction<AoANTSetUndernameRecordParams>;
+  removeUndernameRecord: WriteAction<{ undername: string }>;
+  setTicker: WriteAction<{ ticker: string }>;
+  setDescription: WriteAction<{ description: string }>;
+  setKeywords: WriteAction<{ keywords: string[] }>;
+  setName: WriteAction<{ name: string }>;
+  setLogo: WriteAction<{ txId: string }>;
+  releaseName: WriteAction<{ name: string; arioProcessId: string }>;
+  reassignName: WriteAction<{
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  }>;
+  approvePrimaryNameRequest: WriteAction<{
+    name: string;
+    address: string;
+    arioProcessId: string;
+  }>;
+  removePrimaryNames: WriteAction<{
+    names: string[];
+    arioProcessId: string;
+    notifyOwners?: boolean;
+  }>;
 }
+
+/** utility type to ensure WriteOptions are appended to each parameter set */
+type WriteAction<P, R = AoMessageResult> = (
+  params: P,
+  options?: WriteOptions,
+) => Promise<R>;
+
+export type AoANTSetBaseNameRecordParams = {
+  transactionId: string;
+  ttlSeconds: number;
+};
+
+export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
+  undername: string;
+};

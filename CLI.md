@@ -155,7 +155,9 @@ Commands:
   transfer-ant-ownership [options]        Transfer ownership of an ANT process
   add-ant-controller [options]            Add a controller to an ANT process
   remove-ant-controller [options]         Remove a controller from an ANT process
-  set-ant-record [options]                Set a record of an ANT process
+  set-ant-record [options]                Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername
+  set-ant-base-name [options]             Set the base name of an ANT process
+  set-ant-undername [options]             Set an undername of an ANT process
   remove-ant-record [options]             Remove a record from an ANT process
   set-ant-ticker [options]                Set the ticker of an ANT process
   set-ant-name [options]                  Set the name of an ANT process
