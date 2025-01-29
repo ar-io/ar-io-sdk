@@ -378,3 +378,15 @@ export const antStateOptions = [
   optionMap.controllers,
   optionMap.ttlSeconds,
 ];
+
+export const setAntBaseNameOptions = [
+  optionMap.processId,
+  optionMap.transactionId,
+  optionMap.ttlSeconds,
+  ...writeActionOptions,
+];
+
+export const setAntUndernameOptions = [
+  ...setAntBaseNameOptions,
+  optionMap.undername,
+];

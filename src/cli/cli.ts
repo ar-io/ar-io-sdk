@@ -22,6 +22,10 @@ import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
+  setAntBaseNameCLICommand,
+  setAntRecordCLICommand,
+} from './commands/antCommands.js';
+import {
   buyRecordCLICommand,
   extendLeaseCLICommand,
   increaseUndernameLimitCLICommand,
@@ -85,6 +89,8 @@ import {
   paginationAddressOptions,
   paginationOptions,
   redelegateStakeOptions,
+  setAntBaseNameOptions,
+  setAntUndernameOptions,
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
@@ -738,45 +744,26 @@ makeCommand<ProcessIdCLIOptions & { controller?: string }>({
   },
 });
 
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    undername?: string;
-    transactionId?: string;
-    ttlSeconds?: number;
-  }
->({
+makeCommand({
   name: 'set-ant-record',
-  description: 'Set a record of an ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.undername,
-    optionMap.transactionId,
-    optionMap.ttlSeconds,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const ttlSeconds = options.ttlSeconds ?? 3600;
-    const undername = requiredStringFromOptions(options, 'undername');
-    const transactionId = requiredStringFromOptions(options, 'transactionId');
+  description:
+    'Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername',
+  options: setAntUndernameOptions,
+  action: setAntRecordCLICommand,
+});
 
-    await assertConfirmationPrompt(
-      `Are you sure you want to set this record?\n${JSON.stringify(
-        { undername, transactionId, ttlSeconds },
-        null,
-        2,
-      )}`,
-      options,
-    );
+makeCommand({
+  name: 'set-ant-base-name',
+  description: 'Set the base name of an ANT process',
+  options: setAntBaseNameOptions,
+  action: setAntBaseNameCLICommand,
+});
 
-    return writeANTFromOptions(options).setRecord(
-      {
-        undername,
-        transactionId,
-        ttlSeconds,
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+makeCommand({
+  name: 'set-ant-undername',
+  description: 'Set an undername of an ANT process',
+  options: setAntUndernameOptions,
+  action: setAntRecordCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({

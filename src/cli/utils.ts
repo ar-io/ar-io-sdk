@@ -71,6 +71,8 @@ import {
   WriteActionCLIOptions,
 } from './types.js';
 
+export const defaultTtlSecondsCLI = 3600;
+
 export function stringifyJsonForCLIDisplay(
   json: JsonSerializable | unknown,
 ): string {
@@ -612,7 +614,10 @@ export function getANTStateFromOptions(
     ticker: options.ticker,
     name: options.name,
     keywords: options.keywords,
-    ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 3600,
+    ttlSeconds:
+      options.ttlSeconds !== undefined
+        ? +options.ttlSeconds
+        : defaultTtlSecondsCLI,
   });
 }
 

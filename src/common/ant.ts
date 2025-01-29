@@ -27,6 +27,8 @@ import {
   AoANTInfo,
   AoANTRead,
   AoANTRecord,
+  AoANTSetBaseNameRecordParams,
+  AoANTSetUndernameRecordParams,
   AoANTState,
   AoANTWrite,
 } from '../types/ant.js';
@@ -69,6 +71,7 @@ export class ANT {
 
 export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
+  public readonly processId: string;
   private strict: boolean;
 
   constructor(config: ANTConfigOptionalStrict) {
@@ -82,6 +85,8 @@ export class AoANTReadable implements AoANTRead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+
+    this.processId = this.process.processId;
   }
 
   async getState(
@@ -393,21 +398,9 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
-   * @example
-   * ```ts
-   * ant.setController({ controller: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk" });
-   * ```
    */
   async setRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    }: {
-      undername: string;
-      transactionId: string;
-      ttlSeconds: number;
-    },
+    { undername, transactionId, ttlSeconds }: AoANTSetUndernameRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.process.send({
@@ -436,10 +429,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   async setBaseNameRecord({
     transactionId,
     ttlSeconds,
-  }: {
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult> {
+  }: AoANTSetBaseNameRecordParams): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
         { name: 'Action', value: 'Set-Record' },
@@ -467,11 +457,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     undername,
     transactionId,
     ttlSeconds,
-  }: {
-    undername: string;
-    transactionId: string;
-    ttlSeconds: number;
-  }): Promise<AoMessageResult> {
+  }: AoANTSetUndernameRecordParams): Promise<AoMessageResult> {
     return this.setRecord({
       undername,
       transactionId,
