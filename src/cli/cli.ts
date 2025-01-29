@@ -64,7 +64,11 @@ import {
   listArNSReturnedNames,
   listGateways,
 } from './commands/readCommands.js';
-import { transfer } from './commands/transfer.js';
+import {
+  revokeVaultCLICommand,
+  transferCLICommand,
+  vaultedTransferCLICommand,
+} from './commands/transfer.js';
 import {
   addressAndVaultIdOptions,
   antStateOptions,
@@ -84,6 +88,7 @@ import {
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
+  vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
 import {
@@ -424,7 +429,21 @@ makeCommand({
   name: 'transfer',
   description: 'Transfer ARIO to another address',
   options: transferOptions,
-  action: transfer,
+  action: transferCLICommand,
+});
+
+makeCommand({
+  name: 'vaulted-transfer',
+  description: 'Transfer ARIO to another address into a locked vault',
+  options: vaultedTransferOptions,
+  action: vaultedTransferCLICommand,
+});
+
+makeCommand({
+  name: 'revoke-vault',
+  description: 'Revoke a vaulted transfer as the controller',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.recipient],
+  action: revokeVaultCLICommand,
 });
 
 makeCommand({

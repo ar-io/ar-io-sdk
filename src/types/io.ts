@@ -455,6 +455,18 @@ export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
 };
 
+export type AoVaultedTransferParams = {
+  recipient: WalletAddress;
+  quantity: mARIOToken | number;
+  lockLengthMs: number;
+  revokable?: boolean;
+};
+
+export type AoRevokeVaultParams = {
+  vaultId: TransactionId;
+  recipient: WalletAddress;
+};
+
 export type AoGatewayRegistrySettings = {
   delegates: {
     minStake: number;
@@ -625,6 +637,15 @@ export interface AoARIOWrite extends AoARIORead {
     },
     options?: WriteOptions,
   ): Promise<AoMessageResult>;
+  vaultedTransfer(
+    { recipient, quantity, lockLengthMs, revokable }: AoVaultedTransferParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+  revokeVault(
+    { vaultId, recipient }: AoRevokeVaultParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult>;
+
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   joinNetwork(
     params: AoJoinNetworkParams,

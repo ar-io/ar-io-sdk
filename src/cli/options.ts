@@ -243,6 +243,20 @@ export const optionMap = {
     description:
       'Where to fund the action from. e.g. "balance", "stakes", or "any',
   },
+  revokable: {
+    alias: '--revokable',
+    description:
+      'Whether the vaulted transfer is revokable by the sender. Defaults to false',
+    type: 'boolean',
+  },
+  lockLengthMs: {
+    alias: '--lock-length-ms <lockLengthMs>',
+    description: 'The length of time in milliseconds to lock the transfer for',
+  },
+  recipient: {
+    alias: '--recipient <recipient>',
+    description: 'The recipient to interact with',
+  },
 };
 
 export const walletOptions = [
@@ -301,6 +315,14 @@ export const transferOptions = [
   ...writeActionOptions,
   optionMap.quantity,
   optionMap.target,
+];
+
+export const vaultedTransferOptions = [
+  ...writeActionOptions,
+  optionMap.quantity,
+  optionMap.recipient,
+  optionMap.lockLengthMs,
+  optionMap.revokable,
 ];
 
 export const operatorStakeOptions = [
