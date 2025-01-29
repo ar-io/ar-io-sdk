@@ -59,7 +59,6 @@ describe('e2e esm tests', async () => {
       projectRootPath,
       '../docker-compose.test.yml',
     )
-      .withBuild()
       .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
       .up(['ao-cu']);
   });
