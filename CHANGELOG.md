@@ -4,36 +4,17 @@
 ### Features
 
 * **revokable vaults:** init revokeVault and vaultedTransfer commands and methods PE-7514 ([6ca44a1](https://github.com/ar-io/ar-io-sdk/commit/6ca44a1e84d1bd14ded87a59cc408425c54ea2e4))
-
-## [3.3.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.3...v3.3.1-alpha.4) (2025-01-29)
-
-
-### Bug Fixes
-
-* **ant:** update ANT ids ([9f37e76](https://github.com/ar-io/ar-io-sdk/commit/9f37e768b43ad6fb6d813de1eba7eefe072bfb97))
-
-## [3.3.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.2...v3.3.1-alpha.3) (2025-01-28)
+## [3.3.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0...v3.3.1) (2025-01-29)
 
 
 ### Bug Fixes
 
 * **ant:** bumps ids ([8eb2e38](https://github.com/ar-io/ar-io-sdk/commit/8eb2e388fe15e18b049c735ab414b750b7aa439b))
-
-## [3.3.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.1...v3.3.1-alpha.2) (2025-01-26)
-
-
-### Bug Fixes
-
+* **ants:** module bump _wSmbjfSlX3dZNcqE8JqKmj-DKum9uQ_jB08LwOKCyw ([8d442e0](https://github.com/ar-io/ar-io-sdk/commit/8d442e0c6fe102a8890b4b38d4b37c434004842d))
+* **ant:** update ANT ids ([9f37e76](https://github.com/ar-io/ar-io-sdk/commit/9f37e768b43ad6fb6d813de1eba7eefe072bfb97))
 * **boot:** add boot loader logic to ant spawn util ([f00ab47](https://github.com/ar-io/ar-io-sdk/commit/f00ab47848979b05634677ad458940b033e9f90a))
 * **lua:** update lua code id ([76822a2](https://github.com/ar-io/ar-io-sdk/commit/76822a2b4b12df7449d6a0d4c25927d491a17faf))
 * **tags:** remove extra tags from spawn util ([f308b84](https://github.com/ar-io/ar-io-sdk/commit/f308b84cb48f7ecb4bd89d5dbc910002bd147dcc))
-
-## [3.3.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0...v3.3.1-alpha.1) (2025-01-24)
-
-
-### Bug Fixes
-
-* **ants:** module bump _wSmbjfSlX3dZNcqE8JqKmj-DKum9uQ_jB08LwOKCyw ([8d442e0](https://github.com/ar-io/ar-io-sdk/commit/8d442e0c6fe102a8890b4b38d4b37c434004842d))
 
 # [3.3.0](https://github.com/ar-io/ar-io-sdk/compare/v3.2.0...v3.3.0) (2025-01-24)
 
