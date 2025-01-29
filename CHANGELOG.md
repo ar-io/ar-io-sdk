@@ -1,3 +1,10 @@
+# [3.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-01-29)
+
+
+### Bug Fixes
+
+* **ant:** add setUndername and setBasename apis ([ce4abfe](https://github.com/ar-io/ar-io-sdk/commit/ce4abfe33032530157eb31657ae93d681935f27e))
+
 # [3.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.4...v3.4.0-alpha.1) (2025-01-29)
 
 
