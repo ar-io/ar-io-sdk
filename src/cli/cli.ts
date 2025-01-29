@@ -69,6 +69,9 @@ import {
   listGateways,
 } from './commands/readCommands.js';
 import {
+  createVaultCLICommand,
+  extendVaultCLICommand,
+  increaseVaultCLICommand,
   revokeVaultCLICommand,
   transferCLICommand,
   vaultedTransferCLICommand,
@@ -450,6 +453,27 @@ makeCommand({
   description: 'Revoke a vaulted transfer as the controller',
   options: [...writeActionOptions, optionMap.vaultId, optionMap.recipient],
   action: revokeVaultCLICommand,
+});
+
+makeCommand({
+  name: 'create-vault',
+  description: 'Create a locked vault with balance from the sender',
+  options: [...writeActionOptions, optionMap.lockLengthMs, optionMap.quantity],
+  action: createVaultCLICommand,
+});
+
+makeCommand({
+  name: 'extend-vault',
+  description: 'Extend the lock length of a vault as the recipient',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.extendLengthMs],
+  action: extendVaultCLICommand,
+});
+
+makeCommand({
+  name: 'increase-vault',
+  description: 'Increase the balance of a locked vault as the recipient',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.quantity],
+  action: increaseVaultCLICommand,
 });
 
 makeCommand({

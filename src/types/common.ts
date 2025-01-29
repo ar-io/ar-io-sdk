@@ -135,3 +135,9 @@ export interface AOContract {
     signer: AoSigner;
   }): Promise<{ id: string; result?: K }>;
 }
+
+/** utility type to ensure WriteOptions are appended to each parameter set */
+export type AoWriteAction<P, R = AoMessageResult> = (
+  params: P,
+  options?: WriteOptions,
+) => Promise<R>;
