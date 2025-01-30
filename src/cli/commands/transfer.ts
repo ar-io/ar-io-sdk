@@ -27,6 +27,7 @@ import {
 } from '../types.js';
 import {
   assertEnoughMARIOBalance,
+  assertLockLengthInRange,
   confirmationPrompt,
   formatARIOWithCommas,
   formatMARIOToARIOWithCommas,
@@ -82,6 +83,7 @@ export async function vaultedTransferCLICommand(
   const recipient = requiredStringFromOptions(o, 'recipient');
   const { ario, signerAddress } = writeARIOFromOptions(o);
   const lockLengthMs = requiredPositiveIntegerFromOptions(o, 'lockLengthMs');
+  assertLockLengthInRange(lockLengthMs);
 
   if (!o.skipConfirmation) {
     await assertEnoughMARIOBalance({
@@ -163,6 +165,7 @@ export async function createVaultCLICommand(
   const mARIOQuantity = requiredMARIOFromOptions(o, 'quantity');
   const { ario, signerAddress } = writeARIOFromOptions(o);
   const lockLengthMs = requiredPositiveIntegerFromOptions(o, 'lockLengthMs');
+  assertLockLengthInRange(lockLengthMs);
 
   if (!o.skipConfirmation) {
     await assertEnoughMARIOBalance({
@@ -205,6 +208,7 @@ export async function extendVaultCLICommand(
     o,
     'extendLengthMs',
   );
+  assertLockLengthInRange(extendLengthMs, false);
 
   if (!o.skipConfirmation) {
     const vault = await ario.getVault({ vaultId, address: signerAddress });

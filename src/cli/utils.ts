@@ -660,3 +660,26 @@ export function fundFromFromOptions<
   }
   return o.fundFrom ?? 'balance';
 }
+
+export function assertLockLengthInRange(
+  lockLengthMs: number,
+  assertMin = true, // extend-vault has no min lock length
+) {
+  const minLockLengthMs = 1209600000; // 14 days
+  const maxLockLengthMs = 378432000000; // ~12 years
+
+  if (lockLengthMs > maxLockLengthMs) {
+    throw new Error(
+      `Lock length must be at most 12 years (378432000000 ms). Provided lock length: ${lockLengthMs} ms`,
+    );
+  }
+  if (!assertMin) {
+    return;
+  }
+
+  if (lockLengthMs < minLockLengthMs) {
+    throw new Error(
+      `Lock length must be at least 14 days (1209600000 ms). Provided lock length: ${lockLengthMs} ms`,
+    );
+  }
+}
