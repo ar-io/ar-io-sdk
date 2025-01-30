@@ -1,3 +1,11 @@
+# [3.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.3...v3.4.0-alpha.4) (2025-01-30)
+
+
+### Features
+
+* **vault apis:** assert lock length in range PE-7541 ([3585643](https://github.com/ar-io/ar-io-sdk/commit/3585643ecd8b0a335741fe0bfbcfbd2288cc3e9d))
+* **vault apis:** init write methods+commands for create/extend/increase vault PE-7541 ([b2e3cab](https://github.com/ar-io/ar-io-sdk/commit/b2e3cab54e8547c0392604c3302c01caac38d2c7))
+
 # [3.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.2...v3.4.0-alpha.3) (2025-01-29)
 
 
