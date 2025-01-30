@@ -125,6 +125,9 @@ Commands:
   transfer [options]                      Transfer ARIO to another address
   vaulted-transfer [options]              Transfer ARIO to another address into a locked vault
   revoke-vault [options]                  Revoke a vaulted transfer as the controller
+  create-vault [options]                  Create a locked vault with balance from the sender
+  extend-vault [options]                  Extend the lock length of a vault as the recipient
+  increase-vault [options]                Increase the balance of a locked vault as the recipient
   join-network [options]                  Join a gateway to the AR.IO network
   leave-network [options]                 Leave a gateway from the AR.IO network
   update-gateway-settings [options]       Update AR.IO gateway settings

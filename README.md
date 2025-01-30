@@ -35,6 +35,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
     - [`vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`](#vaultedtransfer-recipient-quantity-locklengthms-revokable-)
     - [`revokeVault({ recipient, vaultId })`](#revokevault-recipient-vaultid-)
+    - [`createVault({ lockLengthMs, quantity })`](#createvault-locklengthms-quantity-)
+    - [`extendVault({ vaultId, extendLengthMs })`](#extendvault-vaultid-extendlengthms-)
+    - [`increaseVault({ vaultId, quantity })`](#increasevault-vaultid-quantity-)
   - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
@@ -547,6 +550,45 @@ const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.revokeVault({
   recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
   vaultId: 'IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs',
+});
+```
+
+#### `createVault({ lockLengthMs, quantity })`
+
+Creates a vault for the specified `quantity` of mARIO from the signer's balance and locks it for the specified `lockLengthMs` milliseconds.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.createVault({
+  lockLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+  quantity: new ARIOToken(1000).toMARIO(),
+});
+```
+
+#### `extendVault({ vaultId, extendLengthMs })`
+
+Extends the lock length of a signer's vault by the specified `extendLengthMs` milliseconds.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.extendVault({
+  vaultId: 'vaultIdOne',
+  extendLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+});
+```
+
+#### `increaseVault({ vaultId, quantity })`
+
+Increases the balance of a signer's vault by the specified `quantity` of mARIO.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.increaseVault({
+  vaultId: 'vaultIdOne',
+  quantity: new ARIOToken(1000).toMARIO(),
 });
 ```
 
