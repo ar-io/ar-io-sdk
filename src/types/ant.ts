@@ -16,7 +16,7 @@
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { AoMessageResult, WalletAddress, WriteOptions } from './common.js';
+import { AoWriteAction, WalletAddress } from './common.js';
 
 /**
  * example error:
@@ -203,43 +203,37 @@ export interface AoANTRead {
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer: WriteAction<{ target: WalletAddress }>;
-  addController: WriteAction<{ controller: WalletAddress }>;
-  removeController: WriteAction<{ controller: WalletAddress }>;
+  transfer: AoWriteAction<{ target: WalletAddress }>;
+  addController: AoWriteAction<{ controller: WalletAddress }>;
+  removeController: AoWriteAction<{ controller: WalletAddress }>;
   /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
-  setRecord: WriteAction<AoANTSetUndernameRecordParams>;
-  removeRecord: WriteAction<{ undername: string }>;
-  setBaseNameRecord: WriteAction<AoANTSetBaseNameRecordParams>;
-  setUndernameRecord: WriteAction<AoANTSetUndernameRecordParams>;
-  removeUndernameRecord: WriteAction<{ undername: string }>;
-  setTicker: WriteAction<{ ticker: string }>;
-  setDescription: WriteAction<{ description: string }>;
-  setKeywords: WriteAction<{ keywords: string[] }>;
-  setName: WriteAction<{ name: string }>;
-  setLogo: WriteAction<{ txId: string }>;
-  releaseName: WriteAction<{ name: string; arioProcessId: string }>;
-  reassignName: WriteAction<{
+  setRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
+  removeRecord: AoWriteAction<{ undername: string }>;
+  setBaseNameRecord: AoWriteAction<AoANTSetBaseNameRecordParams>;
+  setUndernameRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
+  removeUndernameRecord: AoWriteAction<{ undername: string }>;
+  setTicker: AoWriteAction<{ ticker: string }>;
+  setDescription: AoWriteAction<{ description: string }>;
+  setKeywords: AoWriteAction<{ keywords: string[] }>;
+  setName: AoWriteAction<{ name: string }>;
+  setLogo: AoWriteAction<{ txId: string }>;
+  releaseName: AoWriteAction<{ name: string; arioProcessId: string }>;
+  reassignName: AoWriteAction<{
     name: string;
     arioProcessId: string;
     antProcessId: string;
   }>;
-  approvePrimaryNameRequest: WriteAction<{
+  approvePrimaryNameRequest: AoWriteAction<{
     name: string;
     address: string;
     arioProcessId: string;
   }>;
-  removePrimaryNames: WriteAction<{
+  removePrimaryNames: AoWriteAction<{
     names: string[];
     arioProcessId: string;
     notifyOwners?: boolean;
   }>;
 }
-
-/** utility type to ensure WriteOptions are appended to each parameter set */
-type WriteAction<P, R = AoMessageResult> = (
-  params: P,
-  options?: WriteOptions,
-) => Promise<R>;
 
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;

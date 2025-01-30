@@ -50,16 +50,19 @@ import {
   AoArNSPurchaseParams,
   AoArNSReservedNameDataWithName,
   AoBuyRecordParams,
+  AoCreateVaultParams,
   AoDelegation,
   AoEpochData,
   AoEpochSettings,
   AoExtendLeaseParams,
+  AoExtendVaultParams,
   AoGateway,
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
   AoGetCostDetailsParams,
   AoIncreaseUndernameLimitParams,
+  AoIncreaseVaultParams,
   AoPaginatedAddressParams,
   AoRegistrationFees,
   AoRevokeVaultParams,
@@ -807,6 +810,54 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         { name: 'Action', value: 'Revoke-Vault' },
         { name: 'Vault-Id', value: vaultId },
         { name: 'Recipient', value: recipient },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async createVault(
+    { lockLengthMs, quantity }: AoCreateVaultParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Create-Vault' },
+        { name: 'Lock-Length', value: lockLengthMs.toString() },
+        { name: 'Quantity', value: quantity.toString() },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async extendVault(
+    { vaultId, extendLengthMs }: AoExtendVaultParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Extend-Vault' },
+        { name: 'Vault-Id', value: vaultId },
+        { name: 'Extend-Length', value: extendLengthMs.toString() },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async increaseVault(
+    { vaultId, quantity }: AoIncreaseVaultParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { tags = [] } = options || {};
+    return this.process.send({
+      tags: [
+        ...tags,
+        { name: 'Action', value: 'Increase-Vault' },
+        { name: 'Vault-Id', value: vaultId },
+        { name: 'Quantity', value: quantity.toString() },
       ],
       signer: this.signer,
     });

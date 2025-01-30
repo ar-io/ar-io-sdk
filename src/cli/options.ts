@@ -251,7 +251,11 @@ export const optionMap = {
   },
   lockLengthMs: {
     alias: '--lock-length-ms <lockLengthMs>',
-    description: 'The length of time in milliseconds to lock the transfer for',
+    description: 'The length of time in milliseconds to lock the vault for',
+  },
+  extendLengthMs: {
+    alias: '--extend-length-ms <extendLengthMs>',
+    description: 'The length of time in milliseconds to extend the vault for',
   },
   recipient: {
     alias: '--recipient <recipient>',
