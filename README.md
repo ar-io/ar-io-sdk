@@ -185,7 +185,7 @@ const gateways = await ario.getGateways();
       "vaults": {},
       "weights": {
         "compositeWeight": 0.97688888893556,
-        "gatewayRewardRatioWeight": 1,
+        "gatewayPerformanceRatio": 1,
         "tenureWeight": 0.19444444444444,
         "observerRewardRatioWeight": 1,
         "normalizedCompositeWeight": 0.19247316211083,
@@ -632,7 +632,7 @@ const gateway = await ario.getGateway({
   "vaults": {},
   "weights": {
     "compositeWeight": 0.97688888893556,
-    "gatewayRewardRatioWeight": 1,
+    "gatewayPerformanceRatio": 1,
     "tenureWeight": 0.19444444444444,
     "observerRewardRatioWeight": 1,
     "normalizedCompositeWeight": 0.19247316211083,
@@ -688,7 +688,7 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
       "vaults": {},
       "weights": {
         "compositeWeight": 0.97688888893556,
-        "gatewayRewardRatioWeight": 1,
+        "gatewayPerformanceRatio": 1,
         "tenureWeight": 0.19444444444444,
         "observerRewardRatioWeight": 1,
         "normalizedCompositeWeight": 0.19247316211083,
@@ -1540,7 +1540,7 @@ const epoch = await ario.getCurrentEpoch();
       "start": 1292450,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
-      "gatewayRewardRatioWeight": 1,
+      "gatewayPerformanceRatio": 1,
       "observerRewardRatioWeight": 1,
       "compositeWeight": 0.4494598765432099,
       "normalizedCompositeWeight": 0.002057032496835938
@@ -1596,7 +1596,7 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
       "startTimestamp": 1720720620813,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
-      "gatewayRewardRatioWeight": 1,
+      "gatewayPerformanceRatio": 1,
       "observerRewardRatioWeight": 1,
       "compositeWeight": 0.4494598765432099,
       "normalizedCompositeWeight": 0.002057032496835938
@@ -1735,7 +1735,7 @@ const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
     "start": 1296976,
     "stakeWeight": 1,
     "tenureWeight": 0.41453703703703704,
-    "gatewayRewardRatioWeight": 1,
+    "gatewayPerformanceRatio": 1,
     "observerRewardRatioWeight": 1,
     "compositeWeight": 0.41453703703703704,
     "normalizedCompositeWeight": 0.0018972019546783507

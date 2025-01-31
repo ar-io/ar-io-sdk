@@ -242,8 +242,12 @@ export type AoWeightedObserver = {
 export type AoGatewayWeights = {
   stakeWeight: number;
   tenureWeight: number;
+  // @deprecated - use `gatewayPerformanceRatio` instead
   gatewayRewardRatioWeight: number;
+  // @deprecated - use `observerPerformanceRatio` instead
   observerRewardRatioWeight: number;
+  gatewayPerformanceRatio: number;
+  observerPerformanceRatio: number;
   compositeWeight: number;
   normalizedCompositeWeight: number;
 };
