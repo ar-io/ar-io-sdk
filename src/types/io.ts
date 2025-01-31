@@ -20,6 +20,7 @@ import {
   AoPrimaryName,
   AoPrimaryNameRequest,
   AoRedelegationFeeInfo,
+  AoWriteAction,
   AtLeastOne,
   BlockHeight,
   ProcessId,
@@ -455,6 +456,33 @@ export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
 };
 
+export type AoVaultedTransferParams = {
+  recipient: WalletAddress;
+  quantity: mARIOToken | number;
+  lockLengthMs: number;
+  revokable?: boolean;
+};
+
+export type AoRevokeVaultParams = {
+  vaultId: TransactionId;
+  recipient: WalletAddress;
+};
+
+export type AoCreateVaultParams = {
+  quantity: mARIOToken | number;
+  lockLengthMs: number;
+};
+
+export type AoExtendVaultParams = {
+  vaultId: string;
+  extendLengthMs: number;
+};
+
+export type AoIncreaseVaultParams = {
+  vaultId: string;
+  quantity: mARIOToken | number;
+};
+
 export type AoGatewayRegistrySettings = {
   delegates: {
     minStake: number;
@@ -615,103 +643,50 @@ export interface AoARIORead {
 
 export interface AoARIOWrite extends AoARIORead {
   // write interactions
-  transfer(
-    {
-      target,
-      qty,
-    }: {
-      target: WalletAddress;
-      qty: number;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
+  transfer: AoWriteAction<{ target: WalletAddress; qty: number | mARIOToken }>;
+  vaultedTransfer: AoWriteAction<AoVaultedTransferParams>;
+  revokeVault: AoWriteAction<AoRevokeVaultParams>;
+  createVault: AoWriteAction<AoCreateVaultParams>;
+  extendVault: AoWriteAction<AoExtendVaultParams>;
+  increaseVault: AoWriteAction<AoIncreaseVaultParams>;
+
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
-  joinNetwork(
-    params: AoJoinNetworkParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  leaveNetwork(options?: WriteOptions): Promise<AoMessageResult>;
-  updateGatewaySettings(
-    params: AoUpdateGatewaySettingsParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  increaseOperatorStake(
-    params: {
-      increaseQty: number | mARIOToken;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  decreaseOperatorStake(
-    params: {
-      decreaseQty: number | mARIOToken;
-      instant?: boolean;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  delegateStake(
-    params: {
-      target: WalletAddress;
-      stakeQty: number | mARIOToken;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  decreaseDelegateStake(
-    params: {
-      target: WalletAddress;
-      decreaseQty: number | mARIOToken;
-      instant?: boolean;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  instantWithdrawal(
-    params: {
-      gatewayAddress?: WalletAddress;
-      vaultId: string;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  saveObservations(
-    params: {
-      reportTxId: TransactionId;
-      failedGateways: WalletAddress[];
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
+  joinNetwork: AoWriteAction<AoJoinNetworkParams>;
+  leaveNetwork: (options?: WriteOptions) => Promise<AoMessageResult>;
+  updateGatewaySettings: AoWriteAction<AoUpdateGatewaySettingsParams>;
+  increaseOperatorStake: AoWriteAction<{ increaseQty: number | mARIOToken }>;
+  decreaseOperatorStake: AoWriteAction<{
+    decreaseQty: number | mARIOToken;
+    instant?: boolean;
+  }>;
+  delegateStake: AoWriteAction<AoDelegateStakeParams>;
+  decreaseDelegateStake: AoWriteAction<{
+    target: WalletAddress;
+    decreaseQty: number | mARIOToken;
+    instant?: boolean;
+  }>;
+  instantWithdrawal: AoWriteAction<{
+    gatewayAddress?: WalletAddress;
+    vaultId: string;
+  }>;
+  saveObservations: AoWriteAction<{
+    reportTxId: TransactionId;
+    failedGateways: WalletAddress[];
+  }>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
-  buyRecord(
-    params: AoBuyRecordParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  upgradeRecord(
-    params: AoArNSPurchaseParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  extendLease(
-    params: AoExtendLeaseParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  increaseUndernameLimit(
-    params: AoIncreaseUndernameLimitParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  cancelWithdrawal(
-    params: {
-      gatewayAddress?: WalletAddress;
-      vaultId: string;
-    },
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  requestPrimaryName(
-    params: AoArNSPurchaseParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
-  redelegateStake(
-    params: AoRedelegateStakeParams,
-    options?: WriteOptions,
-  ): Promise<AoMessageResult>;
+  buyRecord: AoWriteAction<AoBuyRecordParams>;
+  upgradeRecord: AoWriteAction<AoArNSPurchaseParams>;
+  extendLease: AoWriteAction<AoExtendLeaseParams>;
+  increaseUndernameLimit: AoWriteAction<AoIncreaseUndernameLimitParams>;
+  cancelWithdrawal: AoWriteAction<{
+    gatewayAddress?: WalletAddress;
+    vaultId: string;
+  }>;
+  requestPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
+  redelegateStake: AoWriteAction<AoRedelegateStakeParams>;
 }
 
-// Typeguard functions
+// Type-guard functions
 export function isProcessConfiguration(
   config: object,
 ): config is Required<ProcessConfiguration> & Record<string, never> {

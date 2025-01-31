@@ -71,6 +71,8 @@ import {
   WriteActionCLIOptions,
 } from './types.js';
 
+export const defaultTtlSecondsCLI = 3600;
+
 export function stringifyJsonForCLIDisplay(
   json: JsonSerializable | unknown,
 ): string {
@@ -543,6 +545,13 @@ export function writeANTFromOptions(
   });
 }
 
+export function booleanFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): boolean {
+  return !!options[key];
+}
+
 export function requiredStringFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
@@ -605,7 +614,10 @@ export function getANTStateFromOptions(
     ticker: options.ticker,
     name: options.name,
     keywords: options.keywords,
-    ttlSeconds: options.ttlSeconds !== undefined ? +options.ttlSeconds : 3600,
+    ttlSeconds:
+      options.ttlSeconds !== undefined
+        ? +options.ttlSeconds
+        : defaultTtlSecondsCLI,
   });
 }
 
@@ -647,4 +659,27 @@ export function fundFromFromOptions<
     }
   }
   return o.fundFrom ?? 'balance';
+}
+
+export function assertLockLengthInRange(
+  lockLengthMs: number,
+  assertMin = true, // extend-vault has no min lock length
+) {
+  const minLockLengthMs = 1209600000; // 14 days
+  const maxLockLengthMs = 378432000000; // ~12 years
+
+  if (lockLengthMs > maxLockLengthMs) {
+    throw new Error(
+      `Lock length must be at most 12 years (378432000000 ms). Provided lock length: ${lockLengthMs} ms`,
+    );
+  }
+  if (!assertMin) {
+    return;
+  }
+
+  if (lockLengthMs < minLockLengthMs) {
+    throw new Error(
+      `Lock length must be at least 14 days (1209600000 ms). Provided lock length: ${lockLengthMs} ms`,
+    );
+  }
 }

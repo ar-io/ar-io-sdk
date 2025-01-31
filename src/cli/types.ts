@@ -80,6 +80,10 @@ export type CLIReadOptionsFromAoParams<T> = CLIOptionsFromAoParams<T> &
 export type CLIWriteOptionsFromAoParams<T> = WriteActionCLIOptions &
   CLIOptionsFromAoParams<T>;
 
+export type CLIWriteOptionsFromAoAntParams<T> = CLIWriteOptionsFromAoParams<
+  T & { processId: string }
+>;
+
 export type PaginationCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<PaginationParams>;
 

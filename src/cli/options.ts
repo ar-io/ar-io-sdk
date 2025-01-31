@@ -243,6 +243,24 @@ export const optionMap = {
     description:
       'Where to fund the action from. e.g. "balance", "stakes", or "any',
   },
+  revokable: {
+    alias: '--revokable',
+    description:
+      'Whether the vaulted transfer is revokable by the sender. Defaults to false',
+    type: 'boolean',
+  },
+  lockLengthMs: {
+    alias: '--lock-length-ms <lockLengthMs>',
+    description: 'The length of time in milliseconds to lock the vault for',
+  },
+  extendLengthMs: {
+    alias: '--extend-length-ms <extendLengthMs>',
+    description: 'The length of time in milliseconds to extend the vault for',
+  },
+  recipient: {
+    alias: '--recipient <recipient>',
+    description: 'The recipient to interact with',
+  },
 };
 
 export const walletOptions = [
@@ -303,6 +321,14 @@ export const transferOptions = [
   optionMap.target,
 ];
 
+export const vaultedTransferOptions = [
+  ...writeActionOptions,
+  optionMap.quantity,
+  optionMap.recipient,
+  optionMap.lockLengthMs,
+  optionMap.revokable,
+];
+
 export const operatorStakeOptions = [
   ...writeActionOptions,
   optionMap.operatorStake,
@@ -355,4 +381,16 @@ export const antStateOptions = [
   optionMap.description,
   optionMap.controllers,
   optionMap.ttlSeconds,
+];
+
+export const setAntBaseNameOptions = [
+  optionMap.processId,
+  optionMap.transactionId,
+  optionMap.ttlSeconds,
+  ...writeActionOptions,
+];
+
+export const setAntUndernameOptions = [
+  ...setAntBaseNameOptions,
+  optionMap.undername,
 ];

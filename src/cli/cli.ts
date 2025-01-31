@@ -22,6 +22,10 @@ import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
+  setAntBaseNameCLICommand,
+  setAntRecordCLICommand,
+} from './commands/antCommands.js';
+import {
   buyRecordCLICommand,
   extendLeaseCLICommand,
   increaseUndernameLimitCLICommand,
@@ -64,7 +68,14 @@ import {
   listArNSReturnedNames,
   listGateways,
 } from './commands/readCommands.js';
-import { transfer } from './commands/transfer.js';
+import {
+  createVaultCLICommand,
+  extendVaultCLICommand,
+  increaseVaultCLICommand,
+  revokeVaultCLICommand,
+  transferCLICommand,
+  vaultedTransferCLICommand,
+} from './commands/transfer.js';
 import {
   addressAndVaultIdOptions,
   antStateOptions,
@@ -81,9 +92,12 @@ import {
   paginationAddressOptions,
   paginationOptions,
   redelegateStakeOptions,
+  setAntBaseNameOptions,
+  setAntUndernameOptions,
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
+  vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
 import {
@@ -424,7 +438,42 @@ makeCommand({
   name: 'transfer',
   description: 'Transfer ARIO to another address',
   options: transferOptions,
-  action: transfer,
+  action: transferCLICommand,
+});
+
+makeCommand({
+  name: 'vaulted-transfer',
+  description: 'Transfer ARIO to another address into a locked vault',
+  options: vaultedTransferOptions,
+  action: vaultedTransferCLICommand,
+});
+
+makeCommand({
+  name: 'revoke-vault',
+  description: 'Revoke a vaulted transfer as the controller',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.recipient],
+  action: revokeVaultCLICommand,
+});
+
+makeCommand({
+  name: 'create-vault',
+  description: 'Create a locked vault with balance from the sender',
+  options: [...writeActionOptions, optionMap.lockLengthMs, optionMap.quantity],
+  action: createVaultCLICommand,
+});
+
+makeCommand({
+  name: 'extend-vault',
+  description: 'Extend the lock length of a vault as the recipient',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.extendLengthMs],
+  action: extendVaultCLICommand,
+});
+
+makeCommand({
+  name: 'increase-vault',
+  description: 'Increase the balance of a locked vault as the recipient',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.quantity],
+  action: increaseVaultCLICommand,
 });
 
 makeCommand({
@@ -719,45 +768,26 @@ makeCommand<ProcessIdCLIOptions & { controller?: string }>({
   },
 });
 
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    undername?: string;
-    transactionId?: string;
-    ttlSeconds?: number;
-  }
->({
+makeCommand({
   name: 'set-ant-record',
-  description: 'Set a record of an ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.undername,
-    optionMap.transactionId,
-    optionMap.ttlSeconds,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const ttlSeconds = options.ttlSeconds ?? 3600;
-    const undername = requiredStringFromOptions(options, 'undername');
-    const transactionId = requiredStringFromOptions(options, 'transactionId');
+  description:
+    'Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername',
+  options: setAntUndernameOptions,
+  action: setAntRecordCLICommand,
+});
 
-    await assertConfirmationPrompt(
-      `Are you sure you want to set this record?\n${JSON.stringify(
-        { undername, transactionId, ttlSeconds },
-        null,
-        2,
-      )}`,
-      options,
-    );
+makeCommand({
+  name: 'set-ant-base-name',
+  description: 'Set the base name of an ANT process',
+  options: setAntBaseNameOptions,
+  action: setAntBaseNameCLICommand,
+});
 
-    return writeANTFromOptions(options).setRecord(
-      {
-        undername,
-        transactionId,
-        ttlSeconds,
-      },
-      writeActionTagsFromOptions(options),
-    );
-  },
+makeCommand({
+  name: 'set-ant-undername',
+  description: 'Set an undername of an ANT process',
+  options: setAntUndernameOptions,
+  action: setAntRecordCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({

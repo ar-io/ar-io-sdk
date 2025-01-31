@@ -33,6 +33,11 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Vaults](#vaults)
     - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
     - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
+    - [`vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`](#vaultedtransfer-recipient-quantity-locklengthms-revokable-)
+    - [`revokeVault({ recipient, vaultId })`](#revokevault-recipient-vaultid-)
+    - [`createVault({ lockLengthMs, quantity })`](#createvault-locklengthms-quantity-)
+    - [`extendVault({ vaultId, extendLengthMs })`](#extendvault-vaultid-extendlengthms-)
+    - [`increaseVault({ vaultId, quantity })`](#increasevault-vaultid-quantity-)
   - [Gateways](#gateways)
     - [`getGateway({ address })`](#getgateway-address-)
     - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
@@ -89,6 +94,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
     - [`transfer({ target })`](#transfer-target-)
     - [`setController({ controller })`](#setcontroller-controller-)
     - [`removeController({ controller })`](#removecontroller-controller-)
+    - [`setBaseNameRecord({ transactionId, ttlSeconds })`](#setbasenamerecord-transactionid-ttlseconds-)
+    - [`setUndernameRecord({ undername, transactionId, ttlSeconds })`](#setundernamerecord-undername-transactionid-ttlseconds-)
+    - [`removeUndernameRecord({ undername })`](#removeundernamerecord-undername-)
     - [`setRecord({ undername, transactionId, ttlSeconds })`](#setrecord-undername-transactionid-ttlseconds-)
     - [`removeRecord({ undername })`](#removerecord-undername-)
     - [`setName({ name })`](#setname-name-)
@@ -510,6 +518,79 @@ const vaults = await ario.getVaults({
 ```
 
 </details>
+
+#### `vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`
+
+Transfers `mARIO` to the designated `recipient` address and locks the balance for the specified `lockLengthMs` milliseconds. The `revokable` flag determines if the vaulted transfer can be revoked by the sender.
+
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.vaultedTransfer(
+  {
+    recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    quantity: new ARIOToken(1000).toMARIO(),
+    lockLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+    revokable: true,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+```
+
+#### `revokeVault({ recipient, vaultId })`
+
+Revokes a vaulted transfer by the recipient address and vault ID. Only the sender of the vaulted transfer can revoke it.
+
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+const { id: txId } = await ario.revokeVault({
+  recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+  vaultId: 'IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs',
+});
+```
+
+#### `createVault({ lockLengthMs, quantity })`
+
+Creates a vault for the specified `quantity` of mARIO from the signer's balance and locks it for the specified `lockLengthMs` milliseconds.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.createVault({
+  lockLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+  quantity: new ARIOToken(1000).toMARIO(),
+});
+```
+
+#### `extendVault({ vaultId, extendLengthMs })`
+
+Extends the lock length of a signer's vault by the specified `extendLengthMs` milliseconds.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.extendVault({
+  vaultId: 'vaultIdOne',
+  extendLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
+});
+```
+
+#### `increaseVault({ vaultId, quantity })`
+
+Increases the balance of a signer's vault by the specified `quantity` of mARIO.
+
+```typescript
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
+
+const { id: txId } = await ario.increaseVault({
+  vaultId: 'vaultIdOne',
+  quantity: new ARIOToken(1000).toMARIO(),
+});
+```
 
 ### Gateways
 
@@ -2024,9 +2105,70 @@ const { id: txId } = await ant.removeController(
 );
 ```
 
+#### `setBaseNameRecord({ transactionId, ttlSeconds })`
+
+Adds or updates the base name record for the ANT. This is the top level name of the ANT (e.g. ardrive.ar.io)
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+// get the ant for the base name
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
+const { id: txId } = await ant.setBaseNameRecord({
+  transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+  ttlSeconds: 3600,
+});
+
+// ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+```
+
+#### `setUndernameRecord({ undername, transactionId, ttlSeconds })`
+
+Adds or updates an undername record for the ANT. An undername is appended to the base name of the ANT (e.g. dapp_ardrive.ar.io)
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+> Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
+
+```typescript
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
+const { id: txId } = await ant.setUndernameRecord(
+  {
+    undername: 'dapp',
+    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    ttlSeconds: 900,
+  },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+
+// dapp_ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+```
+
+#### `removeUndernameRecord({ undername })`
+
+Removes an undername record from the ANT process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.removeUndernameRecord(
+  { undername: 'dapp' },
+  // optional additional tags
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+
+// dapp_ardrive.ar.io will no longer resolve to the provided transaction id
+```
+
 #### `setRecord({ undername, transactionId, ttlSeconds })`
 
-Updates or creates a record in the ANT process.
+> [!WARNING]
+> Deprecated: Use `setBaseNameRecord` or `setUndernameRecord` instead.
+
+Adds or updates a record for the ANT process. The `undername` parameter is used to specify the record name. Use `@` for the base name record.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
@@ -2046,16 +2188,23 @@ const { id: txId } = await ant.setRecord(
 
 #### `removeRecord({ undername })`
 
+> [!WARNING]
+> Deprecated: Use `removeUndernameRecord` instead.
+
 Removes a record from the ANT process.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
+const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.removeRecord(
-  { undername: 'remove-domemain' },
+  { undername: 'dapp' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
+
+// dapp_ardrive.ar.io will no longer resolve to the provided transaction id
 ```
 
 #### `setName({ name })`

@@ -123,6 +123,11 @@ Commands:
   get-gateway-vaults [options]            Get the vaults of a gateway
   list-all-gateway-vaults [options]       List vaults from all gateways
   transfer [options]                      Transfer ARIO to another address
+  vaulted-transfer [options]              Transfer ARIO to another address into a locked vault
+  revoke-vault [options]                  Revoke a vaulted transfer as the controller
+  create-vault [options]                  Create a locked vault with balance from the sender
+  extend-vault [options]                  Extend the lock length of a vault as the recipient
+  increase-vault [options]                Increase the balance of a locked vault as the recipient
   join-network [options]                  Join a gateway to the AR.IO network
   leave-network [options]                 Leave a gateway from the AR.IO network
   update-gateway-settings [options]       Update AR.IO gateway settings
@@ -153,7 +158,9 @@ Commands:
   transfer-ant-ownership [options]        Transfer ownership of an ANT process
   add-ant-controller [options]            Add a controller to an ANT process
   remove-ant-controller [options]         Remove a controller from an ANT process
-  set-ant-record [options]                Set a record of an ANT process
+  set-ant-record [options]                Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername
+  set-ant-base-name [options]             Set the base name of an ANT process
+  set-ant-undername [options]             Set an undername of an ANT process
   remove-ant-record [options]             Remove a record from an ANT process
   set-ant-ticker [options]                Set the ticker of an ANT process
   set-ant-name [options]                  Set the name of an ANT process
