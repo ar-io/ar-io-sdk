@@ -1,3 +1,10 @@
+## [3.4.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0...v3.4.1-alpha.1) (2025-01-31)
+
+
+### Bug Fixes
+
+* **gar:** mark old fields as deprecated, add new ones ([18ca1b4](https://github.com/ar-io/ar-io-sdk/commit/18ca1b4117ecefa1198405ed70173144a6354d4f))
+
 # [3.4.0](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1...v3.4.0) (2025-01-31)
 
 
