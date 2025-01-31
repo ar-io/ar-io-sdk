@@ -1,31 +1,3 @@
-# [3.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.3...v3.4.0-alpha.4) (2025-01-30)
-
-
-### Features
-
-* **vault apis:** assert lock length in range PE-7541 ([3585643](https://github.com/ar-io/ar-io-sdk/commit/3585643ecd8b0a335741fe0bfbcfbd2288cc3e9d))
-* **vault apis:** init write methods+commands for create/extend/increase vault PE-7541 ([b2e3cab](https://github.com/ar-io/ar-io-sdk/commit/b2e3cab54e8547c0392604c3302c01caac38d2c7))
-
-# [3.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.2...v3.4.0-alpha.3) (2025-01-29)
-
-
-### Features
-
-* **ant apis:** add commands for new methods ([931e621](https://github.com/ar-io/ar-io-sdk/commit/931e621cbb8b35e58dbfa64d8adaa898dbf74086))
-
-# [3.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0-alpha.1...v3.4.0-alpha.2) (2025-01-29)
-
-
-### Bug Fixes
-
-* **ant:** add setUndername and setBasename apis ([ce4abfe](https://github.com/ar-io/ar-io-sdk/commit/ce4abfe33032530157eb31657ae93d681935f27e))
-
-# [3.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1-alpha.4...v3.4.0-alpha.1) (2025-01-29)
-
-
-### Features
-
-* **revokable vaults:** init revokeVault and vaultedTransfer commands and methods PE-7514 ([6ca44a1](https://github.com/ar-io/ar-io-sdk/commit/6ca44a1e84d1bd14ded87a59cc408425c54ea2e4))
 ## [3.3.1](https://github.com/ar-io/ar-io-sdk/compare/v3.3.0...v3.3.1) (2025-01-29)
 
 
