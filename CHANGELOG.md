@@ -1,3 +1,11 @@
+## [3.4.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0...v3.4.1) (2025-02-03)
+
+
+### Bug Fixes
+
+* **epochs:** getPrescribedObservers and getPrescribedNames should get data from GQL/arweave vs. the contract ([d8fa25d](https://github.com/ar-io/ar-io-sdk/commit/d8fa25dc2c92d7b8759d4a6db2837f1f4d04881c))
+* **gar:** mark old fields as deprecated, add new ones ([18ca1b4](https://github.com/ar-io/ar-io-sdk/commit/18ca1b4117ecefa1198405ed70173144a6354d4f))
+
 # [3.4.0](https://github.com/ar-io/ar-io-sdk/compare/v3.3.1...v3.4.0) (2025-01-31)
 
 
