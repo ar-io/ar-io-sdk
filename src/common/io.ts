@@ -375,7 +375,18 @@ export class ARIOReadable implements AoARIORead {
 
   async getPrescribedObservers(
     epoch?: EpochInput,
-  ): Promise<AoWeightedObserver[]> {
+  ): Promise<AoWeightedObserver[] | undefined> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: +epochIndex,
+        processId: this.process.processId,
+      });
+      return epochData?.prescribedObservers;
+    }
+
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
       { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
@@ -386,7 +397,17 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getPrescribedNames(epoch?: EpochInput): Promise<string[]> {
+  async getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: +epochIndex,
+        processId: this.process.processId,
+      });
+      return epochData?.prescribedNames;
+    }
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Names' },
       { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },

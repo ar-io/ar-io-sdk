@@ -588,8 +588,10 @@ export interface AoARIORead {
   }): Promise<AoReturnedName | undefined>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
-  getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
+  getPrescribedObservers(
+    epoch?: EpochInput,
+  ): Promise<AoWeightedObserver[] | undefined>;
+  getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined>;
   getObservations(
     epoch?: EpochInput,
   ): Promise<AoEpochObservationData | undefined>;
