@@ -171,9 +171,9 @@ export async function getEpoch(o: EpochCLIOptions) {
 export async function getPrescribedObservers(o: EpochCLIOptions) {
   const epoch = epochInputFromOptions(o);
   const result = await readARIOFromOptions(o).getPrescribedObservers(epoch);
-  return result?.length
-    ? result
-    : { message: `No prescribed observers found for epoch ${epoch}` };
+  return (
+    result ?? { message: `No prescribed observers found for epoch ${epoch}` }
+  );
 }
 
 export async function getPrescribedNames(o: EpochCLIOptions) {
@@ -181,9 +181,7 @@ export async function getPrescribedNames(o: EpochCLIOptions) {
   const result = await readARIOFromOptions(o).getPrescribedNames(
     epochInputFromOptions(o),
   );
-  return result?.length
-    ? result
-    : { message: `No prescribed names found for epoch ${epoch}` };
+  return result ?? { message: `No prescribed names found for epoch ${epoch}` };
 }
 
 export async function getTokenCost(o: GetTokenCostCLIOptions) {

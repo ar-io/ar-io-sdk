@@ -242,8 +242,12 @@ export type AoWeightedObserver = {
 export type AoGatewayWeights = {
   stakeWeight: number;
   tenureWeight: number;
+  // @deprecated - use `gatewayPerformanceRatio` instead
   gatewayRewardRatioWeight: number;
+  // @deprecated - use `observerPerformanceRatio` instead
   observerRewardRatioWeight: number;
+  gatewayPerformanceRatio: number;
+  observerPerformanceRatio: number;
   compositeWeight: number;
   normalizedCompositeWeight: number;
 };
@@ -584,8 +588,10 @@ export interface AoARIORead {
   }): Promise<AoReturnedName | undefined>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
-  getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
+  getPrescribedObservers(
+    epoch?: EpochInput,
+  ): Promise<AoWeightedObserver[] | undefined>;
+  getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined>;
   getObservations(
     epoch?: EpochInput,
   ): Promise<AoEpochObservationData | undefined>;
