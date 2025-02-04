@@ -55,6 +55,7 @@ export const AntKeywordsSchema = z.array(z.string()); // TODO: add specific limi
 export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
+  priority: z.number().optional(),
 });
 export type AoANTRecord = z.infer<typeof AntRecordSchema>;
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
@@ -239,6 +240,7 @@ export interface AoANTWrite extends AoANTRead {
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
+  priority?: number;
 };
 
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
