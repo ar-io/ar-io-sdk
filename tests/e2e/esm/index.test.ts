@@ -253,9 +253,6 @@ describe('e2e esm tests', async () => {
         assert(typeof gateway.weights.tenureWeight === 'number');
         assert(typeof gateway.weights.observerPerformanceRatio === 'number');
         assert(typeof gateway.weights.gatewayPerformanceRatio === 'number');
-        // backwards compatibility
-        assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
-        assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
       });
     });
 
@@ -293,9 +290,6 @@ describe('e2e esm tests', async () => {
         assert(typeof gateway.weights.tenureWeight === 'number');
         assert(typeof gateway.weights.observerPerformanceRatio === 'number');
         assert(typeof gateway.weights.gatewayPerformanceRatio === 'number');
-        // backwards compatibility
-        assert(typeof gateway.weights.observerRewardRatioWeight === 'number');
-        assert(typeof gateway.weights.gatewayRewardRatioWeight === 'number');
       });
     });
 
@@ -559,9 +553,6 @@ describe('e2e esm tests', async () => {
         assert(typeof observer.gatewayPerformanceRatio === 'number');
         assert(typeof observer.observerPerformanceRatio === 'number');
         assert(typeof observer.compositeWeight === 'number');
-        // backwards compatibility
-        assert(typeof observer.observerRewardRatioWeight === 'number');
-        assert(typeof observer.gatewayRewardRatioWeight === 'number');
       }
     });
 
