@@ -317,3 +317,38 @@ export function removeUnicodeFromError(error: string): string {
     )
     .trim();
 }
+
+/**
+ * Sorts ANT records by priority and then lexicographically.
+ */
+export const antRecordsSortedByPriority = (
+  antRecords: Record<string, AoANTRecord>,
+): Record<string, AoANTRecord> => {
+  return Object.fromEntries(
+    Object.entries(antRecords).sort(([a, aRecord], [b, bRecord]) => {
+      // '@' is the root name and should be resolved first
+      if (a === '@') {
+        return -1;
+      }
+      if (b === '@') {
+        return 1;
+      }
+      // if a record has a priority, it should be resolved before any other record without a priority
+      if ('priority' in aRecord && !('priority' in bRecord)) {
+        return -1;
+      }
+      if (!('priority' in aRecord) && 'priority' in bRecord) {
+        return 1;
+      }
+      // sort by priority if both records have a priority
+      if (aRecord.priority !== undefined && bRecord.priority !== undefined) {
+        if (aRecord.priority === bRecord.priority) {
+          return a.localeCompare(b);
+        }
+        return aRecord.priority - bRecord.priority;
+      }
+      // if the records have no priority, sort lexicographically
+      return a.localeCompare(b);
+    }),
+  );
+};
