@@ -1234,7 +1234,7 @@ const record = await ario.getArNSRecord({ name: 'ardrive' });
   "endTimestamp": 1752256702026,
   "startTimestamp": 1720720819969,
   "type": "lease",
-  "undernames": 100
+  "undernameLimit": 100
 }
 ```
 
@@ -1267,40 +1267,45 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
       "processId": "eNey-H9RB9uCdoJUvPULb35qhZVXZcEXv8xds4aHhkQ",
       "purchasePrice": 75541282285,
       "startTimestamp": 1720720621424,
+      "endTimestamp": 1752256702026,
       "type": "permabuy",
-      "undernames": 10
+      "undernameLimit": 10
     },
     {
       "name": "ardrive",
       "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
       "endTimestamp": 1720720819969,
       "startTimestamp": 1720720620813,
+      "purchasePrice": 75541282285,
       "type": "lease",
-      "undernames": 100
+      "undernameLimit": 100
     },
     {
       "name": "arweave",
       "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
       "endTimestamp": 1720720819969,
       "startTimestamp": 1720720620800,
+      "purchasePrice": 75541282285,
       "type": "lease",
-      "undernames": 100
+      "undernameLimit": 100
     },
     {
       "name": "ar-io",
       "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
       "endTimestamp": 1720720819969,
       "startTimestamp": 1720720619000,
+      "purchasePrice": 75541282285,
       "type": "lease",
-      "undernames": 100
+      "undernameLimit": 100
     },
     {
       "name": "fwd",
       "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
       "endTimestamp": 1720720819969,
       "startTimestamp": 1720720220811,
+      "purchasePrice": 75541282285,
       "type": "lease",
-      "undernames": 100
+      "undernameLimit": 100
     }
     // ...95 other records
   ],
