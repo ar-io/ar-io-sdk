@@ -1,3 +1,10 @@
+# [3.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0-alpha.1) (2025-02-04)
+
+
+### Features
+
+* **arns stats:** include arns stats type on epoch PE-7562 ([f92ee91](https://github.com/ar-io/ar-io-sdk/commit/f92ee918ada030cad3cff0ae07bd6ca84eb512bb))
+
 ## [3.4.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0...v3.4.1) (2025-02-03)
 
 
