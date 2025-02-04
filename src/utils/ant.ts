@@ -20,6 +20,8 @@ import { ANTRecords, SortedANTRecords } from '../types/ant.js';
  *
  * Note: javascript guarantees that the order of objects in an object is persistent. Still, adding index to each record is useful for enforcing against undername limits.
  *
+ * Reference: https://github.com/ar-io/ar-io-node/blob/e0a9ec56559cad1b3e35d668563871afb8649913/docs/madr/003-arns-undername-limits.md
+ *
  * @param antRecords - The ANT records to sort.
  */
 export const sortedANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
