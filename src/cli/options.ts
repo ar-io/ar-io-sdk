@@ -27,8 +27,13 @@ export const optionMap = {
     alias: '--private-key <key>',
     description: 'Stringified private key to use with the action',
   },
-  dev: {
-    alias: '--dev',
+  testnet: {
+    alias: '--testnet',
+    description: 'Run against the AR.IO testnet process',
+    type: 'boolean',
+  },
+  devnet: {
+    alias: '--dev, --devnet',
     description: 'Run against the AR.IO devnet process',
     type: 'boolean',
   },
@@ -271,7 +276,8 @@ export const walletOptions = [
 
 export const globalOptions = [
   ...walletOptions,
-  optionMap.dev,
+  optionMap.devnet,
+  optionMap.testnet,
   optionMap.debug,
   optionMap.arioProcessId,
   optionMap.cuUrl,

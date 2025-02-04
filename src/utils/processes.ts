@@ -22,7 +22,7 @@ import { ANT } from '../common/ant.js';
 import { AOProcess } from '../common/index.js';
 import { ARIO } from '../common/io.js';
 import { ILogger, Logger } from '../common/logger.js';
-import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
+import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
 import { AoANTRegistryRead } from '../types/ant-registry.js';
 import { AoANTState } from '../types/ant.js';
 import {
@@ -74,7 +74,7 @@ export class ArNSEventEmitter extends EventEmitter {
   private antAoClient: AoClient;
   constructor({
     contract = ARIO.init({
-      processId: ARIO_TESTNET_PROCESS_ID,
+      processId: ARIO_MAINNET_PROCESS_ID,
     }),
     timeoutMs = 60_000,
     concurrency = 30,
@@ -192,7 +192,7 @@ export class ArNSEventEmitter extends EventEmitter {
 
 export const fetchAllArNSRecords = async ({
   contract = ARIO.init({
-    processId: ARIO_TESTNET_PROCESS_ID,
+    processId: ARIO_MAINNET_PROCESS_ID,
   }),
   emitter,
   logger = Logger.default,

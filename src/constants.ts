@@ -37,6 +37,8 @@ export const arioDevnetProcessId = ARIO_DEVNET_PROCESS_ID;
 export const ARIO_TESTNET_PROCESS_ID =
   'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
 
+export const ARIO_MAINNET_PROCESS_ID = 'placeholder'; // TODO: update when mainnet process ID is available
+
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MARIO_PER_ARIO = 1_000_000;
 export const AOS_MODULE_ID = 'acdKHzHAG-RVC06nNVlX3jIXvomfiBnA5NZTEPYOMv8';

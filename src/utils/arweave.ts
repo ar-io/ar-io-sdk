@@ -15,7 +15,7 @@
  */
 import Arweave from 'arweave';
 
-import { ARIO_TESTNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
+import { ARIO_MAINNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
 import { BlockHeight } from '../types/common.js';
 import { AoEpochData, PaginationParams } from '../types/io.js';
 import { parseAoEpochData } from './ao.js';
@@ -66,7 +66,7 @@ export const paginationParamsToTags = <T>(
 export const getEpochDataFromGql = async ({
   arweave,
   epochIndex,
-  processId = ARIO_TESTNET_PROCESS_ID,
+  processId = ARIO_MAINNET_PROCESS_ID,
   retries = 3,
 }: {
   arweave: Arweave;
@@ -104,12 +104,12 @@ export const getEpochDataFromGql = async ({
  * Get the epoch with distribution data for the current epoch
  * @param arweave - The Arweave instance
  * @param epochIndex - The index of the epoch
- * @param processId - The process ID (optional, defaults to ARIO_TESTNET_PROCESS_ID)
+ * @param processId - The process ID (optional, defaults to ARIO_MAINNET_PROCESS_ID)
  * @returns string - The stringified GQL query
  */
 export const epochDistributionNoticeGqlQuery = ({
   epochIndex,
-  processId = ARIO_TESTNET_PROCESS_ID,
+  processId = ARIO_MAINNET_PROCESS_ID,
 }: {
   epochIndex: number;
   processId?: string;

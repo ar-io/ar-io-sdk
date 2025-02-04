@@ -10,7 +10,7 @@ import {
   ARIO,
   ARIOReadable,
   ARIOWriteable,
-  ARIO_TESTNET_PROCESS_ID,
+  ARIO_MAINNET_PROCESS_ID,
   AoANTReadable,
   AoANTRegistryWriteable,
   AoANTWriteable,
@@ -50,7 +50,7 @@ const ario = ARIO.init({
 });
 
 // epochs with known distribution data notices
-const epochIndex = processId === ARIO_TESTNET_PROCESS_ID ? 189 : 200;
+const epochIndex = processId === ARIO_MAINNET_PROCESS_ID ? 189 : 200;
 
 describe('e2e esm tests', async () => {
   let compose;

@@ -25,6 +25,7 @@ import {
   ARIO,
   ARIOToken,
   ARIO_DEVNET_PROCESS_ID,
+  ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
   AoANTRead,
   AoANTWrite,
@@ -149,13 +150,16 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
 
 export function arioProcessIdFromOptions({
   arioProcessId,
-  dev,
+  testnet,
+  devnet,
 }: GlobalCLIOptions): string {
   return arioProcessId !== undefined
     ? arioProcessId
-    : dev
-      ? ARIO_DEVNET_PROCESS_ID
-      : ARIO_TESTNET_PROCESS_ID;
+    : testnet
+      ? ARIO_TESTNET_PROCESS_ID
+      : devnet
+        ? ARIO_DEVNET_PROCESS_ID
+        : ARIO_MAINNET_PROCESS_ID;
 }
 
 function jwkFromOptions({

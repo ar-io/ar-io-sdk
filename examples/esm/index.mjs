@@ -1,7 +1,7 @@
 import {
   ANT,
   ARIO,
-  ARIO_TESTNET_PROCESS_ID,
+  ARIO_MAINNET_PROCESS_ID,
   getANTProcessesOwnedByWallet,
 } from '@ar.io/sdk';
 
@@ -9,7 +9,7 @@ import {
   const arIO = ARIO.init();
   const testnetGateways = await arIO.getGateways();
   const protocolBalance = await arIO.getBalance({
-    address: ARIO_TESTNET_PROCESS_ID,
+    address: ARIO_MAINNET_PROCESS_ID,
   });
   const contractInfo = await arIO.getInfo();
   const ardriveRecord = await arIO.getArNSRecord({ name: 'ardrive' });
