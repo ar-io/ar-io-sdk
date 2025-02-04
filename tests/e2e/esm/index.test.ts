@@ -504,7 +504,10 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(balances.items));
       balances.items.forEach((wallet) => {
         assert(typeof wallet.address === 'string');
-        assert(typeof wallet.balance === 'number');
+        assert(
+          typeof wallet.balance === 'number',
+          `Balance for ${wallet.address} is not a number: ${wallet.balance}`,
+        );
       });
     });
 

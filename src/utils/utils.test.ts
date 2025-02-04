@@ -1,8 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { pruneTags } from '../../src/utils/arweave.js';
-import { errorMessageFromOutput } from '../../src/utils/index.js';
+import { pruneTags } from './arweave.js';
+import { errorMessageFromOutput } from './index.js';
 
 describe('pruneTags', () => {
   it('should remove tags with undefined values', () => {
