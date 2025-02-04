@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoANTRecord } from '../types/ant.js';
+import { ANTRecords, SortedANTRecords } from '../types/ant.js';
 
 /**
  * Sorts ANT records by priority and then lexicographically.
  *
+ * Note: javascript guarantees that the order of objects in an object is persistent. Still, adding index to each record is useful for enforcing against undername limits.
+ *
  * @param antRecords - The ANT records to sort.
  */
-export const sortedANTRecords = (
-  antRecords: Record<string, AoANTRecord>,
-): Record<string, AoANTRecord> => {
-  return Object.fromEntries(
-    Object.entries(antRecords).sort(([a, aRecord], [b, bRecord]) => {
+export const sortedANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
+  const sortedEntries = Object.entries(antRecords).sort(
+    ([a, aRecord], [b, bRecord]) => {
       // '@' is the root name and should be resolved first
       if (a === '@') {
         return -1;
@@ -39,15 +39,19 @@ export const sortedANTRecords = (
       if (!('priority' in aRecord) && 'priority' in bRecord) {
         return 1;
       }
-      // sort by priority if both records have a priority
+      // if both records have a priority, sort by priority and fallback to lexicographic sorting
       if (aRecord.priority !== undefined && bRecord.priority !== undefined) {
         if (aRecord.priority === bRecord.priority) {
           return a.localeCompare(b);
         }
         return aRecord.priority - bRecord.priority;
       }
-      // if the records have no priority, sort lexicographically
+      // all other records are sorted lexicographically
       return a.localeCompare(b);
-    }),
+    },
+  );
+  // now that they are sorted, add the index to each record - this is their position in the sorted list and is used to enforce undername limits
+  return Object.fromEntries(
+    sortedEntries.map(([a, aRecord], index) => [a, { ...aRecord, index }]),
   );
 };
