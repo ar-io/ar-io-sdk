@@ -170,6 +170,18 @@ describe('e2e esm tests', async () => {
     it('should be able to get the current epoch', async () => {
       const epoch = await ario.getCurrentEpoch();
       assert.ok(epoch);
+      assert.equal(typeof epoch.epochIndex, 'number');
+      assert.equal(typeof epoch.startHeight, 'number');
+      assert.equal(typeof epoch.endTimestamp, 'number');
+      assert.equal(typeof epoch.distributionTimestamp, 'number');
+      assert.equal(typeof epoch.arnsStats.totalReservedNames, 'number');
+      assert.equal(typeof epoch.arnsStats.totalActiveNames, 'number');
+      assert.equal(typeof epoch.arnsStats.totalReturnedNames, 'number');
+      assert.equal(typeof epoch.arnsStats.totalGracePeriodNames, 'number');
+      assert(Array.isArray(epoch.prescribedObservers));
+      assert(Array.isArray(epoch.prescribedNames));
+      assert(Array.isArray(epoch.observations.failureSummaries));
+      assert(Array.isArray(epoch.observations.reports));
     });
 
     it('should be able to get epoch-settings', async () => {
