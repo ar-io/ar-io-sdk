@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { sortedANTRecords } from './ant.js';
+import { sortANTRecords } from './ant.js';
 
 describe('sortANTRecordsByPriority', () => {
   it('should sort records by priority and then lexicographically', () => {
@@ -14,7 +14,7 @@ describe('sortANTRecordsByPriority', () => {
       noPriority: { transactionId: 'test', ttlSeconds: 1 },
       '@': { transactionId: 'test', ttlSeconds: 1 }, // always first, even if no priority
     };
-    const sorted = sortedANTRecords(records);
+    const sorted = sortANTRecords(records);
     assert.deepStrictEqual(sorted, {
       '@': { transactionId: 'test', ttlSeconds: 1, index: 0 }, // always first, even if no priority
       undername1: {
@@ -56,7 +56,7 @@ describe('sortANTRecordsByPriority', () => {
       '@': { priority: 5, transactionId: 'test', ttlSeconds: 1 }, //  priorities set on '@' are ignored, they are always first
       undername1: { priority: 2, transactionId: 'test', ttlSeconds: 1 },
     };
-    const sorted = sortedANTRecords(records);
+    const sorted = sortANTRecords(records);
     assert.deepStrictEqual(sorted, {
       '@': { priority: 5, transactionId: 'test', ttlSeconds: 1, index: 0 },
       undername1: {

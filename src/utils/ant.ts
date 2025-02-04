@@ -24,7 +24,7 @@ import { ANTRecords, SortedANTRecords } from '../types/ant.js';
  *
  * @param antRecords - The ANT records to sort.
  */
-export const sortedANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
+export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
   const sortedEntries = Object.entries(antRecords).sort(
     ([a, aRecord], [b, bRecord]) => {
       // '@' is the root name and should be resolved first
