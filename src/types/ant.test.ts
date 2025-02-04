@@ -7,7 +7,7 @@ import {
   AntInfoSchema,
   AntStateSchema,
   isAoANTState,
-} from '../../src/types/ant.js';
+} from './ant.js';
 
 const stub_address = 'valid-address'.padEnd(43, '1');
 

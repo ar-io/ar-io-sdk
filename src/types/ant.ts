@@ -208,6 +208,7 @@ export interface AoANTWrite extends AoANTRead {
   removeController: AoWriteAction<{ controller: WalletAddress }>;
   /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
   setRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
+  /** @deprecated Use removeUndernameRecord instead for undernames */
   removeRecord: AoWriteAction<{ undername: string }>;
   setBaseNameRecord: AoWriteAction<AoANTSetBaseNameRecordParams>;
   setUndernameRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
