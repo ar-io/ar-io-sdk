@@ -1,3 +1,11 @@
+# [3.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.1...v3.5.0-alpha.2) (2025-02-05)
+
+
+### Bug Fixes
+
+* **ant:** add `priority` as an attribute on ANTs ([f0c6758](https://github.com/ar-io/ar-io-sdk/commit/f0c67589c4894c6434633911fc6c83d9cb1cfeb4))
+* **ant:** update types and add index for easy enforcement ([3dd6df5](https://github.com/ar-io/ar-io-sdk/commit/3dd6df596d584694b5ad8a3e20f5e404016e7578))
+
 # [3.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0-alpha.1) (2025-02-04)
 
 
