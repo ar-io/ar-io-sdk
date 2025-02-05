@@ -55,8 +55,13 @@ export const AntKeywordsSchema = z.array(z.string()); // TODO: add specific limi
 export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
+  priority: z.number().optional(),
 });
 export type AoANTRecord = z.infer<typeof AntRecordSchema>;
+export type ANTRecords = Record<string, AoANTRecord>;
+export type SortedANTRecord = AoANTRecord & { index: number };
+export type SortedANTRecords = Record<string, SortedANTRecord>;
+
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
 export const AntControllersSchema = z.array(
   ArweaveTxIdSchema.describe('Controller address'),
@@ -188,7 +193,7 @@ export interface AoANTRead {
     { undername }: { undername: string },
     opts?: AntReadOptions,
   ): Promise<AoANTRecord | undefined>;
-  getRecords(opts?: AntReadOptions): Promise<Record<string, AoANTRecord>>;
+  getRecords(opts?: AntReadOptions): Promise<ANTRecords>;
   getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
   getTicker(opts?: AntReadOptions): Promise<string>;
@@ -239,6 +244,7 @@ export interface AoANTWrite extends AoANTRead {
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
+  priority?: number;
 };
 
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
