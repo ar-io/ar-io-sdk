@@ -15,6 +15,7 @@ describe('sortANTRecordsByPriority', () => {
       undername5: { priority: 100, transactionId: 'test', ttlSeconds: 1 }, // priority does not represent the index or position of the record, just the order of resolution relative to other records
       noPriority: { transactionId: 'test', ttlSeconds: 1 },
       noPriority01: { transactionId: 'test', ttlSeconds: 1 },
+      noPriority1: { transactionId: 'test', ttlSeconds: 1 },
       noPriority11: { transactionId: 'test', ttlSeconds: 1 },
       '@': { transactionId: 'test', ttlSeconds: 1 }, // always first, even if no priority
     };
@@ -65,7 +66,8 @@ describe('sortANTRecordsByPriority', () => {
       },
       noPriority: { transactionId: 'test', ttlSeconds: 1, index: 8 },
       noPriority01: { transactionId: 'test', ttlSeconds: 1, index: 9 },
-      noPriority11: { transactionId: 'test', ttlSeconds: 1, index: 10 },
+      noPriority1: { transactionId: 'test', ttlSeconds: 1, index: 10 },
+      noPriority11: { transactionId: 'test', ttlSeconds: 1, index: 11 },
     });
   });
 
