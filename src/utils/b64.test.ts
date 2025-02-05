@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fromB64Url, getRandomText, toB64Url } from '../../src/utils/base64.js';
+import { fromB64Url, getRandomText, toB64Url } from './base64.js';
 
 describe('b64utils', () => {
   it('should convert various strings to base64url and back', () => {
@@ -16,8 +16,12 @@ describe('b64utils', () => {
     ];
     for (const str of testStrings) {
       const encoded = toB64Url(Buffer.from(str));
-      const decoded = Buffer.from(fromB64Url(encoded)).toString();
-      assert.strictEqual(decoded, str, `Failed for string: ${str}`);
+      const decoded = fromB64Url(encoded);
+      assert.deepStrictEqual(
+        decoded,
+        Buffer.from(str),
+        `Failed for string: ${str}`,
+      );
     }
   });
   it('should convert various buffers to base64url and back', () => {

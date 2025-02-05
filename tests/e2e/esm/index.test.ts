@@ -504,7 +504,10 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(balances.items));
       balances.items.forEach((wallet) => {
         assert(typeof wallet.address === 'string');
-        assert(typeof wallet.balance === 'number');
+        assert(
+          typeof wallet.balance === 'number',
+          `Balance for ${wallet.address} is not a number: ${wallet.balance}`,
+        );
       });
     });
 
@@ -1093,7 +1096,13 @@ describe('e2e esm tests', async () => {
       it('should be able to get the ANT records', async () => {
         const records = await ant.getRecords();
         assert.ok(records);
-        // TODO: check enforcement of alphabetical order with '@' first
+        for (const record of Object.values(records)) {
+          assert(typeof record.transactionId === 'string');
+          assert(typeof record.ttlSeconds === 'number');
+          if (record.priority) {
+            assert(typeof record.priority === 'number');
+          }
+        }
       });
 
       it('should be able to get a @ record from the ANT', async () => {
