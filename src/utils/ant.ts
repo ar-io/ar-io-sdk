@@ -44,12 +44,13 @@ export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
       // if both records have a priority, sort by priority and fallback to lexicographic sorting
       if (aRecord.priority !== undefined && bRecord.priority !== undefined) {
         if (aRecord.priority === bRecord.priority) {
-          return a.localeCompare(b);
+          // use deterministic comparison instead of localeCompare to avoid locale-specific sorting
+          return a < b ? -1 : a > b ? 1 : 0;
         }
         return aRecord.priority - bRecord.priority;
       }
-      // all other records are sorted lexicographically
-      return a.localeCompare(b);
+      // all other records are sorted lexicographically, using deterministic comparison instead of localeCompare to avoid locale-specific sorting
+      return a < b ? -1 : a > b ? 1 : 0;
     },
   );
   // now that they are sorted, add the index to each record - this is their position in the sorted list and is used to enforce undername limits
