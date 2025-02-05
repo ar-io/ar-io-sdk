@@ -125,6 +125,7 @@
   },
   "dependencies": {
     "@dha-team/arbundles": "^1.0.1",
+    "@permaweb/ao-loader": "^0.0.46",
     "@permaweb/aoconnect": "^0.0.57",
     "arweave": "1.15.5",
     "axios": "1.7.9",
