@@ -1,3 +1,10 @@
+# [3.5.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.2...v3.5.0-alpha.3) (2025-02-05)
+
+
+### Bug Fixes
+
+* **ant:** use deterministic sort with no locale comparison ([7f2e067](https://github.com/ar-io/ar-io-sdk/commit/7f2e067f007012a26d1a0b54211bd56f517a6e92))
+
 # [3.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.1...v3.5.0-alpha.2) (2025-02-05)
 
 
