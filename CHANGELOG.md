@@ -1,3 +1,10 @@
+# [3.5.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.3...v3.5.0-alpha.4) (2025-02-05)
+
+
+### Bug Fixes
+
+* **evolve:** use fetch for data instead of arweave ([6deb91c](https://github.com/ar-io/ar-io-sdk/commit/6deb91c233923b7c4f4dc971de0668367b6b9e51))
+
 # [3.5.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.2...v3.5.0-alpha.3) (2025-02-05)
 
 
