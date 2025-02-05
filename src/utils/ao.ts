@@ -127,10 +127,14 @@ export async function evolveANT({
   });
 
   //TODO: cache locally and only fetch if not cached
-  const luaString = (await arweave.transactions.getData(luaCodeTxId, {
-    decode: true,
-    string: true,
-  })) as string;
+  // We do not use arweave to get the data because it may throw on l2 tx data
+  const {
+    api: { host, port, protocol },
+  } = arweave.getConfig();
+
+  const luaString = await fetch(
+    `${protocol}://${host}:${port}/${luaCodeTxId}`,
+  ).then((res) => res.text());
 
   const { id: evolveMsgId } = await aosClient.send({
     tags: [
