@@ -37,6 +37,21 @@ export const AO_LOADER_OPTIONS = {
   extensions: [],
 };
 
+export const DEFAULT_HANDLE_OPTIONS = {
+  Id: ''.padEnd(43, '1'),
+  ['Block-Height']: '1',
+  // important to set the address so that that `Authority` check passes. Else the `isTrusted` with throw an error.
+  Owner: STUB_ADDRESS,
+  Tags: [],
+  Module: 'ANT',
+  Target: STUB_ADDRESS,
+  From: STUB_ADDRESS,
+  Timestamp: Date.now(),
+  // for msg.reply
+  Reference: '1',
+  Data: '1234',
+};
+
 export type HandleFunction = Awaited<ReturnType<typeof AoLoader>>;
 
 export class LocalAO implements Partial<AoClient> {
@@ -97,14 +112,19 @@ export class LocalAO implements Partial<AoClient> {
     const res = await this.handle(
       this.memory,
       {
+        ...DEFAULT_HANDLE_OPTIONS,
         Id: this.nonce,
+        Data: params.data || DEFAULT_HANDLE_OPTIONS.Data,
+        Tags: params.tags || DEFAULT_HANDLE_OPTIONS.Tags,
         ...params,
       },
       {
-        ...this.handlerEnv,
+        ...AO_LOADER_HANDLER_ENV,
         ...(handlerEnvOverrides ?? {}),
       },
     );
+    if (!res) throw new Error('oops');
+
     delete res.Memory;
 
     return res;
@@ -115,18 +135,21 @@ export class LocalAO implements Partial<AoClient> {
     handlerEnvOverrides?: typeof AO_LOADER_HANDLER_ENV,
   ): Promise<string> {
     const newNonce = (parseInt(this.nonce) + 1).toString().padStart(43, '0');
+
     const res = await this.handle(
       this.memory,
       {
+        ...DEFAULT_HANDLE_OPTIONS,
         Id: newNonce,
-        Data: params.data,
-        Tags: params.tags,
+        Data: params.data || DEFAULT_HANDLE_OPTIONS.Data,
+        Tags: params.tags || DEFAULT_HANDLE_OPTIONS.Tags,
       },
       {
-        ...this.handlerEnv,
+        ...AO_LOADER_HANDLER_ENV,
         ...(handlerEnvOverrides ?? {}),
       },
-    );
+    ).catch((e) => console.error(e));
+    if (!res) throw new Error('Error from handle: ' + res);
     const { Memory, ...rest } = res;
     this.memory = Memory;
     this.nonce = newNonce;

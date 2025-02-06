@@ -4,9 +4,9 @@
   "description": "A test harness for testing the ar-io-sdk in ESM project'",
   "type": "module",
   "scripts": {
-    "postinstall": "yarn link @ar.io/sdk",
+    "postinstall": "yarn link @ar.io/sdk && yarn update-aos-ant",
     "update-aos-ant": "node update-aos-ant-wasm.mjs",
-    "test": "yarn update-aos-ant && node --import=../../register.mjs --trace-warnings --test index.test.ts && echo '\nNode ESM Integration ✅'"
+    "test": "node --import=../../register.mjs --trace-warnings --test index.test.ts && echo '\nNode ESM Integration ✅'"
   },
   "dependencies": {
     "@ar.io/sdk": "*",

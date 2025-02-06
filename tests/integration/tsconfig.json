@@ -3,5 +3,5 @@
   "compilerOptions": {
     "module": "ESNext"
   },
-  "include": ["index.test.ts"]
+  "include": ["index.test.ts", "utils.ts"]
 }

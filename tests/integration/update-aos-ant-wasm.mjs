@@ -22,12 +22,12 @@ async function main() {
 
   if (!aosAntFiles.some((file) => file.includes(AOS_MODULE_ID))) {
     const res = await fetch(`https://arweave.net/${AOS_MODULE_ID}`).then((r) =>
-      r.text(),
+      r.arrayBuffer(),
     );
 
     fs.writeFileSync(
       path.join(fixturesDir, `aos-ant-${AOS_MODULE_ID}.wasm`),
-      res,
+      Buffer.from(res),
     );
   }
 }

@@ -1,9 +1,14 @@
-import { ANT, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
+import { ANT, AOProcess, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import * as fs from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { AO_LOADER_OPTIONS, LocalAO, TEST_AOS_ANT_WASM } from './utils';
+import {
+  AO_LOADER_HANDLER_ENV,
+  AO_LOADER_OPTIONS,
+  LocalAO,
+  TEST_AOS_ANT_WASM,
+} from './utils.js';
 
 const testWalletJSON = fs.readFileSync('./test-wallet.json', {
   encoding: 'utf-8',
@@ -17,9 +22,13 @@ const signers = [
 
 describe('integration esm tests', async () => {
   async function createLocalANT() {
-    return LocalAO.init({
-      wasmModule: TEST_AOS_ANT_WASM,
-      aoLoaderOptions: AO_LOADER_OPTIONS,
+    return new AOProcess({
+      processId: 'ant-'.padEnd(43, '1'),
+      ao: (await LocalAO.init({
+        wasmModule: TEST_AOS_ANT_WASM,
+        aoLoaderOptions: AO_LOADER_OPTIONS,
+        handlerEnv: AO_LOADER_HANDLER_ENV,
+      })) as any,
     });
   }
 
@@ -47,13 +56,18 @@ describe('integration esm tests', async () => {
           signer: signers[0],
         });
 
-        const res = await ant.setRecord({
-          undername: '@',
+        await ant.setBaseNameRecord({
           transactionId: ''.padEnd(43, '1'),
           ttlSeconds: 900,
         });
 
-        assert(res, 'unable to set @ record');
+        const record = await ant.getRecord({ undername: '@' });
+
+        assert.strictEqual(
+          record.transactionId,
+          ''.padEnd(43, '1'),
+          'record not set',
+        );
       });
     });
   });
