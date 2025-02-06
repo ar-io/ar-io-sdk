@@ -5,14 +5,18 @@ import path from 'node:path';
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 async function main() {
-  const fixtures = fs.readdirSync(path.join(__dirname, 'fixtures'));
+  const fixturesDir = path.join(__dirname, 'fixtures');
+  if (!fs.existsSync(fixturesDir)) {
+    fs.mkdirSync(fixturesDir);
+  }
+  const fixtures = fs.readdirSync(fixturesDir);
   const aosAntFiles = fixtures.filter(
     (file) => file.startsWith('aos-ant-') && file.endsWith('.wasm'),
   );
 
   for (const file of aosAntFiles) {
     if (!file.includes(AOS_MODULE_ID)) {
-      fs.unlinkSync(path.join(__dirname, 'fixtures', file));
+      fs.unlinkSync(path.join(fixturesDir, file));
     }
   }
 
@@ -22,7 +26,7 @@ async function main() {
     );
 
     fs.writeFileSync(
-      path.join(__dirname, 'fixtures', `aos-ant-${AOS_MODULE_ID}.wasm`),
+      path.join(fixturesDir, `aos-ant-${AOS_MODULE_ID}.wasm`),
       res,
     );
   }
