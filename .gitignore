@@ -17,3 +17,4 @@ yarn-error.log
 # test files
 tests/wallets
 tests/contracts
+aos-ant-*.wasm
