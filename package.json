@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.4.1",
+  "version": "3.5.0-alpha.5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -72,7 +72,7 @@
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "NODE_OPTIONS=\"--import=./register.mjs\" node --test tests/unit/**.test.ts",
+    "test:unit": "NODE_OPTIONS=\"--import=./register.mjs\" node --test src/**/**.test.ts",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "prepare": "husky install",

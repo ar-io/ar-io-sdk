@@ -179,6 +179,12 @@ export type AoEpochData = {
   distributionTimestamp: Timestamp;
   /** @deprecated - use `getDistributions` to get distribution data for a given epoch **/
   distributions: AoEpochDistributionData;
+  arnsStats: {
+    totalReturnedNames: number;
+    totalActiveNames: number;
+    totalGracePeriodNames: number;
+    totalReservedNames: number;
+  };
 };
 export type AoTokenSupplyData = {
   total: number;
@@ -333,8 +339,6 @@ export type AoAllGatewayVaults = AoGatewayVault & {
 };
 
 // Input types
-
-// TODO: confirm what is required or if all can be optional and defaults will be provided
 export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
   Partial<AoGatewaySettings> & {
     observerAddress?: WalletAddress;
