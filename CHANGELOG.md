@@ -1,39 +1,3 @@
-# [3.5.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.4...v3.5.0-alpha.5) (2025-02-06)
-
-
-### Bug Fixes
-
-* **module ids:** update ant lua and module id ([97e0628](https://github.com/ar-io/ar-io-sdk/commit/97e0628731f30f88f0fd6c12556973afdbc1df33))
-
-# [3.5.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.3...v3.5.0-alpha.4) (2025-02-05)
-
-
-### Bug Fixes
-
-* **evolve:** use fetch for data instead of arweave ([6deb91c](https://github.com/ar-io/ar-io-sdk/commit/6deb91c233923b7c4f4dc971de0668367b6b9e51))
-
-# [3.5.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.2...v3.5.0-alpha.3) (2025-02-05)
-
-
-### Bug Fixes
-
-* **ant:** use deterministic sort with no locale comparison ([7f2e067](https://github.com/ar-io/ar-io-sdk/commit/7f2e067f007012a26d1a0b54211bd56f517a6e92))
-
-# [3.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.1...v3.5.0-alpha.2) (2025-02-05)
-
-
-### Bug Fixes
-
-* **ant:** add `priority` as an attribute on ANTs ([f0c6758](https://github.com/ar-io/ar-io-sdk/commit/f0c67589c4894c6434633911fc6c83d9cb1cfeb4))
-* **ant:** update types and add index for easy enforcement ([3dd6df5](https://github.com/ar-io/ar-io-sdk/commit/3dd6df596d584694b5ad8a3e20f5e404016e7578))
-
-# [3.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0-alpha.1) (2025-02-04)
-
-
-### Features
-
-* **arns stats:** include arns stats type on epoch PE-7562 ([f92ee91](https://github.com/ar-io/ar-io-sdk/commit/f92ee918ada030cad3cff0ae07bd6ca84eb512bb))
-
 ## [3.4.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0...v3.4.1) (2025-02-03)
 
 
