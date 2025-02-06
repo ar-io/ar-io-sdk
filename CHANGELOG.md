@@ -1,3 +1,10 @@
+# [3.5.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.4...v3.5.0-alpha.5) (2025-02-06)
+
+
+### Bug Fixes
+
+* **module ids:** update ant lua and module id ([97e0628](https://github.com/ar-io/ar-io-sdk/commit/97e0628731f30f88f0fd6c12556973afdbc1df33))
+
 # [3.5.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.3...v3.5.0-alpha.4) (2025-02-05)
 
 
