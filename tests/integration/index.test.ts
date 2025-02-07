@@ -10,7 +10,7 @@ import {
   TEST_AOS_ANT_WASM,
 } from './utils.js';
 
-const testWalletJSON = fs.readFileSync('./test-wallet.json', {
+const testWalletJSON = fs.readFileSync('./setup/test-wallet.json', {
   encoding: 'utf-8',
 });
 

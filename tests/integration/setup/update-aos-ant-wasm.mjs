@@ -7,7 +7,7 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const arweaveHost = process.env.ARWEAVE_GATEWAY || 'arweave.net';
 
 async function main() {
-  const fixturesDir = path.join(__dirname, 'fixtures');
+  const fixturesDir = path.join(__dirname, '../fixtures');
   if (!fs.existsSync(fixturesDir)) {
     fs.mkdirSync(fixturesDir);
   }

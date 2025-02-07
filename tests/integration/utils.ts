@@ -54,6 +54,27 @@ export const DEFAULT_HANDLE_OPTIONS = {
 
 export type HandleFunction = Awaited<ReturnType<typeof AoLoader>>;
 
+/**
+ * @description Drop in replacement class representing the return type of the `connect` function from `@permaweb/aoconnect` (@type{AoClient})
+ * 
+ * This can be initialized and passed to AOProcess.ao
+ * 
+ * It satisfies our current use of AoClient.dryrun, AoClient.message, and AoClient.result by maintaining a `handle` function
+ * created with AoLoader, a `resultsCache`, and a txid-like `nonce`.
+ * 
+ * @example
+ * 
+ * ```ts
+ *  new AOProcess({
+      processId: 'ant-'.padEnd(43, '1'),
+      ao: (await LocalAO.init({
+        wasmModule: TEST_AOS_ANT_WASM,
+        aoLoaderOptions: AO_LOADER_OPTIONS,
+        handlerEnv: AO_LOADER_HANDLER_ENV,
+      })) as any,
+    });
+ * ```
+ */
 export class LocalAO implements Partial<AoClient> {
   wasmModule: any;
   handle: HandleFunction;
