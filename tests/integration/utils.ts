@@ -204,17 +204,3 @@ export async function createLocalProcess({
     })) as any,
   });
 }
-
-export async function createLocalANT({
-  processId = 'ant-'.padEnd(43, '0'),
-  wasmModule = TEST_AOS_ANT_WASM,
-  aoLoaderOptions = AO_LOADER_OPTIONS,
-  handlerEnv = AO_LOADER_HANDLER_ENV,
-} = {}) {
-  return createLocalProcess({
-    processId,
-    wasmModule,
-    aoLoaderOptions,
-    handlerEnv,
-  });
-}

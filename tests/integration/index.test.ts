@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import * as fs from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { createLocalANT } from './utils.js';
+import { createLocalProcess } from './utils.js';
 
 const testWalletJSON = fs.readFileSync('./setup/test-wallet.json', {
   encoding: 'utf-8',
@@ -24,7 +24,7 @@ describe('integration esm tests', async () => {
     describe('Reads', async () => {
       it('should be able to get ANT state', async () => {
         const ant = ANT.init({
-          process: await createLocalANT(),
+          process: await createLocalProcess(),
         });
 
         const state = await ant.getState();
@@ -36,7 +36,7 @@ describe('integration esm tests', async () => {
     describe('Writes', async () => {
       it('should be able to set @ record', async () => {
         const ant = ANT.init({
-          process: await createLocalANT(),
+          process: await createLocalProcess(),
           signer: signers[0],
         });
 
