@@ -8,13 +8,12 @@
     "update-aos-ant": "node update-aos-ant-wasm.mjs",
     "test": "node --import=../../register.mjs --trace-warnings --test index.test.ts && echo '\nNode ESM Integration ✅'"
   },
-  "dependencies": {
+  "dependencies": {},
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@permaweb/ao-loader": "^0.0.46",
     "@ar.io/sdk": "*",
     "@permaweb/aoconnect": "^0.0.59",
     "arweave": "^1.15.5"
-  },
-  "license": "AGPL-3.0-or-later",
-  "devDependencies": {
-    "@permaweb/ao-loader": "^0.0.46"
   }
 }
