@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
+const arweaveHost = process.env.ARWEAVE_GATEWAY || 'arweave.net';
+
 async function main() {
   const fixturesDir = path.join(__dirname, 'fixtures');
   if (!fs.existsSync(fixturesDir)) {
@@ -21,8 +23,8 @@ async function main() {
   }
 
   if (!aosAntFiles.some((file) => file.includes(AOS_MODULE_ID))) {
-    const res = await fetch(`https://arweave.net/${AOS_MODULE_ID}`).then((r) =>
-      r.arrayBuffer(),
+    const res = await fetch(`https://${arweaveHost}/${AOS_MODULE_ID}`).then(
+      (r) => r.arrayBuffer(),
     );
 
     fs.writeFileSync(
