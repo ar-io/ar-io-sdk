@@ -9,14 +9,14 @@ export const TEST_AOS_ANT_WASM = fs.readFileSync(
 );
 
 export const STUB_PROCESS_ID = 'process-id-'.padEnd(43, '1');
-export const STUB_ADDRESS = 'arweave-address-'.padEnd(43, '1');
+export const STUB_AR_ADDRESS = 'arweave-address-'.padEnd(43, '1');
 export const STUB_ETH_ADDRESS = '0xFCAd0B19bB29D4674531d6f115237E16AfCE377c';
 export const STUB_ANT_REGISTRY_ID = 'ant-registry-'.padEnd(43, '1');
 
 export const AO_LOADER_HANDLER_ENV = {
   Process: {
-    Id: STUB_ADDRESS,
-    Owner: STUB_ADDRESS,
+    Id: STUB_AR_ADDRESS,
+    Owner: STUB_AR_ADDRESS,
     Tags: [
       { name: 'Authority', value: 'XXXXXX' },
       { name: 'ANT-Registry-Id', value: STUB_ANT_REGISTRY_ID },
@@ -41,11 +41,11 @@ export const DEFAULT_HANDLE_OPTIONS = {
   Id: ''.padEnd(43, '1'),
   ['Block-Height']: '1',
   // important to set the address so that that `Authority` check passes. Else the `isTrusted` with throw an error.
-  Owner: STUB_ADDRESS,
+  Owner: STUB_AR_ADDRESS,
   Tags: [],
   Module: 'ANT',
-  Target: STUB_ADDRESS,
-  From: STUB_ADDRESS,
+  Target: STUB_AR_ADDRESS,
+  From: STUB_AR_ADDRESS,
   Timestamp: Date.now(),
   // for msg.reply
   Reference: '1',
