@@ -1,4 +1,4 @@
-import { AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
+import { AOProcess, AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
 import AoLoader from '@permaweb/ao-loader';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -187,4 +187,34 @@ export class LocalAO implements Partial<AoClient> {
   }
 
   // TODO: implement rest of AoClient tooling
+}
+
+export async function createLocalProcess({
+  processId = 'process-'.padEnd(43, '0'),
+  wasmModule = TEST_AOS_ANT_WASM,
+  aoLoaderOptions = AO_LOADER_OPTIONS,
+  handlerEnv = AO_LOADER_HANDLER_ENV,
+} = {}) {
+  return new AOProcess({
+    processId,
+    ao: (await LocalAO.init({
+      wasmModule,
+      aoLoaderOptions,
+      handlerEnv,
+    })) as any,
+  });
+}
+
+export async function createLocalANT({
+  processId = 'ant-'.padEnd(43, '0'),
+  wasmModule = TEST_AOS_ANT_WASM,
+  aoLoaderOptions = AO_LOADER_OPTIONS,
+  handlerEnv = AO_LOADER_HANDLER_ENV,
+} = {}) {
+  return createLocalProcess({
+    processId,
+    wasmModule,
+    aoLoaderOptions,
+    handlerEnv,
+  });
 }

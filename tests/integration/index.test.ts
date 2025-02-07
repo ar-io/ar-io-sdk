@@ -1,14 +1,9 @@
-import { ANT, AOProcess, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
+import { ANT, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import * as fs from 'node:fs';
 import { describe, it } from 'node:test';
 
-import {
-  AO_LOADER_HANDLER_ENV,
-  AO_LOADER_OPTIONS,
-  LocalAO,
-  TEST_AOS_ANT_WASM,
-} from './utils.js';
+import { createLocalANT } from './utils.js';
 
 const testWalletJSON = fs.readFileSync('./setup/test-wallet.json', {
   encoding: 'utf-8',
@@ -21,17 +16,6 @@ const signers = [
 ] as const;
 
 describe('integration esm tests', async () => {
-  async function createLocalANT() {
-    return new AOProcess({
-      processId: 'ant-'.padEnd(43, '1'),
-      ao: (await LocalAO.init({
-        wasmModule: TEST_AOS_ANT_WASM,
-        aoLoaderOptions: AO_LOADER_OPTIONS,
-        handlerEnv: AO_LOADER_HANDLER_ENV,
-      })) as any,
-    });
-  }
-
   describe('ARIO', async () => {
     // TODO: add integration tests for ario
   });
