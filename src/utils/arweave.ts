@@ -68,23 +68,32 @@ export const getEpochDataFromGql = async ({
   epochIndex,
   processId = ARIO_TESTNET_PROCESS_ID,
   retries = 3,
+  gqlUrl = 'https://arweave-search.goldsky.com/graphql',
 }: {
   arweave: Arweave;
   epochIndex: number;
   processId?: string;
   retries?: number;
+  gqlUrl?: string;
 }): Promise<AoEpochData | undefined> => {
   // fetch from gql
   const query = epochDistributionNoticeGqlQuery({ epochIndex, processId });
   // add three retries with exponential backoff
   for (let i = 0; i < retries; i++) {
     try {
-      const response = await arweave.api.post('graphql', query);
+      const response = (await fetch(gqlUrl, {
+        method: 'POST',
+        body: query,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then((res) => res.json())) as any;
+
       // parse the nodes to get the id
-      if (response.data?.data?.transactions?.edges?.length === 0) {
+      if (response?.data?.transactions?.edges?.length === 0) {
         return undefined;
       }
-      const id = response.data.data.transactions.edges[0].node.id;
+      const id = response.data.transactions.edges[0].node.id;
       // fetch the transaction from arweave
       const transaction = await arweave.api.get<AoEpochData>(id);
       // assert it is the correct type
@@ -110,9 +119,7 @@ export const getEpochDataFromGql = async ({
 export const epochDistributionNoticeGqlQuery = ({
   epochIndex,
   processId = ARIO_TESTNET_PROCESS_ID,
-}: {
-  epochIndex: number;
-  processId?: string;
+  authorities = ['fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY'],
 }): string => {
   // write the query
   const gqlQuery = JSON.stringify({
@@ -125,7 +132,7 @@ export const epochDistributionNoticeGqlQuery = ({
             { name: "Epoch-Index", values: ["${epochIndex}"] }
             { name: "Data-Protocol", values: ["ao"] }
           ],
-          owners: ["fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY"],
+          owners: [${authorities.map((a) => `"${a}"`).join(',')}],
           first: 1,
           sort: HEIGHT_DESC
         ) {

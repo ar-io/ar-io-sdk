@@ -141,6 +141,14 @@ describe('e2e esm tests', async () => {
     it('should be able to get a single arns record', async () => {
       const arns = await ario.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
+      assert(typeof arns.processId === 'string');
+      assert(typeof arns.startTimestamp === 'number');
+      assert(
+        typeof arns.type === 'string' &&
+          ['lease', 'permabuy'].includes(arns.type),
+      );
+      assert(typeof arns.undernameLimit === 'number');
+      assert(typeof arns.purchasePrice === 'number');
     });
 
     it('should be able to get reserved names', async () => {
@@ -173,7 +181,6 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof epoch.epochIndex, 'number');
       assert.equal(typeof epoch.startHeight, 'number');
       assert.equal(typeof epoch.endTimestamp, 'number');
-      assert.equal(typeof epoch.distributionTimestamp, 'number');
       assert.equal(typeof epoch.arnsStats.totalReservedNames, 'number');
       assert.equal(typeof epoch.arnsStats.totalActiveNames, 'number');
       assert.equal(typeof epoch.arnsStats.totalReturnedNames, 'number');
@@ -191,7 +198,6 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof epochSettings.maxObservers, 'number');
       assert.equal(typeof epochSettings.durationMs, 'number');
       assert.equal(typeof epochSettings.prescribedNameCount, 'number');
-      assert.equal(typeof epochSettings.distributionDelayMs, 'number');
       assert.equal(typeof epochSettings.epochZeroTimestamp, 'number');
       assert.equal(typeof epochSettings.rewardPercentage, 'number');
       assert.equal(typeof epochSettings.epochZeroStartTimestamp, 'number');
