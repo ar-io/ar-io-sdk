@@ -1,27 +1,18 @@
-# [3.5.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.6...v3.5.0-alpha.7) (2025-02-09)
+# [3.5.0](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0) (2025-02-06)
 
 
 ### Bug Fixes
 
-* **gql:** use goldsky by default for fetching gql data ([57f4948](https://github.com/ar-io/ar-io-sdk/commit/57f4948e5c1adc15b46cdaf6a875d1b1ef3b87f4))
+* **ant:** add `priority` as an attribute on ANTs ([f0c6758](https://github.com/ar-io/ar-io-sdk/commit/f0c67589c4894c6434633911fc6c83d9cb1cfeb4))
+* **ant:** update types and add index for easy enforcement ([3dd6df5](https://github.com/ar-io/ar-io-sdk/commit/3dd6df596d584694b5ad8a3e20f5e404016e7578))
+* **ant:** use deterministic sort with no locale comparison ([7f2e067](https://github.com/ar-io/ar-io-sdk/commit/7f2e067f007012a26d1a0b54211bd56f517a6e92))
+* **evolve:** use fetch for data instead of arweave ([6deb91c](https://github.com/ar-io/ar-io-sdk/commit/6deb91c233923b7c4f4dc971de0668367b6b9e51))
+* **module ids:** update ant lua and module id ([97e0628](https://github.com/ar-io/ar-io-sdk/commit/97e0628731f30f88f0fd6c12556973afdbc1df33))
 
-# [3.5.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.5...v3.5.0-alpha.6) (2025-02-07)
 
+### Features
 
-### Bug Fixes
-
-* **deps:** move aoloader dep to integration tests ([3426bad](https://github.com/ar-io/ar-io-sdk/commit/3426bad89242417fc8dcba85ad30a87ab968a22e))
-* **deps:** remove cross-env ([991bb25](https://github.com/ar-io/ar-io-sdk/commit/991bb2504b50b1d150cffdb92c36bb5c7dd1635c))
-* **integration tests:** add arweave gateway env var ([01b1f96](https://github.com/ar-io/ar-io-sdk/commit/01b1f96936d7654e6dcee3f5bb576b7c67e6846c))
-* **integration tests:** add jsdoc to utility class ([3a583d7](https://github.com/ar-io/ar-io-sdk/commit/3a583d7de2f539c0e93d8a13a1112b1d28d8086e))
-* **integration tests:** move local util to utils lib and create a base util ([7b64273](https://github.com/ar-io/ar-io-sdk/commit/7b64273c070d95bb14e372f8ee1e813b09180793))
-* **integration tests:** name stub arweave address in same pattern as stub eth address ([5c7b0d0](https://github.com/ar-io/ar-io-sdk/commit/5c7b0d0f2fcd67c001c85fa6bd19d180d8c0a48d))
-* **integration tests:** remove local ant spawning util ([496286c](https://github.com/ar-io/ar-io-sdk/commit/496286cb79301c353c6f678203a46928ee1dbbce))
-* **integration tests:** set deps as dev deps ([129ba8d](https://github.com/ar-io/ar-io-sdk/commit/129ba8d470f411282778ae8acac043716297d45b))
-* **tests:** add integration test suite ([708e0ce](https://github.com/ar-io/ar-io-sdk/commit/708e0ce838d57cb4f52b6933b39c74f3a0bd1a4f))
-* **tests:** add integration tests for ao processes with sdk clients using aoloader ([d050eb8](https://github.com/ar-io/ar-io-sdk/commit/d050eb8bb3fb9d51e0f51cc31e94e9ba681c1673))
-* **tsconfig:** point extends at right spot ([db19368](https://github.com/ar-io/ar-io-sdk/commit/db1936888dcecc2c53be867ee92c3357b0dee1c1))
-* **utils:** add localAO class ([f144093](https://github.com/ar-io/ar-io-sdk/commit/f14409386bf7019e91ac23c020236916736219b8))
+* **arns stats:** include arns stats type on epoch PE-7562 ([f92ee91](https://github.com/ar-io/ar-io-sdk/commit/f92ee918ada030cad3cff0ae07bd6ca84eb512bb))
 
 ## [3.4.1](https://github.com/ar-io/ar-io-sdk/compare/v3.4.0...v3.4.1) (2025-02-03)
 
