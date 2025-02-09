@@ -219,7 +219,7 @@ export class ARIOReadable implements AoARIORead {
       { name: 'Action', value: 'Epoch' },
       {
         name: 'Epoch-Index',
-        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+        value: currentIndex.toString(),
       },
     ];
 
@@ -400,7 +400,7 @@ export class ARIOReadable implements AoARIORead {
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
       {
         name: 'Epoch-Index',
-        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+        value: currentIndex.toString(),
       },
     ];
 
@@ -427,7 +427,7 @@ export class ARIOReadable implements AoARIORead {
       { name: 'Action', value: 'Epoch-Prescribed-Names' },
       {
         name: 'Epoch-Index',
-        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+        value: currentIndex.toString(),
       },
     ];
 
@@ -459,7 +459,7 @@ export class ARIOReadable implements AoARIORead {
       { name: 'Action', value: 'Epoch-Observations' },
       {
         name: 'Epoch-Index',
-        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+        value: currentIndex.toString(),
       },
     ];
 
@@ -489,7 +489,7 @@ export class ARIOReadable implements AoARIORead {
       { name: 'Action', value: 'Epoch-Distributions' },
       {
         name: 'Epoch-Index',
-        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+        value: currentIndex.toString(),
       },
     ];
 
