@@ -1,3 +1,10 @@
+## [3.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.1...v3.5.1-alpha.2) (2025-02-09)
+
+
+### Bug Fixes
+
+* **zod:** fix zod enforcement ([08d5168](https://github.com/ar-io/ar-io-sdk/commit/08d5168a65fd974bd872024acb2659284abd498e))
+
 ## [3.5.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1-alpha.1) (2025-02-09)
 
 
