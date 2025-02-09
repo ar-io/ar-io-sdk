@@ -1,3 +1,10 @@
+# [3.5.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.6...v3.5.0-alpha.7) (2025-02-09)
+
+
+### Bug Fixes
+
+* **gql:** use goldsky by default for fetching gql data ([57f4948](https://github.com/ar-io/ar-io-sdk/commit/57f4948e5c1adc15b46cdaf6a875d1b1ef3b87f4))
+
 # [3.5.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0-alpha.5...v3.5.0-alpha.6) (2025-02-07)
 
 
