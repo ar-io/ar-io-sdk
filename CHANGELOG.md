@@ -1,3 +1,10 @@
+## [3.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.2...v3.5.1-alpha.3) (2025-02-09)
+
+
+### Bug Fixes
+
+* **io:** do not use requested epoch index if not provided ([ebfa3cc](https://github.com/ar-io/ar-io-sdk/commit/ebfa3cc222ecbd99d00caf2c7aa2cd860369827d))
+
 ## [3.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.1...v3.5.1-alpha.2) (2025-02-09)
 
 
