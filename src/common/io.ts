@@ -165,17 +165,14 @@ export class ARIOReadable implements AoARIORead {
     const epochSettings = await this.getEpochSettings();
     const epochZeroStartTimestamp = epochSettings.epochZeroStartTimestamp;
     const epochLengthMs = epochSettings.durationMs;
-    return Math.floor((timestamp - epochZeroStartTimestamp) / epochLengthMs);
+    return (
+      Math.floor((timestamp - epochZeroStartTimestamp) / epochLengthMs) + 1
+    );
   }
 
   private async computeCurrentEpochIndex(): Promise<number> {
-    const epochSettings = await this.getEpochSettings();
-    const epochZeroStartTimestamp = epochSettings.epochZeroStartTimestamp;
-    const epochLengthMs = epochSettings.durationMs;
     const currentTimestamp = Date.now();
-    return Math.floor(
-      (currentTimestamp - epochZeroStartTimestamp) / epochLengthMs,
-    );
+    return this.computeEpochIndexForTimestamp(currentTimestamp);
   }
 
   private async computeEpochIndex(
