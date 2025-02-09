@@ -180,15 +180,15 @@ export class ARIOReadable implements AoARIORead {
 
   private async computeEpochIndex(
     params?: EpochInput,
-  ): Promise<string | undefined> {
+  ): Promise<number | undefined> {
     const epochIndex = (params as { epochIndex?: number })?.epochIndex;
     if (epochIndex !== undefined) {
-      return epochIndex.toString();
+      return epochIndex;
     }
 
     const timestamp = (params as { timestamp?: number })?.timestamp;
     if (timestamp !== undefined) {
-      return (await this.computeEpochIndexForTimestamp(timestamp)).toString();
+      return this.computeEpochIndexForTimestamp(timestamp);
     }
 
     return undefined;
@@ -201,12 +201,15 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
-    const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
-    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+    const requestedEpochIndex = await this.computeEpochIndex(epoch);
+    if (
+      requestedEpochIndex !== undefined &&
+      requestedEpochIndex < currentIndex
+    ) {
       const epochData = await getEpochDataFromGql({
         arweave: this.arweave,
-        epochIndex: +epochIndex,
+        epochIndex: requestedEpochIndex,
         processId: this.process.processId,
       });
       return epochData;
@@ -214,7 +217,10 @@ export class ARIOReadable implements AoARIORead {
     // go to the process epoch and fetch the epoch data
     const allTags = [
       { name: 'Action', value: 'Epoch' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+      {
+        name: 'Epoch-Index',
+        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+      },
     ];
 
     return this.process.read<AoEpochData | undefined>({
@@ -376,12 +382,15 @@ export class ARIOReadable implements AoARIORead {
   async getPrescribedObservers(
     epoch?: EpochInput,
   ): Promise<AoWeightedObserver[] | undefined> {
-    const epochIndex = await this.computeEpochIndex(epoch);
+    const requestedEpochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
-    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+    if (
+      requestedEpochIndex !== undefined &&
+      requestedEpochIndex < currentIndex
+    ) {
       const epochData = await getEpochDataFromGql({
         arweave: this.arweave,
-        epochIndex: +epochIndex,
+        epochIndex: requestedEpochIndex,
         processId: this.process.processId,
       });
       return epochData?.prescribedObservers;
@@ -389,7 +398,10 @@ export class ARIOReadable implements AoARIORead {
 
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Observers' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+      {
+        name: 'Epoch-Index',
+        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+      },
     ];
 
     return this.process.read<AoWeightedObserver[]>({
@@ -398,19 +410,25 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined> {
-    const epochIndex = await this.computeEpochIndex(epoch);
+    const requestedEpochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
-    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+    if (
+      requestedEpochIndex !== undefined &&
+      requestedEpochIndex < currentIndex
+    ) {
       const epochData = await getEpochDataFromGql({
         arweave: this.arweave,
-        epochIndex: +epochIndex,
+        epochIndex: requestedEpochIndex,
         processId: this.process.processId,
       });
       return epochData?.prescribedNames;
     }
     const allTags = [
       { name: 'Action', value: 'Epoch-Prescribed-Names' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+      {
+        name: 'Epoch-Index',
+        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+      },
     ];
 
     return this.process.read<string[]>({
@@ -423,12 +441,15 @@ export class ARIOReadable implements AoARIORead {
   async getObservations(
     epoch?: EpochInput,
   ): Promise<AoEpochObservationData | undefined> {
-    const epochIndex = await this.computeEpochIndex(epoch);
+    const requestedEpochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
-    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+    if (
+      requestedEpochIndex !== undefined &&
+      requestedEpochIndex < currentIndex
+    ) {
       const epochData = await getEpochDataFromGql({
         arweave: this.arweave,
-        epochIndex: +epochIndex,
+        epochIndex: requestedEpochIndex,
         processId: this.process.processId,
       });
       return epochData?.observations;
@@ -436,7 +457,10 @@ export class ARIOReadable implements AoARIORead {
     // go to the process epoch and fetch the observations
     const allTags = [
       { name: 'Action', value: 'Epoch-Observations' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+      {
+        name: 'Epoch-Index',
+        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+      },
     ];
 
     return this.process.read<AoEpochObservationData>({
@@ -447,12 +471,15 @@ export class ARIOReadable implements AoARIORead {
   async getDistributions(
     epoch?: EpochInput,
   ): Promise<AoEpochDistributionData | undefined> {
-    const epochIndex = await this.computeEpochIndex(epoch);
+    const requestedEpochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
-    if (epochIndex !== undefined && +epochIndex < currentIndex) {
+    if (
+      requestedEpochIndex !== undefined &&
+      requestedEpochIndex < currentIndex
+    ) {
       const epochData = await getEpochDataFromGql({
         arweave: this.arweave,
-        epochIndex: +epochIndex,
+        epochIndex: requestedEpochIndex,
         processId: this.process.processId,
       });
       return epochData?.distributions;
@@ -460,7 +487,10 @@ export class ARIOReadable implements AoARIORead {
     // go to the process epoch and fetch the distributions
     const allTags = [
       { name: 'Action', value: 'Epoch-Distributions' },
-      { name: 'Epoch-Index', value: await this.computeEpochIndex(epoch) },
+      {
+        name: 'Epoch-Index',
+        value: requestedEpochIndex?.toString() ?? currentIndex.toString(),
+      },
     ];
 
     return this.process.read<AoEpochDistributionData>({
