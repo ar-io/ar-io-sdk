@@ -1,0 +1,7 @@
+{
+  "extends": "../e2e/tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext"
+  },
+  "include": ["index.test.ts", "utils.ts"]
+}

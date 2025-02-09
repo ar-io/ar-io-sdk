@@ -276,7 +276,6 @@ export function parseAoEpochData(value: unknown): AoEpochData {
     prescribedObservers: z.any(),
     prescribedNames: z.array(z.string()),
     observations: z.any(),
-    distributionTimestamp: z.number(),
     epochIndex: z.number(),
   });
   return epochDataSchema.parse(value) as AoEpochData;

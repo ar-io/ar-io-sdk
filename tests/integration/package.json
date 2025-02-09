@@ -1,0 +1,19 @@
+{
+  "name": "node-esm-harness",
+  "version": "1.0.0",
+  "description": "A test harness for testing the ar-io-sdk in ESM project'",
+  "type": "module",
+  "scripts": {
+    "postinstall": "yarn link @ar.io/sdk && yarn setup",
+    "setup": "node setup/update-aos-ant-wasm.mjs",
+    "test": "node --import=../../register.mjs --trace-warnings --test index.test.ts && echo '\nNode ESM Integration ✅'"
+  },
+  "dependencies": {},
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@permaweb/ao-loader": "^0.0.46",
+    "@ar.io/sdk": "*",
+    "@permaweb/aoconnect": "^0.0.59",
+    "arweave": "^1.15.5"
+  }
+}
