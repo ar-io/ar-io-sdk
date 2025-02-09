@@ -1,37 +1,3 @@
-## [3.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.2...v3.5.1-alpha.3) (2025-02-09)
-
-
-### Bug Fixes
-
-* **io:** do not use requested epoch index if not provided ([ebfa3cc](https://github.com/ar-io/ar-io-sdk/commit/ebfa3cc222ecbd99d00caf2c7aa2cd860369827d))
-
-## [3.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.1...v3.5.1-alpha.2) (2025-02-09)
-
-
-### Bug Fixes
-
-* **zod:** fix zod enforcement ([08d5168](https://github.com/ar-io/ar-io-sdk/commit/08d5168a65fd974bd872024acb2659284abd498e))
-
-## [3.5.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1-alpha.1) (2025-02-09)
-
-
-### Bug Fixes
-
-* **deps:** move aoloader dep to integration tests ([3426bad](https://github.com/ar-io/ar-io-sdk/commit/3426bad89242417fc8dcba85ad30a87ab968a22e))
-* **deps:** remove cross-env ([991bb25](https://github.com/ar-io/ar-io-sdk/commit/991bb2504b50b1d150cffdb92c36bb5c7dd1635c))
-* **gql:** push empty to commit to publish 3.5.1-alpha.1 ([2c69859](https://github.com/ar-io/ar-io-sdk/commit/2c69859cfe5d4075b5dacec553e4fb4efb15bda3))
-* **gql:** use goldsky by default for fetching gql data ([57f4948](https://github.com/ar-io/ar-io-sdk/commit/57f4948e5c1adc15b46cdaf6a875d1b1ef3b87f4))
-* **integration tests:** add arweave gateway env var ([01b1f96](https://github.com/ar-io/ar-io-sdk/commit/01b1f96936d7654e6dcee3f5bb576b7c67e6846c))
-* **integration tests:** add jsdoc to utility class ([3a583d7](https://github.com/ar-io/ar-io-sdk/commit/3a583d7de2f539c0e93d8a13a1112b1d28d8086e))
-* **integration tests:** move local util to utils lib and create a base util ([7b64273](https://github.com/ar-io/ar-io-sdk/commit/7b64273c070d95bb14e372f8ee1e813b09180793))
-* **integration tests:** name stub arweave address in same pattern as stub eth address ([5c7b0d0](https://github.com/ar-io/ar-io-sdk/commit/5c7b0d0f2fcd67c001c85fa6bd19d180d8c0a48d))
-* **integration tests:** remove local ant spawning util ([496286c](https://github.com/ar-io/ar-io-sdk/commit/496286cb79301c353c6f678203a46928ee1dbbce))
-* **integration tests:** set deps as dev deps ([129ba8d](https://github.com/ar-io/ar-io-sdk/commit/129ba8d470f411282778ae8acac043716297d45b))
-* **tests:** add integration test suite ([708e0ce](https://github.com/ar-io/ar-io-sdk/commit/708e0ce838d57cb4f52b6933b39c74f3a0bd1a4f))
-* **tests:** add integration tests for ao processes with sdk clients using aoloader ([d050eb8](https://github.com/ar-io/ar-io-sdk/commit/d050eb8bb3fb9d51e0f51cc31e94e9ba681c1673))
-* **tsconfig:** point extends at right spot ([db19368](https://github.com/ar-io/ar-io-sdk/commit/db1936888dcecc2c53be867ee92c3357b0dee1c1))
-* **utils:** add localAO class ([f144093](https://github.com/ar-io/ar-io-sdk/commit/f14409386bf7019e91ac23c020236916736219b8))
-
 # [3.5.0](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0) (2025-02-06)
 
 
