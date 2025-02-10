@@ -152,7 +152,6 @@ export function arioProcessIdFromOptions({
   arioProcessId,
   devnet,
   testnet,
-  mainnet,
 }: GlobalCLIOptions): string {
   if (arioProcessId !== undefined) {
     return arioProcessId;
@@ -163,11 +162,8 @@ export function arioProcessIdFromOptions({
   if (testnet) {
     return ARIO_TESTNET_PROCESS_ID;
   }
-  if (mainnet) {
-    return ARIO_MAINNET_PROCESS_ID;
-  }
 
-  return ARIO_TESTNET_PROCESS_ID; // TODO(4.0): move to mainnet
+  return ARIO_MAINNET_PROCESS_ID;
 }
 
 function jwkFromOptions({
