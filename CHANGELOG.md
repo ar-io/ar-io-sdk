@@ -1,3 +1,15 @@
+# [3.6.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.6.0-alpha.1) (2025-02-11)
+
+
+### Bug Fixes
+
+* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+
+
+### Features
+
+* **ant:** add sorting to ANT records responses by default ([4e74825](https://github.com/ar-io/ar-io-sdk/commit/4e74825831cca54ebf5c06da1105c224cd2a7214))
+
 ## [3.5.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1) (2025-02-09)
 
 
