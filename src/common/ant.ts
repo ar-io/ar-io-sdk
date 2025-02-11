@@ -16,6 +16,7 @@
 import { z } from 'zod';
 
 import {
+  ANTRecords,
   AntBalancesSchema,
   AntControllersSchema,
   AntInfoSchema,
@@ -31,6 +32,7 @@ import {
   AoANTSetUndernameRecordParams,
   AoANTState,
   AoANTWrite,
+  SortedANTRecords,
 } from '../types/ant.js';
 import {
   AoMessageResult,
@@ -42,6 +44,7 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/index.js';
+import { sortANTRecords } from '../utils/ant.js';
 import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
@@ -158,7 +161,7 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
-   * @returns {Promise<Record<string, AoANTRecord>>} All the undernames managed by the ANT.
+   * @returns {Promise<SortedANTRecords>} All the undernames managed by the ANT.
    * @example
    * Get the current records
    * ```ts
@@ -167,14 +170,16 @@ export class AoANTReadable implements AoANTRead {
    */
   async getRecords(
     { strict }: AntReadOptions = { strict: this.strict },
-  ): Promise<Record<string, AoANTRecord>> {
+  ): Promise<SortedANTRecords> {
     const tags = [{ name: 'Action', value: 'Records' }];
-    const records = await this.process.read<Record<string, AoANTRecord>>({
+    const records = await this.process.read<ANTRecords>({
       tags,
     });
 
     if (strict) parseSchemaResult(AntRecordsSchema, records);
-    return records;
+
+    // sort the records using the deterministic sort used by ar-io nodes
+    return sortANTRecords(records);
   }
 
   /**
