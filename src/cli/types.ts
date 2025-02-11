@@ -29,7 +29,9 @@ export type WalletCLIOptions = {
 };
 
 export type GlobalCLIOptions = WalletCLIOptions & {
-  dev: boolean;
+  devnet: boolean;
+  testnet: boolean;
+  mainnet: boolean;
   debug: boolean;
   arioProcessId?: string;
   cuUrl?: string;
