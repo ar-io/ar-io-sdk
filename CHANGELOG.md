@@ -1,3 +1,10 @@
+# [3.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.1...v3.6.0-alpha.2) (2025-02-11)
+
+
+### Bug Fixes
+
+* **ids:** bump module and lua source ids to ant 16 ([cf6d0de](https://github.com/ar-io/ar-io-sdk/commit/cf6d0de930c1ec5d30f183cd88bfd05ee0bcaaba))
+
 # [3.6.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.6.0-alpha.1) (2025-02-11)
 
 
