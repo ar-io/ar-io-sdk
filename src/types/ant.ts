@@ -193,7 +193,7 @@ export interface AoANTRead {
     { undername }: { undername: string },
     opts?: AntReadOptions,
   ): Promise<AoANTRecord | undefined>;
-  getRecords(opts?: AntReadOptions): Promise<ANTRecords>;
+  getRecords(opts?: AntReadOptions): Promise<SortedANTRecords>;
   getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
   getTicker(opts?: AntReadOptions): Promise<string>;

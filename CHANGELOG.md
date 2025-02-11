@@ -1,3 +1,23 @@
+# [3.6.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.6.0-alpha.1) (2025-02-11)
+
+
+### Bug Fixes
+
+* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+
+
+### Features
+
+* **ant:** add sorting to ANT records responses by default ([4e74825](https://github.com/ar-io/ar-io-sdk/commit/4e74825831cca54ebf5c06da1105c224cd2a7214))
+
+## [3.5.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1) (2025-02-09)
+
+
+### Bug Fixes
+
+* **gql:** use goldsky by default for fetching gql data ([57f4948](https://github.com/ar-io/ar-io-sdk/commit/57f4948e5c1adc15b46cdaf6a875d1b1ef3b87f4))
+* **zod:** fix zod enforcement ([08d5168](https://github.com/ar-io/ar-io-sdk/commit/08d5168a65fd974bd872024acb2659284abd498e))
+
 # [3.5.0](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0) (2025-02-06)
 
 
