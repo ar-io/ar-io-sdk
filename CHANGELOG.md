@@ -1,3 +1,10 @@
+## [3.5.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1-alpha.3...v3.5.1-alpha.4) (2025-02-11)
+
+
+### Bug Fixes
+
+* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+
 # [3.5.0](https://github.com/ar-io/ar-io-sdk/compare/v3.4.1...v3.5.0) (2025-02-06)
 
 
