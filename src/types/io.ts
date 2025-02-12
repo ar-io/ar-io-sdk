@@ -182,6 +182,15 @@ export type AoEpochData = {
     totalReservedNames: number;
   };
 };
+
+export type AoEligibleReward = {
+  type: 'operatorReward' | 'delegateReward';
+  recipient: WalletAddress;
+  eligibleReward: number;
+  gatewayAddress: WalletAddress;
+  cursorId: string;
+};
+
 export type AoTokenSupplyData = {
   total: number;
   circulating: number;
@@ -607,6 +616,9 @@ export interface AoARIORead {
   getDistributions(
     epoch?: EpochInput,
   ): Promise<AoEpochDistributionData | undefined>;
+  getEligibleDistributions(
+    epoch?: EpochInput,
+  ): Promise<PaginationResult<AoEligibleReward> | undefined>;
   getTokenCost({
     intent,
     type,

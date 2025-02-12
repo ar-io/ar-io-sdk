@@ -52,6 +52,7 @@ import {
   AoBuyRecordParams,
   AoCreateVaultParams,
   AoDelegation,
+  AoEligibleReward,
   AoEpochData,
   AoEpochSettings,
   AoExtendLeaseParams,
@@ -478,6 +479,100 @@ export class ARIOReadable implements AoARIORead {
     ];
 
     return this.process.read<AoEpochDistributionData>({
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getEligibleDistributions(
+    epoch?: EpochInput,
+    params?: PaginationParams<AoEligibleReward>,
+  ): Promise<PaginationResult<AoEligibleReward>> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: epochIndex,
+        processId: this.process.processId,
+      });
+
+      const rewards: AoEligibleReward[] = [];
+
+      const eligibleDistributions = epochData?.distributions.rewards.eligible;
+      if (!eligibleDistributions) {
+        return {
+          hasMore: false,
+          items: [],
+          totalItems: 0,
+          limit: params?.limit ?? 100,
+          sortOrder: params?.sortOrder ?? 'desc',
+        };
+      }
+      for (const [gatewayAddress, reward] of Object.entries(
+        eligibleDistributions,
+      )) {
+        rewards.push({
+          type: 'operatorReward',
+          recipient: gatewayAddress,
+          eligibleReward: reward.operatorReward,
+          cursorId: gatewayAddress + '_' + gatewayAddress,
+          gatewayAddress,
+        });
+
+        for (const [delegateAddress, delegateRewardQty] of Object.entries(
+          reward.delegateRewards,
+        )) {
+          rewards.push({
+            type: 'delegateReward',
+            recipient: delegateAddress,
+            eligibleReward: delegateRewardQty,
+            cursorId: gatewayAddress + '_' + delegateAddress,
+            gatewayAddress,
+          });
+        }
+      }
+
+      // sort the rewards by the sortBy
+      const sortBy = params?.sortBy ?? 'eligibleReward';
+      const sortOrder = params?.sortOrder ?? 'desc';
+      rewards.sort((a, b) => {
+        const aSort = a[sortBy];
+        const bSort = b[sortBy];
+        if (aSort === bSort || aSort === undefined || bSort === undefined) {
+          return 0;
+        }
+        if (sortOrder === 'asc') {
+          return aSort > bSort ? 1 : -1;
+        }
+        return aSort < bSort ? 1 : -1;
+      });
+
+      // paginate the rewards
+      const limit = params?.limit ?? 100;
+      const start =
+        params?.cursor !== undefined
+          ? rewards.findIndex((r) => r.cursorId === params.cursor) + 1
+          : 0;
+      const end = limit ? start + limit : rewards.length;
+
+      return {
+        hasMore: end < rewards.length,
+        items: rewards.slice(start, end),
+        totalItems: rewards.length,
+        limit,
+        sortOrder,
+        nextCursor: rewards[end]?.cursorId,
+        sortBy,
+      };
+    }
+
+    // on current epoch, go to process and fetch the distributions
+    const allTags = [
+      { name: 'Action', value: 'Eligible-Distributions' },
+      ...paginationParamsToTags(params),
+    ];
+
+    return this.process.read<PaginationResult<AoEligibleReward>>({
       tags: pruneTags(allTags),
     });
   }
