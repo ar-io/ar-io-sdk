@@ -556,11 +556,13 @@ export class ARIOReadable implements AoARIORead {
     fromAddress,
     fundFrom,
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
+    const replacedBuyRecordWithBuyName =
+      intent === 'Buy-Record' ? 'Buy-Name' : intent;
     const allTags = [
       { name: 'Action', value: 'Cost-Details' },
       {
         name: 'Intent',
-        value: intent,
+        value: replacedBuyRecordWithBuyName,
       },
       {
         name: 'Name',
