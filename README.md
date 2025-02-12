@@ -1355,12 +1355,12 @@ const { id: txId } = await ario.extendLease(
 
 #### `getTokenCost({ intent, ...args })`
 
-Calculates the price in mARIO to perform the interaction in question, eg a 'Buy-record' interaction, where args are the specific params for that interaction.
+Calculates the price in mARIO to perform the interaction in question, eg a 'Buy-Name' interaction, where args are the specific params for that interaction.
 
 ```typescript
 const price = await ario
   .getTokenCost({
-    intent: 'Buy-Record',
+    intent: 'Buy-Name',
     name: 'ar-io',
     type: 'permabuy',
   })
@@ -1378,11 +1378,11 @@ const price = await ario
 
 #### `getCostDetails({ intent, fromAddress, fundFrom, ...args})`
 
-Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Record' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
+Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Name' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
 
 ```typescript
 const costDetails = await ario.getCostDetails({
-  intent: 'Buy-Record',
+  intent: 'Buy-Name',
   fromAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   fundFrom: 'stakes',
   name: 'ar-io',

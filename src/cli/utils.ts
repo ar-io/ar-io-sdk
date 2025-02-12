@@ -622,7 +622,7 @@ export function getANTStateFromOptions(
 }
 
 export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
-  o.intent ??= 'Buy-Record';
+  o.intent ??= 'Buy-Name';
   o.type ??= 'lease';
   o.years ??= '1';
 

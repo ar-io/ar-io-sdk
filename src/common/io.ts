@@ -483,7 +483,7 @@ export class ARIOReadable implements AoARIORead {
   }
 
   async getTokenCost(params: {
-    intent: 'Buy-Record';
+    intent: 'Buy-Record' | 'Buy-Name';
     type: 'permabuy' | 'lease';
     years: number;
     name: string;
@@ -514,11 +514,13 @@ export class ARIOReadable implements AoARIORead {
     quantity,
     fromAddress,
   }: AoTokenCostParams): Promise<number> {
+    const replacedBuyRecordWithBuyName =
+      intent === 'Buy-Record' ? 'Buy-Name' : intent;
     const allTags = [
       { name: 'Action', value: 'Token-Cost' },
       {
         name: 'Intent',
-        value: intent,
+        value: replacedBuyRecordWithBuyName,
       },
       {
         name: 'Name',
