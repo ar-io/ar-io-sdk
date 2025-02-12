@@ -1,3 +1,10 @@
+## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
+
+
+### Bug Fixes
+
+* **arns:** use buy-name buy default for getCostDetails ([d71f402](https://github.com/ar-io/ar-io-sdk/commit/d71f402500c37b3f2e25df36431de3fcef8a8174))
+
 ## [3.5.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.5.2) (2025-02-12)
 
 
