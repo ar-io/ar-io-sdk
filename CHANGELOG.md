@@ -1,3 +1,11 @@
+# [3.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.2...v3.6.0-alpha.3) (2025-02-12)
+
+
+### Bug Fixes
+
+* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
+* **arns:** use buy-name buy default for getCostDetails ([d71f402](https://github.com/ar-io/ar-io-sdk/commit/d71f402500c37b3f2e25df36431de3fcef8a8174))
+
 ## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
 
 
