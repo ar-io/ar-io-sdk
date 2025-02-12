@@ -1,3 +1,10 @@
+## [3.5.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.5.2) (2025-02-12)
+
+
+### Bug Fixes
+
+* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
+
 ## [3.5.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1) (2025-02-09)
 
 
