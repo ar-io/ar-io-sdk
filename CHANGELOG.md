@@ -1,3 +1,10 @@
+# [3.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.3...v3.6.0-alpha.4) (2025-02-12)
+
+
+### Bug Fixes
+
+* **deps:** bump aoconnect sdk ([3896ee8](https://github.com/ar-io/ar-io-sdk/commit/3896ee8c5d74a07bd020e66defd6ff1a600241e5))
+
 # [3.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.2...v3.6.0-alpha.3) (2025-02-12)
 
 
