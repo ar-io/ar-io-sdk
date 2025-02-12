@@ -19,7 +19,7 @@ import {
   const observations = await arIO.getObservations({ epochIndex: 0 });
   const distributions = await arIO.getDistributions({ epochIndex: 0 });
   const buyRecordCost = await arIO.getTokenCost({
-    intent: 'Buy-Record',
+    intent: 'Buy-Name',
     type: 'lease',
     name: 'ar-io-dapp-record',
     years: 1,
