@@ -1033,6 +1033,33 @@ describe('e2e esm tests', async () => {
         typeof registrySettings.operators.withdrawLengthMs === 'number',
       );
     });
+
+    it('should be able to get the first page of eligible distributions', async () => {
+      const eligibleDistributions = await ario.getEligibleEpochRewards();
+      assert.ok(eligibleDistributions);
+      assert.equal(eligibleDistributions.limit, 100);
+      assert.equal(eligibleDistributions.sortOrder, 'desc');
+      assert.equal(eligibleDistributions.sortBy, 'gatewayAddress');
+      assert.equal(typeof eligibleDistributions.totalItems, 'number');
+      assert.equal(typeof eligibleDistributions.sortBy, 'string');
+      assert.equal(typeof eligibleDistributions.sortOrder, 'string');
+      assert.equal(typeof eligibleDistributions.limit, 'number');
+      assert.equal(typeof eligibleDistributions.hasMore, 'boolean');
+      if (eligibleDistributions.nextCursor) {
+        assert.equal(typeof eligibleDistributions.nextCursor, 'string');
+      }
+      assert(Array.isArray(eligibleDistributions.items));
+
+      eligibleDistributions.items.forEach(
+        ({ type, recipient, eligibleReward, gatewayAddress, cursorId }) => {
+          assert(['operatorReward', 'delegateReward'].includes(type));
+          assert.equal(typeof recipient, 'string');
+          assert.equal(typeof eligibleReward, 'number');
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof cursorId, 'string');
+        },
+      );
+    });
   });
 
   describe('ANTRegistry', async () => {
