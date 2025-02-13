@@ -83,6 +83,7 @@ import {
   getEpochDataFromGql,
   paginationParamsToTags,
   pruneTags,
+  sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
@@ -495,75 +496,10 @@ export class ARIOReadable implements AoARIORead {
         epochIndex: epochIndex,
         processId: this.process.processId,
       });
-
-      const rewards: AoEligibleReward[] = [];
-
-      const eligibleDistributions = epochData?.distributions.rewards.eligible;
-      if (!eligibleDistributions) {
-        return {
-          hasMore: false,
-          items: [],
-          totalItems: 0,
-          limit: params?.limit ?? 100,
-          sortOrder: params?.sortOrder ?? 'desc',
-        };
-      }
-      for (const [gatewayAddress, reward] of Object.entries(
-        eligibleDistributions,
-      )) {
-        rewards.push({
-          type: 'operatorReward',
-          recipient: gatewayAddress,
-          eligibleReward: reward.operatorReward,
-          cursorId: gatewayAddress + '_' + gatewayAddress,
-          gatewayAddress,
-        });
-
-        for (const [delegateAddress, delegateRewardQty] of Object.entries(
-          reward.delegateRewards,
-        )) {
-          rewards.push({
-            type: 'delegateReward',
-            recipient: delegateAddress,
-            eligibleReward: delegateRewardQty,
-            cursorId: gatewayAddress + '_' + delegateAddress,
-            gatewayAddress,
-          });
-        }
-      }
-
-      // sort the rewards by the sortBy
-      const sortBy = params?.sortBy ?? 'eligibleReward';
-      const sortOrder = params?.sortOrder ?? 'desc';
-      rewards.sort((a, b) => {
-        const aSort = a[sortBy];
-        const bSort = b[sortBy];
-        if (aSort === bSort || aSort === undefined || bSort === undefined) {
-          return 0;
-        }
-        if (sortOrder === 'asc') {
-          return aSort > bSort ? 1 : -1;
-        }
-        return aSort < bSort ? 1 : -1;
-      });
-
-      // paginate the rewards
-      const limit = params?.limit ?? 100;
-      const start =
-        params?.cursor !== undefined
-          ? rewards.findIndex((r) => r.cursorId === params.cursor) + 1
-          : 0;
-      const end = limit ? start + limit : rewards.length;
-
-      return {
-        hasMore: end < rewards.length,
-        items: rewards.slice(start, end),
-        totalItems: rewards.length,
-        limit,
-        sortOrder,
-        nextCursor: rewards[end]?.cursorId,
-        sortBy,
-      };
+      return sortAndPaginateEpochDataIntoEligibleDistributions(
+        epochData,
+        params,
+      );
     }
 
     // on current epoch, go to process and fetch the distributions
