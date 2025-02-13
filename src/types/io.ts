@@ -120,6 +120,15 @@ export type AoEpochDistributionRewards = {
   distributed?: Record<WalletAddress, number>;
 };
 
+export type AoGetEpochDistributionRewards = Omit<
+  AoEpochDistributionRewards,
+  'eligible'
+>;
+
+export type AoGetEpochDistributionData = AoEpochDistributionData & {
+  rewards: AoGetEpochDistributionRewards;
+};
+
 export type AoEpochDistributionData = {
   rewards: AoEpochDistributionRewards;
   totalEligibleGateways: number;
@@ -173,7 +182,6 @@ export type AoEpochData = {
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
-  /** @deprecated - use `getDistributions` to get distribution data for a given epoch **/
   distributions: AoEpochDistributionData;
   arnsStats: {
     totalReturnedNames: number;
@@ -183,7 +191,11 @@ export type AoEpochData = {
   };
 };
 
-export type AoEligibleReward = {
+export type AoGetEpochResult = Omit<AoEpochData, 'distributions'> & {
+  distributions?: AoGetEpochDistributionData;
+};
+
+export type AoEligibleDistribution = {
   type: 'operatorReward' | 'delegateReward';
   recipient: WalletAddress;
   eligibleReward: number;
@@ -604,7 +616,7 @@ export interface AoARIORead {
   }: {
     name: string;
   }): Promise<AoReturnedName | undefined>;
-  getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
+  getEpoch(epoch?: EpochInput): Promise<AoGetEpochResult | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
   getPrescribedObservers(
     epoch?: EpochInput,

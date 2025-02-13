@@ -62,6 +62,7 @@ import {
   AoGatewayRegistrySettings,
   AoGatewayVault,
   AoGetCostDetailsParams,
+  AoGetEpochResult,
   AoIncreaseUndernameLimitParams,
   AoIncreaseVaultParams,
   AoPaginatedAddressParams,
@@ -83,6 +84,7 @@ import {
   getEpochDataFromGql,
   paginationParamsToTags,
   pruneTags,
+  removeEligibleDistributionsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
@@ -202,7 +204,7 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
+  async getEpoch(epoch?: EpochInput): Promise<AoGetEpochResult | undefined> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
@@ -211,7 +213,8 @@ export class ARIOReadable implements AoARIORead {
         epochIndex: epochIndex,
         processId: this.process.processId,
       });
-      return epochData;
+
+      return removeEligibleDistributionsFromEpochData(epochData);
     }
     // go to the process epoch and fetch the epoch data
     const allTags = [

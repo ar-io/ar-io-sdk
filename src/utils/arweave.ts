@@ -20,6 +20,7 @@ import { BlockHeight } from '../types/common.js';
 import {
   AoEligibleDistribution,
   AoEpochData,
+  AoGetEpochResult,
   PaginationParams,
   PaginationResult,
 } from '../types/io.js';
@@ -225,5 +226,24 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
     sortOrder,
     nextCursor: rewards[end]?.cursorId,
     sortBy,
+  };
+}
+
+export function removeEligibleDistributionsFromEpochData(
+  epochData?: AoEpochData,
+): AoGetEpochResult | undefined {
+  if (epochData === undefined) {
+    return undefined;
+  }
+  return {
+    ...epochData,
+    distributions: {
+      ...epochData.distributions,
+      rewards: {
+        ...epochData.distributions.rewards,
+        // @ts-expect-error -- remove eligible
+        eligible: undefined,
+      },
+    },
   };
 }
