@@ -18,7 +18,7 @@ import Arweave from 'arweave';
 import { ARIO_TESTNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
 import { BlockHeight } from '../types/common.js';
 import {
-  AoEligibleReward,
+  AoEligibleDistribution,
   AoEpochData,
   PaginationParams,
   PaginationResult,
@@ -155,9 +155,9 @@ export const epochDistributionNoticeGqlQuery = ({
 
 export function sortAndPaginateEpochDataIntoEligibleDistributions(
   epochData?: AoEpochData,
-  params?: PaginationParams<AoEligibleReward>,
-): PaginationResult<AoEligibleReward> {
-  const rewards: AoEligibleReward[] = [];
+  params?: PaginationParams<AoEligibleDistribution>,
+): PaginationResult<AoEligibleDistribution> {
+  const rewards: AoEligibleDistribution[] = [];
   const sortBy = params?.sortBy ?? 'eligibleReward';
   const sortOrder = params?.sortOrder ?? 'desc';
   const limit = params?.limit ?? 100;

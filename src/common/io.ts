@@ -52,7 +52,7 @@ import {
   AoBuyRecordParams,
   AoCreateVaultParams,
   AoDelegation,
-  AoEligibleReward,
+  AoEligibleDistribution,
   AoEpochData,
   AoEpochSettings,
   AoExtendLeaseParams,
@@ -486,8 +486,8 @@ export class ARIOReadable implements AoARIORead {
 
   async getEligibleDistributions(
     epoch?: EpochInput,
-    params?: PaginationParams<AoEligibleReward>,
-  ): Promise<PaginationResult<AoEligibleReward>> {
+    params?: PaginationParams<AoEligibleDistribution>,
+  ): Promise<PaginationResult<AoEligibleDistribution>> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
@@ -508,7 +508,7 @@ export class ARIOReadable implements AoARIORead {
       ...paginationParamsToTags(params),
     ];
 
-    return this.process.read<PaginationResult<AoEligibleReward>>({
+    return this.process.read<PaginationResult<AoEligibleDistribution>>({
       tags: pruneTags(allTags),
     });
   }

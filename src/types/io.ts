@@ -618,7 +618,8 @@ export interface AoARIORead {
   ): Promise<AoEpochDistributionData | undefined>;
   getEligibleDistributions(
     epoch?: EpochInput,
-  ): Promise<PaginationResult<AoEligibleReward> | undefined>;
+    params?: PaginationParams<AoEligibleDistribution>,
+  ): Promise<PaginationResult<AoEligibleDistribution> | undefined>;
   getTokenCost({
     intent,
     type,

@@ -300,6 +300,22 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'get-eligible-distributions',
+  description: 'Get eligible distributions for an epoch',
+  options: [...epochOptions, ...paginationOptions],
+  action: (o) =>
+    readARIOFromOptions(o)
+      .getEligibleDistributions(
+        epochInputFromOptions(o),
+        paginationParamsFromOptions(o),
+      )
+      .then(
+        (result) =>
+          result ?? { message: 'No eligible distributions found for epoch' },
+      ),
+});
+
+makeCommand({
   name: 'get-token-cost',
   description: 'Get token cost for an intended action',
   options: tokenCostOptions,
