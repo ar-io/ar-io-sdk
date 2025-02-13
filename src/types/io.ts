@@ -628,7 +628,7 @@ export interface AoARIORead {
   getDistributions(
     epoch?: EpochInput,
   ): Promise<AoEpochDistributionData | undefined>;
-  getEligibleDistributions(
+  getEligibleEpochRewards(
     epoch?: EpochInput,
     params?: PaginationParams<AoEligibleDistribution>,
   ): Promise<PaginationResult<AoEligibleDistribution> | undefined>;

@@ -487,7 +487,7 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getEligibleDistributions(
+  async getEligibleEpochRewards(
     epoch?: EpochInput,
     params?: PaginationParams<AoEligibleDistribution>,
   ): Promise<PaginationResult<AoEligibleDistribution>> {

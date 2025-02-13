@@ -305,7 +305,7 @@ makeCommand({
   options: [...epochOptions, ...paginationOptions],
   action: (o) =>
     readARIOFromOptions(o)
-      .getEligibleDistributions(
+      .getEligibleEpochRewards(
         epochInputFromOptions(o),
         paginationParamsFromOptions(o),
       )
