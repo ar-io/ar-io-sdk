@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { AoEpochData } from '../types/io.js';
 import {
   pruneTags,
   sortAndPaginateEpochDataIntoEligibleDistributions,
@@ -139,7 +140,7 @@ describe('errorMessageFromOutput', () => {
   });
 });
 
-describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
+describe('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
   const mockEpochData = {
     distributions: {
       rewards: {
@@ -160,7 +161,7 @@ describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
         },
       },
     },
-  };
+  } as unknown as AoEpochData;
 
   it('returns empty results when epochData is undefined', () => {
     assert.deepEqual(
@@ -178,7 +179,6 @@ describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
 
   it('sorts rewards in descending order by eligibleReward', () => {
     const result =
-      // @ts-ignore
       sortAndPaginateEpochDataIntoEligibleDistributions(mockEpochData);
     assert.deepEqual(result.items, [
       {
@@ -221,7 +221,6 @@ describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
 
   it('supports sorting in ascending order', () => {
     const result = sortAndPaginateEpochDataIntoEligibleDistributions(
-      // @ts-ignore
       mockEpochData,
       {
         sortOrder: 'asc',
@@ -233,7 +232,6 @@ describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
 
   it('paginates results correctly', () => {
     const result = sortAndPaginateEpochDataIntoEligibleDistributions(
-      // @ts-ignore
       mockEpochData,
       {
         limit: 2,
@@ -246,12 +244,10 @@ describe.only('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
 
   it('resumes pagination from cursor', () => {
     const firstPage = sortAndPaginateEpochDataIntoEligibleDistributions(
-      // @ts-ignore
       mockEpochData,
       { limit: 2 },
     );
     const secondPage = sortAndPaginateEpochDataIntoEligibleDistributions(
-      // @ts-ignore
       mockEpochData,
       {
         limit: 2,
