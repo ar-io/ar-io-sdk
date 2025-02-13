@@ -1039,7 +1039,7 @@ describe('e2e esm tests', async () => {
       assert.ok(eligibleDistributions);
       assert.equal(eligibleDistributions.limit, 100);
       assert.equal(eligibleDistributions.sortOrder, 'desc');
-      assert.equal(eligibleDistributions.sortBy, 'gatewayAddress');
+      assert.equal(eligibleDistributions.sortBy, 'cursorId');
       assert.equal(typeof eligibleDistributions.totalItems, 'number');
       assert.equal(typeof eligibleDistributions.sortBy, 'string');
       assert.equal(typeof eligibleDistributions.sortOrder, 'string');
