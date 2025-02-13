@@ -80,7 +80,9 @@ Options:
   -V, --version                           output the version number
   -w, --wallet-file <walletFilePath>      The file path to the wallet to use for the interaction
   --private-key <key>                     Stringified private key to use with the action
-  --dev                                   Run against the AR.IO devnet process
+  --dev, --devnet                         Run against the AR.IO devnet process
+  --testnet                               Run against the AR.IO testnet process
+  --mainnet                               Run against the AR.IO mainnet process
   --debug                                 Enable debug log output
   --ario-process-id <arioProcessId>       Run against a custom AR.IO process id
   --cu-url <cuUrl>                        The URL for a custom compute unit
@@ -109,6 +111,7 @@ Commands:
   get-prescribed-names [options]          Get prescribed names for an epoch
   get-observations [options]              Get observations for an epoch
   get-distributions [options]             Get distributions for an epoch
+  get-eligible-rewards [options]          Get eligible distributions for an epoch
   get-token-cost [options]                Get token cost for an intended action
   get-cost-details [options]              Get expanded cost details for an intended action
   list-vaults [options]                   Get all wallet vaults

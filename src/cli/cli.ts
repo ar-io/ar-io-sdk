@@ -300,7 +300,7 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'get-eligible-distributions',
+  name: 'get-eligible-rewards',
   description: 'Get eligible distributions for an epoch',
   options: [...epochOptions, ...paginationOptions],
   action: (o) =>
