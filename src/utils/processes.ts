@@ -196,7 +196,7 @@ export const fetchAllArNSRecords = async ({
   }),
   emitter,
   logger = Logger.default,
-  pageSize = 50_000,
+  pageSize = 1000,
 }: {
   contract?: AoARIORead;
   emitter?: EventEmitter;
