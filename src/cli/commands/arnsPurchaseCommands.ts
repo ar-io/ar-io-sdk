@@ -59,7 +59,7 @@ export async function buyRecordCLICommand(
       ario,
       address: signerAddress,
       costDetailsParams: {
-        intent: 'Buy-Record',
+        intent: 'Buy-Name',
         type,
         name,
         years,
