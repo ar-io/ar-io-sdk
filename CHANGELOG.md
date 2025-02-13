@@ -1,3 +1,10 @@
+# [3.6.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.4...v3.6.0-alpha.5) (2025-02-13)
+
+
+### Bug Fixes
+
+* **page size:** set page size to 1000 on fetch all records util ([5fa802e](https://github.com/ar-io/ar-io-sdk/commit/5fa802ea346ad87883fd3033a9a0621e6f2573ea))
+
 # [3.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.3...v3.6.0-alpha.4) (2025-02-12)
 
 
