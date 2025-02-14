@@ -130,7 +130,8 @@ export type AoGetEpochDistributionData = AoEpochDistributionData & {
 };
 
 export type AoEpochDistributionData = {
-  rewards: AoEpochDistributionRewards;
+  // Will not exist on current epoch
+  rewards?: AoEpochDistributionRewards;
   totalEligibleGateways: number;
   totalEligibleRewards: number;
   totalEligibleObserverReward: number;
