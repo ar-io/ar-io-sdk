@@ -15,7 +15,12 @@
  */
 import { connect } from '@permaweb/aoconnect';
 
-import { AOContract, AoClient, AoSigner } from '../../types/index.js';
+import {
+  AOContract,
+  AoClient,
+  AoSigner,
+  DryRunResult,
+} from '../../types/index.js';
 import { getRandomText } from '../../utils/base64.js';
 import { errorMessageFromOutput } from '../../utils/index.js';
 import { safeDecode } from '../../utils/json.js';
@@ -60,56 +65,28 @@ export class AOProcess implements AOContract {
     retries?: number;
     fromAddress?: string;
   }): Promise<K> {
+    this.logger.debug(`Evaluating read interaction on process`, {
+      tags,
+      processId: this.processId,
+    });
+    // map tags to inputs
+    const dryRunInput = {
+      process: this.processId,
+      tags,
+    };
+    if (fromAddress !== undefined) {
+      dryRunInput['Owner'] = fromAddress;
+    }
+
     let attempts = 0;
-    let lastError: Error | undefined;
+    let result: DryRunResult | undefined = undefined;
+
     while (attempts < retries) {
       try {
-        this.logger.debug(`Evaluating read interaction on process`, {
-          tags,
-          processId: this.processId,
-        });
-        // map tags to inputs
-        const dryRunInput = {
-          process: this.processId,
-          tags,
-        };
-        if (fromAddress !== undefined) {
-          dryRunInput['Owner'] = fromAddress;
-        }
-        const result = await this.ao.dryrun(dryRunInput);
-        this.logger.debug(`Read interaction result`, {
-          result,
-          processId: this.processId,
-        });
-
-        const error = errorMessageFromOutput(result);
-        if (error !== undefined) {
-          throw new Error(error);
-        }
-
-        if (result.Messages === undefined || result.Messages.length === 0) {
-          this.logger.debug(
-            `Process ${this.processId} does not support provided action.`,
-            {
-              result,
-              tags,
-              processId: this.processId,
-            },
-          );
-          throw new Error(
-            `Process ${this.processId} does not support provided action.`,
-          );
-        }
-        const messageData = result.Messages?.[0]?.Data;
-
-        // return undefined if no data is returned
-        if (this.isMessageDataEmpty(messageData)) {
-          return undefined as K;
-        }
-
-        const response: K = safeDecode<K>(messageData);
-        return response;
-      } catch (error: any) {
+        result = await this.ao.dryrun(dryRunInput);
+        // break on successful return of result
+        break;
+      } catch (error) {
         attempts++;
         this.logger.debug(`Read attempt ${attempts} failed`, {
           error: error?.message,
@@ -117,7 +94,10 @@ export class AOProcess implements AOContract {
           tags,
           processId: this.processId,
         });
-        lastError = error;
+
+        if (attempts === retries) {
+          throw error;
+        }
 
         // exponential backoff
         await new Promise((resolve) =>
@@ -125,7 +105,43 @@ export class AOProcess implements AOContract {
         );
       }
     }
-    throw lastError;
+
+    if (result === undefined) {
+      throw new Error('Unexpected error when evaluating read interaction');
+    }
+
+    this.logger.debug(`Read interaction result`, {
+      result,
+      processId: this.processId,
+    });
+
+    const error = errorMessageFromOutput(result);
+    if (error !== undefined) {
+      throw new Error(error);
+    }
+
+    if (result.Messages === undefined || result.Messages.length === 0) {
+      this.logger.debug(
+        `Process ${this.processId} does not support provided action.`,
+        {
+          result,
+          tags,
+          processId: this.processId,
+        },
+      );
+      throw new Error(
+        `Process ${this.processId} does not support provided action.`,
+      );
+    }
+    const messageData = result.Messages?.[0]?.Data;
+
+    // return undefined if no data is returned
+    if (this.isMessageDataEmpty(messageData)) {
+      return undefined as K;
+    }
+
+    const response: K = safeDecode<K>(messageData);
+    return response;
   }
 
   async send<K>({

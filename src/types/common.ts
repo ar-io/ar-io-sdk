@@ -141,3 +141,17 @@ export type AoWriteAction<P, R = AoMessageResult> = (
   params: P,
   options?: WriteOptions,
 ) => Promise<R>;
+
+// the following are from @permaweb/aoconnect which does not export these types directly
+export type DryRunResult = {
+  Output: any;
+  Messages: any[];
+  Spawns: any[];
+  Error?: any;
+};
+export type MessageResult = {
+  Output: any;
+  Messages: any[];
+  Spawns: any[];
+  Error?: any;
+};
