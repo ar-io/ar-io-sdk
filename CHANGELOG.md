@@ -1,3 +1,10 @@
+# [3.6.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.5...v3.6.0-alpha.6) (2025-02-14)
+
+
+### Bug Fixes
+
+* **request name:** add fund from tag on request primary name api ([be362ad](https://github.com/ar-io/ar-io-sdk/commit/be362adbd30c73a6cba1902caf8532e35ecac3d7))
+
 # [3.6.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.4...v3.6.0-alpha.5) (2025-02-13)
 
 
