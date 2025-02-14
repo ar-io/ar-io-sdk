@@ -1,21 +1,38 @@
-# [3.6.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.1...v3.6.0-alpha.2) (2025-02-11)
+# [3.6.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.4...v3.6.0-alpha.5) (2025-02-13)
 
 
 ### Bug Fixes
 
-* **ids:** bump module and lua source ids to ant 16 ([cf6d0de](https://github.com/ar-io/ar-io-sdk/commit/cf6d0de930c1ec5d30f183cd88bfd05ee0bcaaba))
+* **page size:** set page size to 1000 on fetch all records util ([5fa802e](https://github.com/ar-io/ar-io-sdk/commit/5fa802ea346ad87883fd3033a9a0621e6f2573ea))
 
-# [3.6.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.6.0-alpha.1) (2025-02-11)
+# [3.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.3...v3.6.0-alpha.4) (2025-02-12)
 
 
 ### Bug Fixes
 
-* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+* **deps:** bump aoconnect sdk ([3896ee8](https://github.com/ar-io/ar-io-sdk/commit/3896ee8c5d74a07bd020e66defd6ff1a600241e5))
+
+# [3.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.2...v3.6.0-alpha.3) (2025-02-12)
 
 
-### Features
+### Bug Fixes
 
-* **ant:** add sorting to ANT records responses by default ([4e74825](https://github.com/ar-io/ar-io-sdk/commit/4e74825831cca54ebf5c06da1105c224cd2a7214))
+* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
+* **arns:** use buy-name buy default for getCostDetails ([d71f402](https://github.com/ar-io/ar-io-sdk/commit/d71f402500c37b3f2e25df36431de3fcef8a8174))
+
+## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
+
+
+### Bug Fixes
+
+* **arns:** use buy-name buy default for getCostDetails ([d71f402](https://github.com/ar-io/ar-io-sdk/commit/d71f402500c37b3f2e25df36431de3fcef8a8174))
+
+## [3.5.2](https://github.com/ar-io/ar-io-sdk/compare/v3.5.1...v3.5.2) (2025-02-12)
+
+
+### Bug Fixes
+
+* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
 
 ## [3.5.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1) (2025-02-09)
 

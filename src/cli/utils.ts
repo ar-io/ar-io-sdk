@@ -25,6 +25,7 @@ import {
   ARIO,
   ARIOToken,
   ARIO_DEVNET_PROCESS_ID,
+  ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
   AoANTRead,
   AoANTWrite,
@@ -149,13 +150,24 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
 
 export function arioProcessIdFromOptions({
   arioProcessId,
-  dev,
+  devnet,
+  testnet,
+  mainnet,
 }: GlobalCLIOptions): string {
-  return arioProcessId !== undefined
-    ? arioProcessId
-    : dev
-      ? ARIO_DEVNET_PROCESS_ID
-      : ARIO_TESTNET_PROCESS_ID;
+  if (arioProcessId !== undefined) {
+    return arioProcessId;
+  }
+  if (devnet) {
+    return ARIO_DEVNET_PROCESS_ID;
+  }
+  if (testnet) {
+    return ARIO_TESTNET_PROCESS_ID;
+  }
+  if (mainnet) {
+    return ARIO_MAINNET_PROCESS_ID;
+  }
+
+  return ARIO_TESTNET_PROCESS_ID; // TODO(4.0): move to mainnet
 }
 
 function jwkFromOptions({
@@ -622,7 +634,7 @@ export function getANTStateFromOptions(
 }
 
 export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
-  o.intent ??= 'Buy-Record';
+  o.intent ??= 'Buy-Name';
   o.type ??= 'lease';
   o.years ??= '1';
 
