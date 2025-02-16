@@ -1,32 +1,3 @@
-# [3.6.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.5...v3.6.0-alpha.6) (2025-02-14)
-
-
-### Bug Fixes
-
-* **request name:** add fund from tag on request primary name api ([be362ad](https://github.com/ar-io/ar-io-sdk/commit/be362adbd30c73a6cba1902caf8532e35ecac3d7))
-
-# [3.6.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.4...v3.6.0-alpha.5) (2025-02-13)
-
-
-### Bug Fixes
-
-* **page size:** set page size to 1000 on fetch all records util ([5fa802e](https://github.com/ar-io/ar-io-sdk/commit/5fa802ea346ad87883fd3033a9a0621e6f2573ea))
-
-# [3.6.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.3...v3.6.0-alpha.4) (2025-02-12)
-
-
-### Bug Fixes
-
-* **deps:** bump aoconnect sdk ([3896ee8](https://github.com/ar-io/ar-io-sdk/commit/3896ee8c5d74a07bd020e66defd6ff1a600241e5))
-
-# [3.6.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0-alpha.2...v3.6.0-alpha.3) (2025-02-12)
-
-
-### Bug Fixes
-
-* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
-* **arns:** use buy-name buy default for getCostDetails ([d71f402](https://github.com/ar-io/ar-io-sdk/commit/d71f402500c37b3f2e25df36431de3fcef8a8174))
-
 ## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
 
 
@@ -39,7 +10,7 @@
 
 ### Bug Fixes
 
-* **arns:** use `buy-name` when fetching token bost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
+* **arns:** use `buy-name` when fetching token cost by default ([5585b4d](https://github.com/ar-io/ar-io-sdk/commit/5585b4d3abf76bc687568d32f4b7b5f0c34c5324))
 
 ## [3.5.1](https://github.com/ar-io/ar-io-sdk/compare/v3.5.0...v3.5.1) (2025-02-09)
 
