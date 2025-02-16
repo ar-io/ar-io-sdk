@@ -497,17 +497,26 @@ export type AoGatewayRegistrySettings = {
     withdrawLengthMs: number;
   };
   observers: {
-    tenureWeightDays: number;
-    tenureWeightPeriod: number;
+    tenureWeightDurationMs: number;
     maxTenureWeight: number;
-    maxPerEpoch: number;
   };
   operators: {
     minStake: number;
     withdrawLengthMs: number;
     leaveLengthMs: number;
     failedEpochCountMax: number;
-    failedEpochSlashRate: number;
+    failedGatewaySlashRate: number;
+  };
+  redelegations: {
+    minRedelegationPenaltyRate: number;
+    maxRedelegationPenaltyRate: number;
+    minRedelegationAmount: number;
+    redelegationFeeResetIntervalMs: number;
+  };
+  expeditedWithdrawals: {
+    minExpeditedWithdrawalPenaltyRate: number;
+    maxExpeditedWithdrawalPenaltyRate: number;
+    minExpeditedWithdrawalAmount: number;
   };
 };
 
@@ -517,9 +526,9 @@ export type DemandFactorSettings = {
   periodLengthMs: number;
   demandFactorBaseValue: number;
   demandFactorMin: number;
-  demandFactorUpAdjustment: number;
-  demandFactorDownAdjustment: number;
-  stepDownThreshold: number;
+  demandFactorUpAdjustmentRate: number;
+  demandFactorDownAdjustmentRate: number;
+  maxPeriodsAtMinDemandFactor: number;
   criteria: string;
 };
 
