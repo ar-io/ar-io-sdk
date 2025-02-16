@@ -1105,6 +1105,7 @@ describe('e2e esm tests', async () => {
         for (const record of Object.values(records)) {
           assert(typeof record.transactionId === 'string');
           assert(typeof record.ttlSeconds === 'number');
+          assert(typeof record.index === 'number');
           if (record.priority) {
             assert(typeof record.priority === 'number');
           }

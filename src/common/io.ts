@@ -1305,6 +1305,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       ...tags,
       { name: 'Action', value: 'Request-Primary-Name' },
       { name: 'Name', value: params.name },
+      { name: 'Fund-From', value: params.fundFrom },
     ];
     return this.process.send({
       signer: this.signer,
