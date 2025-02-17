@@ -225,7 +225,7 @@ export class ARIOReadable implements AoARIORead {
       },
     ];
 
-    return this.process.read<AoEpochData | undefined>({
+    return this.process.read<AoGetEpochResult | undefined>({
       tags: pruneTags(allTags),
     });
   }

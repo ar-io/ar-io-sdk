@@ -162,7 +162,7 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
   const sortBy = params?.sortBy ?? 'eligibleReward';
   const sortOrder = params?.sortOrder ?? 'desc';
   const limit = params?.limit ?? 100;
-  const eligibleDistributions = epochData?.distributions.rewards.eligible;
+  const eligibleDistributions = epochData?.distributions.rewards?.eligible;
   if (eligibleDistributions === undefined) {
     return {
       hasMore: false,
