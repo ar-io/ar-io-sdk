@@ -198,8 +198,6 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof epochSettings.maxObservers, 'number');
       assert.equal(typeof epochSettings.durationMs, 'number');
       assert.equal(typeof epochSettings.prescribedNameCount, 'number');
-      assert.equal(typeof epochSettings.epochZeroTimestamp, 'number');
-      assert.equal(typeof epochSettings.rewardPercentage, 'number');
       assert.equal(typeof epochSettings.epochZeroStartTimestamp, 'number');
     });
 
