@@ -341,7 +341,7 @@ export function requiredInitiatorFromOptions(
   return requiredAddressFromOptions(options);
 }
 
-export function writeActionTagsFromOptions<O extends WriteActionCLIOptions>(
+export function customTagsFromOptions<O extends WriteActionCLIOptions>(
   options: O,
 ): WriteOptions {
   if (options.tags === undefined) {

@@ -1,3 +1,20 @@
+# [3.7.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.2-alpha.1...v3.7.0-alpha.1) (2025-02-17)
+
+
+### Features
+
+* **distributions:** init paginated distributions cli command PE-7641 ([8810ec6](https://github.com/ar-io/ar-io-sdk/commit/8810ec6301827bc397eaa6b17c9ae74e21163a3d))
+* **distributions:** init paginated getEligibleDistributions PE-7641 ([9ba192f](https://github.com/ar-io/ar-io-sdk/commit/9ba192fbf25c714feaba51bbfce6d5de1a6e5cb6))
+* **distributions:** remove eligible rewards from get epoch return PE-7641 ([4437eaa](https://github.com/ar-io/ar-io-sdk/commit/4437eaa7eec310e31e3afc28110a9659527af026))
+* **read commands:** add commands epoch-settings, demand-factor-settings, read-action ([821b6f6](https://github.com/ar-io/ar-io-sdk/commit/821b6f6ed317ace32e62c0d2234bce7f8db513a0))
+
+## [3.6.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1...v3.6.2-alpha.1) (2025-02-17)
+
+
+### Bug Fixes
+
+* **types:** fix epoch settings type ([a306baa](https://github.com/ar-io/ar-io-sdk/commit/a306baa5c7cfa83090126e3429798f5738887725))
+
 ## [3.6.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0...v3.6.1) (2025-02-17)
 
 

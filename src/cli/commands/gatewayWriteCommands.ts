@@ -29,6 +29,7 @@ import {
 import {
   assertConfirmationPrompt,
   assertEnoughMARIOBalance,
+  customTagsFromOptions,
   formatARIOWithCommas,
   gatewaySettingsFromOptions,
   redelegateParamsFromOptions,
@@ -39,7 +40,6 @@ import {
   requiredTargetAndQuantityFromOptions,
   stringifyJsonForCLIDisplay,
   writeARIOFromOptions,
-  writeActionTagsFromOptions,
 } from '../utils.js';
 
 export async function joinNetwork(options: JoinNetworkCLIOptions) {
@@ -84,7 +84,7 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
 
   const result = await ario.joinNetwork(
     settings,
-    writeActionTagsFromOptions(options),
+    customTagsFromOptions(options),
   );
 
   const output = {
@@ -114,7 +114,7 @@ export async function updateGatewaySettings(
 
   const result = await ario.updateGatewaySettings(
     gatewaySettings,
-    writeActionTagsFromOptions(options),
+    customTagsFromOptions(options),
   );
 
   const output = {
@@ -145,7 +145,7 @@ export async function leaveNetwork(options: WriteActionCLIOptions) {
   }
 
   return writeARIOFromOptions(options).ario.leaveNetwork(
-    writeActionTagsFromOptions(options),
+    customTagsFromOptions(options),
   );
 }
 
@@ -170,7 +170,7 @@ export async function saveObservations(
       failedGateways: requiredStringArrayFromOptions(o, 'failedGateways'),
       reportTxId: requiredStringFromOptions(o, 'transactionId'),
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -188,7 +188,7 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
     writeARIOFromOptions(o).ario.increaseOperatorStake({
       increaseQty,
     }),
-    writeActionTagsFromOptions(o)
+    customTagsFromOptions(o)
   );
 }
 
@@ -208,7 +208,7 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
     {
       decreaseQty,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -226,7 +226,7 @@ export async function instantWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
       vaultId,
       gatewayAddress,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -244,7 +244,7 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
       vaultId,
       gatewayAddress,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -292,7 +292,7 @@ export async function delegateStake(options: TransferCLIOptions) {
       target,
       stakeQty: arioQuantity.toMARIO(),
     },
-    writeActionTagsFromOptions(options),
+    customTagsFromOptions(options),
   );
 
   const output = {

@@ -72,6 +72,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
   - [Epochs](#epochs)
     - [`getCurrentEpoch()`](#getcurrentepoch)
     - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
+    - [`getEligibleEpochRewards({ epochIndex }, { cursor, limit, sortBy, sortOrder })](#geteligibleepochrewards-epochindex---cursor-limit-sortby-sortorder-)
     - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
     - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
     - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
@@ -1615,12 +1616,6 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
     "totalDistributedRewards": 100000000,
     "distributedTimestamp": 1720720621424,
     "rewards": {
-      "eligible": {
-        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
-          "operatorReward": 100000000,
-          "delegateRewards": {}
-        }
-      },
       "distributed": {
         "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
       }
@@ -1629,6 +1624,39 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
 }
 ```
 
+</details>
+
+#### `getEligibleEpochRewards({ epochIndex }, { cursor, limit, sortBy, sortOrder })
+
+Returns the eligible epoch rewards for the specified block height. If no epoch index is provided, the current epoch is used.
+
+```typescript
+const ario = ARIO.init();
+const rewards = await ario.getEligibleEpochRewards({ epochIndex: 0 });
+```
+
+<details>
+  <summary>Output</summary>
+  
+```json
+{
+  "sortOrder": "desc",
+  "hasMore": true,
+  "totalItems": 37,
+  "limit": 1,
+  "sortBy": "cursorId",
+  "items": [
+    {
+      "cursorId": "xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0_xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0",
+      "recipient": "xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0",
+      "gatewayAddress": "xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0",
+      "eligibleReward": 2627618704,
+      "type": "operatorReward"
+    }
+  ],
+  "nextCursor": "xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0_xN_aVln30LmoCffwmk5_kRkcyQZyZWy1o_TNtM_CTm0"
+}
+```
 </details>
 
 #### `getObservations({ epochIndex })`
