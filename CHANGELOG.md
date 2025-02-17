@@ -1,9 +1,9 @@
-## [3.6.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1-alpha.1...v3.6.1-alpha.2) (2025-02-17)
+## [3.6.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0...v3.6.1) (2025-02-17)
 
 
 ### Bug Fixes
 
-* **types:** fix epoch settings type ([a306baa](https://github.com/ar-io/ar-io-sdk/commit/a306baa5c7cfa83090126e3429798f5738887725))
+* **types:** correct types for demand factor and gateway settings, update tests ([583ffeb](https://github.com/ar-io/ar-io-sdk/commit/583ffebfd32b13d00707fec7f8f5dd2564c9e08b))
 
 # [3.6.0](https://github.com/ar-io/ar-io-sdk/compare/v3.5.3...v3.6.0) (2025-02-17)
 
