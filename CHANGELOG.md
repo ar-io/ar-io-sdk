@@ -1,3 +1,10 @@
+## [3.6.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1...v3.6.2-alpha.1) (2025-02-17)
+
+
+### Bug Fixes
+
+* **types:** fix epoch settings type ([a306baa](https://github.com/ar-io/ar-io-sdk/commit/a306baa5c7cfa83090126e3429798f5738887725))
+
 ## [3.6.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0...v3.6.1) (2025-02-17)
 
 
