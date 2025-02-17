@@ -17,6 +17,7 @@ import {
   ArweaveSigner,
   arioDevnetProcessId,
   createAoSigner,
+  isDistributedEpochData,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
@@ -676,6 +677,7 @@ describe('e2e esm tests', async () => {
     it('should be able to get epoch distributions at a specific epoch', async () => {
       const distributions = await ario.getDistributions({ epochIndex });
       assert.ok(distributions);
+      assert.ok(isDistributedEpochData(distributions));
       assert(
         typeof distributions === 'object',
         'distributions is not an object',
@@ -1031,6 +1033,33 @@ describe('e2e esm tests', async () => {
       assert.ok(typeof registrySettings.operators.minStake === 'number');
       assert.ok(
         typeof registrySettings.operators.withdrawLengthMs === 'number',
+      );
+    });
+
+    it('should be able to get the first page of eligible distributions', async () => {
+      const eligibleDistributions = await ario.getEligibleEpochRewards();
+      assert.ok(eligibleDistributions);
+      assert.equal(eligibleDistributions.limit, 100);
+      assert.equal(eligibleDistributions.sortOrder, 'desc');
+      assert.equal(eligibleDistributions.sortBy, 'cursorId');
+      assert.equal(typeof eligibleDistributions.totalItems, 'number');
+      assert.equal(typeof eligibleDistributions.sortBy, 'string');
+      assert.equal(typeof eligibleDistributions.sortOrder, 'string');
+      assert.equal(typeof eligibleDistributions.limit, 'number');
+      assert.equal(typeof eligibleDistributions.hasMore, 'boolean');
+      if (eligibleDistributions.nextCursor) {
+        assert.equal(typeof eligibleDistributions.nextCursor, 'string');
+      }
+      assert(Array.isArray(eligibleDistributions.items));
+
+      eligibleDistributions.items.forEach(
+        ({ type, recipient, eligibleReward, gatewayAddress, cursorId }) => {
+          assert(['operatorReward', 'delegateReward'].includes(type));
+          assert.equal(typeof recipient, 'string');
+          assert.equal(typeof eligibleReward, 'number');
+          assert.equal(typeof gatewayAddress, 'string');
+          assert.equal(typeof cursorId, 'string');
+        },
       );
     });
   });

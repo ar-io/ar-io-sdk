@@ -17,7 +17,13 @@ import Arweave from 'arweave';
 
 import { ARIO_TESTNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
 import { BlockHeight } from '../types/common.js';
-import { AoEpochData, PaginationParams } from '../types/io.js';
+import {
+  AoEligibleDistribution,
+  AoEpochData,
+  PaginationParams,
+  PaginationResult,
+  isDistributedEpoch,
+} from '../types/io.js';
 import { parseAoEpochData } from './ao.js';
 
 export const validateArweaveId = (id: string): boolean => {
@@ -147,3 +153,101 @@ export const epochDistributionNoticeGqlQuery = ({
   });
   return gqlQuery;
 };
+
+export function sortAndPaginateEpochDataIntoEligibleDistributions(
+  epochData?: AoEpochData,
+  params?: PaginationParams<AoEligibleDistribution>,
+): PaginationResult<AoEligibleDistribution> {
+  const rewards: AoEligibleDistribution[] = [];
+  const sortBy = params?.sortBy ?? 'eligibleReward';
+  const sortOrder = params?.sortOrder ?? 'desc';
+  const limit = params?.limit ?? 100;
+  if (!isDistributedEpoch(epochData)) {
+    return {
+      hasMore: false,
+      items: [],
+      totalItems: 0,
+      limit,
+      sortOrder,
+      sortBy,
+    };
+  }
+  const eligibleDistributions = epochData?.distributions.rewards.eligible;
+  for (const [gatewayAddress, reward] of Object.entries(
+    eligibleDistributions,
+  )) {
+    rewards.push({
+      type: 'operatorReward',
+      recipient: gatewayAddress,
+      eligibleReward: reward.operatorReward,
+      cursorId: gatewayAddress + '_' + gatewayAddress,
+      gatewayAddress,
+    });
+
+    for (const [delegateAddress, delegateRewardQty] of Object.entries(
+      reward.delegateRewards,
+    )) {
+      rewards.push({
+        type: 'delegateReward',
+        recipient: delegateAddress,
+        eligibleReward: delegateRewardQty,
+        cursorId: gatewayAddress + '_' + delegateAddress,
+        gatewayAddress,
+      });
+    }
+  }
+
+  // sort the rewards by the sortBy
+
+  rewards.sort((a, b) => {
+    const aSort = a[sortBy];
+    const bSort = b[sortBy];
+    if (aSort === bSort || aSort === undefined || bSort === undefined) {
+      return 0;
+    }
+    if (sortOrder === 'asc') {
+      return aSort > bSort ? 1 : -1;
+    }
+    return aSort < bSort ? 1 : -1;
+  });
+
+  // paginate the rewards
+  const start =
+    params?.cursor !== undefined
+      ? rewards.findIndex((r) => r.cursorId === params.cursor) + 1
+      : 0;
+  const end = limit ? start + limit : rewards.length;
+
+  return {
+    hasMore: end < rewards.length,
+    items: rewards.slice(start, end),
+    totalItems: rewards.length,
+    limit,
+    sortOrder,
+    nextCursor: rewards[end]?.cursorId,
+    sortBy,
+  };
+}
+
+export function removeEligibleRewardsFromEpochData(
+  epochData?: AoEpochData,
+): AoEpochData | undefined {
+  if (epochData === undefined) {
+    return undefined;
+  }
+
+  if (!isDistributedEpoch(epochData)) {
+    return epochData;
+  }
+  return {
+    ...epochData,
+    distributions: {
+      ...epochData.distributions,
+      rewards: {
+        ...epochData.distributions.rewards,
+        // @ts-expect-error -- remove eligible rewards
+        eligible: undefined,
+      },
+    },
+  };
+}

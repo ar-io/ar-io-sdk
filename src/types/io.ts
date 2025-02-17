@@ -108,29 +108,6 @@ export type AoVaultData = {
   endTimestamp: Timestamp;
 };
 
-export type AoEpochDistributionRewards = {
-  eligible: Record<
-    WalletAddress,
-    {
-      delegateRewards: Record<WalletAddress, number>;
-      operatorReward: number;
-    }
-  >;
-  // TODO: we could create a new type for this
-  distributed?: Record<WalletAddress, number>;
-};
-
-export type AoEpochDistributionData = {
-  rewards: AoEpochDistributionRewards;
-  totalEligibleGateways: number;
-  totalEligibleRewards: number;
-  totalEligibleObserverReward: number;
-  totalEligibleGatewayReward: number;
-  // TODO: we could create a new type for this
-  distributedTimestamp?: Timestamp; // only set if rewards have been distributed
-  totalDistributedRewards?: number; // only set if rewards have been distributed
-};
-
 export type AoArNSReservedNameData = {
   target?: string;
   endTimestamp?: number;
@@ -164,7 +141,37 @@ export type AoEpochSettings = {
   maxObservers: number;
 };
 
-export type AoEpochData = {
+export type AoEpochDistributionTotalsData = {
+  totalEligibleGateways: number;
+  totalEligibleRewards: number;
+  totalEligibleObserverReward: number;
+  totalEligibleGatewayReward: number;
+};
+
+/** @deprecated Use getEligibleEpochRewards getEpochDistributions, will be removed in a future release  */
+export type AoEpochDistributionRewards = {
+  eligible: Record<
+    WalletAddress,
+    {
+      delegateRewards: Record<WalletAddress, number>;
+      operatorReward: number;
+    }
+  >;
+  distributed: Record<WalletAddress, number>;
+};
+
+export type AoEpochDistributed = AoEpochDistributionTotalsData & {
+  /** @deprecated Use getEligibleEpochRewards getEpochDistributions, will be removed in a future release  */
+  rewards: AoEpochDistributionRewards;
+  distributedTimestamp: Timestamp; // only set if rewards have been distributed
+  totalDistributedRewards: number; // only set if rewards have been distributed
+};
+
+export type AoEpochDistributionData =
+  | AoEpochDistributionTotalsData
+  | AoEpochDistributed;
+
+export type AoEpochData<D = AoEpochDistributionData> = {
   epochIndex: AoEpochIndex;
   startHeight: BlockHeight;
   observations: AoEpochObservationData;
@@ -173,8 +180,7 @@ export type AoEpochData = {
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
   distributionTimestamp: Timestamp;
-  /** @deprecated - use `getDistributions` to get distribution data for a given epoch **/
-  distributions: AoEpochDistributionData;
+  distributions: D;
   arnsStats: {
     totalReturnedNames: number;
     totalActiveNames: number;
@@ -182,6 +188,33 @@ export type AoEpochData = {
     totalReservedNames: number;
   };
 };
+
+export const isDistributedEpochData = (
+  data: AoEpochDistributed | AoEpochDistributionTotalsData,
+): data is AoEpochDistributed => {
+  return (data as AoEpochDistributed).distributedTimestamp !== undefined;
+};
+
+export const isDistributedEpoch = (
+  data: AoEpochData | undefined,
+): data is AoEpochData<AoEpochDistributed> & {
+  distributions: { rewards: object };
+} => {
+  return (
+    data !== undefined &&
+    data.distributions !== undefined &&
+    isDistributedEpochData(data.distributions)
+  );
+};
+
+export type AoEligibleDistribution = {
+  type: 'operatorReward' | 'delegateReward';
+  recipient: WalletAddress;
+  eligibleReward: number;
+  gatewayAddress: WalletAddress;
+  cursorId: string;
+};
+
 export type AoTokenSupplyData = {
   total: number;
   circulating: number;
@@ -607,6 +640,10 @@ export interface AoARIORead {
   getDistributions(
     epoch?: EpochInput,
   ): Promise<AoEpochDistributionData | undefined>;
+  getEligibleEpochRewards(
+    epoch?: EpochInput,
+    params?: PaginationParams<AoEligibleDistribution>,
+  ): Promise<PaginationResult<AoEligibleDistribution> | undefined>;
   getTokenCost({
     intent,
     type,
