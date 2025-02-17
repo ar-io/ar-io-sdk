@@ -143,6 +143,7 @@ describe('errorMessageFromOutput', () => {
 describe('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
   const mockEpochData = {
     distributions: {
+      distributedTimestamp: 1234567890,
       rewards: {
         eligible: {
           gateway1: {
