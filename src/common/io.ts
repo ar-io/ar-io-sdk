@@ -507,7 +507,7 @@ export class ARIOReadable implements AoARIORead {
 
     // on current epoch, go to process and fetch the distributions
     const allTags = [
-      { name: 'Action', value: 'Eligible-Distributions' },
+      { name: 'Action', value: 'Epoch-Eligible-Rewards' },
       ...paginationParamsToTags(params),
     ];
 
