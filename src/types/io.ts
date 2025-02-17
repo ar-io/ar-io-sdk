@@ -162,7 +162,7 @@ export type AoEpochDistributionRewards = {
 
 export type AoEpochDistributed = AoEpochDistributionTotalsData & {
   /** @deprecated Use getEligibleEpochRewards getEpochDistributions, will be removed in a future release  */
-  rewards?: AoEpochDistributionRewards;
+  rewards: AoEpochDistributionRewards;
   distributedTimestamp: Timestamp; // only set if rewards have been distributed
   totalDistributedRewards: number; // only set if rewards have been distributed
 };
@@ -189,6 +189,12 @@ export type AoEpochData<D = AoEpochDistributionData> = {
   };
 };
 
+export const isDistributedEpochData = (
+  data: AoEpochDistributed | AoEpochDistributionTotalsData,
+): data is AoEpochDistributed => {
+  return (data as AoEpochDistributed).distributedTimestamp !== undefined;
+};
+
 export const isDistributedEpoch = (
   data: AoEpochData | undefined,
 ): data is AoEpochData<AoEpochDistributed> & {
@@ -197,7 +203,7 @@ export const isDistributedEpoch = (
   return (
     data !== undefined &&
     data.distributions !== undefined &&
-    (data.distributions as AoEpochDistributed).rewards !== undefined
+    isDistributedEpochData(data.distributions)
   );
 };
 

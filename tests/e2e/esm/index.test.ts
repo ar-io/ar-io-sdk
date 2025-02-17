@@ -17,6 +17,7 @@ import {
   ArweaveSigner,
   arioDevnetProcessId,
   createAoSigner,
+  isDistributedEpochData,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
@@ -676,6 +677,7 @@ describe('e2e esm tests', async () => {
     it('should be able to get epoch distributions at a specific epoch', async () => {
       const distributions = await ario.getDistributions({ epochIndex });
       assert.ok(distributions);
+      assert.ok(isDistributedEpochData(distributions));
       assert(
         typeof distributions === 'object',
         'distributions is not an object',
