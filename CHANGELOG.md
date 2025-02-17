@@ -1,3 +1,19 @@
+# [3.6.0](https://github.com/ar-io/ar-io-sdk/compare/v3.5.3...v3.6.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+* **deps:** bump aoconnect sdk ([3896ee8](https://github.com/ar-io/ar-io-sdk/commit/3896ee8c5d74a07bd020e66defd6ff1a600241e5))
+* **ids:** bump module and lua source ids to ant 16 ([cf6d0de](https://github.com/ar-io/ar-io-sdk/commit/cf6d0de930c1ec5d30f183cd88bfd05ee0bcaaba))
+* **page size:** set page size to 1000 on fetch all records util ([5fa802e](https://github.com/ar-io/ar-io-sdk/commit/5fa802ea346ad87883fd3033a9a0621e6f2573ea))
+* **request name:** add fund from tag on request primary name api ([be362ad](https://github.com/ar-io/ar-io-sdk/commit/be362adbd30c73a6cba1902caf8532e35ecac3d7))
+
+
+### Features
+
+* **ant:** add sorting to ANT records responses by default ([4e74825](https://github.com/ar-io/ar-io-sdk/commit/4e74825831cca54ebf5c06da1105c224cd2a7214))
+
 ## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
 
 
