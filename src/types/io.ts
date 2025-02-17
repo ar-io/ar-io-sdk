@@ -161,11 +161,7 @@ export type AoEpochSettings = {
   epochZeroStartTimestamp: Timestamp;
   durationMs: number;
   prescribedNameCount: number;
-  rewardPercentage: number;
   maxObservers: number;
-  distributionDelayMs: number;
-  epochZeroTimestamp: Timestamp;
-  pruneEpochsCount: number;
 };
 
 export type AoEpochData = {
