@@ -20,10 +20,10 @@ import {
 import { CLIWriteOptionsFromAoAntParams } from '../types.js';
 import {
   assertConfirmationPrompt,
+  customTagsFromOptions,
   defaultTtlSecondsCLI,
   requiredStringFromOptions,
   writeANTFromOptions,
-  writeActionTagsFromOptions,
 } from '../utils.js';
 
 /** @deprecated -- use set-ant-base-name and set-ant-undername */
@@ -53,7 +53,7 @@ export async function setAntRecordCLICommand(
       transactionId,
       ttlSeconds,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -81,7 +81,7 @@ export async function setAntBaseNameCLICommand(
       transactionId,
       ttlSeconds,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -111,6 +111,6 @@ export async function setAntUndernameCLICommand(
       transactionId,
       ttlSeconds,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }

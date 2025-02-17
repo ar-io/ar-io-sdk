@@ -114,6 +114,7 @@ import {
   applyOptions,
   arioProcessIdFromOptions,
   assertConfirmationPrompt,
+  customTagsFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
   getANTStateFromOptions,
@@ -128,7 +129,6 @@ import {
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
-  writeActionTagsFromOptions,
 } from './utils.js';
 
 applyOptions(
@@ -162,6 +162,18 @@ makeCommand({
   name: 'get-demand-factor',
   description: 'Get demand factor',
   action: (options) => readARIOFromOptions(options).getDemandFactor(),
+});
+
+makeCommand({
+  name: 'get-demand-factor-settings',
+  description: 'Get current settings for demand factor',
+  action: (options) => readARIOFromOptions(options).getDemandFactorSettings(),
+});
+
+makeCommand({
+  name: 'get-epoch-settings',
+  description: 'Get current settings for epochs',
+  action: (options) => readARIOFromOptions(options).getEpochSettings(),
 });
 
 makeCommand({
@@ -746,7 +758,7 @@ makeCommand<
       {
         target,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -765,7 +777,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { controller?: string }>({
       {
         controller: requiredStringFromOptions(options, 'controller'),
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -779,7 +791,7 @@ makeCommand<ProcessIdCLIOptions & { controller?: string }>({
       {
         controller: requiredStringFromOptions(options, 'controller'),
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -822,7 +834,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
       {
         undername,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -843,7 +855,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
       {
         ticker,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -867,7 +879,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { name?: string }>({
       {
         name,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -888,7 +900,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { description?: string }>({
       {
         description,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -908,7 +920,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { keywords?: string[] }>({
       {
         keywords,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -933,7 +945,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
         // TODO: Could take a logo file, upload it to Arweave, get transaction ID
         txId,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -959,7 +971,7 @@ makeCommand<
         name,
         arioProcessId: arioProcessIdFromOptions(options),
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -993,7 +1005,7 @@ makeCommand<
         arioProcessId: arioProcessIdFromOptions(options),
         antProcessId: targetProcess,
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -1027,7 +1039,7 @@ makeCommand<
         address,
         arioProcessId: arioProcessIdFromOptions(options),
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -1052,7 +1064,7 @@ makeCommand<
         names,
         arioProcessId: arioProcessIdFromOptions(options),
       },
-      writeActionTagsFromOptions(options),
+      customTagsFromOptions(options),
     );
   },
 });
@@ -1067,8 +1079,23 @@ makeCommand({
       logger: getLoggerFromOptions(options),
     });
     return process.send<AoMessageResult>({
-      tags: writeActionTagsFromOptions(options).tags ?? [],
+      tags: customTagsFromOptions(options).tags ?? [],
       signer: requiredAoSignerFromOptions(options),
+    });
+  },
+});
+
+makeCommand({
+  name: 'read-action',
+  description: 'Send a dry-run read action to an AO Process',
+  options: [optionMap.processId, optionMap.tags],
+  action: async (options) => {
+    const process = new AOProcess({
+      processId: requiredProcessIdFromOptions(options),
+      logger: getLoggerFromOptions(options),
+    });
+    return process.read<AoMessageResult>({
+      tags: customTagsFromOptions(options).tags ?? [],
     });
   },
 });
