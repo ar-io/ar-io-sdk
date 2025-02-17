@@ -201,7 +201,6 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof epochSettings.epochZeroTimestamp, 'number');
       assert.equal(typeof epochSettings.rewardPercentage, 'number');
       assert.equal(typeof epochSettings.epochZeroStartTimestamp, 'number');
-      assert.equal(typeof epochSettings.pruneEpochsCount, 'number');
     });
 
     it('should be able to get demand factor settings', async () => {
@@ -215,15 +214,19 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof demandFactorSettings.periodLengthMs, 'number');
       assert.equal(typeof demandFactorSettings.demandFactorBaseValue, 'number');
       assert.equal(typeof demandFactorSettings.demandFactorMin, 'number');
-      assert.equal(
-        typeof demandFactorSettings.demandFactorUpAdjustment,
-        'number',
-      );
-      assert.equal(
-        typeof demandFactorSettings.demandFactorDownAdjustment,
-        'number',
-      );
-      assert.equal(typeof demandFactorSettings.stepDownThreshold, 'number');
+      // TODO: these have changed to rates - update with v4.0.0 release
+      // assert.equal(
+      //   typeof demandFactorSettings.demandFactorUpAdjustmentRate,
+      //   'number',
+      // );
+      // assert.equal(
+      //   typeof demandFactorSettings.demandFactorDownAdjustmentRate,
+      //   'number',
+      // );
+      // assert.equal(
+      //   typeof demandFactorSettings.maxPeriodsAtMinDemandFactor,
+      //   'number',
+      // );
       assert.equal(typeof demandFactorSettings.criteria, 'string');
     });
 
@@ -1017,20 +1020,16 @@ describe('e2e esm tests', async () => {
       assert.ok(
         typeof registrySettings.delegates.withdrawLengthMs === 'number',
       );
-      assert.ok(typeof registrySettings.observers.maxPerEpoch === 'number');
       assert.ok(typeof registrySettings.observers.maxTenureWeight === 'number');
-      assert.ok(
-        typeof registrySettings.observers.tenureWeightDays === 'number',
-      );
-      assert.ok(
-        typeof registrySettings.observers.tenureWeightPeriod === 'number',
-      );
+      // assert.ok(
+      //   typeof registrySettings.observers.tenureWeightDurationMs === 'number',
+      // );
       assert.ok(
         typeof registrySettings.operators.failedEpochCountMax === 'number',
       );
-      assert.ok(
-        typeof registrySettings.operators.failedEpochSlashRate === 'number',
-      );
+      // assert.ok(
+      //   typeof registrySettings.operators.failedGatewaySlashRate === 'number',
+      // );
       assert.ok(typeof registrySettings.operators.leaveLengthMs === 'number');
       assert.ok(typeof registrySettings.operators.minStake === 'number');
       assert.ok(
