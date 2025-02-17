@@ -23,13 +23,13 @@ import { CLIWriteOptionsFromAoParams } from '../types.js';
 import {
   assertConfirmationPrompt,
   assertEnoughBalanceForArNSPurchase,
+  customTagsFromOptions,
   fundFromFromOptions,
   positiveIntegerFromOptions,
   recordTypeFromOptions,
   requiredPositiveIntegerFromOptions,
   requiredStringFromOptions,
   writeARIOFromOptions,
-  writeActionTagsFromOptions,
 } from '../utils.js';
 
 export async function buyRecordCLICommand(
@@ -82,7 +82,7 @@ export async function buyRecordCLICommand(
       years,
       fundFrom: fundFromFromOptions(o),
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -167,7 +167,7 @@ export async function extendLeaseCLICommand(
       name,
       years,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -210,7 +210,7 @@ export async function increaseUndernameLimitCLICommand(
       name,
       increaseCount,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
 
@@ -246,6 +246,6 @@ export async function requestPrimaryNameCLICommand(
       name,
       fundFrom,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 }
