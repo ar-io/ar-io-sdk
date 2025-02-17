@@ -20,9 +20,9 @@ import { BlockHeight } from '../types/common.js';
 import {
   AoEligibleDistribution,
   AoEpochData,
-  AoGetEpochResult,
   PaginationParams,
   PaginationResult,
+  isDistributedEpoch,
 } from '../types/io.js';
 import { parseAoEpochData } from './ao.js';
 
@@ -162,8 +162,7 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
   const sortBy = params?.sortBy ?? 'eligibleReward';
   const sortOrder = params?.sortOrder ?? 'desc';
   const limit = params?.limit ?? 100;
-  const eligibleDistributions = epochData?.distributions.rewards?.eligible;
-  if (eligibleDistributions === undefined) {
+  if (!isDistributedEpoch(epochData)) {
     return {
       hasMore: false,
       items: [],
@@ -173,6 +172,7 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
       sortBy,
     };
   }
+  const eligibleDistributions = epochData?.distributions.rewards.eligible;
   for (const [gatewayAddress, reward] of Object.entries(
     eligibleDistributions,
   )) {
@@ -229,11 +229,15 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
   };
 }
 
-export function removeEligibleDistributionsFromEpochData(
+export function removeEligibleRewardsFromEpochData(
   epochData?: AoEpochData,
-): AoGetEpochResult | undefined {
+): AoEpochData | undefined {
   if (epochData === undefined) {
     return undefined;
+  }
+
+  if (!isDistributedEpoch(epochData)) {
+    return epochData;
   }
   return {
     ...epochData,
@@ -241,7 +245,7 @@ export function removeEligibleDistributionsFromEpochData(
       ...epochData.distributions,
       rewards: {
         ...epochData.distributions.rewards,
-        // @ts-expect-error -- remove eligible
+        // @ts-expect-error -- remove eligible rewards
         eligible: undefined,
       },
     },
