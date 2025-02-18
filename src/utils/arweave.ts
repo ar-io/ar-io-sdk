@@ -20,6 +20,7 @@ import { BlockHeight } from '../types/common.js';
 import {
   AoEligibleDistribution,
   AoEpochData,
+  AoEpochDistributionData,
   PaginationParams,
   PaginationResult,
   isDistributedEpoch,
@@ -81,7 +82,7 @@ export const getEpochDataFromGql = async ({
   processId?: string;
   retries?: number;
   gqlUrl?: string;
-}): Promise<AoEpochData | undefined> => {
+}): Promise<AoEpochData<AoEpochDistributionData> | undefined> => {
   // fetch from gql
   const query = epochDistributionNoticeGqlQuery({ epochIndex, processId });
   // add three retries with exponential backoff
