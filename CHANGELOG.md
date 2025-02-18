@@ -1,3 +1,10 @@
+## [3.7.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.7.0...v3.7.1-alpha.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **types:** overload getEpoch to provide correct types on specific param requests ([bafce74](https://github.com/ar-io/ar-io-sdk/commit/bafce74e438b05a4e61a7443fd7f391ec74f4633))
+
 # [3.7.0](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1...v3.7.0) (2025-02-17)
 
 
