@@ -102,7 +102,8 @@ export const getEpochDataFromGql = async ({
       }
       const id = response.data.transactions.edges[0].node.id;
       // fetch the transaction from arweave
-      const transaction = await arweave.api.get<AoEpochData>(id);
+      const transaction =
+        await arweave.api.get<AoEpochData<AoEpochDistributed>>(id);
       // assert it is the correct type
       return parseAoEpochData(transaction.data);
     } catch (error) {
