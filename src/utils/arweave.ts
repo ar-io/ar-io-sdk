@@ -20,6 +20,7 @@ import { BlockHeight } from '../types/common.js';
 import {
   AoEligibleDistribution,
   AoEpochData,
+  AoEpochDistributed,
   PaginationParams,
   PaginationResult,
   isDistributedEpoch,
@@ -81,7 +82,7 @@ export const getEpochDataFromGql = async ({
   processId?: string;
   retries?: number;
   gqlUrl?: string;
-}): Promise<AoEpochData | undefined> => {
+}): Promise<AoEpochData<AoEpochDistributed> | undefined> => {
   // fetch from gql
   const query = epochDistributionNoticeGqlQuery({ epochIndex, processId });
   // add three retries with exponential backoff
@@ -101,7 +102,8 @@ export const getEpochDataFromGql = async ({
       }
       const id = response.data.transactions.edges[0].node.id;
       // fetch the transaction from arweave
-      const transaction = await arweave.api.get<AoEpochData>(id);
+      const transaction =
+        await arweave.api.get<AoEpochData<AoEpochDistributed>>(id);
       // assert it is the correct type
       return parseAoEpochData(transaction.data);
     } catch (error) {

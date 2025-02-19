@@ -54,6 +54,7 @@ import {
   AoDelegation,
   AoEligibleDistribution,
   AoEpochData,
+  AoEpochDistributed,
   AoEpochDistributionTotalsData,
   AoEpochSettings,
   AoExtendLeaseParams,
@@ -204,6 +205,10 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
+  async getEpoch(
+    epoch: EpochInput,
+  ): Promise<AoEpochData<AoEpochDistributed> | undefined>;
+  async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
@@ -375,8 +380,8 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getCurrentEpoch(): Promise<AoEpochData> {
-    return this.process.read<AoEpochData>({
+  async getCurrentEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>> {
+    return this.process.read<AoEpochData<AoEpochDistributionTotalsData>>({
       tags: [{ name: 'Action', value: 'Epoch' }],
     });
   }
