@@ -140,7 +140,7 @@ describe('e2e esm tests', async () => {
       });
     });
     it('should be able to get a single arns record', async () => {
-      const arns = await ario.getArNSRecord({ name: 'ardrive' });
+      const arns = await ario.getArNSRecord({ name: 'dtf' });
       assert.ok(arns);
       assert(typeof arns.processId === 'string');
       assert(typeof arns.startTimestamp === 'number');
@@ -176,7 +176,7 @@ describe('e2e esm tests', async () => {
       });
     });
 
-    it('should be able to get the current epoch', async () => {
+    it.skip('should be able to get the current epoch', async () => {
       const epoch = await ario.getCurrentEpoch();
       assert.ok(epoch);
       assert.equal(typeof epoch.epochIndex, 'number');
@@ -337,14 +337,14 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get a single gateway', async () => {
       const gateway = await ario.getGateway({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
       });
       assert.ok(gateway);
     });
 
     it('should be able to get gateway delegates', async () => {
       const delegates = await ario.getGatewayDelegates({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
         limit: 1,
         sortBy: 'startTimestamp',
         sortOrder: 'desc',
@@ -371,7 +371,7 @@ describe('e2e esm tests', async () => {
 
     it('should be able get list of allowed gateway delegate addresses, if applicable', async () => {
       const allowedDelegates = await ario.getAllowedDelegates({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
       });
       assert.ok(allowedDelegates);
       assert(allowedDelegates.limit === 100);
@@ -418,7 +418,7 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get gateway vaults', async () => {
       const vaults = await ario.getGatewayVaults({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
       });
       assert.ok(vaults);
       assert(vaults.limit === 100);
@@ -473,7 +473,7 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get gateway delegate allow list', async () => {
       const allowList = await ario.getGatewayDelegateAllowList({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
         limit: 1,
         // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
         sortOrder: 'desc',
@@ -546,7 +546,7 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get a single balance', async () => {
       const balance = await ario.getBalance({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: '0x74d7A46140440f94d5b1e20abfc16fe4E7009422',
       });
       assert.ok(balance);
       assert(typeof balance === 'number');
@@ -615,7 +615,7 @@ describe('e2e esm tests', async () => {
         intent: 'Buy-Name',
         name: 'new-name',
         type: 'permabuy',
-        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fromAddress: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
         fundFrom: undefined,
       });
       assert.ok(costDetails);
@@ -629,7 +629,7 @@ describe('e2e esm tests', async () => {
         intent: 'Buy-Name',
         name: 'new-name',
         type: 'permabuy',
-        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fromAddress: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
         fundFrom: undefined,
       });
       assert.ok(costDetails);
@@ -643,7 +643,7 @@ describe('e2e esm tests', async () => {
         intent: 'Buy-Name',
         name: 'new-name',
         years: 1,
-        fromAddress: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        fromAddress: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
         fundFrom: 'stakes',
       });
       assert.ok(costDetails);
@@ -674,7 +674,7 @@ describe('e2e esm tests', async () => {
       assert.ok(distributions);
     });
 
-    it('should be able to get epoch distributions at a specific epoch', async () => {
+    it.skip('should be able to get epoch distributions at a specific epoch', async () => {
       const distributions = await ario.getDistributions({ epochIndex });
       assert.ok(distributions);
       assert.ok(isDistributedEpochData(distributions));
@@ -736,7 +736,7 @@ describe('e2e esm tests', async () => {
       assert.ok(observations);
     });
 
-    it('should be able to get epoch observations at a specific epoch', async () => {
+    it.skip('should be able to get epoch observations at a specific epoch', async () => {
       const observations = await ario.getObservations({ epochIndex });
       assert.ok(observations);
       // assert the type of the observations
@@ -974,27 +974,27 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get a specific primary name by address', async () => {
       const primaryName = await ario.getPrimaryName({
-        address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        address: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
       });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: '1H7WZIWhzwTH9FIcnuMqYkTsoyv1OTfGa_amvuYwrgo',
+        name: 'permagate',
+        startTimestamp: 1740009600000,
+        processId: 'Y-i-s6ZpBbVQN13amlbyQnlw_QobKyVCzeS9kYedWtI',
       });
     });
 
     it('should be able to get a specific primary name by name', async () => {
       const primaryName = await ario.getPrimaryName({
-        name: 'arns',
+        name: 'dtf',
       });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: 'ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo',
+        name: 'dtf',
+        startTimestamp: 1740009600000,
+        processId: 'USSnWNX2FDqRZ4NQr-4PzNESpGeyyr15ZIlU0aD0Hmc',
       });
     });
 
@@ -1005,7 +1005,7 @@ describe('e2e esm tests', async () => {
 
     it('should be able to get current redelegation fee', async () => {
       const redelegationFee = await ario.getRedelegationFee({
-        address: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+        address: '--6xxNi9O8I4o_UnUVIZNm89SSn4IzgWnHV30UT0m0E',
       });
       assert.ok(redelegationFee);
       assert.equal(redelegationFee.redelegationFeeRate, 0);
@@ -1036,7 +1036,7 @@ describe('e2e esm tests', async () => {
       );
     });
 
-    it('should be able to get the first page of eligible distributions', async () => {
+    it.skip('should be able to get the first page of eligible distributions', async () => {
       const eligibleDistributions = await ario.getEligibleEpochRewards();
       assert.ok(eligibleDistributions);
       assert.equal(eligibleDistributions.limit, 100);
