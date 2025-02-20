@@ -1,3 +1,10 @@
+# [3.8.0](https://github.com/ar-io/ar-io-sdk/compare/v3.7.1...v3.8.0) (2025-02-20)
+
+
+### Features
+
+* **mainnet:** update constant to the mainnet process ID ([4a11840](https://github.com/ar-io/ar-io-sdk/commit/4a11840dbf2b11b8c0c381403aa31f33c85662e3))
+
 ## [3.7.1](https://github.com/ar-io/ar-io-sdk/compare/v3.7.0...v3.7.1) (2025-02-19)
 
 
