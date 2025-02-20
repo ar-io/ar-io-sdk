@@ -91,7 +91,7 @@ describe('e2e esm tests', async () => {
       assert(ario instanceof ARIOReadable);
     });
 
-    it('should be able to instantiate ARIO with a proces id and arweave', async () => {
+    it('should be able to instantiate ARIO with a process  id and arweave', async () => {
       const ario = ARIO.init({
         processId,
         arweave,
