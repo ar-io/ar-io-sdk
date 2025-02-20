@@ -29,6 +29,7 @@ import {
   assertEnoughMARIOBalance,
   assertLockLengthInRange,
   confirmationPrompt,
+  customTagsFromOptions,
   formatARIOWithCommas,
   formatMARIOToARIOWithCommas,
   requiredMARIOFromOptions,
@@ -36,7 +37,6 @@ import {
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
   writeARIOFromOptions,
-  writeActionTagsFromOptions,
 } from '../utils.js';
 
 export async function transferCLICommand(options: TransferCLIOptions) {
@@ -64,7 +64,7 @@ export async function transferCLICommand(options: TransferCLIOptions) {
       target,
       qty: arioQuantity.toMARIO().valueOf(),
     },
-    writeActionTagsFromOptions(options),
+    customTagsFromOptions(options),
   );
 
   const output = {
@@ -107,7 +107,7 @@ export async function vaultedTransferCLICommand(
       lockLengthMs,
       revokable: o.revokable,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 
   const output = {
@@ -147,7 +147,7 @@ export async function revokeVaultCLICommand(
       vaultId,
       recipient,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 
   const output = {
@@ -187,7 +187,7 @@ export async function createVaultCLICommand(
       quantity: mARIOQuantity,
       lockLengthMs,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 
   const output = {
@@ -231,7 +231,7 @@ export async function extendVaultCLICommand(
       vaultId,
       extendLengthMs,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 
   const output = {
@@ -271,7 +271,7 @@ export async function increaseVaultCLICommand(
       vaultId,
       quantity: mARIOQuantity,
     },
-    writeActionTagsFromOptions(o),
+    customTagsFromOptions(o),
   );
 
   const output = {

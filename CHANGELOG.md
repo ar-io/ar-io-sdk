@@ -1,3 +1,79 @@
+# [3.8.0](https://github.com/ar-io/ar-io-sdk/compare/v3.7.1...v3.8.0) (2025-02-20)
+
+
+### Features
+
+* **mainnet:** update constant to the mainnet process ID ([4a11840](https://github.com/ar-io/ar-io-sdk/commit/4a11840dbf2b11b8c0c381403aa31f33c85662e3))
+
+## [3.7.1](https://github.com/ar-io/ar-io-sdk/compare/v3.7.0...v3.7.1) (2025-02-19)
+
+
+### Bug Fixes
+
+* **types:** overload getEpoch to provide correct types on specific param requests ([bafce74](https://github.com/ar-io/ar-io-sdk/commit/bafce74e438b05a4e61a7443fd7f391ec74f4633))
+
+## [3.7.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.7.0...v3.7.1-alpha.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **types:** overload getEpoch to provide correct types on specific param requests ([bafce74](https://github.com/ar-io/ar-io-sdk/commit/bafce74e438b05a4e61a7443fd7f391ec74f4633))
+
+# [3.7.0](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1...v3.7.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* **types:** fix epoch settings type ([a306baa](https://github.com/ar-io/ar-io-sdk/commit/a306baa5c7cfa83090126e3429798f5738887725))
+
+
+### Features
+
+* **distributions:** init paginated distributions cli command PE-7641 ([8810ec6](https://github.com/ar-io/ar-io-sdk/commit/8810ec6301827bc397eaa6b17c9ae74e21163a3d))
+* **distributions:** init paginated getEligibleDistributions PE-7641 ([9ba192f](https://github.com/ar-io/ar-io-sdk/commit/9ba192fbf25c714feaba51bbfce6d5de1a6e5cb6))
+* **distributions:** remove eligible rewards from get epoch return PE-7641 ([4437eaa](https://github.com/ar-io/ar-io-sdk/commit/4437eaa7eec310e31e3afc28110a9659527af026))
+* **read commands:** add commands epoch-settings, demand-factor-settings, read-action ([821b6f6](https://github.com/ar-io/ar-io-sdk/commit/821b6f6ed317ace32e62c0d2234bce7f8db513a0))
+
+# [3.7.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.2-alpha.1...v3.7.0-alpha.1) (2025-02-17)
+
+
+### Features
+
+* **distributions:** init paginated distributions cli command PE-7641 ([8810ec6](https://github.com/ar-io/ar-io-sdk/commit/8810ec6301827bc397eaa6b17c9ae74e21163a3d))
+* **distributions:** init paginated getEligibleDistributions PE-7641 ([9ba192f](https://github.com/ar-io/ar-io-sdk/commit/9ba192fbf25c714feaba51bbfce6d5de1a6e5cb6))
+* **distributions:** remove eligible rewards from get epoch return PE-7641 ([4437eaa](https://github.com/ar-io/ar-io-sdk/commit/4437eaa7eec310e31e3afc28110a9659527af026))
+* **read commands:** add commands epoch-settings, demand-factor-settings, read-action ([821b6f6](https://github.com/ar-io/ar-io-sdk/commit/821b6f6ed317ace32e62c0d2234bce7f8db513a0))
+
+## [3.6.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.1...v3.6.2-alpha.1) (2025-02-17)
+
+
+### Bug Fixes
+
+* **types:** fix epoch settings type ([a306baa](https://github.com/ar-io/ar-io-sdk/commit/a306baa5c7cfa83090126e3429798f5738887725))
+
+## [3.6.1](https://github.com/ar-io/ar-io-sdk/compare/v3.6.0...v3.6.1) (2025-02-17)
+
+
+### Bug Fixes
+
+* **types:** correct types for demand factor and gateway settings, update tests ([583ffeb](https://github.com/ar-io/ar-io-sdk/commit/583ffebfd32b13d00707fec7f8f5dd2564c9e08b))
+
+# [3.6.0](https://github.com/ar-io/ar-io-sdk/compare/v3.5.3...v3.6.0) (2025-02-17)
+
+
+### Bug Fixes
+
+* **ant ids:** update module and lua source ids to ant 15 ([b8d6c96](https://github.com/ar-io/ar-io-sdk/commit/b8d6c963b320dad47d61ef742d06231874fb0c83))
+* **deps:** bump aoconnect sdk ([3896ee8](https://github.com/ar-io/ar-io-sdk/commit/3896ee8c5d74a07bd020e66defd6ff1a600241e5))
+* **ids:** bump module and lua source ids to ant 16 ([cf6d0de](https://github.com/ar-io/ar-io-sdk/commit/cf6d0de930c1ec5d30f183cd88bfd05ee0bcaaba))
+* **page size:** set page size to 1000 on fetch all records util ([5fa802e](https://github.com/ar-io/ar-io-sdk/commit/5fa802ea346ad87883fd3033a9a0621e6f2573ea))
+* **request name:** add fund from tag on request primary name api ([be362ad](https://github.com/ar-io/ar-io-sdk/commit/be362adbd30c73a6cba1902caf8532e35ecac3d7))
+
+
+### Features
+
+* **ant:** add sorting to ANT records responses by default ([4e74825](https://github.com/ar-io/ar-io-sdk/commit/4e74825831cca54ebf5c06da1105c224cd2a7214))
+
 ## [3.5.3](https://github.com/ar-io/ar-io-sdk/compare/v3.5.2...v3.5.3) (2025-02-12)
 
 

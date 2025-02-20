@@ -52,7 +52,10 @@ import {
   AoBuyRecordParams,
   AoCreateVaultParams,
   AoDelegation,
+  AoEligibleDistribution,
   AoEpochData,
+  AoEpochDistributed,
+  AoEpochDistributionTotalsData,
   AoEpochSettings,
   AoExtendLeaseParams,
   AoExtendVaultParams,
@@ -82,6 +85,8 @@ import {
   getEpochDataFromGql,
   paginationParamsToTags,
   pruneTags,
+  removeEligibleRewardsFromEpochData,
+  sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
@@ -200,6 +205,10 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
+  async getEpoch(
+    epoch: EpochInput,
+  ): Promise<AoEpochData<AoEpochDistributed> | undefined>;
+  async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
@@ -209,7 +218,8 @@ export class ARIOReadable implements AoARIORead {
         epochIndex: epochIndex,
         processId: this.process.processId,
       });
-      return epochData;
+
+      return removeEligibleRewardsFromEpochData(epochData);
     }
     // go to the process epoch and fetch the epoch data
     const allTags = [
@@ -220,7 +230,7 @@ export class ARIOReadable implements AoARIORead {
       },
     ];
 
-    return this.process.read<AoEpochData | undefined>({
+    return this.process.read<AoEpochData<AoEpochDistributionTotalsData>>({
       tags: pruneTags(allTags),
     });
   }
@@ -370,8 +380,8 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getCurrentEpoch(): Promise<AoEpochData> {
-    return this.process.read<AoEpochData>({
+  async getCurrentEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>> {
+    return this.process.read<AoEpochData<AoEpochDistributionTotalsData>>({
       tags: [{ name: 'Action', value: 'Epoch' }],
     });
   }
@@ -478,6 +488,35 @@ export class ARIOReadable implements AoARIORead {
     ];
 
     return this.process.read<AoEpochDistributionData>({
+      tags: pruneTags(allTags),
+    });
+  }
+
+  async getEligibleEpochRewards(
+    epoch?: EpochInput,
+    params?: PaginationParams<AoEligibleDistribution>,
+  ): Promise<PaginationResult<AoEligibleDistribution>> {
+    const epochIndex = await this.computeEpochIndex(epoch);
+    const currentIndex = await this.computeCurrentEpochIndex();
+    if (epochIndex !== undefined && epochIndex < currentIndex) {
+      const epochData = await getEpochDataFromGql({
+        arweave: this.arweave,
+        epochIndex: epochIndex,
+        processId: this.process.processId,
+      });
+      return sortAndPaginateEpochDataIntoEligibleDistributions(
+        epochData,
+        params,
+      );
+    }
+
+    // on current epoch, go to process and fetch the distributions
+    const allTags = [
+      { name: 'Action', value: 'Epoch-Eligible-Rewards' },
+      ...paginationParamsToTags(params),
+    ];
+
+    return this.process.read<PaginationResult<AoEligibleDistribution>>({
       tags: pruneTags(allTags),
     });
   }

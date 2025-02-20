@@ -31,6 +31,7 @@ import { AoANTRecord } from '../types/ant.js';
 import {
   AoClient,
   AoEpochData,
+  AoEpochDistributed,
   AoSigner,
   ContractSigner,
   WalletAddress,
@@ -267,18 +268,20 @@ export function initANTStateForAddress({
 /**
  * Uses zod schema to parse the epoch data
  */
-export function parseAoEpochData(value: unknown): AoEpochData {
+export function parseAoEpochData(
+  value: unknown,
+): AoEpochData<AoEpochDistributed> {
   const epochDataSchema = z.object({
     startTimestamp: z.number(),
     startHeight: z.number(),
-    distributions: z.any(),
+    distributions: z.any(), // TODO: add full distributed object type
     endTimestamp: z.number(),
     prescribedObservers: z.any(),
     prescribedNames: z.array(z.string()),
     observations: z.any(),
     epochIndex: z.number(),
   });
-  return epochDataSchema.parse(value) as AoEpochData;
+  return epochDataSchema.parse(value) as AoEpochData<AoEpochDistributed>;
 }
 
 export function errorMessageFromOutput(output: {
