@@ -20,6 +20,7 @@ import {
   AoClient,
   AoSigner,
   DryRunResult,
+  MessageResult,
 } from '../../types/index.js';
 import { getRandomText } from '../../utils/base64.js';
 import { errorMessageFromOutput } from '../../utils/index.js';
@@ -157,7 +158,9 @@ export class AOProcess implements AOContract {
   }): Promise<{ id: string; result?: K }> {
     // main purpose of retries is to handle network errors/new process delays
     let attempts = 0;
-    let lastError: Error | undefined;
+    let messageId: string | undefined;
+    let result: MessageResult | undefined = undefined;
+
     while (attempts < retries) {
       try {
         this.logger.debug(`Evaluating send interaction on contract`, {
@@ -170,7 +173,7 @@ export class AOProcess implements AOContract {
         // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
         const anchor = getRandomText(32);
 
-        const messageId = await this.ao.message({
+        messageId = await this.ao.message({
           process: this.processId,
           // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
@@ -186,46 +189,16 @@ export class AOProcess implements AOContract {
         });
 
         // check the result of the send interaction
-        const output = await this.ao.result({
+        result = await this.ao.result({
           message: messageId,
           process: this.processId,
         });
 
         this.logger.debug('Message result', {
-          output,
+          result,
           messageId,
           processId: this.processId,
         });
-
-        const error = errorMessageFromOutput(output);
-        if (error !== undefined) {
-          throw new WriteInteractionError(error);
-        }
-
-        // check if there are any Messages in the output
-        if (output.Messages?.length === 0 || output.Messages === undefined) {
-          return { id: messageId };
-        }
-
-        if (output.Messages.length === 0) {
-          throw new Error(
-            `Process ${this.processId} does not support provided action.`,
-          );
-        }
-
-        if (this.isMessageDataEmpty(output.Messages[0].Data)) {
-          return { id: messageId };
-        }
-
-        const resultData: K = safeDecode<K>(output.Messages[0].Data);
-
-        this.logger.debug('Message result data', {
-          resultData,
-          messageId,
-          processId: this.processId,
-        });
-
-        return { id: messageId, result: resultData };
       } catch (error: any) {
         this.logger.error('Error sending message to process', {
           error: error?.message,
@@ -234,23 +207,58 @@ export class AOProcess implements AOContract {
           tags,
         });
 
-        // throw on write interaction errors. No point retrying write interactions, waste of gas.
-        if (error.message.includes('500')) {
-          this.logger.debug('Retrying send interaction', {
-            attempts,
-            retries,
-            error: error?.message,
-            processId: this.processId,
-          });
-          // exponential backoff
-          await new Promise((resolve) =>
-            setTimeout(resolve, 2 ** attempts * 2000),
-          );
-          attempts++;
-          lastError = error;
-        } else throw error;
+        attempts++;
+
+        this.logger.debug('Retrying send interaction', {
+          attempts,
+          retries,
+          error: error?.message,
+          processId: this.processId,
+        });
+
+        if (attempts === retries) {
+          throw error;
+        }
+
+        // exponential backoff
+        await new Promise((resolve) =>
+          setTimeout(resolve, 2 ** attempts * 2000),
+        );
       }
     }
-    throw lastError;
+
+    if (result === undefined || messageId === undefined) {
+      throw new Error('Unexpected error when evaluating write interaction');
+    }
+
+    const error = errorMessageFromOutput(result);
+    if (error !== undefined) {
+      throw new WriteInteractionError(error);
+    }
+
+    // check if there are any Messages in the output
+    if (result.Messages?.length === 0 || result.Messages === undefined) {
+      return { id: messageId };
+    }
+
+    if (result.Messages.length === 0) {
+      throw new Error(
+        `Process ${this.processId} does not support provided action.`,
+      );
+    }
+
+    if (this.isMessageDataEmpty(result.Messages[0].Data)) {
+      return { id: messageId };
+    }
+
+    const resultData: K = safeDecode<K>(result.Messages[0].Data);
+
+    this.logger.debug('Message result data', {
+      resultData,
+      messageId,
+      processId: this.processId,
+    });
+
+    return { id: messageId, result: resultData };
   }
 }
