@@ -199,6 +199,7 @@ export class AOProcess implements AOContract {
           messageId,
           processId: this.processId,
         });
+        break;
       } catch (error: any) {
         this.logger.error('Error sending message to process', {
           error: error?.message,
