@@ -647,7 +647,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.releaseName({ name: "ardrive", arioProcessId: AR_TESTNET_PROCESS_ID });
+   * ant.releaseName({ name: "ardrive", arioProcessId: ARIO_MAINNET_PROCESS_ID });
    * ```
    */
   async releaseName(
@@ -675,7 +675,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.reassignName({ name: "ardrive", arioProcessId: ARIO_TESTNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
+   * ant.reassignName({ name: "ardrive", arioProcessId: ARIO_MAINNET_PROCESS_ID, antProcessId: NEW_ANT_PROCESS_ID });
    * ```
    */
   async reassignName(
@@ -708,7 +708,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.approvePrimaryNameRequest({ name: "ardrive", address: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f", arioProcessId: ARIO_TESTNET_PROCESS_ID }); // approves the request for ardrive.ar.io to be registered by the address
+   * ant.approvePrimaryNameRequest({ name: "ardrive", address: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f", arioProcessId: ARIO_MAINNET_PROCESS_ID }); // approves the request for ardrive.ar.io to be registered by the address
    * ```
    */
   async approvePrimaryNameRequest(
@@ -741,7 +741,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.removePrimaryNames({ names: ["ardrive", "dapp_ardrive"], arioProcessId: ARIO_TESTNET_PROCESS_ID, notifyOwners: true }); // removes the primary names and associated wallet addresses assigned to "ardrive" and "dapp_ardrive"
+   * ant.removePrimaryNames({ names: ["ardrive", "dapp_ardrive"], arioProcessId: ARIO_MAINNET_PROCESS_ID, notifyOwners: true }); // removes the primary names and associated wallet addresses assigned to "ardrive" and "dapp_ardrive"
    * ```
    */
   async removePrimaryNames(

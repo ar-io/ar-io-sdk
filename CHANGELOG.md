@@ -1,3 +1,10 @@
+## [3.8.1](https://github.com/ar-io/ar-io-sdk/compare/v3.8.0...v3.8.1) (2025-02-21)
+
+
+### Bug Fixes
+
+* **mainnet:** default to the mainnet process ID ([a96713c](https://github.com/ar-io/ar-io-sdk/commit/a96713c4a0cf403a1f87e1de18df0605c0fc5796))
+
 # [3.8.0](https://github.com/ar-io/ar-io-sdk/compare/v3.7.1...v3.8.0) (2025-02-20)
 
 
