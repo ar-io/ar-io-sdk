@@ -96,7 +96,7 @@ export class AOProcess implements AOContract {
           processId: this.processId,
         });
 
-        if (attempts === retries) {
+        if (attempts >= retries) {
           throw error;
         }
 
@@ -216,7 +216,7 @@ export class AOProcess implements AOContract {
           processId: this.processId,
         });
 
-        if (attempts === retries) {
+        if (attempts >= retries) {
           throw error;
         }
 
