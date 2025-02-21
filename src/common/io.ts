@@ -15,7 +15,7 @@
  */
 import Arweave from 'arweave';
 
-import { ARIO_TESTNET_PROCESS_ID } from '../constants.js';
+import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
@@ -123,7 +123,7 @@ export class ARIOReadable implements AoARIORead {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
-        processId: ARIO_TESTNET_PROCESS_ID,
+        processId: ARIO_MAINNET_PROCESS_ID,
       });
     } else if (isProcessConfiguration(config)) {
       this.process = config.process;
@@ -816,7 +816,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     if (config === undefined) {
       super({
         process: new AOProcess({
-          processId: ARIO_TESTNET_PROCESS_ID,
+          processId: ARIO_MAINNET_PROCESS_ID,
         }),
       });
     } else {
