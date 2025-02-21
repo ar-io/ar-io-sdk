@@ -13,6 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
+  - [Mainnet and Testnet Process IDs](#mainnet-and-testnet-process-ids)
   - [Web](#web)
     - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
     - [Browser](#browser)
@@ -207,6 +208,27 @@ const gateways = await ario.getGateways();
 ## Usage
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
+
+### Mainnet and Testnet Process IDs
+
+The SDK provides the following process IDs for the mainnet and testnet environments:
+
+- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID
+- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID
+
+```typescript
+import {
+  ARIO,
+  ARIO_MAINNET_PROCESS_ID,
+  ARIO_TESTNET_PROCESS_ID,
+} from '@ar.io/sdk';
+```
+
+By default, the SDK will use the mainnet process ID. To use the testnet process ID, provide the `ARIO_TESTNET_PROCESS_ID` when initializing the client.
+
+```typescript
+const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID });
+```
 
 ### Web
 
@@ -2375,7 +2397,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.releaseName({
   name: 'permalink',
-  arioProcessId: ARIO_TESTNET_PROCESS_ID, // releases the name owned by the ANT and sends it to recently returned names on the ARIO contract
+  arioProcessId: ARIO_MAINNET_PROCESS_ID, // releases the name owned by the ANT and sends it to recently returned names on the ARIO contract
 });
 ```
 
@@ -2388,7 +2410,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.reassignName({
   name: 'ardrive',
-  arioProcessId: ARIO_TESTNET_PROCESS_ID,
+  arioProcessId: ARIO_MAINNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
 });
 ```
@@ -2403,7 +2425,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 const { id: txId } = await ant.approvePrimaryNameRequest({
   name: 'arns',
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
-  arioProcessId: ARIO_TESTNET_PROCESS_ID, // the ARIO process id to use for the request
+  arioProcessId: ARIO_MAINNET_PROCESS_ID, // the ARIO process id to use for the request
 });
 ```
 
@@ -2416,7 +2438,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const { id: txId } = await ant.removePrimaryNames({
   names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
-  arioProcessId: ARIO_TESTNET_PROCESS_ID,
+  arioProcessId: ARIO_MAINNET_PROCESS_ID,
   notifyOwners: true, // if true, the owners of the removed names will be send AO messages to notify them of the removal
 });
 ```
