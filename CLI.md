@@ -59,7 +59,9 @@ ar.io help <command>
 
 For each command the AR.IO CLI provides a set of options that allow you to customize the behavior of the CLI. Some of the common options include:
 
-- `--dev`: Run against the AR.IO devnet process
+- `--dev, --devnet`: Run against the AR.IO devnet process
+- `--testnet`: Run against the AR.IO testnet process
+- `--mainnet`: Run against the AR.IO mainnet process (default)
 - `--debug`: Enable debug log output
 - `--skip-confirmation`: Skip confirmation prompts
 - `--ario-process-id <arioProcessId>`: Run against a custom AR.IO process id

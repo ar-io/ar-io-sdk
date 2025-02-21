@@ -13,6 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
+  - [Mainnet and Testnet Process IDs](#mainnet-and-testnet-process-ids)
   - [Web](#web)
     - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
     - [Browser](#browser)
@@ -207,6 +208,27 @@ const gateways = await ario.getGateways();
 ## Usage
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
+
+### Mainnet and Testnet Process IDs
+
+The SDK provides the following process IDs for the mainnet and testnet environments:
+
+- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID
+- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID
+
+```typescript
+import {
+  ARIO,
+  ARIO_MAINNET_PROCESS_ID,
+  ARIO_TESTNET_PROCESS_ID,
+} from '@ar.io/sdk';
+```
+
+By default, the SDK will use the mainnet process ID. To use the testnet process ID, provide the `ARIO_TESTNET_PROCESS_ID` when initializing the client.
+
+```typescript
+const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID });
+```
 
 ### Web
 
