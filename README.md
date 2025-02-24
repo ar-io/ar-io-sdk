@@ -13,7 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [Mainnet and Testnet Process IDs](#mainnet-and-testnet-process-ids)
+  - [Networks (Mainnet, Testnet, etc.)](#networks-mainnet-testnet-etc)
   - [Web](#web)
     - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
     - [Browser](#browser)
@@ -151,9 +151,9 @@ yarn add @ar.io/sdk --ignore-engines
 ## Quick Start
 
 ```typescript
-import { ARIO, ARIO_MAINNET_PROCESS_ID } from '@ar.io/sdk';
+import { ARIO } from '@ar.io/sdk';
 
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init(); // defaults to mainnet
 const gateways = await ario.getGateways();
 ```
 
@@ -209,25 +209,27 @@ const gateways = await ario.getGateways();
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
-### Mainnet and Testnet Process IDs
+### Networks (Mainnet, Testnet, etc.)
 
 The SDK provides the following process IDs for the mainnet and testnet environments:
 
-- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID
-- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID
+- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID (production)
+- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID (testing and development)
+- `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (for development purposes)
+
+As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
 
 ```typescript
 import {
   ARIO,
+  ARIO_DEVNET_PROCESS_ID,
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
 } from '@ar.io/sdk';
 ```
 
-By default, the SDK will use the mainnet process ID. To use the testnet process ID, provide the `ARIO_TESTNET_PROCESS_ID` when initializing the client.
-
 ```typescript
-const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID });
+const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID }); // use the testnet contract
 ```
 
 ### Web
@@ -235,10 +237,10 @@ const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID });
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-import { ARIO, ARIO_MAINNET_PROCESS_ID } from '@ar.io/sdk/web';
+import { ARIO } from '@ar.io/sdk/web';
 
 // set up client
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 // fetch gateways
 const gateways = await ario.getGateways();
 ```
@@ -250,10 +252,10 @@ const gateways = await ario.getGateways();
 
 ```html
 <script type="module">
-  import { ARIO, ARIO_MAINNET_PROCESS_ID } from 'https://unpkg.com/@ar.io/sdk';
+  import { ARIO } from 'https://unpkg.com/@ar.io/sdk';
 
   // set up client
-  const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+  const ario = ARIO.init();
   // fetch gateways
   const gateways = await ario.getGateways();
 </script>
@@ -264,10 +266,10 @@ const gateways = await ario.getGateways();
 #### ESM (NodeNext)
 
 ```javascript
-import { ARIO, ARIO_MAINNET_PROCESS_ID } from '@ar.io/sdk/node';
+import { ARIO } from '@ar.io/sdk/node';
 
 // set up client
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 // fetch gateways
 const gateways = await ario.getGateways();
 ```
@@ -275,10 +277,10 @@ const gateways = await ario.getGateways();
 #### CJS
 
 ```javascript
-import { ARIO, ARIO_MAINNET_PROCESS_ID } from '@ar.io/sdk';
+import { ARIO } from '@ar.io/sdk';
 
 // set up client
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 // fetch gateways
 const gateways = await ario.getGateways();
 ```
@@ -318,13 +320,13 @@ Factory function to that creates a read-only or writeable client. By providing a
 
 ```typescript
 // read-only client
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 
 // read-write client for browser environments
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID, signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
+const ario = ARIO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
 
 // read-write client for node environments
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID, signer: new ArweaveSigner(JWK) });
+const ario = ARIO.init({ signer: new ArweaveSigner(JWK) });
 
 ```
 
@@ -333,7 +335,7 @@ const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID, signer: new Arweave
 Retrieves the information of the ARIO process.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const info = await ario.getInfo();
 ```
 
@@ -367,7 +369,7 @@ Retrieves the total supply of tokens, returned in mARIO. The total supply includ
 - `protocolBalance` - tokens that are held in the protocol's treasury. This is included in the circulating supply.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const supply = await ario.getTokenSupply();
 ```
 
@@ -393,7 +395,7 @@ const supply = await ario.getTokenSupply();
 Retrieves the balance of the specified wallet address.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 // the balance will be returned in mARIO as a value
 const balance = await ario
   .getBalance({
@@ -416,7 +418,7 @@ const balance = await ario
 Retrieves the balances of the ARIO process in `mARIO`, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const balances = await ario.getBalances({
   cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
   limit: 100,
@@ -479,7 +481,7 @@ const { id: txId } = await ario.transfer(
 Retrieves the locked-balance user vault of the ARIO process by the specified wallet address and vault ID.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const vault = await ario.getVault({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   vaultId: 'vaultIdOne',
@@ -504,7 +506,7 @@ const vault = await ario.getVault({
 Retrieves all locked-balance user vaults of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last wallet address from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const vaults = await ario.getVaults({
   cursor: '0',
   limit: 100,
@@ -637,7 +639,7 @@ const { id: txId } = await ario.increaseVault({
 Retrieves a gateway's info by its staking wallet address.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const gateway = await ario.getGateway({
   address: '-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck',
 });
@@ -686,7 +688,7 @@ const gateway = await ario.getGateway({
 Retrieves registered gateways of the ARIO process, using pagination and sorting by the specified criteria. The `cursor` used for pagination is the last gateway address from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const gateways = await ario.getGateways({
   limit: 100,
   sortOrder: 'desc',
@@ -749,7 +751,7 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
 Retrieves all delegates for a specific gateway, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegate address from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const delegates = await ario.getGatewayDelegates({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
   limit: 3,
@@ -923,7 +925,7 @@ const { id: txId } = await ario.decreaseDelegateStake({
 Retrieves all active and vaulted stakes across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last delegationId (concatenated gateway and startTimestamp of the delgation) from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const vaults = await ario.getDelegations({
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
   cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
@@ -974,7 +976,7 @@ Instantly withdraws an existing vault on a gateway. If no `gatewayAddress` is pr
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID, signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 // removes a delegated vault from a gateway
 const { id: txId } = await ario.instantWithdrawal(
   {
@@ -1003,7 +1005,7 @@ Cancels an existing vault on a gateway. The vaulted stake will be returned to th
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID, signer: new ArweaveSigner(jwk) });
+const ario = ARIO.init({ signer: new ArweaveSigner(jwk) });
 // cancels a delegated vault from a gateway
 const { id: txId } = await ario.cancelWithdrawal(
   {
@@ -1029,7 +1031,7 @@ const { id: txId } = await ario.cancelWithdrawal(
 Retrieves all allowed delegates for a specific address. The `cursor` used for pagination is the last address from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const allowedDelegates = await ario.getAllowedDelegates({
   address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
 });
@@ -1060,7 +1062,7 @@ const allowedDelegates = await ario.getAllowedDelegates({
 Retrieves all vaults across all gateways for a specific address, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const vaults = await ario.getGatewayVaults({
   address: '"PZ5vIhHf8VY969TxBPQN-rYY9CNFP9ggNsMBqlWUzWM',
 });
@@ -1095,7 +1097,7 @@ const vaults = await ario.getGatewayVaults({
 Retrieves all vaults across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last vaultId from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const vaults = await ario.getAllGatewayVaults({
   limit: 1,
   sortBy: 'endTimestamp',
@@ -1196,7 +1198,7 @@ const { id: txId } = await ario.redelegateStake({
 Retrieves the fee rate as percentage required to redelegate the stake of a specific address. Fee rate ranges from 0% to 60% based on the number of redelegations since the last fee reset.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 
 const fee = await ario.getRedelegationFee({
   address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
@@ -1220,7 +1222,7 @@ const fee = await ario.getRedelegationFee({
 Retrieves all delegates across all gateways, paginated and sorted by the specified criteria. The `cursor` used for pagination is a `cursorId` derived from delegate address and the gatewayAddress from the previous request. e.g `address_gatewayAddress`.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const delegates = await ario.getAllDelegates({
   limit: 2,
   sortBy: 'startTimestamp',
@@ -1286,7 +1288,7 @@ const record = await ario.buyRecord(
 Retrieves the record info of the specified ArNS name.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const record = await ario.getArNSRecord({ name: 'ardrive' });
 ```
 
@@ -1310,7 +1312,7 @@ const record = await ario.getArNSRecord({ name: 'ardrive' });
 Retrieves all registered ArNS records of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 // get the newest 100 names
 const records = await ario.getArNSRecords({
   limit: 100,
@@ -1507,7 +1509,7 @@ const demandFactor = await ario.getDemandFactor();
 Retrieves all active returned names of the ARIO process, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last returned name from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const returnedNames = await ario.getArNSReturnedNames({
   limit: 100,
   sortBy: 'endTimestamp',
@@ -1550,7 +1552,7 @@ const returnedNames = await ario.getArNSReturnedNames({
 Retrieves the returned name data for the specified returned name.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const returnedName = await ario.getArNSReturnedName({ name: 'permalink' });
 ```
 
@@ -1583,7 +1585,7 @@ const returnedName = await ario.getArNSReturnedName({ name: 'permalink' });
 Returns the current epoch data.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const epoch = await ario.getCurrentEpoch();
 ```
 
@@ -1639,7 +1641,7 @@ const epoch = await ario.getCurrentEpoch();
 Returns the epoch data for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const epoch = await ario.getEpoch({ epochIndex: 0 });
 ```
 
@@ -1701,7 +1703,7 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
 Returns the eligible epoch rewards for the specified block height. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const rewards = await ario.getEligibleEpochRewards({ epochIndex: 0 });
 ```
 
@@ -1734,7 +1736,7 @@ const rewards = await ario.getEligibleEpochRewards({ epochIndex: 0 });
 Returns the epoch-indexed observation list. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const observations = await ario.getObservations();
 ```
 
@@ -1767,7 +1769,7 @@ const observations = await ario.getObservations();
 Returns the current rewards distribution information. If no epoch index is provided, the current epoch is used.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const distributions = await ario.getDistributions({ epochIndex: 0 });
 ```
 
@@ -1822,7 +1824,7 @@ const { id: txId } = await ario.saveObservations(
 Retrieves the prescribed observers of the ARIO process. To fetch prescribed observers for a previous epoch set the `epochIndex` to the desired epoch index.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
 ```
 
@@ -1855,7 +1857,7 @@ const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
 Retrieves all primary names paginated and sorted by the specified criteria. The `cursor` used for pagination is the last name from the previous request.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const names = await ario.getPrimaryNames({
   cursor: 'ao', // this is the last name from the previous request
   limit: 1,
@@ -1892,7 +1894,7 @@ const names = await ario.getPrimaryNames({
 Retrieves the primary name for a given name or address.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const name = await ario.getPrimaryName({
   name: 'arns',
 });
@@ -1933,7 +1935,7 @@ const { id: txId } = await ario.requestPrimaryName({
 Retrieves the primary name request for a a wallet address.
 
 ```typescript
-const ario = ARIO.init({ processId: ARIO_MAINNET_PROCESS_ID });
+const ario = ARIO.init();
 const request = await ario.getPrimaryNameRequest({
   initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
 });
@@ -1958,6 +1960,9 @@ const request = await ario.getPrimaryNameRequest({
 The ARIO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [ARIO Network Spec]. By default, it will use the current [ARIO Testnet Process]. Refer to [AO Connect] for more information on how to configure an ARIO process to use specific AO infrastructure.
 
 ```typescript
+import { ARIO } from '@ar.io/sdk';
+import { connect } from '@permaweb/aoconnect';
+
 // provide a custom ao infrastructure and process id
 const ario = ARIO.init({
   process: new AoProcess({
