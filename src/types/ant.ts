@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isAddress } from 'viem';
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
@@ -39,18 +38,9 @@ export const ArweaveTxIdSchema = z
     message: 'Must be an Arweave Transaction ID',
   });
 
-export const EthereumAddressSchema = z
-  .string({
-    description: 'Ethereum Address',
-  })
-  .refine((val) => isAddress(val, { strict: true }), {
-    message: 'Must be an Ethereum Address',
-  });
-
-export const AOAddressSchema = z.union([
-  ArweaveTxIdSchema,
-  EthereumAddressSchema,
-]);
+export const AOAddressSchema = z.string({
+  description: 'AO Address',
+});
 
 export const IntegerStringSchema = z
   .string({
