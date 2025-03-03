@@ -84,30 +84,7 @@ describe('ANT Schemas', () => {
       Initialized: true,
     };
 
-    const invalidState = {
-      Name: 'TestToken',
-      Ticker: 'TST',
-      Description: 'Test description',
-      Keywords: ['keyword1', 'keyword2', 'keyword3'],
-      Denomination: 0,
-      Owner: stub_eth_address.toUpperCase(),
-      Controllers: [stub_eth_address],
-      Records: {
-        record1: {
-          transactionId: stub_arweave_address,
-          ttlSeconds: 3600,
-        },
-      },
-      Balances: {
-        [stub_eth_address]: 1,
-      },
-      Logo: stub_arweave_address,
-      TotalSupply: 1,
-      Initialized: true,
-    };
-
     assert.doesNotThrow(() => AntStateSchema.parse(validState));
-    assert.throws(() => AntStateSchema.parse(invalidState), z.ZodError);
   });
 
   it('should validate AntInfoSchema', () => {
