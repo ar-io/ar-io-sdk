@@ -134,6 +134,7 @@
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
     "prompts": "^2.4.2",
+    "viem": "^2.23.5",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
   },

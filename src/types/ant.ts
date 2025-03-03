@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { isAddress } from 'viem';
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
@@ -37,6 +38,19 @@ export const ArweaveTxIdSchema = z
   .refine((val) => ARWEAVE_TX_REGEX.test(val), {
     message: 'Must be an Arweave Transaction ID',
   });
+
+export const EthereumAddressSchema = z
+  .string({
+    description: 'Ethereum Address',
+  })
+  .refine((val) => isAddress(val, { strict: true }), {
+    message: 'Must be an Ethereum Address',
+  });
+
+export const AOAddressSchema = z.union([
+  ArweaveTxIdSchema,
+  EthereumAddressSchema,
+]);
 
 export const IntegerStringSchema = z
   .string({
@@ -64,10 +78,10 @@ export type SortedANTRecords = Record<string, SortedANTRecord>;
 
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
 export const AntControllersSchema = z.array(
-  ArweaveTxIdSchema.describe('Controller address'),
+  AOAddressSchema.describe('Controller address'),
 );
 export const AntBalancesSchema = z.record(
-  ArweaveTxIdSchema.describe('Holder address'),
+  AOAddressSchema.describe('Holder address'),
   z.number(),
 );
 
@@ -82,7 +96,7 @@ export const AntStateSchema = z.object({
       'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
     )
     .min(0, { message: 'Denomination must be a non-negative number' }),
-  Owner: ArweaveTxIdSchema.describe('The Owners address.'),
+  Owner: AOAddressSchema.describe('The Owners address.'),
   Controllers: AntControllersSchema.describe(
     'Controllers of the ANT who have administrative privileges.',
   ),
