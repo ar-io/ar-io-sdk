@@ -38,6 +38,10 @@ export const ArweaveTxIdSchema = z
     message: 'Must be an Arweave Transaction ID',
   });
 
+export const AOAddressSchema = z.string({
+  description: 'AO Address',
+});
+
 export const IntegerStringSchema = z
   .string({
     description: 'Integer String',
@@ -64,10 +68,10 @@ export type SortedANTRecords = Record<string, SortedANTRecord>;
 
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
 export const AntControllersSchema = z.array(
-  ArweaveTxIdSchema.describe('Controller address'),
+  AOAddressSchema.describe('Controller address'),
 );
 export const AntBalancesSchema = z.record(
-  ArweaveTxIdSchema.describe('Holder address'),
+  AOAddressSchema.describe('Holder address'),
   z.number(),
 );
 
@@ -82,7 +86,7 @@ export const AntStateSchema = z.object({
       'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
     )
     .min(0, { message: 'Denomination must be a non-negative number' }),
-  Owner: ArweaveTxIdSchema.describe('The Owners address.'),
+  Owner: AOAddressSchema.describe('The Owners address.'),
   Controllers: AntControllersSchema.describe(
     'Controllers of the ANT who have administrative privileges.',
   ),
