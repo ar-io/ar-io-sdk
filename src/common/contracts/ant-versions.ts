@@ -107,12 +107,15 @@ export class ANTVersionsWritable
     super(config);
     this.signer = createAoSigner(signer);
   }
-  async addVersion(params: {
-    version: string;
-    moduleId: string;
-    luaSourceId?: string;
-    notes?: string;
-  }) {
+  async addVersion(
+    params: {
+      version: string;
+      moduleId: string;
+      luaSourceId?: string;
+      notes?: string;
+    },
+    { tags },
+  ) {
     return this.process.send({
       tags: pruneTags([
         { name: 'Action', value: 'Add-Version' },
@@ -120,6 +123,7 @@ export class ANTVersionsWritable
         { name: 'Module-Id', value: params.moduleId },
         { name: 'Lua-Source-Id', value: params.luaSourceId },
         { name: 'Notes', value: params.notes },
+        ...(tags ?? []),
       ]),
       signer: this.signer,
     });
