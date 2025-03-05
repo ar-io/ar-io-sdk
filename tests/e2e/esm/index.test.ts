@@ -1083,6 +1083,11 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(affiliatedAnts.Controlled));
     });
 
+    it('should retrieve versions from registry', async () => {
+      const antVersions = await registry.getVersions();
+      assert(antVersions, 'failed to get ant versions');
+    });
+
     it('should be able to create AoANTRegistryWriteable with valid signers', async () => {
       for (const signer of signers) {
         const registry = ANTRegistry.init({
