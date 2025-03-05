@@ -1,3 +1,10 @@
+## [3.8.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.8.2-alpha.2...v3.8.2-alpha.3) (2025-03-05)
+
+
+### Bug Fixes
+
+* add missing maxDelegateRewardSharePct field from AoGatewayRegistrySettings ([87942ad](https://github.com/ar-io/ar-io-sdk/commit/87942ad5fa2f83a443caacc7a1595f807897482f))
+
 ## [3.8.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.8.2-alpha.1...v3.8.2-alpha.2) (2025-03-04)
 
 
