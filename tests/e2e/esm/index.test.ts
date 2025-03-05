@@ -1029,6 +1029,10 @@ describe('e2e esm tests', async () => {
       assert.ok(
         typeof registrySettings.operators.failedGatewaySlashRate === 'number',
       );
+      assert.ok(
+        typeof registrySettings.operators.maxDelegateRewardSharePct ===
+          'number',
+      );
       assert.ok(typeof registrySettings.operators.leaveLengthMs === 'number');
       assert.ok(typeof registrySettings.operators.minStake === 'number');
       assert.ok(
