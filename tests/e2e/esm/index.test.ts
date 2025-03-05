@@ -5,6 +5,7 @@
 import {
   ANT,
   ANTRegistry,
+  ANTVersions,
   ANT_REGISTRY_ID,
   AOProcess,
   ARIO,
@@ -1083,11 +1084,6 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(affiliatedAnts.Controlled));
     });
 
-    it('should retrieve versions from registry', async () => {
-      const antVersions = await registry.getVersions();
-      assert(antVersions, 'failed to get ant versions');
-    });
-
     it('should be able to create AoANTRegistryWriteable with valid signers', async () => {
       for (const signer of signers) {
         const registry = ANTRegistry.init({
@@ -1099,6 +1095,25 @@ describe('e2e esm tests', async () => {
         });
         assert(registry instanceof AoANTRegistryWriteable);
       }
+    });
+  });
+
+  describe('ANTVersions', async () => {
+    const antVersions = ANTVersions.init({
+      process: new AOProcess({
+        processId: ANT_REGISTRY_ID,
+        ao: aoClient,
+      }),
+    });
+
+    it('should get ANT versions', async () => {
+      const versions = antVersions.getANTVersions();
+      assert(versions, 'Failed to get ANT versions');
+    });
+
+    it('should get latest ANT version', async () => {
+      const version = antVersions.getLatestANTVersion();
+      assert(version, 'Failed to get ANT versions');
     });
   });
 

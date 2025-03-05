@@ -19,17 +19,8 @@ export interface AoANTRegistryRead {
   accessControlList(params: {
     address: string;
   }): Promise<{ Owned: string[]; Controlled: string[] }>;
-  getVersions(): Promise<
-    Record<string, { moduleId: string; luaSourceId?: string; notes?: string }>
-  >;
 }
 
 export interface AoANTRegistryWrite extends AoANTRegistryRead {
   register(params: { processId: string }): Promise<AoMessageResult>;
-  addVersion(params: {
-    version: string;
-    moduleId: string;
-    luaSourceId?: string;
-    notes?: string;
-  }): Promise<AoMessageResult>;
 }

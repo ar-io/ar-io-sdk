@@ -31,6 +31,7 @@ import {
   AoANTSetBaseNameRecordParams,
   AoANTSetUndernameRecordParams,
   AoANTState,
+  AoANTVersionsRead,
   AoANTWrite,
   SortedANTRecords,
 } from '../types/ant.js';
@@ -47,6 +48,7 @@ import {
 import { sortANTRecords } from '../utils/ant.js';
 import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
+import { ANTVersions } from './contracts/ant-versions.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 type ANTConfigOptionalStrict = Required<ProcessConfiguration> & {
@@ -57,6 +59,7 @@ type ANTConfigWithSigner = WithSigner<ANTConfigOptionalStrict>;
 type ANTConfig = ANTConfigNoSigner | ANTConfigWithSigner;
 
 export class ANT {
+  static versions: AoANTVersionsRead = ANTVersions.init();
   // no signer give read
   static init(config: ANTConfigNoSigner): AoANTRead;
 

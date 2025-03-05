@@ -27,7 +27,6 @@ import {
   isProcessIdConfiguration,
 } from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
-import { pruneTags } from '../utils/arweave.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 type ANTRegistryNoSigner = ProcessConfiguration;
@@ -86,14 +85,6 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
       ],
     });
   }
-
-  async getVersions(): Promise<
-    Record<string, { moduleId: string; luaSourceId?: string; notes: string }>
-  > {
-    return this.process.read({
-      tags: [{ name: 'Action', value: 'Get-Versions' }],
-    });
-  }
 }
 
 export class AoANTRegistryWriteable
@@ -117,24 +108,6 @@ export class AoANTRegistryWriteable
         { name: 'Action', value: 'Register' },
         { name: 'Process-Id', value: processId },
       ],
-      signer: this.signer,
-    });
-  }
-
-  async addVersion(params: {
-    version: string;
-    moduleId: string;
-    luaSourceId?: string;
-    notes?: string;
-  }): Promise<AoMessageResult> {
-    return this.process.send({
-      tags: pruneTags([
-        { name: 'Action', value: 'Add-Version' },
-        { name: 'Version', value: params.version },
-        { name: 'Module-Id', value: params.moduleId },
-        { name: 'Lua-Source-Id', value: params.luaSourceId },
-        { name: 'Notes', value: params.notes },
-      ]),
       signer: this.signer,
     });
   }
