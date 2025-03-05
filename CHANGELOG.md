@@ -1,18 +1,12 @@
-## [3.8.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.8.2-alpha.2...v3.8.2-alpha.3) (2025-03-05)
+## [3.8.2](https://github.com/ar-io/ar-io-sdk/compare/v3.8.1...v3.8.2) (2025-02-25)
 
 
 ### Bug Fixes
 
-* add missing maxDelegateRewardSharePct field from AoGatewayRegistrySettings ([87942ad](https://github.com/ar-io/ar-io-sdk/commit/87942ad5fa2f83a443caacc7a1595f807897482f))
-
-## [3.8.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.8.2-alpha.1...v3.8.2-alpha.2) (2025-03-04)
-
-
-### Bug Fixes
-
-* **schema:** remove viem and use string for AOAddressSchema ([090c799](https://github.com/ar-io/ar-io-sdk/commit/090c799a9b366960a6f29d6d9c89d78c086ce444))
-* **schemas:** update ant schema to accept eth support ([7bc7df4](https://github.com/ar-io/ar-io-sdk/commit/7bc7df4bdaf358c5423311b075118c5a3a865f73))
-* **tests:** update unit test to check loosely on eth address ([b8e202b](https://github.com/ar-io/ar-io-sdk/commit/b8e202b68a2a410512fcec653f22f38482b303eb))
+* missing break for happy path through send ([e55ecc1](https://github.com/ar-io/ar-io-sdk/commit/e55ecc19104ed284727c503bc171bb18118b0785))
+* modify retry logic for send to only retry on exceptions from ao.message or ao.result ([229df6b](https://github.com/ar-io/ar-io-sdk/commit/229df6b3618a5268fcf984f320f9782c3b7ac8bb))
+* modify retry logic to only occur on dryrun exceptions ([c578893](https://github.com/ar-io/ar-io-sdk/commit/c5788932f809b752da760fb55a06a640813c9629))
+* protect against if retries is 0 ([6aa1b58](https://github.com/ar-io/ar-io-sdk/commit/6aa1b58e3f127200925e4178ff0736fb77b44a06))
 
 ## [3.8.1](https://github.com/ar-io/ar-io-sdk/compare/v3.8.0...v3.8.1) (2025-02-21)
 
