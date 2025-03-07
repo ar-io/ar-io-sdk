@@ -254,3 +254,24 @@ export type AoANTSetBaseNameRecordParams = {
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
   undername: string;
 };
+
+export interface AoANTVersionsRead {
+  getANTVersions(): Promise<
+    Record<string, { moduleId: string; luaSourceId?: string; notes?: string }>
+  >;
+  getLatestANTVersion(): Promise<{
+    version: string;
+    moduleId: string;
+    luaSourceId?: string;
+    notes?: string;
+  }>;
+}
+
+export interface AoANTVersionsWrite extends AoANTVersionsRead {
+  addVersion: AoWriteAction<{
+    version: string;
+    moduleId: string;
+    luaSourceId?: string;
+    notes?: string;
+  }>;
+}

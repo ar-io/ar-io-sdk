@@ -5,6 +5,7 @@
 import {
   ANT,
   ANTRegistry,
+  ANTVersions,
   ANT_REGISTRY_ID,
   AOProcess,
   ARIO,
@@ -1094,6 +1095,25 @@ describe('e2e esm tests', async () => {
         });
         assert(registry instanceof AoANTRegistryWriteable);
       }
+    });
+  });
+
+  describe('ANTVersions', async () => {
+    const antVersions = ANTVersions.init({
+      process: new AOProcess({
+        processId: ANT_REGISTRY_ID,
+        ao: aoClient,
+      }),
+    });
+
+    it('should get ANT versions', async () => {
+      const versions = antVersions.getANTVersions();
+      assert(versions, 'Failed to get ANT versions');
+    });
+
+    it('should get latest ANT version', async () => {
+      const version = antVersions.getLatestANTVersion();
+      assert(version, 'Failed to get ANT versions');
     });
   });
 
