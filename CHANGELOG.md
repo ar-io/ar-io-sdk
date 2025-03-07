@@ -1,3 +1,17 @@
+# [3.9.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.8.3-alpha.1...v3.9.0-alpha.1) (2025-03-07)
+
+
+### Bug Fixes
+
+* **options:** add write options to addVersion ([95ccef0](https://github.com/ar-io/ar-io-sdk/commit/95ccef02c52c2c025ee7ec3770514af92b112088))
+* **versions:** export versions class ([6368c44](https://github.com/ar-io/ar-io-sdk/commit/6368c4418acb32a4532e4e452ab614dbe5e0eb3a))
+
+
+### Features
+
+* **versions:** add ANT version class ([c9ec5c5](https://github.com/ar-io/ar-io-sdk/commit/c9ec5c5f84634252a166a087d4babfcc771f70fb))
+* **versions:** add versioning handlers to ant registry ([c681909](https://github.com/ar-io/ar-io-sdk/commit/c681909cde4b5678a87e3bd71dbeb9329cd16188))
+
 ## [3.8.2](https://github.com/ar-io/ar-io-sdk/compare/v3.8.1...v3.8.2) (2025-02-25)
 
 
