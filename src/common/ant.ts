@@ -48,7 +48,7 @@ import {
 import { sortANTRecords } from '../utils/ant.js';
 import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
-import { ANTVersions } from './contracts/ant-versions.js';
+import { ANTVersions } from './ant-versions.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 type ANTConfigOptionalStrict = Required<ProcessConfiguration> & {

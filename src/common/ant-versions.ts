@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANT_REGISTRY_ID } from '../../constants.js';
-import { AoANTVersionsRead, AoANTVersionsWrite } from '../../types/ant.js';
-import { WithSigner } from '../../types/common.js';
+import { ANT_REGISTRY_ID } from '../constants.js';
+import { AoANTVersionsRead, AoANTVersionsWrite } from '../types/ant.js';
+import { WithSigner } from '../types/common.js';
 import {
   ProcessConfiguration,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../../types/io.js';
-import { AoSigner } from '../../types/token.js';
-import { createAoSigner } from '../../utils/ao.js';
-import { pruneTags } from '../../utils/arweave.js';
-import { InvalidContractConfigurationError } from '../error.js';
-import { AOProcess } from './ao-process.js';
+} from '../types/io.js';
+import { AoSigner } from '../types/token.js';
+import { createAoSigner } from '../utils/ao.js';
+import { pruneTags } from '../utils/arweave.js';
+import { AOProcess } from './contracts/ao-process.js';
+import { InvalidContractConfigurationError } from './error.js';
 
 type ANTVersionsNoSigner = ProcessConfiguration;
 type ANTVersionsWithSigner = WithSigner<ProcessConfiguration>;
