@@ -179,7 +179,7 @@ export class AOProcess implements AOContract {
         // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
         const anchor = getRandomText(32);
 
-        messageId = await this.ao.message({
+        messageId ??= await this.ao.message({
           process: this.processId,
           // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
