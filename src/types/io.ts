@@ -106,6 +106,7 @@ export type AoVaultData = {
   balance: number;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
+  controller?: WalletAddress;
 };
 
 export type AoArNSReservedNameData = {

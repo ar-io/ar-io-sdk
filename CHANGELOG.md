@@ -1,16 +1,19 @@
-# [3.9.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.8.3-alpha.1...v3.9.0-alpha.1) (2025-03-07)
+## [3.8.4](https://github.com/ar-io/ar-io-sdk/compare/v3.8.3...v3.8.4) (2025-03-12)
 
 
 ### Bug Fixes
 
-* **options:** add write options to addVersion ([95ccef0](https://github.com/ar-io/ar-io-sdk/commit/95ccef02c52c2c025ee7ec3770514af92b112088))
-* **versions:** export versions class ([6368c44](https://github.com/ar-io/ar-io-sdk/commit/6368c4418acb32a4532e4e452ab614dbe5e0eb3a))
+* **types:** add vault controller as optional to vault ([f26bdb3](https://github.com/ar-io/ar-io-sdk/commit/f26bdb3bb18a2015378e2ca065f42658b4eee066))
+
+## [3.8.3](https://github.com/ar-io/ar-io-sdk/compare/v3.8.2...v3.8.3) (2025-03-05)
 
 
-### Features
+### Bug Fixes
 
-* **versions:** add ANT version class ([c9ec5c5](https://github.com/ar-io/ar-io-sdk/commit/c9ec5c5f84634252a166a087d4babfcc771f70fb))
-* **versions:** add versioning handlers to ant registry ([c681909](https://github.com/ar-io/ar-io-sdk/commit/c681909cde4b5678a87e3bd71dbeb9329cd16188))
+* add missing maxDelegateRewardSharePct field from AoGatewayRegistrySettings ([87942ad](https://github.com/ar-io/ar-io-sdk/commit/87942ad5fa2f83a443caacc7a1595f807897482f))
+* **schema:** remove viem and use string for AOAddressSchema ([090c799](https://github.com/ar-io/ar-io-sdk/commit/090c799a9b366960a6f29d6d9c89d78c086ce444))
+* **schemas:** update ant schema to accept eth support ([7bc7df4](https://github.com/ar-io/ar-io-sdk/commit/7bc7df4bdaf358c5423311b075118c5a3a865f73))
+* **tests:** update unit test to check loosely on eth address ([b8e202b](https://github.com/ar-io/ar-io-sdk/commit/b8e202b68a2a410512fcec653f22f38482b303eb))
 
 ## [3.8.2](https://github.com/ar-io/ar-io-sdk/compare/v3.8.1...v3.8.2) (2025-02-25)
 
