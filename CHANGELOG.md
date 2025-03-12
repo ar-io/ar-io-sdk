@@ -1,3 +1,10 @@
+# [3.9.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.1...v3.9.0-alpha.2) (2025-03-12)
+
+
+### Bug Fixes
+
+* **types:** add vault controller as optional to vault ([f26bdb3](https://github.com/ar-io/ar-io-sdk/commit/f26bdb3bb18a2015378e2ca065f42658b4eee066))
+
 ## [3.8.4](https://github.com/ar-io/ar-io-sdk/compare/v3.8.3...v3.8.4) (2025-03-12)
 
 
