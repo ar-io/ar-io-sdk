@@ -166,6 +166,8 @@ export class AOProcess implements AOContract {
     let attempts = 0;
     let messageId: string | undefined;
     let result: MessageResult | undefined = undefined;
+    // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
+    const anchor = getRandomText(32);
 
     while (attempts < retries) {
       try {
@@ -175,14 +177,9 @@ export class AOProcess implements AOContract {
           processId: this.processId,
         });
 
-        // TODO: do a read as a dry run to check if the process supports the action
-        // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
-        const anchor = getRandomText(32);
-
         // MUST NOT retry messaging if a message was already sent. This could result in a double entry-like condition when sending tokens for example.
         messageId ??= await this.ao.message({
           process: this.processId,
-          // TODO: any other default tags we want to add?
           tags: [...tags, { name: 'AR-IO-SDK', value: version }],
           data,
           signer,
@@ -195,7 +192,6 @@ export class AOProcess implements AOContract {
           anchor,
         });
 
-        // check the result of the send interaction
         result = await this.ao.result({
           message: messageId,
           process: this.processId,
