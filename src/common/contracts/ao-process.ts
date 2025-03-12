@@ -221,7 +221,13 @@ export class AOProcess implements AOContract {
         });
 
         if (attempts >= retries) {
-          throw error;
+          this.logger.error(`Maximum read result attempts exceeded`, {
+            error: error?.message,
+            stack: error?.stack,
+            tags,
+            processId: this.processId,
+          });
+          throw new Error('Maximum read result attempts exceeded');
         }
 
         // exponential backoff
