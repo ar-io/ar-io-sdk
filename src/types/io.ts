@@ -106,6 +106,7 @@ export type AoVaultData = {
   balance: number;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
+  controller?: WalletAddress;
 };
 
 export type AoArNSReservedNameData = {
@@ -533,7 +534,6 @@ export type AoGatewayRegistrySettings = {
     minStake: number;
     withdrawLengthMs: number;
     leaveLengthMs: number;
-    maxDelegateRewardSharePct: number;
     failedEpochCountMax: number;
     failedGatewaySlashRate: number;
   };
