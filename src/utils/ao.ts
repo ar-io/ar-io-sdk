@@ -46,6 +46,7 @@ export type SpawnANTState = {
   ticker: string;
   records: Record<string, AoANTRecord>;
   balances: Record<WalletAddress, number>;
+  logo: string;
 };
 
 export type SpawnANTParams = {
@@ -234,6 +235,8 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
 export const defaultTargetManifestId =
   '-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI';
 
+export const defaultANTLogoId = 'Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A';
+
 export function initANTStateForAddress({
   owner,
   targetId,
@@ -243,6 +246,7 @@ export function initANTStateForAddress({
   description = '',
   ticker = 'aos',
   name = 'ANT',
+  logo = defaultANTLogoId,
 }: Partial<SpawnANTState> & {
   targetId?: string;
   ttlSeconds?: number;
@@ -262,6 +266,7 @@ export function initANTStateForAddress({
         ttlSeconds,
       },
     },
+    logo,
   };
 }
 
