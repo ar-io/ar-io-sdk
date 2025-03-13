@@ -1,3 +1,10 @@
+# [3.9.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.2...v3.9.0-alpha.3) (2025-03-13)
+
+
+### Bug Fixes
+
+* **PE-7802:** add logo to SpawnAntState type and options ([c7adfca](https://github.com/ar-io/ar-io-sdk/commit/c7adfca80e1e0d11b2aad8102f940955c43893f2))
+
 # [3.9.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.1...v3.9.0-alpha.2) (2025-03-12)
 
 
