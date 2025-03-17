@@ -271,6 +271,10 @@ export const optionMap = {
     alias: '--recipient <recipient>',
     description: 'The recipient to interact with',
   },
+  logo: {
+    alias: '--logo <logo>',
+    description: 'The ANT logo',
+  },
 };
 
 export const walletOptions = [
@@ -393,6 +397,7 @@ export const antStateOptions = [
   optionMap.description,
   optionMap.controllers,
   optionMap.ttlSeconds,
+  optionMap.logo,
 ];
 
 export const setAntBaseNameOptions = [

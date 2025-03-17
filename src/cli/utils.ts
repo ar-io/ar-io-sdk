@@ -622,6 +622,7 @@ export function getANTStateFromOptions(
     ticker: options.ticker,
     name: options.name,
     keywords: options.keywords,
+    logo: options.logo,
     ttlSeconds:
       options.ttlSeconds !== undefined
         ? +options.ttlSeconds

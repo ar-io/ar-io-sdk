@@ -27,7 +27,8 @@ const ario = ARIO.init({
   process: new AOProcess({
     processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
     ao: connect({
-      CU_URL: 'http://localhost:6363',
+      // CU_URL: 'http://localhost:6363',
+      CU_URL: 'https://cu.ardrive.io',
     }),
   }),
 });
