@@ -1,3 +1,10 @@
+# [3.9.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.4...v3.9.0-alpha.5) (2025-03-18)
+
+
+### Bug Fixes
+
+* **ao:** update retry logic on send, include more verbose messaging ([70e6678](https://github.com/ar-io/ar-io-sdk/commit/70e6678bde3e814411d2d107aece762e8a927fee))
+
 # [3.9.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.3...v3.9.0-alpha.4) (2025-03-18)
 
 
