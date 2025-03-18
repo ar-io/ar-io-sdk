@@ -103,7 +103,9 @@ export class AOProcess implements AOContract {
             tags,
             processId: this.processId,
           });
-          throw new Error('Maximum read attempts exceeded');
+          throw new Error(
+            `Maximum read attempts exceeded for process ${this.processId}`,
+          );
         }
 
         // exponential backoff
@@ -227,7 +229,9 @@ export class AOProcess implements AOContract {
             tags,
             processId: this.processId,
           });
-          throw new Error('Maximum read result attempts exceeded');
+          throw new Error(
+            `Maximum read result attempts exceeded for process ${this.processId}.`,
+          );
         }
 
         // exponential backoff
