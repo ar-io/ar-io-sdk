@@ -1,3 +1,14 @@
+# [3.9.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.3...v3.9.0-alpha.4) (2025-03-18)
+
+
+### Bug Fixes
+
+* **comments:** cleanup ([7444be3](https://github.com/ar-io/ar-io-sdk/commit/7444be3f089e9b2c1552101e3ebbf1d3d01da2ba))
+* **logging:** log errors more verbosely on read fails ([c9fab18](https://github.com/ar-io/ar-io-sdk/commit/c9fab1832d325bfe58084fbce4b92eec48a725bc))
+* **messaging:** only retry messaging if no id was recieved ([9cbffef](https://github.com/ar-io/ar-io-sdk/commit/9cbffef365a8307ca8e97baff1b4ac7d4bb811de))
+* **send:** add comment on not retrying on send ([692938a](https://github.com/ar-io/ar-io-sdk/commit/692938a415aed2103ac76b41ad643550cb053f5e))
+* **send:** log on max attempts in send as well ([2399d23](https://github.com/ar-io/ar-io-sdk/commit/2399d2347052df90146e682fca1ba4ca0f30f3f6))
+
 # [3.9.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.2...v3.9.0-alpha.3) (2025-03-13)
 
 
