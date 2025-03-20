@@ -16,7 +16,7 @@
 import Arweave from 'arweave';
 
 import { ARIO_MAINNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
-import { BlockHeight } from '../types/common.js';
+import { AoClient, BlockHeight } from '../types/common.js';
 import {
   AoEligibleDistribution,
   AoEpochData,
@@ -117,6 +117,94 @@ export const getEpochDataFromGql = async ({
   return undefined;
 };
 
+export const getEpochDataFromGqlWithCUFallback = async ({
+  arweave,
+  ao,
+  epochIndex,
+  processId = ARIO_MAINNET_PROCESS_ID,
+}: {
+  arweave: Arweave;
+  ao: AoClient;
+  epochIndex: number;
+  processId?: string;
+}): Promise<AoEpochData<AoEpochDistributed> | undefined> => {
+  const gqlResult = await getEpochDataFromGql({
+    arweave,
+    epochIndex,
+    processId,
+  });
+  if (gqlResult) {
+    return gqlResult;
+  }
+  const gqlFallbackResult = await getEpochDataFromGqlFallback({
+    ao,
+    epochIndex,
+    processId,
+  });
+  if (gqlFallbackResult) {
+    return gqlFallbackResult;
+  }
+  return undefined;
+};
+
+export const getEpochDataFromGqlFallback = async ({
+  ao,
+  epochIndex,
+  processId = ARIO_MAINNET_PROCESS_ID,
+  gqlUrl = 'https://arweave-search.goldsky.com/graphql',
+}: {
+  ao: AoClient;
+  epochIndex: number;
+  processId?: string;
+  gqlUrl?: string;
+}): Promise<AoEpochData<AoEpochDistributed> | undefined> => {
+  const query = epochDistributionNoticeGqlQueryFallback({
+    epochIndex,
+    processId,
+  });
+  const response = await fetch(gqlUrl, {
+    method: 'POST',
+    body: query,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  const responseJson = (await response.json()) as any;
+  if (responseJson.data.transactions.edges.length === 0) {
+    return undefined;
+  }
+  for (const edge of responseJson.data.transactions.edges) {
+    const id = edge.node.id;
+    const messageResult = await ao
+      .result({
+        message: id,
+        process: processId,
+      })
+      .catch(() => undefined);
+    if (!messageResult) {
+      continue;
+    }
+    for (const message of messageResult.Messages) {
+      const data = JSON.parse(message.Data);
+      const tags: { name: string; value: string }[] = message.Tags;
+      // check if the message results include epoch-distribution-notice for the requested epoch index
+      if (
+        tags.some(
+          (tag) =>
+            tag.name === 'Action' && tag.value === 'Epoch-Distribution-Notice',
+        ) &&
+        tags.some(
+          (tag) =>
+            tag.name === 'Epoch-Index' && tag.value === epochIndex.toString(),
+        )
+      ) {
+        return parseAoEpochData(data);
+      }
+    }
+  }
+  return undefined;
+};
+
 /**
  * Get the epoch with distribution data for the current epoch
  * @param arweave - The Arweave instance
@@ -154,6 +242,37 @@ export const epochDistributionNoticeGqlQuery = ({
     `,
   });
   return gqlQuery;
+};
+// fallback query if the distribution notice does not get cranked
+export const epochDistributionNoticeGqlQueryFallback = ({
+  processId = ARIO_MAINNET_PROCESS_ID,
+  owners = ['OAb-n-ZugyN598kZNpfOy0ACelGVmwCQ0kYbgNGDUK8'], // ar.io team wallet ticks once a day
+}: {
+  epochIndex: number;
+  processId?: string;
+  owners?: string[];
+}): string => {
+  return JSON.stringify({
+    query: `
+      query {
+        transactions(
+          tags: [
+            { name: "Action", values: ["Tick"] }
+          ],
+          first: 100,
+          owners: [${owners.map((a) => `"${a}"`).join(',')}],
+          recipients: ["${processId}"],
+          sort: HEIGHT_DESC
+        ) {
+          edges {
+            node {
+              id  
+            }
+          }
+        }
+      }
+    `,
+  });
 };
 
 export function sortAndPaginateEpochDataIntoEligibleDistributions(
