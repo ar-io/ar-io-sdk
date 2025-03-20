@@ -1,3 +1,10 @@
+# [3.9.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.5...v3.9.0-alpha.6) (2025-03-20)
+
+
+### Bug Fixes
+
+* **gql:** add fallback to go to CU for epoch distribution data ([12be216](https://github.com/ar-io/ar-io-sdk/commit/12be216a0529d699a7aed6bef6e9b00f92cd32fc))
+
 # [3.9.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.4...v3.9.0-alpha.5) (2025-03-18)
 
 
