@@ -193,6 +193,18 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(epoch.observations.reports));
     });
 
+    it('should be able to get a previous epoch', async () => {
+      const currentEpoch = await ario.getCurrentEpoch();
+      const epoch = await ario.getEpoch({
+        epochIndex: currentEpoch.epochIndex - 1,
+      });
+      assert.ok(epoch);
+      assert.equal(typeof epoch.epochIndex, 'number');
+      assert.equal(typeof epoch.startHeight, 'number');
+      assert.equal(typeof epoch.endTimestamp, 'number');
+      assert.equal(epoch.epochIndex, currentEpoch.epochIndex - 1);
+    });
+
     it('should be able to get epoch-settings', async () => {
       const epochSettings = await ario.getEpochSettings();
       assert.ok(epochSettings);
