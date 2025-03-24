@@ -578,7 +578,7 @@ export interface AoARIORead {
   }>;
   getTokenSupply(): Promise<AoTokenSupplyData>;
   getEpochSettings(): Promise<AoEpochSettings>;
-  getGateway({ address }: AoAddressParams): Promise<AoGateway | undefined>;
+  getGateway({ address }: AoAddressParams): Promise<AoGateway>;
   // TODO: these could be moved to a separate Gateways class that implements gateway specific interactions
   getGatewayDelegates({
     address,
@@ -606,11 +606,7 @@ export interface AoARIORead {
   getBalances(
     params?: PaginationParams<AoBalanceWithAddress>,
   ): Promise<PaginationResult<AoBalanceWithAddress>>;
-  getArNSRecord({
-    name,
-  }: {
-    name: string;
-  }): Promise<AoArNSNameData | undefined>;
+  getArNSRecord({ name }: { name: string }): Promise<AoArNSNameData>;
   getArNSRecords(
     params?: AoGetArNSRecordsParams,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
@@ -621,31 +617,21 @@ export interface AoARIORead {
     name,
   }: {
     name: string;
-  }): Promise<AoArNSReservedNameData | undefined>;
+  }): Promise<AoArNSReservedNameData>;
   getArNSReturnedNames(
     params?: PaginationParams<AoReturnedName>,
   ): Promise<PaginationResult<AoReturnedName>>;
-  getArNSReturnedName({
-    name,
-  }: {
-    name: string;
-  }): Promise<AoReturnedName | undefined>;
-  getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
+  getArNSReturnedName({ name }: { name: string }): Promise<AoReturnedName>;
+  getEpoch(epoch?: EpochInput): Promise<AoEpochData>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(
-    epoch?: EpochInput,
-  ): Promise<AoWeightedObserver[] | undefined>;
-  getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined>;
-  getObservations(
-    epoch?: EpochInput,
-  ): Promise<AoEpochObservationData | undefined>;
-  getDistributions(
-    epoch?: EpochInput,
-  ): Promise<AoEpochDistributionData | undefined>;
+  getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
+  getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
+  getObservations(epoch?: EpochInput): Promise<AoEpochObservationData>;
+  getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
   getEligibleEpochRewards(
     epoch?: EpochInput,
     params?: PaginationParams<AoEligibleDistribution>,
-  ): Promise<PaginationResult<AoEligibleDistribution> | undefined>;
+  ): Promise<PaginationResult<AoEligibleDistribution>>;
   getTokenCost({
     intent,
     type,
@@ -667,10 +653,7 @@ export interface AoARIORead {
   getVaults(
     params?: PaginationParams<AoWalletVault>,
   ): Promise<PaginationResult<AoWalletVault>>;
-  getVault({
-    address,
-    vaultId,
-  }: AoGetVaultParams): Promise<AoVaultData | undefined>;
+  getVault({ address, vaultId }: AoGetVaultParams): Promise<AoVaultData>;
   getPrimaryNameRequest(params: {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest>;
@@ -679,7 +662,7 @@ export interface AoARIORead {
   ): Promise<PaginationResult<AoPrimaryNameRequest>>;
   getPrimaryName(
     params: { address: WalletAddress } | { name: string },
-  ): Promise<AoPrimaryName | undefined>;
+  ): Promise<AoPrimaryName>;
   getPrimaryNames(
     params?: PaginationParams<AoPrimaryName>,
   ): Promise<PaginationResult<AoPrimaryName>>;

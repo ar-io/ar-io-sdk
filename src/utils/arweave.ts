@@ -351,12 +351,8 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
 }
 
 export function removeEligibleRewardsFromEpochData(
-  epochData?: AoEpochData,
-): AoEpochData | undefined {
-  if (epochData === undefined) {
-    return undefined;
-  }
-
+  epochData: AoEpochData,
+): AoEpochData {
   if (!isDistributedEpoch(epochData)) {
     return epochData;
   }

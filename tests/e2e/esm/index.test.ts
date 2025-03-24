@@ -198,7 +198,6 @@ describe('e2e esm tests', async () => {
       const epoch = await ario.getEpoch({
         epochIndex: currentEpoch.epochIndex - 1,
       });
-      console.log(epoch);
       assert.ok(epoch);
       assert.equal(typeof epoch.epochIndex, 'number');
       assert.equal(typeof epoch.startHeight, 'number');
