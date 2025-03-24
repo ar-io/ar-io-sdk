@@ -3,8 +3,9 @@ import {
   ANT_REGISTRY_ID,
   AOProcess,
   ARIO,
+  ARIO_TESTNET_PROCESS_ID,
   ContractSigner,
-  arioDevnetProcessId,
+  Logger,
   createAoSigner,
 } from '@ar.io/sdk/web';
 import { connect } from '@permaweb/aoconnect';
@@ -13,6 +14,9 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import './App.css';
+
+// minimize logs
+Logger.default.setLogLevel('none');
 
 // just validating that the default ARIO works in web context
 const defaultArIO = ARIO.init();
@@ -25,10 +29,9 @@ const antRegistry = ANTRegistry.init();
 // validating that the ARIO works in web context with a process
 const ario = ARIO.init({
   process: new AOProcess({
-    processId: process.env.ARIO_PROCESS_ID || arioDevnetProcessId,
+    processId: process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID,
     ao: connect({
-      // CU_URL: 'http://localhost:6363',
-      CU_URL: 'https://cu.ardrive.io',
+      CU_URL: 'http://localhost:6363',
     }),
   }),
 });
