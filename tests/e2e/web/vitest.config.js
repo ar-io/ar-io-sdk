@@ -7,6 +7,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     testTimeout: 300_000,
+    hookTimeout: 300_000,
   },
   resolve: {
     /**
