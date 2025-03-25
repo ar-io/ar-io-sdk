@@ -16,7 +16,6 @@ import {
   AoANTRegistryWriteable,
   AoANTWriteable,
   ArweaveSigner,
-  arioDevnetProcessId,
   createAoSigner,
   isDistributedEpochData,
 } from '@ar.io/sdk';
@@ -43,16 +42,13 @@ const aoClient = connect({
 });
 const arweave = Arweave.init({});
 
-const processId = process.env.ARIO_PROCESS_ID || arioDevnetProcessId;
+const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
 const ario = ARIO.init({
   process: new AOProcess({
     processId,
     ao: aoClient,
   }),
 });
-
-// epochs with known distribution data notices
-const epochIndex = processId === ARIO_TESTNET_PROCESS_ID ? 189 : 200;
 
 describe('e2e esm tests', async () => {
   let compose;
@@ -92,7 +88,7 @@ describe('e2e esm tests', async () => {
       assert(ario instanceof ARIOReadable);
     });
 
-    it('should be able to instantiate ARIO with a proces id and arweave', async () => {
+    it('should be able to instantiate ARIO with a process id and arweave', async () => {
       const ario = ARIO.init({
         processId,
         arweave,
@@ -177,6 +173,17 @@ describe('e2e esm tests', async () => {
       });
     });
 
+    it('should be able to get a single reserved name', async () => {
+      const { items: reservedNames } = await ario.getArNSReservedNames();
+      assert.ok(reservedNames);
+      if (reservedNames.length > 0) {
+        const reservedName = await ario.getArNSReservedName({
+          name: reservedNames[0].name,
+        });
+        assert.ok(reservedName);
+      }
+    });
+
     it('should be able to get the current epoch', async () => {
       const epoch = await ario.getCurrentEpoch();
       assert.ok(epoch);
@@ -191,6 +198,18 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(epoch.prescribedNames));
       assert(Array.isArray(epoch.observations.failureSummaries));
       assert(Array.isArray(epoch.observations.reports));
+    });
+
+    it('should be able to get a previous epoch', async () => {
+      const currentEpoch = await ario.getCurrentEpoch();
+      const epoch = await ario.getEpoch({
+        epochIndex: currentEpoch.epochIndex - 1,
+      });
+      assert.ok(epoch);
+      assert.equal(typeof epoch.epochIndex, 'number');
+      assert.equal(typeof epoch.startHeight, 'number');
+      assert.equal(typeof epoch.endTimestamp, 'number');
+      assert.equal(epoch.epochIndex, currentEpoch.epochIndex - 1);
     });
 
     it('should be able to get epoch-settings', async () => {
@@ -227,21 +246,6 @@ describe('e2e esm tests', async () => {
         'number',
       );
       assert.equal(typeof demandFactorSettings.criteria, 'string');
-    });
-
-    it('should be able to get reserved names', async () => {
-      const reservedNames = await ario.getArNSReservedNames();
-      assert.ok(reservedNames);
-    });
-    it('should be able to get a single reserved name', async () => {
-      const { items: reservedNames } = await ario.getArNSReservedNames();
-      assert.ok(reservedNames);
-      if (reservedNames.length > 0) {
-        const reservedName = await ario.getArNSReservedName({
-          name: reservedNames[0].name,
-        });
-        assert.ok(reservedName);
-      }
     });
 
     it('should be able to get first page of gateways', async () => {
@@ -337,15 +341,28 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a single gateway', async () => {
+      const { items: gateways } = await ario.getGateways({
+        limit: 1,
+      });
+      if (gateways.length === 0) {
+        return;
+      }
+      const gatewayObject = gateways[0];
       const gateway = await ario.getGateway({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: gatewayObject.gatewayAddress,
       });
       assert.ok(gateway);
     });
 
     it('should be able to get gateway delegates', async () => {
+      const { items: gateways } = await ario.getGateways({
+        limit: 1,
+      });
+      if (gateways.length === 0) {
+        return;
+      }
       const delegates = await ario.getGatewayDelegates({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: gateways[0].gatewayAddress,
         limit: 1,
         sortBy: 'startTimestamp',
         sortOrder: 'desc',
@@ -371,8 +388,14 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able get list of allowed gateway delegate addresses, if applicable', async () => {
+      const { items: gateways } = await ario.getGateways({
+        limit: 1,
+      });
+      if (gateways.length === 0) {
+        return;
+      }
       const allowedDelegates = await ario.getAllowedDelegates({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: gateways[0].gatewayAddress,
       });
       assert.ok(allowedDelegates);
       assert(allowedDelegates.limit === 100);
@@ -418,8 +441,14 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get gateway vaults', async () => {
+      const { items: gateways } = await ario.getGateways({
+        limit: 1,
+      });
+      if (gateways.length === 0) {
+        return;
+      }
       const vaults = await ario.getGatewayVaults({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: gateways[0].gatewayAddress,
       });
       assert.ok(vaults);
       assert(vaults.limit === 100);
@@ -473,8 +502,14 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get gateway delegate allow list', async () => {
+      const { items: gateways } = await ario.getGateways({
+        limit: 1,
+      });
+      if (gateways.length === 0) {
+        return;
+      }
       const allowList = await ario.getGatewayDelegateAllowList({
-        address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+        address: gateways[0].gatewayAddress,
         limit: 1,
         // note: sortBy is omitted because it's not supported for by this contract handler, the result is an array of addresses
         sortOrder: 'desc',
@@ -676,7 +711,10 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get epoch distributions at a specific epoch', async () => {
-      const distributions = await ario.getDistributions({ epochIndex });
+      const currentEpoch = await ario.getCurrentEpoch();
+      const distributions = await ario.getDistributions({
+        epochIndex: currentEpoch.epochIndex - 1,
+      });
       assert.ok(distributions);
       assert.ok(isDistributedEpochData(distributions));
       assert(
@@ -738,7 +776,10 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get epoch observations at a specific epoch', async () => {
-      const observations = await ario.getObservations({ epochIndex });
+      const currentEpoch = await ario.getCurrentEpoch();
+      const observations = await ario.getObservations({
+        epochIndex: currentEpoch.epochIndex - 1,
+      });
       assert.ok(observations);
       // assert the type of the observations
       assert(typeof observations === 'object');
@@ -974,8 +1015,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a specific primary name by address', async () => {
+      const { items: primaryNames } = await ario.getPrimaryNames();
+      if (primaryNames.length === 0) {
+        return;
+      }
       const primaryName = await ario.getPrimaryName({
-        address: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        address: primaryNames[0].owner,
       });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
@@ -987,8 +1032,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should be able to get a specific primary name by name', async () => {
+      const { items: primaryNames } = await ario.getPrimaryNames();
+      if (primaryNames.length === 0) {
+        return;
+      }
       const primaryName = await ario.getPrimaryName({
-        name: 'arns',
+        name: primaryNames[0].name,
       });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
