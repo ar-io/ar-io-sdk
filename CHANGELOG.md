@@ -1,3 +1,10 @@
+# [3.9.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.6...v3.9.0-alpha.7) (2025-03-25)
+
+
+### Bug Fixes
+
+* **exports:** move types/browser exports above import/require ([280d8bd](https://github.com/ar-io/ar-io-sdk/commit/280d8bde7390628fdb8ec112be6847d136a02134))
+
 # [3.9.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.5...v3.9.0-alpha.6) (2025-03-20)
 
 
