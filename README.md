@@ -252,7 +252,8 @@ const gateways = await ario.getGateways();
 
 ```html
 <script type="module">
-  import { ARIO } from 'https://unpkg.com/@ar.io/sdk';
+  // replace <@version> with a pinned version (e.g. @3.8.4) or @latest, if you're risky :)
+  import { ARIO } from 'https://unpkg.com/@ar.io/sdk<@version>'; 
 
   // set up client
   const ario = ARIO.init();
