@@ -210,14 +210,11 @@ export async function extendVaultCLICommand(
 
   if (!o.skipConfirmation) {
     const vault = await ario.getVault({ vaultId, address: signerAddress });
-    if (!vault) {
-      throw new Error(
-        `Vault for signer '${signerAddress}' with vault id '${vaultId}' not found`,
-      );
-    }
 
     const confirm = await confirmationPrompt(
-      `Are you sure you want to extend vault with id ${vaultId} for ${extendLengthMs}ms?`,
+      `Are you sure you want to extend vault with id ${vaultId} for ${extendLengthMs}ms with balance ${formatARIOWithCommas(
+        new mARIOToken(vault.balance).toARIO(),
+      )} ARIO?`,
     );
     if (!confirm) {
       return { message: 'Vault extension aborted by user' };
@@ -250,14 +247,11 @@ export async function increaseVaultCLICommand(
 
   if (!o.skipConfirmation) {
     const vault = await ario.getVault({ vaultId, address: signerAddress });
-    if (!vault) {
-      throw new Error(
-        `Vault for signer '${signerAddress}' with vault id '${vaultId}' not found`,
-      );
-    }
 
     const confirm = await confirmationPrompt(
-      `Are you sure you want to increase vault with id ${vaultId} by ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO?`,
+      `Are you sure you want to increase vault with id ${vaultId} by ${formatMARIOToARIOWithCommas(mARIOQuantity)} ARIO with balance ${formatARIOWithCommas(
+        new mARIOToken(vault.balance).toARIO(),
+      )} ARIO?`,
     );
     if (!confirm) {
       return { message: 'Vault increase aborted by user' };
