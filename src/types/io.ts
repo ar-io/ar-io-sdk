@@ -632,20 +632,14 @@ export interface AoARIORead {
   }): Promise<AoReturnedName | undefined>;
   getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined>;
   getCurrentEpoch(): Promise<AoEpochData>;
-  getPrescribedObservers(
-    epoch?: EpochInput,
-  ): Promise<AoWeightedObserver[] | undefined>;
-  getPrescribedNames(epoch?: EpochInput): Promise<string[] | undefined>;
-  getObservations(
-    epoch?: EpochInput,
-  ): Promise<AoEpochObservationData | undefined>;
-  getDistributions(
-    epoch?: EpochInput,
-  ): Promise<AoEpochDistributionData | undefined>;
+  getPrescribedObservers(epoch?: EpochInput): Promise<AoWeightedObserver[]>;
+  getPrescribedNames(epoch?: EpochInput): Promise<string[]>;
+  getObservations(epoch?: EpochInput): Promise<AoEpochObservationData>;
+  getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData>;
   getEligibleEpochRewards(
     epoch?: EpochInput,
     params?: PaginationParams<AoEligibleDistribution>,
-  ): Promise<PaginationResult<AoEligibleDistribution> | undefined>;
+  ): Promise<PaginationResult<AoEligibleDistribution>>;
   getTokenCost({
     intent,
     type,
