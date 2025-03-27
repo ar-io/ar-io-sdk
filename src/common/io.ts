@@ -199,11 +199,9 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(
-    epoch: EpochInput,
-  ): Promise<AoEpochData<AoEpochDistributed> | undefined>;
+  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
-  async getEpoch(epoch?: EpochInput): Promise<AoEpochData | undefined> {
+  async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
@@ -213,6 +211,10 @@ export class ARIOReadable implements AoARIORead {
         processId: this.process.processId,
         ao: this.process.ao,
       });
+
+      if (!epochData) {
+        throw new Error('Epoch data not found for epoch index ' + epochIndex);
+      }
 
       return removeEligibleRewardsFromEpochData(epochData);
     }
@@ -230,12 +232,8 @@ export class ARIOReadable implements AoARIORead {
     });
   }
 
-  async getArNSRecord({
-    name,
-  }: {
-    name: string;
-  }): Promise<AoArNSNameData | undefined> {
-    return this.process.read<AoArNSNameData | undefined>({
+  async getArNSRecord({ name }: { name: string }): Promise<AoArNSNameData> {
+    return this.process.read<AoArNSNameData>({
       tags: [
         { name: 'Action', value: 'Record' },
         { name: 'Name', value: name },
@@ -269,8 +267,8 @@ export class ARIOReadable implements AoARIORead {
     name,
   }: {
     name: string;
-  }): Promise<AoArNSReservedNameData | undefined> {
-    return this.process.read<AoArNSReservedNameData | undefined>({
+  }): Promise<AoArNSReservedNameData> {
+    return this.process.read<AoArNSReservedNameData>({
       tags: [
         { name: 'Action', value: 'Reserved-Name' },
         { name: 'Name', value: name },
@@ -304,8 +302,8 @@ export class ARIOReadable implements AoARIORead {
   }: {
     address: WalletAddress;
     vaultId: string;
-  }): Promise<AoVaultData | undefined> {
-    return this.process.read<AoVaultData | undefined>({
+  }): Promise<AoVaultData> {
+    return this.process.read<AoVaultData>({
       tags: [
         { name: 'Action', value: 'Vault' },
         { name: 'Address', value: address },
@@ -329,8 +327,8 @@ export class ARIOReadable implements AoARIORead {
     address,
   }: {
     address: WalletAddress;
-  }): Promise<AoGateway | undefined> {
-    return this.process.read<AoGateway | undefined>({
+  }): Promise<AoGateway> {
+    return this.process.read<AoGateway>({
       tags: [
         { name: 'Action', value: 'Gateway' },
         { name: 'Address', value: address },
@@ -359,7 +357,7 @@ export class ARIOReadable implements AoARIORead {
       tags: [
         { name: 'Action', value: 'Paginated-Allowed-Delegates' },
         { name: 'Address', value: address },
-        ...paginationParamsToTags<WalletAddress | undefined>(pageParams),
+        ...paginationParamsToTags<WalletAddress>(pageParams),
       ],
     });
   }
@@ -520,6 +518,11 @@ export class ARIOReadable implements AoARIORead {
         processId: this.process.processId,
         ao: this.process.ao,
       });
+
+      if (!epochData) {
+        throw new Error('Epoch data not found for epoch index ' + epochIndex);
+      }
+
       return sortAndPaginateEpochDataIntoEligibleDistributions(
         epochData,
         params,
@@ -680,7 +683,7 @@ export class ARIOReadable implements AoARIORead {
     name,
   }: {
     name: string;
-  }): Promise<AoReturnedName | undefined> {
+  }): Promise<AoReturnedName> {
     const allTags = [
       { name: 'Action', value: 'Returned-Name' },
       { name: 'Name', value: name },
