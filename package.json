@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.8.4",
+  "version": "3.9.0-alpha.7",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -38,21 +38,21 @@
   ],
   "exports": {
     ".": {
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js",
       "types": "./lib/types/node/index.d.ts",
-      "browser": "./bundles/web.bundle.min.js"
+      "browser": "./bundles/web.bundle.min.js",
+      "import": "./lib/esm/node/index.js",
+      "require": "./lib/cjs/node/index.js"
     },
     "./node": {
+      "types": "./lib/types/node/index.d.ts",
       "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js",
-      "types": "./lib/types/node/index.d.ts"
+      "require": "./lib/cjs/node/index.js"
     },
     "./web": {
-      "import": "./lib/esm/web/index.js",
-      "require": "./lib/cjs/web/index.js",
       "types": "./lib/types/web/index.d.ts",
-      "browser": "./bundles/web.bundle.min.js"
+      "browser": "./bundles/web.bundle.min.js",
+      "import": "./lib/esm/web/index.js",
+      "require": "./lib/cjs/web/index.js"
     }
   },
   "bin": {
@@ -72,7 +72,7 @@
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "NODE_OPTIONS=\"--import=./register.mjs\" node --test src/**/**.test.ts",
+    "test:unit": "node --import=./register.mjs --test --test-reporter=spec src/**/**.test.ts",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
@@ -128,7 +128,7 @@
     "@dha-team/arbundles": "^1.0.1",
     "@permaweb/aoconnect": "^0.0.57",
     "arweave": "1.15.5",
-    "axios": "1.7.9",
+    "axios": "1.8.2",
     "axios-retry": "^4.3.0",
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",

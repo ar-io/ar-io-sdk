@@ -82,7 +82,7 @@ import {
 import { AoSigner, mARIOToken } from '../types/token.js';
 import { createAoSigner } from '../utils/ao.js';
 import {
-  getEpochDataFromGql,
+  getEpochDataFromGqlWithCUFallback,
   paginationParamsToTags,
   pruneTags,
   removeEligibleRewardsFromEpochData,
@@ -174,13 +174,7 @@ export class ARIOReadable implements AoARIORead {
   }
 
   private async computeCurrentEpochIndex(): Promise<number> {
-    const epochSettings = await this.getEpochSettings();
-    const epochZeroStartTimestamp = epochSettings.epochZeroStartTimestamp;
-    const epochLengthMs = epochSettings.durationMs;
-    const currentTimestamp = Date.now();
-    return Math.floor(
-      (currentTimestamp - epochZeroStartTimestamp) / epochLengthMs,
-    );
+    return this.computeEpochIndexForTimestamp(Date.now());
   }
 
   private async computeEpochIndex(
@@ -213,10 +207,11 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
+        ao: this.process.ao,
       });
 
       return removeEligibleRewardsFromEpochData(epochData);
@@ -392,7 +387,8 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
+        ao: this.process.ao,
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
@@ -417,10 +413,11 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
+        ao: this.process.ao,
       });
       return epochData?.prescribedNames;
     }
@@ -444,10 +441,11 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
+        ao: this.process.ao,
       });
       return epochData?.observations;
     }
@@ -471,10 +469,11 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
+        ao: this.process.ao,
       });
       return epochData?.distributions;
     }
@@ -499,10 +498,11 @@ export class ARIOReadable implements AoARIORead {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
     if (epochIndex !== undefined && epochIndex < currentIndex) {
-      const epochData = await getEpochDataFromGql({
+      const epochData = await getEpochDataFromGqlWithCUFallback({
         arweave: this.arweave,
         epochIndex: epochIndex,
         processId: this.process.processId,
+        ao: this.process.ao,
       });
       return sortAndPaginateEpochDataIntoEligibleDistributions(
         epochData,

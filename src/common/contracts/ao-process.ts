@@ -31,7 +31,7 @@ import { ILogger, Logger } from '../logger.js';
 
 export class AOProcess implements AOContract {
   private logger: ILogger;
-  private ao: AoClient;
+  public readonly ao: AoClient;
   public readonly processId: string;
 
   constructor({
@@ -97,7 +97,16 @@ export class AOProcess implements AOContract {
         });
 
         if (attempts >= retries) {
-          throw error;
+          this.logger.debug(`Maximum read attempts exceeded`, {
+            error: error?.message,
+            stack: error?.stack,
+            tags,
+            processId: this.processId,
+            ao: JSON.stringify(this.ao),
+          });
+          throw new Error(
+            `Failed to evaluate a dry-run on process ${this.processId}.`,
+          );
         }
 
         // exponential backoff
@@ -123,7 +132,7 @@ export class AOProcess implements AOContract {
 
     if (result.Messages === undefined || result.Messages.length === 0) {
       this.logger.debug(
-        `Process ${this.processId} does not support provided action.`,
+        `Empty result - process ${this.processId} does not support provided action.`,
         {
           result,
           tags,
@@ -156,39 +165,54 @@ export class AOProcess implements AOContract {
     signer: AoSigner;
     retries?: number;
   }): Promise<{ id: string; result?: K }> {
-    // main purpose of retries is to handle network errors/new process delays
-    let attempts = 0;
     let messageId: string | undefined;
-    let result: MessageResult | undefined = undefined;
+    const anchor = getRandomText(32); // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
 
+    try {
+      this.logger.debug(`Evaluating send interaction on contract`, {
+        tags,
+        data,
+        processId: this.processId,
+      });
+
+      /**
+       * DO NOT retry messaging if a message was already sent.
+       * This could result in a double entry-like condition when sending tokens for example.
+       * If the message fails to send we will throw an error and the caller can retry.
+       */
+      messageId = await this.ao.message({
+        process: this.processId,
+        tags: [...tags, { name: 'AR-IO-SDK', value: version }],
+        data,
+        signer,
+        anchor,
+      });
+
+      this.logger.debug(`Sent message to process`, {
+        messageId,
+        processId: this.processId,
+        anchor,
+      });
+    } catch (error: any) {
+      this.logger.debug('Error sending message to process', {
+        error: error?.message,
+        stack: error?.stack,
+        processId: this.processId,
+        tags,
+      });
+      // throw the error so it can be handled by the caller
+      throw error;
+    }
+
+    if (messageId === undefined) {
+      throw new Error('Failed to send message to process.');
+    }
+
+    // get the result of the message before returning, using retries to handle network errors/new process delays
+    let result: MessageResult | undefined = undefined;
+    let attempts = 0;
     while (attempts < retries) {
       try {
-        this.logger.debug(`Evaluating send interaction on contract`, {
-          tags,
-          data,
-          processId: this.processId,
-        });
-
-        // TODO: do a read as a dry run to check if the process supports the action
-        // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
-        const anchor = getRandomText(32);
-
-        messageId = await this.ao.message({
-          process: this.processId,
-          // TODO: any other default tags we want to add?
-          tags: [...tags, { name: 'AR-IO-SDK', value: version }],
-          data,
-          signer,
-          anchor,
-        });
-
-        this.logger.debug(`Sent message to process`, {
-          messageId,
-          processId: this.processId,
-          anchor,
-        });
-
-        // check the result of the send interaction
         result = await this.ao.result({
           message: messageId,
           process: this.processId,
@@ -201,13 +225,6 @@ export class AOProcess implements AOContract {
         });
         break;
       } catch (error: any) {
-        this.logger.error('Error sending message to process', {
-          error: error?.message,
-          stack: error?.stack,
-          processId: this.processId,
-          tags,
-        });
-
         attempts++;
 
         this.logger.debug('Retrying send interaction', {
@@ -218,7 +235,17 @@ export class AOProcess implements AOContract {
         });
 
         if (attempts >= retries) {
-          throw error;
+          this.logger.debug(
+            `Message was sent to process ${this.processId} with id ${messageId} but result was not returned. Review transactions for more details.`,
+            {
+              error: error?.message,
+              stack: error?.stack,
+              tags,
+              processId: this.processId,
+              messageId,
+            },
+          );
+          return { id: messageId };
         }
 
         // exponential backoff
@@ -228,8 +255,16 @@ export class AOProcess implements AOContract {
       }
     }
 
-    if (result === undefined || messageId === undefined) {
-      throw new Error('Unexpected error when evaluating write interaction');
+    if (result === undefined) {
+      this.logger.debug(
+        `Message was sent to process ${this.processId} with id ${messageId} but the result was not returned. Review transactions for more details.`,
+        {
+          tags,
+          processId: this.processId,
+          messageId,
+        },
+      );
+      return { id: messageId };
     }
 
     const error = errorMessageFromOutput(result);
@@ -240,12 +275,6 @@ export class AOProcess implements AOContract {
     // check if there are any Messages in the output
     if (result.Messages?.length === 0 || result.Messages === undefined) {
       return { id: messageId };
-    }
-
-    if (result.Messages.length === 0) {
-      throw new Error(
-        `Process ${this.processId} does not support provided action.`,
-      );
     }
 
     if (this.isMessageDataEmpty(result.Messages[0].Data)) {
