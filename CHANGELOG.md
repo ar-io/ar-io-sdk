@@ -1,3 +1,12 @@
+## [3.9.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.9.1-alpha.1...v3.9.1-alpha.2) (2025-03-27)
+
+
+### Bug Fixes
+
+* **cli:** update other vault APIs ([0916e96](https://github.com/ar-io/ar-io-sdk/commit/0916e960c95ee3e2b28939c528e440ff049b2a17))
+* **cli:** update types and errors in cli ([4b5aebd](https://github.com/ar-io/ar-io-sdk/commit/4b5aebda3aa130434882daa58b5d9b80fa228fd6))
+* **io:** do not return undefined for any API ([ce6a077](https://github.com/ar-io/ar-io-sdk/commit/ce6a077fa7f7c04382c52415124baf4d71107935))
+
 ## [3.9.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0...v3.9.1-alpha.1) (2025-03-27)
 
 
