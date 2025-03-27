@@ -20,6 +20,7 @@ import {
   AoRevokeVaultParams,
   AoVaultedTransferParams,
 } from '../../types/io.js';
+import { mARIOToken } from '../../types/token.js';
 import {
   CLIWriteOptionsFromAoParams,
   JsonSerializable,
@@ -128,14 +129,11 @@ export async function revokeVaultCLICommand(
 
   if (!o.skipConfirmation) {
     const vault = await ario.getVault({ vaultId, address: recipient });
-    if (!vault) {
-      throw new Error(
-        `Vault for recipient '${recipient}' with vault id '${vaultId}' not found`,
-      );
-    }
 
     const confirm = await confirmationPrompt(
-      `Are you sure you want to revoke vault with id ${vaultId} from ${recipient}?`,
+      `Are you sure you want to revoke vault with id ${vaultId} from ${recipient} with balance ${formatARIOWithCommas(
+        new mARIOToken(vault.balance).toARIO(),
+      )} ARIO?`,
     );
     if (!confirm) {
       return { message: 'Revoke aborted by user' };
