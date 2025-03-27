@@ -276,7 +276,7 @@ export const epochDistributionNoticeGqlQueryFallback = ({
 };
 
 export function sortAndPaginateEpochDataIntoEligibleDistributions(
-  epochData?: AoEpochData,
+  epochData: AoEpochData,
   params?: PaginationParams<AoEligibleDistribution>,
 ): PaginationResult<AoEligibleDistribution> {
   const rewards: AoEligibleDistribution[] = [];
@@ -351,12 +351,8 @@ export function sortAndPaginateEpochDataIntoEligibleDistributions(
 }
 
 export function removeEligibleRewardsFromEpochData(
-  epochData?: AoEpochData,
-): AoEpochData | undefined {
-  if (epochData === undefined) {
-    return undefined;
-  }
-
+  epochData: AoEpochData,
+): AoEpochData {
   if (!isDistributedEpoch(epochData)) {
     return epochData;
   }

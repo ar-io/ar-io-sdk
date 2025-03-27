@@ -131,9 +131,6 @@ export async function leaveNetwork(options: WriteActionCLIOptions) {
 
   if (!options.skipConfirmation) {
     const gateway = await ario.getGateway({ address: signerAddress });
-    if (!gateway) {
-      throw new Error(`Gateway not found for address: ${signerAddress}`);
-    }
 
     await assertConfirmationPrompt(
       'Gateway Details:\n\n' +

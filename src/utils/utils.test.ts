@@ -164,20 +164,6 @@ describe('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
     },
   } as unknown as AoEpochData;
 
-  it('returns empty results when epochData is undefined', () => {
-    assert.deepEqual(
-      sortAndPaginateEpochDataIntoEligibleDistributions(undefined),
-      {
-        hasMore: false,
-        items: [],
-        totalItems: 0,
-        limit: 100,
-        sortOrder: 'desc',
-        sortBy: 'eligibleReward',
-      },
-    );
-  });
-
   it('sorts rewards in descending order by eligibleReward', () => {
     const result =
       sortAndPaginateEpochDataIntoEligibleDistributions(mockEpochData);
