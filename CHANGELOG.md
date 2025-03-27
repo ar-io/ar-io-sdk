@@ -1,3 +1,10 @@
+## [3.9.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0...v3.9.1-alpha.1) (2025-03-27)
+
+
+### Bug Fixes
+
+* **ario:** throw errors if fail to find epoch data ([b1bb024](https://github.com/ar-io/ar-io-sdk/commit/b1bb0247349f33aed86e5a01c074b1c25256d66e))
+
 # [3.9.0](https://github.com/ar-io/ar-io-sdk/compare/v3.8.4...v3.9.0) (2025-03-27)
 
 
