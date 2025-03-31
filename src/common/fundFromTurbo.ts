@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ArconnectSigner,
-  ArweaveSigner,
-  EthereumSigner,
-  InjectedEthereumSigner,
-  Signer,
-  stringToBuffer,
-} from '@dha-team/arbundles';
+import { ArconnectSigner, SignatureConfig } from '@dha-team/arbundles';
 import { AxiosInstance, RawAxiosRequestHeaders } from 'axios';
-import { randomBytes } from 'crypto';
+import { v4 } from 'uuid';
 
 import {
   AoMessageResult,
+  FundFromTurboSigner,
   TransactionId,
   WriteOptions,
 } from '../types/common.js';
@@ -43,7 +37,7 @@ export interface TurboConfig {
   logger?: ILogger;
   // The HTTP client to use
   axios?: AxiosInstance;
-  signer: Signer;
+  signer: FundFromTurboSigner;
 }
 
 export type InitiateArNSPurchaseParams = {
@@ -56,32 +50,34 @@ export type InitiateArNSPurchaseParams = {
 };
 
 export async function signedRequestHeadersFromSigner(
-  signer: Signer,
-  nonce: string = randomBytes(32).toString('hex'),
+  signer: FundFromTurboSigner,
+  nonce: string = v4(),
 ): Promise<RawAxiosRequestHeaders> {
-  const signature = await signer.sign(stringToBuffer(nonce));
+  await (signer as ArconnectSigner).setPublicKey?.();
+  const signature = await signer.sign(Uint8Array.from(Buffer.from(nonce)));
 
   let publicKey: string;
-  if (signer instanceof EthereumSigner) {
-    console.log('EthereumSigner', signer);
-    publicKey = signer.publicKey.toString('hex');
-  } else if (signer instanceof ArweaveSigner) {
-    publicKey = toB64Url(signer.publicKey);
-  } else if (signer instanceof ArconnectSigner) {
-    await signer.setPublicKey();
-    publicKey = toB64Url(signer.publicKey);
-  } else if (signer instanceof InjectedEthereumSigner) {
-    await signer.setPublicKey();
-    publicKey = signer.publicKey.toString('hex');
-  } else {
-    throw new Error('Unsupported signer type for signing requests');
+  switch (signer.signatureType) {
+    case SignatureConfig.ARWEAVE:
+      publicKey = toB64Url(signer.publicKey);
+      break;
+    case SignatureConfig.ETHEREUM:
+      publicKey = '0x' + signer.publicKey.toString('hex');
+      break;
+    // TODO: solana sig support
+    // case SignatureConfig.SOLANA:
+    // case SignatureConfig.ED25519:
+    default:
+      throw new Error(
+        `Unsupported signer type for signing requests: ${signer.signatureType}`,
+      );
   }
-  console.log('publicKey', publicKey);
 
   return {
     'x-public-key': publicKey,
     'x-nonce': nonce,
     'x-signature': toB64Url(Buffer.from(signature)),
+    'x-signature-type': signer.signatureType,
   };
 }
 
@@ -111,7 +107,7 @@ export class FundFromTurbo {
   private readonly uploadUrl: string;
   private readonly axios: AxiosInstance;
   private readonly logger: ILogger;
-  private readonly signer: Signer;
+  private readonly signer: FundFromTurboSigner;
 
   constructor({
     paymentUrl = 'http://localhost:3000',
@@ -159,7 +155,7 @@ export class FundFromTurbo {
       { name: 'Process-Id', value: processId },
     ];
     const prunedTags = pruneTags(tags);
-    const nonce = randomBytes(32).toString('hex');
+    const nonce = v4();
 
     if (options && options.tags) {
       options.tags.forEach((tag) => {

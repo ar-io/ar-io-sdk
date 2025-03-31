@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { EthereumSigner } from '@dha-team/arbundles/src/index';
+import { EthereumSigner } from '@dha-team/arbundles';
 import { connect } from '@permaweb/aoconnect';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';

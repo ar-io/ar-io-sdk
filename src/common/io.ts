@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Signer } from '@dha-team/arbundles';
 import Arweave from 'arweave';
 
 import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
@@ -850,7 +851,11 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
-    this.fundFromTurbo = new FundFromTurbo({ signer, paymentUrl, uploadUrl });
+    this.fundFromTurbo = new FundFromTurbo({
+      signer: signer as Signer,
+      paymentUrl,
+      uploadUrl,
+    });
   }
 
   async transfer(
