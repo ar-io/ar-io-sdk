@@ -432,7 +432,7 @@ export type AoTokenCostParams = {
   fromAddress?: WalletAddress;
 };
 
-export const fundFromOptions = ['balance', 'stakes', 'any'] as const;
+export const fundFromOptions = ['balance', 'stakes', 'any', 'turbo'] as const;
 export type FundFrom = (typeof fundFromOptions)[number];
 export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
   return fundFromOptions.indexOf(fundFrom as FundFrom) !== -1;

@@ -22,8 +22,11 @@ import {
   PaginationParams,
 } from '../types/io.js';
 
+export type SupportedCLITokenType = 'ethereum' | 'arweave';
+
 export type WalletCLIOptions = {
   walletFile?: string;
+  token?: SupportedCLITokenType;
   // mnemonic?: string;
   privateKey?: string;
 };
@@ -35,6 +38,8 @@ export type GlobalCLIOptions = WalletCLIOptions & {
   debug: boolean;
   arioProcessId?: string;
   cuUrl?: string;
+  uploadUrl?: string;
+  paymentUrl?: string;
 };
 
 export type WriteActionCLIOptions = GlobalCLIOptions & {

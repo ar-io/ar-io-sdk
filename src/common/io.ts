@@ -91,6 +91,7 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { FundFromTurbo, InitiateArNSPurchaseParams } from './fundFromTurbo.js';
 
 type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
 type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
@@ -818,7 +819,14 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+  private fundFromTurbo: FundFromTurbo;
+
+  constructor({
+    signer,
+    paymentUrl,
+    uploadUrl,
+    ...config
+  }: ARIOConfigWithSigner & { uploadUrl?: string; paymentUrl?: string }) {
     if (config === undefined) {
       super({
         process: new AOProcess({
@@ -829,6 +837,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
+    this.fundFromTurbo = new FundFromTurbo({ signer, paymentUrl, uploadUrl });
   }
 
   async transfer(
@@ -1222,10 +1231,31 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
+  private async sendArNSPurchaseIntentToTurbo(
+    params: InitiateArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const { arioWriteResult } = await this.fundFromTurbo.initiateArNSPurchase(
+      params,
+      options,
+    );
+    return arioWriteResult;
+  }
+
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Buy-Record',
+        name: params.name,
+        type: params.type,
+        processId: params.processId,
+        years: params.years,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,

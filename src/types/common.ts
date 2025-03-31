@@ -37,7 +37,7 @@ export type ProcessId = string;
 export type OptionalArweave<T = NonNullable<unknown>> = {
   arweave?: Arweave;
 } & T;
-export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
+export type ContractSigner = Signer;
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
 } & T; // TODO: optionally allow JWK in place of signer

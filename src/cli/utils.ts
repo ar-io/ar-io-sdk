@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { EthereumSigner } from '@dha-team/arbundles/src/index';
 import { connect } from '@permaweb/aoconnect';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
@@ -227,8 +228,16 @@ export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
   signer: ContractSigner;
   signerAddress: string;
 } {
-  // TODO: Support other wallet types
+  const token = options.token ?? 'arweave';
+
   const jwk = requiredJwkFromOptions(options);
+  if (token === 'ethereum') {
+    const signer = new EthereumSigner(jwk as unknown as string);
+    // For EthereumSigner, we need to convert the JWK to a string
+    return { signer, signerAddress: signer.publicKey.toString('hex') };
+  }
+
+  // TODO: Support other wallet types
   const signer = new ArweaveSigner(jwk);
   return { signer, signerAddress: jwkToAddress(jwk) };
 }
