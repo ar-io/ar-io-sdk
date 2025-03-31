@@ -252,7 +252,8 @@ const gateways = await ario.getGateways();
 
 ```html
 <script type="module">
-  import { ARIO } from 'https://unpkg.com/@ar.io/sdk';
+  // replace <@version> with a pinned version (e.g. @3.8.4) or @latest, if you're risky :)
+  import { ARIO } from 'https://unpkg.com/@ar.io/sdk<@version>';
 
   // set up client
   const ario = ARIO.init();
@@ -1960,12 +1961,12 @@ const request = await ario.getPrimaryNameRequest({
 The ARIO client class exposes APIs relevant to the ar.io process. It can be configured to use any AO Process ID that adheres to the [ARIO Network Spec]. By default, it will use the current [ARIO Testnet Process]. Refer to [AO Connect] for more information on how to configure an ARIO process to use specific AO infrastructure.
 
 ```typescript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO , AOProcess } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 
 // provide a custom ao infrastructure and process id
 const ario = ARIO.init({
-  process: new AoProcess({
+  process: new AOProcess({
     processId: 'ARIO_PROCESS_ID'
     ao: connect({
       MU_URL: 'https://mu-testnet.xyz',

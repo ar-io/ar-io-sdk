@@ -21,7 +21,7 @@ describe('ESM browser validation', () => {
     )
       .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
       .up(['ao-cu']);
-  }, 120_000);
+  });
 
   afterAll(async () => {
     await compose.down();

@@ -1,41 +1,41 @@
-# [3.9.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.5...v3.9.0-alpha.6) (2025-03-20)
+## [3.9.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.9.1-alpha.1...v3.9.1-alpha.2) (2025-03-27)
 
 
 ### Bug Fixes
 
-* **gql:** add fallback to go to CU for epoch distribution data ([12be216](https://github.com/ar-io/ar-io-sdk/commit/12be216a0529d699a7aed6bef6e9b00f92cd32fc))
+* **cli:** update other vault APIs ([0916e96](https://github.com/ar-io/ar-io-sdk/commit/0916e960c95ee3e2b28939c528e440ff049b2a17))
+* **cli:** update types and errors in cli ([4b5aebd](https://github.com/ar-io/ar-io-sdk/commit/4b5aebda3aa130434882daa58b5d9b80fa228fd6))
+* **io:** do not return undefined for any API ([ce6a077](https://github.com/ar-io/ar-io-sdk/commit/ce6a077fa7f7c04382c52415124baf4d71107935))
 
-# [3.9.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.4...v3.9.0-alpha.5) (2025-03-18)
+## [3.9.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0...v3.9.1-alpha.1) (2025-03-27)
+
+
+### Bug Fixes
+
+* **ario:** throw errors if fail to find epoch data ([b1bb024](https://github.com/ar-io/ar-io-sdk/commit/b1bb0247349f33aed86e5a01c074b1c25256d66e))
+
+# [3.9.0](https://github.com/ar-io/ar-io-sdk/compare/v3.8.4...v3.9.0) (2025-03-27)
 
 
 ### Bug Fixes
 
 * **ao:** update retry logic on send, include more verbose messaging ([70e6678](https://github.com/ar-io/ar-io-sdk/commit/70e6678bde3e814411d2d107aece762e8a927fee))
-
-# [3.9.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.3...v3.9.0-alpha.4) (2025-03-18)
-
-
-### Bug Fixes
-
 * **comments:** cleanup ([7444be3](https://github.com/ar-io/ar-io-sdk/commit/7444be3f089e9b2c1552101e3ebbf1d3d01da2ba))
+* **exports:** move types/browser exports above import/require ([280d8bd](https://github.com/ar-io/ar-io-sdk/commit/280d8bde7390628fdb8ec112be6847d136a02134))
+* **gql:** add fallback to go to CU for epoch distribution data ([12be216](https://github.com/ar-io/ar-io-sdk/commit/12be216a0529d699a7aed6bef6e9b00f92cd32fc))
 * **logging:** log errors more verbosely on read fails ([c9fab18](https://github.com/ar-io/ar-io-sdk/commit/c9fab1832d325bfe58084fbce4b92eec48a725bc))
 * **messaging:** only retry messaging if no id was recieved ([9cbffef](https://github.com/ar-io/ar-io-sdk/commit/9cbffef365a8307ca8e97baff1b4ac7d4bb811de))
+* **options:** add write options to addVersion ([95ccef0](https://github.com/ar-io/ar-io-sdk/commit/95ccef02c52c2c025ee7ec3770514af92b112088))
+* **PE-7802:** add logo to SpawnAntState type and options ([c7adfca](https://github.com/ar-io/ar-io-sdk/commit/c7adfca80e1e0d11b2aad8102f940955c43893f2))
 * **send:** add comment on not retrying on send ([692938a](https://github.com/ar-io/ar-io-sdk/commit/692938a415aed2103ac76b41ad643550cb053f5e))
 * **send:** log on max attempts in send as well ([2399d23](https://github.com/ar-io/ar-io-sdk/commit/2399d2347052df90146e682fca1ba4ca0f30f3f6))
-
-# [3.9.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.2...v3.9.0-alpha.3) (2025-03-13)
-
-
-### Bug Fixes
-
-* **PE-7802:** add logo to SpawnAntState type and options ([c7adfca](https://github.com/ar-io/ar-io-sdk/commit/c7adfca80e1e0d11b2aad8102f940955c43893f2))
-
-# [3.9.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0-alpha.1...v3.9.0-alpha.2) (2025-03-12)
+* **versions:** export versions class ([6368c44](https://github.com/ar-io/ar-io-sdk/commit/6368c4418acb32a4532e4e452ab614dbe5e0eb3a))
 
 
-### Bug Fixes
+### Features
 
-* **types:** add vault controller as optional to vault ([f26bdb3](https://github.com/ar-io/ar-io-sdk/commit/f26bdb3bb18a2015378e2ca065f42658b4eee066))
+* **versions:** add ANT version class ([c9ec5c5](https://github.com/ar-io/ar-io-sdk/commit/c9ec5c5f84634252a166a087d4babfcc771f70fb))
+* **versions:** add versioning handlers to ant registry ([c681909](https://github.com/ar-io/ar-io-sdk/commit/c681909cde4b5678a87e3bd71dbeb9329cd16188))
 
 ## [3.8.4](https://github.com/ar-io/ar-io-sdk/compare/v3.8.3...v3.8.4) (2025-03-12)
 
