@@ -100,7 +100,7 @@
     "arconnect": "^1.0.3",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
-    "esbuild": "^0.25.1",
+    "esbuild": "^0.25.2",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "eslint": "^8.47.0",
     "eslint-config-prettier": "^9.0.0",
