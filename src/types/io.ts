@@ -468,6 +468,7 @@ export type CostDetailsResult = {
     basePrice: number;
   };
   fundingPlan?: AoFundingPlan;
+  wincQty?: string;
 };
 
 export type AoGetVaultParams = {

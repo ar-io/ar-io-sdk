@@ -95,7 +95,9 @@ import { InvalidContractConfigurationError } from './error.js';
 import { FundFromTurbo, InitiateArNSPurchaseParams } from './fundFromTurbo.js';
 
 type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
-type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfigWithSigner = WithSigner<
+  OptionalArweave<ProcessConfiguration & { paymentUrl?: string }>
+>;
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
@@ -121,7 +123,11 @@ export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+  protected fundFromTurbo: FundFromTurbo;
+
+  constructor(
+    config?: OptionalArweave<ProcessConfiguration> & { paymentUrl?: string },
+  ) {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
@@ -136,6 +142,9 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+    this.fundFromTurbo = new FundFromTurbo({
+      paymentUrl: config?.paymentUrl,
+    });
   }
 
   async getInfo(): Promise<{
@@ -618,6 +627,23 @@ export class ARIOReadable implements AoARIORead {
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const replacedBuyRecordWithBuyName =
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
+
+    if (fundFrom === 'turbo') {
+      const { mARIO, winc } = await this.fundFromTurbo.getArNSPurchasePrice({
+        intent: replacedBuyRecordWithBuyName,
+        name,
+        increaseQty: quantity,
+        type,
+        years,
+      });
+
+      return {
+        tokenCost: +mARIO,
+        wincQty: winc,
+        discounts: [],
+      };
+    }
+
     const allTags = [
       { name: 'Action', value: 'Cost-Details' },
       {
@@ -833,13 +859,9 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  private fundFromTurbo: FundFromTurbo;
+  protected fundFromTurbo: FundFromTurbo;
 
-  constructor({
-    signer,
-    paymentUrl,
-    ...config
-  }: ARIOConfigWithSigner & { paymentUrl?: string }) {
+  constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
       super({
         process: new AOProcess({

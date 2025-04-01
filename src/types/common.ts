@@ -33,7 +33,6 @@ export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
 export type ProcessId = string;
-
 export type OptionalArweave<T = NonNullable<unknown>> = {
   arweave?: Arweave;
 } & T;

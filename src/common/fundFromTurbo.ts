@@ -36,7 +36,7 @@ export interface TurboConfig {
   logger?: ILogger;
   // The HTTP client to use
   axios?: AxiosInstance;
-  signer: FundFromTurboSigner;
+  signer?: FundFromTurboSigner;
 }
 
 export type InitiateArNSPurchaseParams = {
@@ -105,10 +105,10 @@ export class FundFromTurbo {
   private readonly paymentUrl: string;
   private readonly axios: AxiosInstance;
   private readonly logger: ILogger;
-  private readonly signer: FundFromTurboSigner;
+  private readonly signer?: FundFromTurboSigner;
 
   constructor({
-    paymentUrl = 'https://payment.ardrive.io',
+    paymentUrl = 'http://localhost:3000',
     axios = createAxiosInstance(),
     logger = Logger.default,
     signer,
@@ -126,7 +126,7 @@ export class FundFromTurbo {
     type,
     years,
   }: InitiateArNSPurchaseParams): Promise<{ winc: string; mARIO: mARIOToken }> {
-    const url = new URL(`${this.paymentUrl}/v1/price/${intent}/${name}`);
+    const url = new URL(`${this.paymentUrl}/v1/arns/price/${intent}/${name}`);
     if (increaseQty !== undefined) {
       url.searchParams.append('increaseQty', increaseQty.toString());
     }
@@ -151,6 +151,15 @@ export class FundFromTurbo {
       status,
     });
 
+    if (status !== 200) {
+      throw new Error(
+        'Failed to get ArNS purchase price' + JSON.stringify(data),
+      );
+    }
+    if (!data.winc || !data.mARIO) {
+      throw new Error('Invalid response from Turbo' + JSON.stringify(data));
+    }
+
     return {
       winc: data.winc,
       mARIO: new mARIOToken(+data.mARIO),
@@ -168,6 +177,12 @@ export class FundFromTurbo {
     }: InitiateArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<ArNSPurchaseResult> {
+    if (!this.signer) {
+      throw new Error(
+        'Signer required for initiating ArNS purchase with Turbo',
+      );
+    }
+
     const tags = [
       { name: 'Turbo-ArNS-Purchase-Intent', value: intent },
       { name: 'Name', value: name },
@@ -226,7 +241,9 @@ export class FundFromTurbo {
     });
 
     if (status !== 200) {
-      throw new Error('Failed to initiate ArNS purchase');
+      throw new Error(
+        'Failed to initiate ArNS purchase' + JSON.stringify(data),
+      );
     }
 
     return data;

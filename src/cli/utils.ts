@@ -167,7 +167,7 @@ export function arioProcessIdFromOptions({
   return ARIO_MAINNET_PROCESS_ID;
 }
 
-function jwkFromOptions({
+function walletFromOptions({
   privateKey,
   walletFile,
 }: WalletCLIOptions): JWKInterface | undefined {
@@ -183,7 +183,7 @@ function jwkFromOptions({
 export function requiredJwkFromOptions(
   options: WalletCLIOptions,
 ): JWKInterface {
-  const jwk = jwkFromOptions(options);
+  const jwk = walletFromOptions(options);
   if (jwk === undefined) {
     throw new Error(
       'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
@@ -224,22 +224,38 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   });
 }
 
-export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
-  signer: ContractSigner;
-  signerAddress: string;
-} {
+export function contractSignerFromOptions(
+  options: WalletCLIOptions,
+): { signer: ContractSigner; signerAddress: string } | undefined {
+  const wallet = walletFromOptions(options);
+
+  if (wallet === undefined) {
+    return undefined;
+  }
   const token = options.token ?? 'arweave';
 
-  const jwk = requiredJwkFromOptions(options);
   if (token === 'ethereum') {
-    const signer = new EthereumSigner(jwk as unknown as string);
+    const signer = new EthereumSigner(wallet as unknown as string);
     // For EthereumSigner, we need to convert the JWK to a string
     return { signer, signerAddress: signer.publicKey.toString('hex') };
   }
 
   // TODO: Support other wallet types
-  const signer = new ArweaveSigner(jwk);
-  return { signer, signerAddress: jwkToAddress(jwk) };
+  const signer = new ArweaveSigner(wallet);
+  return { signer, signerAddress: jwkToAddress(wallet) };
+}
+
+export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
+  signer: ContractSigner;
+  signerAddress: string;
+} {
+  const contractSigner = contractSignerFromOptions(options);
+  if (contractSigner === undefined) {
+    throw new Error(
+      'No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`',
+    );
+  }
+  return contractSigner;
 }
 
 export function requiredAoSignerFromOptions(
@@ -284,11 +300,11 @@ export function addressFromOptions<O extends AddressCLIOptions>(
   if (options.address !== undefined) {
     return options.address;
   }
-  // TODO: Support other wallet types
-  const jwk = jwkFromOptions(options);
-  if (jwk !== undefined) {
-    return jwkToAddress(jwk);
+  const { signerAddress } = requiredContractSignerFromOptions(options);
+  if (signerAddress === undefined) {
+    return undefined;
   }
+
   return undefined;
 }
 
