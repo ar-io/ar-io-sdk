@@ -50,10 +50,6 @@ export const optionMap = {
     alias: '--cu-url <cuUrl>',
     description: 'The URL for a custom compute unit',
   },
-  uploadUrl: {
-    alias: '--upload-url <uploadUrl>',
-    description: 'The URL for a custom turbo upload service',
-  },
   paymentUrl: {
     alias: '--payment-url <paymentUrl>',
     description: 'The URL for a custom turbo payment service',
@@ -313,7 +309,6 @@ export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
-  optionMap.uploadUrl,
   optionMap.paymentUrl,
 ];
 

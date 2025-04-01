@@ -838,9 +838,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   constructor({
     signer,
     paymentUrl,
-    uploadUrl,
     ...config
-  }: ARIOConfigWithSigner & { uploadUrl?: string; paymentUrl?: string }) {
+  }: ARIOConfigWithSigner & { paymentUrl?: string }) {
     if (config === undefined) {
       super({
         process: new AOProcess({
@@ -854,7 +853,6 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     this.fundFromTurbo = new FundFromTurbo({
       signer: signer as Signer,
       paymentUrl,
-      uploadUrl,
     });
   }
 

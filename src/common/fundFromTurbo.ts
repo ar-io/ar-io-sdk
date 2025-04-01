@@ -23,14 +23,13 @@ import {
   TransactionId,
   WriteOptions,
 } from '../types/common.js';
+import { mARIOToken } from '../types/token.js';
 import { pruneTags } from '../utils/arweave.js';
 import { toB64Url } from '../utils/base64.js';
 import { createAxiosInstance } from '../utils/http-client.js';
 import { ILogger, Logger } from './logger.js';
 
 export interface TurboConfig {
-  // The URL of the Turbo upload service
-  uploadUrl?: string;
   // The URL of the Turbo payment service
   paymentUrl?: string;
   // The logger to use
@@ -104,35 +103,58 @@ export interface FundFromTurboInterface {
 
 export class FundFromTurbo {
   private readonly paymentUrl: string;
-  private readonly uploadUrl: string;
   private readonly axios: AxiosInstance;
   private readonly logger: ILogger;
   private readonly signer: FundFromTurboSigner;
 
   constructor({
-    paymentUrl = 'http://localhost:3000',
-    uploadUrl = 'http://localhost:3000',
+    paymentUrl = 'https://payment.ardrive.io',
     axios = createAxiosInstance(),
     logger = Logger.default,
     signer,
   }: TurboConfig) {
     this.paymentUrl = paymentUrl;
-    this.uploadUrl = uploadUrl;
     this.axios = axios;
     this.logger = logger;
     this.signer = signer;
-
-    console.log(this.uploadUrl);
   }
 
-  public async getArNSPurchasePrice(
-    params: InitiateArNSPurchaseParams,
-  ): Promise<number> {
-    const { data } = await this.axios.post<{ price: number }>(
-      `${this.paymentUrl}/price`,
-      params,
-    );
-    return data.price;
+  public async getArNSPurchasePrice({
+    intent,
+    name,
+    increaseQty,
+    type,
+    years,
+  }: InitiateArNSPurchaseParams): Promise<{ winc: string; mARIO: mARIOToken }> {
+    const url = new URL(`${this.paymentUrl}/v1/price/${intent}/${name}`);
+    if (increaseQty !== undefined) {
+      url.searchParams.append('increaseQty', increaseQty.toString());
+    }
+    if (type !== undefined) {
+      url.searchParams.append('type', type);
+    }
+    if (years !== undefined) {
+      url.searchParams.append('years', years.toString());
+    }
+    const { data, status } = await this.axios.get<{
+      winc: string;
+      mARIO: string;
+    }>(url.toString());
+
+    this.logger.debug('getArNSPurchasePrice', {
+      intent,
+      name,
+      increaseQty,
+      type,
+      years,
+      data,
+      status,
+    });
+
+    return {
+      winc: data.winc,
+      mARIO: new mARIOToken(+data.mARIO),
+    };
   }
 
   public async initiateArNSPurchase(
@@ -164,7 +186,7 @@ export class FundFromTurbo {
     }
 
     const path = new URL(
-      `${this.paymentUrl}/v1/initiate-arns-purchase/${intent}/${name}`,
+      `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
     );
     if (increaseQty !== undefined) {
       path.searchParams.append('increaseQty', increaseQty.toString());
@@ -178,8 +200,9 @@ export class FundFromTurbo {
     if (years !== undefined) {
       path.searchParams.append('years', years.toString());
     }
-    const { data, status } = await this.axios.get<ArNSPurchaseResult>(
+    const { data, status } = await this.axios.post<ArNSPurchaseResult>(
       path.toString(),
+      '',
       {
         headers: {
           ...((await signedRequestHeadersFromSigner(
@@ -189,9 +212,6 @@ export class FundFromTurbo {
         },
       },
     );
-
-    console.log('status', status);
-    console.log('data', data);
 
     this.logger.debug('Initiated ArNS purchase', {
       intent,

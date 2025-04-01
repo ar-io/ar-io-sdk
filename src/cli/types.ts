@@ -38,7 +38,6 @@ export type GlobalCLIOptions = WalletCLIOptions & {
   debug: boolean;
   arioProcessId?: string;
   cuUrl?: string;
-  uploadUrl?: string;
   paymentUrl?: string;
 };
 
