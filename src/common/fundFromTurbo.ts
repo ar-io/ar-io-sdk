@@ -23,6 +23,7 @@ import {
   TransactionId,
   WriteOptions,
 } from '../types/common.js';
+import { Intent } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
 import { pruneTags } from '../utils/arweave.js';
 import { toB64Url } from '../utils/base64.js';
@@ -44,7 +45,7 @@ export type InitiateArNSPurchaseParams = {
   years?: number;
   increaseQty?: number;
   name: string;
-  intent: string;
+  intent: Intent;
   processId?: TransactionId;
 };
 

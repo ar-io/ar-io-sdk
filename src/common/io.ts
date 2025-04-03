@@ -1322,6 +1322,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Upgrade-Name',
+        name: params.name,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1348,6 +1355,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Extend-Lease',
+        name: params.name,
+        years: params.years,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1366,6 +1381,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Increase-Undername-Limit',
+        name: params.name,
+        increaseQty: params.increaseCount,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1412,6 +1435,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      throw new Error(
+        'Turbo funding is not yet supported for primary name requests',
+      );
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
