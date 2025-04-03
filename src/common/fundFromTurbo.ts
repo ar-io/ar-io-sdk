@@ -108,7 +108,7 @@ export class FundFromTurbo {
   private readonly signer?: FundFromTurboSigner;
 
   constructor({
-    paymentUrl = 'http://localhost:3000',
+    paymentUrl = 'https://payment.ardrive.io',
     axios = createAxiosInstance(),
     logger = Logger.default,
     signer,

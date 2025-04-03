@@ -25,6 +25,7 @@ import {
 } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
+import { ArNSPurchaseReceipt as TurboArNSPurchaseReceipt } from '../common/fundFromTurbo.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -61,7 +62,10 @@ export type WriteParameters<Input> = WithSigner<
   Required<ReadParameters<Input>>
 >;
 
-export type AoMessageResult = { id: string };
+export type AoMessageResult = {
+  id: string;
+  receipt?: TurboArNSPurchaseReceipt;
+};
 
 export type AoPrimaryNameRequest = {
   name: string;
