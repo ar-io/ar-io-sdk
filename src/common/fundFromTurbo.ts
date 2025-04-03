@@ -25,7 +25,6 @@ import {
 } from '../types/common.js';
 import { Intent } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
-import { pruneTags } from '../utils/arweave.js';
 import { toB64Url } from '../utils/base64.js';
 import { createAxiosInstance } from '../utils/http-client.js';
 import { ILogger, Logger } from './logger.js';
