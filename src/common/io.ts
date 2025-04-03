@@ -1272,10 +1272,9 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
 
   private async sendArNSPurchaseIntentToTurbo(
     params: InitiateArNSPurchaseParams,
-    options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const { arioWriteResult, purchaseReceipt } =
-      await this.fundFromTurbo.initiateArNSPurchase(params, options);
+      await this.fundFromTurbo.initiateArNSPurchase(params);
     return { ...arioWriteResult, receipt: purchaseReceipt };
   }
 

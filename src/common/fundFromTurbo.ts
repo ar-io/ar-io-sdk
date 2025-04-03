@@ -167,39 +167,21 @@ export class FundFromTurbo {
     };
   }
 
-  public async initiateArNSPurchase(
-    {
-      intent,
-      name,
-      increaseQty,
-      processId,
-      type,
-      years,
-    }: InitiateArNSPurchaseParams,
-    options?: WriteOptions,
-  ): Promise<ArNSPurchaseResult> {
+  public async initiateArNSPurchase({
+    intent,
+    name,
+    increaseQty,
+    processId,
+    type,
+    years,
+  }: InitiateArNSPurchaseParams): Promise<ArNSPurchaseResult> {
     if (!this.signer) {
       throw new Error(
         'Signer required for initiating ArNS purchase with Turbo',
       );
     }
 
-    const tags = [
-      { name: 'Turbo-ArNS-Purchase-Intent', value: intent },
-      { name: 'Name', value: name },
-      { name: 'Quantity', value: increaseQty?.toString() },
-      { name: 'Type', value: type },
-      { name: 'Years', value: years?.toString() },
-      { name: 'Process-Id', value: processId },
-    ];
-    const prunedTags = pruneTags(tags);
     const nonce = v4();
-
-    if (options && options.tags) {
-      options.tags.forEach((tag) => {
-        prunedTags.push(tag);
-      });
-    }
 
     const path = new URL(
       `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
