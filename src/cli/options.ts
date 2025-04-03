@@ -340,6 +340,7 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
+  optionMap.paymentUrl,
 ];
 
 export const transferOptions = [

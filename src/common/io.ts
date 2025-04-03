@@ -34,6 +34,7 @@ import {
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
   OptionalArweave,
+  OptionalPaymentUrl,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
@@ -94,9 +95,11 @@ import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { FundFromTurbo, InitiateArNSPurchaseParams } from './fundFromTurbo.js';
 
-type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
+type ARIOConfigNoSigner = OptionalPaymentUrl<
+  OptionalArweave<ProcessConfiguration>
+>;
 type ARIOConfigWithSigner = WithSigner<
-  OptionalArweave<ProcessConfiguration & { paymentUrl?: string }>
+  OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
 >;
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
@@ -125,9 +128,7 @@ export class ARIOReadable implements AoARIORead {
   protected arweave: Arweave;
   protected fundFromTurbo: FundFromTurbo;
 
-  constructor(
-    config?: OptionalArweave<ProcessConfiguration> & { paymentUrl?: string },
-  ) {
+  constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({

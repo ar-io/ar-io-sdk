@@ -221,6 +221,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
 
   return ARIO.init({
     process: aoProcessFromOptions(options),
+    paymentUrl: options.paymentUrl,
   });
 }
 
@@ -275,6 +276,7 @@ export function writeARIOFromOptions(options: GlobalCLIOptions): {
     ario: ARIO.init({
       process: aoProcessFromOptions(options),
       signer,
+      paymentUrl: options.paymentUrl,
     }),
     signerAddress,
   };

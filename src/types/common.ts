@@ -36,6 +36,9 @@ export type ProcessId = string;
 export type OptionalArweave<T = NonNullable<unknown>> = {
   arweave?: Arweave;
 } & T;
+export type OptionalPaymentUrl<T = NonNullable<unknown>> = {
+  paymentUrl?: string;
+} & T;
 export type FundFromTurboSigner = Signer;
 export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
