@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Signer } from '@dha-team/arbundles';
 import Arweave from 'arweave';
 
 import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
@@ -33,6 +34,7 @@ import {
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
   OptionalArweave,
+  OptionalPaymentUrl,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
@@ -91,9 +93,14 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { FundFromTurbo, InitiateArNSPurchaseParams } from './fundFromTurbo.js';
 
-type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
-type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfigNoSigner = OptionalPaymentUrl<
+  OptionalArweave<ProcessConfiguration>
+>;
+type ARIOConfigWithSigner = WithSigner<
+  OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
+>;
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
@@ -119,7 +126,9 @@ export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+  protected fundFromTurbo: FundFromTurbo;
+
+  constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
@@ -134,6 +143,9 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+    this.fundFromTurbo = new FundFromTurbo({
+      paymentUrl: config?.paymentUrl,
+    });
   }
 
   async getInfo(): Promise<{
@@ -616,6 +628,23 @@ export class ARIOReadable implements AoARIORead {
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const replacedBuyRecordWithBuyName =
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
+
+    if (fundFrom === 'turbo') {
+      const { mARIO, winc } = await this.fundFromTurbo.getArNSPurchasePrice({
+        intent: replacedBuyRecordWithBuyName,
+        name,
+        increaseQty: quantity,
+        type,
+        years,
+      });
+
+      return {
+        tokenCost: +mARIO,
+        wincQty: winc,
+        discounts: [],
+      };
+    }
+
     const allTags = [
       { name: 'Action', value: 'Cost-Details' },
       {
@@ -831,7 +860,9 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+  protected fundFromTurbo: FundFromTurbo;
+
+  constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
       super({
         process: new AOProcess({
@@ -842,6 +873,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
+    this.fundFromTurbo = new FundFromTurbo({
+      signer: signer as Signer,
+      paymentUrl,
+    });
   }
 
   async transfer(
@@ -1235,10 +1270,28 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
+  private async sendArNSPurchaseIntentToTurbo(
+    params: InitiateArNSPurchaseParams,
+  ): Promise<AoMessageResult> {
+    const { arioWriteResult, purchaseReceipt } =
+      await this.fundFromTurbo.initiateArNSPurchase(params);
+    return { ...arioWriteResult, receipt: purchaseReceipt };
+  }
+
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Buy-Name',
+        name: params.name,
+        type: params.type,
+        processId: params.processId,
+        years: params.years,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1268,6 +1321,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Upgrade-Name',
+        name: params.name,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1294,6 +1354,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Extend-Lease',
+        name: params.name,
+        years: params.years,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1312,6 +1380,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.sendArNSPurchaseIntentToTurbo({
+        intent: 'Increase-Undername-Limit',
+        name: params.name,
+        increaseQty: params.increaseCount,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1358,6 +1434,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      throw new Error(
+        'Turbo funding is not yet supported for primary name requests',
+      );
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
