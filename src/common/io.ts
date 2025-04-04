@@ -1284,7 +1284,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
       return this.sendArNSPurchaseIntentToTurbo({
-        intent: 'Buy-Record',
+        intent: 'Buy-Name',
         name: params.name,
         type: params.type,
         processId: params.processId,
