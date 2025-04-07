@@ -153,11 +153,11 @@ export class FundFromTurbo {
 
     if (status !== 200) {
       throw new Error(
-        'Failed to get ArNS purchase price' + JSON.stringify(data),
+        'Failed to get ArNS purchase price ' + JSON.stringify(data),
       );
     }
     if (!data.winc || !data.mARIO) {
-      throw new Error('Invalid response from Turbo' + JSON.stringify(data));
+      throw new Error('Invalid response from Turbo ' + JSON.stringify(data));
     }
 
     return {
@@ -224,7 +224,7 @@ export class FundFromTurbo {
 
     if (status !== 200) {
       throw new Error(
-        'Failed to initiate ArNS purchase' + JSON.stringify(data),
+        'Failed to initiate ArNS purchase ' + JSON.stringify(data),
       );
     }
 
