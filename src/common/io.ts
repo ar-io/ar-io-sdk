@@ -39,6 +39,7 @@ import {
   PaginationResult,
   ProcessConfiguration,
   TransactionId,
+  TurboAoMessageResult,
   WalletAddress,
   WithSigner,
   WriteOptions,
@@ -1272,7 +1273,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
 
   private async sendArNSPurchaseIntentToTurbo(
     params: InitiateArNSPurchaseParams,
-  ): Promise<AoMessageResult> {
+  ): Promise<TurboAoMessageResult> {
     const { arioWriteResult, purchaseReceipt } =
       await this.fundFromTurbo.initiateArNSPurchase(params);
     return { ...arioWriteResult, receipt: purchaseReceipt };
@@ -1281,7 +1282,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult | TurboAoMessageResult> {
     if (params.fundFrom === 'turbo') {
       return this.sendArNSPurchaseIntentToTurbo({
         intent: 'Buy-Name',
@@ -1320,7 +1321,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async upgradeRecord(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult | TurboAoMessageResult> {
     if (params.fundFrom === 'turbo') {
       return this.sendArNSPurchaseIntentToTurbo({
         intent: 'Upgrade-Name',
@@ -1353,7 +1354,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async extendLease(
     params: AoExtendLeaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult | TurboAoMessageResult> {
     if (params.fundFrom === 'turbo') {
       return this.sendArNSPurchaseIntentToTurbo({
         intent: 'Extend-Lease',
@@ -1379,7 +1380,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async increaseUndernameLimit(
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult | TurboAoMessageResult> {
     if (params.fundFrom === 'turbo') {
       return this.sendArNSPurchaseIntentToTurbo({
         intent: 'Increase-Undername-Limit',

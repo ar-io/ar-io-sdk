@@ -64,7 +64,9 @@ export type WriteParameters<Input> = WithSigner<
 
 export type AoMessageResult = {
   id: string;
-  receipt?: TurboArNSPurchaseReceipt;
+};
+export type TurboAoMessageResult = AoMessageResult & {
+  receipt: TurboArNSPurchaseReceipt;
 };
 
 export type AoPrimaryNameRequest = {
