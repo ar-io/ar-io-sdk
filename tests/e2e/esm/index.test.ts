@@ -10,6 +10,7 @@ import {
   AOProcess,
   ARIO,
   ARIOReadable,
+  ARIOWithFaucet,
   ARIOWriteable,
   ARIO_TESTNET_PROCESS_ID,
   AoANTReadable,
@@ -30,8 +31,6 @@ import {
   StartedDockerComposeEnvironment,
   Wait,
 } from 'testcontainers';
-
-import { TokenFaucet } from '../../../lib/types/types/faucet';
 
 const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
@@ -1294,7 +1293,7 @@ describe('e2e esm tests', async () => {
 });
 
 describe('faucet', async () => {
-  let testnet: TokenFaucet<AoARIORead>;
+  let testnet: ARIOWithFaucet<AoARIORead>;
   let compose: StartedDockerComposeEnvironment;
   // let authToken: JsonWebToken;
   before(async () => {
@@ -1321,22 +1320,36 @@ describe('faucet', async () => {
     await compose.down();
   });
 
-  it('should return a captcha URL for a process', async () => {
-    const request = await testnet.faucet.captchaUrl();
-    assert.ok(request);
-    assert.ok(request.captchaUrl);
-    assert.ok(request.processId);
+  describe('existing APIs', () => {
+    it('should be able to get info of the token', async () => {
+      const info = await testnet.getInfo();
+      assert.ok(info);
+    });
+
+    it('should be able to get the token supply', async () => {
+      const supply = await testnet.getTokenSupply();
+      assert.ok(supply);
+    });
   });
 
-  it('should be able to get an auth token with a valid captcha response', async () => {
-    const captchaResponse = 'test-captcha-response';
-    const authToken = await testnet.faucet.requestAuthToken({
-      captchaResponse,
+  describe('faucet APIs', () => {
+    it('should return a captcha URL for a process', async () => {
+      const request = await testnet.faucet.captchaUrl();
+      assert.ok(request);
+      assert.ok(request.captchaUrl);
+      assert.ok(request.processId);
     });
-    assert.ok(authToken);
-    assert.ok(authToken.status === 'success');
-    assert.ok(authToken.token);
-    assert.ok(authToken.expiresAt);
+
+    it('should be able to get an auth token with a valid captcha response', async () => {
+      const captchaResponse = 'test-captcha-response';
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse,
+      });
+      assert.ok(authToken);
+      assert.ok(authToken.status === 'success');
+      assert.ok(authToken.token);
+      assert.ok(authToken.expiresAt);
+    });
   });
 
   // it('should be able to claim tokens with an auth token', async () => {

@@ -1,18 +1,23 @@
-import { ARIO, ARIO_DEVNET_PROCESS_ID, mARIOToken } from '@ar.io/sdk/web';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ARIO, ARIOToken, mARIOToken } from '@ar.io/sdk/web';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { useEffect, useState } from 'react';
 
 import './App.css';
 import { useArNSRecords, useArNSReturnedNames } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
-const ario = ARIO.init({ processId: ARIO_DEVNET_PROCESS_ID });
+const ario = ARIO.testnet();
 
 function App() {
+  const [balance, setBalance] = useState<number | null>(null);
+  const [tokenRequestMessage, setTokenRequestMessage] = useState<string | null>(
+    null,
+  );
+
   const {
     data: names,
     isLoading: namesLoading,
@@ -173,6 +178,71 @@ function App() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  useEffect(() => {
+    fetchBalance();
+  }, [ario]);
+
+  const fetchBalance = async () => {
+    const activeAddress = await window.arweaveWallet.getActiveAddress();
+    await ario
+      .getBalance({
+        address: activeAddress,
+      })
+      .then((balance) => {
+        const arioBalance = new mARIOToken(balance).toARIO().valueOf();
+        setBalance(arioBalance);
+      });
+  };
+
+  async function requestTokens() {
+    try {
+      if (localStorage.getItem('ario-jwt')) {
+        await ario.faucet
+          .claimWithAuthToken({
+            authToken: localStorage.getItem('ario-jwt') ?? '',
+            recipient: await window.arweaveWallet.getActiveAddress(),
+            quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+          })
+          .then((res) => {
+            // refetch balance
+            fetchBalance();
+            setTokenRequestMessage(`Successfully claimed 100 ARIO tokens!`);
+          })
+          .catch((err) => {
+            setTokenRequestMessage(`Failed to claim tokens: ${err}`);
+          });
+      } else {
+        const captchaUrl = await ario.faucet.captchaUrl();
+        const newWindow = window.open(
+          captchaUrl.captchaUrl,
+          '_blank',
+          'width=600,height=600',
+        );
+        window.parent.addEventListener('message', async (event) => {
+          if (event.data.type === 'ario-jwt-success') {
+            newWindow?.close();
+            localStorage.setItem('ario-jwt', event.data.token);
+            const res = await ario.faucet
+              .claimWithAuthToken({
+                authToken: localStorage.getItem('ario-jwt') ?? '',
+                recipient: await window.arweaveWallet.getActiveAddress(),
+                quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+              })
+              .then((res) => {
+                setTokenRequestMessage(`Successfully claimed 100 ARIO tokens!`);
+              })
+              .catch((err) => {
+                setTokenRequestMessage(`Failed to claim tokens: ${err}`);
+              });
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to claim tokens:', error);
+      alert('Failed to claim tokens. See console for details.');
+    }
+  }
+
   return (
     <div
       className="App"
@@ -180,6 +250,34 @@ function App() {
     >
       <div className="header">
         <h1>AR.IO Network Explorer</h1>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span>
+            Current Balance:{' '}
+            {balance ? `${balance.toFixed(2)} ARIO` : 'Loading...'}
+          </span>
+
+          <button onClick={requestTokens}>
+            Request 100 AR.IO tokens (tARIO)
+          </button>
+          {tokenRequestMessage && (
+            <span
+              style={{
+                color: 'green',
+                opacity: tokenRequestMessage ? 1 : 0,
+                transition: 'opacity 0.3s',
+              }}
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setTokenRequestMessage(null);
+                }, 5000);
+              }}
+            >
+              {tokenRequestMessage}
+            </span>
+          )}
+        </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <h1 style={{ textAlign: 'left' }}>ArNS Names</h1>

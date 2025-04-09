@@ -21,23 +21,58 @@ import {
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
 } from '../constants.js';
-import { TokenFaucet } from '../types/faucet.js';
 import {
+  ARIOWithFaucet,
+  AoARIORead,
+  AoARIOWrite,
+  AoAllDelegates,
+  AoAllGatewayVaults,
+  AoArNSNameData,
   AoArNSNameDataWithName,
+  AoArNSPurchaseParams,
   AoArNSReservedNameData,
+  AoArNSReservedNameDataWithName,
   AoBalanceWithAddress,
+  AoBuyRecordParams,
+  AoCreateVaultParams,
+  AoDelegation,
+  AoEligibleDistribution,
+  AoEpochData,
+  AoEpochDistributed,
   AoEpochDistributionData,
+  AoEpochDistributionTotalsData,
   AoEpochObservationData,
+  AoEpochSettings,
+  AoExtendLeaseParams,
+  AoExtendVaultParams,
+  AoGateway,
+  AoGatewayDelegateWithAddress,
+  AoGatewayRegistrySettings,
+  AoGatewayVault,
   AoGatewayWithAddress,
+  AoGetCostDetailsParams,
+  AoIncreaseUndernameLimitParams,
+  AoIncreaseVaultParams,
   AoJoinNetworkParams,
   AoMessageResult,
+  AoPaginatedAddressParams,
   AoPrimaryName,
   AoPrimaryNameRequest,
   AoRedelegationFeeInfo,
+  AoRegistrationFees,
   AoReturnedName,
+  AoRevokeVaultParams,
+  AoSigner,
+  AoTokenCostParams,
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
+  AoVaultData,
+  AoVaultedTransferParams,
+  AoWalletVault,
   AoWeightedObserver,
+  CostDetailsResult,
+  DemandFactorSettings,
+  EpochInput,
   OptionalArweave,
   OptionalPaymentUrl,
   PaginationParams,
@@ -47,46 +82,10 @@ import {
   WalletAddress,
   WithSigner,
   WriteOptions,
-} from '../types/index.js';
-import {
-  AoARIORead,
-  AoARIOWrite,
-  AoAllDelegates,
-  AoAllGatewayVaults,
-  AoArNSNameData,
-  AoArNSPurchaseParams,
-  AoArNSReservedNameDataWithName,
-  AoBuyRecordParams,
-  AoCreateVaultParams,
-  AoDelegation,
-  AoEligibleDistribution,
-  AoEpochData,
-  AoEpochDistributed,
-  AoEpochDistributionTotalsData,
-  AoEpochSettings,
-  AoExtendLeaseParams,
-  AoExtendVaultParams,
-  AoGateway,
-  AoGatewayDelegateWithAddress,
-  AoGatewayRegistrySettings,
-  AoGatewayVault,
-  AoGetCostDetailsParams,
-  AoIncreaseUndernameLimitParams,
-  AoIncreaseVaultParams,
-  AoPaginatedAddressParams,
-  AoRegistrationFees,
-  AoRevokeVaultParams,
-  AoTokenCostParams,
-  AoVaultData,
-  AoVaultedTransferParams,
-  AoWalletVault,
-  CostDetailsResult,
-  DemandFactorSettings,
-  EpochInput,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types/io.js';
-import { AoSigner, mARIOToken } from '../types/token.js';
+  mARIOToken,
+} from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
 import {
   getEpochDataFromGqlWithCUFallback,
@@ -127,41 +126,45 @@ export class ARIO {
     return new ARIOReadable(config);
   }
 
-  static testnet(): TokenFaucet<AoARIORead>;
+  static testnet(): ARIOWithFaucet<AoARIORead>;
   static testnet(
     config: ARIOConfigNoSigner & { faucetUrl?: string },
-  ): TokenFaucet<AoARIORead>;
+  ): ARIOWithFaucet<AoARIORead>;
   static testnet(
     config: ARIOConfigWithSigner & { faucetUrl?: string },
-  ): TokenFaucet<AoARIOWrite>;
+  ): ARIOWithFaucet<AoARIORead>;
   static testnet(
     config?: ARIOConfig & { faucetUrl?: string },
-  ): TokenFaucet<AoARIORead | AoARIOWrite> {
-    if (config === undefined) {
-      config = {};
-    }
-
-    if (isProcessConfiguration(config)) {
-      const processConfig = {
-        ...config.process,
-        processId: ARIO_TESTNET_PROCESS_ID,
-      };
-
-      // default to cu.ardrive.io if no ao is provided
-      if (processConfig.ao === undefined) {
-        processConfig.ao = connect({
-          CU_URL: 'https://cu.ardrive.io',
-        });
-      }
-
-      return createFaucet<ARIOReadable>(
-        new ARIOReadable({
-          process: new AOProcess(processConfig),
+  ): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
+    if (config !== undefined && 'signer' in config) {
+      return createFaucet<ARIOWriteable>(
+        new ARIOWriteable({
+          ...config,
+          process: new AOProcess({
+            processId: ARIO_TESTNET_PROCESS_ID,
+            ao: connect({
+              CU_URL: 'https://cu.ardrive.io',
+              ...(config as any)?.ao,
+            }),
+          }),
         }),
-        config.faucetUrl ?? 'https://faucet.ario.permaweb.services',
+        config?.faucetUrl ?? 'https://faucet.ario.permaweb.services',
       );
     }
-    throw new InvalidContractConfigurationError();
+
+    return createFaucet<ARIOReadable>(
+      new ARIOReadable({
+        ...config,
+        process: new AOProcess({
+          processId: ARIO_TESTNET_PROCESS_ID,
+          ao: connect({
+            CU_URL: 'https://cu.ardrive.io',
+            ...(config as any)?.ao,
+          }),
+        }),
+      }),
+      config?.faucetUrl ?? 'https://faucet.ario.permaweb.services',
+    );
   }
 }
 

@@ -13,67 +13,73 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export type JsonWebToken = {
-  processId: string;
-  iat: number;
-  exp: number;
-  nonce: string;
+import { AoARIORead, AoARIOWrite } from './io.js';
+
+export type ARIOWithFaucet<T extends AoARIORead | AoARIOWrite> = T & {
+  faucet: TokenFaucet;
 };
+export interface TokenFaucet {
+  /**
+   * Claim tokens for a process using a captcha response. This method is used to synchronously claim tokens for a process using a captcha response.
+   * @param captchaResponse - The captcha response
+   * @param recipient - The recipient address
+   * @param quantity - The quantity of tokens to claim
+   * @returns The claim id and success status
+   */
+  claimWithCaptchaResponse({
+    captchaResponse,
+    recipient,
+    quantity,
+  }: {
+    captchaResponse: string;
+    recipient: string;
+    quantity: number;
+  }): Promise<{ id: string; success: boolean }>;
 
-export type TokenFaucet<T = Record<string, never>> = T & {
-  faucet: {
-    /**
-     * Claim tokens for a process using a captcha response
-     * @param captchaResponse - The captcha response
-     * @param recipient - The recipient address
-     * @param quantity - The quantity of tokens to claim
-     * @returns The claim id and success status
-     */
-    claimWithCaptchaResponse({
-      captchaResponse,
-      recipient,
-      quantity,
-    }: {
-      captchaResponse: string;
-      recipient: string;
-      quantity: number;
-    }): Promise<{ id: string; success: boolean }>;
+  /**
+   * Returns the captcha URL for a process. The captcha is used to verify a human is solving the captcha. Once you have a captcha response, you can use it to request an authorization token via the requestAuthToken method.
+   * @returns The captcha URL for a process
+   */
+  captchaUrl(): Promise<{
+    processId: string;
+    captchaUrl: string;
+  }>;
 
-    /**
-     * Returns the captcha URL for a process, which once solved, can be used to claim tokens
-     * @returns The captcha URL for a process
-     */
-    captchaUrl(): Promise<{
-      processId: string;
-      captchaUrl: string;
-    }>;
+  /**
+   * Requests an authorization token for a process. The captcha response is used to verify a human is solving the captcha. Once you have an authorization token, you can use it to claim tokens from the faucet via the claimWithAuthToken method.
+   * @param captchaResponse - The captcha response
+   * @returns The status of the request, the authorization token, and the expiration time
+   */
+  requestAuthToken({ captchaResponse }: { captchaResponse: string }): Promise<{
+    status: 'success' | 'error';
+    token: string;
+    expiresAt: number;
+  }>;
 
-    /**
-     * Claims tokens for a process using an auth token
-     * @param authToken - The auth token
-     * @param recipient - The recipient address
-     */
-    requestAuthToken({
-      captchaResponse,
-    }: {
-      captchaResponse: string;
-    }): Promise<{
-      status: 'success' | 'error';
-      token: string;
-      expiresAt: number;
-    }>;
+  /**
+   * Transfers tokens from the faucet wallet to a recipient address using an authorization token. To request an authorization token, solve the captcha from the captchaUrl method.
+   * @param authToken - The authorization token
+   * @param recipient - The recipient address
+   * @param quantity - The quantity of tokens to claim
+   * @returns The message id of the transfer and success status
+   */
+  claimWithAuthToken({
+    authToken,
+    recipient,
+    quantity,
+  }: {
+    authToken: string;
+    recipient: string;
+    quantity: number;
+  }): Promise<{ id: string; success: boolean }>;
 
-    claimWithAuthToken({
-      authToken,
-      recipient,
-      quantity,
-    }: {
-      authToken: string;
-      recipient: string;
-      quantity: number;
-    }): Promise<{ id: string; success: boolean }>;
-    verifyAuthToken(authToken: JsonWebToken): Promise<{
-      valid: boolean;
-    }>;
-  };
-};
+  /**
+   * Verifies an authorization token is valid.
+   * @param authToken - The authorization token
+   * @returns The validity of the authorization token and the expiration time
+   */
+  verifyAuthToken({ authToken }: { authToken: string }): Promise<{
+    valid: boolean;
+    expiresAt: number;
+  }>;
+}
