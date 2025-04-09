@@ -154,7 +154,7 @@ export class ARIO {
     });
   }
 
-  static testnet(): AoARIORead;
+  static testnet(): ARIOWithFaucet<AoARIORead>;
   static testnet(
     config: ARIOConfigNoSigner & { faucetUrl?: string },
   ): ARIOWithFaucet<AoARIORead>;
