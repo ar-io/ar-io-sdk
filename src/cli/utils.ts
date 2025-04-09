@@ -486,6 +486,10 @@ export async function assertEnoughBalanceForArNSPurchase({
   address: string;
   costDetailsParams: AoGetCostDetailsParams;
 }) {
+  if (costDetailsParams.fundFrom === 'turbo') {
+    return;
+  }
+
   const costDetails = await ario.getCostDetails(costDetailsParams);
   if (costDetails.fundingPlan) {
     if (costDetails.fundingPlan.shortfall > 0) {
