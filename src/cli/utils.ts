@@ -302,9 +302,9 @@ export function addressFromOptions<O extends AddressCLIOptions>(
   if (options.address !== undefined) {
     return options.address;
   }
-  const { signerAddress } = requiredContractSignerFromOptions(options);
-  if (signerAddress === undefined) {
-    return undefined;
+  const signer = contractSignerFromOptions(options);
+  if (signer !== undefined) {
+    return signer.signerAddress;
   }
 
   return undefined;
