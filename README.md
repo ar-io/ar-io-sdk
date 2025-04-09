@@ -229,13 +229,15 @@ const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID }); // use the testn
 
 ### Testnet Faucet
 
-The SDK provides a `faucet` property on the `ARIO` class to claim tokens from the testnet faucet (`tARIO`). These tokens are not real and cannot be used on mainnet, but they are useful for testing and development of your applications.
+The SDK provides APIs for claiming tokens via a faucet on the AR.IO Testnet processs (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
 
-To claim testnet tokens from the faucet, you have two options:
+To claim testnet tokens from the faucet, you can use the following methods:
 
 1. Visit [faucet.ar.io](https://faucet.ar.io) - This is the easiest way to quickly get tokens for testing for a single address.
 
-2. Programmatically via the SDK - This is useful if you need to claim tokens for multiple addresses or dynamically within your application. Refer to the async workflow in the [ar-io-testnet-faucet] service for more details about how JWT tokens are handled.
+2. Programmatically via the SDK - This is useful if you need to claim tokens for multiple addresses or dynamically within your application.
+
+Example application workflow for requesting and claiming tokens using JWT:
 
 ```typescript
 const ario = ARIO.testnet();
