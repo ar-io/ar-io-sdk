@@ -15,6 +15,7 @@ import {
   AoANTReadable,
   AoANTRegistryWriteable,
   AoANTWriteable,
+  AoARIORead,
   ArweaveSigner,
   createAoSigner,
   isDistributedEpochData,
@@ -24,7 +25,13 @@ import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { after, before, describe, it } from 'node:test';
-import { DockerComposeEnvironment, Wait } from 'testcontainers';
+import {
+  DockerComposeEnvironment,
+  StartedDockerComposeEnvironment,
+  Wait,
+} from 'testcontainers';
+
+import { TokenFaucet } from '../../../lib/types/types/faucet';
 
 const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
@@ -1284,4 +1291,77 @@ describe('e2e esm tests', async () => {
       }
     });
   });
+});
+
+describe('faucet', async () => {
+  let testnet: TokenFaucet<AoARIORead>;
+  let compose: StartedDockerComposeEnvironment;
+  // let authToken: JsonWebToken;
+  before(async () => {
+    compose = await new DockerComposeEnvironment(
+      projectRootPath,
+      '../docker-compose.test.yml',
+    )
+      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .up(['ao-cu', 'faucet']);
+
+    // setup our testnet instance to use local APIs
+    testnet = ARIO.testnet({
+      faucetUrl: 'http://localhost:3000',
+      process: new AOProcess({
+        processId: ARIO_TESTNET_PROCESS_ID,
+        ao: connect({
+          CU_URL: 'http://localhost:6363',
+        }),
+      }),
+    });
+  });
+
+  after(async () => {
+    await compose.down();
+  });
+
+  it('should return a captcha URL for a process', async () => {
+    const request = await testnet.faucet.captchaUrl();
+    assert.ok(request);
+    assert.ok(request.captchaUrl);
+    assert.ok(request.processId);
+  });
+
+  it('should be able to get an auth token with a valid captcha response', async () => {
+    const captchaResponse = 'test-captcha-response';
+    const authToken = await testnet.faucet.requestAuthToken({
+      captchaResponse,
+    });
+    assert.ok(authToken);
+    assert.ok(authToken.status === 'success');
+    assert.ok(authToken.token);
+    assert.ok(authToken.expiresAt);
+  });
+
+  // it('should be able to claim tokens with an auth token', async () => {
+  //   const authToken = await testnet.faucet.requestAuthToken({
+  //     captchaResponse: 'test-captcha-response',
+  //   });
+  //   const claim = await testnet.faucet.claimWithAuthToken({
+  //     authToken: authToken.token,
+  //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+  //     quantity: 1,
+  //   });
+  //   console.log(claim);
+  //   assert.ok(claim);
+  //   assert.ok(claim.success);
+  // });
+
+  // // claim sync with captcha response
+  // it('should be able to claim tokens with a captcha response', async () => {
+  //   const captchaResponse = 'test-captcha-response';
+  //   const claim = await testnet.faucet.claimWithCaptchaResponse({
+  //     captchaResponse,
+  //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+  //     quantity: 1,
+  //   });
+  //   assert.ok(claim);
+  //   assert.ok(claim.success);
+  // });
 });

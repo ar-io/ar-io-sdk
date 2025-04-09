@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 import { Signer } from '@dha-team/arbundles';
+import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
-import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
+import {
+  ARIO_MAINNET_PROCESS_ID,
+  ARIO_TESTNET_PROCESS_ID,
+} from '../constants.js';
+import { TokenFaucet } from '../types/faucet.js';
 import {
   AoArNSNameDataWithName,
   AoArNSReservedNameData,
@@ -93,6 +98,7 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { createFaucet } from './faucet.js';
 import { TurboArNSPaymentProvider } from './turbo.js';
 
 type ARIOConfigNoSigner = OptionalPaymentUrl<
@@ -120,10 +126,47 @@ export class ARIO {
     }
     return new ARIOReadable(config);
   }
+
+  static testnet(): TokenFaucet<AoARIORead>;
+  static testnet(
+    config: ARIOConfigNoSigner & { faucetUrl?: string },
+  ): TokenFaucet<AoARIORead>;
+  static testnet(
+    config: ARIOConfigWithSigner & { faucetUrl?: string },
+  ): TokenFaucet<AoARIOWrite>;
+  static testnet(
+    config?: ARIOConfig & { faucetUrl?: string },
+  ): TokenFaucet<AoARIORead | AoARIOWrite> {
+    if (config === undefined) {
+      config = {};
+    }
+
+    if (isProcessConfiguration(config)) {
+      const processConfig = {
+        ...config.process,
+        processId: ARIO_TESTNET_PROCESS_ID,
+      };
+
+      // default to cu.ardrive.io if no ao is provided
+      if (processConfig.ao === undefined) {
+        processConfig.ao = connect({
+          CU_URL: 'https://cu.ardrive.io',
+        });
+      }
+
+      return createFaucet<ARIOReadable>(
+        new ARIOReadable({
+          process: new AOProcess(processConfig),
+        }),
+        config.faucetUrl ?? 'https://faucet.ario.permaweb.services',
+      );
+    }
+    throw new InvalidContractConfigurationError();
+  }
 }
 
 export class ARIOReadable implements AoARIORead {
-  protected process: AOProcess;
+  public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
   protected paymentProvider: TurboArNSPaymentProvider; // TODO: this could be an array/map of payment providers
@@ -858,7 +901,7 @@ export class ARIOReadable implements AoARIORead {
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  protected declare process: AOProcess;
+  public declare readonly process: AOProcess;
   private signer: AoSigner;
   protected paymentProvider: TurboArNSPaymentProvider;
 

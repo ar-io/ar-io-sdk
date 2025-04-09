@@ -14,3 +14,19 @@ services:
       PROCESS_CHECKPOINT_TRUSTED_OWNERS: ${PROCESS_CHECKPOINT_TRUSTED_OWNERS:-fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY,-HFe6PleLxj1EdFMYMSetT2NIJioDsZIktn-Y0AwP54,WjnS-s03HWsDSdMnyTdzB1eHZB2QheUWP_FVRVYxkXk}
       GRAPHQL_URL: ${GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
       CHECKPOINT_GRAPHQL_URL: ${CHECKPOINT_GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
+
+  faucet:
+    image: ghcr.io/ar-io/ar-io-testnet-faucet:latest
+    restart: 'no'
+    ports:
+      - ${FAUCET_PORT:-3000}:${FAUCET_PORT:-3000}
+    environment:
+      PORT: ${FAUCET_PORT:-3000}
+      CAPTCHA_ENABLED: ${CAPTCHA_ENABLED:-false}
+      REQUIRE_CAPTCHA_VERIFICATION: ${REQUIRE_CAPTCHA_VERIFICATION:-false}
+      CAPTCHA_RATE_LIMIT_THRESHOLD: ${CAPTCHA_RATE_LIMIT_THRESHOLD:-1000}
+      DEFAULT_MIN_FAUCET_TOKEN_TRANSFER_QTY: ${DEFAULT_MIN_FAUCET_TOKEN_TRANSFER_QTY:-0}
+      ENABLE_SELF_HOSTED_FRONTEND: ${ENABLE_SELF_HOSTED_FRONTEND:-false}
+      WALLET_FILE: ${WALLET_FILE:-./test-wallet.json}
+    volumes:
+      - ${WALLET_FILE:-./test-wallet.json}:/usr/src/app/test-wallet.json
