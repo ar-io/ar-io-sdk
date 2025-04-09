@@ -16,5 +16,6 @@
 export * from './ant-registry.js';
 export * from './ant.js';
 export * from './common.js';
+export * from './faucet.js';
 export * from './io.js';
 export * from './token.js';
