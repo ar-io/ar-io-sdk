@@ -216,8 +216,8 @@ To claim testnet tokens from the testnet token faucet, you can use one of the fo
    - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
    - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
 
-    <details>
-      <summary><i>Example client-side code for claiming tokens</i></summary>
+<details>
+  <summary><i>Example client-side code for claiming tokens</i></summary>
 
 ```typescript
 import { ARIO } from '@ar.io/sdk';
@@ -274,7 +274,7 @@ if (
 }
 ```
 
-     </details>
+</details>
 
 ## ARIO
 
