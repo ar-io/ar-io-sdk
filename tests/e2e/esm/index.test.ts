@@ -1163,12 +1163,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should get ANT versions', async () => {
-      const versions = antVersions.getANTVersions();
+      const versions = await antVersions.getANTVersions();
       assert(versions, 'Failed to get ANT versions');
     });
 
     it('should get latest ANT version', async () => {
-      const version = antVersions.getLatestANTVersion();
+      const version = await antVersions.getLatestANTVersion();
       assert(version, 'Failed to get ANT versions');
     });
   });
