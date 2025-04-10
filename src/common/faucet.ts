@@ -209,7 +209,7 @@ export class ARIOTokenFaucet implements TokenFaucet {
     expiresAt: number;
   }> {
     const res = await fetch(
-      `${this.faucetUrl}/api/token/verify?processId=${this.processId}`,
+      `${this.faucetUrl}/api/token/verify?process-id=${this.processId}`,
       {
         method: 'GET',
         headers: {
