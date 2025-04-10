@@ -125,8 +125,10 @@ export class ARIO {
   ): AoARIORead;
   static mainnet(
     config: ARIOConfigWithSigner & { faucetUrl?: string },
-  ): AoARIORead;
-  static mainnet(config?: ARIOConfig & { faucetUrl?: string }): AoARIORead {
+  ): AoARIOWrite;
+  static mainnet(
+    config?: ARIOConfig & { faucetUrl?: string },
+  ): AoARIORead | AoARIOWrite {
     if (config !== undefined && 'signer' in config) {
       return new ARIOWriteable({
         ...config,
@@ -153,7 +155,7 @@ export class ARIO {
   ): ARIOWithFaucet<AoARIORead>;
   static testnet(
     config: ARIOConfigWithSigner & { faucetUrl?: string },
-  ): ARIOWithFaucet<AoARIORead>;
+  ): ARIOWithFaucet<AoARIOWrite>;
   static testnet(
     config?: ARIOConfig & { faucetUrl?: string },
   ): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
