@@ -630,7 +630,7 @@ export class ARIOReadable implements AoARIORead {
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
 
     if (fundFrom === 'turbo') {
-      const { mARIO, winc } = await this.paymentProvider.getArNSPrice({
+      const { mARIO, winc } = await this.paymentProvider.getArNSPriceDetails({
         intent: replacedBuyRecordWithBuyName,
         name,
         quantity,

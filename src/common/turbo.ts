@@ -84,7 +84,9 @@ export type ArNSPurchaseReceipt = AoTokenCostParams & {
 
 export interface ArNSPaymentProvider {
   // TODO: have this return just the number, for generic payment providers
-  getArNSPrice(params: AoTokenCostParams): Promise<{
+  /** Returns the cost of the action in the Payment Provider's native currency (winc for Turbo) */
+  getPrice(params: AoTokenCostParams): Promise<number>;
+  getArNSPriceDetails(params: AoTokenCostParams): Promise<{
     winc: string;
     mARIO: mARIOToken;
   }>;
@@ -112,7 +114,7 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
     this.signer = signer;
   }
 
-  public async getArNSPrice({
+  public async getArNSPriceDetails({
     intent,
     name,
     quantity,
@@ -133,7 +135,7 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
       mARIO: string;
     }>(url);
 
-    this.logger.debug('getPrice', {
+    this.logger.debug('getArNSPriceDetails', {
       intent,
       name,
       quantity,
@@ -156,6 +158,11 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
       winc: data.winc,
       mARIO: new mARIOToken(+data.mARIO),
     };
+  }
+
+  public async getPrice(params: AoTokenCostParams): Promise<number> {
+    const { winc } = await this.getArNSPriceDetails(params);
+    return +winc;
   }
 
   public async initiateArNSPurchase({
