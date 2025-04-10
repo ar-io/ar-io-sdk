@@ -1454,30 +1454,6 @@ describe('faucet', async () => {
       );
     });
 
-    // it('should be able to claim tokens with an auth token', async () => {
-    //   const authToken = await testnet.faucet.requestAuthToken({
-    //     captchaResponse: 'test-captcha-response',
-    //   });
-    //   const claim = await testnet.faucet.claimWithAuthToken({
-    //     authToken: authToken.token,
-    //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-    //     quantity: 1,
-    //   });
-    //   console.log(claim);
-    //   assert.ok(claim);
-    //   assert.ok(claim.success);
-    // });
-
-    // // claim sync with captcha response
-    // it('should be able to claim tokens with a captcha response', async () => {
-    //   const captchaResponse = 'test-captcha-response';
-    //   const claim = await testnet.faucet.claimWithCaptchaResponse({
-    //     captchaResponse,
-    //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-    //     quantity: 1,
-    //   });
-    //   assert.ok(claim);
-    //   assert.ok(claim.success);
-    // });
+    // TODO: additional tests that actually claim tokens with a local ARIO process
   });
 });

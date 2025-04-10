@@ -16,7 +16,7 @@ services:
       CHECKPOINT_GRAPHQL_URL: ${CHECKPOINT_GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
 
   faucet:
-    image: ghcr.io/ar-io/ar-io-testnet-faucet:latest
+    image: ghcr.io/ar-io/ar-io-faucet:latest
     restart: 'no'
     ports:
       - ${FAUCET_PORT:-3000}:${FAUCET_PORT:-3000}

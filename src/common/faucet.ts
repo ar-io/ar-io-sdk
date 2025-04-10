@@ -73,16 +73,14 @@ export class ARIOTokenFaucet implements TokenFaucet {
     captchaUrl: string;
   }> {
     const res = await fetch(
-      `${this.faucetUrl}/api/captcha/request?process-id=${this.processId}`,
+      `${this.faucetUrl}/api/captcha/url?process-id=${this.processId}`,
       {
         method: 'GET',
       },
     );
 
     if (!res.ok) {
-      const body = await res.json().catch(async () => ({
-        error: await res.text().catch(() => res.statusText),
-      }));
+      const body = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error((body as { error: string }).error);
     }
     const data = (await res.json()) as {
@@ -120,9 +118,7 @@ export class ARIOTokenFaucet implements TokenFaucet {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(async () => ({
-        error: await res.text().catch(() => res.statusText),
-      }));
+      const body = await res.json().catch(() => ({ error: res.statusText }));
       throw new Error((body as { error: string }).error);
     }
 
