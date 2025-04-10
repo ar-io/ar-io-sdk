@@ -160,7 +160,7 @@ export class ARIO {
     config?: ARIOConfig & { faucetUrl?: string },
   ): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
     if (config !== undefined && 'signer' in config) {
-      return createFaucet<ARIOWriteable>(
+      return createFaucet(
         new ARIOWriteable({
           ...config,
           process: new AOProcess({
@@ -175,7 +175,7 @@ export class ARIO {
       );
     }
 
-    return createFaucet<ARIOReadable>(
+    return createFaucet(
       new ARIOReadable({
         ...config,
         process: new AOProcess({

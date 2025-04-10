@@ -19,6 +19,7 @@ import {
   AoARIORead,
   ArweaveSigner,
   createAoSigner,
+  createFaucet,
   isDistributedEpochData,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
@@ -1332,7 +1333,7 @@ describe('faucet', async () => {
     });
   });
 
-  describe('faucet APIs', () => {
+  describe('captchaUrl()', () => {
     it('should return a captcha URL for a process', async () => {
       const request = await testnet.faucet.captchaUrl();
       assert.ok(request);
@@ -1340,7 +1341,22 @@ describe('faucet', async () => {
       assert.ok(request.processId);
     });
 
-    it('should be able to get an auth token with a valid captcha response', async () => {
+    it('should throw an error if the process is not supported by the faucet', async () => {
+      const fake = createFaucet(
+        new ARIOReadable({
+          process: new AOProcess({
+            processId: 'some-non-supported-process-id',
+            ao: aoClient,
+          }),
+        }),
+        'http://localhost:3000',
+      );
+      await assert.rejects(async () => await fake.faucet.captchaUrl(), Error);
+    });
+  });
+
+  describe('requestAuthToken()', () => {
+    it('should return a success status with a valid captcha response', async () => {
       const captchaResponse = 'test-captcha-response';
       const authToken = await testnet.faucet.requestAuthToken({
         captchaResponse,
@@ -1350,31 +1366,118 @@ describe('faucet', async () => {
       assert.ok(authToken.token);
       assert.ok(authToken.expiresAt);
     });
+
+    it('should throw an error if the captcha response is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.requestAuthToken({ captchaResponse: '' }),
+        Error,
+      );
+    });
   });
 
-  // it('should be able to claim tokens with an auth token', async () => {
-  //   const authToken = await testnet.faucet.requestAuthToken({
-  //     captchaResponse: 'test-captcha-response',
-  //   });
-  //   const claim = await testnet.faucet.claimWithAuthToken({
-  //     authToken: authToken.token,
-  //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-  //     quantity: 1,
-  //   });
-  //   console.log(claim);
-  //   assert.ok(claim);
-  //   assert.ok(claim.success);
-  // });
+  describe('verifyAuthToken()', () => {
+    it('should return true for a valid auth token', async () => {
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse: 'test-captcha-response',
+      });
+      const valid = await testnet.faucet.verifyAuthToken({
+        authToken: authToken.token,
+      });
+      assert.ok(valid);
+      assert.ok(valid.valid);
+      assert.ok(valid.expiresAt);
+    });
+  });
 
-  // // claim sync with captcha response
-  // it('should be able to claim tokens with a captcha response', async () => {
-  //   const captchaResponse = 'test-captcha-response';
-  //   const claim = await testnet.faucet.claimWithCaptchaResponse({
-  //     captchaResponse,
-  //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
-  //     quantity: 1,
-  //   });
-  //   assert.ok(claim);
-  //   assert.ok(claim.success);
-  // });
+  describe('claimWithAuthToken()', () => {
+    it('should throw an error if the auth token is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+    it('should throw an error if the recipient is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the quantity is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: -1,
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the quantity is not a number', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            // @ts-expect-error - we are testing an error
+            quantity: 'not-a-number',
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the faucet wallet does not have enough balance', async () => {
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse: 'test-captcha-response',
+      });
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: authToken.token,
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+
+    // it('should be able to claim tokens with an auth token', async () => {
+    //   const authToken = await testnet.faucet.requestAuthToken({
+    //     captchaResponse: 'test-captcha-response',
+    //   });
+    //   const claim = await testnet.faucet.claimWithAuthToken({
+    //     authToken: authToken.token,
+    //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+    //     quantity: 1,
+    //   });
+    //   console.log(claim);
+    //   assert.ok(claim);
+    //   assert.ok(claim.success);
+    // });
+
+    // // claim sync with captcha response
+    // it('should be able to claim tokens with a captcha response', async () => {
+    //   const captchaResponse = 'test-captcha-response';
+    //   const claim = await testnet.faucet.claimWithCaptchaResponse({
+    //     captchaResponse,
+    //     recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+    //     quantity: 1,
+    //   });
+    //   assert.ok(claim);
+    //   assert.ok(claim.success);
+    // });
+  });
 });

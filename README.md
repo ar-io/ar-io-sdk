@@ -212,63 +212,67 @@ To claim testnet tokens from the testnet token faucet, you can use one of the fo
 
 2. Programmatically via the SDK - useful if you need to claim tokens for multiple addresses or dynamically within your application.
 
-   <details>
-     <summary><i>Example client-side code for claiming tokens</i></summary>
+   - `ARIO.testnet().faucet.captchaUrl()` - returns the captcha URL for the testnet faucet. Open this URL in a new browser window and listen for the `ario-jwt-success` event to be emitted.
+   - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
+   - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
 
-   ```typescript
-   import { ARIO } from '@ar.io/sdk';
+    <details>
+      <summary><i>Example client-side code for claiming tokens</i></summary>
 
-   const testnet = ARIO.testnet();
-   const captchaUrl = await ario.faucet.captchaUrl();
+```typescript
+import { ARIO } from '@ar.io/sdk';
 
-   // open the captcha URL in the browser, and listen for the auth token event
-   const captchaWindow = window.open(
-     captchaUrl.captchaUrl,
-     '_blank',
-     'width=600,height=600',
-   );
-   /**
-    * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
-    * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
-    */
-   window.parent.addEventListener('message', async (event) => {
-     if (event.data.type === 'ario-jwt-success') {
-       localStorage.setItem('ario-jwt', event.data.token);
-       localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
-       // close our captcha window
-       captchaWindow?.close();
-       // claim the tokens using the JWT token
-       const res = await testnet.faucet
-         .claimWithAuthToken({
-           authToken: event.data.token,
-           recipient: await window.arweaveWallet.getActiveAddress(),
-           quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
-         })
-         .then((res) => {
-           alert(
-             'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
-           );
-         })
-         .catch((err) => {
-           alert(`Failed to claim tokens: ${err}`);
-         });
-     }
-   });
+const testnet = ARIO.testnet();
+const captchaUrl = await ario.faucet.captchaUrl();
 
-   /**
-    * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
-    */
-   if (
-     localStorage.getItem('ario-jwt-expires-at') &&
-     Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
-   ) {
-     const res = await testnet.faucet.claimWithAuthToken({
-       authToken: localStorage.getItem('ario-jwt') ?? '',
-       recipient: await window.arweaveWallet.getActiveAddress(),
-       quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
-     });
-   }
-   ```
+// open the captcha URL in the browser, and listen for the auth token event
+const captchaWindow = window.open(
+  captchaUrl.captchaUrl,
+  '_blank',
+  'width=600,height=600',
+);
+/**
+ * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
+ * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
+ */
+window.parent.addEventListener('message', async (event) => {
+  if (event.data.type === 'ario-jwt-success') {
+    localStorage.setItem('ario-jwt', event.data.token);
+    localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
+    // close our captcha window
+    captchaWindow?.close();
+    // claim the tokens using the JWT token
+    const res = await testnet.faucet
+      .claimWithAuthToken({
+        authToken: event.data.token,
+        recipient: await window.arweaveWallet.getActiveAddress(),
+        quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+      })
+      .then((res) => {
+        alert(
+          'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
+        );
+      })
+      .catch((err) => {
+        alert(`Failed to claim tokens: ${err}`);
+      });
+  }
+});
+
+/**
+ * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
+ */
+if (
+  localStorage.getItem('ario-jwt-expires-at') &&
+  Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
+) {
+  const res = await testnet.faucet.claimWithAuthToken({
+    authToken: localStorage.getItem('ario-jwt') ?? '',
+    recipient: await window.arweaveWallet.getActiveAddress(),
+    quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+  });
+}
+```
 
      </details>
 
