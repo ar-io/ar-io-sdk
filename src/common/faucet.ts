@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { TokenFaucet } from '../types/faucet.js';
-import { ARIOReadable } from './io.js';
+import { ARIOWithFaucet, TokenFaucet } from '../types/faucet.js';
+import { ARIOReadable, ARIOWriteable } from './io.js';
 
 /**
  * Creates a proxy object that implements the TokenFaucet interface. It wraps the ARIOReadable instance and adds methods for claiming tokens from the faucet API.
@@ -22,12 +22,10 @@ import { ARIOReadable } from './io.js';
  * @param faucetApiUrl - The URL of the faucet API
  * @returns A proxy object that implements the TokenFaucet interface
  */
-export function createFaucet<T extends ARIOReadable>(
-  arioInstance: T,
+export function createFaucet(
+  arioInstance: ARIOReadable | ARIOWriteable,
   faucetApiUrl: string,
-): T & {
-  faucet: TokenFaucet;
-} {
+): ARIOWithFaucet<ARIOReadable | ARIOWriteable> {
   const faucet = new ARIOTokenFaucet({
     faucetUrl: faucetApiUrl,
     processId: arioInstance.process.processId,
@@ -48,9 +46,7 @@ export function createFaucet<T extends ARIOReadable>(
       return undefined;
     },
   });
-  return proxy as T & {
-    faucet: TokenFaucet;
-  };
+  return proxy as ARIOWithFaucet<ARIOReadable | ARIOWriteable>;
 }
 
 export class ARIOTokenFaucet implements TokenFaucet {
@@ -76,10 +72,24 @@ export class ARIOTokenFaucet implements TokenFaucet {
     processId: string;
     captchaUrl: string;
   }> {
-    return {
-      processId: this.processId,
-      captchaUrl: `${this.faucetUrl}/captcha?process-id=${this.processId}`,
+    const res = await fetch(
+      `${this.faucetUrl}/api/captcha/request?process-id=${this.processId}`,
+      {
+        method: 'GET',
+      },
+    );
+
+    if (!res.ok) {
+      const body = await res.json().catch(async () => ({
+        error: await res.text().catch(() => res.statusText),
+      }));
+      throw new Error((body as { error: string }).error);
+    }
+    const data = (await res.json()) as {
+      processId: string;
+      captchaUrl: string;
     };
+    return data;
   }
 
   /**
@@ -108,9 +118,16 @@ export class ARIOTokenFaucet implements TokenFaucet {
         captchaResponse,
       }),
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return await res.json();
+
+    if (!res.ok) {
+      const body = await res.json().catch(async () => ({
+        error: await res.text().catch(() => res.statusText),
+      }));
+      throw new Error((body as { error: string }).error);
+    }
+
+    const data = (await res.json()) as { id: string; success: boolean };
+    return data;
   }
 
   /**
@@ -135,9 +152,16 @@ export class ARIOTokenFaucet implements TokenFaucet {
         captchaResponse,
       }),
     });
-    const data = await res.json();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error((body as { error: string }).error);
+    }
+    const data = (await res.json()) as {
+      status: 'success' | 'error';
+      token: string;
+      expiresAt: number;
+    };
     return data;
   }
 
@@ -169,9 +193,14 @@ export class ARIOTokenFaucet implements TokenFaucet {
         processId: this.processId,
       }),
     });
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return await res.json();
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error((body as { error: string }).error);
+    }
+
+    const data = (await res.json()) as { id: string; success: boolean };
+    return data;
   }
 
   /**
@@ -184,7 +213,7 @@ export class ARIOTokenFaucet implements TokenFaucet {
     expiresAt: number;
   }> {
     const res = await fetch(
-      `${this.faucetUrl}/api/token/verify?process-id=${this.processId}`,
+      `${this.faucetUrl}/api/token/verify?processId=${this.processId}`,
       {
         method: 'GET',
         headers: {
@@ -193,8 +222,12 @@ export class ARIOTokenFaucet implements TokenFaucet {
         },
       },
     );
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return await res.json();
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error((body as { error: string }).error);
+    }
+    const data = (await res.json()) as { valid: boolean; expiresAt: number };
+    return data;
   }
 }
