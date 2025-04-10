@@ -1277,10 +1277,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     if (params.fundFrom === 'turbo') {
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Buy-Name',
-        name: params.name,
-        type: params.type,
-        processId: params.processId,
-        years: params.years,
+        ...params,
       });
     }
 
@@ -1349,8 +1346,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     if (params.fundFrom === 'turbo') {
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Extend-Lease',
-        name: params.name,
-        years: params.years,
+        ...params,
       });
     }
 
@@ -1375,8 +1371,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     if (params.fundFrom === 'turbo') {
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Increase-Undername-Limit',
-        name: params.name,
-        quantity: params.increaseCount,
+        ...params,
       });
     }
 
