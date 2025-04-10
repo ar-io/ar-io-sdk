@@ -26,7 +26,6 @@ import {
   ProcessId,
   Timestamp,
   TransactionId,
-  TurboAoMessageResult,
   WalletAddress,
   WriteOptions,
 } from './index.js';
@@ -709,21 +708,12 @@ export interface AoARIOWrite extends AoARIORead {
     failedGateways: WalletAddress[];
   }>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
-  buyRecord: AoWriteAction<
-    AoBuyRecordParams,
-    AoMessageResult | TurboAoMessageResult
-  >;
-  upgradeRecord: AoWriteAction<
-    AoArNSPurchaseParams,
-    AoMessageResult | TurboAoMessageResult
-  >;
-  extendLease: AoWriteAction<
-    AoExtendLeaseParams,
-    AoMessageResult | TurboAoMessageResult
-  >;
+  buyRecord: AoWriteAction<AoBuyRecordParams, AoMessageResult>;
+  upgradeRecord: AoWriteAction<AoArNSPurchaseParams, AoMessageResult>;
+  extendLease: AoWriteAction<AoExtendLeaseParams, AoMessageResult>;
   increaseUndernameLimit: AoWriteAction<
     AoIncreaseUndernameLimitParams,
-    AoMessageResult | TurboAoMessageResult
+    AoMessageResult
   >;
   cancelWithdrawal: AoWriteAction<{
     gatewayAddress?: WalletAddress;

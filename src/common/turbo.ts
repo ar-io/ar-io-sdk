@@ -15,18 +15,19 @@
  */
 import { ArconnectSigner, SignatureConfig } from '@dha-team/arbundles';
 import { AxiosInstance, RawAxiosRequestHeaders } from 'axios';
-import { v4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   AoMessageResult,
-  FundFromTurboSigner,
   TransactionId,
+  TurboArNSSigner,
   WriteOptions,
 } from '../types/common.js';
-import { Intent } from '../types/io.js';
+import { AoTokenCostParams } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
 import { toB64Url } from '../utils/base64.js';
 import { createAxiosInstance } from '../utils/http-client.js';
+import { urlWithSearchParams } from '../utils/url.js';
 import { ILogger, Logger } from './logger.js';
 
 export interface TurboConfig {
@@ -36,22 +37,16 @@ export interface TurboConfig {
   logger?: ILogger;
   // The HTTP client to use
   axios?: AxiosInstance;
-  signer?: FundFromTurboSigner;
+  signer?: TurboArNSSigner;
 }
 
-export type InitiateArNSPurchaseParams = {
-  type?: string;
-  years?: number;
-  increaseQty?: number;
-  name: string;
-  intent: Intent;
-  processId?: TransactionId;
-};
-
-export async function signedRequestHeadersFromSigner(
-  signer: FundFromTurboSigner,
-  nonce: string = v4(),
-): Promise<RawAxiosRequestHeaders> {
+export async function signedRequestHeadersFromSigner({
+  signer,
+  nonce = uuidv4(),
+}: {
+  signer: TurboArNSSigner;
+  nonce?: string;
+}): Promise<RawAxiosRequestHeaders> {
   await (signer as ArconnectSigner).setPublicKey?.();
   const signature = await signer.sign(Uint8Array.from(Buffer.from(nonce)));
 
@@ -80,32 +75,30 @@ export async function signedRequestHeadersFromSigner(
   };
 }
 
-export type ArNSPurchaseReceipt = InitiateArNSPurchaseParams & {
+export type ArNSPurchaseReceipt = AoTokenCostParams & {
   wincQty: string;
   mARIOQty: string;
   usdArRate: number;
   createdDate: string;
 };
 
-export type ArNSPurchaseResult = {
-  arioWriteResult: AoMessageResult;
-  purchaseReceipt: ArNSPurchaseReceipt;
-};
-
-export interface FundFromTurboInterface {
-  getArNSPurchasePrice(params: InitiateArNSPurchaseParams): Promise<number>;
+export interface ArNSPaymentProvider {
+  // TODO: have this return just the number, for generic payment providers
+  getArNSPrice(params: AoTokenCostParams): Promise<{
+    winc: string;
+    mARIO: mARIOToken;
+  }>;
   initiateArNSPurchase(
-    params: InitiateArNSPurchaseParams,
+    params: AoTokenCostParams & { processId?: TransactionId },
     options: WriteOptions,
-  ): Promise<ArNSPurchaseResult>;
-  getArNSPurchaseReceipt(intent: string): Promise<ArNSPurchaseReceipt>;
+  ): Promise<AoMessageResult<ArNSPurchaseReceipt>>;
 }
 
-export class FundFromTurbo {
+export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
   private readonly paymentUrl: string;
   private readonly axios: AxiosInstance;
   private readonly logger: ILogger;
-  private readonly signer?: FundFromTurboSigner;
+  private readonly signer?: TurboArNSSigner;
 
   constructor({
     paymentUrl = 'https://payment.ardrive.io',
@@ -119,32 +112,31 @@ export class FundFromTurbo {
     this.signer = signer;
   }
 
-  public async getArNSPurchasePrice({
+  public async getArNSPrice({
     intent,
     name,
-    increaseQty,
+    quantity,
     type,
     years,
-  }: InitiateArNSPurchaseParams): Promise<{ winc: string; mARIO: mARIOToken }> {
-    const url = new URL(`${this.paymentUrl}/v1/arns/price/${intent}/${name}`);
-    if (increaseQty !== undefined) {
-      url.searchParams.append('increaseQty', increaseQty.toString());
-    }
-    if (type !== undefined) {
-      url.searchParams.append('type', type);
-    }
-    if (years !== undefined) {
-      url.searchParams.append('years', years.toString());
-    }
+  }: AoTokenCostParams): Promise<{ winc: string; mARIO: mARIOToken }> {
+    const url = urlWithSearchParams({
+      baseUrl: `${this.paymentUrl}/v1/arns/price/${intent}/${name}`,
+      params: {
+        increaseQty: quantity,
+        type,
+        years,
+      },
+    });
+
     const { data, status } = await this.axios.get<{
       winc: string;
       mARIO: string;
-    }>(url.toString());
+    }>(url);
 
-    this.logger.debug('getArNSPurchasePrice', {
+    this.logger.debug('getPrice', {
       intent,
       name,
-      increaseQty,
+      quantity,
       type,
       years,
       data,
@@ -169,57 +161,49 @@ export class FundFromTurbo {
   public async initiateArNSPurchase({
     intent,
     name,
-    increaseQty,
-    processId,
+    quantity,
     type,
+    processId,
     years,
-  }: InitiateArNSPurchaseParams): Promise<ArNSPurchaseResult> {
+  }: AoTokenCostParams & {
+    processId?: TransactionId;
+  }): Promise<AoMessageResult<ArNSPurchaseReceipt>> {
     if (!this.signer) {
       throw new Error(
         'Signer required for initiating ArNS purchase with Turbo',
       );
     }
 
-    const nonce = v4();
-
-    const path = new URL(
-      `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
-    );
-    if (increaseQty !== undefined) {
-      path.searchParams.append('increaseQty', increaseQty.toString());
-    }
-    if (processId !== undefined) {
-      path.searchParams.append('processId', processId);
-    }
-    if (type !== undefined) {
-      path.searchParams.append('type', type);
-    }
-    if (years !== undefined) {
-      path.searchParams.append('years', years.toString());
-    }
-    const { data, status } = await this.axios.post<ArNSPurchaseResult>(
-      path.toString(),
-      '',
-      {
-        headers: {
-          ...((await signedRequestHeadersFromSigner(
-            this.signer,
-            nonce,
-          )) as RawAxiosRequestHeaders),
-        },
+    const url = urlWithSearchParams({
+      baseUrl: `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
+      params: {
+        increaseQty: quantity,
+        processId,
+        type,
+        years,
       },
-    );
+    });
+
+    const headers = await signedRequestHeadersFromSigner({
+      signer: this.signer,
+    });
+
+    const { data, status } = await this.axios.post<{
+      arioWriteResult: AoMessageResult;
+      purchaseReceipt: ArNSPurchaseReceipt;
+    }>(url, null, {
+      headers,
+    });
 
     this.logger.debug('Initiated ArNS purchase', {
       intent,
       name,
-      increaseQty,
+      quantity,
       processId,
       type,
       years,
       data,
       status,
-      nonce,
     });
 
     if (status !== 200) {
@@ -228,6 +212,9 @@ export class FundFromTurbo {
       );
     }
 
-    return data;
+    return {
+      id: data.arioWriteResult.id,
+      result: data.purchaseReceipt,
+    };
   }
 }

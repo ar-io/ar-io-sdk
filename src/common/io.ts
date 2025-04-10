@@ -39,7 +39,6 @@ import {
   PaginationResult,
   ProcessConfiguration,
   TransactionId,
-  TurboAoMessageResult,
   WalletAddress,
   WithSigner,
   WriteOptions,
@@ -94,7 +93,7 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
-import { FundFromTurbo, InitiateArNSPurchaseParams } from './fundFromTurbo.js';
+import { TurboArNSPaymentProvider } from './turbo.js';
 
 type ARIOConfigNoSigner = OptionalPaymentUrl<
   OptionalArweave<ProcessConfiguration>
@@ -127,7 +126,7 @@ export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  protected fundFromTurbo: FundFromTurbo;
+  protected paymentProvider: TurboArNSPaymentProvider; // TODO: this could be an array/map of payment providers
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
@@ -144,7 +143,7 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.fundFromTurbo = new FundFromTurbo({
+    this.paymentProvider = new TurboArNSPaymentProvider({
       paymentUrl: config?.paymentUrl,
     });
   }
@@ -212,8 +211,8 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
+  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
@@ -631,10 +630,10 @@ export class ARIOReadable implements AoARIORead {
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
 
     if (fundFrom === 'turbo') {
-      const { mARIO, winc } = await this.fundFromTurbo.getArNSPurchasePrice({
+      const { mARIO, winc } = await this.paymentProvider.getArNSPrice({
         intent: replacedBuyRecordWithBuyName,
         name,
-        increaseQty: quantity,
+        quantity,
         type,
         years,
       });
@@ -861,7 +860,7 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  protected fundFromTurbo: FundFromTurbo;
+  protected paymentProvider: TurboArNSPaymentProvider;
 
   constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
@@ -874,7 +873,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
-    this.fundFromTurbo = new FundFromTurbo({
+    this.paymentProvider = new TurboArNSPaymentProvider({
       signer: signer as Signer,
       paymentUrl,
     });
@@ -1271,20 +1270,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     });
   }
 
-  private async sendArNSPurchaseIntentToTurbo(
-    params: InitiateArNSPurchaseParams,
-  ): Promise<TurboAoMessageResult> {
-    const { arioWriteResult, purchaseReceipt } =
-      await this.fundFromTurbo.initiateArNSPurchase(params);
-    return { ...arioWriteResult, receipt: purchaseReceipt };
-  }
-
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult | TurboAoMessageResult> {
+  ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
-      return this.sendArNSPurchaseIntentToTurbo({
+      return this.paymentProvider.initiateArNSPurchase({
         intent: 'Buy-Name',
         name: params.name,
         type: params.type,
@@ -1321,9 +1312,9 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async upgradeRecord(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult | TurboAoMessageResult> {
+  ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
-      return this.sendArNSPurchaseIntentToTurbo({
+      return this.paymentProvider.initiateArNSPurchase({
         intent: 'Upgrade-Name',
         name: params.name,
       });
@@ -1354,9 +1345,9 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async extendLease(
     params: AoExtendLeaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult | TurboAoMessageResult> {
+  ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
-      return this.sendArNSPurchaseIntentToTurbo({
+      return this.paymentProvider.initiateArNSPurchase({
         intent: 'Extend-Lease',
         name: params.name,
         years: params.years,
@@ -1380,12 +1371,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async increaseUndernameLimit(
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult | TurboAoMessageResult> {
+  ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
-      return this.sendArNSPurchaseIntentToTurbo({
+      return this.paymentProvider.initiateArNSPurchase({
         intent: 'Increase-Undername-Limit',
         name: params.name,
-        increaseQty: params.increaseCount,
+        quantity: params.increaseCount,
       });
     }
 
