@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Signer } from '@dha-team/arbundles';
 import Arweave from 'arweave';
 
 import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
@@ -33,6 +34,7 @@ import {
   AoUpdateGatewaySettingsParams,
   AoWeightedObserver,
   OptionalArweave,
+  OptionalPaymentUrl,
   PaginationParams,
   PaginationResult,
   ProcessConfiguration,
@@ -91,9 +93,14 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { TurboArNSPaymentProvider } from './turbo.js';
 
-type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
-type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfigNoSigner = OptionalPaymentUrl<
+  OptionalArweave<ProcessConfiguration>
+>;
+type ARIOConfigWithSigner = WithSigner<
+  OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
+>;
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
@@ -119,7 +126,9 @@ export class ARIOReadable implements AoARIORead {
   protected process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+  protected paymentProvider: TurboArNSPaymentProvider; // TODO: this could be an array/map of payment providers
+
+  constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
@@ -134,6 +143,9 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+    this.paymentProvider = new TurboArNSPaymentProvider({
+      paymentUrl: config?.paymentUrl,
+    });
   }
 
   async getInfo(): Promise<{
@@ -199,8 +211,8 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
+  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
@@ -616,6 +628,23 @@ export class ARIOReadable implements AoARIORead {
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const replacedBuyRecordWithBuyName =
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
+
+    if (fundFrom === 'turbo') {
+      const { mARIO, winc } = await this.paymentProvider.getArNSPriceDetails({
+        intent: replacedBuyRecordWithBuyName,
+        name,
+        quantity,
+        type,
+        years,
+      });
+
+      return {
+        tokenCost: +mARIO,
+        wincQty: winc,
+        discounts: [],
+      };
+    }
+
     const allTags = [
       { name: 'Action', value: 'Cost-Details' },
       {
@@ -831,7 +860,9 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   protected declare process: AOProcess;
   private signer: AoSigner;
-  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+  protected paymentProvider: TurboArNSPaymentProvider;
+
+  constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
       super({
         process: new AOProcess({
@@ -842,6 +873,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
+    this.paymentProvider = new TurboArNSPaymentProvider({
+      signer: signer as Signer,
+      paymentUrl,
+    });
   }
 
   async transfer(
@@ -1239,6 +1274,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Buy-Name',
+        ...params,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1268,6 +1310,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Upgrade-Name',
+        name: params.name,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1294,6 +1343,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Extend-Lease',
+        ...params,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1312,6 +1368,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Increase-Undername-Limit',
+        ...params,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1358,6 +1421,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      throw new Error(
+        'Turbo funding is not yet supported for primary name requests',
+      );
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,

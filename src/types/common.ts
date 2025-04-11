@@ -33,10 +33,13 @@ export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
 export type ProcessId = string;
-
 export type OptionalArweave<T = NonNullable<unknown>> = {
   arweave?: Arweave;
 } & T;
+export type OptionalPaymentUrl<T = NonNullable<unknown>> = {
+  paymentUrl?: string;
+} & T;
+export type TurboArNSSigner = Signer;
 export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
@@ -58,7 +61,12 @@ export type WriteParameters<Input> = WithSigner<
   Required<ReadParameters<Input>>
 >;
 
-export type AoMessageResult = { id: string };
+export type AoMessageResult<
+  T = Record<string, string | number | boolean | null>,
+> = {
+  id: string;
+  result?: T;
+};
 
 export type AoPrimaryNameRequest = {
   name: string;
