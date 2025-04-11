@@ -1,3 +1,12 @@
+# [3.10.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.1...v3.10.0-alpha.1) (2025-04-11)
+
+
+### Features
+
+* **buy-arns:** include fundFromTurbo on extend/upgrade/increaseUndLmt methods PE-7751 ([ead2477](https://github.com/ar-io/ar-io-sdk/commit/ead2477212e7c9841c7b7092664c837de6ea6096))
+* **buy-arns:** init fund from turbo option PE-7751 ([76406c7](https://github.com/ar-io/ar-io-sdk/commit/76406c700422ea8145445fd0dbb1b23b94d37cf5))
+* **turbo:** get winc price from turbo on costDetails when fundFrom = turbo PE-7751 ([877ff36](https://github.com/ar-io/ar-io-sdk/commit/877ff36068290abb2ce2a8bc4b0dfd89953a5046))
+
 ## [3.9.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0...v3.9.1) (2025-03-31)
 
 
