@@ -13,118 +13,14 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
-  - [Networks (Mainnet, Testnet, etc.)](#networks-mainnet-testnet-etc)
-  - [Web](#web)
-    - [Bundlers (Webpack, Rollup, ESbuild, etc.)](#bundlers-webpack-rollup-esbuild-etc)
-    - [Browser](#browser)
-  - [Node](#node)
-    - [ESM (NodeNext)](#esm-nodenext)
-    - [CJS](#cjs)
-  - [Typescript](#typescript)
-- [ARIOToken & mARIOToken](#ariotoken--mariotoken)
-  - [Converting ARIO to mARIO](#converting-ario-to-mario)
-- [ARIO Process](#ario-process)
-  - [General](#general)
-    - [`init({ signer })`](#init-signer-)
-    - [`getInfo()`](#getinfo)
-    - [`getTokenSupply()`](#gettokensupply)
-    - [`getBalance({ address })`](#getbalance-address-)
-    - [`getBalances({ cursor, limit, sortBy, sortOrder })`](#getbalances-cursor-limit-sortby-sortorder-)
-    - [`transfer({ target, qty })`](#transfer-target-qty-)
-  - [Vaults](#vaults)
-    - [`getVault({ address, vaultId })`](#getvault-address-vaultid-)
-    - [`getVaults({ cursor, limit, sortBy, sortOrder })`](#getvaults-cursor-limit-sortby-sortorder-)
-    - [`vaultedTransfer({ recipient, quantity, lockLengthMs, revokable })`](#vaultedtransfer-recipient-quantity-locklengthms-revokable-)
-    - [`revokeVault({ recipient, vaultId })`](#revokevault-recipient-vaultid-)
-    - [`createVault({ lockLengthMs, quantity })`](#createvault-locklengthms-quantity-)
-    - [`extendVault({ vaultId, extendLengthMs })`](#extendvault-vaultid-extendlengthms-)
-    - [`increaseVault({ vaultId, quantity })`](#increasevault-vaultid-quantity-)
-  - [Gateways](#gateways)
-    - [`getGateway({ address })`](#getgateway-address-)
-    - [`getGateways({ cursor, limit, sortBy, sortOrder })`](#getgateways-cursor-limit-sortby-sortorder-)
-    - [`getGatewayDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getgatewaydelegates-address-cursor-limit-sortby-sortorder-)
-    - [`joinNetwork(params)`](#joinnetworkparams)
-    - [`leaveNetwork()`](#leavenetwork)
-    - [`updateGatewaySettings({ ...settings })`](#updategatewaysettings-settings-)
-    - [`increaseDelegateStake({ target, qty })`](#increasedelegatestake-target-qty-)
-    - [`decreaseDelegateStake({ target, qty, instant })`](#decreasedelegatestake-target-qty-instant-)
-    - [`getDelegations({ address, cursor, limit, sortBy, sortOrder })`](#getdelegations-address-cursor-limit-sortby-sortorder-)
-    - [`instantWithdrawal({ gatewayAddress, vaultId })`](#instantwithdrawal-gatewayaddress-vaultid-)
-    - [`cancelWithdrawal({ gatewayAddress, vaultId })`](#cancelwithdrawal-gatewayaddress-vaultid-)
-    - [`getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`](#getalloweddelegates-address-cursor-limit-sortby-sortorder-)
-    - [`getGatewayVaults({ address, cursor, limit, sortBy, sortOrder })`](#getgatewayvaults-address-cursor-limit-sortby-sortorder-)
-    - [`getAllGatewayVaults({ cursor, limit, sortBy, sortOrder })`](#getallgatewayvaults-cursor-limit-sortby-sortorder-)
-    - [`increaseOperatorStake({ qty })`](#increaseoperatorstake-qty-)
-    - [`decreaseOperatorStake({ qty })`](#decreaseoperatorstake-qty-)
-    - [`redelegateStake({ target, source, stakeQty, vaultId })`](#redelegatestake-target-source-stakeqty-vaultid-)
-    - [`getRedelegationFee({ address })`](#getredelegationfee-address-)
-    - [`getAllDelegates({ cursor, limit, sortBy, sortOrder })`](#getalldelegates-cursor-limit-sortby-sortorder-)
-  - [Arweave Name System (ArNS)](#arweave-name-system-arns)
-    - [`buyRecord({ name, type, years, processId })`](#buyrecord-name-type-years-processid-)
-    - [`getArNSRecord({ name })`](#getarnsrecord-name-)
-    - [`getArNSRecords({ cursor, limit, sortBy, sortOrder })`](#getarnsrecords-cursor-limit-sortby-sortorder-)
-    - [`increaseUndernameLimit({ name, qty })`](#increaseundernamelimit-name-qty-)
-    - [`extendLease({ name, years })`](#extendlease-name-years-)
-    - [`getTokenCost({ intent, ...args })`](#gettokencost-intent-args-)
-    - [`getCostDetails({ intent, fromAddress, fundFrom, ...args})`](#getcostdetails-intent-fromaddress-fundfrom-args)
-    - [`getDemandFactor()`](#getdemandfactor)
-    - [`getArNSReturnedNames({ cursor, limit, sortBy, sortOrder })`](#getarnsreturnednames-cursor-limit-sortby-sortorder-)
-    - [`getArNSReturnedName({ name })`](#getarnsreturnedname-name-)
-  - [Epochs](#epochs)
-    - [`getCurrentEpoch()`](#getcurrentepoch)
-    - [`getEpoch({ epochIndex })`](#getepoch-epochindex-)
-    - [`getEligibleEpochRewards({ epochIndex }, { cursor, limit, sortBy, sortOrder })](#geteligibleepochrewards-epochindex---cursor-limit-sortby-sortorder-)
-    - [`getObservations({ epochIndex })`](#getobservations-epochindex-)
-    - [`getDistributions({ epochIndex })`](#getdistributions-epochindex-)
-    - [`saveObservations({ reportTxId, failedGateways })`](#saveobservations-reporttxid-failedgateways-)
-    - [`getPrescribedObservers({ epochIndex })`](#getprescribedobservers-epochindex-)
-  - [Primary Names](#primary-names)
-    - [`getPrimaryNames({ cursor, limit, sortBy, sortOrder })`](#getprimarynames-cursor-limit-sortby-sortorder-)
-    - [`getPrimaryName({ name, address })`](#getprimaryname-name-address-)
-    - [`requestPrimaryName({ name })`](#requestprimaryname-name-)
-    - [`getPrimaryNameRequest({ initiator })`](#getprimarynamerequest-initiator-)
-  - [Configuration](#configuration)
+- [Networks (Mainnet, Testnet, etc.)](#networks-mainnet-testnet-etc)
+- [ARIO](#ario)
 - [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
-  - [ANT APIs](#ant-apis)
-    - [`init({ processId, signer })`](#init-processid-signer-)
-    - [`getInfo()`](#getinfo-1)
-    - [`getHandlers()`](#gethandlers)
-    - [`getState()`](#getstate)
-    - [`getOwner()`](#getowner)
-    - [`getControllers()`](#getcontrollers)
-    - [`getRecords()`](#getrecords)
-    - [`transfer({ target })`](#transfer-target-)
-    - [`setController({ controller })`](#setcontroller-controller-)
-    - [`removeController({ controller })`](#removecontroller-controller-)
-    - [`setBaseNameRecord({ transactionId, ttlSeconds })`](#setbasenamerecord-transactionid-ttlseconds-)
-    - [`setUndernameRecord({ undername, transactionId, ttlSeconds })`](#setundernamerecord-undername-transactionid-ttlseconds-)
-    - [`removeUndernameRecord({ undername })`](#removeundernamerecord-undername-)
-    - [`setRecord({ undername, transactionId, ttlSeconds })`](#setrecord-undername-transactionid-ttlseconds-)
-    - [`removeRecord({ undername })`](#removerecord-undername-)
-    - [`setName({ name })`](#setname-name-)
-    - [`setTicker({ ticker })`](#setticker-ticker-)
-    - [`setDescription({ description })`](#setdescription-description-)
-    - [`setKeywords({ keywords })`](#setkeywords-keywords-)
-    - [`getLogo()`](#getlogo)
-    - [`setLogo({ txId })`](#setlogo-txid-)
-    - [`releaseName({ name, arioProcessId })`](#releasename-name-arioprocessid-)
-    - [`reassignName({ name, arioProcessId, antProcessId })`](#reassignname-name-arioprocessid-antprocessid-)
-    - [`approvePrimaryNameRequest({ name, address, arioProcessId })`](#approveprimarynamerequest-name-address-arioprocessid-)
-    - [`removePrimaryNames({ names, arioProcessId, notifyOwners })`](#removeprimarynames-names-arioprocessid-notifyowners-)
-  - [Configuration](#configuration-1)
+- [Token Conversion](#token-conversion)
 - [Logging](#logging)
 - [Pagination](#pagination)
 - [Resources](#resources)
-  - [Bundling](#bundling)
-  - [AR.IO Gateways](#ario-gateways)
-  - [Running a Gateway](#running-a-gateway)
-  - [AO](#ao)
 - [Developers](#developers)
-  - [Requirements](#requirements)
-  - [Setup & Build](#setup--build)
-  - [Testing](#testing)
-  - [Linting & Formatting](#linting--formatting)
-  - [Architecture](#architecture)
 
 <!-- tocstop -->
 
@@ -209,29 +105,6 @@ const gateways = await ario.getGateways();
 
 The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
-### Networks (Mainnet, Testnet, etc.)
-
-The SDK provides the following process IDs for the mainnet and testnet environments:
-
-- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID (production)
-- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID (testing and development)
-- `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (for development purposes)
-
-As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
-
-```typescript
-import {
-  ARIO,
-  ARIO_DEVNET_PROCESS_ID,
-  ARIO_MAINNET_PROCESS_ID,
-  ARIO_TESTNET_PROCESS_ID,
-} from '@ar.io/sdk';
-```
-
-```typescript
-const ario = ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID }); // use the testnet contract
-```
-
 ### Web
 
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
@@ -293,25 +166,117 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 > [!NOTE]
 > Typescript version 5.3 or higher is recommended.
 
-## ARIOToken & mARIOToken
+## Networks (Mainnet, Testnet, etc.)
 
-The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
+The SDK provides the following process IDs for the mainnet and testnet environments:
 
-**All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
+- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID (production)
+- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID (testing and development)
+- `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (development)
 
-### Converting ARIO to mARIO
+As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
 
 ```typescript
-import { ARIOToken, mARIOToken } from '@ar.io/sdk';
-
-const arioValue = 1;
-const mARIOValue = new ARIOToken(arioValue).toMARIO();
-
-const mARIOValue = 1_000_000;
-const arioValue = new mARIOToken(mARIOValue).toARIO();
+import { ARIO, ARIO_TESTNET_PROCESS_ID } from '@ar.io/sdk';
 ```
 
-## ARIO Process
+```typescript
+const testnet = ARIO.testnet();
+```
+
+### Mainnet
+
+As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const ario = ARIO.mainnet(); // or ARIO.init()
+```
+
+### Testnet
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID })
+```
+
+#### Faucet
+
+The SDK provides APIs for claiming tokens via a faucet on the AR.IO Testnet process (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
+
+To claim testnet tokens from the testnet token faucet, you can use one of the following methods:
+
+1. Visit [faucet.ar.io](https://faucet.ar.io) - the easiest way to quickly get tokens for testing for a single address.
+
+2. Programmatically via the SDK - useful if you need to claim tokens for multiple addresses or dynamically within your application.
+
+   - `ARIO.testnet().faucet.captchaUrl()` - returns the captcha URL for the testnet faucet. Open this URL in a new browser window and listen for the `ario-jwt-success` event to be emitted.
+   - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
+   - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
+
+<details>
+  <summary><i>Example client-side code for claiming tokens</i></summary>
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const testnet = ARIO.testnet();
+const captchaUrl = await ario.faucet.captchaUrl();
+
+// open the captcha URL in the browser, and listen for the auth token event
+const captchaWindow = window.open(
+  captchaUrl.captchaUrl,
+  '_blank',
+  'width=600,height=600',
+);
+/**
+ * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
+ * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
+ */
+window.parent.addEventListener('message', async (event) => {
+  if (event.data.type === 'ario-jwt-success') {
+    localStorage.setItem('ario-jwt', event.data.token);
+    localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
+    // close our captcha window
+    captchaWindow?.close();
+    // claim the tokens using the JWT token
+    const res = await testnet.faucet
+      .claimWithAuthToken({
+        authToken: event.data.token,
+        recipient: await window.arweaveWallet.getActiveAddress(),
+        quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+      })
+      .then((res) => {
+        alert(
+          'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
+        );
+      })
+      .catch((err) => {
+        alert(`Failed to claim tokens: ${err}`);
+      });
+  }
+});
+
+/**
+ * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
+ */
+if (
+  localStorage.getItem('ario-jwt-expires-at') &&
+  Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
+) {
+  const res = await testnet.faucet.claimWithAuthToken({
+    authToken: localStorage.getItem('ario-jwt') ?? '',
+    recipient: await window.arweaveWallet.getActiveAddress(),
+    quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+  });
+}
+```
+
+</details>
+
+## ARIO
 
 ### General
 
@@ -2468,6 +2433,24 @@ const ant = ANT.init({
 });
 ```
 
+## Token Conversion
+
+The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
+
+**All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
+
+### Converting ARIO to mARIO
+
+```typescript
+import { ARIOToken, mARIOToken } from '@ar.io/sdk';
+
+const arioValue = 1;
+const mARIOValue = new ARIOToken(arioValue).toMARIO();
+
+const mARIOValue = 1_000_000;
+const arioValue = new mARIOToken(mARIOValue).toARIO();
+```
+
 ## Logging
 
 The library uses the [Winston] logger for node based projects, and `console` logger for web based projects by default. You can configure the log level via `setLogLevel()` API. Alternatively you can set a custom logger as the default logger so long as it satisfes the `ILogger` interface.
@@ -2589,3 +2572,4 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [ar-io-node repository]: https://github.com/ar-io/ar-io-node
 [ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
 [ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
+[ar-io-testnet-faucet]: https://github.com/ar-io/ar-io-testnet-faucet?tab=readme-ov-file#asynchronous-workflow
