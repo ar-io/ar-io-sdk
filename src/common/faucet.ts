@@ -16,16 +16,21 @@
 import { ARIOWithFaucet, TokenFaucet } from '../types/faucet.js';
 import { ARIOReadable, ARIOWriteable } from './io.js';
 
+const DEFAULT_FAUCET_API_URL = 'https://faucet.ario.permaweb.services';
+
 /**
  * Creates a proxy object that implements the TokenFaucet interface. It wraps the ARIOReadable instance and adds methods for claiming tokens from the faucet API.
  * @param arioInstance - The ARIOReadable instance
  * @param faucetApiUrl - The URL of the faucet API
  * @returns A proxy object that implements the TokenFaucet interface
  */
-export function createFaucet(
-  arioInstance: ARIOReadable | ARIOWriteable,
-  faucetApiUrl: string,
-): ARIOWithFaucet<ARIOReadable | ARIOWriteable> {
+export function createFaucet({
+  arioInstance,
+  faucetApiUrl = DEFAULT_FAUCET_API_URL,
+}: {
+  arioInstance: ARIOReadable | ARIOWriteable;
+  faucetApiUrl?: string;
+}): ARIOWithFaucet<ARIOReadable | ARIOWriteable> {
   const faucet = new ARIOTokenFaucet({
     faucetUrl: faucetApiUrl,
     processId: arioInstance.process.processId,

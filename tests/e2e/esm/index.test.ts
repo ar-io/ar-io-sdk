@@ -1342,15 +1342,15 @@ describe('faucet', async () => {
     });
 
     it('should throw an error if the process is not supported by the faucet', async () => {
-      const fake = createFaucet(
-        new ARIOReadable({
+      const fake = createFaucet({
+        arioInstance: new ARIOReadable({
           process: new AOProcess({
             processId: 'some-non-supported-process-id',
             ao: aoClient,
           }),
         }),
-        'http://localhost:3000',
-      );
+        faucetApiUrl: 'http://localhost:3000',
+      });
       await assert.rejects(async () => await fake.faucet.captchaUrl(), Error);
     });
   });

@@ -160,8 +160,8 @@ export class ARIO {
     config?: ARIOConfig & { faucetUrl?: string },
   ): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
     if (config !== undefined && 'signer' in config) {
-      return createFaucet(
-        new ARIOWriteable({
+      return createFaucet({
+        arioInstance: new ARIOWriteable({
           ...config,
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
@@ -171,12 +171,12 @@ export class ARIO {
             }),
           }),
         }),
-        config?.faucetUrl ?? 'https://faucet.ario.permaweb.services',
-      );
+        faucetApiUrl: config?.faucetUrl,
+      });
     }
 
-    return createFaucet(
-      new ARIOReadable({
+    return createFaucet({
+      arioInstance: new ARIOReadable({
         ...config,
         process: new AOProcess({
           processId: ARIO_TESTNET_PROCESS_ID,
@@ -186,8 +186,8 @@ export class ARIO {
           }),
         }),
       }),
-      config?.faucetUrl ?? 'https://faucet.ario.permaweb.services',
-    );
+      faucetApiUrl: config?.faucetUrl,
+    });
   }
 }
 
