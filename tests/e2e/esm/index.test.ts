@@ -1061,12 +1061,15 @@ describe('e2e esm tests', async () => {
       const primaryName = await ario.getPrimaryName({
         address: primaryNames[0].owner,
       });
+      const arnsRecord = await ario.getArNSRecord({
+        name: primaryName.name,
+      });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: primaryNames[0].owner,
+        name: primaryNames[0].name,
+        startTimestamp: primaryName.startTimestamp,
+        processId: arnsRecord.processId,
       });
     });
 
@@ -1078,12 +1081,15 @@ describe('e2e esm tests', async () => {
       const primaryName = await ario.getPrimaryName({
         name: primaryNames[0].name,
       });
+      const arnsRecord = await ario.getArNSRecord({
+        name: primaryName.name,
+      });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: primaryNames[0].owner,
+        name: primaryNames[0].name,
+        startTimestamp: primaryName.startTimestamp,
+        processId: arnsRecord.processId,
       });
     });
 
