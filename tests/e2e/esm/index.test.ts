@@ -12,6 +12,7 @@ import {
   ARIOReadable,
   ARIOWithFaucet,
   ARIOWriteable,
+  ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
   AoANTReadable,
   AoANTRegistryWriteable,
@@ -48,7 +49,6 @@ const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
 const arweave = Arweave.init({});
-
 const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
 const ario = ARIO.init({
   process: new AOProcess({
@@ -65,7 +65,8 @@ describe('e2e esm tests', async () => {
       projectRootPath,
       '../docker-compose.test.yml',
     )
-      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .withWaitStrategy('ao-cu-1', Wait.forHttp(`/state/${processId}`, 6363))
+      .withStartupTimeout(60_000_000)
       .up(['ao-cu', 'faucet']);
   });
 
@@ -79,11 +80,39 @@ describe('e2e esm tests', async () => {
       assert(ario instanceof ARIOReadable);
     });
 
+    it('should be able to instantiate mainnet ARIO', async () => {
+      const ario = ARIO.mainnet();
+      assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === ARIO_MAINNET_PROCESS_ID);
+    });
+
+    it('should be able to instantiate testnet ARIO', async () => {
+      const ario = ARIO.testnet();
+      assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === ARIO_TESTNET_PROCESS_ID);
+    });
+
     it('should be able to instantiate ARIO default process with just a signer', async () => {
       const ario = ARIO.init({
         signer: new ArweaveSigner(testWallet),
       });
       assert(ario instanceof ARIOWriteable);
+    });
+
+    it('should able to instantiate mainnet ARIO with just a signer', async () => {
+      const ario = ARIO.mainnet({
+        signer: new ArweaveSigner(testWallet),
+      });
+      assert(ario instanceof ARIOWriteable);
+      assert(ario.process.processId === ARIO_MAINNET_PROCESS_ID);
+    });
+
+    it('should able to instantiate testnet ARIO with just a signer', async () => {
+      const ario = ARIO.testnet({
+        signer: new ArweaveSigner(testWallet),
+      });
+      assert(ario instanceof ARIOWriteable);
+      assert(ario.process.processId === ARIO_TESTNET_PROCESS_ID);
     });
 
     it('should be able to instantiate ARIO with a process and arweave', async () => {
@@ -94,6 +123,7 @@ describe('e2e esm tests', async () => {
         arweave,
       });
       assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === processId);
     });
 
     it('should be able to instantiate ARIO with a process id and arweave', async () => {
@@ -102,6 +132,7 @@ describe('e2e esm tests', async () => {
         arweave,
       });
       assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === processId);
     });
 
     it('should be able to get the process information', async () => {
