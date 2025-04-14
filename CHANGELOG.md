@@ -1,3 +1,20 @@
+# [3.10.0](https://github.com/ar-io/ar-io-sdk/compare/v3.9.1...v3.10.0) (2025-04-14)
+
+
+### Bug Fixes
+
+* **ario:** add faucet wrapper to testnet, update example with JWT requsts for tokens ([baa0b78](https://github.com/ar-io/ar-io-sdk/commit/baa0b78717a816342b30afd6c537646b784e270b))
+* **ario:** return correct ARIO types on mainnet and testnet static functions ([72fe3ac](https://github.com/ar-io/ar-io-sdk/commit/72fe3acb1ddd71415f56b90a82a7fd9176a5c575))
+* **faucet:** add ARIOTokenFaucet class and use proxy correctly, update static functions and types ([0ccffce](https://github.com/ar-io/ar-io-sdk/commit/0ccffce2b0a6064ce1b391959dbc65bd59c6d96a))
+
+
+### Features
+
+* **buy-arns:** include fundFromTurbo on extend/upgrade/increaseUndLmt methods PE-7751 ([ead2477](https://github.com/ar-io/ar-io-sdk/commit/ead2477212e7c9841c7b7092664c837de6ea6096))
+* **buy-arns:** init fund from turbo option PE-7751 ([76406c7](https://github.com/ar-io/ar-io-sdk/commit/76406c700422ea8145445fd0dbb1b23b94d37cf5))
+* **faucet:** enable token faucet APIs, update ARIO ([d6bad0b](https://github.com/ar-io/ar-io-sdk/commit/d6bad0b449414cd21d420740a683637af26f4898))
+* **turbo:** get winc price from turbo on costDetails when fundFrom = turbo PE-7751 ([877ff36](https://github.com/ar-io/ar-io-sdk/commit/877ff36068290abb2ce2a8bc4b0dfd89953a5046))
+
 ## [3.9.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.0...v3.9.1) (2025-03-31)
 
 
