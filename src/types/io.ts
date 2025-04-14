@@ -721,15 +721,16 @@ export interface AoARIOWrite extends AoARIORead {
 
 // Type-guard functions
 export function isProcessConfiguration(
-  config: object,
+  config: object | undefined,
 ): config is Required<ProcessConfiguration> & Record<string, never> {
-  return 'process' in config;
+  return config !== undefined && 'process' in config;
 }
 
 export function isProcessIdConfiguration(
-  config: object,
+  config: object | undefined,
 ): config is Required<ProcessIdConfig> & Record<string, never> {
   return (
+    config !== undefined &&
     'processId' in config &&
     typeof config.processId === 'string' &&
     validateArweaveId(config.processId) === true

@@ -229,6 +229,8 @@ export function createAoSigner(signer: ContractSigner): AoSigner {
     return signedData;
   };
 
+  // eslint-disable-next-line
+  // @ts-ignore Buffer vs ArrayBuffer type mismatch
   return aoSigner;
 }
 

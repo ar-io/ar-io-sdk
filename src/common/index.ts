@@ -18,7 +18,7 @@ export * from './logger.js';
 export * from './ant.js';
 export * from './ant-registry.js';
 export * from './ant-versions.js';
-
+export * from './faucet.js';
 // ao
 export * from './io.js';
 export * from './contracts/ao-process.js';
