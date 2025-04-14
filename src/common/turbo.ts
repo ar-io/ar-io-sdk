@@ -47,31 +47,47 @@ export async function signedRequestHeadersFromSigner({
   signer: TurboArNSSigner;
   nonce?: string;
 }): Promise<RawAxiosRequestHeaders> {
-  await (signer as ArconnectSigner).setPublicKey?.();
-  const signature = await signer.sign(Uint8Array.from(Buffer.from(nonce)));
-
+  let signature: string;
   let publicKey: string;
-  switch (signer.signatureType) {
-    case SignatureConfig.ARWEAVE:
-      publicKey = toB64Url(signer.publicKey);
-      break;
-    case SignatureConfig.ETHEREUM:
-      publicKey = '0x' + signer.publicKey.toString('hex');
-      break;
-    // TODO: solana sig support
-    // case SignatureConfig.SOLANA:
-    // case SignatureConfig.ED25519:
-    default:
-      throw new Error(
-        `Unsupported signer type for signing requests: ${signer.signatureType}`,
-      );
-  }
 
+  if (isWanderArweaveBrowserSigner(signer)) {
+    publicKey = await signer.getActivePublicKey();
+
+    signature = toB64Url(
+      Buffer.from(
+        await signer.signMessage(Uint8Array.from(Buffer.from(nonce))),
+      ),
+    );
+  } else {
+    if (signer.publicKey === undefined) {
+      await (signer as ArconnectSigner).setPublicKey?.();
+    }
+
+    signature = toB64Url(
+      Buffer.from(await signer.sign(Uint8Array.from(Buffer.from(nonce)))),
+    );
+
+    switch (signer.signatureType) {
+      case SignatureConfig.ARWEAVE:
+        publicKey = toB64Url(signer.publicKey);
+        break;
+      case SignatureConfig.ETHEREUM:
+        publicKey = '0x' + signer.publicKey.toString('hex');
+        break;
+      // TODO: solana sig support
+      // case SignatureConfig.SOLANA:
+      // case SignatureConfig.ED25519:
+      default:
+        throw new Error(
+          `Unsupported signer type for signing requests: ${signer.signatureType}`,
+        );
+    }
+  }
   return {
     'x-public-key': publicKey,
     'x-nonce': nonce,
-    'x-signature': toB64Url(Buffer.from(signature)),
-    'x-signature-type': signer.signatureType,
+    'x-signature': signature,
+    'x-signature-type': signer.signatureType ?? 'arweave',
   };
 }
 
@@ -224,4 +240,18 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
       result: data.purchaseReceipt,
     };
   }
+}
+
+type WanderWallet = {
+  signMessage: (message: Uint8Array) => Promise<Uint8Array>;
+  getActivePublicKey: () => Promise<string>;
+};
+
+function isWanderArweaveBrowserSigner(signer: unknown): signer is WanderWallet {
+  return (
+    typeof signer === 'object' &&
+    signer !== null &&
+    'signMessage' in signer &&
+    'getActivePublicKey' in signer
+  );
 }
