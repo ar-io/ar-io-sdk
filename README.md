@@ -289,7 +289,7 @@ Factory function to that creates a read-only or writeable client. By providing a
 const ario = ARIO.mainnet();
 
 // read-write client for browser environments
-const ario = ARIO.mainnet({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.mainnet({}))});
+const ario = ARIO.mainnet({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
 
 // read-write client for node environments
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(JWK) });
