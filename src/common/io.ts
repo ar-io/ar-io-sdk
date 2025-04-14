@@ -77,6 +77,7 @@ import {
   OptionalPaymentUrl,
   PaginationParams,
   PaginationResult,
+  ProcessConfig,
   ProcessConfiguration,
   TransactionId,
   WalletAddress,
@@ -143,7 +144,7 @@ export class ARIO {
           processId: ARIO_MAINNET_PROCESS_ID,
           ao: connect({
             CU_URL: 'https://cu.ardrive.io',
-            ...(config as any)?.ao,
+            ...(config as ProcessConfig)?.process?.ao,
           }),
         }),
       });
@@ -174,8 +175,7 @@ export class ARIO {
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
               CU_URL: 'https://cu.ardrive.io',
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ...(config as any)?.ao,
+              ...(config as ProcessConfig)?.process?.ao,
             }),
           }),
         }),
@@ -190,7 +190,7 @@ export class ARIO {
           processId: ARIO_TESTNET_PROCESS_ID,
           ao: connect({
             CU_URL: 'https://cu.ardrive.io',
-            ...(config as any)?.ao,
+            ...(config as ProcessConfig)?.process?.ao,
           }),
         }),
       }),
@@ -935,7 +935,7 @@ export class ARIOReadable implements AoARIORead {
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  declare public readonly process: AOProcess;
+  public declare readonly process: AOProcess;
   private signer: AoSigner;
   protected paymentProvider: TurboArNSPaymentProvider;
 
