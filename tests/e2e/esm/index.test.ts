@@ -1296,7 +1296,7 @@ describe('e2e esm tests', async () => {
 describe('faucet', async () => {
   let testnet: ARIOWithFaucet<AoARIORead>;
   let compose: StartedDockerComposeEnvironment;
-  // let authToken: JsonWebToken;
+
   before(async () => {
     compose = await new DockerComposeEnvironment(
       projectRootPath,

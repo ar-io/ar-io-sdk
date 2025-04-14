@@ -174,6 +174,7 @@ export class ARIO {
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
               CU_URL: 'https://cu.ardrive.io',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(config as any)?.ao,
             }),
           }),
@@ -934,7 +935,7 @@ export class ARIOReadable implements AoARIORead {
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  public declare readonly process: AOProcess;
+  declare public readonly process: AOProcess;
   private signer: AoSigner;
   protected paymentProvider: TurboArNSPaymentProvider;
 
