@@ -10,13 +10,16 @@ import {
   AOProcess,
   ARIO,
   ARIOReadable,
+  ARIOWithFaucet,
   ARIOWriteable,
   ARIO_TESTNET_PROCESS_ID,
   AoANTReadable,
   AoANTRegistryWriteable,
   AoANTWriteable,
+  AoARIORead,
   ArweaveSigner,
   createAoSigner,
+  createFaucet,
   isDistributedEpochData,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
@@ -24,7 +27,11 @@ import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { after, before, describe, it } from 'node:test';
-import { DockerComposeEnvironment, Wait } from 'testcontainers';
+import {
+  DockerComposeEnvironment,
+  StartedDockerComposeEnvironment,
+  Wait,
+} from 'testcontainers';
 
 const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
@@ -1156,12 +1163,12 @@ describe('e2e esm tests', async () => {
     });
 
     it('should get ANT versions', async () => {
-      const versions = antVersions.getANTVersions();
+      const versions = await antVersions.getANTVersions();
       assert(versions, 'Failed to get ANT versions');
     });
 
     it('should get latest ANT version', async () => {
-      const version = antVersions.getLatestANTVersion();
+      const version = await antVersions.getLatestANTVersion();
       assert(version, 'Failed to get ANT versions');
     });
   });
@@ -1283,5 +1290,170 @@ describe('e2e esm tests', async () => {
         });
       }
     });
+  });
+});
+
+describe('faucet', async () => {
+  let testnet: ARIOWithFaucet<AoARIORead>;
+  let compose: StartedDockerComposeEnvironment;
+
+  before(async () => {
+    compose = await new DockerComposeEnvironment(
+      projectRootPath,
+      '../docker-compose.test.yml',
+    )
+      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
+      .up(['ao-cu', 'faucet']);
+
+    // setup our testnet instance to use local APIs
+    testnet = ARIO.testnet({
+      faucetUrl: 'http://localhost:3000',
+      process: new AOProcess({
+        processId: ARIO_TESTNET_PROCESS_ID,
+        ao: connect({
+          CU_URL: 'http://localhost:6363',
+        }),
+      }),
+    });
+  });
+
+  after(async () => {
+    await compose.down();
+  });
+
+  describe('existing APIs', () => {
+    it('should be able to get info of the token', async () => {
+      const info = await testnet.getInfo();
+      assert.ok(info);
+    });
+
+    it('should be able to get the token supply', async () => {
+      const supply = await testnet.getTokenSupply();
+      assert.ok(supply);
+    });
+  });
+
+  describe('captchaUrl()', () => {
+    it('should return a captcha URL for a process', async () => {
+      const request = await testnet.faucet.captchaUrl();
+      assert.ok(request);
+      assert.ok(request.captchaUrl);
+      assert.ok(request.processId);
+    });
+
+    it('should throw an error if the process is not supported by the faucet', async () => {
+      const fake = createFaucet({
+        arioInstance: new ARIOReadable({
+          process: new AOProcess({
+            processId: 'some-non-supported-process-id',
+            ao: aoClient,
+          }),
+        }),
+        faucetApiUrl: 'http://localhost:3000',
+      });
+      await assert.rejects(async () => await fake.faucet.captchaUrl(), Error);
+    });
+  });
+
+  describe('requestAuthToken()', () => {
+    it('should return a success status with a valid captcha response', async () => {
+      const captchaResponse = 'test-captcha-response';
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse,
+      });
+      assert.ok(authToken);
+      assert.ok(authToken.status === 'success');
+      assert.ok(authToken.token);
+      assert.ok(authToken.expiresAt);
+    });
+
+    it('should throw an error if the captcha response is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.requestAuthToken({ captchaResponse: '' }),
+        Error,
+      );
+    });
+  });
+
+  describe('verifyAuthToken()', () => {
+    it('should return true for a valid auth token', async () => {
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse: 'test-captcha-response',
+      });
+      const valid = await testnet.faucet.verifyAuthToken({
+        authToken: authToken.token,
+      });
+      assert.ok(valid);
+      assert.ok(valid.valid);
+      assert.ok(valid.expiresAt);
+    });
+  });
+
+  describe('claimWithAuthToken()', () => {
+    it('should throw an error if the auth token is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+    it('should throw an error if the recipient is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the quantity is invalid', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: -1,
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the quantity is not a number', async () => {
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: 'invalid-auth-token',
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            // @ts-expect-error - we are testing an error
+            quantity: 'not-a-number',
+          }),
+        Error,
+      );
+    });
+
+    it('should throw an error if the faucet wallet does not have enough balance', async () => {
+      const authToken = await testnet.faucet.requestAuthToken({
+        captchaResponse: 'test-captcha-response',
+      });
+      await assert.rejects(
+        async () =>
+          await testnet.faucet.claimWithAuthToken({
+            authToken: authToken.token,
+            recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+            quantity: 1,
+          }),
+        Error,
+      );
+    });
+
+    // TODO: additional tests that actually claim tokens with a local ARIO process
   });
 });

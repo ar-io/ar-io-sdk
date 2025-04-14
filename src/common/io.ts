@@ -14,50 +14,34 @@
  * limitations under the License.
  */
 import { Signer } from '@dha-team/arbundles';
+import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
-import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
 import {
-  AoArNSNameDataWithName,
-  AoArNSReservedNameData,
-  AoBalanceWithAddress,
-  AoEpochDistributionData,
-  AoEpochObservationData,
-  AoGatewayWithAddress,
-  AoJoinNetworkParams,
-  AoMessageResult,
-  AoPrimaryName,
-  AoPrimaryNameRequest,
-  AoRedelegationFeeInfo,
-  AoReturnedName,
-  AoTokenSupplyData,
-  AoUpdateGatewaySettingsParams,
-  AoWeightedObserver,
-  OptionalArweave,
-  OptionalPaymentUrl,
-  PaginationParams,
-  PaginationResult,
-  ProcessConfiguration,
-  TransactionId,
-  WalletAddress,
-  WithSigner,
-  WriteOptions,
-} from '../types/index.js';
+  ARIO_MAINNET_PROCESS_ID,
+  ARIO_TESTNET_PROCESS_ID,
+} from '../constants.js';
 import {
+  ARIOWithFaucet,
   AoARIORead,
   AoARIOWrite,
   AoAllDelegates,
   AoAllGatewayVaults,
   AoArNSNameData,
+  AoArNSNameDataWithName,
   AoArNSPurchaseParams,
+  AoArNSReservedNameData,
   AoArNSReservedNameDataWithName,
+  AoBalanceWithAddress,
   AoBuyRecordParams,
   AoCreateVaultParams,
   AoDelegation,
   AoEligibleDistribution,
   AoEpochData,
   AoEpochDistributed,
+  AoEpochDistributionData,
   AoEpochDistributionTotalsData,
+  AoEpochObservationData,
   AoEpochSettings,
   AoExtendLeaseParams,
   AoExtendVaultParams,
@@ -65,23 +49,44 @@ import {
   AoGatewayDelegateWithAddress,
   AoGatewayRegistrySettings,
   AoGatewayVault,
+  AoGatewayWithAddress,
   AoGetCostDetailsParams,
   AoIncreaseUndernameLimitParams,
   AoIncreaseVaultParams,
+  AoJoinNetworkParams,
+  AoMessageResult,
   AoPaginatedAddressParams,
+  AoPrimaryName,
+  AoPrimaryNameRequest,
+  AoRedelegationFeeInfo,
   AoRegistrationFees,
+  AoReturnedName,
   AoRevokeVaultParams,
+  AoSigner,
   AoTokenCostParams,
+  AoTokenSupplyData,
+  AoUpdateGatewaySettingsParams,
   AoVaultData,
   AoVaultedTransferParams,
   AoWalletVault,
+  AoWeightedObserver,
   CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
+  OptionalArweave,
+  OptionalPaymentUrl,
+  PaginationParams,
+  PaginationResult,
+  ProcessConfig,
+  ProcessConfiguration,
+  TransactionId,
+  WalletAddress,
+  WithSigner,
+  WriteOptions,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types/io.js';
-import { AoSigner, mARIOToken } from '../types/token.js';
+  mARIOToken,
+} from '../types/index.js';
 import { createAoSigner } from '../utils/ao.js';
 import {
   getEpochDataFromGqlWithCUFallback,
@@ -93,6 +98,7 @@ import {
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
+import { createFaucet } from './faucet.js';
 import { TurboArNSPaymentProvider } from './turbo.js';
 
 type ARIOConfigNoSigner = OptionalPaymentUrl<
@@ -120,10 +126,81 @@ export class ARIO {
     }
     return new ARIOReadable(config);
   }
+
+  static mainnet(): AoARIORead;
+  static mainnet(
+    config: ARIOConfigNoSigner & { faucetUrl?: string },
+  ): AoARIORead;
+  static mainnet(
+    config: ARIOConfigWithSigner & { faucetUrl?: string },
+  ): AoARIOWrite;
+  static mainnet(
+    config?: ARIOConfig & { faucetUrl?: string },
+  ): AoARIORead | AoARIOWrite {
+    if (config !== undefined && 'signer' in config) {
+      return new ARIOWriteable({
+        ...config,
+        process: new AOProcess({
+          processId: ARIO_MAINNET_PROCESS_ID,
+          ao: connect({
+            CU_URL: 'https://cu.ardrive.io',
+            ...(config as ProcessConfig)?.process?.ao,
+          }),
+        }),
+      });
+    }
+    return new ARIOReadable({
+      ...config,
+      process: new AOProcess({
+        processId: ARIO_MAINNET_PROCESS_ID,
+      }),
+    });
+  }
+
+  static testnet(): ARIOWithFaucet<AoARIORead>;
+  static testnet(
+    config: ARIOConfigNoSigner & { faucetUrl?: string },
+  ): ARIOWithFaucet<AoARIORead>;
+  static testnet(
+    config: ARIOConfigWithSigner & { faucetUrl?: string },
+  ): ARIOWithFaucet<AoARIOWrite>;
+  static testnet(
+    config?: ARIOConfig & { faucetUrl?: string },
+  ): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
+    if (config !== undefined && 'signer' in config) {
+      return createFaucet({
+        arioInstance: new ARIOWriteable({
+          ...config,
+          process: new AOProcess({
+            processId: ARIO_TESTNET_PROCESS_ID,
+            ao: connect({
+              CU_URL: 'https://cu.ardrive.io',
+              ...(config as ProcessConfig)?.process?.ao,
+            }),
+          }),
+        }),
+        faucetApiUrl: config?.faucetUrl,
+      });
+    }
+
+    return createFaucet({
+      arioInstance: new ARIOReadable({
+        ...config,
+        process: new AOProcess({
+          processId: ARIO_TESTNET_PROCESS_ID,
+          ao: connect({
+            CU_URL: 'https://cu.ardrive.io',
+            ...(config as ProcessConfig)?.process?.ao,
+          }),
+        }),
+      }),
+      faucetApiUrl: config?.faucetUrl,
+    });
+  }
 }
 
 export class ARIOReadable implements AoARIORead {
-  protected process: AOProcess;
+  public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
   protected paymentProvider: TurboArNSPaymentProvider; // TODO: this could be an array/map of payment providers
@@ -858,7 +935,7 @@ export class ARIOReadable implements AoARIORead {
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  protected declare process: AOProcess;
+  public declare readonly process: AOProcess;
   private signer: AoSigner;
   protected paymentProvider: TurboArNSPaymentProvider;
 
