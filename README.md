@@ -9,7 +9,6 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 <!-- toc -->
 
 - [Table of Contents](#table-of-contents)
-- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
@@ -24,12 +23,9 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 
 <!-- tocstop -->
 
-## Prerequisites
-
-- `node>=v18.0.0`
-- `npm` or `yarn`
-
 ## Installation
+
+Requires `node>=v18.0.0`
 
 ```shell
 npm install @ar.io/sdk
@@ -107,6 +103,9 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 
 ### Web
 
+> [!WARNING]
+> Polyfills are not provided by default for bundled web projects (Vite, ESBuild, Webpack, Rollup, etc.) . Depending on your apps bundler configuration and plugins, you will need to provide polyfills for various imports including `crypto`, `process` and `buffer`. Refer to [examples/webpack] and [examples/vite] for examples. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills.
+
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
@@ -117,9 +116,6 @@ const ario = ARIO.mainnet();
 // fetch gateways
 const gateways = await ario.getGateways();
 ```
-
-> [!WARNING]
-> Polyfills are not provided by default for bundled web projects (Vite, ESBuild, Webpack, Rollup, etc.) . Depending on your apps bundler configuration and plugins, you will need to provide polyfills for various imports including `crypto`, `process` and `buffer`. Refer to [examples/webpack] and [examples/vite] for examples. For other project configurations, refer to your bundler's documentation for more information on how to provide the necessary polyfills.
 
 #### Browser
 
@@ -175,14 +171,6 @@ The SDK provides the following process IDs for the mainnet and testnet environme
 - `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (development)
 
 As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
-
-```typescript
-import { ARIO, ARIO_TESTNET_PROCESS_ID } from '@ar.io/sdk';
-```
-
-```typescript
-const testnet = ARIO.testnet();
-```
 
 ### Mainnet
 
