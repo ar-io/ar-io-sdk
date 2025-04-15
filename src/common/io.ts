@@ -99,6 +99,7 @@ import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
 import {
+  TurboArNSPaymentFactory,
   TurboArNSPaymentProviderAuthenticated,
   TurboArNSPaymentProviderUnauthenticated,
   isTurboArNSSigner,
@@ -224,7 +225,7 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.paymentProvider = new TurboArNSPaymentProviderUnauthenticated({
+    this.paymentProvider = TurboArNSPaymentFactory.init({
       paymentUrl: config?.paymentUrl,
     });
   }
@@ -956,14 +957,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
-    this.paymentProvider = isTurboArNSSigner(signer)
-      ? new TurboArNSPaymentProviderAuthenticated({
-          signer,
-          paymentUrl,
-        })
-      : new TurboArNSPaymentProviderUnauthenticated({
-          paymentUrl,
-        });
+    this.paymentProvider = TurboArNSPaymentFactory.init({
+      signer: isTurboArNSSigner(signer) ? signer : undefined,
+      paymentUrl,
+    });
   }
 
   async transfer(

@@ -148,6 +148,47 @@ export interface ArNSAuthenticatedPaymentProvider
   ): Promise<AoMessageResult<ArNSPurchaseReceipt>>;
 }
 
+export class TurboArNSPaymentFactory {
+  static init(): TurboArNSPaymentProviderUnauthenticated;
+  // Overload: without signer, will return unauthenticated provider
+  static init({
+    paymentUrl,
+    axios,
+    logger,
+  }: TurboUnauthenticatedConfig & {
+    signer?: TurboArNSSigner;
+  }): TurboArNSPaymentProviderUnauthenticated;
+  // Overload: with signer, will return authenticated provider
+  static init({
+    signer,
+    paymentUrl,
+    axios,
+    logger,
+  }: TurboAuthenticatedConfig): TurboArNSPaymentProviderAuthenticated;
+  static init(
+    config?:
+      | TurboAuthenticatedConfig
+      | (TurboUnauthenticatedConfig & { signer?: TurboArNSSigner }),
+  ):
+    | TurboArNSPaymentProviderAuthenticated
+    | TurboArNSPaymentProviderUnauthenticated {
+    const { signer, paymentUrl, axios, logger } = config ?? {};
+    if (signer !== undefined) {
+      return new TurboArNSPaymentProviderAuthenticated({
+        signer,
+        paymentUrl,
+        axios,
+        logger,
+      });
+    }
+    return new TurboArNSPaymentProviderUnauthenticated({
+      paymentUrl,
+      axios,
+      logger,
+    });
+  }
+}
+
 // Base class for unauthenticated operations
 export class TurboArNSPaymentProviderUnauthenticated
   implements ArNSUnauthenticatedPaymentProvider
