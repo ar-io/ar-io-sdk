@@ -111,23 +111,7 @@ type ARIOConfigWithSigner = WithSigner<
   OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
 >;
 
-type WithAuthenticatedPaymentProvider<T> = T & {
-  paymentProvider: TurboArNSPaymentProviderAuthenticated;
-};
-
-type WithUnauthenticatedPaymentProvider<T> = T & {
-  paymentProvider: TurboArNSPaymentProviderUnauthenticated;
-};
-
-type ARIOConfigWithSignerAndAuthenticatedPaymentProvider =
-  WithAuthenticatedPaymentProvider<ARIOConfigWithSigner>;
-type ARIOConfigWithSignerAndUnauthenticatedPaymentProvider =
-  WithUnauthenticatedPaymentProvider<ARIOConfigWithSigner>;
-type ARIOConfig =
-  | ARIOConfigNoSigner
-  | ARIOConfigWithSigner
-  | ARIOConfigWithSignerAndAuthenticatedPaymentProvider
-  | ARIOConfigWithSignerAndUnauthenticatedPaymentProvider;
+type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
   // Overload: No arguments -> returns AoARIORead
