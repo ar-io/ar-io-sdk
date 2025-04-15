@@ -28,7 +28,6 @@ import {
   AoMessageResult,
   TransactionId,
   TurboArNSSigner,
-  WriteOptions,
 } from '../types/common.js';
 import { AoTokenCostParams } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
@@ -143,7 +142,6 @@ export interface ArNSPaymentProvider {
 export interface ArNSAuthenticatedPaymentProvider extends ArNSPaymentProvider {
   initiateArNSPurchase(
     params: AoTokenCostParams & { processId?: TransactionId },
-    options: WriteOptions, // Note: WriteOptions might not be necessary here if unused
   ): Promise<AoMessageResult<ArNSPurchaseReceipt>>;
 }
 
