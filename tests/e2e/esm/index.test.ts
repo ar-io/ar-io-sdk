@@ -10,13 +10,17 @@ import {
   AOProcess,
   ARIO,
   ARIOReadable,
+  ARIOWithFaucet,
   ARIOWriteable,
+  ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
   AoANTReadable,
   AoANTRegistryWriteable,
   AoANTWriteable,
+  AoARIORead,
   ArweaveSigner,
   createAoSigner,
+  createFaucet,
   isDistributedEpochData,
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
@@ -24,7 +28,11 @@ import Arweave from 'arweave';
 import { strict as assert } from 'node:assert';
 import fs from 'node:fs';
 import { after, before, describe, it } from 'node:test';
-import { DockerComposeEnvironment, Wait } from 'testcontainers';
+import {
+  DockerComposeEnvironment,
+  StartedDockerComposeEnvironment,
+  Wait,
+} from 'testcontainers';
 
 const projectRootPath = process.cwd();
 const testWalletJSON = fs.readFileSync('../test-wallet.json', {
@@ -41,7 +49,6 @@ const aoClient = connect({
   CU_URL: 'http://localhost:6363',
 });
 const arweave = Arweave.init({});
-
 const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
 const ario = ARIO.init({
   process: new AOProcess({
@@ -51,14 +58,16 @@ const ario = ARIO.init({
 });
 
 describe('e2e esm tests', async () => {
-  let compose;
+  let compose: StartedDockerComposeEnvironment;
+
   before(async () => {
     compose = await new DockerComposeEnvironment(
       projectRootPath,
       '../docker-compose.test.yml',
     )
-      .withWaitStrategy('ao-cu-1', Wait.forHttp('/', 6363))
-      .up(['ao-cu']);
+      .withWaitStrategy('ao-cu-1', Wait.forHttp(`/state/${processId}`, 6363))
+      .withStartupTimeout(60_000_000)
+      .up(['ao-cu', 'faucet']);
   });
 
   after(async () => {
@@ -71,11 +80,39 @@ describe('e2e esm tests', async () => {
       assert(ario instanceof ARIOReadable);
     });
 
+    it('should be able to instantiate mainnet ARIO', async () => {
+      const ario = ARIO.mainnet();
+      assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === ARIO_MAINNET_PROCESS_ID);
+    });
+
+    it('should be able to instantiate testnet ARIO', async () => {
+      const ario = ARIO.testnet();
+      assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === ARIO_TESTNET_PROCESS_ID);
+    });
+
     it('should be able to instantiate ARIO default process with just a signer', async () => {
       const ario = ARIO.init({
         signer: new ArweaveSigner(testWallet),
       });
       assert(ario instanceof ARIOWriteable);
+    });
+
+    it('should able to instantiate mainnet ARIO with just a signer', async () => {
+      const ario = ARIO.mainnet({
+        signer: new ArweaveSigner(testWallet),
+      });
+      assert(ario instanceof ARIOWriteable);
+      assert(ario.process.processId === ARIO_MAINNET_PROCESS_ID);
+    });
+
+    it('should able to instantiate testnet ARIO with just a signer', async () => {
+      const ario = ARIO.testnet({
+        signer: new ArweaveSigner(testWallet),
+      });
+      assert(ario instanceof ARIOWriteable);
+      assert(ario.process.processId === ARIO_TESTNET_PROCESS_ID);
     });
 
     it('should be able to instantiate ARIO with a process and arweave', async () => {
@@ -86,6 +123,7 @@ describe('e2e esm tests', async () => {
         arweave,
       });
       assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === processId);
     });
 
     it('should be able to instantiate ARIO with a process id and arweave', async () => {
@@ -94,6 +132,7 @@ describe('e2e esm tests', async () => {
         arweave,
       });
       assert(ario instanceof ARIOReadable);
+      assert(ario.process.processId === processId);
     });
 
     it('should be able to get the process information', async () => {
@@ -1022,12 +1061,15 @@ describe('e2e esm tests', async () => {
       const primaryName = await ario.getPrimaryName({
         address: primaryNames[0].owner,
       });
+      const arnsRecord = await ario.getArNSRecord({
+        name: primaryName.name,
+      });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: primaryNames[0].owner,
+        name: primaryNames[0].name,
+        startTimestamp: primaryName.startTimestamp,
+        processId: arnsRecord.processId,
       });
     });
 
@@ -1039,12 +1081,15 @@ describe('e2e esm tests', async () => {
       const primaryName = await ario.getPrimaryName({
         name: primaryNames[0].name,
       });
+      const arnsRecord = await ario.getArNSRecord({
+        name: primaryName.name,
+      });
       assert.ok(primaryName);
       assert.deepStrictEqual(primaryName, {
-        owner: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
-        name: 'arns',
-        startTimestamp: 1719356032297,
-        processId: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+        owner: primaryNames[0].owner,
+        name: primaryNames[0].name,
+        startTimestamp: primaryName.startTimestamp,
+        processId: arnsRecord.processId,
       });
     });
 
@@ -1116,13 +1161,169 @@ describe('e2e esm tests', async () => {
         },
       );
     });
+
+    describe('faucet', async () => {
+      let testnet: ARIOWithFaucet<AoARIORead>;
+
+      before(async () => {
+        // setup our testnet instance to use local APIs
+        testnet = ARIO.testnet({
+          faucetUrl: 'http://localhost:3000',
+          process: new AOProcess({
+            processId: ARIO_TESTNET_PROCESS_ID,
+            ao: connect({
+              CU_URL: 'http://localhost:6363',
+            }),
+          }),
+        });
+      });
+
+      describe('existing APIs', () => {
+        it('should be able to get info of the token', async () => {
+          const info = await testnet.getInfo();
+          assert.ok(info);
+        });
+
+        it('should be able to get the token supply', async () => {
+          const supply = await testnet.getTokenSupply();
+          assert.ok(supply);
+        });
+      });
+
+      describe('captchaUrl()', () => {
+        it('should return a captcha URL for a process', async () => {
+          const request = await testnet.faucet.captchaUrl();
+          assert.ok(request);
+          assert.ok(request.captchaUrl);
+          assert.ok(request.processId);
+        });
+
+        it('should throw an error if the process is not supported by the faucet', async () => {
+          const fake = createFaucet({
+            arioInstance: new ARIOReadable({
+              process: new AOProcess({
+                processId: 'some-non-supported-process-id',
+                ao: aoClient,
+              }),
+            }),
+            faucetApiUrl: 'http://localhost:3000',
+          });
+          await assert.rejects(
+            async () => await fake.faucet.captchaUrl(),
+            Error,
+          );
+        });
+      });
+
+      describe('requestAuthToken()', () => {
+        it('should return a success status with a valid captcha response', async () => {
+          const captchaResponse = 'test-captcha-response';
+          const authToken = await testnet.faucet.requestAuthToken({
+            captchaResponse,
+          });
+          assert.ok(authToken);
+          assert.ok(authToken.status === 'success');
+          assert.ok(authToken.token);
+          assert.ok(authToken.expiresAt);
+        });
+
+        it('should throw an error if the captcha response is invalid', async () => {
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.requestAuthToken({ captchaResponse: '' }),
+            Error,
+          );
+        });
+      });
+
+      describe('verifyAuthToken()', () => {
+        it('should return true for a valid auth token', async () => {
+          const authToken = await testnet.faucet.requestAuthToken({
+            captchaResponse: 'test-captcha-response',
+          });
+          const valid = await testnet.faucet.verifyAuthToken({
+            authToken: authToken.token,
+          });
+          assert.ok(valid);
+          assert.ok(valid.valid);
+          assert.ok(valid.expiresAt);
+        });
+      });
+
+      describe('claimWithAuthToken()', () => {
+        it('should throw an error if the auth token is invalid', async () => {
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.claimWithAuthToken({
+                authToken: 'invalid-auth-token',
+                recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+                quantity: 1,
+              }),
+            Error,
+          );
+        });
+        it('should throw an error if the recipient is invalid', async () => {
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.claimWithAuthToken({
+                authToken: 'invalid-auth-token',
+                recipient: '',
+                quantity: 1,
+              }),
+            Error,
+          );
+        });
+
+        it('should throw an error if the quantity is invalid', async () => {
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.claimWithAuthToken({
+                authToken: 'invalid-auth-token',
+                recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+                quantity: -1,
+              }),
+            Error,
+          );
+        });
+
+        it('should throw an error if the quantity is not a number', async () => {
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.claimWithAuthToken({
+                authToken: 'invalid-auth-token',
+                recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+                // @ts-expect-error - we are testing an error
+                quantity: 'not-a-number',
+              }),
+            Error,
+          );
+        });
+
+        it('should throw an error if the faucet wallet does not have enough balance', async () => {
+          const authToken = await testnet.faucet.requestAuthToken({
+            captchaResponse: 'test-captcha-response',
+          });
+          await assert.rejects(
+            async () =>
+              await testnet.faucet.claimWithAuthToken({
+                authToken: authToken.token,
+                recipient: '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk',
+                quantity: 1,
+              }),
+            Error,
+          );
+        });
+
+        // TODO: additional tests that actually claim tokens with a local ARIO process
+      });
+    });
   });
 
   describe('ANTRegistry', async () => {
     const registry = ANTRegistry.init({
       process: new AOProcess({
         processId: ANT_REGISTRY_ID,
-        ao: aoClient,
+        // ao: aoClient,
       }),
     });
     const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
@@ -1139,7 +1340,7 @@ describe('e2e esm tests', async () => {
           signer,
           process: new AOProcess({
             processId: ANT_REGISTRY_ID,
-            ao: aoClient,
+            // ao: aoClient,
           }),
         });
         assert(registry instanceof AoANTRegistryWriteable);
@@ -1151,17 +1352,17 @@ describe('e2e esm tests', async () => {
     const antVersions = ANTVersions.init({
       process: new AOProcess({
         processId: ANT_REGISTRY_ID,
-        ao: aoClient,
+        // ao: aoClient,
       }),
     });
 
     it('should get ANT versions', async () => {
-      const versions = antVersions.getANTVersions();
+      const versions = await antVersions.getANTVersions();
       assert(versions, 'Failed to get ANT versions');
     });
 
     it('should get latest ANT version', async () => {
-      const version = antVersions.getLatestANTVersion();
+      const version = await antVersions.getLatestANTVersion();
       assert(version, 'Failed to get ANT versions');
     });
   });

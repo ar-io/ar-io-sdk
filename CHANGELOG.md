@@ -1,3 +1,17 @@
+# [3.10.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.1...v3.10.0-alpha.2) (2025-04-14)
+
+
+### Bug Fixes
+
+* **ario:** add faucet wrapper to testnet, update example with JWT requsts for tokens ([baa0b78](https://github.com/ar-io/ar-io-sdk/commit/baa0b78717a816342b30afd6c537646b784e270b))
+* **ario:** return correct ARIO types on mainnet and testnet static functions ([72fe3ac](https://github.com/ar-io/ar-io-sdk/commit/72fe3acb1ddd71415f56b90a82a7fd9176a5c575))
+* **faucet:** add ARIOTokenFaucet class and use proxy correctly, update static functions and types ([0ccffce](https://github.com/ar-io/ar-io-sdk/commit/0ccffce2b0a6064ce1b391959dbc65bd59c6d96a))
+
+
+### Features
+
+* **faucet:** enable token faucet APIs, update ARIO ([d6bad0b](https://github.com/ar-io/ar-io-sdk/commit/d6bad0b449414cd21d420740a683637af26f4898))
+
 # [3.10.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.9.1...v3.10.0-alpha.1) (2025-04-11)
 
 
