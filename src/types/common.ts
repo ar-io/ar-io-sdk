@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  ArconnectSigner,
   ArweaveSigner,
   EthereumSigner,
   InjectedEthereumSigner,
@@ -49,6 +50,7 @@ export type TurboArNSSigner =
   | EthereumSigner
   | InjectedEthereumSigner
   | ArweaveSigner
+  | ArconnectSigner
   | Window['arweaveWallet'];
 export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {

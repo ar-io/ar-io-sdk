@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  ArconnectSigner,
   ArweaveSigner,
   EthereumSigner,
   InjectedEthereumSigner,
@@ -65,6 +66,15 @@ export async function signedRequestHeadersFromSigner({
     ? SignatureConfig.ARWEAVE
     : (signer as Signer).signatureType;
 
+  if (signer instanceof ArconnectSigner) {
+    signature = toB64Url(
+      Buffer.from(
+        await signer['signer'].signMessage(Uint8Array.from(Buffer.from(nonce))),
+      ),
+    );
+  }
+
+  // equivalent to window.arweaveWallet
   if (isWanderArweaveBrowserSigner(signer)) {
     signature = toB64Url(
       Buffer.from(
