@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { EthereumSigner } from '@dha-team/arbundles';
 import { connect } from '@permaweb/aoconnect';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
@@ -167,7 +166,7 @@ export function arioProcessIdFromOptions({
   return ARIO_MAINNET_PROCESS_ID;
 }
 
-function walletFromOptions({
+function jwkFromOptions({
   privateKey,
   walletFile,
 }: WalletCLIOptions): JWKInterface | undefined {
@@ -183,7 +182,7 @@ function walletFromOptions({
 export function requiredJwkFromOptions(
   options: WalletCLIOptions,
 ): JWKInterface {
-  const jwk = walletFromOptions(options);
+  const jwk = jwkFromOptions(options);
   if (jwk === undefined) {
     throw new Error(
       'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
@@ -221,42 +220,17 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
 
   return ARIO.init({
     process: aoProcessFromOptions(options),
-    paymentUrl: options.paymentUrl,
   });
-}
-
-export function contractSignerFromOptions(
-  options: WalletCLIOptions,
-): { signer: ContractSigner; signerAddress: string } | undefined {
-  const wallet = walletFromOptions(options);
-
-  if (wallet === undefined) {
-    return undefined;
-  }
-  const token = options.token ?? 'arweave';
-
-  if (token === 'ethereum') {
-    const signer = new EthereumSigner(wallet as unknown as string);
-    // For EthereumSigner, we need to convert the JWK to a string
-    return { signer, signerAddress: signer.publicKey.toString('hex') };
-  }
-
-  // TODO: Support other wallet types
-  const signer = new ArweaveSigner(wallet);
-  return { signer, signerAddress: jwkToAddress(wallet) };
 }
 
 export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
   signer: ContractSigner;
   signerAddress: string;
 } {
-  const contractSigner = contractSignerFromOptions(options);
-  if (contractSigner === undefined) {
-    throw new Error(
-      'No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`',
-    );
-  }
-  return contractSigner;
+  // TODO: Support other wallet types
+  const jwk = requiredJwkFromOptions(options);
+  const signer = new ArweaveSigner(jwk);
+  return { signer, signerAddress: jwkToAddress(jwk) };
 }
 
 export function requiredAoSignerFromOptions(
@@ -276,7 +250,6 @@ export function writeARIOFromOptions(options: GlobalCLIOptions): {
     ario: ARIO.init({
       process: aoProcessFromOptions(options),
       signer,
-      paymentUrl: options.paymentUrl,
     }),
     signerAddress,
   };
@@ -302,11 +275,11 @@ export function addressFromOptions<O extends AddressCLIOptions>(
   if (options.address !== undefined) {
     return options.address;
   }
-  const signer = contractSignerFromOptions(options);
-  if (signer !== undefined) {
-    return signer.signerAddress;
+  // TODO: Support other wallet types
+  const jwk = jwkFromOptions(options);
+  if (jwk !== undefined) {
+    return jwkToAddress(jwk);
   }
-
   return undefined;
 }
 
@@ -486,10 +459,6 @@ export async function assertEnoughBalanceForArNSPurchase({
   address: string;
   costDetailsParams: AoGetCostDetailsParams;
 }) {
-  if (costDetailsParams.fundFrom === 'turbo') {
-    return;
-  }
-
   const costDetails = await ario.getCostDetails(costDetailsParams);
   if (costDetails.fundingPlan) {
     if (costDetails.fundingPlan.shortfall > 0) {

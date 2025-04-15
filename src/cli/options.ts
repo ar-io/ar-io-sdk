@@ -50,10 +50,6 @@ export const optionMap = {
     alias: '--cu-url <cuUrl>',
     description: 'The URL for a custom compute unit',
   },
-  paymentUrl: {
-    alias: '--payment-url <paymentUrl>',
-    description: 'The URL for a custom turbo payment service',
-  },
   processId: {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
@@ -279,16 +275,10 @@ export const optionMap = {
     alias: '--logo <logo>',
     description: 'The ANT logo',
   },
-  token: {
-    alias: '-t, --token <type>',
-    description: 'Crypto token type for wallet or action',
-    default: 'arweave',
-  },
 };
 
 export const walletOptions = [
   optionMap.walletFile,
-  optionMap.token,
   // optionMap.mnemonic,
   optionMap.privateKey,
 ];
@@ -309,7 +299,6 @@ export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
-  optionMap.paymentUrl,
 ];
 
 export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];
@@ -340,7 +329,6 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
-  optionMap.paymentUrl,
 ];
 
 export const transferOptions = [
