@@ -130,7 +130,7 @@ export type ArNSPurchaseReceipt = AoTokenCostParams & {
 };
 
 // Define separate provider interfaces
-export interface ArNSUnauthenticatedPaymentProvider {
+export interface ArNSPaymentProvider {
   // TODO: have this return just the number, for generic payment providers
   /** Returns the cost of the action in the Payment Provider's native currency (winc for Turbo) */
   getPrice(params: AoTokenCostParams): Promise<number>;
@@ -140,8 +140,7 @@ export interface ArNSUnauthenticatedPaymentProvider {
   }>;
 }
 
-export interface ArNSAuthenticatedPaymentProvider
-  extends ArNSUnauthenticatedPaymentProvider {
+export interface ArNSAuthenticatedPaymentProvider extends ArNSPaymentProvider {
   initiateArNSPurchase(
     params: AoTokenCostParams & { processId?: TransactionId },
     options: WriteOptions, // Note: WriteOptions might not be necessary here if unused
@@ -191,7 +190,7 @@ export class TurboArNSPaymentFactory {
 
 // Base class for unauthenticated operations
 export class TurboArNSPaymentProviderUnauthenticated
-  implements ArNSUnauthenticatedPaymentProvider
+  implements ArNSPaymentProvider
 {
   protected readonly paymentUrl: string;
   protected readonly axios: AxiosInstance;
