@@ -1,3 +1,16 @@
+# [3.10.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.2...v3.10.0-alpha.3) (2025-04-16)
+
+
+### Bug Fixes
+
+* **signing:** add arconnect signer ([35ae6aa](https://github.com/ar-io/ar-io-sdk/commit/35ae6aa2f2e7a5429c35df9a4a4cabbbb499fed3))
+* **signing:** export signers for web and throw if not configured in io class ([6ae1973](https://github.com/ar-io/ar-io-sdk/commit/6ae1973ec5990194973bac6d18cd2f1f222c63e4))
+* **turbo arns:** remove write options from initiate arns purchase ([77bb518](https://github.com/ar-io/ar-io-sdk/commit/77bb5188a91e012f9f02acb398961caa3917c8f2))
+* **turbo arns:** use singular init in factory ([0527b83](https://github.com/ar-io/ar-io-sdk/commit/0527b8357fe47f1dee8831832b43a520555a5770))
+* **turbo signer:** detect wander wallet, use undeprecated method PE-7751 ([6f45983](https://github.com/ar-io/ar-io-sdk/commit/6f459830f5e6a7830bd4e58e6017399123a66936))
+* **types:** remove unused types ([88ea8f1](https://github.com/ar-io/ar-io-sdk/commit/88ea8f1dda274e6a96d340791fa7a00da8eff241))
+* **types:** update arns payment provider interface name ([336d52f](https://github.com/ar-io/ar-io-sdk/commit/336d52f03cd5ed7cb49173e26f4e3838a9b7cf91))
+
 # [3.10.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.1...v3.10.0-alpha.2) (2025-04-14)
 
 
