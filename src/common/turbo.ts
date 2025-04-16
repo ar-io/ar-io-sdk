@@ -83,7 +83,7 @@ export async function signedRequestHeadersFromSigner({
     signer instanceof EthereumSigner ||
     signer instanceof InjectedEthereumSigner
   ) {
-    if ('setPublicKey' in signer) {
+    if ('setPublicKey' in signer && signer['publicKey'] === undefined) {
       await signer.setPublicKey();
     }
     signature = toB64Url(
