@@ -1,3 +1,10 @@
+# [3.10.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.3...v3.10.0-alpha.4) (2025-04-16)
+
+
+### Bug Fixes
+
+* **turbo:** check if public key is undefined before setting it ([5bea941](https://github.com/ar-io/ar-io-sdk/commit/5bea9416244ebec1b499e01526bb5c7855a6b9e3))
+
 # [3.10.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.2...v3.10.0-alpha.3) (2025-04-16)
 
 
