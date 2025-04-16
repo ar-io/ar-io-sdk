@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ArconnectSigner, SignatureConfig } from '@dha-team/arbundles';
+import {
+  ArconnectSigner,
+  ArweaveSigner,
+  EthereumSigner,
+  InjectedEthereumSigner,
+  SignatureConfig,
+  Signer,
+} from '@dha-team/arbundles';
 import { AxiosInstance, RawAxiosRequestHeaders } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -21,7 +28,6 @@ import {
   AoMessageResult,
   TransactionId,
   TurboArNSSigner,
-  WriteOptions,
 } from '../types/common.js';
 import { AoTokenCostParams } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
@@ -30,14 +36,19 @@ import { createAxiosInstance } from '../utils/http-client.js';
 import { urlWithSearchParams } from '../utils/url.js';
 import { ILogger, Logger } from './logger.js';
 
-export interface TurboConfig {
+// Define separate config interfaces
+export interface TurboUnauthenticatedConfig {
   // The URL of the Turbo payment service
   paymentUrl?: string;
   // The logger to use
   logger?: ILogger;
   // The HTTP client to use
   axios?: AxiosInstance;
-  signer?: TurboArNSSigner;
+}
+
+export interface TurboAuthenticatedConfig extends TurboUnauthenticatedConfig {
+  // The signer required for authenticated operations
+  signer: TurboArNSSigner;
 }
 
 export async function signedRequestHeadersFromSigner({
@@ -47,31 +58,72 @@ export async function signedRequestHeadersFromSigner({
   signer: TurboArNSSigner;
   nonce?: string;
 }): Promise<RawAxiosRequestHeaders> {
-  await (signer as ArconnectSigner).setPublicKey?.();
-  const signature = await signer.sign(Uint8Array.from(Buffer.from(nonce)));
+  let signature: string | undefined = undefined;
+  let publicKey: string | undefined = undefined;
 
-  let publicKey: string;
-  switch (signer.signatureType) {
+  const signatureType = isWanderArweaveBrowserSigner(signer)
+    ? SignatureConfig.ARWEAVE
+    : (signer as Signer).signatureType;
+
+  // equivalent to window.arweaveWallet
+  if (isWanderArweaveBrowserSigner(signer)) {
+    signature = toB64Url(
+      Buffer.from(
+        await signer.signMessage(Uint8Array.from(Buffer.from(nonce))),
+      ),
+    );
+  } else if (signer instanceof ArconnectSigner) {
+    signature = toB64Url(
+      Buffer.from(
+        await signer['signer'].signMessage(Uint8Array.from(Buffer.from(nonce))),
+      ),
+    );
+  } else if (
+    signer instanceof ArweaveSigner ||
+    signer instanceof EthereumSigner ||
+    signer instanceof InjectedEthereumSigner
+  ) {
+    if ('setPublicKey' in signer) {
+      await signer.setPublicKey();
+    }
+    signature = toB64Url(
+      Buffer.from(await signer.sign(Uint8Array.from(Buffer.from(nonce)))),
+    );
+  }
+
+  switch (signatureType) {
     case SignatureConfig.ARWEAVE:
-      publicKey = toB64Url(signer.publicKey);
+      if (isWanderArweaveBrowserSigner(signer)) {
+        publicKey = await signer.getActivePublicKey();
+      } else if ('setPublicKey' in signer) {
+        await signer.setPublicKey();
+        publicKey = toB64Url(signer.publicKey);
+      }
       break;
     case SignatureConfig.ETHEREUM:
-      publicKey = '0x' + signer.publicKey.toString('hex');
+      if ('publicKey' in signer) {
+        publicKey = '0x' + signer.publicKey.toString('hex');
+      } else {
+        throw new Error('Public key not found');
+      }
       break;
     // TODO: solana sig support
     // case SignatureConfig.SOLANA:
     // case SignatureConfig.ED25519:
     default:
       throw new Error(
-        `Unsupported signer type for signing requests: ${signer.signatureType}`,
+        `Unsupported signer type for signing requests: ${signatureType}`,
       );
   }
 
+  if (publicKey === undefined || signature === undefined) {
+    throw new Error('Public key or signature not found');
+  }
   return {
     'x-public-key': publicKey,
     'x-nonce': nonce,
-    'x-signature': toB64Url(Buffer.from(signature)),
-    'x-signature-type': signer.signatureType,
+    'x-signature': signature,
+    'x-signature-type': signatureType,
   };
 }
 
@@ -82,6 +134,7 @@ export type ArNSPurchaseReceipt = AoTokenCostParams & {
   createdDate: string;
 };
 
+// Define separate provider interfaces
 export interface ArNSPaymentProvider {
   // TODO: have this return just the number, for generic payment providers
   /** Returns the cost of the action in the Payment Provider's native currency (winc for Turbo) */
@@ -90,28 +143,71 @@ export interface ArNSPaymentProvider {
     winc: string;
     mARIO: mARIOToken;
   }>;
+}
+
+export interface ArNSAuthenticatedPaymentProvider extends ArNSPaymentProvider {
   initiateArNSPurchase(
     params: AoTokenCostParams & { processId?: TransactionId },
-    options: WriteOptions,
   ): Promise<AoMessageResult<ArNSPurchaseReceipt>>;
 }
 
-export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
-  private readonly paymentUrl: string;
-  private readonly axios: AxiosInstance;
-  private readonly logger: ILogger;
-  private readonly signer?: TurboArNSSigner;
+export class TurboArNSPaymentFactory {
+  static init(): TurboArNSPaymentProviderUnauthenticated;
+  // Overload: without signer, will return unauthenticated provider
+  static init({
+    paymentUrl,
+    axios,
+    logger,
+  }: TurboUnauthenticatedConfig & {
+    signer?: TurboArNSSigner;
+  }): TurboArNSPaymentProviderUnauthenticated;
+  // Overload: with signer, will return authenticated provider
+  static init({
+    signer,
+    paymentUrl,
+    axios,
+    logger,
+  }: TurboAuthenticatedConfig): TurboArNSPaymentProviderAuthenticated;
+  static init(
+    config?:
+      | TurboAuthenticatedConfig
+      | (TurboUnauthenticatedConfig & { signer?: TurboArNSSigner }),
+  ):
+    | TurboArNSPaymentProviderAuthenticated
+    | TurboArNSPaymentProviderUnauthenticated {
+    const { signer, paymentUrl, axios, logger } = config ?? {};
+    if (signer !== undefined) {
+      return new TurboArNSPaymentProviderAuthenticated({
+        signer,
+        paymentUrl,
+        axios,
+        logger,
+      });
+    }
+    return new TurboArNSPaymentProviderUnauthenticated({
+      paymentUrl,
+      axios,
+      logger,
+    });
+  }
+}
+
+// Base class for unauthenticated operations
+export class TurboArNSPaymentProviderUnauthenticated
+  implements ArNSPaymentProvider
+{
+  protected readonly paymentUrl: string;
+  protected readonly axios: AxiosInstance;
+  protected readonly logger: ILogger;
 
   constructor({
     paymentUrl = 'https://payment.ardrive.io',
     axios = createAxiosInstance(),
     logger = Logger.default,
-    signer,
-  }: TurboConfig) {
+  }: TurboUnauthenticatedConfig) {
     this.paymentUrl = paymentUrl;
     this.axios = axios;
     this.logger = logger;
-    this.signer = signer;
   }
 
   public async getArNSPriceDetails({
@@ -164,6 +260,22 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
     const { winc } = await this.getArNSPriceDetails(params);
     return +winc;
   }
+}
+
+// Class for authenticated operations, extending the base class
+export class TurboArNSPaymentProviderAuthenticated
+  extends TurboArNSPaymentProviderUnauthenticated
+  implements ArNSAuthenticatedPaymentProvider
+{
+  private readonly signer: TurboArNSSigner;
+
+  constructor({ signer, ...restConfig }: TurboAuthenticatedConfig) {
+    super(restConfig); // Pass unauthenticated config to base class+
+    if (!isTurboArNSSigner(signer)) {
+      throw new Error('Signer must be a TurboArNSSigner');
+    }
+    this.signer = signer;
+  }
 
   public async initiateArNSPurchase({
     intent,
@@ -174,13 +286,9 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
     years,
   }: AoTokenCostParams & {
     processId?: TransactionId;
+    // options parameter removed as it wasn't used
   }): Promise<AoMessageResult<ArNSPurchaseReceipt>> {
-    if (!this.signer) {
-      throw new Error(
-        'Signer required for initiating ArNS purchase with Turbo',
-      );
-    }
-
+    // Signer check is implicitly handled by requiring it in the constructor
     const url = urlWithSearchParams({
       baseUrl: `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
       params: {
@@ -224,4 +332,28 @@ export class TurboArNSPaymentProvider implements ArNSPaymentProvider {
       result: data.purchaseReceipt,
     };
   }
+}
+
+type WanderWallet = {
+  signMessage: (message: Uint8Array) => Promise<Uint8Array>;
+  getActivePublicKey: () => Promise<string>;
+};
+
+function isWanderArweaveBrowserSigner(signer: unknown): signer is WanderWallet {
+  return (
+    typeof signer === 'object' &&
+    signer !== null &&
+    'signMessage' in signer &&
+    'getActivePublicKey' in signer
+  );
+}
+
+export function isTurboArNSSigner(signer: unknown): signer is TurboArNSSigner {
+  const isWanderWallet = isWanderArweaveBrowserSigner(signer);
+  const isSigner =
+    signer instanceof EthereumSigner ||
+    signer instanceof InjectedEthereumSigner ||
+    signer instanceof ArweaveSigner ||
+    signer instanceof ArconnectSigner;
+  return isWanderWallet || isSigner;
 }

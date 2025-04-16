@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Signer } from '@dha-team/arbundles';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
@@ -99,7 +98,12 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
-import { TurboArNSPaymentProvider } from './turbo.js';
+import {
+  TurboArNSPaymentFactory,
+  TurboArNSPaymentProviderAuthenticated,
+  TurboArNSPaymentProviderUnauthenticated,
+  isTurboArNSSigner,
+} from './turbo.js';
 
 type ARIOConfigNoSigner = OptionalPaymentUrl<
   OptionalArweave<ProcessConfiguration>
@@ -107,6 +111,7 @@ type ARIOConfigNoSigner = OptionalPaymentUrl<
 type ARIOConfigWithSigner = WithSigner<
   OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
 >;
+
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
@@ -203,7 +208,7 @@ export class ARIOReadable implements AoARIORead {
   public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  protected paymentProvider: TurboArNSPaymentProvider; // TODO: this could be an array/map of payment providers
+  protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
@@ -220,7 +225,7 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
-    this.paymentProvider = new TurboArNSPaymentProvider({
+    this.paymentProvider = TurboArNSPaymentFactory.init({
       paymentUrl: config?.paymentUrl,
     });
   }
@@ -937,7 +942,9 @@ export class ARIOReadable implements AoARIORead {
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   public declare readonly process: AOProcess;
   private signer: AoSigner;
-  protected paymentProvider: TurboArNSPaymentProvider;
+  protected paymentProvider:
+    | TurboArNSPaymentProviderAuthenticated
+    | TurboArNSPaymentProviderUnauthenticated;
 
   constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
@@ -950,8 +957,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
-    this.paymentProvider = new TurboArNSPaymentProvider({
-      signer: signer as Signer,
+    this.paymentProvider = TurboArNSPaymentFactory.init({
+      signer: isTurboArNSSigner(signer) ? signer : undefined,
       paymentUrl,
     });
   }
@@ -1352,6 +1359,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Buy-Name',
         ...params,
@@ -1388,6 +1402,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Upgrade-Name',
         name: params.name,
@@ -1421,6 +1442,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Extend-Lease',
         ...params,
@@ -1446,6 +1474,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Increase-Undername-Limit',
         ...params,

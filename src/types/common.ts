@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Signer } from '@dha-team/arbundles';
+import {
+  ArconnectSigner,
+  ArweaveSigner,
+  EthereumSigner,
+  InjectedEthereumSigner,
+  Signer,
+} from '@dha-team/arbundles';
 import {
   dryrun,
   message,
@@ -39,7 +45,13 @@ export type OptionalArweave<T = NonNullable<unknown>> = {
 export type OptionalPaymentUrl<T = NonNullable<unknown>> = {
   paymentUrl?: string;
 } & T;
-export type TurboArNSSigner = Signer;
+// TODO: TurboArNSSigner could be simply `Signer` but we need to implement each message signing method for signing headers.
+export type TurboArNSSigner =
+  | EthereumSigner
+  | InjectedEthereumSigner
+  | ArweaveSigner
+  | ArconnectSigner
+  | Window['arweaveWallet'];
 export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
 export type WithSigner<T = NonNullable<unknown>> = {
   signer: ContractSigner;
