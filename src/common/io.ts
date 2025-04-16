@@ -1358,10 +1358,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
-    if (
-      this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated &&
-      params.fundFrom === 'turbo'
-    ) {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Buy-Name',
         ...params,
@@ -1397,10 +1401,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
-    if (
-      this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated &&
-      params.fundFrom === 'turbo'
-    ) {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Upgrade-Name',
         name: params.name,
@@ -1433,10 +1441,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
-    if (
-      this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated &&
-      params.fundFrom === 'turbo'
-    ) {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Extend-Lease',
         ...params,
@@ -1461,10 +1473,14 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
-    if (
-      this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated &&
-      params.fundFrom === 'turbo'
-    ) {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Increase-Undername-Limit',
         ...params,

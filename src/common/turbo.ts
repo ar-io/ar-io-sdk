@@ -65,14 +65,6 @@ export async function signedRequestHeadersFromSigner({
     ? SignatureConfig.ARWEAVE
     : (signer as Signer).signatureType;
 
-  if (signer instanceof ArconnectSigner) {
-    signature = toB64Url(
-      Buffer.from(
-        await signer['signer'].signMessage(Uint8Array.from(Buffer.from(nonce))),
-      ),
-    );
-  }
-
   // equivalent to window.arweaveWallet
   if (isWanderArweaveBrowserSigner(signer)) {
     signature = toB64Url(
@@ -80,36 +72,50 @@ export async function signedRequestHeadersFromSigner({
         await signer.signMessage(Uint8Array.from(Buffer.from(nonce))),
       ),
     );
+  } else if (signer instanceof ArconnectSigner) {
+    signature = toB64Url(
+      Buffer.from(
+        await signer['signer'].signMessage(Uint8Array.from(Buffer.from(nonce))),
+      ),
+    );
   } else if (
     signer instanceof ArweaveSigner ||
     signer instanceof EthereumSigner ||
     signer instanceof InjectedEthereumSigner
   ) {
+    if ('setPublicKey' in signer) {
+      await signer.setPublicKey();
+    }
     signature = toB64Url(
       Buffer.from(await signer.sign(Uint8Array.from(Buffer.from(nonce)))),
     );
-
-    switch (signer.signatureType) {
-      case SignatureConfig.ARWEAVE:
-        if (isWanderArweaveBrowserSigner(signer)) {
-          publicKey = await signer.getActivePublicKey();
-        } else if ('setPublicKey' in signer) {
-          await signer.setPublicKey();
-          publicKey = toB64Url(signer.publicKey);
-        }
-        break;
-      case SignatureConfig.ETHEREUM:
-        publicKey = '0x' + signer.publicKey.toString('hex');
-        break;
-      // TODO: solana sig support
-      // case SignatureConfig.SOLANA:
-      // case SignatureConfig.ED25519:
-      default:
-        throw new Error(
-          `Unsupported signer type for signing requests: ${signatureType}`,
-        );
-    }
   }
+
+  switch (signatureType) {
+    case SignatureConfig.ARWEAVE:
+      if (isWanderArweaveBrowserSigner(signer)) {
+        publicKey = await signer.getActivePublicKey();
+      } else if ('setPublicKey' in signer) {
+        await signer.setPublicKey();
+        publicKey = toB64Url(signer.publicKey);
+      }
+      break;
+    case SignatureConfig.ETHEREUM:
+      if ('publicKey' in signer) {
+        publicKey = '0x' + signer.publicKey.toString('hex');
+      } else {
+        throw new Error('Public key not found');
+      }
+      break;
+    // TODO: solana sig support
+    // case SignatureConfig.SOLANA:
+    // case SignatureConfig.ED25519:
+    default:
+      throw new Error(
+        `Unsupported signer type for signing requests: ${signatureType}`,
+      );
+  }
+
   if (publicKey === undefined || signature === undefined) {
     throw new Error('Public key or signature not found');
   }
@@ -347,6 +353,7 @@ export function isTurboArNSSigner(signer: unknown): signer is TurboArNSSigner {
   const isSigner =
     signer instanceof EthereumSigner ||
     signer instanceof InjectedEthereumSigner ||
-    signer instanceof ArweaveSigner;
+    signer instanceof ArweaveSigner ||
+    signer instanceof ArconnectSigner;
   return isWanderWallet || isSigner;
 }
