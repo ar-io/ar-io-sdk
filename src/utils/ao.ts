@@ -27,7 +27,7 @@ import {
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
-import { AoANTRecord } from '../types/ant.js';
+import { SpawnANTState, SpawnANTStateSchema } from '../types/ant.js';
 import {
   AoClient,
   AoEpochData,
@@ -36,18 +36,7 @@ import {
   ContractSigner,
   WalletAddress,
 } from '../types/index.js';
-
-export type SpawnANTState = {
-  owner: WalletAddress;
-  controllers: WalletAddress[];
-  name: string;
-  description: string;
-  keywords: string[];
-  ticker: string;
-  records: Record<string, AoANTRecord>;
-  balances: Record<WalletAddress, number>;
-  logo: string;
-};
+import { parseSchemaResult } from './schema.js';
 
 export type SpawnANTParams = {
   signer: AoSigner;
@@ -80,6 +69,9 @@ export async function spawnANT({
   authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
   // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
+  if (state) {
+    parseSchemaResult(SpawnANTStateSchema, state);
+  }
   const processId = await ao.spawn({
     module,
     scheduler,

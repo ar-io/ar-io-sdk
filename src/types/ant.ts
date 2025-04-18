@@ -106,6 +106,24 @@ export const AntStateSchema = z.object({
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
 
+export const SpawnANTStateSchema = z.object({
+  name: z.string().describe('The name of the ANT.'),
+  ticker: z.string().describe('The ticker symbol for the ANT.'),
+  description: z.string().describe('The description for the ANT.'),
+  keywords: AntKeywordsSchema.describe('The keywords for the ANT.'),
+  owner: AOAddressSchema.describe('The Owners address.'),
+  controllers: AntControllersSchema.describe(
+    'Controllers of the ANT who have administrative privileges.',
+  ),
+  records: AntRecordsSchema.describe('Records associated with the ANT.'),
+  balances: AntBalancesSchema.describe(
+    'Balance details for each address holding the ANT.',
+  ),
+  logo: ArweaveTxIdSchema.describe('Transaction ID of the ANT logo.'),
+});
+
+export type SpawnANTState = z.infer<typeof SpawnANTStateSchema>;
+
 export const AntReadHandlers = [
   'balance',
   'balances',
