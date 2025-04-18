@@ -1,3 +1,10 @@
+# [3.10.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.4...v3.10.0-alpha.5) (2025-04-18)
+
+
+### Bug Fixes
+
+* **spawn:** validate spawn ant state if provided PE-7986 ([f7696cf](https://github.com/ar-io/ar-io-sdk/commit/f7696cf4314af6cfe74bf6ef3e54526e1494b7ba))
+
 # [3.10.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.3...v3.10.0-alpha.4) (2025-04-16)
 
 
