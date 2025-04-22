@@ -35,13 +35,13 @@ interface ArNSNameResolver {
   resolveArNSName({ name }: { name: string }): Promise<ArNSNameResolutionData>;
 }
 
-interface ArweaveDataFetcher {
-  // given any URL[] params passed to a domain, provide it to wayfinder and resolve the data using the chosen strategy
-  fetchData({ reference }: { reference: string }): Promise<Buffer>;
-}
-
 interface WayfinderRoutingStrategy {
   getTargetGateway(): Promise<string>;
+}
+
+interface WayfinderRouter {
+  getRedirectUrl({ reference }: { reference: string }): Promise<URL>;
+  fetch({ reference }: { reference: string }): Promise<T>;
 }
 
 export class FixedGatewayStrategy implements WayfinderRoutingStrategy {
@@ -147,38 +147,19 @@ export class ARIOGatewayNameResolver implements ArNSNameResolver {
   }
 }
 
-export class ARIOArweaveDataFetcher implements ArweaveDataFetcher {
-  // TODO: verification support here
-  private strategy: WayfinderRoutingStrategy;
-
-  constructor({ strategy }: { strategy: WayfinderRoutingStrategy }) {
-    this.strategy = strategy;
-  }
-
-  async fetchData({ reference }: { reference: string }): Promise<Buffer> {
-    const gateway = await this.strategy.getTargetGateway();
-    const url = `${gateway}/${reference}`;
-    const data = await fetch(url);
-    return Buffer.from(await data.arrayBuffer());
-  }
-}
-
 export const WayfinderRoutingStrategy = {
   random: RandomGatewayStrategy,
   priority: PriorityGatewayStrategy,
   fixed: FixedGatewayStrategy,
 } as const;
 
-export class Wayfinder
-  implements ArweaveDataFetcher, ArNSNameResolver, WayfinderRoutingStrategy
-{
+export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
   // TODO: private verificationSettings: {
   //   trustedGatewayFQDNs: string[];
   //   localVerify: boolean;
   // };
   private routingStrategy: WayfinderRoutingStrategy;
   private resolver: ArNSNameResolver;
-  private arweaveDataFetcher: ArweaveDataFetcher;
   private ario: AoARIORead;
   // TODO: private blocklistGatewayFQDNs: string[];
   // TODO: stats provider
@@ -188,13 +169,11 @@ export class Wayfinder
     ario,
     routingStrategy,
     resolver,
-    arweaveDataFetcher,
     // TODO: stats provider
   }: {
     ario: AoARIORead;
     routingStrategy?: WayfinderRoutingStrategy;
     resolver?: ArNSNameResolver;
-    arweaveDataFetcher?: ArweaveDataFetcher;
     // TODO: support blocklist
     // TODO: stats provider
   }) {
@@ -206,19 +185,44 @@ export class Wayfinder
       new ARIOGatewayNameResolver({
         strategy: this.routingStrategy,
       });
-    this.arweaveDataFetcher =
-      arweaveDataFetcher ??
-      new ARIOArweaveDataFetcher({
-        strategy: this.routingStrategy,
-      });
   }
 
-  /**
-   * @param reference - the reference to fetch data from (e.g. ar://vilenarios)
-   * @returns the data as a buffer
-   */
-  async fetchData({ reference }: { reference: string }): Promise<Buffer> {
-    return this.arweaveDataFetcher.fetchData({ reference });
+  async getRedirectUrl({ reference }: { reference: string }): Promise<URL> {
+    // break out the ar://
+    const path = reference.split('://')[1];
+    const arnsRegex = /^[a-z0-9_-]{1,51}$/;
+    const txidRegex = /^[a-z0-9]{43}$/;
+    if (path.startsWith('/')) {
+      // route to gateway
+      return new URL(await this.getTargetGateway(), path);
+    }
+    if (arnsRegex.test(path)) {
+      // TODO: handle `/` after the arns name
+      const name = path.split('/')[0];
+      const { txId } = await this.resolver.resolveArNSName({ name });
+      return new URL(await this.getTargetGateway(), `${txId}${path}`);
+    }
+    if (txidRegex.test(path)) {
+      // TODO: handle `/` after the txid
+      const txid = path.split('/')[0];
+      return new URL(await this.getTargetGateway(), `${txid}${path}`);
+    }
+
+    throw new Error('Invalid reference');
+  }
+
+  async fetch<T>({ reference }: { reference: string }): Promise<T> {
+    // must start with ar://
+    if (!reference.startsWith('ar://')) {
+      throw new Error('Invalid reference, must start with ar://');
+    }
+    const url = await this.getRedirectUrl({ reference });
+    const data = await fetch(url);
+    if (!data.ok) {
+      throw new Error(`Failed to fetch data from ${url}`);
+    }
+    // TODO: return desired data type
+    return data.json() as T;
   }
 
   /**
@@ -226,18 +230,6 @@ export class Wayfinder
    */
   async getTargetGateway(): Promise<string> {
     return this.routingStrategy.getTargetGateway();
-  }
-
-  /**
-   * @param name - the name to resolve
-   * @returns the resolution data for the arns name
-   */
-  async resolveArNSName({
-    name,
-  }: {
-    name: string;
-  }): Promise<ArNSNameResolutionData> {
-    return this.resolver.resolveArNSName({ name });
   }
 
   // TODO: add verification support
