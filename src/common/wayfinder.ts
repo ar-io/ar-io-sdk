@@ -192,23 +192,20 @@ export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
   // TODO: metricsProvider for otel/prom support
   constructor({
     ario = ARIO.mainnet(),
-    strategy = new RandomGatewayStrategy({ ario }),
-    // resolver = new ARIOGatewayNameResolver({
-    //   strategy,
-    // }),
+    blocklist = [],
+    strategy = new RandomGatewayStrategy({ ario, blocklist }),
     http = fetch,
     // TODO: stats provider
   }: {
     ario?: AoARIORead;
+    blocklist?: string[];
     strategy?: WayfinderRoutingStrategy;
     resolver?: ArNSNameResolver;
     http?: typeof fetch | typeof axios;
     // TODO: support blocklist
     // TODO: stats provider
   }) {
-    // this.ario = ario;
     this.strategy = strategy;
-    // this.resolver = resolver;
 
     // add a proxy object to the fetch HTTP request
     this.http = this.wrapFetch({
@@ -230,6 +227,7 @@ export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
           });
           urlString = redirectUrl.toString();
         }
+        // TODO: add verification handling after we fetch the data, use an event emitter to notify listeners
         return route(urlString.toString(), init);
       },
     }) as typeof fetch;
