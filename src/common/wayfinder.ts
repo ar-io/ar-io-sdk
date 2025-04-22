@@ -169,7 +169,9 @@ export const WayfinderRoutingStrategy = {
   fixed: FixedGatewayStrategy,
 } as const;
 
-export class Wayfinder implements ArweaveDataFetcher, ArNSNameResolver {
+export class Wayfinder
+  implements ArweaveDataFetcher, ArNSNameResolver, WayfinderRoutingStrategy
+{
   // TODO: private verificationSettings: {
   //   trustedGatewayFQDNs: string[];
   //   localVerify: boolean;
