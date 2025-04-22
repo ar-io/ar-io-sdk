@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { AoARIORead, AoGateway } from '../types/io.js';
+import { ARIO } from './io.js';
 
 /**
  * ar:///info vs ar://ar-io/observer/reports/current
@@ -153,45 +154,47 @@ export const WayfinderRoutingStrategy = {
   fixed: FixedGatewayStrategy,
 } as const;
 
+export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
+export const txidRegex = /^[a-z0-9]{43}$/;
+
 export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
   // TODO: private verificationSettings: {
   //   trustedGatewayFQDNs: string[];
   //   localVerify: boolean;
   // };
   private routingStrategy: WayfinderRoutingStrategy;
-  private resolver: ArNSNameResolver;
   private ario: AoARIORead;
+  private resolver: ArNSNameResolver;
   // TODO: private blocklistGatewayFQDNs: string[];
   // TODO: stats provider
 
   // TODO: metricsProvider for otel/prom support
   constructor({
-    ario,
-    routingStrategy,
-    resolver,
+    ario = ARIO.mainnet(),
+    routingStrategy = new RandomGatewayStrategy({ ario }),
+    resolver = new ARIOGatewayNameResolver({
+      strategy: routingStrategy,
+    }),
     // TODO: stats provider
   }: {
-    ario: AoARIORead;
+    ario?: AoARIORead;
     routingStrategy?: WayfinderRoutingStrategy;
     resolver?: ArNSNameResolver;
     // TODO: support blocklist
     // TODO: stats provider
   }) {
     this.ario = ario;
-    this.routingStrategy =
-      routingStrategy ?? new RandomGatewayStrategy({ ario: this.ario });
-    this.resolver =
-      resolver ??
-      new ARIOGatewayNameResolver({
-        strategy: this.routingStrategy,
-      });
+    this.routingStrategy = routingStrategy;
+    this.resolver = resolver;
   }
 
   async getRedirectUrl({ reference }: { reference: string }): Promise<URL> {
     // break out the ar://
-    const path = reference.split('://')[1];
-    const arnsRegex = /^[a-z0-9_-]{1,51}$/;
-    const txidRegex = /^[a-z0-9]{43}$/;
+    const [protocol, path] = reference.split('://');
+    if (protocol !== 'ar') {
+      throw new Error('Invalid reference, must start with ar://');
+    }
+
     if (path.startsWith('/')) {
       // route to gateway
       return new URL(await this.getTargetGateway(), path);
@@ -213,9 +216,6 @@ export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
 
   async fetch<T>({ reference }: { reference: string }): Promise<T> {
     // must start with ar://
-    if (!reference.startsWith('ar://')) {
-      throw new Error('Invalid reference, must start with ar://');
-    }
     const url = await this.getRedirectUrl({ reference });
     const data = await fetch(url);
     if (!data.ok) {
