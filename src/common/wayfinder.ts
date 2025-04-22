@@ -42,7 +42,7 @@ interface WayfinderRoutingStrategy {
 
 interface WayfinderRouter {
   getRedirectUrl({ reference }: { reference: string }): Promise<URL>;
-  fetch({ reference }: { reference: string }): Promise<T>;
+  fetch<T>({ reference }: { reference: string }): Promise<T>;
 }
 
 export class FixedGatewayStrategy implements WayfinderRoutingStrategy {
