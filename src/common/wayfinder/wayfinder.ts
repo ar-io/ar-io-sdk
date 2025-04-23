@@ -183,6 +183,7 @@ export class Wayfinder<T extends AnyFunction> {
     // TODO: stats provider
     // TODO: caches to reduce the number of requests to the wayfinder
   }) {
+    // TODO: we can wrap the provided router in a cache router here if we want
     this.router = router;
     this.httpClient = httpClient;
     this.resolveUrl = async ({ originalUrl }) =>

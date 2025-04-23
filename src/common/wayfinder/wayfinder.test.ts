@@ -200,4 +200,6 @@ describe('Wayfinder', () => {
       });
     });
   });
+
+  // TODO: streaming support using got.stream and got()
 });
