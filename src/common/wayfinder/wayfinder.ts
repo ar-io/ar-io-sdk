@@ -95,8 +95,9 @@ export const createWayfinderClient = <T extends AnyFunction>({
       argArray: Parameters<T>,
     ): Promise<ReturnType<T>> {
       const originalUrl = argArray[0];
+      // get the resolved url for the request
       const redirectUrl = await resolveUrl({ originalUrl });
-      // wraps any standard http client with ar:// support
+      // make the request to the resolved url
       return httpClient(
         redirectUrl.toString(),
         ...argArray.slice(1),
