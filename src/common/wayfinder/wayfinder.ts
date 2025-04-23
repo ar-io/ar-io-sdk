@@ -17,10 +17,11 @@ import { webcrypto } from 'crypto';
 
 import { WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
+import { ARIOGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
 // local types for wayfinder
-type AnyFunction = (...args: any[]) => any;
+type AnyFunction = (...args: unknown[]) => unknown;
 type WayfinderHttpClient<T extends AnyFunction> = T;
 
 // known regexes for wayfinder urls
@@ -175,13 +176,15 @@ export class Wayfinder<T extends AnyFunction> {
   public readonly request: WayfinderHttpClient<T>;
   // TODO: stats provider
   // TODO: metricsProvider for otel/prom support
-  // TODO: a names cache and gateways cache
   // TODO: private verificationSettings: {
   //   trustedGateways: URL[];
   //   method: 'local' | 'remote';
   // };
   constructor({
-    router = new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+    router = new RandomGatewayRouter({
+      // optionally use a cache gateways provider to reduce the number of requests to the contract
+      gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() }),
+    }),
     httpClient,
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
@@ -191,9 +194,7 @@ export class Wayfinder<T extends AnyFunction> {
     httpClient: T;
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
-    // TODO: caches to reduce the number of requests to the wayfinder
   }) {
-    // TODO: we can wrap the provided router in a cache router here if we want
     this.router = router;
     this.httpClient = httpClient;
     this.resolveUrl = async ({ originalUrl }) =>

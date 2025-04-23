@@ -13,55 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoARIORead } from '../../../types/io.js';
 import { WayfinderRouter } from '../../../types/wayfinder.js';
-import { ARIO } from '../../io.js';
+import { GatewaysProvider } from '../gateways.js';
 import { randomInt } from '../wayfinder.js';
 
 export class PriorityGatewayRouter implements WayfinderRouter {
   public readonly name = 'priority';
-  private ario: AoARIORead;
+  private gatewaysProvider: GatewaysProvider;
   private limit: number;
   private sortBy: 'totalDelegatedStake' | 'startTimestamp' | 'operatorStake';
   private sortOrder: 'asc' | 'desc';
   private blocklist: string[];
   constructor({
-    ario = ARIO.mainnet(),
+    gatewaysProvider,
     limit = 1,
     sortBy = 'operatorStake',
     sortOrder = 'desc',
     blocklist = [],
   }: {
-    ario?: AoARIORead;
+    gatewaysProvider: GatewaysProvider;
     limit?: number;
     sortBy?: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
     sortOrder?: 'asc' | 'desc';
     blocklist?: string[];
   }) {
-    this.ario = ario;
+    this.gatewaysProvider = gatewaysProvider;
     this.limit = limit;
     this.sortBy = sortBy;
     this.sortOrder = sortOrder;
     this.blocklist = blocklist;
   }
 
-  // TODO: builder pattern to easily change the parameters for the Router
-
   async getTargetGateway(): Promise<URL> {
-    const { items: gateways } = await this.ario.getGateways({
-      sortOrder: this.sortOrder,
-      sortBy: this.sortBy,
-      limit: 100, // filter it after get the results as the contract does not support filters
-    });
+    const gateways = await this.gatewaysProvider
+      .getGateways({
+        filter: (gateway) =>
+          gateway.status === 'joined' &&
+          !this.blocklist.includes(gateway.settings.fqdn),
+      })
+      .then((gateways) =>
+        gateways
+          .sort(
+            this.sortOrder === 'asc'
+              ? (a, b) => a[this.sortBy] - b[this.sortBy]
+              : (a, b) => b[this.sortBy] - a[this.sortBy],
+          )
+          .slice(0, this.limit),
+      );
 
-    // filter out gateways that are not joined
-    const filteredGateways = gateways
-      .filter((gateway) => gateway.status === 'joined')
-      .filter((gateway) => !this.blocklist.includes(gateway.settings.fqdn))
-      .slice(0, this.limit - 1);
-
-    const targetGateway =
-      filteredGateways[randomInt(0, filteredGateways.length)];
+    const targetGateway = gateways[randomInt(0, gateways.length)];
 
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');

@@ -4,11 +4,8 @@ import assert from 'node:assert';
 import { buffer } from 'node:stream/consumers';
 import { before, describe, it } from 'node:test';
 
-import {
-  AoARIORead,
-  AoGatewayWithAddress,
-  PaginationResult,
-} from '../../types/io.js';
+import { AoGatewayWithAddress } from '../../types/io.js';
+import { GatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 import { Wayfinder } from './wayfinder.js';
 
@@ -24,20 +21,9 @@ const stubbedGateway: AoGatewayWithAddress = {
     port: 443,
   },
 } as unknown as AoGatewayWithAddress;
-const stubbedArio: AoARIORead = {
-  getGateways: async () =>
-    ({
-      items: [stubbedGateway],
-      cursor: null,
-      limit: 1,
-      totalItems: 1,
-      sortOrder: 'desc',
-      sortBy: 'operatorStake',
-      hasMore: false,
-    }) as unknown as PaginationResult<AoGatewayWithAddress>,
-  getGateway: async ({ address }: { address: string }) =>
-    address === stubbedGateway.gatewayAddress ? stubbedGateway : null,
-} as unknown as AoARIORead;
+const stubbedGatewaysProvider: GatewaysProvider = {
+  getGateways: async () => [stubbedGateway],
+} as unknown as GatewaysProvider;
 
 describe('Wayfinder', () => {
   describe('http wrapper', () => {
@@ -46,7 +32,9 @@ describe('Wayfinder', () => {
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: fetch,
-          router: new RandomGatewayRouter({ ario: stubbedArio }),
+          router: new RandomGatewayRouter({
+            gatewaysProvider: stubbedGatewaysProvider,
+          }),
         });
       });
       it('should fetch the data using the selected gateway', async () => {
@@ -127,7 +115,9 @@ describe('Wayfinder', () => {
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: axios,
-          router: new RandomGatewayRouter({ ario: stubbedArio }),
+          router: new RandomGatewayRouter({
+            gatewaysProvider: stubbedGatewaysProvider,
+          }),
         });
       });
       it('should fetch the data using axios default function against the target gateway', async () => {
@@ -209,7 +199,9 @@ describe('Wayfinder', () => {
         });
         const wayfinder = new Wayfinder({
           httpClient: axiosInstance,
-          router: new RandomGatewayRouter({ ario: stubbedArio }),
+          router: new RandomGatewayRouter({
+            gatewaysProvider: stubbedGatewaysProvider,
+          }),
         });
         const [nativeAxios, response] = await Promise.all([
           axiosInstance('https://arweave.net/not-found'),
@@ -226,7 +218,9 @@ describe('Wayfinder', () => {
     before(() => {
       wayfinder = new Wayfinder({
         httpClient: got,
-        router: new RandomGatewayRouter({ ario: stubbedArio }),
+        router: new RandomGatewayRouter({
+          gatewaysProvider: stubbedGatewaysProvider,
+        }),
       });
     });
 

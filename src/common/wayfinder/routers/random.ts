@@ -13,38 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoARIORead } from '../../../types/io.js';
 import { WayfinderRouter } from '../../../types/wayfinder.js';
+import { GatewaysProvider } from '../gateways.js';
 import { randomInt } from '../wayfinder.js';
 
 export class RandomGatewayRouter implements WayfinderRouter {
   public readonly name = 'random';
-  private ario: AoARIORead;
+  private gatewaysProvider: GatewaysProvider;
   private blocklist: string[];
   constructor({
-    ario,
+    gatewaysProvider,
     blocklist = [],
-    // TODO: some entropy source like crypto.randomBytes
   }: {
-    ario: AoARIORead;
+    gatewaysProvider: GatewaysProvider;
     blocklist?: string[];
   }) {
-    this.ario = ario;
+    this.gatewaysProvider = gatewaysProvider;
     this.blocklist = blocklist;
   }
 
   async getTargetGateway(): Promise<URL> {
-    // TODO: use read through promise cache to fetch gateways and store them in the cache - TODO: make sure it's joined
-    const { items: gateways } = await this.ario.getGateways({
-      sortBy: 'gatewayAddress',
-      limit: 1000,
+    const gateways = await this.gatewaysProvider.getGateways({
+      filter: (gateway) =>
+        gateway.status === 'joined' &&
+        !this.blocklist.includes(gateway.settings.fqdn),
     });
-    const filteredGateways = gateways
-      .filter((gateway) => gateway.status === 'joined')
-      .filter((gateway) => !this.blocklist.includes(gateway.settings.fqdn));
 
-    const targetGateway =
-      filteredGateways[randomInt(0, filteredGateways.length)];
+    const targetGateway = gateways[randomInt(0, gateways.length)];
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');
     }
