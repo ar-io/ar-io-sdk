@@ -45,7 +45,7 @@ export const randomInt = (min: number, max: number): number => {
  * @param targetGateway - the target gateway to resolve the url against
  * @returns the resolved url that can be used to make a request
  */
-export const resolveRedirectUrl = ({
+export const resolveWayfinderUrl = ({
   originalUrl,
   targetGateway,
 }: {
@@ -198,13 +198,12 @@ export class Wayfinder<T extends AnyFunction> {
     this.router = router;
     this.httpClient = httpClient;
     this.resolveUrl = async ({ originalUrl }) =>
-      resolveRedirectUrl({
+      resolveWayfinderUrl({
         originalUrl,
         targetGateway: await this.router.getTargetGateway(),
       });
     this.request = createWayfinderClient<T>({
       httpClient,
-      // TODO: provide a verifyDataHash function that can be used to verify the data
       resolveUrl: this.resolveUrl,
       // TODO: provide the verifyDataHash function from the verifier to the wayfinder client along with verificationSettings
     });
