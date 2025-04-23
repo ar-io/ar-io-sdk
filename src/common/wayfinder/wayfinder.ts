@@ -84,6 +84,7 @@ export const resolveRedirectUrl = ({
 export const createWayfinderClient = <T extends AnyFunction>({
   httpClient,
   resolveUrl,
+  // TODO: support a verifyDataHash function that can be used to verify the data
 }: {
   httpClient: T;
   resolveUrl: (params: { originalUrl: string }) => Promise<URL>;
@@ -177,17 +178,17 @@ export class Wayfinder<T extends AnyFunction> {
     this.httpClient = httpClient;
     this.request = createWayfinderClient<T>({
       httpClient,
+      // TODO: provide a verifyDataHash function that can be used to verify the data
       resolveUrl: async ({ originalUrl }) =>
         resolveRedirectUrl({
           originalUrl,
           // todo: use a read through cache here or on the router to avoid calling ARIO contract on every request
           targetGateway: await this.router.getTargetGateway(),
-          // TODO: pass verificationSettings
         }),
     });
   }
 
-  // TODO: potential builder pattern to update the Router
+  // TODO: potential builder pattern to update the Router/blocklist/httpClient
 
   // TODO: add verification support
 }
