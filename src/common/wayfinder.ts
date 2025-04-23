@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import axios from 'axios';
+import { webcrypto } from 'crypto';
 
 import { AoARIORead } from '../types/io.js';
 import { ARIO } from './io.js';
@@ -22,8 +22,8 @@ export interface WayfinderRoutingStrategy {
   getTargetGateway: (options?: { seed?: number }) => Promise<URL>;
 }
 
-export interface WayfinderRouter {
-  fetch: typeof fetch | typeof axios;
+export interface WayfinderRouter<T extends AnyFunction> {
+  fetch: WayfinderHttpClient<T>;
   getRedirectUrl({ reference }: { reference: string }): Promise<URL>;
 }
 
@@ -40,13 +40,20 @@ export class FixedGatewayStrategy implements WayfinderRoutingStrategy {
   }
 }
 
+// local helper for randomness, does not support seeding
+export const randomInt = (min: number, max: number): number => {
+  const [rand] = webcrypto.getRandomValues(new Uint32Array(1));
+  return min + (rand % (max - min));
+};
+
 export class RandomGatewayStrategy implements WayfinderRoutingStrategy {
-  private ario: AoARIORead;
   public readonly name = 'random';
+  private ario: AoARIORead;
   private blocklist: string[];
   constructor({
     ario,
     blocklist = [],
+    // TODO: some entropy source like crypto.randomBytes
   }: {
     ario: AoARIORead;
     blocklist?: string[];
@@ -55,11 +62,7 @@ export class RandomGatewayStrategy implements WayfinderRoutingStrategy {
     this.blocklist = blocklist;
   }
 
-  async getTargetGateway({
-    seed = Math.random(),
-  }: {
-    seed?: number;
-  } = {}): Promise<URL> {
+  async getTargetGateway(): Promise<URL> {
     // TODO: use read through promise cache to fetch gateways and store them in the cache - TODO: make sure it's joined
     const { items: gateways } = await this.ario.getGateways({
       sortBy: 'gatewayAddress',
@@ -68,8 +71,9 @@ export class RandomGatewayStrategy implements WayfinderRoutingStrategy {
     const filteredGateways = gateways
       .filter((gateway) => gateway.status === 'joined')
       .filter((gateway) => !this.blocklist.includes(gateway.settings.fqdn));
+
     const targetGateway =
-      filteredGateways[Math.floor(seed * filteredGateways.length)];
+      filteredGateways[randomInt(0, filteredGateways.length)];
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');
     }
@@ -106,11 +110,9 @@ export class PriorityGatewayStrategy implements WayfinderRoutingStrategy {
     this.blocklist = blocklist;
   }
 
-  async getTargetGateway({
-    seed = Math.random(),
-  }: {
-    seed?: number;
-  } = {}): Promise<URL> {
+  // TODO: builder pattern to easily change the parameters for the strategy
+
+  async getTargetGateway(): Promise<URL> {
     const { items: gateways } = await this.ario.getGateways({
       sortOrder: this.sortOrder,
       sortBy: this.sortBy,
@@ -124,7 +126,7 @@ export class PriorityGatewayStrategy implements WayfinderRoutingStrategy {
       .slice(0, this.limit - 1);
 
     const targetGateway =
-      filteredGateways[Math.floor(seed * filteredGateways.length)];
+      filteredGateways[randomInt(0, filteredGateways.length)];
 
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');
@@ -177,7 +179,7 @@ export const createWayfinderHttpClient = <T extends AnyFunction>({
   }) as WayfinderHttpClient<T>;
 };
 
-export class Wayfinder<T extends AnyFunction> implements WayfinderRouter {
+export class Wayfinder<T extends AnyFunction> implements WayfinderRouter<T> {
   public readonly strategy: WayfinderRoutingStrategy;
   public readonly fetch: WayfinderHttpClient<T>;
   public readonly ario: AoARIORead;
