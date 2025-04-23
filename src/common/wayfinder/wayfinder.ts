@@ -90,6 +90,7 @@ export const createWayfinderClient = <T extends AnyFunction>({
 }: {
   httpClient: T;
   resolveUrl: (params: { originalUrl: string }) => Promise<URL>;
+  // TODO: support a verifyDataHash function that can be used to verify the data
 }): WayfinderHttpClient<T> => {
   return new Proxy(httpClient, {
     async apply(
@@ -101,6 +102,7 @@ export const createWayfinderClient = <T extends AnyFunction>({
       // get the resolved url for the request
       const redirectUrl = await resolveUrl({ originalUrl });
       // make the request to the resolved url
+      // TODO: verify the data hash of the response using the verifyDataHash function
       return httpClient(
         redirectUrl.toString(),
         ...argArray.slice(1),
@@ -140,6 +142,18 @@ export class Wayfinder<T extends AnyFunction> {
    */
   public readonly httpClient: T;
   /**
+   * The function that resolves the redirect url for ar:// requests to a target gateway
+   *
+   * @example
+   * const wayfinder = new Wayfinder({
+   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   httpClient: axios,
+   * });
+   *
+   * const redirectUrl = await wayfinder.resolveUrl({ originalUrl: 'ar://example' });
+   */
+  public readonly resolveUrl: (params: { originalUrl: string }) => Promise<URL>;
+  /**
    * A wrapped http client that supports ar:// protocol
    *
    * @example
@@ -171,15 +185,16 @@ export class Wayfinder<T extends AnyFunction> {
   }) {
     this.router = router;
     this.httpClient = httpClient;
+    this.resolveUrl = async ({ originalUrl }) =>
+      resolveRedirectUrl({
+        originalUrl,
+        // todo: use a read through cache here or on the router to avoid calling ARIO contract on every request
+        targetGateway: await this.router.getTargetGateway(),
+      });
     this.request = createWayfinderClient<T>({
       httpClient,
       // TODO: provide a verifyDataHash function that can be used to verify the data
-      resolveUrl: async ({ originalUrl }) =>
-        resolveRedirectUrl({
-          originalUrl,
-          // todo: use a read through cache here or on the router to avoid calling ARIO contract on every request
-          targetGateway: await this.router.getTargetGateway(),
-        }),
+      resolveUrl: this.resolveUrl,
     });
   }
 

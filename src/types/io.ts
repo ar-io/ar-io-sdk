@@ -566,6 +566,7 @@ export type DemandFactorSettings = {
 // Interfaces
 
 export interface AoARIORead {
+  process: AOProcess;
   getInfo(): Promise<{
     Ticker: string;
     Name: string;

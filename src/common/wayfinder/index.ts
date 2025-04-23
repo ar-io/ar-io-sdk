@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './ant-registry.js';
-export * from './ant.js';
-export * from './common.js';
-export * from './faucet.js';
-export * from './io.js';
-export * from './token.js';
 export * from './wayfinder.js';
+
+// routers
+export * from './routers/random.js';
+export * from './routers/priority.js';
+export * from './routers/fixed.js';
