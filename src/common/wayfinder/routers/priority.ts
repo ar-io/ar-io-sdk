@@ -45,23 +45,21 @@ export class PriorityGatewayRouter implements WayfinderRouter {
   }
 
   async getTargetGateway(): Promise<URL> {
-    const gateways = await this.gatewaysProvider
-      .getGateways({
-        filter: (gateway) =>
-          gateway.status === 'joined' &&
-          !this.blocklist.includes(gateway.settings.fqdn),
-      })
-      .then((gateways) =>
-        gateways
-          .sort(
-            this.sortOrder === 'asc'
-              ? (a, b) => a[this.sortBy] - b[this.sortBy]
-              : (a, b) => b[this.sortBy] - a[this.sortBy],
-          )
-          .slice(0, this.limit),
-      );
+    const allGateways = await this.gatewaysProvider.getGateways();
+    const gateways = allGateways.filter(
+      (gateway) =>
+        gateway.status === 'joined' &&
+        !this.blocklist.includes(gateway.settings.fqdn),
+    );
+    const sortedGateways = gateways
+      .sort(
+        this.sortOrder === 'asc'
+          ? (a, b) => a[this.sortBy] - b[this.sortBy]
+          : (a, b) => b[this.sortBy] - a[this.sortBy],
+      )
+      .slice(0, this.limit);
 
-    const targetGateway = gateways[randomInt(0, gateways.length)];
+    const targetGateway = sortedGateways[randomInt(0, sortedGateways.length)];
 
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');

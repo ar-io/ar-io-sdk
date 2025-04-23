@@ -16,11 +16,7 @@
 import { AoARIORead, AoGatewayWithAddress } from '../../types/io.js';
 
 export interface GatewaysProvider {
-  getGateways({
-    filter,
-  }: {
-    filter?: (gateway: AoGatewayWithAddress) => boolean;
-  }): Promise<AoGatewayWithAddress[]>;
+  getGateways(): Promise<AoGatewayWithAddress[]>;
 }
 
 export class ARIOGatewaysProvider implements GatewaysProvider {
@@ -30,11 +26,7 @@ export class ARIOGatewaysProvider implements GatewaysProvider {
     this.ario = ario;
   }
 
-  async getGateways({
-    filter = (g) => g.status === 'joined',
-  }: {
-    filter?: (gateway: AoGatewayWithAddress) => boolean;
-  }): Promise<AoGatewayWithAddress[]> {
+  async getGateways(): Promise<AoGatewayWithAddress[]> {
     let cursor: string | undefined;
     let attempts = 0;
     const gateways: AoGatewayWithAddress[] = [];
@@ -56,7 +48,8 @@ export class ARIOGatewaysProvider implements GatewaysProvider {
         attempts++;
       }
     } while (cursor !== undefined && attempts < 3);
-    return gateways.filter(filter);
+    // filter out any gateways that are not joined
+    return gateways.filter((g) => g.status === 'joined');
   }
 }
 
@@ -66,12 +59,8 @@ export class StaticGatewaysProvider implements GatewaysProvider {
     this.gateways = gateways;
   }
 
-  async getGateways({
-    filter = (g) => g.status === 'joined',
-  }: {
-    filter?: (gateway: AoGatewayWithAddress) => boolean;
-  }): Promise<AoGatewayWithAddress[]> {
-    return this.gateways.filter(filter);
+  async getGateways(): Promise<AoGatewayWithAddress[]> {
+    return this.gateways;
   }
 }
 
@@ -92,11 +81,7 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
     this.ttlSeconds = ttlSeconds;
   }
 
-  async getGateways({
-    filter = (g) => g.status === 'joined',
-  }: {
-    filter?: (gateway: AoGatewayWithAddress) => boolean;
-  }): Promise<AoGatewayWithAddress[]> {
+  async getGateways(): Promise<AoGatewayWithAddress[]> {
     const now = Date.now();
     if (
       this.gatewaysCache.length === 0 ||
@@ -104,9 +89,8 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
     ) {
       try {
         // preserve the cache if the fetch fails
-        this.gatewaysCache = await this.gatewaysProvider.getGateways({
-          filter,
-        });
+        const allGateways = await this.gatewaysProvider.getGateways();
+        this.gatewaysCache = allGateways.filter((g) => g.status === 'joined');
         this.lastUpdated = now;
       } catch (error) {
         console.error('Error fetching gateways', error);
