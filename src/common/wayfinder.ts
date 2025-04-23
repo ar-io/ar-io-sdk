@@ -31,11 +31,11 @@ export interface ArNSNameResolver {
 }
 
 export interface WayfinderRoutingStrategy {
-  getTargetGateway(): Promise<URL>;
+  getTargetGateway: (options?: { seed?: number }) => Promise<URL>;
 }
 
 export interface WayfinderRouter {
-  http: typeof fetch | typeof axios;
+  fetch: typeof fetch | typeof axios;
   getRedirectUrl({ reference }: { reference: string }): Promise<URL>;
 }
 
@@ -67,7 +67,11 @@ export class RandomGatewayStrategy implements WayfinderRoutingStrategy {
     this.blocklist = blocklist;
   }
 
-  async getTargetGateway({ seed = Math.random() }: { seed?: number } = {}) {
+  async getTargetGateway({
+    seed = Math.random(),
+  }: {
+    seed?: number;
+  } = {}): Promise<URL> {
     // TODO: use read through promise cache to fetch gateways and store them in the cache - TODO: make sure it's joined
     const { items: gateways } = await this.ario.getGateways({
       sortBy: 'gatewayAddress',
@@ -114,7 +118,11 @@ export class PriorityGatewayStrategy implements WayfinderRoutingStrategy {
     this.blocklist = blocklist;
   }
 
-  async getTargetGateway({ seed = Math.random() }: { seed?: number } = {}) {
+  async getTargetGateway({
+    seed = Math.random(),
+  }: {
+    seed?: number;
+  } = {}): Promise<URL> {
     const { items: gateways } = await this.ario.getGateways({
       sortOrder: this.sortOrder,
       sortBy: this.sortBy,
@@ -162,7 +170,10 @@ export class ARIOGatewayNameResolver implements ArNSNameResolver {
 
 export type WayfinderRoutingStrategyName = 'random' | 'priority' | 'fixed';
 
-export const WayfinderRoutingStrategies = {
+export const WayfinderRoutingStrategies: Record<
+  WayfinderRoutingStrategyName,
+  new (...args: any[]) => WayfinderRoutingStrategy
+> = {
   random: RandomGatewayStrategy,
   priority: PriorityGatewayStrategy,
   fixed: FixedGatewayStrategy,
@@ -171,67 +182,68 @@ export const WayfinderRoutingStrategies = {
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
 export const txIdRegex = /^[a-z0-9]{43}$/;
 
-type RequestInfo = Parameters<typeof fetch>[0];
-
 // TODO: introduce wayfinder http wrapper class/interface so we can support a variety of http clients to proxy requests through
-export interface WayfinderHttpClient<T extends typeof fetch | typeof axios> {
-  wrapFetch(...args: Parameters<T>): ReturnType<T>;
-}
+export type AnyFunction = (...args: any[]) => any;
+export type WayfinderHttpClient<T extends AnyFunction> = T;
+export const createWayfinderHttpClient = <T extends AnyFunction>({
+  httpClient,
+}: {
+  httpClient: T; // generic http client parameters
+}): WayfinderHttpClient<T> => {
+  return new Proxy(httpClient, {
+    async apply(
+      _target,
+      thisArg,
+      argArray: Parameters<T>,
+    ): Promise<ReturnType<T>> {
+      const originalUrl = argArray[0];
+      let wayfinderUrl = originalUrl;
+      if (typeof originalUrl === 'string' && originalUrl.startsWith('ar://')) {
+        wayfinderUrl = (
+          await thisArg.getRedirectUrl({ reference: originalUrl })
+        ).toString();
+      }
+      // wraps any standard http client with ar:// support
+      return httpClient(wayfinderUrl, ...argArray.slice(1)) as ReturnType<T>;
+    },
+  }) as WayfinderHttpClient<T>;
+};
 
-export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
-  // TODO: private verificationSettings: {
-  //   trustedGatewayFQDNs: string[];
-  //   localVerify: boolean;
-  // };
-  private strategy: WayfinderRoutingStrategy;
-  // private resolver: ArNSNameResolver;
-  public readonly http: typeof fetch | typeof axios;
-  // TODO: private blocklistGatewayFQDNs: string[];
+export class Wayfinder<T extends AnyFunction>
+  implements WayfinderRoutingStrategy, WayfinderRouter
+{
+  public readonly strategy: WayfinderRoutingStrategy;
+  public readonly fetch: WayfinderHttpClient<T>;
+  public readonly ario: AoARIORead;
+  public readonly blocklist: string[];
   // TODO: stats provider
-
   // TODO: metricsProvider for otel/prom support
+  // TODO: a names cache and gateways cache
+  // TODO: private verificationSettings: {
+  //   trustedGateways: URL[];
+  //   method: 'local' | 'remote';
+  // };
   constructor({
     ario = ARIO.mainnet(),
     blocklist = [],
     strategy = new RandomGatewayStrategy({ ario, blocklist }),
-    http = fetch,
+    fetch,
     // TODO: stats provider
   }: {
     ario?: AoARIORead;
     blocklist?: string[];
     strategy?: WayfinderRoutingStrategy;
-    resolver?: ArNSNameResolver;
-    http?: typeof fetch | typeof axios;
-    // TODO: support blocklist
+    fetch: WayfinderHttpClient<T>;
     // TODO: stats provider
   }) {
     this.strategy = strategy;
-
-    // add a proxy object to the fetch HTTP request
-    this.http = this.wrapFetch({
-      route: (url, init) => http(url, init),
+    this.fetch = createWayfinderHttpClient<T>({
+      httpClient: fetch,
     });
   }
 
-  private wrapFetch({
-    route,
-  }: {
-    route: (url: string, init?: RequestInit) => Promise<Response>;
-  }): typeof fetch | typeof axios {
-    return new Proxy(fetch, {
-      async apply(_, thisArg, [url, init]: [RequestInfo, RequestInit?]) {
-        let urlString = url;
-        if (url.toString().startsWith('ar://')) {
-          const redirectUrl = await thisArg.getRedirectUrl({
-            reference: String(url),
-          });
-          urlString = redirectUrl.toString();
-        }
-        // TODO: add verification handling after we fetch the data, use an event emitter to notify listeners
-        return route(urlString.toString(), init);
-      },
-    }) as typeof fetch;
-  }
+  // TODO: add builder to set http client so it can be easily changed
+  // TODO: builder to set routing strategy so it can be easily changed
 
   // reference equates to ar://<something>
   async getRedirectUrl({ reference }: { reference: string }): Promise<URL> {
@@ -242,10 +254,9 @@ export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
     }
 
     if (path.startsWith('/')) {
-      // route to gateway e.g. ar:///info
-      // results https://arweave.net/info - if they are not using an APEX arns name
       return new URL(path.slice(1), await this.getTargetGateway());
     }
+
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
     if (txIdRegex.test(path)) {
       const [txId, ...rest] = path.split('/');
@@ -270,8 +281,12 @@ export class Wayfinder implements WayfinderRoutingStrategy, WayfinderRouter {
   /**
    * @returns the target gateway
    */
-  async getTargetGateway(): Promise<URL> {
-    return this.strategy.getTargetGateway();
+  async getTargetGateway({
+    seed = Math.random(),
+  }: {
+    seed?: number;
+  } = {}): Promise<URL> {
+    return this.strategy.getTargetGateway({ seed });
   }
 
   // TODO: support updating the routing strategy

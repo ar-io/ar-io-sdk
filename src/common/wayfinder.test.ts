@@ -7,7 +7,7 @@ import {
   AoGatewayWithAddress,
   PaginationResult,
 } from '../types/io.js';
-import { ArNSNameResolver, Wayfinder } from './wayfinder.js';
+import { Wayfinder, createWayfinderHttpClient } from './wayfinder.js';
 
 describe('Wayfinder', () => {
   const stubbedGateway: AoGatewayWithAddress = {
@@ -36,23 +36,12 @@ describe('Wayfinder', () => {
     getGateway: async ({ address }: { address: string }) =>
       address === stubbedGateway.gatewayAddress ? stubbedGateway : null,
   } as unknown as AoARIORead;
-  const stubbedResolver = {
-    resolve: async ({ name }: { name: string }) => ({
-      txId: 'tx-id',
-      processId: 'process-id',
-      owner: 'owner',
-      name: name,
-      ttlSeconds: 1000,
-      undernameLimit: 1000,
-      undernameIndex: 1,
-    }),
-  } as unknown as ArNSNameResolver;
 
   describe('getRedirectUrl', () => {
     it('should handle ar:// protocol with txid', async () => {
       const wayfinder = new Wayfinder({
         ario: stubbedArio,
-        resolver: stubbedResolver,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
       const txId = '0'.repeat(43);
       const url = await wayfinder.getRedirectUrl({
@@ -64,7 +53,7 @@ describe('Wayfinder', () => {
     it('should handle ar:// protocol with a gateway api', async () => {
       const wayfinder = new Wayfinder({
         ario: stubbedArio,
-        resolver: stubbedResolver,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
       const url = await wayfinder.getRedirectUrl({
         reference: 'ar:///info',
@@ -75,7 +64,7 @@ describe('Wayfinder', () => {
     it('should handle ar:// protocol with an arns name', async () => {
       const wayfinder = new Wayfinder({
         ario: stubbedArio,
-        resolver: stubbedResolver,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
       const url = await wayfinder.getRedirectUrl({
         reference: 'ar://name',
@@ -84,7 +73,10 @@ describe('Wayfinder', () => {
     });
 
     it('should throw error for invalid protocol', async () => {
-      const wayfinder = new Wayfinder({ ario: stubbedArio });
+      const wayfinder = new Wayfinder({
+        ario: stubbedArio,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
+      });
       assert.rejects(
         wayfinder.getRedirectUrl({
           reference: 'http://arweave.net',
@@ -94,7 +86,10 @@ describe('Wayfinder', () => {
     });
 
     it('should throw error for invalid reference format', async () => {
-      const wayfinder = new Wayfinder({ ario: stubbedArio });
+      const wayfinder = new Wayfinder({
+        ario: stubbedArio,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
+      });
       assert.rejects(
         wayfinder.getRedirectUrl({
           reference: 'ar://invalid!reference',
@@ -108,7 +103,10 @@ describe('Wayfinder', () => {
 
   describe('getTargetGateway', () => {
     it('should return the target gateway', async () => {
-      const wayfinder = new Wayfinder({ ario: stubbedArio });
+      const wayfinder = new Wayfinder({
+        ario: stubbedArio,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
+      });
       const gateway = await wayfinder.getTargetGateway();
       assert.strictEqual(gateway.toString(), 'https://arweave.net/');
     });
@@ -127,6 +125,7 @@ describe('Wayfinder', () => {
               hasMore: false,
             }) as unknown as PaginationResult<AoGatewayWithAddress>,
         } as unknown as AoARIORead,
+        fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
       assert.rejects(
         wayfinder.getTargetGateway(),
@@ -139,29 +138,110 @@ describe('Wayfinder', () => {
   describe('http wrapper', () => {
     describe('fetch', () => {
       it('should fetch the data using the selected gateway', async () => {
-        const wayfinder = new Wayfinder({ ario: stubbedArio, http: fetch });
-        const response = await wayfinder.http('ar://ao');
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({ httpClient: fetch }),
+        });
+        const nativeFetch = await fetch('https://ao.arweave.net');
+        const response = await wayfinder.fetch('ar://ao');
         assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.status, nativeFetch.status);
+        // assert the arns headers are the same
+        const arnsHeaders = Array.from(response.headers.entries()).filter(
+          ([key]) => key.startsWith('x-arns-'),
+        );
+        const nativeFetchHeaders = Array.from(
+          nativeFetch.headers.entries(),
+        ).filter(([key]) => key.startsWith('x-arns-'));
+        assert.deepStrictEqual(arnsHeaders, nativeFetchHeaders);
+        assert.deepStrictEqual(await response.text(), await nativeFetch.text());
+      });
+      it('should route a non-ar:// url as a normal fetch', async () => {
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({ httpClient: fetch }),
+        });
+        const nativeFetch = await fetch('https://arweave.net/', {
+          method: 'HEAD',
+        });
+        const response = await wayfinder.fetch('https://arweave.net/', {
+          method: 'HEAD',
+        });
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.status, nativeFetch.status);
+        // TODO: ensure the headers are the same excluding unique headers
+        assert.deepStrictEqual(await response.text(), await nativeFetch.text());
       });
 
-      it('should route a non-ar:// url as a normal fetch', async () => {
-        const wayfinder = new Wayfinder({ ario: stubbedArio, http: fetch });
-        const response = await wayfinder.http('https://arweave.net/');
-        assert.strictEqual(response.status, 200);
-      });
+      for (const api of ['/info', '/metrics', '/block/current']) {
+        it(`supports a native arweave node apis ${api}`, async () => {
+          const wayfinder = new Wayfinder({
+            ario: stubbedArio,
+            fetch: createWayfinderHttpClient({ httpClient: fetch }),
+          });
+          const nativeFetch = await fetch(`https://arweave.net${api}`);
+          const response = await wayfinder.fetch(`ar:///${api}`);
+          assert.strictEqual(response.status, 200);
+          assert.strictEqual(response.status, nativeFetch.status);
+          // TODO: ensure the headers are the same excluding unique headers
+          assert.deepStrictEqual(
+            await response.text(),
+            await nativeFetch.text(),
+          );
+        });
+      }
+
+      for (const api of ['/ar-io/info', '/ar-io/__gateway_metrics']) {
+        it(`supports a native ario node gateway apis ${api}`, async () => {
+          const wayfinder = new Wayfinder({
+            ario: stubbedArio,
+            fetch: createWayfinderHttpClient({ httpClient: fetch }),
+          });
+          const nativeFetch = await fetch(`https://arweave.net${api}`);
+          const response = await wayfinder.fetch(`ar:///${api}`);
+          assert.strictEqual(response.status, 200);
+          assert.strictEqual(response.status, nativeFetch.status);
+          // TODO: ensure the headers are the same excluding unique headers
+          assert.deepStrictEqual(
+            await response.text(),
+            await nativeFetch.text(),
+          );
+        });
+      }
     });
 
     describe('axios', () => {
       it('should fetch the data using the selected gateway', async () => {
-        const wayfinder = new Wayfinder({ ario: stubbedArio, http: axios });
-        const response = await wayfinder.http('ar://ao');
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({ httpClient: axios }),
+        });
+        const nativeAxios = await axios.get('https://ao.arweave.net');
+        const response = await wayfinder.fetch('ar://ao');
         assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.status, nativeAxios.status);
+        // assert the arns headers are the same
+        const arnsHeaders = Object.entries(response.headers).filter(([key]) =>
+          key.startsWith('x-arns-'),
+        );
+        const nativeAxiosHeaders = Object.entries(nativeAxios.headers).filter(
+          ([key]) => key.startsWith('x-arns-'),
+        );
+        assert.deepStrictEqual(arnsHeaders, nativeAxiosHeaders);
+        assert.deepStrictEqual(response.data, nativeAxios.data);
       });
 
       it('should route a non-ar:// url as a normal fetch', async () => {
-        const wayfinder = new Wayfinder({ ario: stubbedArio, http: axios });
-        const response = await wayfinder.http('https://arweave.net/');
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({ httpClient: axios }),
+        });
+        const nativeAxios = await axios.get('https://arweave.net/');
+        const response = await wayfinder.fetch('https://arweave.net/');
         assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.status, nativeAxios.status);
+        assert.deepStrictEqual(response.data, nativeAxios.data);
+        // TODO: ensure the headers are the same excluding unique headers
       });
     });
   });
