@@ -19,12 +19,8 @@ import { AoARIORead } from '../types/io.js';
 import { ARIO } from './io.js';
 
 export interface WayfinderRoutingStrategy {
+  readonly name: string;
   getTargetGateway: (options?: { seed?: number }) => Promise<URL>;
-}
-
-export interface WayfinderRouter<T extends AnyFunction> {
-  fetch: WayfinderHttpClient<T>;
-  getRedirectUrl({ reference }: { reference: string }): Promise<URL>;
 }
 
 export class FixedGatewayStrategy implements WayfinderRoutingStrategy {
@@ -91,17 +87,17 @@ export class PriorityGatewayStrategy implements WayfinderRoutingStrategy {
   private sortOrder: 'asc' | 'desc';
   private blocklist: string[];
   constructor({
-    ario,
+    ario = ARIO.mainnet(),
     limit = 1,
     sortBy = 'operatorStake',
     sortOrder = 'desc',
     blocklist = [],
   }: {
-    ario: AoARIORead;
-    limit: number;
-    sortBy: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
-    sortOrder: 'asc' | 'desc';
-    blocklist: string[];
+    ario?: AoARIORead;
+    limit?: number;
+    sortBy?: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
+    sortOrder?: 'asc' | 'desc';
+    blocklist?: string[];
   }) {
     this.ario = ario;
     this.limit = limit;
@@ -151,39 +147,86 @@ export const WayfinderRoutingStrategies: Record<
 
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
 export const txIdRegex = /^[a-z0-9]{43}$/;
+export const getRedirectUrl = async ({
+  url,
+  strategy,
+}: {
+  url: string;
+  strategy: WayfinderRoutingStrategy;
+}): Promise<URL> => {
+  const [protocol, path] = url.split('://');
+  if (protocol !== 'ar') {
+    throw new Error('Invalid reference, must start with ar://');
+  }
+
+  if (path.startsWith('/')) {
+    return new URL(path.slice(1), await strategy.getTargetGateway());
+  }
+
+  // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
+  if (txIdRegex.test(path)) {
+    const [txId, ...rest] = path.split('/');
+    return new URL(
+      `${txId}${rest.join('/')}`,
+      await strategy.getTargetGateway(),
+    );
+  }
+
+  if (arnsRegex.test(path)) {
+    // TODO: arns names may only support query params after the name
+    const [name, ...rest] = path.split('/');
+    // TODO: check a local base name cache list the name exists
+    const gateway = await strategy.getTargetGateway();
+    const arnsName = `${gateway.protocol}//${name}.${gateway.hostname}${gateway.port ? `:${gateway.port}` : ''}`;
+    return new URL(rest.join('/'), arnsName);
+  }
+
+  // TODO: throw here if it's not a valid reference
+  throw new Error(
+    'Invalid reference. Must be of the form ar://<txid> or ar://<name> or ar:///<gateway-api>',
+  );
+};
 
 // TODO: introduce wayfinder http wrapper class/interface so we can support a variety of http clients to proxy requests through
 export type AnyFunction = (...args: any[]) => any;
-export type WayfinderHttpClient<T extends AnyFunction> = T;
+export type WayfinderHttpClient<T extends AnyFunction> = T & {
+  getRedirectUrl: ({ originalUrl }: { originalUrl: string }) => Promise<URL>;
+};
 export const createWayfinderHttpClient = <T extends AnyFunction>({
   httpClient,
+  routingStrategy,
 }: {
-  httpClient: T; // generic http client parameters
+  httpClient: T;
+  routingStrategy: WayfinderRoutingStrategy;
 }): WayfinderHttpClient<T> => {
-  return new Proxy(httpClient, {
+  const client = Object.assign(httpClient, {
+    getRedirectUrl: ({ originalUrl }: { originalUrl: string }) =>
+      getRedirectUrl({ url: originalUrl, strategy: routingStrategy }),
+  }) as unknown as WayfinderHttpClient<T>;
+  return new Proxy(client, {
     async apply(
-      _target,
-      thisArg,
+      target,
+      _thisArg,
       argArray: Parameters<T>,
     ): Promise<ReturnType<T>> {
       const originalUrl = argArray[0];
       let wayfinderUrl = originalUrl;
       if (typeof originalUrl === 'string' && originalUrl.startsWith('ar://')) {
         wayfinderUrl = (
-          await thisArg.getRedirectUrl({ reference: originalUrl })
+          await target.getRedirectUrl({ originalUrl })
         ).toString();
       }
       // wraps any standard http client with ar:// support
       return httpClient(wayfinderUrl, ...argArray.slice(1)) as ReturnType<T>;
     },
-  }) as WayfinderHttpClient<T>;
+  }) as unknown as WayfinderHttpClient<T>;
 };
 
-export class Wayfinder<T extends AnyFunction> implements WayfinderRouter<T> {
+export class Wayfinder<T extends AnyFunction> {
   public readonly strategy: WayfinderRoutingStrategy;
-  public readonly fetch: WayfinderHttpClient<T>;
-  public readonly ario: AoARIORead;
+  public readonly request: WayfinderHttpClient<T>;
   public readonly blocklist: string[];
+  public readonly httpClient: T;
   // TODO: stats provider
   // TODO: metricsProvider for otel/prom support
   // TODO: a names cache and gateways cache
@@ -192,64 +235,23 @@ export class Wayfinder<T extends AnyFunction> implements WayfinderRouter<T> {
   //   method: 'local' | 'remote';
   // };
   constructor({
-    ario = ARIO.mainnet(),
-    blocklist = [],
-    strategy = new RandomGatewayStrategy({ ario, blocklist }),
-    fetch,
+    strategy = new RandomGatewayStrategy({ ario: ARIO.mainnet() }),
+    httpClient,
     // TODO: stats provider
   }: {
-    ario?: AoARIORead;
-    blocklist?: string[];
-    strategy?: WayfinderRoutingStrategy;
-    fetch: WayfinderHttpClient<T>;
+    strategy: WayfinderRoutingStrategy;
+    httpClient: T;
     // TODO: stats provider
   }) {
     this.strategy = strategy;
-    this.fetch = createWayfinderHttpClient<T>({
-      httpClient: fetch,
+    this.httpClient = httpClient;
+    this.request = createWayfinderHttpClient<T>({
+      httpClient,
+      routingStrategy: strategy,
     });
   }
 
-  // TODO: add builder to set http client so it can be easily changed
-  // TODO: builder to set routing strategy so it can be easily changed
+  // TODO: potential builder pattern to update the strategy
 
-  // reference equates to ar://<something>
-  async getRedirectUrl({ reference }: { reference: string }): Promise<URL> {
-    // break out the ar://
-    const [protocol, path] = reference.split('://');
-    if (protocol !== 'ar') {
-      throw new Error('Invalid reference, must start with ar://');
-    }
-
-    if (path.startsWith('/')) {
-      return new URL(path.slice(1), await this.strategy.getTargetGateway());
-    }
-
-    // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
-    if (txIdRegex.test(path)) {
-      const [txId, ...rest] = path.split('/');
-      return new URL(
-        `${txId}${rest.join('/')}`,
-        await this.strategy.getTargetGateway(),
-      );
-    }
-
-    if (arnsRegex.test(path)) {
-      // TODO: arns names may only support query params after the name
-      const [name, ...rest] = path.split('/');
-      // TODO: check a local base name cache list the name exists
-      const gateway = await this.strategy.getTargetGateway();
-      const arnsName = `${gateway.protocol}//${name}.${gateway.hostname}${gateway.port ? `:${gateway.port}` : ''}`;
-      return new URL(rest.join('/'), arnsName);
-    }
-
-    // TODO: throw here if it's not a valid reference
-    throw new Error(
-      'Invalid reference. Must be of the form ar://<txid> or ar://<name> or ar:///<gateway-api>',
-    );
-  }
-
-  // TODO: support updating the routing strategy
   // TODO: add verification support
-  // TODO: handle support for gateway urls prefixed with ar:///
 }
