@@ -79,7 +79,7 @@ export const resolveRedirectUrl = ({
 
 /**
  * Creates a wrapped http client that supports ar:// protocol
- * @param httpClient - the http client to wrap (e.g. axios, fetch, etc.)
+ * @param httpClient - the http client to wrap (e.g. axios, fetch, got, etc.)
  * @param resolveUrl - the function to construct the redirect url for ar:// requests
  * @returns a wrapped http client that supports ar:// protocol
  */
@@ -108,6 +108,13 @@ export const createWayfinderClient = <T extends AnyFunction>({
     },
   }) as unknown as WayfinderHttpClient<T>;
 };
+
+/**
+ * The main class for the wayfinder
+ * @param router - the router to use for requests
+ * @param httpClient - the http client to use for requests
+ * @param blocklist - the blocklist of gateways to avoid
+ */
 export class Wayfinder<T extends AnyFunction> {
   /**
    * The router to use for requests
