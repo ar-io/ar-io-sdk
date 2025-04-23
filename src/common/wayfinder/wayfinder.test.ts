@@ -6,46 +6,45 @@ import {
   AoARIORead,
   AoGatewayWithAddress,
   PaginationResult,
-} from '../types/io.js';
-import { RandomGatewayStrategy, Wayfinder } from './wayfinder.js';
+} from '../../types/io.js';
+import { RandomGatewayRouter } from './routers/index.js';
+import { Wayfinder } from './wayfinder.js';
+
+const stubbedGateway: AoGatewayWithAddress = {
+  status: 'joined',
+  gatewayAddress: 'arweave',
+  operatorStake: 1000,
+  totalDelegatedStake: 1000,
+  startTimestamp: 1000,
+  settings: {
+    protocol: 'https',
+    fqdn: 'arweave.net',
+    port: 443,
+  },
+} as unknown as AoGatewayWithAddress;
+const stubbedArio: AoARIORead = {
+  getGateways: async () =>
+    ({
+      items: [stubbedGateway],
+      cursor: null,
+      limit: 1,
+      totalItems: 1,
+      sortOrder: 'desc',
+      sortBy: 'operatorStake',
+      hasMore: false,
+    }) as unknown as PaginationResult<AoGatewayWithAddress>,
+  getGateway: async ({ address }: { address: string }) =>
+    address === stubbedGateway.gatewayAddress ? stubbedGateway : null,
+} as unknown as AoARIORead;
 
 describe('Wayfinder', () => {
-  const stubbedGateway: AoGatewayWithAddress = {
-    status: 'joined',
-    gatewayAddress: 'arweave',
-    operatorStake: 1000,
-    totalDelegatedStake: 1000,
-    startTimestamp: 1000,
-    settings: {
-      protocol: 'https',
-      fqdn: 'arweave.net',
-      port: 443,
-    },
-  } as unknown as AoGatewayWithAddress;
-  const stubbedArio: AoARIORead = {
-    getGateways: async () =>
-      ({
-        items: [stubbedGateway],
-        cursor: null,
-        limit: 1,
-        totalItems: 1,
-        sortOrder: 'desc',
-        sortBy: 'operatorStake',
-        hasMore: false,
-      }) as unknown as PaginationResult<AoGatewayWithAddress>,
-    getGateway: async ({ address }: { address: string }) =>
-      address === stubbedGateway.gatewayAddress ? stubbedGateway : null,
-  } as unknown as AoARIORead;
-
   describe('http wrapper', () => {
     describe('fetch', () => {
       let wayfinder: Wayfinder<typeof fetch>;
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: fetch,
-          strategy: new RandomGatewayStrategy({
-            ario: stubbedArio,
-          }),
+          router: new RandomGatewayRouter({ ario: stubbedArio }),
         });
       });
       it('should fetch the data using the selected gateway', async () => {
@@ -126,7 +125,7 @@ describe('Wayfinder', () => {
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: axios,
-          strategy: new RandomGatewayStrategy({ ario: stubbedArio }),
+          router: new RandomGatewayRouter({ ario: stubbedArio }),
         });
       });
       it('should fetch the data using axios against the target gateway', async () => {
@@ -147,7 +146,7 @@ describe('Wayfinder', () => {
         assert.deepStrictEqual(response.data, nativeAxios.data);
       });
 
-      it('should route a non-ar:// url as a normal axios', async () => {
+      it('should route a non-ar:// url as a normal axios request', async () => {
         const [nativeAxios, response] = await Promise.all([
           axios.get('https://arweave.net/'),
           wayfinder.request('https://arweave.net/'),
@@ -158,15 +157,39 @@ describe('Wayfinder', () => {
         // TODO: ensure the headers are the same excluding unique headers
       });
 
+      for (const api of ['/info', '/metrics', '/block/current']) {
+        it(`supports native arweave node apis ${api}`, async () => {
+          const [nativeAxios, response] = await Promise.all([
+            axios.get(`https://arweave.net${api}`),
+            wayfinder.request(`ar:///${api}`),
+          ]);
+          assert.strictEqual(response.status, 200);
+          assert.strictEqual(response.status, nativeAxios.status);
+          // TODO: ensure the headers are the same excluding unique headers
+          assert.deepStrictEqual(response.data, nativeAxios.data);
+        });
+      }
+
+      for (const api of ['/ar-io/info', '/ar-io/__gateway_metrics']) {
+        it(`supports native ario node gateway apis ${api}`, async () => {
+          const [nativeAxios, response] = await Promise.all([
+            axios.get(`https://arweave.net${api}`),
+            wayfinder.request(`ar:///${api}`),
+          ]);
+          assert.strictEqual(response.status, 200);
+          assert.strictEqual(response.status, nativeAxios.status);
+          // TODO: ensure the headers are the same excluding unique headers
+          assert.deepStrictEqual(response.data, nativeAxios.data);
+        });
+      }
+
       it('should return the error from the target gateway if the route is not found', async () => {
         const axiosInstance = axios.create({
           validateStatus: () => true, // don't throw so we can compare axios result with wrapped axios result
         });
         const wayfinder = new Wayfinder({
           httpClient: axiosInstance,
-          strategy: new RandomGatewayStrategy({
-            ario: stubbedArio,
-          }),
+          router: new RandomGatewayRouter({ ario: stubbedArio }),
         });
         const [nativeAxios, response] = await Promise.all([
           axiosInstance.get('https://arweave.net/not-found'),
