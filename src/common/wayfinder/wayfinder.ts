@@ -15,22 +15,24 @@
  */
 import { webcrypto } from 'crypto';
 
-import { AoARIORead } from '../../types/io.js';
-import {
-  AnyFunction,
-  WayfinderHttpClient,
-  WayfinderRouter,
-  WayfinderRouterName,
-} from '../../types/wayfinder.js';
+import { WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
-import { FixedGatewayRouter } from './routers/fixed.js';
-import { PriorityGatewayRouter } from './routers/priority.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
+// local types for wayfinder
+type AnyFunction = (...args: any[]) => any;
+type WayfinderHttpClient<T extends AnyFunction> = T;
+
+// known regexes for wayfinder urls
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
 export const txIdRegex = /^[a-z0-9]{43}$/;
 
-// local helper for randomness, does not support seeding
+/**
+ * Cryptographically secure helper for randomness, does not support seeding
+ * @param min - the minimum value
+ * @param max - the maximum value
+ * @returns a random integer between min and max
+ */
 export const randomInt = (min: number, max: number): number => {
   const [rand] = webcrypto.getRandomValues(new Uint32Array(1));
   return min + (rand % (max - min));
@@ -106,20 +108,6 @@ export const createWayfinderClient = <T extends AnyFunction>({
     },
   }) as unknown as WayfinderHttpClient<T>;
 };
-
-export const WayfinderRouters: Record<
-  WayfinderRouterName,
-  (
-    params: { ario: AoARIORead; blocklist?: string[] } | { gateway: string },
-  ) => WayfinderRouter
-> = {
-  random: (params: { ario: AoARIORead; blocklist?: string[] }) =>
-    new RandomGatewayRouter(params),
-  priority: (params: { ario: AoARIORead; blocklist?: string[] }) =>
-    new PriorityGatewayRouter(params),
-  fixed: (params: { gateway: string }) => new FixedGatewayRouter(params),
-} as const;
-
 export class Wayfinder<T extends AnyFunction> {
   /**
    * The router to use for requests

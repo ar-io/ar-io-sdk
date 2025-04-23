@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export type WayfinderRouterName = 'random' | 'priority' | 'fixed';
 export interface WayfinderRouter {
-  readonly name: WayfinderRouterName;
+  readonly name: string;
   getTargetGateway: () => Promise<URL>;
 }
-
-export type AnyFunction = (...args: any[]) => any;
-export type WayfinderHttpClient<T extends AnyFunction> = T;

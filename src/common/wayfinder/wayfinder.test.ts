@@ -7,7 +7,7 @@ import {
   AoGatewayWithAddress,
   PaginationResult,
 } from '../../types/io.js';
-import { RandomGatewayRouter } from './routers/index.js';
+import { RandomGatewayRouter } from './routers/random.js';
 import { Wayfinder } from './wayfinder.js';
 
 const stubbedGateway: AoGatewayWithAddress = {
