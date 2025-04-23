@@ -107,7 +107,7 @@ describe('Wayfinder', () => {
         ario: stubbedArio,
         fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
-      const gateway = await wayfinder.getTargetGateway();
+      const gateway = await wayfinder.strategy.getTargetGateway();
       assert.strictEqual(gateway.toString(), 'https://arweave.net/');
     });
 
@@ -128,7 +128,7 @@ describe('Wayfinder', () => {
         fetch: createWayfinderHttpClient({ httpClient: fetch }),
       });
       assert.rejects(
-        wayfinder.getTargetGateway(),
+        wayfinder.strategy.getTargetGateway(),
         new Error('No target gateway found'),
       );
     });
@@ -208,10 +208,22 @@ describe('Wayfinder', () => {
           );
         });
       }
+
+      it('returns the error from the target gateway if the route is not found', async () => {
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({ httpClient: fetch }),
+        });
+        const nativeFetch = await fetch('https://arweave.net/not-found');
+        const response = await wayfinder.fetch('https://arweave.net/not-found');
+        assert.strictEqual(response.status, nativeFetch.status);
+        assert.strictEqual(response.statusText, nativeFetch.statusText);
+        assert.deepStrictEqual(await response.text(), await nativeFetch.text());
+      });
     });
 
     describe('axios', () => {
-      it('should fetch the data using the selected gateway', async () => {
+      it('should fetch the data using axios against the target gateway', async () => {
         const wayfinder = new Wayfinder({
           ario: stubbedArio,
           fetch: createWayfinderHttpClient({ httpClient: axios }),
@@ -231,7 +243,7 @@ describe('Wayfinder', () => {
         assert.deepStrictEqual(response.data, nativeAxios.data);
       });
 
-      it('should route a non-ar:// url as a normal fetch', async () => {
+      it('should route a non-ar:// url as a normal axios', async () => {
         const wayfinder = new Wayfinder({
           ario: stubbedArio,
           fetch: createWayfinderHttpClient({ httpClient: axios }),
@@ -242,6 +254,24 @@ describe('Wayfinder', () => {
         assert.strictEqual(response.status, nativeAxios.status);
         assert.deepStrictEqual(response.data, nativeAxios.data);
         // TODO: ensure the headers are the same excluding unique headers
+      });
+
+      it('should return the error from the target gateway if the route is not found', async () => {
+        const axiosInstance = axios.create({
+          validateStatus: () => true, // don't throw so we can compare axios result with wrapped axios result
+        });
+        const wayfinder = new Wayfinder({
+          ario: stubbedArio,
+          fetch: createWayfinderHttpClient({
+            httpClient: axiosInstance,
+          }),
+        });
+        const nativeAxios = await axiosInstance.get(
+          'https://arweave.net/not-found',
+        );
+        const response = await wayfinder.fetch('https://arweave.net/not-found');
+        assert.strictEqual(response.status, nativeAxios.status);
+        assert.strictEqual(response.data, nativeAxios.data);
       });
     });
   });

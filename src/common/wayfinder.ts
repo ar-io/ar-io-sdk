@@ -18,18 +18,6 @@ import axios from 'axios';
 import { AoARIORead } from '../types/io.js';
 import { ARIO } from './io.js';
 
-type ArNSNameResolutionData = {
-  ttlSeconds: number;
-  txId: string;
-  processId: string;
-  owner: string;
-  undernameLimit: number;
-  undernameIndex: number; // index of the undername relative to the limit
-};
-export interface ArNSNameResolver {
-  resolve({ name }: { name: string }): Promise<ArNSNameResolutionData>;
-}
-
 export interface WayfinderRoutingStrategy {
   getTargetGateway: (options?: { seed?: number }) => Promise<URL>;
 }
@@ -148,26 +136,6 @@ export class PriorityGatewayStrategy implements WayfinderRoutingStrategy {
   }
 }
 
-export class ARIOGatewayNameResolver implements ArNSNameResolver {
-  private strategy: WayfinderRoutingStrategy;
-  public readonly name = 'ario';
-  constructor({ strategy }: { strategy: WayfinderRoutingStrategy }) {
-    this.strategy = strategy;
-  }
-
-  async resolve({ name }: { name: string }): Promise<ArNSNameResolutionData> {
-    const gateway = await this.strategy.getTargetGateway();
-    const url = `${gateway}/ar-io/resolver/${name}`;
-    const data = await fetch(url);
-    if (!data.ok) {
-      throw new Error(`Failed to resolve gateway for ${name}`);
-    }
-
-    const json = await data.json();
-    return json as ArNSNameResolutionData;
-  }
-}
-
 export type WayfinderRoutingStrategyName = 'random' | 'priority' | 'fixed';
 
 export const WayfinderRoutingStrategies: Record<
@@ -209,9 +177,7 @@ export const createWayfinderHttpClient = <T extends AnyFunction>({
   }) as WayfinderHttpClient<T>;
 };
 
-export class Wayfinder<T extends AnyFunction>
-  implements WayfinderRoutingStrategy, WayfinderRouter
-{
+export class Wayfinder<T extends AnyFunction> implements WayfinderRouter {
   public readonly strategy: WayfinderRoutingStrategy;
   public readonly fetch: WayfinderHttpClient<T>;
   public readonly ario: AoARIORead;
@@ -254,20 +220,23 @@ export class Wayfinder<T extends AnyFunction>
     }
 
     if (path.startsWith('/')) {
-      return new URL(path.slice(1), await this.getTargetGateway());
+      return new URL(path.slice(1), await this.strategy.getTargetGateway());
     }
 
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
     if (txIdRegex.test(path)) {
       const [txId, ...rest] = path.split('/');
-      return new URL(`${txId}${rest.join('/')}`, await this.getTargetGateway());
+      return new URL(
+        `${txId}${rest.join('/')}`,
+        await this.strategy.getTargetGateway(),
+      );
     }
 
     if (arnsRegex.test(path)) {
       // TODO: arns names may only support query params after the name
       const [name, ...rest] = path.split('/');
       // TODO: check a local base name cache list the name exists
-      const gateway = await this.getTargetGateway();
+      const gateway = await this.strategy.getTargetGateway();
       const arnsName = `${gateway.protocol}//${name}.${gateway.hostname}${gateway.port ? `:${gateway.port}` : ''}`;
       return new URL(rest.join('/'), arnsName);
     }
@@ -276,17 +245,6 @@ export class Wayfinder<T extends AnyFunction>
     throw new Error(
       'Invalid reference. Must be of the form ar://<txid> or ar://<name> or ar:///<gateway-api>',
     );
-  }
-
-  /**
-   * @returns the target gateway
-   */
-  async getTargetGateway({
-    seed = Math.random(),
-  }: {
-    seed?: number;
-  } = {}): Promise<URL> {
-    return this.strategy.getTargetGateway({ seed });
   }
 
   // TODO: support updating the routing strategy
