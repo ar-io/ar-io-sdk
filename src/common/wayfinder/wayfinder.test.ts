@@ -1,5 +1,7 @@
 import axios from 'axios';
+import got from 'got';
 import assert from 'node:assert';
+import { buffer } from 'node:stream/consumers';
 import { before, describe, it } from 'node:test';
 
 import {
@@ -128,10 +130,28 @@ describe('Wayfinder', () => {
           router: new RandomGatewayRouter({ ario: stubbedArio }),
         });
       });
-      it('should fetch the data using axios against the target gateway', async () => {
+      it('should fetch the data using axios default function against the target gateway', async () => {
+        const [nativeAxios, response] = await Promise.all([
+          axios('https://ao.arweave.net'),
+          wayfinder.request('ar://ao'),
+        ]);
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(response.status, nativeAxios.status);
+        // assert the arns headers are the same
+        const arnsHeaders = Object.entries(response.headers)
+          .sort()
+          .filter(([key]) => key.startsWith('x-arns-'));
+        const nativeAxiosHeaders = Object.entries(nativeAxios.headers).filter(
+          ([key]) => key.startsWith('x-arns-'),
+        );
+        assert.deepStrictEqual(arnsHeaders.sort(), nativeAxiosHeaders.sort());
+        assert.deepStrictEqual(response.data, nativeAxios.data);
+      });
+
+      it('should fetch the data using the axios.get method against the target gateway', async () => {
         const [nativeAxios, response] = await Promise.all([
           axios.get('https://ao.arweave.net'),
-          wayfinder.request('ar://ao'),
+          wayfinder.request.get('ar://ao'),
         ]);
         assert.strictEqual(response.status, 200);
         assert.strictEqual(response.status, nativeAxios.status);
@@ -148,7 +168,7 @@ describe('Wayfinder', () => {
 
       it('should route a non-ar:// url as a normal axios request', async () => {
         const [nativeAxios, response] = await Promise.all([
-          axios.get('https://arweave.net/'),
+          axios('https://arweave.net/'),
           wayfinder.request('https://arweave.net/'),
         ]);
         assert.strictEqual(response.status, 200);
@@ -160,7 +180,7 @@ describe('Wayfinder', () => {
       for (const api of ['/info', '/metrics', '/block/current']) {
         it(`supports native arweave node apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
-            axios.get(`https://arweave.net${api}`),
+            axios(`https://arweave.net${api}`),
             wayfinder.request(`ar:///${api}`),
           ]);
           assert.strictEqual(response.status, 200);
@@ -173,7 +193,7 @@ describe('Wayfinder', () => {
       for (const api of ['/ar-io/info', '/ar-io/__gateway_metrics']) {
         it(`supports native ario node gateway apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
-            axios.get(`https://arweave.net${api}`),
+            axios(`https://arweave.net${api}`),
             wayfinder.request(`ar:///${api}`),
           ]);
           assert.strictEqual(response.status, 200);
@@ -192,7 +212,7 @@ describe('Wayfinder', () => {
           router: new RandomGatewayRouter({ ario: stubbedArio }),
         });
         const [nativeAxios, response] = await Promise.all([
-          axiosInstance.get('https://arweave.net/not-found'),
+          axiosInstance('https://arweave.net/not-found'),
           wayfinder.request('https://arweave.net/not-found'),
         ]);
         assert.strictEqual(response.status, nativeAxios.status);
@@ -201,5 +221,34 @@ describe('Wayfinder', () => {
     });
   });
 
+  describe('got', () => {
+    let wayfinder: Wayfinder<typeof got>;
+    before(() => {
+      wayfinder = new Wayfinder({
+        httpClient: got,
+        router: new RandomGatewayRouter({ ario: stubbedArio }),
+      });
+    });
+
+    it('should fetch the data using the got default function against the target gateway', async () => {
+      const [nativeGot, response] = await Promise.all([
+        got('https://ao.arweave.net'),
+        wayfinder.request('ar://ao'),
+      ]);
+      assert.strictEqual(response.statusCode, 200);
+      assert.strictEqual(response.statusCode, nativeGot.statusCode);
+      assert.deepStrictEqual(response.body, nativeGot.body);
+    });
+
+    it('should stream the data using got.stream against the selected target gateway', async () => {
+      const nativeBuffer = await buffer(
+        await got.stream('https://ao.arweave.net', { decompress: false }),
+      );
+      const wayfinderBuffer = await buffer(
+        await wayfinder.request.stream('ar://ao', { decompress: false }),
+      );
+      assert.deepStrictEqual(wayfinderBuffer, nativeBuffer);
+    });
+  });
   // TODO: streaming support using got.stream and got()
 });

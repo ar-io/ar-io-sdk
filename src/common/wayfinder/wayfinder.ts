@@ -48,11 +48,11 @@ export const resolveRedirectUrl = ({
   originalUrl,
   targetGateway,
 }: {
-  originalUrl: string;
-  targetGateway: URL;
+  originalUrl: string | URL;
+  targetGateway: string | URL;
 }): URL => {
-  if (originalUrl.startsWith('ar://')) {
-    const [, path] = originalUrl.split('ar://');
+  if (originalUrl.toString().startsWith('ar://')) {
+    const [, path] = originalUrl.toString().split('ar://');
 
     if (path.startsWith('/')) {
       return new URL(path.slice(1), targetGateway);
@@ -67,9 +67,9 @@ export const resolveRedirectUrl = ({
     if (arnsRegex.test(path)) {
       // TODO: arns names may only support query params after the name
       const [name, ...rest] = path.split('/');
-      // TODO: check a local base name cache list the name exists
-      const arnsName = `${targetGateway.protocol}//${name}.${targetGateway.hostname}${targetGateway.port ? `:${targetGateway.port}` : ''}`;
-      return new URL(rest.join('/'), arnsName);
+      const targetGatewayUrl = new URL(targetGateway);
+      const arnsUrl = `${targetGatewayUrl.protocol}//${name}.${targetGatewayUrl.hostname}${targetGatewayUrl.port ? `:${targetGatewayUrl.port}` : ''}`;
+      return new URL(rest.join('/'), arnsUrl);
     }
   }
 
@@ -89,26 +89,38 @@ export const createWayfinderClient = <T extends AnyFunction>({
   // TODO: support a verifyDataHash function that can be used to verify the data
 }: {
   httpClient: T;
-  resolveUrl: (params: { originalUrl: string }) => Promise<URL>;
+  resolveUrl: (params: { originalUrl: string | URL }) => Promise<URL>;
   // TODO: support a verifyDataHash function that can be used to verify the data
 }): WayfinderHttpClient<T> => {
+  const invoke = async (fn: AnyFunction, rawArgs: [string, ...unknown[]]) => {
+    const [originalUrl, ...rest] = rawArgs;
+    // TODO: handle if first arg is not a string
+    // route the request to the target gateway
+    const redirectUrl = await resolveUrl({
+      originalUrl,
+    });
+    // make the request to the target gateway using the redirect url and http client
+    const response = await fn(redirectUrl.toString(), ...rest);
+    // TODO: if verifyDataHash is provided, verify the data hash before returning
+    return response;
+  };
+
   return new Proxy(httpClient, {
-    async apply(
-      _target,
-      _thisArg,
-      argArray: Parameters<T>,
-    ): Promise<ReturnType<T>> {
-      const originalUrl = argArray[0];
-      // get the resolved url for the request
-      const redirectUrl = await resolveUrl({ originalUrl });
-      // make the request to the resolved url
-      // TODO: verify the data hash of the response using the verifyDataHash function
-      return httpClient(
-        redirectUrl.toString(),
-        ...argArray.slice(1),
-      ) as ReturnType<T>;
+    // support direct calls: fetch('ar://…', options)
+    // TODO: we may want to type check the argArray to ensure it's an array of [string, ...unknown[]]
+    apply: (_target, _thisArg, argArray) =>
+      invoke(httpClient, argArray as [string, ...unknown[]]),
+
+    // support http clients that use methods like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder invoke function
+    get: (target, prop, receiver) => {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === 'function') {
+        return (...inner: unknown[]) =>
+          invoke(value.bind(target), inner as [string, ...unknown[]]);
+      }
+      return value; // numbers, objects, symbols pass through untouched
     },
-  }) as unknown as WayfinderHttpClient<T>;
+  }) as WayfinderHttpClient<T>;
 };
 
 /**
@@ -127,10 +139,6 @@ export class Wayfinder<T extends AnyFunction> {
    * });
    */
   public readonly router: WayfinderRouter;
-  /**
-   * The blocklist of gateways to avoid
-   */
-  public readonly blocklist: string[];
   /**
    * The http client to use for requests
    *
@@ -175,11 +183,13 @@ export class Wayfinder<T extends AnyFunction> {
   constructor({
     router = new RandomGatewayRouter({ ario: ARIO.mainnet() }),
     httpClient,
+    // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
     // TODO: caches to reduce the number of requests to the wayfinder
   }: {
     router: WayfinderRouter;
     httpClient: T;
+    // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
     // TODO: caches to reduce the number of requests to the wayfinder
   }) {
@@ -189,13 +199,13 @@ export class Wayfinder<T extends AnyFunction> {
     this.resolveUrl = async ({ originalUrl }) =>
       resolveRedirectUrl({
         originalUrl,
-        // todo: use a read through cache here or on the router to avoid calling ARIO contract on every request
         targetGateway: await this.router.getTargetGateway(),
       });
     this.request = createWayfinderClient<T>({
       httpClient,
       // TODO: provide a verifyDataHash function that can be used to verify the data
       resolveUrl: this.resolveUrl,
+      // TODO: provide the verifyDataHash function from the verifier to the wayfinder client along with verificationSettings
     });
   }
 
