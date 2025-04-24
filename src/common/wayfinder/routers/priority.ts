@@ -17,6 +17,10 @@ import { WayfinderRouter } from '../../../types/wayfinder.js';
 import { GatewaysProvider } from '../gateways.js';
 import { randomInt } from '../wayfinder.js';
 
+// TODO: one of N where N are in the last time window have met certain performance thresholds
+// TODO: look at bitorrent routing protocols for inspiration
+// TODO: router that looks at local stats/metrics and adjusts based on those
+
 export class PriorityGatewayRouter implements WayfinderRouter {
   public readonly name = 'priority';
   private gatewaysProvider: GatewaysProvider;

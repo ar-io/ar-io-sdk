@@ -37,6 +37,7 @@ describe('Wayfinder', () => {
           }),
         });
       });
+
       it('should fetch the data using the selected gateway', async () => {
         const nativeFetch = await fetch('https://ao.arweave.net');
         const response = await wayfinder.request('ar://ao');
@@ -98,6 +99,43 @@ describe('Wayfinder', () => {
           );
         });
       }
+
+      it('supports a post request to graphql', async () => {
+        const response = await wayfinder.request('ar:///graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: `
+                query {
+                  transactions(
+                    ids: ["xf958qhCNGfDme1FtoiD6DtMfDENDbtxZpjOM_1tsMM"]
+                  ) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        tags {
+                          name
+                          value
+                        }
+                        block {
+                          height
+                          timestamp
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasNextPage
+                    }
+                  }
+                }
+            `,
+          }),
+        });
+        assert.strictEqual(response.status, 200);
+      });
 
       it('returns the error from the target gateway if the route is not found', async () => {
         const [nativeFetch, response] = await Promise.all([

@@ -21,7 +21,8 @@ import { ARIOGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
 // local types for wayfinder
-type AnyFunction = (...args: unknown[]) => unknown;
+// TODO: potentially change AnyFunction to HttpClientFunction
+type AnyFunction = (...args: [string, ...unknown[]]) => unknown;
 type WayfinderHttpClient<T extends AnyFunction> = T;
 
 // known regexes for wayfinder urls
@@ -49,12 +50,14 @@ export const resolveWayfinderUrl = ({
   originalUrl,
   targetGateway,
 }: {
-  originalUrl: string | URL;
-  targetGateway: string | URL;
+  // TODO: consider changing variable wayfinderUrl
+  originalUrl: string | URL; // TODO: add union type to UrlString
+  targetGateway: string | URL; // TODO: add union type to UrlString
 }): URL => {
   if (originalUrl.toString().startsWith('ar://')) {
     const [, path] = originalUrl.toString().split('ar://');
 
+    // e.g. ar:///info should route to the info endpoint of the target gateway
     if (path.startsWith('/')) {
       return new URL(path.slice(1), targetGateway);
     }
@@ -66,20 +69,30 @@ export const resolveWayfinderUrl = ({
     }
 
     if (arnsRegex.test(path)) {
-      // TODO: arns names may only support query params after the name
+      // TODO: tests to ensure arns names support query params and paths
       const [name, ...rest] = path.split('/');
       const targetGatewayUrl = new URL(targetGateway);
       const arnsUrl = `${targetGatewayUrl.protocol}//${name}.${targetGatewayUrl.hostname}${targetGatewayUrl.port ? `:${targetGatewayUrl.port}` : ''}`;
       return new URL(rest.join('/'), arnsUrl);
     }
+
+    // TODO: support .eth addresses
+    // TODO: "gasless" routing via DNS TXT records (e.g. ar://gatewaypie.com -> TXT record lookup for TX ID and redirect to that gateway)
   }
 
-  // return the original url if it's not a wayfinder url
+  // return the original url if it's not a wayfinder url (allows you to use the wayfinder client with non-wayfinder urls)
   return new URL(originalUrl);
 };
 
 /**
  * Creates a wrapped http client that supports ar:// protocol
+ *
+ * This function leverages a Proxy to intercept calls to the http client
+ * and redirects them to the target gateway using the resolveUrl function url.
+ * It also supports the http client methods like get(), post(), put(), delete(), etc.
+ *
+ * Any URLs provided that are not wayfinder urls will be returned as is.
+ *
  * @param httpClient - the http client to wrap (e.g. axios, fetch, got, etc.)
  * @param resolveUrl - the function to construct the redirect url for ar:// requests
  * @returns a wrapped http client that supports ar:// protocol
@@ -87,15 +100,19 @@ export const resolveWayfinderUrl = ({
 export const createWayfinderClient = <T extends AnyFunction>({
   httpClient,
   resolveUrl,
-  // TODO: support a verifyDataHash function that can be used to verify the data
 }: {
   httpClient: T;
   resolveUrl: (params: { originalUrl: string | URL }) => Promise<URL>;
   // TODO: support a verifyDataHash function that can be used to verify the data
+  // TODO: support a logger for debugging
+  // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
-  const invoke = async (fn: AnyFunction, rawArgs: [string, ...unknown[]]) => {
+  const wayfinderRedirect = async (
+    fn: AnyFunction,
+    rawArgs: [string, ...unknown[]],
+  ) => {
+    // TODO: handle if first arg is not a string (i.e. just return the result of the function call)
     const [originalUrl, ...rest] = rawArgs;
-    // TODO: handle if first arg is not a string
     // route the request to the target gateway
     const redirectUrl = await resolveUrl({
       originalUrl,
@@ -108,16 +125,19 @@ export const createWayfinderClient = <T extends AnyFunction>({
 
   return new Proxy(httpClient, {
     // support direct calls: fetch('ar://…', options)
-    // TODO: we may want to type check the argArray to ensure it's an array of [string, ...unknown[]]
+    // axios() or got()
     apply: (_target, _thisArg, argArray) =>
-      invoke(httpClient, argArray as [string, ...unknown[]]),
+      wayfinderRedirect(httpClient, argArray as [string, ...unknown[]]),
 
-    // support http clients that use methods like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder invoke function
+    // support http clients that use methods like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder redirect function
     get: (target, prop, receiver) => {
       const value = Reflect.get(target, prop, receiver);
       if (typeof value === 'function') {
         return (...inner: unknown[]) =>
-          invoke(value.bind(target), inner as [string, ...unknown[]]);
+          wayfinderRedirect(
+            value.bind(target),
+            inner as [string, ...unknown[]],
+          );
       }
       return value; // numbers, objects, symbols pass through untouched
     },
@@ -166,12 +186,18 @@ export class Wayfinder<T extends AnyFunction> {
    * A wrapped http client that supports ar:// protocol
    *
    * @example
-   * const wayfinder = new Wayfinder({
+   * const { request: wayfind } = new Wayfinder({
    *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
    *   httpClient: axios,
-   * });
+   * });;
    *
-   * const response = await wayfinder.request('ar://example');
+   * TODO: consider a top level function that supports wayfinder routing under the hood
+   * const response = await wayfind('ar://', {
+   *   method: 'POST',
+   *   data: {
+   *     name: 'John Doe',
+   *   },
+   * })
    */
   public readonly request: WayfinderHttpClient<T>;
   // TODO: stats provider
@@ -181,6 +207,7 @@ export class Wayfinder<T extends AnyFunction> {
   //   method: 'local' | 'remote';
   // };
   constructor({
+    // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
       // optionally use a cache gateways provider to reduce the number of requests to the contract
       gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() }),
@@ -188,10 +215,10 @@ export class Wayfinder<T extends AnyFunction> {
     httpClient,
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
-    // TODO: caches to reduce the number of requests to the wayfinder
   }: {
     router: WayfinderRouter;
     httpClient: T;
+    // TODO: fallback handling for when the target gateway is not available
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
   }) {

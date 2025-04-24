@@ -71,10 +71,10 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
   private gatewaysCache: AoGatewayWithAddress[];
   constructor({
     gatewaysProvider,
-    ttlSeconds,
+    ttlSeconds = 5 * 60, // 5 minutes
   }: {
     gatewaysProvider: GatewaysProvider;
-    ttlSeconds: number;
+    ttlSeconds?: number;
   }) {
     this.gatewaysCache = [];
     this.gatewaysProvider = gatewaysProvider;
