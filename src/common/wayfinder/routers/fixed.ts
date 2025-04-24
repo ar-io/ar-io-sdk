@@ -17,13 +17,13 @@ import { WayfinderRouter } from '../../../types/wayfinder.js';
 
 export class FixedGatewayRouter implements WayfinderRouter {
   public readonly name = 'fixed';
-  private gateway: string;
+  private gateway: URL;
 
-  constructor({ gateway }: { gateway: string }) {
+  constructor({ gateway }: { gateway: URL }) {
     this.gateway = gateway;
   }
 
   async getTargetGateway(): Promise<URL> {
-    return new URL(this.gateway);
+    return this.gateway;
   }
 }
