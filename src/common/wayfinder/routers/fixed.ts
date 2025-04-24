@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './ant-registry.js';
-export * from './ant.js';
-export * from './common.js';
-export * from './faucet.js';
-export * from './io.js';
-export * from './token.js';
-export * from './wayfinder.js';
+import { WayfinderRouter } from '../../../types/wayfinder.js';
+
+export class FixedGatewayRouter implements WayfinderRouter {
+  public readonly name = 'fixed';
+  private gateway: URL;
+
+  constructor({ gateway }: { gateway: URL }) {
+    this.gateway = gateway;
+  }
+
+  async getTargetGateway(): Promise<URL> {
+    return this.gateway;
+  }
+}
