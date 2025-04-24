@@ -1,3 +1,20 @@
+# [3.10.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.5...v3.10.0-alpha.6) (2025-04-24)
+
+
+### Bug Fixes
+
+* **types:** use generic type for fetch on wayfinder router ([3b6c1a8](https://github.com/ar-io/ar-io-sdk/commit/3b6c1a81666a17f9d06f27dd7182692aab23e54f))
+* **wayfinder:** add createWayfinderHttpClient which can wrap any http client function and add ar:// protocol handling ([6873bf4](https://github.com/ar-io/ar-io-sdk/commit/6873bf4ecaf2f7c8019b1f2835c9675034d2eda6))
+* **wayfinder:** add gateways interface for fetching gateways ([8cc0279](https://github.com/ar-io/ar-io-sdk/commit/8cc02792102bea3eec00cdd5aa13fe5fe8aba4b9))
+* **wayfinder:** add support for blocklist ([3661787](https://github.com/ar-io/ar-io-sdk/commit/3661787ea578470d7d1f121d372e7365c91f3d20))
+
+
+### Features
+
+* **wayfinder:** some initial wayfinder interfaces and specs ([6493613](https://github.com/ar-io/ar-io-sdk/commit/6493613196afa9e9a15f0dc31c1b8bef33a44209))
+* **wayfinder:** update functions and routing logic, add helpers for routing and creating clients ([933661a](https://github.com/ar-io/ar-io-sdk/commit/933661af706d28b568f48dc442472df9d1c10982))
+* **wayfinder:** use Proxy to wrap http client calls and fetch data using target gateway ([1b88eaf](https://github.com/ar-io/ar-io-sdk/commit/1b88eaf405d37465c9129e73c87386b8cf6eb3ea))
+
 # [3.10.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0-alpha.4...v3.10.0-alpha.5) (2025-04-18)
 
 
