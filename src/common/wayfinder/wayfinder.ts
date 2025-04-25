@@ -19,9 +19,8 @@ import { ARIOGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
 // local types for wayfinder
-// TODO: potentially change AnyFunction to HttpClientFunction
-type AnyFunction = (...args: [string, ...unknown[]]) => unknown;
-type WayfinderHttpClient<T extends AnyFunction> = T;
+type HttpClientFunction = (...args: [string, ...unknown[]]) => unknown;
+type WayfinderHttpClient<T extends HttpClientFunction> = T;
 
 // known regexes for wayfinder urls
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
@@ -84,7 +83,7 @@ export const resolveWayfinderUrl = ({
  * @param resolveUrl - the function to construct the redirect url for ar:// requests
  * @returns a wrapped http client that supports ar:// protocol
  */
-export const createWayfinderClient = <T extends AnyFunction>({
+export const createWayfinderClient = <T extends HttpClientFunction>({
   httpClient,
   resolveUrl,
 }: {
@@ -95,7 +94,7 @@ export const createWayfinderClient = <T extends AnyFunction>({
   // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
   const wayfinderRedirect = async (
-    fn: AnyFunction,
+    fn: HttpClientFunction,
     rawArgs: [string, ...unknown[]],
   ) => {
     // TODO: handle if first arg is not a string (i.e. just return the result of the function call)
@@ -137,7 +136,7 @@ export const createWayfinderClient = <T extends AnyFunction>({
  * @param httpClient - the http client to use for requests
  * @param blocklist - the blocklist of gateways to avoid
  */
-export class Wayfinder<T extends AnyFunction> {
+export class Wayfinder<T extends HttpClientFunction> {
   /**
    * The router to use for requests
    *
@@ -178,8 +177,7 @@ export class Wayfinder<T extends AnyFunction> {
    *   httpClient: axios,
    * });;
    *
-   * TODO: consider a top level function that supports wayfinder routing under the hood
-   * const response = await wayfind('ar://', {
+   * const response = await wayfind('ar://example', {
    *   method: 'POST',
    *   data: {
    *     name: 'John Doe',
