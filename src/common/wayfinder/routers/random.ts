@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { WayfinderRouter } from '../../../types/wayfinder.js';
+import { randomInt } from '../../../utils/random.js';
 import { GatewaysProvider } from '../gateways.js';
-import { randomInt } from '../wayfinder.js';
 
 export class RandomGatewayRouter implements WayfinderRouter {
   public readonly name = 'random';

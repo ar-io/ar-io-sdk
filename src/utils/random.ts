@@ -13,6 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { webcrypto } from 'crypto';
 
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '3.10.0';
+/**
+ * Cryptographically secure helper for randomness, does not support seeding
+ * @param min - the minimum value
+ * @param max - the maximum value
+ * @returns a random integer between min and max
+ */
+export const randomInt = (min: number, max: number): number => {
+  const [rand] = webcrypto.getRandomValues(new Uint32Array(1));
+  return min + (rand % (max - min));
+};

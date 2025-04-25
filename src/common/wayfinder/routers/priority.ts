@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import { WayfinderRouter } from '../../../types/wayfinder.js';
+import { randomInt } from '../../../utils/random.js';
 import { GatewaysProvider } from '../gateways.js';
-import { randomInt } from '../wayfinder.js';
 
 // TODO: one of N where N are in the last time window have met certain performance thresholds
 // TODO: look at bitorrent routing protocols for inspiration

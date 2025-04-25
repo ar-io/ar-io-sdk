@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { webcrypto } from 'crypto';
-
 import { WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { ARIOGatewaysProvider } from './gateways.js';
@@ -28,17 +26,6 @@ type WayfinderHttpClient<T extends AnyFunction> = T;
 // known regexes for wayfinder urls
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
 export const txIdRegex = /^[a-z0-9]{43}$/;
-
-/**
- * Cryptographically secure helper for randomness, does not support seeding
- * @param min - the minimum value
- * @param max - the maximum value
- * @returns a random integer between min and max
- */
-export const randomInt = (min: number, max: number): number => {
-  const [rand] = webcrypto.getRandomValues(new Uint32Array(1));
-  return min + (rand % (max - min));
-};
 
 /**
  * Core function to resolve a wayfinder url against a target gateway
