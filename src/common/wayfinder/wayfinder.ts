@@ -142,7 +142,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    * });
    */
   public readonly router: WayfinderRouter;
@@ -151,7 +153,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });
    */
@@ -161,7 +165,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });
    *
@@ -173,7 +179,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const { request: wayfind } = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });;
    *
