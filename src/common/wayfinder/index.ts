@@ -19,3 +19,6 @@ export * from './wayfinder.js';
 export * from './routers/random.js';
 export * from './routers/priority.js';
 export * from './routers/fixed.js';
+
+// gateways providers
+export * from './gateways.js';
