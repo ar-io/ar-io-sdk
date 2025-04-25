@@ -1,3 +1,10 @@
+# [3.11.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.2...v3.11.0-alpha.3) (2025-04-25)
+
+
+### Bug Fixes
+
+* **wayfinder:** update http client type to allow url or string ([539eb5d](https://github.com/ar-io/ar-io-sdk/commit/539eb5dcc135c7796d04a337bfda4744611e6382))
+
 # [3.11.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.1...v3.11.0-alpha.2) (2025-04-25)
 
 
