@@ -13,6 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { WayfinderRouter } from '../../../types/wayfinder.js';
 
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '3.11.0-alpha.1';
+export class FixedGatewayRouter implements WayfinderRouter {
+  public readonly name = 'fixed';
+  private gateway: URL;
+
+  constructor({ gateway }: { gateway: URL }) {
+    this.gateway = gateway;
+  }
+
+  async getTargetGateway(): Promise<URL> {
+    return this.gateway;
+  }
+}

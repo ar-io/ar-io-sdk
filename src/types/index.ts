@@ -19,3 +19,4 @@ export * from './common.js';
 export * from './faucet.js';
 export * from './io.js';
 export * from './token.js';
+export * from './wayfinder.js';

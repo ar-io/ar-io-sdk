@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '3.11.0-alpha.1';
+export interface WayfinderRouter {
+  readonly name: string;
+  getTargetGateway: () => Promise<URL>;
+}

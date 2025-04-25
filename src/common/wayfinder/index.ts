@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export * from './wayfinder.js';
 
-// AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '3.11.0-alpha.1';
+// routers
+export * from './routers/random.js';
+export * from './routers/priority.js';
+export * from './routers/fixed.js';

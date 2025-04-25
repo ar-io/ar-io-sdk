@@ -2,11 +2,11 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { AoEpochData } from '../types/io.js';
+import { errorMessageFromOutput } from './ao.js';
 import {
   pruneTags,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from './arweave.js';
-import { errorMessageFromOutput } from './index.js';
 
 describe('pruneTags', () => {
   it('should remove tags with undefined values', () => {

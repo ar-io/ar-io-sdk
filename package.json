@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.10.0-alpha.5",
+  "version": "3.11.0-alpha.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -72,7 +72,7 @@
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "node --import=./register.mjs --test --test-reporter=spec src/**/**.test.ts",
+    "test:unit": "node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
@@ -91,8 +91,9 @@
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/npm": "^11.0.3",
+    "@swc/core": "^1.11.22",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
-    "@types/node": "^20.12.12",
+    "@types/node": "^22.14.1",
     "@types/prompts": "^2.4.9",
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -110,6 +111,7 @@
     "eslint-plugin-n": "^16.0.1",
     "eslint-plugin-prettier": "^5.0.0",
     "eslint-plugin-promise": "^6.1.1",
+    "got": "^12.4.7",
     "http-server": "^14.1.1",
     "husky": "^8.0.3",
     "lint-staged": "^15.2.2",
@@ -133,7 +135,6 @@
     "eventemitter3": "^5.0.1",
     "plimit-lit": "^3.0.1",
     "prompts": "^2.4.2",
-    "uuid": "^11.1.0",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
   },

@@ -940,7 +940,6 @@ export class ARIOReadable implements AoARIORead {
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  public declare readonly process: AOProcess;
   private signer: AoSigner;
   protected paymentProvider:
     | TurboArNSPaymentProviderAuthenticated
