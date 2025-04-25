@@ -1,3 +1,10 @@
+# [3.11.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.1...v3.11.0-alpha.2) (2025-04-25)
+
+
+### Bug Fixes
+
+* **wayfinder:** export gateways providers in wayfinder index.ts ([f68ac73](https://github.com/ar-io/ar-io-sdk/commit/f68ac737e08ac1c229e7ea388e07b6df44bdd77a))
+
 # [3.11.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0...v3.11.0-alpha.1) (2025-04-25)
 
 
