@@ -1,3 +1,10 @@
+# [3.11.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.3...v3.11.0-alpha.4) (2025-04-28)
+
+
+### Bug Fixes
+
+* **spawn ant:** check results for invalid-boot-notice on spawning ([1f3382b](https://github.com/ar-io/ar-io-sdk/commit/1f3382bb1f1045d67ea9fa9b18116f15ad49d345))
+
 # [3.11.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.2...v3.11.0-alpha.3) (2025-04-25)
 
 
