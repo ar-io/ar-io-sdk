@@ -19,7 +19,8 @@ import { ARIOGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
 // local types for wayfinder
-type HttpClientFunction = (...args: [string, ...unknown[]]) => unknown;
+type HttpClientArgs = [string | URL, ...unknown[]];
+type HttpClientFunction = (...args: HttpClientArgs) => unknown;
 type WayfinderHttpClient<T extends HttpClientFunction> = T;
 
 // known regexes for wayfinder urls
@@ -95,7 +96,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
 }): WayfinderHttpClient<T> => {
   const wayfinderRedirect = async (
     fn: HttpClientFunction,
-    rawArgs: [string, ...unknown[]],
+    rawArgs: HttpClientArgs,
   ) => {
     // TODO: handle if first arg is not a string (i.e. just return the result of the function call)
     const [originalUrl, ...rest] = rawArgs;
@@ -113,17 +114,14 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     // support direct calls: fetch('ar://…', options)
     // axios() or got()
     apply: (_target, _thisArg, argArray) =>
-      wayfinderRedirect(httpClient, argArray as [string, ...unknown[]]),
+      wayfinderRedirect(httpClient, argArray as HttpClientArgs),
 
-    // support http clients that use methods like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder redirect function
+    // support http clients that use functions like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder redirect function
     get: (target, prop, receiver) => {
       const value = Reflect.get(target, prop, receiver);
       if (typeof value === 'function') {
         return (...inner: unknown[]) =>
-          wayfinderRedirect(
-            value.bind(target),
-            inner as [string, ...unknown[]],
-          );
+          wayfinderRedirect(value.bind(target), inner as HttpClientArgs);
       }
       return value; // numbers, objects, symbols pass through untouched
     },
@@ -142,7 +140,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    * });
    */
   public readonly router: WayfinderRouter;
@@ -151,7 +151,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });
    */
@@ -161,7 +163,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });
    *
@@ -173,7 +177,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const { request: wayfind } = new Wayfinder({
-   *   router: new RandomGatewayRouter({ ario: ARIO.mainnet() }),
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
    *   httpClient: axios,
    * });;
    *

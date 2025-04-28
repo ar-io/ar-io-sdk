@@ -13,12 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './wayfinder.js';
+import { program } from 'commander';
 
-// routers
-export * from './routers/random.js';
-export * from './routers/priority.js';
-export * from './routers/fixed.js';
+import { version } from '../version.js';
+import { globalOptions } from './options.js';
+import { applyOptions, makeCommand } from './utils.js';
 
-// gateways providers
-export * from './gateways.js';
+applyOptions(
+  program
+    .name('ar.io')
+    .version(version)
+    .description('AR.IO Network CLI')
+    .helpCommand(true),
+  globalOptions,
+);
+
+makeCommand({
+  name: '',
+  description: 'Get network info',
+  action: () => {
+    console.log('wayfinder');
+    return Promise.resolve({});
+  },
+});
