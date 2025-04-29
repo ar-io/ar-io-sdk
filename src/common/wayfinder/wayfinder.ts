@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { webcrypto } from 'node:crypto';
+import EventEmitter from 'node:events';
+
 import { DataVerifier, WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
@@ -96,6 +99,40 @@ export const resolveWayfinderUrl = async ({
 };
 
 /**
+ * Wayfinder event emitter with verification events
+ */
+export interface WayfinderEvents {
+  'verification-passed': (params: {
+    requestId: string;
+    originalUrl: string;
+    redirectUrl: string;
+    hash: string;
+  }) => void;
+  'verification-failed': (params: {
+    requestId: string;
+    originalUrl: string;
+    redirectUrl: string;
+    hash: string;
+    error: Error;
+  }) => void;
+}
+export class WayfinderEmitter extends EventEmitter {
+  emit<K extends keyof WayfinderEvents>(
+    event: K,
+    ...args: Parameters<WayfinderEvents[K]>
+  ): boolean {
+    return super.emit(event, ...args);
+  }
+
+  on<K extends keyof WayfinderEvents>(
+    event: K,
+    listener: WayfinderEvents[K],
+  ): this {
+    return super.on(event, listener);
+  }
+}
+
+/**
  * Creates a wrapped http client that supports ar:// protocol
  *
  * This function leverages a Proxy to intercept calls to the http client
@@ -112,6 +149,8 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   httpClient,
   resolveUrl,
   verifyData,
+  strict = true,
+  emitter,
   logger,
 }: {
   httpClient: T;
@@ -126,10 +165,13 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     data: unknown;
     hash: string;
   }) => Promise<void>;
+  strict?: boolean;
   logger?: Logger;
+  emitter?: WayfinderEmitter;
   // TODO: potentially support an event emitter to track verification events?
   // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
+  const requestId = webcrypto.randomUUID();
   const wayfinderRedirect = async (
     fn: HttpClientFunction,
     rawArgs: HttpClientArgs,
@@ -144,6 +186,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     logger?.debug(`Redirecting request to ${redirectUrl}`, {
       originalUrl,
       redirectUrl,
+      requestId,
     });
     // make the request to the target gateway using the redirect url and http client
     const response = await fn(redirectUrl.toString(), ...rest);
@@ -157,12 +200,22 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       if (verifyData) {
         // clone the response to avoid consuming the original response body
         const clonedResponse = (response as any).clone();
-        // TODO: use a hash provider to get the hash of the dat vs. just plucking the header here
+        // TODO: use a hash provider to get the hash of the data vs. just plucking the header here
         const providedHash = clonedResponse.headers.get('x-ar-io-digest'); // or some other header to verify the data
-        if (!providedHash) {
+        if (!providedHash && strict) {
+          throw new Error('Failed to parse data hash from response headers', {
+            cause: {
+              redirectUrl,
+              originalUrl,
+              requestId,
+            },
+          });
+        } else if (!providedHash) {
           logger?.debug('No data hash provided, skipping verification', {
             redirectUrl,
             originalUrl,
+            requestId,
+            strict,
           });
         } else {
           logger?.debug('Verifying data hash', {
@@ -170,16 +223,40 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             originalUrl,
             providedHash,
           });
-          await verifyData({
+
+          // TODO: made this async with events that can be used to track the progress of the verification
+          verifyData({
             // TODO: handle different response types (e.g. stream, buffer, text, json, etc.)
             data: await (clonedResponse as any).arrayBuffer(),
             hash: providedHash,
-          });
-          logger?.debug('Successfully verified data hash', {
-            redirectUrl,
-            originalUrl,
-            hash: providedHash,
-          });
+          })
+            .then(() => {
+              logger?.debug('Successfully verified data hash', {
+                redirectUrl,
+                originalUrl,
+                hash: providedHash,
+              });
+              emitter?.emit('verification-passed', {
+                requestId,
+                originalUrl: originalUrl.toString(),
+                redirectUrl: redirectUrl.toString(),
+                hash: providedHash,
+              });
+            })
+            .catch((error) => {
+              logger?.debug('Failed to verify data hash', {
+                redirectUrl,
+                originalUrl,
+                error,
+              });
+              emitter?.emit('verification-failed', {
+                requestId,
+                originalUrl: originalUrl.toString(),
+                redirectUrl: redirectUrl.toString(),
+                hash: providedHash,
+                error,
+              });
+            });
         }
       }
     }
@@ -278,6 +355,38 @@ export class Wayfinder<T extends HttpClientFunction> {
   //   method: 'local' | 'remote';
   // };
   public readonly verifyData: DataVerifier['verifyData'];
+  /**
+   * The event emitter for wayfinder that emits verification events
+   *
+   * @example
+   * const { request: wayfind, emitter } = new Wayfinder({
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *   }),
+   * });
+   *
+   * emitter.on('verification-passed', (event) => {
+   *   console.log('Verification passed!', event);
+   * });
+   *
+   * emitter.on('verification-failed', (event) => {
+   *   console.log('Verification failed!', event);
+   * });
+   *
+   * const response = await wayfind('ar://example', {
+   *   method: 'POST',
+   *   data: {
+   *     name: 'John Doe',
+   *   },
+   * });
+   *
+   * Optionally wait for verification to complete before returning the response
+   * await new Promise((resolve) => {
+   *   emitter.on('verification-passed', resolve);
+   *   emitter.on('verification-failed', resolve);
+   * });
+   */
+  public readonly emitter: WayfinderEmitter = new WayfinderEmitter();
   constructor({
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
@@ -313,6 +422,7 @@ export class Wayfinder<T extends HttpClientFunction> {
       httpClient,
       resolveUrl: this.resolveUrl,
       verifyData: this.verifyData,
+      emitter: this.emitter,
       logger,
     });
     logger?.debug(`Wayfinder initialized with ${router.name} routing strategy`);

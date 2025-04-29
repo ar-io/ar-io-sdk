@@ -1,4 +1,10 @@
-import { ARIO, ARIOToken, mARIOToken } from '@ar.io/sdk/web';
+import {
+  ARIO,
+  ARIOToken,
+  Wayfinder,
+  WebDigestVerifier,
+  mARIOToken,
+} from '@ar.io/sdk/web';
 import {
   flexRender,
   getCoreRowModel,
@@ -11,6 +17,17 @@ import { useArNSRecords } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
 const ario = ARIO.testnet();
+// @ts-ignore
+const wayfinder = new Wayfinder<typeof fetch>({
+  // @ts-ignore
+  httpClient: fetch,
+  router: {
+    // always use permagate.io as the target gateway
+    getTargetGateway: async () => 'https://permagate.io',
+  },
+  // verify the returned digests match the hash of the data
+  verifier: new WebDigestVerifier(),
+});
 
 function App() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -19,6 +36,10 @@ function App() {
   );
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [wayfinderUrl, setWayfinderUrl] = useState<string | null>(null);
+  const [wayfinderResponse, setWayfinderResponse] = useState<any>(null);
+  const [wayfinderVerificationStatus, setWayfinderVerificationStatus] =
+    useState<string | null>(null);
 
   const {
     data: names,
@@ -216,6 +237,42 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if (wayfinderUrl) {
+      // fetch the data from the wayfinder url
+      console.log('fetching wayfinder url', wayfinderUrl);
+      wayfinder
+        .request(wayfinderUrl, { redirect: 'follow', mode: 'cors' })
+        .then(async (res: any) => {
+          console.log('wayfinder response', res);
+          const data = await res.text();
+          const headers = Object.fromEntries(res.headers.entries());
+          setWayfinderResponse({
+            // data,
+            bytes: data.length,
+            headers,
+          });
+        })
+        .catch((err: any) => {
+          console.error('wayfinder error', err);
+        });
+      wayfinder.emitter.on('verification-started', (event) => {
+        console.log('verification started', event);
+        setWayfinderVerificationStatus('Verification started');
+      });
+      wayfinder.emitter.on('verification-passed', (event) => {
+        console.log('verification passed', event);
+        setWayfinderVerificationStatus('Verification passed');
+      });
+      wayfinder.emitter.on('verification-failed', (event) => {
+        console.log('verification failed', event);
+        setWayfinderVerificationStatus(
+          `Verification failed: ${event.error.message}`,
+        );
+      });
+    }
+  }, [wayfinderUrl]);
+
   return (
     <div
       className="App"
@@ -230,23 +287,65 @@ function App() {
       <div className="header">
         <h1>AR.IO Network Explorer</h1>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px',
-          alignItems: 'center',
-          padding: '2rem',
-        }}
-      >
-        <div className="header">
-          <h2>Testnet Faucet Integration</h2>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <h2 style={{ textAlign: 'left' }}>
+          Wayfinder Routing and Verification
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input
+            type="text"
+            placeholder="Enter ar:// URL"
+            onChange={(e) => {
+              const timeout = setTimeout(() => {
+                const value = e.target.value;
+                if (value.startsWith('ar://')) {
+                  setWayfinderUrl(value);
+                }
+              }, 1000);
+              return () => clearTimeout(timeout);
+            }}
+            style={{
+              padding: '8px',
+              width: '350px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
+          />
+          {wayfinderResponse && (
+            <div>
+              <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(wayfinderResponse, null, 2)}
+              </pre>
+              {wayfinderVerificationStatus && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    color:
+                      wayfinderVerificationStatus === 'Verification passed'
+                        ? 'green'
+                        : 'red',
+                  }}
+                >
+                  {wayfinderVerificationStatus}
+                </div>
+              )}
+            </div>
+          )}
         </div>
+      </div>
+
+      <div style={{ padding: '10px' }}>
+        <hr />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <h2 style={{ textAlign: 'left' }}>Testnet Faucet Integration</h2>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             gap: '15px',
           }}
         >
@@ -273,7 +372,6 @@ function App() {
             }}
           />
 
-          {/* Example of using the testnet faucet to request tokens */}
           <button onClick={requestTokens} disabled={!selectedAddress}>
             Request 100 tARIO
           </button>
@@ -293,25 +391,26 @@ function App() {
               {tokenRequestMessage}
             </span>
           )}
-        </div>
-        <div
-          style={{
-            fontSize: '0.8em',
-            color: '#666',
-            textAlign: 'center',
-            maxWidth: '500px',
-          }}
-        >
-          Note: This example uses the AR.IO testnet faucet to request test
-          tokens (tARIO). A captcha verification is required to claim tokens.
+
+          <div
+            style={{
+              fontSize: '0.8em',
+              color: '#666',
+              maxWidth: '500px',
+            }}
+          >
+            Note: This example uses the AR.IO testnet faucet to request test
+            tokens (tARIO). A captcha verification is required to claim tokens.
+          </div>
         </div>
       </div>
+
       <div style={{ padding: '10px' }}>
         <hr />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h1 style={{ textAlign: 'left' }}>ArNS Names</h1>
+        <h2 style={{ textAlign: 'left' }}>ArNS Names</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             {namesTable.getHeaderGroups().map((headerGroup) => {
@@ -346,11 +445,13 @@ function App() {
           </tbody>
         </table>
       </div>
+
       <div style={{ padding: '10px' }}>
         <hr />
       </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h1 style={{ textAlign: 'left' }}>Gateways</h1>
+        <h2 style={{ textAlign: 'left' }}>Gateways</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             {gatewaysTable.getHeaderGroups().map((headerGroup) => (
@@ -385,6 +486,7 @@ function App() {
           </tbody>
         </table>
       </div>
+
       <div style={{ padding: '10px' }}>
         <hr />
       </div>
