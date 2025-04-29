@@ -15,6 +15,7 @@
  */
 import { WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
+import { Logger } from '../logger.js';
 import { ARIOGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
@@ -33,39 +34,61 @@ export const txIdRegex = /^[a-z0-9]{43}$/;
  * @param targetGateway - the target gateway to resolve the url against
  * @returns the resolved url that can be used to make a request
  */
-export const resolveWayfinderUrl = ({
+export const resolveWayfinderUrl = async ({
   originalUrl,
   targetGateway,
+  logger,
 }: {
   // TODO: consider changing variable wayfinderUrl
   originalUrl: string | URL; // TODO: add union type to UrlString
-  targetGateway: string | URL; // TODO: add union type to UrlString
-}): URL => {
+  targetGateway: () => Promise<string | URL>; // TODO: add union type to UrlString
+  logger?: Logger;
+}): Promise<URL> => {
   if (originalUrl.toString().startsWith('ar://')) {
+    logger?.debug(`Applying wayfinder routing protocol to ${originalUrl}`, {
+      originalUrl,
+    });
+    const targetGatewayUrl = new URL(await targetGateway());
+    logger?.debug(`Selected target gateway: ${targetGatewayUrl}`, {
+      originalUrl,
+      targetGateway: targetGatewayUrl,
+    });
+
     const [, path] = originalUrl.toString().split('ar://');
 
     // e.g. ar:///info should route to the info endpoint of the target gateway
     if (path.startsWith('/')) {
-      return new URL(path.slice(1), targetGateway);
+      logger?.debug(`Routing to ${path.slice(1)} on ${targetGatewayUrl}`, {
+        originalUrl,
+        targetGateway: targetGatewayUrl,
+      });
+      return new URL(path.slice(1), targetGatewayUrl);
     }
 
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
     if (txIdRegex.test(path)) {
       const [txId, ...rest] = path.split('/');
-      return new URL(`${txId}${rest.join('/')}`, targetGateway);
+      return new URL(`${txId}${rest.join('/')}`, targetGatewayUrl);
     }
 
     if (arnsRegex.test(path)) {
       // TODO: tests to ensure arns names support query params and paths
       const [name, ...rest] = path.split('/');
-      const targetGatewayUrl = new URL(targetGateway);
       const arnsUrl = `${targetGatewayUrl.protocol}//${name}.${targetGatewayUrl.hostname}${targetGatewayUrl.port ? `:${targetGatewayUrl.port}` : ''}`;
+      logger?.debug(`Routing to ${path} on ${arnsUrl}`, {
+        originalUrl,
+        targetGateway: targetGatewayUrl,
+      });
       return new URL(rest.join('/'), arnsUrl);
     }
 
     // TODO: support .eth addresses
     // TODO: "gasless" routing via DNS TXT records (e.g. ar://gatewaypie.com -> TXT record lookup for TX ID and redirect to that gateway)
   }
+
+  logger?.debug('No wayfinder routing protocol applied', {
+    originalUrl,
+  });
 
   // return the original url if it's not a wayfinder url (allows you to use the wayfinder client with non-wayfinder urls)
   return new URL(originalUrl);
@@ -87,9 +110,14 @@ export const resolveWayfinderUrl = ({
 export const createWayfinderClient = <T extends HttpClientFunction>({
   httpClient,
   resolveUrl,
+  logger,
 }: {
   httpClient: T;
-  resolveUrl: (params: { originalUrl: string | URL }) => Promise<URL>;
+  resolveUrl: (params: {
+    originalUrl: string | URL;
+    logger?: Logger;
+  }) => Promise<URL>;
+  logger?: Logger;
   // TODO: support a verifyDataHash function that can be used to verify the data
   // TODO: support a logger for debugging
   // TODO: retry strategy to get a new gateway router
@@ -103,9 +131,18 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     // route the request to the target gateway
     const redirectUrl = await resolveUrl({
       originalUrl,
+      logger,
+    });
+    logger?.debug(`Redirecting request to ${redirectUrl}`, {
+      originalUrl,
+      redirectUrl,
     });
     // make the request to the target gateway using the redirect url and http client
     const response = await fn(redirectUrl.toString(), ...rest);
+    logger?.debug(`Successfully routed request to ${redirectUrl}`, {
+      redirectUrl,
+      originalUrl,
+    });
     // TODO: if verifyDataHash is provided, verify the data hash before returning
     return response;
   };
@@ -171,7 +208,10 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * const redirectUrl = await wayfinder.resolveUrl({ originalUrl: 'ar://example' });
    */
-  public readonly resolveUrl: (params: { originalUrl: string }) => Promise<URL>;
+  public readonly resolveUrl: (params: {
+    originalUrl: string;
+    logger?: Logger;
+  }) => Promise<URL>;
   /**
    * A wrapped http client that supports ar:// protocol
    *
@@ -204,27 +244,33 @@ export class Wayfinder<T extends HttpClientFunction> {
       gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() }),
     }),
     httpClient,
+    logger = Logger.default,
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
   }: {
     router: WayfinderRouter;
     httpClient: T;
+    logger?: Logger;
     // TODO: fallback handling for when the target gateway is not available
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
   }) {
     this.router = router;
     this.httpClient = httpClient;
-    this.resolveUrl = async ({ originalUrl }) =>
-      resolveWayfinderUrl({
+    this.resolveUrl = async ({ originalUrl, logger }) => {
+      return resolveWayfinderUrl({
         originalUrl,
-        targetGateway: await this.router.getTargetGateway(),
+        targetGateway: async () => await this.router.getTargetGateway(),
+        logger,
       });
+    };
     this.request = createWayfinderClient<T>({
       httpClient,
       resolveUrl: this.resolveUrl,
+      logger,
       // TODO: provide the verifyDataHash function from the verifier to the wayfinder client along with verificationSettings
     });
+    logger?.debug(`Wayfinder initialized with ${router.name} routing strategy`);
   }
 
   // TODO: potential builder pattern to update the Router/blocklist/httpClient
