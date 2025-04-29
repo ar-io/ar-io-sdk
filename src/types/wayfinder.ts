@@ -13,7 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Readable } from 'stream';
+
 export interface WayfinderRouter {
   readonly name: string;
   getTargetGateway: () => Promise<URL>;
+}
+
+export interface DataVerifier {
+  /**
+   * Verifies the provided data against a provided hash
+   *
+   * Depending on the implementation, the hash can be the computed data root of a transaction, the digest of the data, or some other hash of the data.
+   *
+   * The interface is intended to be vague in order to support various degrees of verification.
+   *
+   * @param data - The data to verify
+   * @param hash - The hash to verify the data against
+   */
+  verifyData: ({
+    data,
+    hash,
+  }: {
+    data: Buffer | Readable | ReadableStream | unknown;
+    hash: string;
+  }) => Promise<void>;
+}
+
+export interface DataHashProvider {
+  /**
+   * Returns a hash for the provided txId. Depending on the implementation, the hash could be a data root, a digest, or some other hash of the data.
+   *
+   * @param txId - The txId of the data
+   * @returns the hash of the data
+   */
+  getHash: ({ txId }: { txId: string }) => Promise<string>;
 }

@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WayfinderRouter } from '../../types/wayfinder.js';
+import { DataVerifier, WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
 import { NetworkGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
+import { DigestVerifier } from './verification/trusted-gateway.js';
 
 // local types for wayfinder
 type HttpClientArgs = [string | URL, ...unknown[]];
@@ -110,6 +111,7 @@ export const resolveWayfinderUrl = async ({
 export const createWayfinderClient = <T extends HttpClientFunction>({
   httpClient,
   resolveUrl,
+  verifyData,
   logger,
 }: {
   httpClient: T;
@@ -117,9 +119,15 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     originalUrl: string | URL;
     logger?: Logger;
   }) => Promise<URL>;
+  verifyData?: ({
+    data,
+    hash,
+  }: {
+    data: unknown;
+    hash: string;
+  }) => Promise<void>;
   logger?: Logger;
-  // TODO: support a verifyDataHash function that can be used to verify the data
-  // TODO: support a logger for debugging
+  // TODO: potentially support an event emitter to track verification events?
   // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
   const wayfinderRedirect = async (
@@ -143,7 +151,39 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       redirectUrl,
       originalUrl,
     });
-    // TODO: if verifyDataHash is provided, verify the data hash before returning
+    // only verify data if the redirect url is different from the original url
+    if (response && redirectUrl.toString() !== originalUrl.toString()) {
+      // verify the digest of the response body
+      if (verifyData) {
+        // clone the response to avoid consuming the original response body
+        const clonedResponse = (response as any).clone();
+        // TODO: use a hash provider to get the hash of the dat vs. just plucking the header here
+        const providedHash = clonedResponse.headers.get('x-ar-io-digest'); // or some other header to verify the data
+        if (!providedHash) {
+          logger?.debug('No data hash provided, skipping verification', {
+            redirectUrl,
+            originalUrl,
+          });
+        } else {
+          logger?.debug('Verifying data hash', {
+            redirectUrl,
+            originalUrl,
+            providedHash,
+          });
+          await verifyData({
+            // TODO: handle different response types (e.g. stream, buffer, text, json, etc.)
+            data: await (clonedResponse as any).arrayBuffer(),
+            hash: providedHash,
+          });
+          logger?.debug('Successfully verified data hash', {
+            redirectUrl,
+            originalUrl,
+            hash: providedHash,
+          });
+        }
+      }
+    }
+    // TODO: add headers to the response
     return response;
   };
 
@@ -237,6 +277,7 @@ export class Wayfinder<T extends HttpClientFunction> {
   //   trustedGateways: URL[];
   //   method: 'local' | 'remote';
   // };
+  public readonly verifyData: DataVerifier['verifyData'];
   constructor({
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
@@ -245,18 +286,22 @@ export class Wayfinder<T extends HttpClientFunction> {
     }),
     httpClient,
     logger = Logger.default,
+    verifier = new DigestVerifier(),
+    // TODO: potentially support a hash provider to get the hash of the data (or put it in the verifier itself)
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
   }: {
     router: WayfinderRouter;
     httpClient: T;
     logger?: Logger;
+    verifier?: DataVerifier;
     // TODO: fallback handling for when the target gateway is not available
     // TODO: add verifier interface that provides a verifyDataHash function
     // TODO: stats provider
   }) {
     this.router = router;
     this.httpClient = httpClient;
+    this.verifyData = verifier.verifyData;
     this.resolveUrl = async ({ originalUrl, logger }) => {
       return resolveWayfinderUrl({
         originalUrl,
@@ -267,8 +312,8 @@ export class Wayfinder<T extends HttpClientFunction> {
     this.request = createWayfinderClient<T>({
       httpClient,
       resolveUrl: this.resolveUrl,
+      verifyData: this.verifyData,
       logger,
-      // TODO: provide the verifyDataHash function from the verifier to the wayfinder client along with verificationSettings
     });
     logger?.debug(`Wayfinder initialized with ${router.name} routing strategy`);
   }
