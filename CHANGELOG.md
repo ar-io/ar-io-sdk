@@ -1,3 +1,10 @@
+# [3.11.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.4...v3.11.0-alpha.5) (2025-04-29)
+
+
+### Bug Fixes
+
+* **wayfinder:** add optionally logger to wayfinder functions ([de86589](https://github.com/ar-io/ar-io-sdk/commit/de865898de2be7d973c864f64f74c20dcf53632b))
+
 # [3.11.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.3...v3.11.0-alpha.4) (2025-04-28)
 
 
