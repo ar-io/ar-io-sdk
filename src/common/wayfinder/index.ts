@@ -22,3 +22,6 @@ export * from './routers/static.js';
 
 // gateways providers
 export * from './gateways.js';
+
+// hash providers
+export * from './verification/trusted-gateway.js';

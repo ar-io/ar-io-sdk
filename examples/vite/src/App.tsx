@@ -37,7 +37,10 @@ function App() {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [wayfinderUrl, setWayfinderUrl] = useState<string | null>(null);
-  const [wayfinderResponse, setWayfinderResponse] = useState<any>(null);
+  const [nonVerifiedWayfinderResponse, setNonVerifiedWayfinderResponse] =
+    useState<any>(null);
+  const [verifiedWayfinderResponse, setVerifiedWayfinderResponse] =
+    useState<any>(null);
   const [wayfinderVerificationStatus, setWayfinderVerificationStatus] =
     useState<string | null>(null);
 
@@ -238,38 +241,59 @@ function App() {
   }
 
   useEffect(() => {
+    setWayfinderVerificationStatus(null);
+    setNonVerifiedWayfinderResponse(null);
+    setVerifiedWayfinderResponse(null);
     if (wayfinderUrl) {
-      // fetch the data from the wayfinder url
-      console.log('fetching wayfinder url', wayfinderUrl);
-      wayfinder
-        .request(wayfinderUrl, { redirect: 'follow', mode: 'cors' })
-        .then(async (res: any) => {
-          console.log('wayfinder response', res);
-          const data = await res.text();
-          const headers = Object.fromEntries(res.headers.entries());
-          setWayfinderResponse({
-            // data,
-            bytes: data.length,
-            headers,
+      const fetchAndVerify = async () => {
+        // fetch the data from the wayfinder url
+        setWayfinderVerificationStatus(`Routing request via wayfinder...`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        wayfinder
+          .request(wayfinderUrl, { redirect: 'follow', mode: 'cors' })
+          .then(async (res: any) => {
+            setWayfinderVerificationStatus(
+              'Successfully fetched data from wayfinder...waiting for verification status...',
+            );
+            // get the bytes of the data
+            const data = await res.text();
+            setNonVerifiedWayfinderResponse({
+              contentLength: data.length,
+              contentType: res.headers.get('content-type'),
+            });
+          })
+          .catch((err: any) => {
+            console.error('wayfinder error', err);
+            setWayfinderVerificationStatus(
+              `Wayfinder request failed: ${err.message}`,
+            );
           });
-        })
-        .catch((err: any) => {
-          console.error('wayfinder error', err);
+        wayfinder.emitter.on('verification-passed', async (event) => {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          setWayfinderVerificationStatus('Verification passed');
+          setVerifiedWayfinderResponse({
+            ...nonVerifiedWayfinderResponse,
+            verified: true,
+            originalUrl: event.originalUrl,
+            resolvedUrl: event.redirectUrl,
+            txId: event.txId,
+          });
         });
-      wayfinder.emitter.on('verification-started', (event) => {
-        console.log('verification started', event);
-        setWayfinderVerificationStatus('Verification started');
-      });
-      wayfinder.emitter.on('verification-passed', (event) => {
-        console.log('verification passed', event);
-        setWayfinderVerificationStatus('Verification passed');
-      });
-      wayfinder.emitter.on('verification-failed', (event) => {
-        console.log('verification failed', event);
-        setWayfinderVerificationStatus(
-          `Verification failed: ${event.error.message}`,
-        );
-      });
+        wayfinder.emitter.on('verification-failed', (event) => {
+          console.log('verification failed using wayfinder', event);
+          setWayfinderVerificationStatus(
+            `Verification failed: ${event.error.message}`,
+          );
+          setVerifiedWayfinderResponse({
+            verified: false,
+            originalUrl: event.originalUrl,
+            resolvedUrl: event.redirectUrl,
+            txId: event.txId,
+            error: event.error,
+          });
+        });
+      };
+      fetchAndVerify();
     }
   }, [wayfinderUrl]);
 
@@ -299,9 +323,7 @@ function App() {
             onChange={(e) => {
               const timeout = setTimeout(() => {
                 const value = e.target.value;
-                if (value.startsWith('ar://')) {
-                  setWayfinderUrl(value);
-                }
+                setWayfinderUrl(value);
               }, 1000);
               return () => clearTimeout(timeout);
             }}
@@ -312,26 +334,30 @@ function App() {
               border: '1px solid #ccc',
             }}
           />
-          {wayfinderResponse && (
-            <div>
+          <div>
+            {(verifiedWayfinderResponse || nonVerifiedWayfinderResponse) && (
               <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(wayfinderResponse, null, 2)}
+                {JSON.stringify(
+                  verifiedWayfinderResponse || nonVerifiedWayfinderResponse,
+                  null,
+                  2,
+                )}
               </pre>
-              {wayfinderVerificationStatus && (
-                <div
-                  style={{
-                    marginTop: '10px',
-                    color:
-                      wayfinderVerificationStatus === 'Verification passed'
-                        ? 'green'
-                        : 'red',
-                  }}
-                >
-                  {wayfinderVerificationStatus}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+            {wayfinderVerificationStatus && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  color:
+                    wayfinderVerificationStatus === 'Verification passed'
+                      ? 'green'
+                      : 'red',
+                }}
+              >
+                {wayfinderVerificationStatus}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -18,9 +18,11 @@ import { DataHashProvider, DataVerifier } from '../../../types/wayfinder.js';
 const arioGatewayHeaders = {
   digest: 'x-ar-io-digest',
   verified: 'x-ar-io-verified',
+  txId: 'x-arns-resolved-tx-id',
+  processId: 'x-arns-resolved-process-id',
 };
 
-export class TrustedGatewayHashProvider implements DataHashProvider {
+export class TrustedGatewaysHashProvider implements DataHashProvider {
   private trustedGateways: URL[];
 
   constructor({ trustedGateways }: { trustedGateways: URL[] }) {
@@ -33,9 +35,11 @@ export class TrustedGatewayHashProvider implements DataHashProvider {
     const hashResults: { gateway: string; txIdHash: string }[] = [];
     const hashes = await Promise.all(
       this.trustedGateways.map(async (gateway): Promise<string> => {
-        const response = await fetch(`${gateway.hostname}/${txId}`, {
+        const response = await fetch(`${gateway.toString()}${txId}`, {
           method: 'HEAD',
+          redirect: 'follow',
         });
+
         if (!response.ok) {
           throw new Error('TxId is not trusted');
         }
@@ -91,7 +95,7 @@ export class DigestVerifier implements DataVerifier {
     const computedHash = Buffer.from(hashBuffer).toString('base64url');
     if (computedHash !== hash) {
       throw new Error('Hash does not match', {
-        cause: { computedHash, providedHash: hash },
+        cause: { computedHash, trustedHash: hash },
       });
     }
   }
