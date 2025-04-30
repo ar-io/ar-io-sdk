@@ -74,14 +74,15 @@ export class WebDataRootVerifier implements DataVerifier {
   }: {
     data: Buffer;
     txId: string;
-  }): Promise<{ hash: string; hashType: 'digest' | 'data-root' }> {
-    const { hash, hashType } = await this.hashProvider.getHash({ txId });
+  }): Promise<void> {
+    // use a service worker in the browser to do this work
+
+    const { hash } = await this.hashProvider.getHash({ txId });
     const dataRoot = await convertBufferToDataRoot({ data });
     if (dataRoot !== hash) {
       throw new Error('Data root does not match', {
         cause: { computedDataRoot: dataRoot, trustedDataRoot: hash },
       });
     }
-    return { hash, hashType };
   }
 }

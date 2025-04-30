@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DataHashProvider } from '../../../types/wayfinder.js';
+import {
+  DataHashProvider,
+  DataRootProvider,
+} from '../../../types/wayfinder.js';
 import { GatewaysProvider } from '../gateways.js';
 
 const arioGatewayHeaders = {
@@ -24,7 +27,7 @@ const arioGatewayHeaders = {
 };
 
 export class TrustedGatewaysDigestProvider implements DataHashProvider {
-  hashType: 'digest';
+  algorithm: 'sha256';
   private gatewaysProvider: GatewaysProvider;
 
   constructor({ gatewaysProvider }: { gatewaysProvider: GatewaysProvider }) {
@@ -40,7 +43,7 @@ export class TrustedGatewaysDigestProvider implements DataHashProvider {
     txId,
   }: {
     txId: string;
-  }): Promise<{ hash: string; hashType: 'digest' | 'data-root' }> {
+  }): Promise<{ hash: string; algorithm: 'sha256' }> {
     // get the hash from every gateway, and ensure they all match
     const hashSet = new Set();
     const hashResults: { gateway: string; txIdHash: string }[] = [];
@@ -84,12 +87,11 @@ export class TrustedGatewaysDigestProvider implements DataHashProvider {
         )}`,
       );
     }
-    return { hash: hashResults[0].txIdHash, hashType: 'digest' };
+    return { hash: hashResults[0].txIdHash, algorithm: 'sha256' };
   }
 }
 
-export class TrustedGatewaysDataRootProvider implements DataHashProvider {
-  hashType: 'data-root';
+export class TrustedGatewaysDataRootProvider implements DataRootProvider {
   private gatewaysProvider: GatewaysProvider;
 
   constructor({ gatewaysProvider }: { gatewaysProvider: GatewaysProvider }) {
@@ -101,11 +103,7 @@ export class TrustedGatewaysDataRootProvider implements DataHashProvider {
    * @param txId - The txId to get the data root for.
    * @returns The data root for the given txId.
    */
-  async getHash({
-    txId,
-  }: {
-    txId: string;
-  }): Promise<{ hash: string; hashType: 'digest' | 'data-root' }> {
+  async getDataRoot({ txId }: { txId: string }): Promise<string> {
     const dataRootSet = new Set();
     const dataRootResults: { gateway: string; dataRoot: string }[] = [];
     const gateways = await this.gatewaysProvider.getGateways();
@@ -141,6 +139,11 @@ export class TrustedGatewaysDataRootProvider implements DataHashProvider {
       );
     }
 
-    return { hash: dataRootResults[0].dataRoot, hashType: 'data-root' };
+    return dataRootResults[0].dataRoot;
   }
 }
+
+// client could check hashes of data items, match expected hash
+// if the gateway has the hash and they've verified it, you can trust the data item and offset
+// you would be only trusting the gateway that it is a valid bundle
+// you can request the offset from the gateway to verify the id

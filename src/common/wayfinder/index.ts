@@ -27,3 +27,4 @@ export * from './gateways.js';
 export * from './verification/trusted-gateway-hash-provider.js';
 export * from './verification/data-root-verifier.js';
 export * from './verification/digest-verifier.js';
+export * from './verification/signature-verifier.js';

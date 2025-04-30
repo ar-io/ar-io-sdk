@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DataHashProvider, DataVerifier } from '../../../types/index.js';
-import { toB64Url } from '../../utils/utils.js';
+import { DataItem } from '@dha-team/arbundles';
 
-export class WebDigestVerifier implements DataVerifier {
-  private readonly hashProvider: DataHashProvider;
-  constructor({ hashProvider }: { hashProvider: DataHashProvider }) {
-    this.hashProvider = hashProvider;
-  }
+import { DataVerifier } from '../../../types/wayfinder.js';
+
+export class DataItemVerifier implements DataVerifier {
   async verifyData({
     data,
     txId,
@@ -28,13 +25,19 @@ export class WebDigestVerifier implements DataVerifier {
     data: Buffer;
     txId: string;
   }): Promise<void> {
-    const { hash } = await this.hashProvider.getHash({ txId });
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const computedHash = toB64Url(Buffer.from(hashBuffer));
-    if (computedHash !== hash) {
-      throw new Error('Hash does not match', {
-        cause: { computedHash, providedHash: hash },
-      });
+    const isDataItem = await DataItem.isDataItem(data);
+    if (isDataItem) {
+      const dataItem = new DataItem(data);
+      const verified = await DataItem.verify(data);
+      if (!verified) {
+        throw new Error('Data item is not valid');
+      }
+      if (dataItem.id !== txId) {
+        throw new Error('Data item ID does not match transaction ID');
+      }
+    } else {
+      // its an L1, so we need to verify the signature
+      throw new Error('Data item is not a data item');
     }
   }
 }

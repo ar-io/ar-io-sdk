@@ -21,7 +21,7 @@ import {
   generateLeaves,
 } from 'arweave/node/lib/merkle.js';
 
-import { DataHashProvider, DataVerifier } from '../../../types/wayfinder.js';
+import { DataRootProvider, DataVerifier } from '../../../types/wayfinder.js';
 
 export async function convertBufferToDataRoot({
   data,
@@ -63,9 +63,13 @@ export async function convertBufferToDataRoot({
 // TODO: convert readable to data root
 
 export class DataRootVerifier implements DataVerifier {
-  private readonly hashProvider: DataHashProvider;
-  constructor({ hashProvider }: { hashProvider: DataHashProvider }) {
-    this.hashProvider = hashProvider;
+  private readonly trustedDataRootProvider: DataRootProvider;
+  constructor({
+    trustedDataRootProvider,
+  }: {
+    trustedDataRootProvider: DataRootProvider;
+  }) {
+    this.trustedDataRootProvider = trustedDataRootProvider;
   }
   async verifyData({
     data,
@@ -73,14 +77,20 @@ export class DataRootVerifier implements DataVerifier {
   }: {
     data: Buffer;
     txId: string;
-  }): Promise<{ hash: string; hashType: 'digest' | 'data-root' }> {
-    const { hash, hashType } = await this.hashProvider.getHash({ txId });
-    const dataRoot = await convertBufferToDataRoot({ data });
-    if (dataRoot !== hash) {
+  }): Promise<void> {
+    const dataRoot = await this.trustedDataRootProvider.getDataRoot({ txId });
+    const computedDataRoot = await convertBufferToDataRoot({ data });
+    if (computedDataRoot !== dataRoot) {
       throw new Error('Data root does not match', {
-        cause: { computedDataRoot: dataRoot, trustedDataRoot: hash },
+        cause: { computedDataRoot, trustedDataRoot: dataRoot },
       });
     }
-    return { hash, hashType };
   }
 }
+
+// some data item options
+// compute and verify data root, use offsets from server and verify the signature that the data item at the offset matches the signature
+// does not give you assurance of valid bundle, but gives verification that the data item itself is valid
+// reading from offsets is the only way for the client to compute and verify the signature
+
+// introduce a composite verifier that determines where/how to lookup the hash

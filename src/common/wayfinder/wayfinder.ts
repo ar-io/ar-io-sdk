@@ -109,16 +109,11 @@ export interface WayfinderEvents {
   'verification-passed': (params: {
     originalUrl: string;
     redirectUrl: string;
-    hashType: 'digest' | 'data-root';
-    hash: string;
     txId: string;
   }) => void;
   'verification-failed': (params: {
     originalUrl: string;
     redirectUrl: string;
-    hashType: 'digest' | 'data-root';
-    trustedHash: string;
-    computedHash: string;
     txId: string;
     error: Error;
   }) => void;
@@ -171,7 +166,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   }: {
     data: unknown;
     txId: string;
-  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
+  }) => Promise<void>;
   strict?: boolean;
   logger?: Logger;
   emitter?: WayfinderEmitter;
@@ -200,15 +195,18 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     });
     // only verify data if the redirect url is different from the original url
     if (response && redirectUrl.toString() !== originalUrl.toString()) {
-      // verify the digest of the response body
       if (verifyData) {
         // clone the response to avoid consuming the original response body
+        // TODO: will likely just need to stream the full thing through verification first, before returning the response object
+        // TODO; create the tap stream, and provide the verifier promise with the verification promise
+        // TODO: tapStream will take the verification promise, and await it once it has all the bytes, and send the error object ot the passthrouh on failure
         const clonedResponse = (response as any).clone();
         // txId is either in the response headers or the path of the request as the first parameter
-        // todo: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
+        // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
         const txId =
           (response as any).headers.get('x-arns-resolved-tx-id') ||
           redirectUrl.pathname.split('/')[1];
+        // TODO: determine if it is data item or L1 transaction here, and tell the verifier accordingly, just drop in hit to graphql now
         if (!txId && strict) {
           throw new Error('Failed to parse data hash from response headers', {
             cause: {
@@ -230,12 +228,18 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             originalUrl: originalUrl.toString(),
             txId,
           });
+
+          // indicate downstream to the verifier if it is a data item or L1 transaction
+          // TODO: given we need to handle and process the full stream to verify, before sending it back to the user...depending on the verification status
+          // you could await here, and then return the response object, or you could stream the response object back to the user
+          // send the user the pass through data, they get it, then you verify
+          // or you could await here, and then return the response object
           verifyData({
             // TODO: handle different response types (e.g. stream, buffer, text, json, etc.)
             data: await (clonedResponse as any).arrayBuffer(),
             txId,
           })
-            .then(({ hash, hashType }) => {
+            .then(() => {
               logger?.debug('Successfully verified data hash', {
                 redirectUrl: redirectUrl.toString(),
                 originalUrl: originalUrl.toString(),
@@ -244,8 +248,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               emitter?.emit('verification-passed', {
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
-                hashType,
-                hash,
                 txId,
               });
             })
@@ -255,15 +257,10 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 originalUrl: originalUrl.toString(),
                 error,
                 txId,
-                trustedHash: error.cause?.trustedHash,
-                computedHash: error.cause?.computedHash,
               });
               emitter?.emit('verification-failed', {
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
-                trustedHash: error.cause?.trustedHash,
-                computedHash: error.cause?.computedHash,
-                hashType: error.cause?.hashType,
                 error,
                 txId,
               });
@@ -365,12 +362,7 @@ export class Wayfinder<T extends HttpClientFunction> {
   public readonly request: WayfinderHttpClient<T>;
   // TODO: stats provider
   // TODO: metricsProvider for otel/prom support
-  // TODO: private verificationSettings: {
-  //   trustedGateways: URL[];
-  //   method: 'local' | 'remote';
-  // };
   public readonly verifyData: DataVerifier['verifyData'];
-  public readonly trustedHash: DataHashProvider['getHash'];
   /**
    * The event emitter for wayfinder that emits verification events
    *

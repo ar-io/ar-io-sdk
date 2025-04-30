@@ -38,13 +38,13 @@ export interface DataVerifier {
   }: {
     data: Buffer | Readable | ReadableStream | unknown;
     txId: string;
-  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
+  }) => Promise<void>;
 }
 
 export interface DataHashProvider {
-  hashType: 'digest' | 'data-root';
+  algorithm: 'sha256';
   /**
-   * Returns a hash for the provided txId. Depending on the implementation, the hash could be a data root, a digest, or some other hash of the data.
+   * Returns a hash for the provided txId using the specified algorithm.
    *
    * @param txId - The txId of the data
    * @returns the hash of the data
@@ -53,13 +53,9 @@ export interface DataHashProvider {
     txId,
   }: {
     txId: string;
-  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
+  }) => Promise<{ hash: string; algorithm: 'sha256' }>;
 }
 
-export interface DataRootHashProvider extends DataHashProvider {
-  hashType: 'data-root';
-}
-
-export interface DigestHashProvider extends DataHashProvider {
-  hashType: 'digest';
+export interface DataRootProvider {
+  getDataRoot: ({ txId }: { txId: string }) => Promise<string>;
 }

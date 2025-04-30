@@ -1,6 +1,7 @@
 import {
   ARIO,
   ARIOToken,
+  DataItemVerifier,
   DataRootVerifier,
   StaticGatewaysProvider,
   TrustedGatewaysDataRootProvider,
@@ -29,13 +30,7 @@ const wayfinder = new Wayfinder<typeof fetch>({
     // always use permagate.io as the target gateway
     getTargetGateway: async () => 'https://permagate.io',
   },
-  verifier: new WebDataRootVerifier({
-    hashProvider: new TrustedGatewaysDataRootProvider({
-      gatewaysProvider: new StaticGatewaysProvider({
-        gateways: [new URL('https://permagate.io')],
-      }),
-    }),
-  }),
+  verifier: new DataItemVerifier(),
 });
 
 function App() {
