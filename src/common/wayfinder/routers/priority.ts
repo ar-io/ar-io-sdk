@@ -15,8 +15,12 @@
  */
 import { WayfinderRouter } from '../../../types/wayfinder.js';
 import { randomInt } from '../../../utils/random.js';
+<<<<<<< HEAD
 import { AoARIORead } from '../../../web/index.js';
 import { NetworkGatewaysProvider } from '../gateways.js';
+=======
+import { ARIOGatewaysProvider } from '../gateways.js';
+>>>>>>> f3fbab8 (fix(wayfinder): add initial data root verificaion class)
 
 // TODO: one of N where N are in the last time window have met certain performance thresholds
 // TODO: look at bitorrent routing protocols for inspiration

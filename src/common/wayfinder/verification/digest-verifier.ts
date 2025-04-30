@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DataVerifier, DigestHashProvider } from '../../../types/index.js';
-import { toB64Url } from '../../utils/utils.js';
+import { DataVerifier, DigestHashProvider } from '../../../types/wayfinder.js';
 
-export class WebDigestVerifier implements DataVerifier {
-  private readonly hashProvider: DigestHashProvider;
-  constructor({ hashProvider }: { hashProvider: DigestHashProvider }) {
-    this.hashProvider = hashProvider;
+export class DigestVerifier implements DataVerifier {
+  private readonly trustedHashProvider: DigestHashProvider;
+  constructor({
+    trustedHashProvider,
+  }: {
+    trustedHashProvider: DigestHashProvider;
+  }) {
+    this.trustedHashProvider = trustedHashProvider;
   }
   async verifyData({
     data,
@@ -28,12 +31,14 @@ export class WebDigestVerifier implements DataVerifier {
     data: Buffer;
     txId: string;
   }): Promise<{ hash: string; hashType: 'digest' | 'data-root' }> {
-    const { hash, hashType } = await this.hashProvider.getHash({ txId });
+    const { hash, hashType } = await this.trustedHashProvider.getHash({ txId });
+    // use the same algo to compute the digest of the data
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const computedHash = toB64Url(Buffer.from(hashBuffer));
+
+    const computedHash = Buffer.from(hashBuffer).toString('base64url');
     if (computedHash !== hash) {
       throw new Error('Hash does not match', {
-        cause: { computedHash, providedHash: hash },
+        cause: { computedHash, trustedHash: hash },
       });
     }
     return { hash, hashType };

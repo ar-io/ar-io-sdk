@@ -13,18 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  ArweaveSigner,
-  ArconnectSigner,
-  InjectedEthereumSigner,
-  EthereumSigner,
-} from '@dha-team/arbundles';
-
-export * from '../types/index.js';
-export * from '../common/index.js';
-export * from '../constants.js';
-export * from '../utils/index.js';
-
-// wayfinder web
-export * from './wayfinder/verification/trusted-gateways.js';
-export * from './wayfinder/verification/data-root.js';
+export const toB64Url = (buffer: Buffer) => {
+  // Convert string to base64url using native browser btoa() and URL-safe character replacements
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};

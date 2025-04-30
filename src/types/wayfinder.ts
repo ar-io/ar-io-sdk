@@ -22,30 +22,44 @@ export interface WayfinderRouter {
 
 export interface DataVerifier {
   /**
-   * Verifies the provided data against a provided hash
+   * Verifies the provided data for a given txId
    *
    * Depending on the implementation, the hash can be the computed data root of a transaction, the digest of the data, or some other hash of the data.
    *
    * The interface is intended to be vague in order to support various degrees of verification.
    *
    * @param data - The data to verify
-   * @param hash - The hash to verify the data against
+   * @param txId - The txId of the data
+   * @returns the hash of the data
    */
   verifyData: ({
     data,
-    hash,
+    txId,
   }: {
     data: Buffer | Readable | ReadableStream | unknown;
-    hash: string;
-  }) => Promise<void>;
+    txId: string;
+  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
 }
 
 export interface DataHashProvider {
+  hashType: 'digest' | 'data-root';
   /**
    * Returns a hash for the provided txId. Depending on the implementation, the hash could be a data root, a digest, or some other hash of the data.
    *
    * @param txId - The txId of the data
    * @returns the hash of the data
    */
-  getHash: ({ txId }: { txId: string }) => Promise<string>;
+  getHash: ({
+    txId,
+  }: {
+    txId: string;
+  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
+}
+
+export interface DataRootHashProvider extends DataHashProvider {
+  hashType: 'data-root';
+}
+
+export interface DigestHashProvider extends DataHashProvider {
+  hashType: 'digest';
 }

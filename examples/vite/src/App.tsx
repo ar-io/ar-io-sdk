@@ -1,8 +1,12 @@
 import {
   ARIO,
   ARIOToken,
+  DataRootVerifier,
+  StaticGatewaysProvider,
+  TrustedGatewaysDataRootProvider,
+  TrustedGatewaysDigestProvider,
   Wayfinder,
-  WebDigestVerifier,
+  WebDataRootVerifier,
   mARIOToken,
 } from '@ar.io/sdk/web';
 import {
@@ -25,8 +29,13 @@ const wayfinder = new Wayfinder<typeof fetch>({
     // always use permagate.io as the target gateway
     getTargetGateway: async () => 'https://permagate.io',
   },
-  // verify the returned digests match the hash of the data
-  verifier: new WebDigestVerifier(),
+  verifier: new WebDataRootVerifier({
+    hashProvider: new TrustedGatewaysDataRootProvider({
+      gatewaysProvider: new StaticGatewaysProvider({
+        gateways: [new URL('https://permagate.io')],
+      }),
+    }),
+  }),
 });
 
 function App() {
@@ -278,14 +287,13 @@ function App() {
               verified: true,
               originalUrl: event.originalUrl,
               resolvedUrl: event.redirectUrl,
-              trustedHash: event.trustedHash,
-              computedHash: event.computedHash,
+              hash: event.hash,
+              hashType: event.hashType,
               txId: event.txId,
             });
           }
         });
         wayfinder.emitter.on('verification-failed', (event) => {
-          console.log('verification failed using wayfinder', event);
           if (event.txId === nonVerifiedWayfinderResponse?.txId) {
             setWayfinderVerificationStatus(
               `Verification failed: ${event.error.message}`,

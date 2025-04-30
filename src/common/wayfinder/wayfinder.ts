@@ -22,12 +22,10 @@ import {
 } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
-import { NetworkGatewaysProvider } from './gateways.js';
+import { NetworkGatewaysProvider, StaticGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
-import {
-  DigestVerifier,
-  TrustedGatewaysHashProvider,
-} from './verification/trusted-gateway.js';
+import { DigestVerifier } from './verification/digest-verifier.js';
+import { TrustedGatewaysDigestProvider } from './verification/trusted-gateway-hash-provider.js';
 
 // local types for wayfinder
 type HttpClientArgs = [string | URL, ...unknown[]];
@@ -111,13 +109,14 @@ export interface WayfinderEvents {
   'verification-passed': (params: {
     originalUrl: string;
     redirectUrl: string;
-    trustedHash: string;
-    computedHash: string;
+    hashType: 'digest' | 'data-root';
+    hash: string;
     txId: string;
   }) => void;
   'verification-failed': (params: {
     originalUrl: string;
     redirectUrl: string;
+    hashType: 'digest' | 'data-root';
     trustedHash: string;
     computedHash: string;
     txId: string;
@@ -157,7 +156,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   httpClient,
   resolveUrl,
   verifyData,
-  trustedHash,
   strict = true,
   emitter,
   logger,
@@ -169,12 +167,11 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   }) => Promise<URL>;
   verifyData?: ({
     data,
-    hash,
+    txId,
   }: {
     data: unknown;
-    hash: string;
-  }) => Promise<void>;
-  trustedHash: (params: { txId: string }) => Promise<string>;
+    txId: string;
+  }) => Promise<{ hash: string; hashType: 'digest' | 'data-root' }>;
   strict?: boolean;
   logger?: Logger;
   emitter?: WayfinderEmitter;
@@ -212,8 +209,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
         const txId =
           (response as any).headers.get('x-arns-resolved-tx-id') ||
           redirectUrl.pathname.split('/')[1];
-        const providedHash = await trustedHash({ txId });
-        if (!providedHash && strict) {
+        if (!txId && strict) {
           throw new Error('Failed to parse data hash from response headers', {
             cause: {
               redirectUrl: redirectUrl.toString(),
@@ -221,7 +217,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               txId,
             },
           });
-        } else if (!providedHash) {
+        } else if (!txId) {
           logger?.debug('No data hash provided, skipping verification', {
             redirectUrl: redirectUrl.toString(),
             originalUrl: originalUrl.toString(),
@@ -229,28 +225,27 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             strict,
           });
         } else {
-          logger?.debug('Verifying data hash', {
+          logger?.debug('Verifying data hash for txId', {
             redirectUrl: redirectUrl.toString(),
             originalUrl: originalUrl.toString(),
-            providedHash,
             txId,
           });
           verifyData({
             // TODO: handle different response types (e.g. stream, buffer, text, json, etc.)
             data: await (clonedResponse as any).arrayBuffer(),
-            hash: providedHash,
+            txId,
           })
-            .then(() => {
+            .then(({ hash, hashType }) => {
               logger?.debug('Successfully verified data hash', {
                 redirectUrl: redirectUrl.toString(),
                 originalUrl: originalUrl.toString(),
-                hash: providedHash,
+                txId,
               });
               emitter?.emit('verification-passed', {
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
-                trustedHash: providedHash,
-                computedHash: providedHash,
+                hashType,
+                hash,
                 txId,
               });
             })
@@ -260,14 +255,15 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 originalUrl: originalUrl.toString(),
                 error,
                 txId,
-                trustedHash: providedHash,
+                trustedHash: error.cause?.trustedHash,
                 computedHash: error.cause?.computedHash,
               });
               emitter?.emit('verification-failed', {
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
-                trustedHash: providedHash,
+                trustedHash: error.cause?.trustedHash,
                 computedHash: error.cause?.computedHash,
+                hashType: error.cause?.hashType,
                 error,
                 txId,
               });
@@ -420,12 +416,12 @@ export class Wayfinder<T extends HttpClientFunction> {
     }),
     httpClient,
     logger = Logger.default,
-    verifier = new DigestVerifier(),
-    // hash provider is anything we want to use to verify the data against, it could be local or remote (e.g. computed locally or fetched from a remote source)
-    // need to think more about how this interface plays with verifying signature and data roots
-    // this could be renamed to trustedHashProvider
-    hashProvider = new TrustedGatewaysHashProvider({
-      trustedGateways: [new URL('https://permagate.io')],
+    verifier = new DigestVerifier({
+      trustedHashProvider: new TrustedGatewaysDigestProvider({
+        gatewaysProvider: new StaticGatewaysProvider({
+          gateways: ['https://permagate.io'],
+        }),
+      }),
     }),
     // TODO: stats provider
   }: {
@@ -439,8 +435,7 @@ export class Wayfinder<T extends HttpClientFunction> {
   }) {
     this.router = router;
     this.httpClient = httpClient;
-    this.verifyData = verifier.verifyData;
-    this.trustedHash = hashProvider.getHash.bind(hashProvider);
+    this.verifyData = verifier.verifyData.bind(verifier);
     this.resolveUrl = async ({ originalUrl, logger }) => {
       return resolveWayfinderUrl({
         originalUrl,
@@ -452,7 +447,6 @@ export class Wayfinder<T extends HttpClientFunction> {
       httpClient,
       resolveUrl: this.resolveUrl,
       verifyData: this.verifyData,
-      trustedHash: this.trustedHash,
       emitter: this.emitter,
       logger,
     });
