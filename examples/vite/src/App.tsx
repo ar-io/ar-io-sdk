@@ -276,6 +276,8 @@ function App() {
             verified: true,
             originalUrl: event.originalUrl,
             resolvedUrl: event.redirectUrl,
+            trustedHash: event.trustedHash,
+            computedHash: event.computedHash,
             txId: event.txId,
           });
         });
@@ -288,6 +290,8 @@ function App() {
             verified: false,
             originalUrl: event.originalUrl,
             resolvedUrl: event.redirectUrl,
+            trustedHash: event.trustedHash,
+            computedHash: event.computedHash,
             txId: event.txId,
             error: event.error,
           });
