@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { webcrypto } from 'node:crypto';
 import EventEmitter from 'node:events';
 
 import {
@@ -110,7 +109,6 @@ export const resolveWayfinderUrl = async ({
  */
 export interface WayfinderEvents {
   'verification-passed': (params: {
-    requestId: string;
     originalUrl: string;
     redirectUrl: string;
     trustedHash: string;
@@ -118,7 +116,6 @@ export interface WayfinderEvents {
     txId: string;
   }) => void;
   'verification-failed': (params: {
-    requestId: string;
     originalUrl: string;
     redirectUrl: string;
     trustedHash: string;
@@ -181,10 +178,8 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   strict?: boolean;
   logger?: Logger;
   emitter?: WayfinderEmitter;
-  // TODO: potentially support an event emitter to track verification events?
   // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
-  const requestId = webcrypto.randomUUID();
   const wayfinderRedirect = async (
     fn: HttpClientFunction,
     rawArgs: HttpClientArgs,
@@ -199,7 +194,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     logger?.debug(`Redirecting request to ${redirectUrl}`, {
       originalUrl,
       redirectUrl,
-      requestId,
     });
     // make the request to the target gateway using the redirect url and http client
     const response = await fn(redirectUrl.toString(), ...rest);
@@ -224,7 +218,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             cause: {
               redirectUrl: redirectUrl.toString(),
               originalUrl: originalUrl.toString(),
-              requestId,
               txId,
             },
           });
@@ -232,7 +225,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           logger?.debug('No data hash provided, skipping verification', {
             redirectUrl: redirectUrl.toString(),
             originalUrl: originalUrl.toString(),
-            requestId,
             txId,
             strict,
           });
@@ -255,7 +247,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 hash: providedHash,
               });
               emitter?.emit('verification-passed', {
-                requestId,
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
                 trustedHash: providedHash,
@@ -273,7 +264,6 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 computedHash: error.cause?.computedHash,
               });
               emitter?.emit('verification-failed', {
-                requestId,
                 originalUrl: originalUrl.toString(),
                 redirectUrl: redirectUrl.toString(),
                 trustedHash: providedHash,
@@ -283,10 +273,13 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               });
             });
         }
+
+        // set the txid on the response headers so it's easy to listen to the events for the requests
+        // TODO: update the return type of the http client to include the txId if verification is enabled
+        (response as any).txId = txId;
       }
     }
     // TODO: if strict - wait for verification to finish and succeed before returning the response
-    // TODO: we may want to but the txid in the response headers so it's easy to listen to the events for the requests
     return response;
   };
 
@@ -400,17 +393,22 @@ export class Wayfinder<T extends HttpClientFunction> {
    *   console.log('Verification failed!', event);
    * });
    *
-   * const response = await wayfind('ar://example', {
-   *   method: 'POST',
-   *   data: {
-   *     name: 'John Doe',
-   *   },
-   * });
+   * const response = await wayfind('ar://example');
    *
    * Optionally wait for verification to complete before returning the response
    * await new Promise((resolve) => {
-   *   emitter.on('verification-passed', resolve);
-   *   emitter.on('verification-failed', resolve);
+   *   emitter.on('verification-passed', event => {
+   *     if (event.txId === response.txId) {
+   *       console.log('Verification passed!');
+   *       resolve(event);
+   *     }
+   *   });
+   *   emitter.on('verification-failed', event => {
+   *     if (event.txId === response.txId) {
+   *       console.log('Verification failed!');
+   *       resolve(event);
+   *     }
+   *   });
    * });
    */
   public readonly emitter: WayfinderEmitter = new WayfinderEmitter();

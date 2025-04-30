@@ -258,6 +258,7 @@ function App() {
             // get the bytes of the data
             const data = await res.text();
             setNonVerifiedWayfinderResponse({
+              txId: res.txId,
               contentLength: data.length,
               contentType: res.headers.get('content-type'),
             });
@@ -270,31 +271,35 @@ function App() {
           });
         wayfinder.emitter.on('verification-passed', async (event) => {
           await new Promise((resolve) => setTimeout(resolve, 2000));
-          setWayfinderVerificationStatus('Verification passed');
-          setVerifiedWayfinderResponse({
-            ...nonVerifiedWayfinderResponse,
-            verified: true,
-            originalUrl: event.originalUrl,
-            resolvedUrl: event.redirectUrl,
-            trustedHash: event.trustedHash,
-            computedHash: event.computedHash,
-            txId: event.txId,
-          });
+          if (event.txId === nonVerifiedWayfinderResponse?.txId) {
+            setWayfinderVerificationStatus('Verification passed');
+            setVerifiedWayfinderResponse({
+              ...nonVerifiedWayfinderResponse,
+              verified: true,
+              originalUrl: event.originalUrl,
+              resolvedUrl: event.redirectUrl,
+              trustedHash: event.trustedHash,
+              computedHash: event.computedHash,
+              txId: event.txId,
+            });
+          }
         });
         wayfinder.emitter.on('verification-failed', (event) => {
           console.log('verification failed using wayfinder', event);
-          setWayfinderVerificationStatus(
-            `Verification failed: ${event.error.message}`,
-          );
-          setVerifiedWayfinderResponse({
-            verified: false,
-            originalUrl: event.originalUrl,
-            resolvedUrl: event.redirectUrl,
-            trustedHash: event.trustedHash,
-            computedHash: event.computedHash,
-            txId: event.txId,
-            error: event.error,
-          });
+          if (event.txId === nonVerifiedWayfinderResponse?.txId) {
+            setWayfinderVerificationStatus(
+              `Verification failed: ${event.error.message}`,
+            );
+            setVerifiedWayfinderResponse({
+              verified: false,
+              originalUrl: event.originalUrl,
+              resolvedUrl: event.redirectUrl,
+              trustedHash: event.trustedHash,
+              computedHash: event.computedHash,
+              txId: event.txId,
+              error: event.error,
+            });
+          }
         });
       };
       fetchAndVerify();
