@@ -121,15 +121,9 @@ export class ARIO {
   }
 
   static mainnet(): AoARIORead;
-  static mainnet(
-    config: ARIOConfigNoSigner & { faucetUrl?: string },
-  ): AoARIORead;
-  static mainnet(
-    config: ARIOConfigWithSigner & { faucetUrl?: string },
-  ): AoARIOWrite;
-  static mainnet(
-    config?: ARIOConfig & { faucetUrl?: string },
-  ): AoARIORead | AoARIOWrite {
+  static mainnet(config: ARIOConfigNoSigner): AoARIORead;
+  static mainnet(config: ARIOConfigWithSigner): AoARIOWrite;
+  static mainnet(config?: ARIOConfig): AoARIORead | AoARIOWrite {
     if (config !== undefined && 'signer' in config) {
       return new ARIOWriteable({
         ...config,
@@ -146,6 +140,10 @@ export class ARIO {
       ...config,
       process: new AOProcess({
         processId: ARIO_MAINNET_PROCESS_ID,
+        ao: connect({
+          CU_URL: 'https://cu.ardrive.io',
+          ...(config as ProcessConfig)?.process?.ao,
+        }),
       }),
     });
   }
