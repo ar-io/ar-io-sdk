@@ -372,8 +372,17 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
         // txId is either in the response headers or the path of the request as the first parameter
         // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
         const txId =
-          (response as any).headers.get('x-arns-resolved-id') ??
+          (response as any)?.headers?.['x-arns-resolved-id'] ??
           redirectUrl.pathname.split('/')[1];
+
+        if (!txIdRegex.test(txId)) {
+          // no transaction id found, skip verification
+          logger?.debug('No transaction id found, skipping verification', {
+            redirectUrl,
+            originalUrl,
+          });
+          return response;
+        }
 
         emitter?.emit('wayfinder', {
           type: 'identified-transaction-id',
