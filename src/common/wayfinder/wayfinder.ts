@@ -185,9 +185,10 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
           type: 'verification-passed',
           txId,
         });
+        tappedClientStream.end();
       } catch (error) {
         console.error('Error on verifier stream', error);
-        originalStream.emit('error', error);
+        tappedClientStream.destroy(error);
         emitter?.emit('wayfinder', {
           type: 'verification-failed',
           error,
