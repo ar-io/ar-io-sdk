@@ -110,6 +110,7 @@ export const resolveWayfinderUrl = async ({
 export type WayfinderEvent =
   | { type: 'verification-passed'; txId: string }
   | { type: 'verification-failed'; txId: string; error: Error }
+  | { type: 'verification-skipped'; originalUrl: string }
   | {
       type: 'verification-progress';
       txId: string;
@@ -361,6 +362,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     });
     // make the request to the target gateway using the redirect url and http client
     const response = await fn(redirectUrl.toString(), ...rest);
+    // TODO: trigger a routing event with the raw response object?
     logger?.debug(`Successfully routed request to ${redirectUrl}`, {
       redirectUrl,
       originalUrl,
@@ -470,10 +472,19 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 data: responseBody,
                 txId,
               });
+              emitter?.emit('wayfinder', {
+                type: 'verification-passed',
+                txId,
+              });
             } catch (error) {
               logger?.debug('Failed to verify data hash', {
                 error,
                 txId,
+              });
+              emitter?.emit('wayfinder', {
+                type: 'verification-failed',
+                txId,
+                error,
               });
             }
             return response;
