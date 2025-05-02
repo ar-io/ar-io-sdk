@@ -371,16 +371,25 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     // only verify data if the redirect url is different from the original url
     if (response && redirectUrl.toString() !== originalUrl.toString()) {
       if (verifyData) {
-        // txId is either in the response headers or the path of the request as the first parameter
+        // if the headers do not have .get on them, we need to parse the headers manually
+        let headers = (response as any).headers;
+        if (typeof headers.get !== 'function') {
+          headers = Object.fromEntries(headers.entries());
+        }
+        // transaction id is either in the response headers or the path of the request as the first parameter
         // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
         const txId =
-          (response as any)?.headers?.['x-arns-resolved-id'] ??
+          headers.get('x-arns-resolved-id') ??
           redirectUrl.pathname.split('/')[1];
 
         if (!txIdRegex.test(txId)) {
           // no transaction id found, skip verification
           logger?.debug('No transaction id found, skipping verification', {
             redirectUrl,
+            originalUrl,
+          });
+          emitter?.emit('wayfinder', {
+            type: 'verification-skipped',
             originalUrl,
           });
           return response;

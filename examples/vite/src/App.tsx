@@ -2,11 +2,12 @@ import {
   ARIO,
   ARIOToken,
   HashVerifier,
+  Logger,
   NetworkGatewaysProvider,
   PriorityGatewayRouter,
   StaticGatewayRouter,
   StaticGatewaysProvider,
-  TrustedGatewaysVerificationProvider,
+  TrustedGatewayHashProvider,
   Wayfinder,
   mARIOToken,
 } from '@ar.io/sdk/web';
@@ -15,12 +16,13 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import './App.css';
 import { useArNSRecords } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
+Logger.default.setLogLevel('debug');
 const ario = ARIO.testnet();
 // @ts-ignore
 const wayfinder = new Wayfinder<typeof fetch>({
@@ -29,7 +31,7 @@ const wayfinder = new Wayfinder<typeof fetch>({
     gateway: 'https://permagate.io',
   }),
   verifier: new HashVerifier({
-    trustedHashProvider: new TrustedGatewaysVerificationProvider({
+    trustedHashProvider: new TrustedGatewayHashProvider({
       gatewaysProvider: new StaticGatewaysProvider({
         gateways: ['https://permagate.io'],
       }),
@@ -45,25 +47,20 @@ function App() {
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [wayfinderUrl, setWayfinderUrl] = useState<string | null>(null);
-  const [wayfinderVerified, setWayfinderVerified] = useState<boolean>(false);
-  const [wayfinderVerificationProgress, setWayfinderVerificationProgress] =
-    useState<number>(0);
-  const [wayfinderVideoStream, setWayfinderVideoStream] = useState<Blob | null>(
+  const [wayfinderVerified, setWayfinderVerified] = useState<boolean | null>(
     null,
   );
-  const [wayfinderRenderPromiseRef, setWayfinderRenderPromiseRef] =
-    useState<Promise<void> | null>(null);
-  const [wayfinderInputTimeout, setWayfinderInputTimeout] =
-    useState<NodeJS.Timeout | null>(null);
-  const [nonVerifiedWayfinderResponse, setNonVerifiedWayfinderResponse] =
-    useState<any>(null);
-  const [verifiedWayfinderResponse, setVerifiedWayfinderResponse] =
-    useState<any>(null);
+  const [wayfinderVerificationProgress, setWayfinderVerificationProgress] =
+    useState<number>(0);
+  const [wayfinderResponse, setWayfinderResponse] = useState<{
+    data: string;
+    contentType: string | null;
+    contentLength: string | null;
+    status: number;
+  } | null>(null);
   const [wayfinderStatusUpdates, setWayfinderStatusUpdates] = useState<
     Set<string>
   >(new Set());
-  const [isUpdatingStatusUpdates, setIsUpdatingStatusUpdates] =
-    useState<boolean>(false);
 
   // const {
   //   data: names,
@@ -263,97 +260,86 @@ function App() {
 
   useEffect(() => {
     setWayfinderStatusUpdates(new Set());
-    setNonVerifiedWayfinderResponse(null);
-    setVerifiedWayfinderResponse(null);
-    setWayfinderVerified(false);
+    setWayfinderResponse(null);
+    setWayfinderVerified(null);
     setWayfinderVerificationProgress(0);
     if (wayfinderUrl) {
-      const fetchAndVerify = async () => {
-        // fetch the data from the wayfinder url
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+      const resolveUrl = async () => {
+        // do a head request on the URL to see if it's a video stream
         wayfinder
-          .request(wayfinderUrl, { redirect: 'follow', mode: 'cors' })
-          .then(async (res: any) => {
-            // consume the result //its video/mp4
-            const result = await res.blob();
-            setWayfinderVideoStream(result);
+          .request(wayfinderUrl, {
+            mode: 'cors',
+            redirect: 'follow',
           })
-          .catch((err: any) => {
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Wayfinder request failed: ${err.message}`);
-              return prevUpdates;
+          .then(async (res) => {
+            setWayfinderResponse({
+              data: await res.text(),
+              contentType: res.headers.get('content-type'),
+              contentLength: res.headers.get('content-length'),
+              status: res.status,
             });
+          })
+          .catch((err) => {
+            console.error('Failed to fetch video:', err);
           });
-        // wayfinder.emitter.on('verification-passed', async (event) => {
-        //   console.log('verification passed', event);
-        //   setWayfinderVerified(true);
-        //   await new Promise((resolve) => setTimeout(resolve, 2000));
-        //   if (
-        //     event.txId === nonVerifiedWayfinderResponse?.txId ||
-        //     !nonVerifiedWayfinderResponse
-        //   ) {
-        //     setWayfinderVerificationStatus('Verification passed');
-        //     setVerifiedWayfinderResponse({
-        //       ...nonVerifiedWayfinderResponse,
-        //       txId: event.txId,
-        //       verified: true,
-        //     });
-        //   }
-        // });
-        wayfinder.emitter.on('wayfinder', (event) => {
-          if (event.type === 'routing-failed') {
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Routing failed: ${event.error.message}`);
-              return prevUpdates;
-            });
-          }
-          if (event.type === 'routing-succeeded') {
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Routing request to: ${event.targetGateway}`);
-              return prevUpdates;
-            });
-          }
-          if (event.type === 'identified-transaction-id') {
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Identified transaction id: ${event.txId}`);
-              return prevUpdates;
-            });
-          }
-          if (event.type === 'verification-passed') {
-            setWayfinderVerified(true);
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Verification passed: ${event.txId}`);
-              return prevUpdates;
-            });
-          }
-          if (event.type === 'verification-failed') {
-            setWayfinderStatusUpdates((prevUpdates) => {
-              prevUpdates.add(`Verification failed: ${event.error.message}`);
-              return prevUpdates;
-            });
-          }
-          if (event.type === 'verification-progress') {
-            const newEventProcessedBytes =
-              (event.processedBytes / (event.totalBytes ?? 1)) * 100;
-            // for every 10% of progress, update the progress bar
-            const newRoundedProgress =
-              Math.round(newEventProcessedBytes / 10) * 10;
-            if (
-              newRoundedProgress >= wayfinderVerificationProgress &&
-              newRoundedProgress > 0
-            ) {
-              setWayfinderStatusUpdates((prevUpdates) => {
-                prevUpdates.add(`Verifying... ${newRoundedProgress}%`);
-                return prevUpdates;
-              });
-              setWayfinderVerificationProgress(newRoundedProgress);
-            }
-          }
-        });
       };
-      fetchAndVerify();
+      resolveUrl();
     }
   }, [wayfinderUrl]);
+
+  useEffect(() => {
+    wayfinder.emitter.on('wayfinder', (event) => {
+      console.log('wayfinder event', event);
+      if (event.type === 'routing-failed') {
+        setWayfinderStatusUpdates((prevUpdates) => {
+          prevUpdates.add(`Routing failed: ${event.error.message}`);
+          return prevUpdates;
+        });
+      }
+      if (event.type === 'routing-succeeded') {
+        setWayfinderStatusUpdates((prevUpdates) => {
+          prevUpdates.add(`Routing request to: ${event.targetGateway}`);
+          return prevUpdates;
+        });
+      }
+      if (event.type === 'identified-transaction-id') {
+        setWayfinderStatusUpdates((prevUpdates) => {
+          prevUpdates.add(`Identified transaction id: ${event.txId}`);
+          return prevUpdates;
+        });
+      }
+      if (event.type === 'verification-passed') {
+        setWayfinderVerified(true);
+        setWayfinderStatusUpdates((prevUpdates) => {
+          prevUpdates.add(`Verification passed: ${event.txId}`);
+          return prevUpdates;
+        });
+      }
+      if (event.type === 'verification-failed') {
+        console.log('verification failed', event);
+        setWayfinderStatusUpdates((prevUpdates) => {
+          prevUpdates.add(`Verification failed: ${event.error.message}`);
+          return prevUpdates;
+        });
+      }
+      if (event.type === 'verification-progress') {
+        const newEventProcessedBytes =
+          (event.processedBytes / (event.totalBytes ?? 1)) * 100;
+        // for every 10% of progress, update the progress bar
+        const newRoundedProgress = Math.round(newEventProcessedBytes / 10) * 10;
+        if (
+          newRoundedProgress >= wayfinderVerificationProgress &&
+          newRoundedProgress > 0
+        ) {
+          setWayfinderStatusUpdates((prevUpdates) => {
+            prevUpdates.add(`Verifying... ${newRoundedProgress}%`);
+            return prevUpdates;
+          });
+          setWayfinderVerificationProgress(newRoundedProgress);
+        }
+      }
+    });
+  }, [wayfinder]);
 
   return (
     <div
@@ -400,15 +386,6 @@ function App() {
             }}
           />
           <div>
-            {(verifiedWayfinderResponse || nonVerifiedWayfinderResponse) && (
-              <pre style={{ textAlign: 'left', whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(
-                  verifiedWayfinderResponse || nonVerifiedWayfinderResponse,
-                  null,
-                  2,
-                )}
-              </pre>
-            )}
             {wayfinderStatusUpdates.size > 0 && (
               <pre
                 style={{
@@ -421,14 +398,28 @@ function App() {
                 ))}
               </pre>
             )}
-            {wayfinderVideoStream && (
-              <video
-                src={URL.createObjectURL(wayfinderVideoStream)}
-                controls
-                style={{ width: '100%', height: '100%' }}
-              />
+            {wayfinderVerified !== null && (
+              <div>
+                <h3>Verification</h3>
+                <p>{wayfinderVerified ? 'Verified' : 'Not verified'}</p>
+              </div>
             )}
           </div>
+          {wayfinderResponse && (
+            <div>
+              <h3>Response headers</h3>
+              <pre
+                style={{
+                  marginTop: '10px',
+                  textAlign: 'left',
+                  maxWidth: '500px',
+                  overflow: 'auto',
+                }}
+              >
+                {JSON.stringify(wayfinderResponse, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
 
