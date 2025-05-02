@@ -18,7 +18,7 @@ export * from './wayfinder.js';
 // routers
 export * from './routers/random.js';
 export * from './routers/priority.js';
-export * from './routers/fixed.js';
+export * from './routers/static.js';
 
 // gateways providers
 export * from './gateways.js';

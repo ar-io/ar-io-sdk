@@ -1,12 +1,12 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { FixedGatewayRouter } from './fixed.js';
+import { StaticGatewayRouter } from './static.js';
 
-describe('FixedRouter', () => {
+describe('StaticGatewayRouter', () => {
   it('should return the provided gateway', async () => {
-    const router = new FixedGatewayRouter({
-      gateway: new URL('http://test-gateway.net'),
+    const router = new StaticGatewayRouter({
+      gateway: 'http://test-gateway.net',
     });
     const result = await router.getTargetGateway();
 

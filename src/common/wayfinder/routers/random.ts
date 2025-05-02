@@ -35,15 +35,13 @@ export class RandomGatewayRouter implements WayfinderRouter {
   async getTargetGateway(): Promise<URL> {
     const allGateways = await this.gatewaysProvider.getGateways();
     const gateways = allGateways.filter(
-      (g) => g.status === 'joined' && !this.blocklist.includes(g.settings.fqdn),
+      (g) => !this.blocklist.includes(g.hostname),
     );
 
     const targetGateway = gateways[randomInt(0, gateways.length)];
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');
     }
-    return new URL(
-      `${targetGateway.settings.protocol}://${targetGateway.settings.fqdn}:${targetGateway.settings.port}`,
-    );
+    return targetGateway;
   }
 }
