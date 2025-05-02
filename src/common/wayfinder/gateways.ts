@@ -16,26 +16,49 @@
 import { AoARIORead, AoGatewayWithAddress } from '../../types/io.js';
 
 export interface GatewaysProvider {
-  getGateways(): Promise<AoGatewayWithAddress[]>;
+  getGateways(): Promise<URL[]>;
 }
 
-export class ARIOGatewaysProvider implements GatewaysProvider {
+export class NetworkGatewaysProvider implements GatewaysProvider {
   private ario: AoARIORead;
-
-  constructor({ ario }: { ario: AoARIORead }) {
+  private sortBy: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
+  private sortOrder: 'asc' | 'desc';
+  private limit: number;
+  private filter: (gateway: AoGatewayWithAddress) => boolean;
+  constructor({
+    ario,
+    sortBy = 'operatorStake',
+    sortOrder = 'desc',
+    limit = 1000,
+    filter = (g) => g.status === 'joined',
+  }: {
+    ario: AoARIORead;
+    sortBy?: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
+    sortOrder?: 'asc' | 'desc';
+    limit?: number;
+    blocklist?: string[];
+    filter?: (gateway: AoGatewayWithAddress) => boolean;
+  }) {
     this.ario = ario;
+    this.sortBy = sortBy;
+    this.sortOrder = sortOrder;
+    this.limit = limit;
+    this.filter = filter;
   }
 
-  async getGateways(): Promise<AoGatewayWithAddress[]> {
+  async getGateways(): Promise<URL[]> {
     let cursor: string | undefined;
     let attempts = 0;
     const gateways: AoGatewayWithAddress[] = [];
     do {
       try {
-        const { items: newGateways, nextCursor } = await this.ario.getGateways({
-          limit: 1000,
-          cursor,
-        });
+        const { items: newGateways = [], nextCursor } =
+          await this.ario.getGateways({
+            limit: 1000,
+            cursor,
+            sortBy: this.sortBy,
+            sortOrder: this.sortOrder,
+          });
         gateways.push(...newGateways);
         cursor = nextCursor;
         attempts = 0; // reset attempts if we get a new cursor
@@ -49,17 +72,23 @@ export class ARIOGatewaysProvider implements GatewaysProvider {
       }
     } while (cursor !== undefined && attempts < 3);
     // filter out any gateways that are not joined
-    return gateways.filter((g) => g.status === 'joined');
+    const filteredGateways = gateways.filter(this.filter).slice(0, this.limit);
+    return filteredGateways.map(
+      (g) =>
+        new URL(
+          `${g.settings.protocol}://${g.settings.fqdn}:${g.settings.port}`,
+        ),
+    );
   }
 }
 
 export class StaticGatewaysProvider implements GatewaysProvider {
-  private gateways: AoGatewayWithAddress[];
-  constructor({ gateways }: { gateways: AoGatewayWithAddress[] }) {
-    this.gateways = gateways;
+  private gateways: URL[];
+  constructor({ gateways }: { gateways: string[] }) {
+    this.gateways = gateways.map((g) => new URL(g));
   }
 
-  async getGateways(): Promise<AoGatewayWithAddress[]> {
+  async getGateways(): Promise<URL[]> {
     return this.gateways;
   }
 }
@@ -68,7 +97,7 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
   private gatewaysProvider: GatewaysProvider;
   private ttlSeconds: number;
   private lastUpdated: number;
-  private gatewaysCache: AoGatewayWithAddress[];
+  private gatewaysCache: URL[];
   constructor({
     gatewaysProvider,
     ttlSeconds = 5 * 60, // 5 minutes
@@ -81,7 +110,7 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
     this.ttlSeconds = ttlSeconds;
   }
 
-  async getGateways(): Promise<AoGatewayWithAddress[]> {
+  async getGateways(): Promise<URL[]> {
     const now = Date.now();
     if (
       this.gatewaysCache.length === 0 ||
@@ -90,7 +119,7 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
       try {
         // preserve the cache if the fetch fails
         const allGateways = await this.gatewaysProvider.getGateways();
-        this.gatewaysCache = allGateways.filter((g) => g.status === 'joined');
+        this.gatewaysCache = allGateways;
         this.lastUpdated = now;
       } catch (error) {
         console.error('Error fetching gateways', error);

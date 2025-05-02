@@ -16,7 +16,7 @@
 import { WayfinderRouter } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
-import { ARIOGatewaysProvider } from './gateways.js';
+import { NetworkGatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 
 // local types for wayfinder
@@ -26,7 +26,7 @@ type WayfinderHttpClient<T extends HttpClientFunction> = T;
 
 // known regexes for wayfinder urls
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
-export const txIdRegex = /^[a-z0-9]{43}$/;
+export const txIdRegex = /^[A-Za-z0-9_-]{43}$/;
 
 /**
  * Core function to resolve a wayfinder url against a target gateway
@@ -241,7 +241,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
       // optionally use a cache gateways provider to reduce the number of requests to the contract
-      gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() }),
+      gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
     }),
     httpClient,
     logger = Logger.default,

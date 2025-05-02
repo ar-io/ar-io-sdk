@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { AoGatewayWithAddress } from '../../../types/io.js';
+import { AoARIORead, AoGatewayWithAddress } from '../../../types/io.js';
 import { PriorityGatewayRouter } from './priority.js';
 
 describe('PriorityRouter', () => {
@@ -131,14 +131,14 @@ describe('PriorityRouter', () => {
     },
   ];
 
-  const mockGatewaysProvider = {
-    getGateways: async () => mockGateways,
-  };
+  const mockArIOClient = {
+    getGateways: async () => ({ items: mockGateways }),
+  } as unknown as AoARIORead;
 
   it('should prioritize gateway with highest success rate when using successRate weight', async () => {
     const router = new PriorityGatewayRouter({
-      gatewaysProvider: mockGatewaysProvider,
-      sortBy: 'totalDelegatedStake',
+      ario: mockArIOClient,
+      sortBy: 'operatorStake',
       sortOrder: 'desc',
       limit: 1,
     });
@@ -149,7 +149,7 @@ describe('PriorityRouter', () => {
 
   it('should prioritize gateway with lowest latency when using latency weight', async () => {
     const router = new PriorityGatewayRouter({
-      gatewaysProvider: mockGatewaysProvider,
+      ario: mockArIOClient,
       sortBy: 'operatorStake',
       sortOrder: 'desc',
       limit: 1,

@@ -15,7 +15,8 @@
  */
 import { WayfinderRouter } from '../../../types/wayfinder.js';
 import { randomInt } from '../../../utils/random.js';
-import { GatewaysProvider } from '../gateways.js';
+import { AoARIORead } from '../../../web/index.js';
+import { NetworkGatewaysProvider } from '../gateways.js';
 
 // TODO: one of N where N are in the last time window have met certain performance thresholds
 // TODO: look at bitorrent routing protocols for inspiration
@@ -23,54 +24,32 @@ import { GatewaysProvider } from '../gateways.js';
 
 export class PriorityGatewayRouter implements WayfinderRouter {
   public readonly name = 'priority';
-  private gatewaysProvider: GatewaysProvider;
-  private limit: number;
-  private sortBy: 'totalDelegatedStake' | 'startTimestamp' | 'operatorStake';
-  private sortOrder: 'asc' | 'desc';
-  private blocklist: string[];
+  public readonly gatewaysProvider: NetworkGatewaysProvider;
   constructor({
-    gatewaysProvider,
-    limit = 1,
-    sortBy = 'operatorStake',
-    sortOrder = 'desc',
-    blocklist = [],
+    ario,
+    sortBy,
+    sortOrder,
+    limit,
   }: {
-    gatewaysProvider: GatewaysProvider;
-    limit?: number;
-    sortBy?: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
-    sortOrder?: 'asc' | 'desc';
-    blocklist?: string[];
+    ario: AoARIORead;
+    sortBy: 'operatorStake' | 'totalDelegatedStake' | 'startTimestamp';
+    sortOrder: 'asc' | 'desc';
+    limit: number;
   }) {
-    this.gatewaysProvider = gatewaysProvider;
-    this.limit = limit;
-    this.sortBy = sortBy;
-    this.sortOrder = sortOrder;
-    this.blocklist = blocklist;
+    this.gatewaysProvider = new NetworkGatewaysProvider({
+      ario,
+      sortBy,
+      sortOrder,
+      limit,
+    });
   }
 
   async getTargetGateway(): Promise<URL> {
-    const allGateways = await this.gatewaysProvider.getGateways();
-    const gateways = allGateways.filter(
-      (gateway) =>
-        gateway.status === 'joined' &&
-        !this.blocklist.includes(gateway.settings.fqdn),
-    );
-    const sortedGateways = gateways
-      .sort(
-        this.sortOrder === 'asc'
-          ? (a, b) => a[this.sortBy] - b[this.sortBy]
-          : (a, b) => b[this.sortBy] - a[this.sortBy],
-      )
-      .slice(0, this.limit);
-
-    const targetGateway = sortedGateways[randomInt(0, sortedGateways.length)];
-
+    const gateways = await this.gatewaysProvider.getGateways();
+    const targetGateway = gateways[randomInt(0, gateways.length)];
     if (targetGateway === undefined) {
       throw new Error('No target gateway found');
     }
-
-    return new URL(
-      `${targetGateway.settings.protocol}://${targetGateway.settings.fqdn}:${targetGateway.settings.port}`,
-    );
+    return targetGateway;
   }
 }
