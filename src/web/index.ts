@@ -24,7 +24,3 @@ export * from '../types/index.js';
 export * from '../common/index.js';
 export * from '../constants.js';
 export * from '../utils/index.js';
-
-// wayfinder web
-export * from './wayfinder/verification/trusted-gateways.js';
-export * from './wayfinder/verification/data-root.js';

@@ -157,14 +157,14 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
     const tappedClientStream = new PassThrough();
     const streamToVerify = new PassThrough();
 
-    // const promise that has not been awaited yet
+    // kick off the verification promise, this will be awaited when the original stream ends
     const verificationPromise = verifyData({
       data: streamToVerify,
       txId,
     });
 
     let bytesProcessed = 0;
-    // Pipe source → both verifier and output
+    // pipe the original stream to the verifier and the client stream
     originalStream.on('data', (chunk) => {
       streamToVerify.write(chunk);
       tappedClientStream.write(chunk);
@@ -178,7 +178,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
     });
 
     originalStream.on('end', async () => {
-      streamToVerify.end(); // triggers verifier completion
+      streamToVerify.end(); // triggers verifier completion and completes the verification promise
       try {
         await verificationPromise;
         emitter?.emit('wayfinder', {
@@ -188,12 +188,12 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
         tappedClientStream.end();
       } catch (error) {
         console.error('Error on verifier stream', error);
-        tappedClientStream.destroy(error);
         emitter?.emit('wayfinder', {
           type: 'verification-failed',
           error,
           txId,
         });
+        tappedClientStream.destroy(error);
       }
     });
 
@@ -205,7 +205,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
     return tappedClientStream as T extends Readable ? PassThrough : T;
   }
 
-  // taps web ReadableStream
+  // taps web readable streams
   if (
     originalStream instanceof ReadableStream &&
     typeof originalStream.tee === 'function'
@@ -219,7 +219,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
 
     let bytesProcessed = 0;
     const reader = clientBranch.getReader();
-    const clientStreamDelayed = new ReadableStream({
+    const clientStreamWithVerification = new ReadableStream({
       async pull(controller) {
         const { done, value } = await reader.read();
         if (done) {
@@ -263,7 +263,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
         });
       },
     });
-    return clientStreamDelayed as T extends Readable ? PassThrough : T;
+    return clientStreamWithVerification as T extends Readable ? PassThrough : T;
   }
   throw new Error('Unsupported body type for cloning');
 }
