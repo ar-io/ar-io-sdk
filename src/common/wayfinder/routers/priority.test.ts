@@ -2,10 +2,6 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { AoARIORead, AoGatewayWithAddress } from '../../../types/io.js';
-<<<<<<< HEAD
-=======
-import { ARIOGatewaysProvider } from '../gateways.js';
->>>>>>> f3fbab8 (fix(wayfinder): add initial data root verificaion class)
 import { PriorityGatewayRouter } from './priority.js';
 
 describe('PriorityRouter', () => {

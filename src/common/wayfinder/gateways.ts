@@ -52,7 +52,6 @@ export class NetworkGatewaysProvider implements GatewaysProvider {
     const gateways: AoGatewayWithAddress[] = [];
     do {
       try {
-<<<<<<< HEAD
         const { items: newGateways = [], nextCursor } =
           await this.ario.getGateways({
             limit: 1000,
@@ -60,14 +59,6 @@ export class NetworkGatewaysProvider implements GatewaysProvider {
             sortBy: this.sortBy,
             sortOrder: this.sortOrder,
           });
-=======
-        const { items: newGateways, nextCursor } = await this.ario.getGateways({
-          limit: 1000,
-          cursor,
-          sortBy: this.sortBy,
-          sortOrder: this.sortOrder,
-        });
->>>>>>> f3fbab8 (fix(wayfinder): add initial data root verificaion class)
         gateways.push(...newGateways);
         cursor = nextCursor;
         attempts = 0; // reset attempts if we get a new cursor
@@ -93,13 +84,8 @@ export class NetworkGatewaysProvider implements GatewaysProvider {
 
 export class StaticGatewaysProvider implements GatewaysProvider {
   private gateways: URL[];
-<<<<<<< HEAD
   constructor({ gateways }: { gateways: string[] }) {
     this.gateways = gateways.map((g) => new URL(g));
-=======
-  constructor({ gateways }: { gateways: URL[] }) {
-    this.gateways = gateways;
->>>>>>> f3fbab8 (fix(wayfinder): add initial data root verificaion class)
   }
 
   async getGateways(): Promise<URL[]> {

@@ -26,8 +26,9 @@ const arioGatewayHeaders = {
   processId: 'x-arns-resolved-process-id',
 };
 
-export class TrustedGatewaysDigestProvider implements DataHashProvider {
-  algorithm: 'sha256';
+export class TrustedGatewaysVerificationProvider
+  implements DataHashProvider, DataRootProvider
+{
   private gatewaysProvider: GatewaysProvider;
 
   constructor({ gatewaysProvider }: { gatewaysProvider: GatewaysProvider }) {
@@ -49,22 +50,22 @@ export class TrustedGatewaysDigestProvider implements DataHashProvider {
     const hashResults: { gateway: string; txIdHash: string }[] = [];
     const gateways = await this.gatewaysProvider.getGateways();
     const hashes = await Promise.all(
-      gateways.map(async (gateway: URL): Promise<string> => {
+      gateways.map(async (gateway: URL): Promise<string | undefined> => {
         const response = await fetch(`${gateway.toString()}${txId}`, {
           method: 'HEAD',
           redirect: 'follow',
         });
 
         if (!response.ok) {
-          throw new Error('TxId is not trusted');
+          // skip this gateway
+          return undefined;
         }
 
         const txIdHash = response.headers.get(arioGatewayHeaders.digest);
 
         if (txIdHash === null || txIdHash === undefined) {
-          throw new Error(
-            `TxId hash not found for gateway ${gateway.hostname}`,
-          );
+          // skip this gateway
+          return undefined;
         }
 
         hashResults.push({
@@ -77,7 +78,13 @@ export class TrustedGatewaysDigestProvider implements DataHashProvider {
     );
 
     for (const hash of hashes) {
-      hashSet.add(hash);
+      if (hash !== undefined) {
+        hashSet.add(hash);
+      }
+    }
+
+    if (hashSet.size === 0) {
+      throw new Error(`No trusted gateways found for txId ${txId}`);
     }
 
     if (hashSet.size > 1) {
@@ -88,14 +95,6 @@ export class TrustedGatewaysDigestProvider implements DataHashProvider {
       );
     }
     return { hash: hashResults[0].txIdHash, algorithm: 'sha256' };
-  }
-}
-
-export class TrustedGatewaysDataRootProvider implements DataRootProvider {
-  private gatewaysProvider: GatewaysProvider;
-
-  constructor({ gatewaysProvider }: { gatewaysProvider: GatewaysProvider }) {
-    this.gatewaysProvider = gatewaysProvider;
   }
 
   /**
@@ -108,27 +107,27 @@ export class TrustedGatewaysDataRootProvider implements DataRootProvider {
     const dataRootResults: { gateway: string; dataRoot: string }[] = [];
     const gateways = await this.gatewaysProvider.getGateways();
     const dataRoots = await Promise.all(
-      gateways.map(async (gateway): Promise<string> => {
-        const response = await fetch(`${gateway.toString()}tx/${txId}`);
+      gateways.map(async (gateway): Promise<string | undefined> => {
+        const response = await fetch(
+          `${gateway.toString()}tx/${txId}/data_root`,
+        );
         if (!response.ok) {
-          throw new Error(
-            `Failed to fetch data root from gateway ${gateway.hostname}`,
-          );
+          // skip this gateway
+          return undefined;
         }
-        for (const [key, value] of response.headers.entries()) {
-          console.log(`${key}: ${value}`);
-        }
-        const data = (await response.json()) as { data_root: string };
+        const dataRoot = await response.text();
         dataRootResults.push({
           gateway: gateway.hostname,
-          dataRoot: data.data_root,
+          dataRoot,
         });
-        return data.data_root;
+        return dataRoot;
       }),
     );
 
     for (const dataRoot of dataRoots) {
-      dataRootSet.add(dataRoot);
+      if (dataRoot !== undefined) {
+        dataRootSet.add(dataRoot);
+      }
     }
 
     if (dataRootSet.size > 1) {
@@ -139,7 +138,7 @@ export class TrustedGatewaysDataRootProvider implements DataRootProvider {
       );
     }
 
-    return dataRootResults[0].dataRoot;
+    return dataRootSet.values().next().value as string;
   }
 }
 
