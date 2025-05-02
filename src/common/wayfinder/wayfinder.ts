@@ -115,7 +115,7 @@ export type WayfinderEvent =
       type: 'verification-progress';
       txId: string;
       processedBytes: number;
-      totalBytes?: number;
+      totalBytes: number;
     }
   | { type: 'routing-started'; originalUrl: string }
   | { type: 'routing-succeeded'; originalUrl: string; targetGateway: string }
@@ -382,6 +382,9 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           headers.get('x-arns-resolved-id') ??
           redirectUrl.pathname.split('/')[1];
 
+        // TODO: validate nodes return content length for all responses
+        const contentLength = parseInt(headers.get('content-length') ?? '0');
+
         if (!txIdRegex.test(txId)) {
           // no transaction id found, skip verification
           logger?.debug('No transaction id found, skipping verification', {
@@ -449,9 +452,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           if (responseBody instanceof ReadableStream) {
             const newClientStream = tapAndVerifyStream<typeof responseBody>({
               originalStream: responseBody,
-              contentLength: parseInt(
-                (response as any).headers.get('content-length') ?? '0',
-              ),
+              contentLength,
               verifyData,
               txId,
               emitter,

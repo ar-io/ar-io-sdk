@@ -54,9 +54,9 @@ function App() {
     useState<number>(0);
   const [wayfinderResponse, setWayfinderResponse] = useState<{
     data: string;
-    contentType: string | null;
-    contentLength: string | null;
+    txId: string;
     status: number;
+    headers: Record<string, string>;
   } | null>(null);
   const [wayfinderStatusUpdates, setWayfinderStatusUpdates] = useState<
     Set<string>
@@ -274,9 +274,9 @@ function App() {
           .then(async (res) => {
             setWayfinderResponse({
               data: await res.text(),
-              contentType: res.headers.get('content-type'),
-              contentLength: res.headers.get('content-length'),
+              txId: (res as any).txId,
               status: res.status,
+              headers: Object.fromEntries(res.headers.entries()),
             });
           })
           .catch((err) => {
@@ -292,37 +292,40 @@ function App() {
       console.log('wayfinder event', event);
       if (event.type === 'routing-failed') {
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`Routing failed: ${event.error.message}`);
+          prevUpdates.add(`❌ Routing failed: ${event.error.message}`);
           return prevUpdates;
         });
       }
       if (event.type === 'routing-succeeded') {
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`Routing request to: ${event.targetGateway}`);
+          prevUpdates.add(`🔄 Routed request to: ${event.targetGateway}`);
           return prevUpdates;
         });
       }
       if (event.type === 'identified-transaction-id') {
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`Identified transaction id: ${event.txId}`);
+          prevUpdates.add(`🔍 Identified transaction id: ${event.txId}`);
           return prevUpdates;
         });
       }
       if (event.type === 'verification-passed') {
         setWayfinderVerified(true);
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`Verification passed: ${event.txId}`);
+          prevUpdates.add(`✅ Verification passed for ${event.txId}`);
           return prevUpdates;
         });
       }
       if (event.type === 'verification-failed') {
         console.log('verification failed', event);
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`Verification failed: ${event.error.message}`);
+          prevUpdates.add(`❌ Verification failed for ${event.txId}`);
           return prevUpdates;
         });
       }
       if (event.type === 'verification-progress') {
+        if (event.totalBytes === 0) {
+          return;
+        }
         const newEventProcessedBytes =
           (event.processedBytes / (event.totalBytes ?? 1)) * 100;
         // for every 10% of progress, update the progress bar
@@ -332,7 +335,7 @@ function App() {
           newRoundedProgress > 0
         ) {
           setWayfinderStatusUpdates((prevUpdates) => {
-            prevUpdates.add(`Verifying... ${newRoundedProgress}%`);
+            prevUpdates.add(`⏳ Verifying... ${newRoundedProgress}%`);
             return prevUpdates;
           });
           setWayfinderVerificationProgress(newRoundedProgress);
@@ -391,18 +394,14 @@ function App() {
                 style={{
                   marginTop: '10px',
                   textAlign: 'left',
+                  maxWidth: '500px',
+                  overflow: 'auto',
                 }}
               >
                 {Array.from(wayfinderStatusUpdates).map((update) => (
                   <div key={update}>{update}</div>
                 ))}
               </pre>
-            )}
-            {wayfinderVerified !== null && (
-              <div>
-                <h3>Verification</h3>
-                <p>{wayfinderVerified ? 'Verified' : 'Not verified'}</p>
-              </div>
             )}
           </div>
           {wayfinderResponse && (
