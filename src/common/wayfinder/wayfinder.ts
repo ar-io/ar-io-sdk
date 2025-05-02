@@ -24,9 +24,9 @@ import {
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
 import { NetworkGatewaysProvider, StaticGatewaysProvider } from './gateways.js';
+import { TrustedGatewayHashProvider } from './gateways/trusted-gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 import { HashVerifier } from './verification/hash-verifier.js';
-import { TrustedGatewaysVerificationProvider } from './verification/trusted-gateway-provider.js';
 
 // local types for wayfinder
 type HttpClientArgs = unknown[];
@@ -618,7 +618,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     httpClient,
     logger = Logger.default,
     verifier = new HashVerifier({
-      trustedHashProvider: new TrustedGatewaysVerificationProvider({
+      trustedHashProvider: new TrustedGatewayHashProvider({
         gatewaysProvider: new StaticGatewaysProvider({
           gateways: ['https://permagate.io'],
         }),

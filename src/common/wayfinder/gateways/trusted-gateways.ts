@@ -26,7 +26,7 @@ const arioGatewayHeaders = {
   processId: 'x-arns-resolved-process-id',
 };
 
-export class TrustedGatewaysVerificationProvider
+export class TrustedGatewayHashProvider
   implements DataHashProvider, DataRootProvider
 {
   private gatewaysProvider: GatewaysProvider;

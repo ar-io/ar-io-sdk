@@ -23,8 +23,10 @@ export * from './routers/static.js';
 // gateways providers
 export * from './gateways.js';
 
+// trusted gateways
+export * from './gateways/trusted-gateways.js';
+
 // hash providers
-export * from './verification/trusted-gateway-provider.js';
 export * from './verification/data-root-verifier.js';
 export * from './verification/hash-verifier.js';
 
