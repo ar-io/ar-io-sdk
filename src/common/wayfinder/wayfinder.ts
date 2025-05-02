@@ -373,8 +373,12 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       if (verifyData) {
         // if the headers do not have .get on them, we need to parse the headers manually
         let headers = (response as any).headers;
-        if (typeof headers.get !== 'function') {
-          headers = Object.fromEntries(headers.entries());
+        if (typeof headers?.get !== 'function') {
+          // reconstruct the headers object
+          headers = new Headers();
+          for (const [key, value] of Object.entries(headers)) {
+            headers.set(key, value);
+          }
         }
         // transaction id is either in the response headers or the path of the request as the first parameter
         // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
