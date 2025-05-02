@@ -5,39 +5,16 @@ import { buffer } from 'node:stream/consumers';
 import { before, describe, it } from 'node:test';
 
 import { Logger } from '../../common/logger.js';
-<<<<<<< HEAD
-=======
-import { AoGatewayWithAddress } from '../../types/io.js';
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
 import { GatewaysProvider } from './gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 import { Wayfinder } from './wayfinder.js';
 
-<<<<<<< HEAD
 const gatewayUrl = 'permagate.io';
-=======
-const stubbedGateway: AoGatewayWithAddress = {
-  status: 'joined',
-  gatewayAddress: 'arweave',
-  operatorStake: 1000,
-  totalDelegatedStake: 1000,
-  startTimestamp: 1000,
-  settings: {
-    protocol: 'https',
-    fqdn: 'permagate.io',
-    port: 443,
-  },
-} as unknown as AoGatewayWithAddress;
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
 const stubbedGatewaysProvider: GatewaysProvider = {
   getGateways: async () => [new URL(`https://${gatewayUrl}`)],
 } as unknown as GatewaysProvider;
 
-<<<<<<< HEAD
 Logger.default.setLogLevel('debug');
-=======
-Logger.default.setLogLevel('none');
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
 
 describe('Wayfinder', () => {
   describe('http wrapper', () => {
@@ -53,11 +30,7 @@ describe('Wayfinder', () => {
       });
 
       it('should fetch the data using the selected gateway', async () => {
-<<<<<<< HEAD
         const nativeFetch = await fetch(`https://ao.${gatewayUrl}`);
-=======
-        const nativeFetch = await fetch('https://ao.permagate.io');
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
         const response = await wayfinder.request('ar://ao');
         assert.strictEqual(response.status, 200);
         assert.strictEqual(response.status, nativeFetch.status);
@@ -73,11 +46,7 @@ describe('Wayfinder', () => {
 
       it('should fetch a tx id using the selected gateway', async () => {
         const nativeFetch = await fetch(
-<<<<<<< HEAD
           `https://${gatewayUrl}/KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A`,
-=======
-          'https://permagate.io/KKmRbIfrc7wiLcG0zvY1etlO0NBx1926dSCksxCIN3A',
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           // follow redirects
           { redirect: 'follow' },
         );
@@ -91,17 +60,10 @@ describe('Wayfinder', () => {
 
       it('should route a non-ar:// url as a normal fetch', async () => {
         const [nativeFetch, response] = await Promise.all([
-<<<<<<< HEAD
           fetch(`https://${gatewayUrl}/`, {
             method: 'HEAD',
           }),
           wayfinder.request(`https://${gatewayUrl}/`, {
-=======
-          fetch('https://permagate.io/', {
-            method: 'HEAD',
-          }),
-          wayfinder.request('https://permagate.io/', {
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
             method: 'HEAD',
           }),
         ]);
@@ -113,13 +75,8 @@ describe('Wayfinder', () => {
       for (const api of ['/info', '/block/current']) {
         it(`supports native arweave node apis ${api}`, async () => {
           const [nativeFetch, response] = await Promise.all([
-<<<<<<< HEAD
             fetch(`https://${gatewayUrl}${api}`),
             wayfinder.request(`ar://${api}`),
-=======
-            fetch(`https://permagate.io${api}`),
-            wayfinder.request(`ar:///${api}`),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           ]);
           assert.strictEqual(response.status, 200);
           assert.strictEqual(response.status, nativeFetch.status);
@@ -130,11 +87,7 @@ describe('Wayfinder', () => {
       for (const api of ['/ar-io/info']) {
         it(`supports native ario node gateway apis ${api}`, async () => {
           const [nativeFetch, response] = await Promise.all([
-<<<<<<< HEAD
             fetch(`https://${gatewayUrl}${api}`),
-=======
-            fetch(`https://permagate.io${api}`),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
             wayfinder.request(`ar:///${api}`),
           ]);
           assert.strictEqual(response.status, 200);
@@ -182,13 +135,8 @@ describe('Wayfinder', () => {
 
       it.skip('returns the error from the target gateway if the route is not found', async () => {
         const [nativeFetch, response] = await Promise.all([
-<<<<<<< HEAD
           fetch(`https://${gatewayUrl}/ar-io/not-found`),
           wayfinder.request('ar:///not-found'),
-=======
-          fetch('https://permagate.io/not-found'),
-          wayfinder.request('https://permagate.io/not-found'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
         ]);
         assert.strictEqual(response.status, nativeFetch.status);
         assert.strictEqual(response.statusText, nativeFetch.statusText);
@@ -207,11 +155,7 @@ describe('Wayfinder', () => {
       });
       it('should fetch the data using axios default function against the target gateway', async () => {
         const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
           axios(`https://ao.${gatewayUrl}`),
-=======
-          axios('https://ao.permagate.io'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           wayfinder.request('ar://ao'),
         ]);
         assert.strictEqual(response.status, 200);
@@ -228,11 +172,7 @@ describe('Wayfinder', () => {
 
       it('should fetch the data using the axios.get method against the target gateway', async () => {
         const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
           axios.get(`https://ao.${gatewayUrl}`),
-=======
-          axios.get('https://ao.permagate.io'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           wayfinder.request.get('ar://ao'),
         ]);
         assert.strictEqual(response.status, 200);
@@ -249,13 +189,8 @@ describe('Wayfinder', () => {
 
       it('should route a non-ar:// url as a normal axios request', async () => {
         const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
           axios(`https://${gatewayUrl}/`),
           wayfinder.request(`https://${gatewayUrl}/`),
-=======
-          axios('https://permagate.io/'),
-          wayfinder.request('https://permagate.io/'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
         ]);
         assert.strictEqual(response.status, 200);
         assert.strictEqual(response.status, nativeAxios.status);
@@ -265,13 +200,8 @@ describe('Wayfinder', () => {
       for (const api of ['/info', '/block/current']) {
         it(`supports native arweave node apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
             axios(`https://${gatewayUrl}${api}`),
             wayfinder.request(`ar://${api}`),
-=======
-            axios(`https://permagate.io${api}`),
-            wayfinder.request(`ar:///${api}`),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           ]);
           assert.strictEqual(response.status, 200);
           assert.strictEqual(response.status, nativeAxios.status);
@@ -282,11 +212,7 @@ describe('Wayfinder', () => {
       for (const api of ['/ar-io/info', '/ar-io/__gateway_metrics']) {
         it(`supports native ario node gateway apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
             axios(`https://${gatewayUrl}${api}`),
-=======
-            axios(`https://permagate.io${api}`),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
             wayfinder.request(`ar:///${api}`),
           ]);
           assert.strictEqual(response.status, 200);
@@ -306,13 +232,8 @@ describe('Wayfinder', () => {
           }),
         });
         const [nativeAxios, response] = await Promise.all([
-<<<<<<< HEAD
           axiosInstance(`https://${gatewayUrl}/ar-io/not-found`),
           wayfinder.request('ar:///not-found'),
-=======
-          axiosInstance('https://permagate.io/not-found'),
-          wayfinder.request('https://permagate.io/not-found'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
         ]);
         assert.strictEqual(response.status, nativeAxios.status);
       });
@@ -331,11 +252,7 @@ describe('Wayfinder', () => {
 
       it('should fetch the data using the got default function against the target gateway', async () => {
         const [nativeGot, response] = await Promise.all([
-<<<<<<< HEAD
           got(`https://ao.${gatewayUrl}`),
-=======
-          got('https://ao.permagate.io'),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
           wayfinder.request('ar://ao'),
         ]);
         assert.strictEqual(response.statusCode, 200);
@@ -345,11 +262,7 @@ describe('Wayfinder', () => {
 
       it('should stream the data using got.stream against the selected target gateway', async () => {
         const nativeBuffer = await buffer(
-<<<<<<< HEAD
           await got.stream(`https://ao.${gatewayUrl}`, { decompress: false }),
-=======
-          await got.stream('https://ao.permagate.io', { decompress: false }),
->>>>>>> d4cf00c (feat(wayfinder): add initial data verification interfaces and classes)
         );
         const wayfinderBuffer = await buffer(
           await wayfinder.request.stream('ar://ao', { decompress: false }),

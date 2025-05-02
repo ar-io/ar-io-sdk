@@ -20,8 +20,14 @@ import {
   buildLayers,
   generateLeaves,
 } from 'arweave/node/lib/merkle.js';
+import { Readable } from 'node:stream';
 
 import { DataRootProvider, DataVerifier } from '../../../types/wayfinder.js';
+import {
+  hashBufferToB64Url,
+  hashReadableStreamToB64Url,
+  hashReadableToB64Url,
+} from '../../../utils/hash.js';
 
 export async function convertBufferToDataRoot({
   data,
@@ -60,8 +66,6 @@ export async function convertBufferToDataRoot({
   return Buffer.from(result.id).toString('base64url');
 }
 
-// TODO: convert readable to data root
-
 export class DataRootVerifier implements DataVerifier {
   private readonly trustedDataRootProvider: DataRootProvider;
   constructor({
@@ -75,11 +79,22 @@ export class DataRootVerifier implements DataVerifier {
     data,
     txId,
   }: {
-    data: Buffer;
+    data: Buffer | Readable | ReadableStream;
     txId: string;
   }): Promise<void> {
     const dataRoot = await this.trustedDataRootProvider.getDataRoot({ txId });
-    const computedDataRoot = await convertBufferToDataRoot({ data });
+    // handle if buffer or readable or readable stream
+    let computedDataRoot: string | undefined;
+    if (Buffer.isBuffer(data)) {
+      computedDataRoot = hashBufferToB64Url(data);
+    } else if (data instanceof Readable) {
+      computedDataRoot = await hashReadableToB64Url(data);
+    } else if (data instanceof ReadableStream) {
+      computedDataRoot = await hashReadableStreamToB64Url(data);
+    }
+    if (computedDataRoot === undefined) {
+      throw new Error('Data root could not be computed');
+    }
     if (computedDataRoot !== dataRoot) {
       throw new Error('Data root does not match', {
         cause: { computedDataRoot, trustedDataRoot: dataRoot },

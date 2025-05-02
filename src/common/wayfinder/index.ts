@@ -24,7 +24,8 @@ export * from './routers/static.js';
 export * from './gateways.js';
 
 // hash providers
-export * from './verification/trusted-gateway-hash-provider.js';
+export * from './verification/trusted-gateway-provider.js';
 export * from './verification/data-root-verifier.js';
-export * from './verification/digest-verifier.js';
-export * from './verification/signature-verifier.js';
+export * from './verification/hash-verifier.js';
+
+// TODO: signature verification

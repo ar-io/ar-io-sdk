@@ -36,13 +36,12 @@ export interface DataVerifier {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream | unknown;
+    data: Buffer | Readable | ReadableStream;
     txId: string;
   }) => Promise<void>;
 }
 
 export interface DataHashProvider {
-  algorithm: 'sha256';
   /**
    * Returns a hash for the provided txId using the specified algorithm.
    *
@@ -57,5 +56,12 @@ export interface DataHashProvider {
 }
 
 export interface DataRootProvider {
+  /**
+   * Returns the data root for the provided txId
+   *
+   * @param txId - The txId of the data
+   * @returns the data root of the data
+   */
   getDataRoot: ({ txId }: { txId: string }) => Promise<string>;
 }
+// TODO: add an offset provider that returns offsets for data items so we can use them to verify the signatures of a data item within a bundle

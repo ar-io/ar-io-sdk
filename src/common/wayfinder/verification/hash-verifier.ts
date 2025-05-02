@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DataHashProvider, DataVerifier } from '../../../types/wayfinder.js';
+import { Readable } from 'node:stream';
 
-export class DigestVerifier implements DataVerifier {
+import { DataHashProvider, DataVerifier } from '../../../types/wayfinder.js';
+import {
+  hashBufferToB64Url,
+  hashReadableStreamToB64Url,
+  hashReadableToB64Url,
+} from '../../../utils/hash.js';
+
+export class HashVerifier implements DataVerifier {
   private readonly trustedHashProvider: DataHashProvider;
   constructor({
     trustedHashProvider,
@@ -28,13 +35,21 @@ export class DigestVerifier implements DataVerifier {
     data,
     txId,
   }: {
-    data: Buffer;
+    data: Buffer | Readable | ReadableStream;
     txId: string;
   }): Promise<void> {
     const { hash } = await this.trustedHashProvider.getHash({ txId });
-    // use the same algo to compute the digest of the data
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const computedHash = Buffer.from(hashBuffer).toString('base64url');
+    let computedHash: string | undefined;
+    if (Buffer.isBuffer(data)) {
+      computedHash = hashBufferToB64Url(data);
+    } else if (data instanceof Readable) {
+      computedHash = await hashReadableToB64Url(data);
+    } else if (data instanceof ReadableStream) {
+      computedHash = await hashReadableStreamToB64Url(data);
+    }
+    if (computedHash === undefined) {
+      throw new Error('Hash could not be computed');
+    }
     if (computedHash !== hash) {
       throw new Error('Hash does not match', {
         cause: { computedHash, trustedHash: hash },
