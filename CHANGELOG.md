@@ -1,3 +1,10 @@
+## [3.10.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.1...v3.10.2) (2025-05-06)
+
+
+### Bug Fixes
+
+* **ao:** null check on CU fallback for epoch-distribution ([87c8d69](https://github.com/ar-io/ar-io-sdk/commit/87c8d69e9e86338a87321b935e0e52f98f6cd4e0))
+
 ## [3.10.1](https://github.com/ar-io/ar-io-sdk/compare/v3.10.0...v3.10.1) (2025-05-01)
 
 
