@@ -184,7 +184,7 @@ export const getEpochDataFromGqlFallback = async ({
     if (!messageResult) {
       continue;
     }
-    for (const message of messageResult.Messages) {
+    for (const message of messageResult?.Messages ?? []) {
       const data = JSON.parse(message.Data);
       const tags: { name: string; value: string }[] = message.Tags;
       // check if the message results include epoch-distribution-notice for the requested epoch index
