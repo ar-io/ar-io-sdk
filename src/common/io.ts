@@ -1365,7 +1365,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Buy-Name',
-        ...params,
+        name: params.name,
+        years: params.years,
+        type: params.type,
+        processId: params.processId,
       });
     }
 
@@ -1448,7 +1451,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Extend-Lease',
-        ...params,
+        name: params.name,
+        years: params.years,
       });
     }
 
@@ -1480,7 +1484,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       }
       return this.paymentProvider.initiateArNSPurchase({
         intent: 'Increase-Undername-Limit',
-        ...params,
+        quantity: params.increaseCount,
+        name: params.name,
       });
     }
 
