@@ -1,3 +1,14 @@
+# [3.11.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.6...v3.11.0-alpha.7) (2025-05-08)
+
+
+### Bug Fixes
+
+* **ao:** null check on CU fallback for epoch-distribution ([87c8d69](https://github.com/ar-io/ar-io-sdk/commit/87c8d69e9e86338a87321b935e0e52f98f6cd4e0))
+* **test:** skip test ([b43aeaf](https://github.com/ar-io/ar-io-sdk/commit/b43aeaf40ecf9b479cb1055ccb66f9bdbfe0cfe4))
+* **tests:** skip test ([9eaf8a4](https://github.com/ar-io/ar-io-sdk/commit/9eaf8a468003db54c53bbbddef9a8b380263a752))
+* **tests:** skip test ([9711763](https://github.com/ar-io/ar-io-sdk/commit/9711763d73f2d5f9e42d78e0db57d0c54409ad54))
+* **types:** pass in named types directly ([ccb29fa](https://github.com/ar-io/ar-io-sdk/commit/ccb29fac33fef11cf0b1038df39be5936ce0c51d))
+
 # [3.11.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.5...v3.11.0-alpha.6) (2025-05-02)
 
 
