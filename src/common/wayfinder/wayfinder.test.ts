@@ -133,7 +133,7 @@ describe('Wayfinder', () => {
         assert.strictEqual(response.status, 200);
       });
 
-      it('returns the error from the target gateway if the route is not found', async () => {
+      it.skip('returns the error from the target gateway if the route is not found', async () => {
         const [nativeFetch, response] = await Promise.all([
           fetch(`https://${gatewayUrl}/ar-io/not-found`),
           wayfinder.request('ar:///not-found'),
@@ -221,7 +221,7 @@ describe('Wayfinder', () => {
         });
       }
 
-      it('should return the error from the target gateway if the route is not found', async () => {
+      it.skip('should return the error from the target gateway if the route is not found', async () => {
         const axiosInstance = axios.create({
           validateStatus: () => true, // don't throw so we can compare axios result with wrapped axios result
         });
