@@ -14,7 +14,7 @@ const stubbedGatewaysProvider: GatewaysProvider = {
   getGateways: async () => [new URL(`https://${gatewayUrl}`)],
 } as unknown as GatewaysProvider;
 
-Logger.default.setLogLevel('debug');
+Logger.default.setLogLevel('none');
 
 describe('Wayfinder', () => {
   describe('http wrapper', () => {
