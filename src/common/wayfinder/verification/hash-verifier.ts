@@ -38,7 +38,7 @@ export class HashVerifier implements DataVerifier {
     data: Buffer | Readable | ReadableStream;
     txId: string;
   }): Promise<void> {
-    const { hash } = await this.trustedHashProvider.getHash({ txId });
+    const hashPromise = this.trustedHashProvider.getHash({ txId });
     let computedHash: string | undefined;
     if (Buffer.isBuffer(data)) {
       computedHash = hashBufferToB64Url(data);
@@ -47,6 +47,8 @@ export class HashVerifier implements DataVerifier {
     } else if (data instanceof ReadableStream) {
       computedHash = await hashReadableStreamToB64Url(data);
     }
+    // await on the hash promise and compare to get a little concurrency when computing hashes over larger data
+    const { hash } = await hashPromise;
     if (computedHash === undefined) {
       throw new Error('Hash could not be computed');
     }

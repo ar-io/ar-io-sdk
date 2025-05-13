@@ -131,7 +131,36 @@ export type WayfinderEvent =
       txId: string;
     };
 
+export interface WayfinderEventArgs {
+  onVerificationPassed?: (
+    payload: Omit<
+      Extract<WayfinderEvent, { type: 'verification-passed' }>,
+      'type'
+    >,
+  ) => void;
+  onVerificationFailed?: (
+    payload: Omit<
+      Extract<WayfinderEvent, { type: 'verification-failed' }>,
+      'type'
+    >,
+  ) => void;
+}
+
 export class WayfinderEmitter extends EventEmitter {
+  constructor({
+    onVerificationPassed,
+    onVerificationFailed,
+    // TODO: continue this pattern for all events
+  }: WayfinderEventArgs = {}) {
+    super();
+    if (onVerificationPassed) {
+      this.on('verification-passed', onVerificationPassed);
+    }
+    if (onVerificationFailed) {
+      this.on('verification-failed', onVerificationFailed);
+    }
+  }
+
   emit<E extends WayfinderEvent['type']>(
     event: E,
     payload: Omit<Extract<WayfinderEvent, { type: E }>, 'type'>,
@@ -141,10 +170,14 @@ export class WayfinderEmitter extends EventEmitter {
 
   on<E extends WayfinderEvent['type']>(
     event: E,
-    listener: (payload: Omit<WayfinderEvent, 'type'>) => void,
+    listener: (
+      payload: Omit<Extract<WayfinderEvent, { type: E }>, 'type'>,
+    ) => void,
   ): this {
     return super.on(event, listener);
   }
+
+  // TODO: additional callback support defined on the emitter, provided via the constructor
 }
 
 function tapAndVerifyStream<T extends Readable | ReadableStream>({
@@ -428,7 +461,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
         }
 
         const responseBody = (response as any)[responseDataKey];
-        // TODO: determine if it is data item or L1 transaction here, and tell the verifier accordingly, just drop in hit to graphql now
+        // TODO: determine if it is data item or L1 transaction, and tell the verifier accordingly, just drop in hit to graphql now
         if (txId === undefined) {
           throw new Error('Failed to parse data hash from response headers', {
             cause: {
@@ -617,26 +650,33 @@ export class Wayfinder<T extends HttpClientFunction> {
   /**
    * The event emitter for wayfinder that emits verification events.
    *
-   * @example
-   * const { request: wayfind, emitter } = new Wayfinder({
-   *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
-   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
-   *       ttlSeconds: 60 * 60 * 24, // 1 day
-   *     }),
-   *   }),
-   * }),
+   * const wayfinder = new Wayfinder({
+   *   emitter: new WayfinderEmitter({
+   *     onVerificationPassed: (event) => {
+   *       console.log('Verification passed!', event);
+   *     },
+   *     onVerificationFailed: (event) => {
+   *       console.log('Verification failed!', event);
+   *     },
+   *   })
+   * })
    *
-   * emitter.on('verification-passed', (event) => {
-   *   console.log('Verification passed!', event);
-   * });
+   * or just implement the interface and pass it in
    *
-   * emitter.on('verification-failed', (event) => {
-   *   console.log('Verification failed!', event);
-   * });
+   * const wayfinder = new Wayfinder({
+   *   emitter: {
+   *     onVerificationPassed: (event) => {
+   *       console.log('Verification passed!', event);
+   *     },
+   *     onVerificationFailed: (event) => {
+   *       console.log('Verification failed!', event);
+   *     },
+   *   }
+   * })
    *
    * const response = await wayfind('ar://example');
    */
+  // TODO: consider changing this to events or event emitter
   public readonly emitter: WayfinderEmitter = new WayfinderEmitter();
   constructor({
     // TODO: consider changing router to routingStrategy or strategy
@@ -664,6 +704,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     logger?: Logger;
     verifier?: DataVerifier;
     hashProvider?: DataHashProvider;
+    emitter?: WayfinderEmitter | WayfinderEventArgs;
     // TODO: fallback handling for when the target gateway is not available
     // TODO: stats provider
   }) {
@@ -689,3 +730,25 @@ export class Wayfinder<T extends HttpClientFunction> {
 
   // TODO: potential builder pattern to update the Router/blocklist/httpClient
 }
+
+// TODO: add a chart for verification strategies and what they do
+// include complexity, performance, and security
+// explain use cases that each strategy is best for
+
+// e.g.
+
+/**
+ *
+ *  type    | complexity | performance | security
+ * ---------|------------|-------------|---------
+ *  hash    | low        | high        | low
+ * ---------|------------|-------------|---------
+ *  data root    | medium       | medium      | low | only L1
+ * ---------|------------|-------------|---------
+ * signature    | medium       | medium      | medium
+ * ---------|------------|-------------|---------
+ *  composite | high       | low         | high
+ * ---------|------------|-------------|---------
+ *
+ *
+ */

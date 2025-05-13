@@ -7,7 +7,7 @@ import {
   PriorityGatewayRouter,
   StaticGatewayRouter,
   StaticGatewaysProvider,
-  TrustedGatewayHashProvider,
+  TrustedGatewaysHashProvider,
   Wayfinder,
   mARIOToken,
 } from '@ar.io/sdk/web';
@@ -31,7 +31,7 @@ const wayfinder = new Wayfinder<typeof fetch>({
     gateway: 'https://permagate.io',
   }),
   verifier: new HashVerifier({
-    trustedHashProvider: new TrustedGatewayHashProvider({
+    trustedHashProvider: new TrustedGatewaysHashProvider({
       gatewaysProvider: new StaticGatewaysProvider({
         gateways: ['https://permagate.io'],
       }),
@@ -288,58 +288,55 @@ function App() {
   }, [wayfinderUrl]);
 
   useEffect(() => {
-    wayfinder.emitter.on('wayfinder', (event) => {
-      console.log('wayfinder event', event);
-      if (event.type === 'routing-failed') {
+    wayfinder.emitter.on('routing-failed', (event) => {
+      setWayfinderStatusUpdates((prevUpdates) => {
+        prevUpdates.add(`❌ Routing failed: ${event.error.message}`);
+        return prevUpdates;
+      });
+    });
+    wayfinder.emitter.on('routing-succeeded', (event) => {
+      setWayfinderStatusUpdates((prevUpdates) => {
+        prevUpdates.add(`🔄 Routed request to: ${event.targetGateway}`);
+        return prevUpdates;
+      });
+    });
+    wayfinder.emitter.on('identified-transaction-id', (event) => {
+      setWayfinderStatusUpdates((prevUpdates) => {
+        prevUpdates.add(`🔍 Identified transaction id: ${event.txId}`);
+        return prevUpdates;
+      });
+    });
+    wayfinder.emitter.on('verification-passed', (event) => {
+      setWayfinderVerified(true);
+      setWayfinderStatusUpdates((prevUpdates) => {
+        prevUpdates.add(`✅ Verification passed for ${event.txId}`);
+        return prevUpdates;
+      });
+    });
+    wayfinder.emitter.on('verification-failed', (event) => {
+      console.log('verification failed', event);
+      setWayfinderStatusUpdates((prevUpdates) => {
+        prevUpdates.add(`❌ Verification failed for ${event.txId}`);
+        return prevUpdates;
+      });
+    });
+    wayfinder.emitter.on('verification-progress', (event) => {
+      if (event.totalBytes === 0) {
+        return;
+      }
+      const newEventProcessedBytes =
+        (event.processedBytes / (event.totalBytes ?? 1)) * 100;
+      // for every 10% of progress, update the progress bar
+      const newRoundedProgress = Math.round(newEventProcessedBytes / 10) * 10;
+      if (
+        newRoundedProgress >= wayfinderVerificationProgress &&
+        newRoundedProgress > 0
+      ) {
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`❌ Routing failed: ${event.error.message}`);
+          prevUpdates.add(`⏳ Verifying... ${newRoundedProgress}%`);
           return prevUpdates;
         });
-      }
-      if (event.type === 'routing-succeeded') {
-        setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`🔄 Routed request to: ${event.targetGateway}`);
-          return prevUpdates;
-        });
-      }
-      if (event.type === 'identified-transaction-id') {
-        setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`🔍 Identified transaction id: ${event.txId}`);
-          return prevUpdates;
-        });
-      }
-      if (event.type === 'verification-passed') {
-        setWayfinderVerified(true);
-        setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`✅ Verification passed for ${event.txId}`);
-          return prevUpdates;
-        });
-      }
-      if (event.type === 'verification-failed') {
-        console.log('verification failed', event);
-        setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`❌ Verification failed for ${event.txId}`);
-          return prevUpdates;
-        });
-      }
-      if (event.type === 'verification-progress') {
-        if (event.totalBytes === 0) {
-          return;
-        }
-        const newEventProcessedBytes =
-          (event.processedBytes / (event.totalBytes ?? 1)) * 100;
-        // for every 10% of progress, update the progress bar
-        const newRoundedProgress = Math.round(newEventProcessedBytes / 10) * 10;
-        if (
-          newRoundedProgress >= wayfinderVerificationProgress &&
-          newRoundedProgress > 0
-        ) {
-          setWayfinderStatusUpdates((prevUpdates) => {
-            prevUpdates.add(`⏳ Verifying... ${newRoundedProgress}%`);
-            return prevUpdates;
-          });
-          setWayfinderVerificationProgress(newRoundedProgress);
-        }
+        setWayfinderVerificationProgress(newRoundedProgress);
       }
     });
   }, [wayfinder]);

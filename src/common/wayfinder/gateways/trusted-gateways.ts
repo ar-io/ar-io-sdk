@@ -31,7 +31,12 @@ export class TrustedGatewaysHashProvider
 {
   private gatewaysProvider: GatewaysProvider;
 
-  constructor({ gatewaysProvider }: { gatewaysProvider: GatewaysProvider }) {
+  constructor({
+    gatewaysProvider,
+    // TODO: add threshold for allowed hash difference (i.e. by count or ratio of total gateways checked)
+  }: {
+    gatewaysProvider: GatewaysProvider;
+  }) {
     this.gatewaysProvider = gatewaysProvider;
   }
 

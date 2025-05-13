@@ -138,7 +138,7 @@ export class DataRootVerifier implements DataVerifier {
     data: Buffer | Readable | ReadableStream;
     txId: string;
   }): Promise<void> {
-    const trustedDataRoot = await this.trustedDataRootProvider.getDataRoot({
+    const trustedDataRootPromise = this.trustedDataRootProvider.getDataRoot({
       txId,
     });
     let computedDataRoot: string | undefined;
@@ -150,6 +150,7 @@ export class DataRootVerifier implements DataVerifier {
     if (computedDataRoot === undefined) {
       throw new Error('Data root could not be computed');
     }
+    const trustedDataRoot = await trustedDataRootPromise;
     if (computedDataRoot !== trustedDataRoot) {
       throw new Error('Data root does not match', {
         cause: { computedDataRoot, trustedDataRoot },
@@ -162,5 +163,17 @@ export class DataRootVerifier implements DataVerifier {
 // compute and verify data root, use offsets from server and verify the signature that the data item at the offset matches the signature
 // does not give you assurance of valid bundle, but gives verification that the data item itself is valid
 // reading from offsets is the only way for the client to compute and verify the signature
-
+/**
+ * - when you get a signature of a data item, you can only verify the owner
+ * - you still need to verify it's going back to the bundle, unpack it, and verify the data item exists at the offset
+ * - you need to the location of the chunks for the data item, and prove it's in the chunk and then prove the data root of the bundle, then you have fully verified the data verifier
+ * - how to prove the data item is on arweave - verify the merkle hash that the chunks for the data item, fit within the expected tree of the parent bundle
+ *
+ * Composite verifier - you'll want to be very efficient with streams
+ * - hash verifier
+ * - parent chunks verifier --> for any range of data within a single transaction, tell me that it's correct
+ * - signature verifier
+ * - offset verifier
+ * - data item verifier
+ */
 // introduce a composite verifier that determines where/how to lookup the hash
