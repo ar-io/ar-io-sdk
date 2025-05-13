@@ -13,7 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Readable } from 'stream';
+
 export interface WayfinderRouter {
   readonly name: string;
   getTargetGateway: () => Promise<URL>;
 }
+
+export interface DataVerifier {
+  /**
+   * Verifies the provided data for a given txId
+   *
+   * Depending on the implementation, the hash can be the computed data root of a transaction, the digest of the data, or some other hash of the data.
+   *
+   * The interface is intended to be vague in order to support various degrees of verification.
+   *
+   * @param data - The data to verify
+   * @param txId - The txId of the data
+   * @returns the hash of the data
+   */
+  verifyData: ({
+    data,
+    txId,
+  }: {
+    data: Buffer | Readable | ReadableStream;
+    txId: string;
+  }) => Promise<void>;
+}
+
+export interface DataHashProvider {
+  /**
+   * Returns a hash for the provided txId using the specified algorithm.
+   *
+   * @param txId - The txId of the data
+   * @returns the hash of the data
+   */
+  getHash: ({
+    txId,
+  }: {
+    txId: string;
+  }) => Promise<{ hash: string; algorithm: 'sha256' }>;
+}
+
+export interface DataRootProvider {
+  /**
+   * Returns the data root for the provided txId
+   *
+   * @param txId - The txId of the data
+   * @returns the data root of the data
+   */
+  getDataRoot: ({ txId }: { txId: string }) => Promise<string>;
+}
+// TODO: add an offset provider that returns offsets for data items so we can use them to verify the signatures of a data item within a bundle
