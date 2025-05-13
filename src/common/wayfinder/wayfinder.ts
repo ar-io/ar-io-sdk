@@ -75,7 +75,6 @@ export const resolveWayfinderUrl = async ({
         originalUrl,
         targetGateway: targetGatewayUrl,
       });
-
       return new URL(path.slice(1), targetGatewayUrl);
     }
 
@@ -144,12 +143,19 @@ export interface WayfinderEventArgs {
       'type'
     >,
   ) => void;
+  onVerificationProgress?: (
+    payload: Omit<
+      Extract<WayfinderEvent, { type: 'verification-progress' }>,
+      'type'
+    >,
+  ) => void;
 }
 
 export class WayfinderEmitter extends EventEmitter {
   constructor({
     onVerificationPassed,
     onVerificationFailed,
+    onVerificationProgress,
     // TODO: continue this pattern for all events
   }: WayfinderEventArgs = {}) {
     super();
@@ -158,6 +164,9 @@ export class WayfinderEmitter extends EventEmitter {
     }
     if (onVerificationFailed) {
       this.on('verification-failed', onVerificationFailed);
+    }
+    if (onVerificationProgress) {
+      this.on('verification-progress', onVerificationProgress);
     }
   }
 
@@ -213,11 +222,14 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
       streamToVerify.write(chunk);
       tappedClientStream.write(chunk);
       bytesProcessed += chunk.length;
-      emitter?.emit('verification-progress', {
-        txId,
-        totalBytes: contentLength,
-        processedBytes: bytesProcessed,
-      });
+      // only emit if contentLength is not 0
+      if (contentLength !== 0) {
+        emitter?.emit('verification-progress', {
+          txId,
+          totalBytes: contentLength,
+          processedBytes: bytesProcessed,
+        });
+      }
     });
 
     originalStream.on('end', async () => {
@@ -229,7 +241,6 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
         });
         tappedClientStream.end();
       } catch (error) {
-        console.error('Error on verifier stream', error);
         emitter?.emit('verification-failed', {
           error,
           txId,
@@ -239,6 +250,10 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
     });
 
     originalStream.on('error', (err) => {
+      emitter?.emit('verification-failed', {
+        error: err,
+        txId,
+      });
       streamToVerify.destroy(err);
       tappedClientStream.destroy(err);
     });
@@ -265,7 +280,7 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
         const { done, value } = await reader.read();
         if (done) {
           try {
-            // due to backpressure, if the client does not consume the stream, the verification will not complete
+            // due to backpressure, if the client does not consume the stream, the verification will not complete (particularly important for fetch, where the response body needs to be awaited for verification to complete)
             await verificationPromise;
             emitter?.emit('verification-passed', {
               txId,
@@ -406,14 +421,20 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     if (response && redirectUrl.toString() !== originalUrl.toString()) {
       if (verifyData) {
         // if the headers do not have .get on them, we need to parse the headers manually
-        let headers = (response as any).headers;
-        if (typeof headers?.get !== 'function') {
-          // reconstruct the headers object
-          headers = new Headers();
-          for (const [key, value] of Object.entries(headers)) {
+        const headers = new Headers();
+        let headersObject = (response as any).headers ?? {};
+
+        if (typeof headersObject.get !== 'function') {
+          headersObject = Object.fromEntries(headersObject);
+          for (const [key, value] of Object.entries(headersObject)) {
+            headers.set(key, value as string);
+          }
+        } else {
+          for (const [key, value] of headersObject.entries()) {
             headers.set(key, value);
           }
         }
+
         // transaction id is either in the response headers or the path of the request as the first parameter
         // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
         const txId =
@@ -421,7 +442,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           redirectUrl.pathname.split('/')[1];
 
         // TODO: validate nodes return content length for all responses
-        const contentLength = parseInt(headers.get('content-length') ?? '0');
+        const contentLength = +(headers.get('content-length') ?? 0);
 
         if (!txIdRegex.test(txId)) {
           // no transaction id found, skip verification
@@ -485,15 +506,15 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             txId,
           });
 
-          if (responseBody instanceof ReadableStream) {
-            const newClientStream = tapAndVerifyStream<typeof responseBody>({
-              originalStream: responseBody,
-              contentLength,
-              verifyData,
-              txId,
-              emitter,
-            });
+          const newClientStream = tapAndVerifyStream<typeof responseBody>({
+            originalStream: responseBody,
+            contentLength,
+            verifyData,
+            txId,
+            emitter,
+          });
 
+          if (responseBody instanceof ReadableStream) {
             // specific to fetch
             return wrapVerifiedResponse(
               response as Response,
@@ -501,15 +522,8 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               txId,
             );
           } else if (responseBody instanceof Readable) {
-            const newClientStream = tapAndVerifyStream({
-              originalStream: responseBody,
-              contentLength: parseInt(
-                (response as any).headers.get('content-length') ?? '0',
-              ),
-              verifyData,
-              txId,
-              emitter,
-            });
+            // overwrite the response body with the new client stream
+            (response as any).txId = txId;
             (response as any).body = newClientStream;
             return response;
           } else {
@@ -670,6 +684,9 @@ export class Wayfinder<T extends HttpClientFunction> {
    *     onVerificationFailed: (event) => {
    *       console.log('Verification failed!', event);
    *     },
+   *     onVerificationProgress: (event) => {
+   *       console.log('Verification progress!', event);
+   *     },
    *   }
    * })
    *
@@ -679,6 +696,7 @@ export class Wayfinder<T extends HttpClientFunction> {
   public readonly emitter: WayfinderEmitter;
 
   constructor({
+    httpClient,
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
       gatewaysProvider: new SimpleCacheGatewaysProvider({
@@ -686,7 +704,6 @@ export class Wayfinder<T extends HttpClientFunction> {
         ttlSeconds: 60 * 60 * 24, // 1 day
       }),
     }),
-    httpClient,
     logger = Logger.default,
     // TODO: support disabling verification or create some PassThroughVerifier like thing
     verifier = new HashVerifier({
@@ -699,8 +716,8 @@ export class Wayfinder<T extends HttpClientFunction> {
     events,
     // TODO: stats provider
   }: {
-    router: WayfinderRouter;
     httpClient: T;
+    router?: WayfinderRouter;
     logger?: Logger;
     verifier?: DataVerifier;
     hashProvider?: DataHashProvider;
