@@ -290,6 +290,7 @@ describe('Wayfinder', () => {
         let seen = Buffer.alloc(0);
         const verifyData = async ({
           data,
+          // @ts-expect-error
           txId,
         }: {
           data: Readable;
@@ -302,7 +303,7 @@ describe('Wayfinder', () => {
             data.on('end', () => {
               // Should have seen exactly the full payload
               assert.strictEqual(seen.length, contentLength);
-              resolve(txId);
+              resolve();
             });
             data.on('error', reject);
           });
@@ -363,6 +364,7 @@ describe('Wayfinder', () => {
         // a stream that will emit chunks
         const originalStream = Readable.from(chunks);
         const verifyData = async ({
+          // @ts-expect-error
           data,
           txId,
         }: {
@@ -425,6 +427,7 @@ describe('Wayfinder', () => {
         let seen = Buffer.alloc(0);
         const verifyData = async ({
           data,
+          // @ts-expect-error
           txId,
         }: {
           data: ReadableStream;
@@ -502,6 +505,7 @@ describe('Wayfinder', () => {
         // a stream that will emit chunks
         const originalStream = ReadableStream.from(chunks);
         const verifyData = async ({
+          // @ts-expect-error
           data,
           txId,
         }: {
