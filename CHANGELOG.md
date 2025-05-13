@@ -1,3 +1,24 @@
+# [3.11.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.7...v3.11.0-alpha.8) (2025-05-13)
+
+
+### Bug Fixes
+
+* **streams:** destroy the client stream on verification failure ([5b24063](https://github.com/ar-io/ar-io-sdk/commit/5b24063ae2f17c0208832ee675102eab19a2ed7a))
+* **wayfinder:** add initial data root verificaion class ([c154224](https://github.com/ar-io/ar-io-sdk/commit/c154224091adfaba02e52d80af0981db6eecf0c4))
+* **wayfinder:** conver buffer and streams to data roots ([63672db](https://github.com/ar-io/ar-io-sdk/commit/63672db1e7443b5abedea2abfbc7db72189de59d))
+* **wayfinder:** fix headers parsing ([e6d967f](https://github.com/ar-io/ar-io-sdk/commit/e6d967f9c7270b0c5f83e4b675d0036107b2990d))
+* **wayfinder:** manually construct headers if get is not available on them ([4e2ce99](https://github.com/ar-io/ar-io-sdk/commit/4e2ce99a5b29bb59101afca10bb819f64d867a2a))
+* **wayfinder:** replace reqeustId with txId, listen to only verification events for given txId ([099d4fd](https://github.com/ar-io/ar-io-sdk/commit/099d4fd9e82c97974dcea5cf600b855071717898))
+* **wayfinder:** update gateway provider implementation, move fixed to static, remove unnecessary web digest implementations ([25f9908](https://github.com/ar-io/ar-io-sdk/commit/25f9908f10fa4d4a5d688bb980b20b674235958c))
+
+
+### Features
+
+* **wayfinder:** add a wayfinder event emitter to track status of verification, introduce web digest ([2305816](https://github.com/ar-io/ar-io-sdk/commit/2305816b7ba637c1e69d8a7550d6b105f29fc920))
+* **wayfinder:** add initial data verification interfaces and classes ([5308a28](https://github.com/ar-io/ar-io-sdk/commit/5308a2840d9254d2795d48188c8cfb5ef02e639e))
+* **wayfinder:** add tapResponseStream helper, add events ([3da439f](https://github.com/ar-io/ar-io-sdk/commit/3da439f5810979c51259e9c37183df3b79898443))
+* **wayfinder:** use hash provider for getting trusted hash, and compare that to locally computed one ([3aae883](https://github.com/ar-io/ar-io-sdk/commit/3aae8837bb66a3457fa46fbe21a4d3de2489336c))
+
 # [3.11.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.6...v3.11.0-alpha.7) (2025-05-08)
 
 
