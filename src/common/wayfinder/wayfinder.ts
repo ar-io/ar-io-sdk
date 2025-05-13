@@ -180,7 +180,7 @@ export class WayfinderEmitter extends EventEmitter {
   // TODO: additional callback support defined on the emitter, provided via the constructor
 }
 
-function tapAndVerifyStream<T extends Readable | ReadableStream>({
+export function tapAndVerifyStream<T extends Readable | ReadableStream>({
   originalStream,
   contentLength,
   verifyData,
@@ -678,10 +678,10 @@ export class Wayfinder<T extends HttpClientFunction> {
    */
   // TODO: consider changing this to events or event emitter
   public readonly emitter: WayfinderEmitter = new WayfinderEmitter();
+
   constructor({
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
-      // optionally use a cache gateways provider to reduce the number of requests to the contract
       gatewaysProvider: new SimpleCacheGatewaysProvider({
         gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
         ttlSeconds: 60 * 60 * 24, // 1 day
