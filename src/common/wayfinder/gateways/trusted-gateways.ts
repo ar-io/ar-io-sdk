@@ -151,3 +151,13 @@ export class TrustedGatewaysHashProvider
 // if the gateway has the hash and they've verified it, you can trust the data item and offset
 // you would be only trusting the gateway that it is a valid bundle
 // you can request the offset from the gateway to verify the id
+
+/**
+ * Note from @djwhitt
+ *
+ * Calculating data roots this way is fine, but it may not reproduce the original data root.
+ * We could also implement a data root verifier that pulls all the chunks, checks that they
+ * reproduce the expected data root, and then compares the concatenated chunk data to the
+ * original data retrieved. That would take a while, but it should be able to verify any L1
+ * data where we can find the chunks.
+ */
