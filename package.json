@@ -72,7 +72,7 @@
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/**.test.ts'",
+    "test:unit": "node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",

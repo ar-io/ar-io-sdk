@@ -23,8 +23,12 @@ import {
 } from '../../types/wayfinder.js';
 import { ARIO } from '../io.js';
 import { Logger } from '../logger.js';
-import { NetworkGatewaysProvider, StaticGatewaysProvider } from './gateways.js';
-import { TrustedGatewayHashProvider } from './gateways/trusted-gateways.js';
+import {
+  NetworkGatewaysProvider,
+  SimpleCacheGatewaysProvider,
+  StaticGatewaysProvider,
+} from './gateways.js';
+import { TrustedGatewaysHashProvider } from './gateways/trusted-gateways.js';
 import { RandomGatewayRouter } from './routers/random.js';
 import { HashVerifier } from './verification/hash-verifier.js';
 
@@ -128,11 +132,17 @@ export type WayfinderEvent =
     };
 
 export class WayfinderEmitter extends EventEmitter {
-  emit(event: 'wayfinder', payload: WayfinderEvent): boolean {
+  emit<E extends WayfinderEvent['type']>(
+    event: E,
+    payload: Omit<Extract<WayfinderEvent, { type: E }>, 'type'>,
+  ): boolean {
     return super.emit(event, payload);
   }
 
-  on(event: 'wayfinder', listener: (event: WayfinderEvent) => void): this {
+  on<E extends WayfinderEvent['type']>(
+    event: E,
+    listener: (payload: Omit<WayfinderEvent, 'type'>) => void,
+  ): this {
     return super.on(event, listener);
   }
 }
@@ -170,8 +180,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
       streamToVerify.write(chunk);
       tappedClientStream.write(chunk);
       bytesProcessed += chunk.length;
-      emitter?.emit('wayfinder', {
-        type: 'verification-progress',
+      emitter?.emit('verification-progress', {
         txId,
         totalBytes: contentLength,
         processedBytes: bytesProcessed,
@@ -182,15 +191,13 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
       streamToVerify.end(); // triggers verifier completion and completes the verification promise
       try {
         await verificationPromise;
-        emitter?.emit('wayfinder', {
-          type: 'verification-passed',
+        emitter?.emit('verification-passed', {
           txId,
         });
         tappedClientStream.end();
       } catch (error) {
         console.error('Error on verifier stream', error);
-        emitter?.emit('wayfinder', {
-          type: 'verification-failed',
+        emitter?.emit('verification-failed', {
           error,
           txId,
         });
@@ -227,14 +234,12 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
           try {
             // due to backpressure, if the client does not consume the stream, the verification will not complete
             await verificationPromise;
-            emitter?.emit('wayfinder', {
-              type: 'verification-passed',
+            emitter?.emit('verification-passed', {
               txId,
             });
             controller.close();
           } catch (err) {
-            emitter?.emit('wayfinder', {
-              type: 'verification-failed',
+            emitter?.emit('verification-failed', {
               txId,
               error: err as Error,
             });
@@ -242,8 +247,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
           }
         } else {
           bytesProcessed += value.length;
-          emitter?.emit('wayfinder', {
-            type: 'verification-progress',
+          emitter?.emit('verification-progress', {
             txId,
             totalBytes: contentLength,
             processedBytes: bytesProcessed,
@@ -253,8 +257,7 @@ function tapAndVerifyStream<T extends Readable | ReadableStream>({
       },
       cancel(reason) {
         reader.cancel(reason);
-        emitter?.emit('wayfinder', {
-          type: 'verification-failed',
+        emitter?.emit('verification-failed', {
           txId,
           error: new Error('Verification cancelled', {
             cause: {
@@ -341,8 +344,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       return fn(...rawArgs);
     }
 
-    emitter?.emit('wayfinder', {
-      type: 'routing-started',
+    emitter?.emit('routing-started', {
       originalUrl: originalUrl.toString(),
     });
 
@@ -351,8 +353,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       originalUrl,
       logger,
     });
-    emitter?.emit('wayfinder', {
-      type: 'routing-succeeded',
+    emitter?.emit('routing-succeeded', {
       originalUrl,
       targetGateway: redirectUrl.toString(),
     });
@@ -395,15 +396,13 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             redirectUrl,
             originalUrl,
           });
-          emitter?.emit('wayfinder', {
-            type: 'verification-skipped',
+          emitter?.emit('verification-skipped', {
             originalUrl,
           });
           return response;
         }
 
-        emitter?.emit('wayfinder', {
-          type: 'identified-transaction-id',
+        emitter?.emit('identified-transaction-id', {
           originalUrl,
           targetGateway: redirectUrl.toString(),
           txId,
@@ -462,6 +461,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               emitter,
             });
 
+            // specific to fetch
             return wrapVerifiedResponse(
               response as Response,
               newClientStream,
@@ -480,14 +480,15 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             (response as any).body = newClientStream;
             return response;
           } else {
-            // TODO: will likely just need to stream the full thing through verification first, before returning the response object
+            // TODO: content-application/json and it's smaller than 10mb
+            // TODO: add tests and verify this works for all non-Readable/streamed responses
             try {
+              // if strict set to true
               await verifyData({
                 data: responseBody,
                 txId,
               });
-              emitter?.emit('wayfinder', {
-                type: 'verification-passed',
+              emitter?.emit('verification-passed', {
                 txId,
               });
             } catch (error) {
@@ -495,8 +496,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                 error,
                 txId,
               });
-              emitter?.emit('wayfinder', {
-                type: 'verification-failed',
+              emitter?.emit('verification-failed', {
                 txId,
                 error,
               });
@@ -602,10 +602,12 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * @example
    * const { request: wayfind, emitter } = new Wayfinder({
-   *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   * router = new RandomGatewayRouter({
+   *   gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *     gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *     ttlSeconds: 60 * 60 * 24, // 1 day
    *   }),
-   * });
+   * }),
    *
    * emitter.on('verification-passed', (event) => {
    *   console.log('Verification passed!', event);
@@ -638,12 +640,16 @@ export class Wayfinder<T extends HttpClientFunction> {
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
       // optionally use a cache gateways provider to reduce the number of requests to the contract
-      gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+      gatewaysProvider: new SimpleCacheGatewaysProvider({
+        gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+        ttlSeconds: 60 * 60 * 24, // 1 day
+      }),
     }),
     httpClient,
     logger = Logger.default,
+    // TODO: support disabling verification or create some PassThroughVerifier like thing
     verifier = new HashVerifier({
-      trustedHashProvider: new TrustedGatewayHashProvider({
+      trustedHashProvider: new TrustedGatewaysHashProvider({
         gatewaysProvider: new StaticGatewaysProvider({
           gateways: ['https://permagate.io'],
         }),
