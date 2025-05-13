@@ -650,21 +650,20 @@ export class Wayfinder<T extends HttpClientFunction> {
   /**
    * The event emitter for wayfinder that emits verification events.
    *
-   * const wayfinder = new Wayfinder({
-   *   emitter: new WayfinderEmitter({
-   *     onVerificationPassed: (event) => {
-   *       console.log('Verification passed!', event);
-   *     },
-   *     onVerificationFailed: (event) => {
-   *       console.log('Verification failed!', event);
-   *     },
-   *   })
+   * const wayfinder = new Wayfinder()
+   *
+   * wayfinder.emitter.on('verification-passed', (event) => {
+   *   console.log('Verification passed!', event);
    * })
    *
-   * or just implement the interface and pass it in
+   * wayfinder.emitter.on('verification-failed', (event) => {
+   *   console.log('Verification failed!', event);
+   * })
+   *
+   * or implement the events interface and pass it in, using callback functions
    *
    * const wayfinder = new Wayfinder({
-   *   emitter: {
+   *   events: {
    *     onVerificationPassed: (event) => {
    *       console.log('Verification passed!', event);
    *     },
@@ -677,7 +676,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    * const response = await wayfind('ar://example');
    */
   // TODO: consider changing this to events or event emitter
-  public readonly emitter: WayfinderEmitter = new WayfinderEmitter();
+  public readonly emitter: WayfinderEmitter;
 
   constructor({
     // TODO: consider changing router to routingStrategy or strategy
@@ -697,6 +696,7 @@ export class Wayfinder<T extends HttpClientFunction> {
         }),
       }),
     }),
+    events,
     // TODO: stats provider
   }: {
     router: WayfinderRouter;
@@ -704,12 +704,13 @@ export class Wayfinder<T extends HttpClientFunction> {
     logger?: Logger;
     verifier?: DataVerifier;
     hashProvider?: DataHashProvider;
-    emitter?: WayfinderEmitter | WayfinderEventArgs;
+    events?: WayfinderEventArgs;
     // TODO: fallback handling for when the target gateway is not available
     // TODO: stats provider
   }) {
     this.router = router;
     this.httpClient = httpClient;
+    this.emitter = new WayfinderEmitter(events);
     this.verifyData = verifier.verifyData.bind(verifier);
     this.resolveUrl = async ({ originalUrl, logger }) => {
       return resolveWayfinderUrl({
