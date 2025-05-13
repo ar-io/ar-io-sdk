@@ -541,21 +541,31 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @example
    * const wayfinder = new Wayfinder({
    *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   *     }),
    *   }),
    * });
+   *
+   * // Returns a target gateway based on the routing strategy
+   * const targetGateway = await wayfinder.router.getTargetGateway();
    */
   public readonly router: WayfinderRouter;
   /**
-   * The http client to use for requests
+   * The native http client used by wayfinder
    *
    * @example
    * const wayfinder = new Wayfinder({
    *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   *     }),
    *   }),
    *   httpClient: axios,
    * });
+   *
    */
   public readonly httpClient: T;
   /**
@@ -564,11 +574,15 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @example
    * const wayfinder = new Wayfinder({
    *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   *     }),
    *   }),
    *   httpClient: axios,
    * });
    *
+   * // returns the redirected URL based on the routing strategy and the original url
    * const redirectUrl = await wayfinder.resolveUrl({ originalUrl: 'ar://example' });
    */
   public readonly resolveUrl: (params: {
@@ -581,7 +595,10 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @example
    * const { request: wayfind } = new Wayfinder({
    *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new ARIOGatewaysProvider({ ario: ARIO.mainnet() })
+   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   *     }),
    *   }),
    *   httpClient: axios,
    * });;
@@ -598,14 +615,15 @@ export class Wayfinder<T extends HttpClientFunction> {
   // TODO: metricsProvider for otel/prom support
   public readonly verifyData: DataVerifier['verifyData'];
   /**
-   * The event emitter for wayfinder that emits verification events
+   * The event emitter for wayfinder that emits verification events.
    *
    * @example
    * const { request: wayfind, emitter } = new Wayfinder({
-   * router = new RandomGatewayRouter({
-   *   gatewaysProvider: new SimpleCacheGatewaysProvider({
-   *     gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
-   *     ttlSeconds: 60 * 60 * 24, // 1 day
+   *   router: new RandomGatewayRouter({
+   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
+   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
+   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   *     }),
    *   }),
    * }),
    *
@@ -618,22 +636,6 @@ export class Wayfinder<T extends HttpClientFunction> {
    * });
    *
    * const response = await wayfind('ar://example');
-   *
-   * Optionally wait for verification to complete before returning the response
-   * await new Promise((resolve) => {
-   *   emitter.on('verification-passed', event => {
-   *     if (event.txId === response.txId) {
-   *       console.log('Verification passed!');
-   *       resolve(event);
-   *     }
-   *   });
-   *   emitter.on('verification-failed', event => {
-   *     if (event.txId === response.txId) {
-   *       console.log('Verification failed!');
-   *       resolve(event);
-   *     }
-   *   });
-   * });
    */
   public readonly emitter: WayfinderEmitter = new WayfinderEmitter();
   constructor({
