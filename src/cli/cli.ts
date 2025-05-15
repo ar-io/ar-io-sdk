@@ -67,6 +67,7 @@ import {
   listArNSReservedNames,
   listArNSReturnedNames,
   listGateways,
+  resolveArNSName,
 } from './commands/readCommands.js';
 import {
   createVaultCLICommand,
@@ -463,6 +464,13 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'resolve-arns-name',
+  description: 'Resolve an ArNS name',
+  options: [optionMap.name],
+  action: resolveArNSName,
+});
+
+makeCommand({
   name: 'transfer',
   description: 'Transfer ARIO to another address',
   options: transferOptions,
@@ -619,6 +627,8 @@ makeCommand({
   options: arnsPurchaseOptions,
   action: requestPrimaryNameCLICommand,
 });
+
+// ANTS
 
 makeCommand<ANTStateCLIOptions>({
   name: 'spawn-ant',
