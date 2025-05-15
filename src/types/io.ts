@@ -565,7 +565,20 @@ export type DemandFactorSettings = {
 
 // Interfaces
 
-export interface AoARIORead {
+// simple interface to allow multiple implementations of ArNSNameResolver
+export type ArNSNameResolutionData = {
+  name: string;
+  owner: string | undefined; // could be unowned
+  txId: string;
+  processId: string;
+  ttlSeconds: number;
+};
+
+export interface ArNSNameResolver {
+  resolveArNSName({ name }: { name: string }): Promise<ArNSNameResolutionData>;
+}
+
+export interface AoARIORead extends ArNSNameResolver {
   process: AOProcess;
   getInfo(): Promise<{
     Ticker: string;

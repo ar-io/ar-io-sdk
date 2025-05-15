@@ -1171,7 +1171,7 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof arnsName.name, 'string');
       assert.equal(typeof arnsName.processId, 'string');
       assert.equal(typeof arnsName.ttlSeconds, 'number');
-      assert.equal(typeof arnsName.transactionId, 'string');
+      assert.equal(typeof arnsName.txId, 'string');
     });
 
     it('should be able to resolve an undername', async () => {
@@ -1183,7 +1183,7 @@ describe('e2e esm tests', async () => {
       assert.equal(typeof undername.name, 'string');
       assert.equal(typeof undername.processId, 'string');
       assert.equal(typeof undername.ttlSeconds, 'number');
-      assert.equal(typeof undername.transactionId, 'string');
+      assert.equal(typeof undername.txId, 'string');
     });
 
     describe('faucet', async () => {

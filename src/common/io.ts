@@ -69,6 +69,7 @@ import {
   AoVaultedTransferParams,
   AoWalletVault,
   AoWeightedObserver,
+  ArNSNameResolver,
   CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
@@ -203,7 +204,7 @@ export class ARIO {
   }
 }
 
-export class ARIOReadable implements AoARIORead {
+export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
