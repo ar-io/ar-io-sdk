@@ -573,7 +573,7 @@ export type ArNSNameResolutionData = {
   type: 'lease' | 'permabuy';
   processId: string;
   ttlSeconds: number;
-  recordIndex?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
+  priority?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
   undernameLimit: number;
 };
 

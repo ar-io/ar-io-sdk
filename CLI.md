@@ -123,7 +123,6 @@ Commands:
   get-redelegation-fee [options]          Get redelegation fee
   get-vault [options]                     Get the vault of provided address and vault ID
 
-
   # ArNS Resolution
   resolve-arns-name [options]             Resolve an ArNS name
 
@@ -178,7 +177,6 @@ Commands:
   spawn-ant [options]                     Spawn an ANT process
 
   # ANT Paginated Handlers
-
   list-ant-records [options]              Get the records of an ANT process
   list-ant-controllers [options]          List the controllers of an ANT process
   list-ant-balances [options]             Get the balances of an ANT process
