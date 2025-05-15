@@ -948,7 +948,8 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     if (baseName === undefined) {
       throw new Error('Invalid name');
     }
-    const undername = name.replace(`_${baseName}`, '') || '@';
+    const undername =
+      name === baseName ? '@' : name.replace(`_${baseName}`, '');
     const nameData = await this.getArNSRecord({ name: baseName });
     const ant = ANT.init({
       process: new AOProcess({
