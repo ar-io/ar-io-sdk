@@ -568,10 +568,12 @@ export type DemandFactorSettings = {
 // simple interface to allow multiple implementations of ArNSNameResolver
 export type ArNSNameResolutionData = {
   name: string;
-  owner: string | undefined; // could be unowned
+  owner?: string; // could be unowned
   txId: string;
   processId: string;
   ttlSeconds: number;
+  index?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
+  limit: number;
 };
 
 export interface ArNSNameResolver {

@@ -69,6 +69,7 @@ import {
   AoVaultedTransferParams,
   AoWalletVault,
   AoWeightedObserver,
+  ArNSNameResolutionData,
   ArNSNameResolver,
   CostDetailsResult,
   DemandFactorSettings,
@@ -938,13 +939,11 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     });
   }
 
-  async resolveArNSName({ name }: { name: string }): Promise<{
+  async resolveArNSName({
+    name,
+  }: {
     name: string;
-    owner: string | undefined; // could be unowned
-    txId: string;
-    processId: string;
-    ttlSeconds: number;
-  }> {
+  }): Promise<ArNSNameResolutionData> {
     const baseName = name.split('_').pop();
     if (baseName === undefined) {
       throw new Error('Invalid name');
@@ -978,6 +977,8 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       txId: antRecord.transactionId,
       processId: nameData.processId,
       ttlSeconds: antRecord.ttlSeconds,
+      index: antRecord.priority,
+      limit: nameData.undernameLimit,
     };
   }
 }
