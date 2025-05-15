@@ -570,10 +570,11 @@ export type ArNSNameResolutionData = {
   name: string;
   owner?: string; // could be unowned
   txId: string;
+  type: 'lease' | 'permabuy';
   processId: string;
   ttlSeconds: number;
-  index?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
-  limit: number;
+  recordIndex?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
+  undernameLimit: number;
 };
 
 export interface ArNSNameResolver {

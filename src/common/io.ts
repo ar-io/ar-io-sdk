@@ -976,10 +976,11 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       name: name,
       owner: owner,
       txId: antRecord.transactionId,
-      processId: nameData.processId,
       ttlSeconds: antRecord.ttlSeconds,
-      index: antRecord.priority,
-      limit: nameData.undernameLimit,
+      recordIndex: antRecord.priority,
+      processId: nameData.processId,
+      undernameLimit: nameData.undernameLimit,
+      type: nameData.type,
     };
   }
 }
