@@ -1162,6 +1162,30 @@ describe('e2e esm tests', async () => {
       );
     });
 
+    it('should be able to resolve an arns name', async () => {
+      const arnsName = await ario.resolveArNSName({
+        name: 'ardrive',
+      });
+      assert.ok(arnsName);
+      assert.equal(typeof arnsName.owner, 'string');
+      assert.equal(typeof arnsName.name, 'string');
+      assert.equal(typeof arnsName.processId, 'string');
+      assert.equal(typeof arnsName.ttlSeconds, 'number');
+      assert.equal(typeof arnsName.transactionId, 'string');
+    });
+
+    it('should be able to resolve an undername', async () => {
+      const undername = await ario.resolveArNSName({
+        name: 'logo_ardrive',
+      });
+      assert.ok(undername);
+      assert.equal(typeof undername.owner, 'string');
+      assert.equal(typeof undername.name, 'string');
+      assert.equal(typeof undername.processId, 'string');
+      assert.equal(typeof undername.ttlSeconds, 'number');
+      assert.equal(typeof undername.transactionId, 'string');
+    });
+
     describe('faucet', async () => {
       let testnet: ARIOWithFaucet<AoARIORead>;
 

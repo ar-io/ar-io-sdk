@@ -33,7 +33,6 @@ import {
   AoArNSReservedNameDataWithName,
   AoBalanceWithAddress,
   AoBuyRecordParams,
-  AoClient,
   AoCreateVaultParams,
   AoDelegation,
   AoEligibleDistribution,
@@ -940,7 +939,7 @@ export class ARIOReadable implements AoARIORead {
 
   async resolveArNSName({ name }: { name: string }): Promise<{
     name: string;
-    owner: string;
+    owner: string | undefined; // could be unowned
     txId: string;
     processId: string;
     ttlSeconds: number;
@@ -962,7 +961,15 @@ export class ARIOReadable implements AoARIORead {
       ant.getRecord({ undername }),
     ]);
     if (antRecord === undefined) {
-      throw new Error('Under name not found');
+      throw new Error(`Record for ${undername} not found on ANT.`);
+    }
+    if (
+      antRecord.ttlSeconds === undefined ||
+      antRecord.transactionId === undefined
+    ) {
+      throw new Error(
+        `Invalid record on ANT. Must have ttlSeconds and transactionId. Record: ${JSON.stringify(antRecord)}`,
+      );
     }
     return {
       name: name,
