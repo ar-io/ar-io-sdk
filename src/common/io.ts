@@ -33,6 +33,7 @@ import {
   AoArNSReservedNameDataWithName,
   AoBalanceWithAddress,
   AoBuyRecordParams,
+  AoClient,
   AoCreateVaultParams,
   AoDelegation,
   AoEligibleDistribution,
@@ -94,6 +95,7 @@ import {
   removeEligibleRewardsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
+import { ANT } from './ant.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -934,6 +936,41 @@ export class ARIOReadable implements AoARIORead {
         ...paginationParamsToTags(params),
       ],
     });
+  }
+
+  async resolveArNSName({ name }: { name: string }): Promise<{
+    name: string;
+    owner: string;
+    txId: string;
+    processId: string;
+    ttlSeconds: number;
+  }> {
+    const baseName = name.split('_').pop();
+    if (baseName === undefined) {
+      throw new Error('Invalid name');
+    }
+    const undername = name.replace(`_${baseName}`, '') || '@';
+    const nameData = await this.getArNSRecord({ name: baseName });
+    const ant = ANT.init({
+      process: new AOProcess({
+        ao: this.process.ao,
+        processId: nameData.processId,
+      }),
+    });
+    const [owner, antRecord] = await Promise.all([
+      ant.getOwner(),
+      ant.getRecord({ undername }),
+    ]);
+    if (antRecord === undefined) {
+      throw new Error('Under name not found');
+    }
+    return {
+      name: name,
+      owner: owner,
+      txId: antRecord.transactionId,
+      processId: nameData.processId,
+      ttlSeconds: antRecord.ttlSeconds,
+    };
   }
 }
 
