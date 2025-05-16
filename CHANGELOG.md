@@ -1,3 +1,10 @@
+# [3.11.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.10...v3.11.0-alpha.11) (2025-05-16)
+
+
+### Bug Fixes
+
+* **cli:** remove console.log for options ([2dfcbf9](https://github.com/ar-io/ar-io-sdk/commit/2dfcbf95b3cc219648306a770d20189efa773d12))
+
 # [3.11.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.9...v3.11.0-alpha.10) (2025-05-16)
 
 
