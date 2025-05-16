@@ -1179,6 +1179,58 @@ const delegates = await ario.getAllDelegates({
 
 ### Arweave Name System (ArNS)
 
+#### `resolveArNSName({ name })`
+
+Resolves an ArNS name to the underlying data id stored on the names corresponding ANT id.
+
+##### Resolving a base name
+
+```typescript
+const ario = ARIO.mainnet();
+const record = await ario.resolveArNSName({ name: 'ardrive' });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "txId": "kvhEUsIY5bXe0Wu2-YUFz20O078uYFzmQIO-7brv8qw",
+  "type": "lease",
+  "recordIndex": 0,
+  "undernameLimit": 100,
+  "owner": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  "name": "ardrive"
+}
+```
+
+</details>
+
+##### Resolving an undername
+
+```typescript
+const ario = ARIO.mainnet();
+const record = await ario.resolveArNSName({ name: 'logo_ardrive' });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "txId": "kvhEUsIY5bXe0Wu2-YUFz20O078uYFzmQIO-7brv8qw",
+  "type": "lease",
+  "recordIndex": 1,
+  "undernameLimit": 100,
+  "owner": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  "name": "ardrive"
+}
+```
+
+</details>
+
 #### `buyRecord({ name, type, years, processId })`
 
 Purchases a new ArNS record with the specified name, type, and duration.

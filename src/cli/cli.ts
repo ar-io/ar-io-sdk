@@ -67,6 +67,7 @@ import {
   listArNSReservedNames,
   listArNSReturnedNames,
   listGateways,
+  resolveArNSName,
 } from './commands/readCommands.js';
 import {
   createVaultCLICommand,
@@ -140,6 +141,7 @@ applyOptions(
   globalOptions,
 );
 
+// # Getters
 makeCommand({
   name: 'info',
   description: 'Get network info',
@@ -150,6 +152,22 @@ makeCommand({
   name: 'token-supply',
   description: 'Get the total token supply',
   action: (options) => readARIOFromOptions(options).getTokenSupply(),
+});
+
+makeCommand<AddressCLIOptions>({
+  name: 'balance',
+  description: 'Get the balance of an address',
+  options: [optionMap.address],
+  action: (options) =>
+    readARIOFromOptions(options)
+      .getBalance({ address: requiredAddressFromOptions(options) })
+      .then((result) => ({
+        address: requiredAddressFromOptions(options),
+        mARIOBalance: result,
+        message: `Provided address current has a balance of ${formatARIOWithCommas(
+          new mARIOToken(result).toARIO(),
+        )} ARIO`,
+      })),
 });
 
 makeCommand({
@@ -184,24 +202,17 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'list-gateways',
-  description: 'List the gateways of the network',
-  options: paginationOptions,
-  action: listGateways,
-});
-
-makeCommand({
-  name: 'list-all-delegates',
-  description: 'List all paginated delegates from all gateways',
-  options: paginationOptions,
-  action: listAllDelegatesCLICommand,
-});
-
-makeCommand({
   name: 'get-gateway-delegates',
   description: 'Get the delegates of a gateway',
   options: paginationAddressOptions,
   action: getGatewayDelegates,
+});
+
+makeCommand({
+  name: 'get-gateway-vaults',
+  description: 'Get the vaults of a gateway',
+  options: paginationAddressOptions,
+  action: getGatewayVaults,
 });
 
 makeCommand({
@@ -226,13 +237,6 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'list-arns-records',
-  description: 'List all ArNS records',
-  options: paginationOptions,
-  action: listArNSRecords,
-});
-
-makeCommand({
   name: 'get-arns-reserved-name',
   description: 'Get a reserved ArNS name',
   options: [optionMap.name],
@@ -240,24 +244,10 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'list-arns-reserved-names',
-  description: 'Get all reserved ArNS names',
-  options: paginationOptions,
-  action: listArNSReservedNames,
-});
-
-makeCommand({
   name: 'get-arns-returned-name',
   description: 'Get an ArNS returned name by name',
   options: [optionMap.name],
   action: getArNSReturnedName,
-});
-
-makeCommand({
-  name: 'list-arns-returned-names',
-  description: 'Get all ArNS recently returned names',
-  options: paginationOptions,
-  action: listArNSReturnedNames,
 });
 
 makeCommand({
@@ -341,19 +331,12 @@ makeCommand({
   action: getCostDetails,
 });
 
-makeCommand<PaginationCLIOptions>({
-  name: 'list-vaults',
-  description: 'Get all wallet vaults',
-  options: paginationOptions,
-  action: (o) =>
-    readARIOFromOptions(o)
-      .getVaults(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No vaults found' },
-      ),
+makeCommand<AddressAndNameCLIOptions>({
+  name: 'get-primary-name',
+  description: 'Get primary name',
+  options: [optionMap.address, optionMap.name],
+  action: getPrimaryName,
 });
-
-// TODO: Could assert valid arweave (or ETH) addresses at CLI level when coming from options (no need from wallet)
 
 makeCommand<InitiatorCLIOptions>({
   name: 'get-primary-name-request',
@@ -369,65 +352,6 @@ makeCommand<InitiatorCLIOptions>({
           result ?? {
             message: `No primary name request found`,
           },
-      ),
-});
-
-makeCommand<PaginationCLIOptions>({
-  name: 'list-primary-name-requests',
-  description: 'Get primary name requests',
-  options: paginationOptions,
-  action: (o) =>
-    readARIOFromOptions(o)
-      .getPrimaryNameRequests(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No requests found' },
-      ),
-});
-
-makeCommand<AddressAndNameCLIOptions>({
-  name: 'get-primary-name',
-  description: 'Get primary name',
-  options: [optionMap.address, optionMap.name],
-  action: getPrimaryName,
-});
-
-makeCommand<PaginationCLIOptions>({
-  name: 'list-primary-names',
-  description: 'Get primary names',
-  options: paginationOptions,
-  action: (o) =>
-    readARIOFromOptions(o)
-      .getPrimaryNames(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No names found' },
-      ),
-});
-
-makeCommand<AddressCLIOptions>({
-  name: 'balance',
-  description: 'Get the balance of an address',
-  options: [optionMap.address],
-  action: (options) =>
-    readARIOFromOptions(options)
-      .getBalance({ address: requiredAddressFromOptions(options) })
-      .then((result) => ({
-        address: requiredAddressFromOptions(options),
-        mARIOBalance: result,
-        message: `Provided address current has a balance of ${formatARIOWithCommas(
-          new mARIOToken(result).toARIO(),
-        )} ARIO`,
-      })),
-});
-
-makeCommand({
-  name: 'list-balances',
-  description: 'List all balances',
-  options: paginationOptions,
-  action: (o) =>
-    readARIOFromOptions(o)
-      .getBalances(paginationParamsFromOptions(o))
-      .then((result) =>
-        result.items.length ? result : { message: 'No balances found' },
       ),
 });
 
@@ -448,11 +372,96 @@ makeCommand({
   action: getVault,
 });
 
+// # ArNS Resolution
 makeCommand({
-  name: 'get-gateway-vaults',
-  description: 'Get the vaults of a gateway',
-  options: paginationAddressOptions,
-  action: getGatewayVaults,
+  name: 'resolve-arns-name',
+  description: 'Resolve an ArNS name',
+  options: [optionMap.name],
+  action: resolveArNSName,
+});
+
+// # Paginated handlers
+makeCommand({
+  name: 'list-gateways',
+  description: 'List the gateways of the network',
+  options: paginationOptions,
+  action: listGateways,
+});
+
+makeCommand({
+  name: 'list-all-delegates',
+  description: 'List all paginated delegates from all gateways',
+  options: paginationOptions,
+  action: listAllDelegatesCLICommand,
+});
+
+makeCommand({
+  name: 'list-arns-records',
+  description: 'List all ArNS records',
+  options: paginationOptions,
+  action: listArNSRecords,
+});
+
+makeCommand({
+  name: 'list-arns-reserved-names',
+  description: 'Get all reserved ArNS names',
+  options: paginationOptions,
+  action: listArNSReservedNames,
+});
+
+makeCommand({
+  name: 'list-arns-returned-names',
+  description: 'Get all ArNS recently returned names',
+  options: paginationOptions,
+  action: listArNSReturnedNames,
+});
+
+makeCommand<PaginationCLIOptions>({
+  name: 'list-vaults',
+  description: 'Get all wallet vaults',
+  options: paginationOptions,
+  action: (o) =>
+    readARIOFromOptions(o)
+      .getVaults(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No vaults found' },
+      ),
+});
+
+makeCommand<PaginationCLIOptions>({
+  name: 'list-primary-name-requests',
+  description: 'Get primary name requests',
+  options: paginationOptions,
+  action: (o) =>
+    readARIOFromOptions(o)
+      .getPrimaryNameRequests(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No requests found' },
+      ),
+});
+
+makeCommand<PaginationCLIOptions>({
+  name: 'list-primary-names',
+  description: 'Get primary names',
+  options: paginationOptions,
+  action: (o) =>
+    readARIOFromOptions(o)
+      .getPrimaryNames(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No names found' },
+      ),
+});
+
+makeCommand({
+  name: 'list-balances',
+  description: 'List all balances',
+  options: paginationOptions,
+  action: (o) =>
+    readARIOFromOptions(o)
+      .getBalances(paginationParamsFromOptions(o))
+      .then((result) =>
+        result.items.length ? result : { message: 'No balances found' },
+      ),
 });
 
 makeCommand({
@@ -462,6 +471,7 @@ makeCommand({
   action: getAllGatewayVaults,
 });
 
+// # Actions
 makeCommand({
   name: 'transfer',
   description: 'Transfer ARIO to another address',
@@ -620,26 +630,9 @@ makeCommand({
   action: requestPrimaryNameCLICommand,
 });
 
-makeCommand<ANTStateCLIOptions>({
-  name: 'spawn-ant',
-  description: 'Spawn an ANT process',
-  options: antStateOptions,
-  action: async (options) => {
-    const state = getANTStateFromOptions(options);
-    const antProcessId = await spawnANT({
-      state,
-      signer: requiredAoSignerFromOptions(options),
-      logger: getLoggerFromOptions(options),
-    });
+// # ANTS
 
-    return {
-      processId: antProcessId,
-      state,
-      message: `Spawned ANT process with process ID ${antProcessId}`,
-    };
-  },
-});
-
+// # Getters
 makeCommand<ProcessIdCLIOptions>({
   name: 'get-ant-state',
   description: 'Get the state of an ANT process',
@@ -676,29 +669,11 @@ makeCommand<
 });
 
 makeCommand<ProcessIdCLIOptions>({
-  name: 'list-ant-records',
-  description: 'Get the records of an ANT process',
-  options: [optionMap.processId],
-  action: async (options) => {
-    return readANTFromOptions(options).getRecords();
-  },
-});
-
-makeCommand<ProcessIdCLIOptions>({
   name: 'get-ant-owner',
   description: 'Get the owner of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
     return readANTFromOptions(options).getOwner();
-  },
-});
-
-makeCommand<ProcessIdCLIOptions>({
-  name: 'list-ant-controllers',
-  description: 'List the controllers of an ANT process',
-  options: [optionMap.processId],
-  action: async (options) => {
-    return readANTFromOptions(options).getControllers();
   },
 });
 
@@ -731,6 +706,46 @@ makeCommand<ProcessIdCLIOptions & { address?: string }>({
   },
 });
 
+// # Spawn
+makeCommand<ANTStateCLIOptions>({
+  name: 'spawn-ant',
+  description: 'Spawn an ANT process',
+  options: antStateOptions,
+  action: async (options) => {
+    const state = getANTStateFromOptions(options);
+    const antProcessId = await spawnANT({
+      state,
+      signer: requiredAoSignerFromOptions(options),
+      logger: getLoggerFromOptions(options),
+    });
+
+    return {
+      processId: antProcessId,
+      state,
+      message: `Spawned ANT process with process ID ${antProcessId}`,
+    };
+  },
+});
+
+// # ANT Paginated Handlers
+makeCommand<ProcessIdCLIOptions>({
+  name: 'list-ant-records',
+  description: 'Get the records of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readANTFromOptions(options).getRecords();
+  },
+});
+
+makeCommand<ProcessIdCLIOptions>({
+  name: 'list-ant-controllers',
+  description: 'List the controllers of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readANTFromOptions(options).getControllers();
+  },
+});
+
 makeCommand<ProcessIdCLIOptions>({
   name: 'list-ant-balances',
   description: 'Get the balances of an ANT process',
@@ -740,11 +755,8 @@ makeCommand<ProcessIdCLIOptions>({
   },
 });
 
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    target?: string;
-  }
->({
+// # Actions
+makeCommand<ProcessIdWriteActionCLIOptions & { target?: string }>({
   name: 'transfer-ant-ownership',
   description: 'Transfer ownership of an ANT process',
   options: [optionMap.processId, optionMap.target, ...writeActionOptions],
@@ -796,6 +808,27 @@ makeCommand<ProcessIdCLIOptions & { controller?: string }>({
   },
 });
 
+makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
+  name: 'remove-ant-record',
+  description: 'Remove a record from an ANT process',
+  options: [optionMap.processId, optionMap.undername, ...writeActionOptions],
+  action: async (options) => {
+    const undername = requiredStringFromOptions(options, 'undername');
+
+    await assertConfirmationPrompt(
+      `Are you sure you want to remove the record with undername ${undername}?`,
+      options,
+    );
+
+    return writeANTFromOptions(options).removeRecord(
+      {
+        undername,
+      },
+      customTagsFromOptions(options),
+    );
+  },
+});
+
 makeCommand({
   name: 'set-ant-record',
   description:
@@ -816,27 +849,6 @@ makeCommand({
   description: 'Set an undername of an ANT process',
   options: setAntUndernameOptions,
   action: setAntRecordCLICommand,
-});
-
-makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
-  name: 'remove-ant-record',
-  description: 'Remove a record from an ANT process',
-  options: [optionMap.processId, optionMap.undername, ...writeActionOptions],
-  action: async (options) => {
-    const undername = requiredStringFromOptions(options, 'undername');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to remove the record with undername ${undername}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).removeRecord(
-      {
-        undername,
-      },
-      customTagsFromOptions(options),
-    );
-  },
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
@@ -942,7 +954,6 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
     );
     return writeANTFromOptions(options).setLogo(
       {
-        // TODO: Could take a logo file, upload it to Arweave, get transaction ID
         txId,
       },
       customTagsFromOptions(options),
@@ -950,6 +961,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
   },
 });
 
+// # ARIO Actions
 makeCommand<
   ProcessIdWriteActionCLIOptions & {
     name?: string;
@@ -1069,6 +1081,7 @@ makeCommand<
   },
 });
 
+// # Utilities
 makeCommand({
   name: 'write-action',
   description: 'Send a write action to an AO Process',

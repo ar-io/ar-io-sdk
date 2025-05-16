@@ -282,3 +282,9 @@ export async function getVault(o: AddressAndVaultIdCLIOptions) {
         },
     );
 }
+
+export async function resolveArNSName(o: NameCLIOptions) {
+  const name = requiredStringFromOptions(o, 'name');
+  const result = await readARIOFromOptions(o).resolveArNSName({ name });
+  return result ?? { message: `No record found for name ${name}` };
+}

@@ -69,6 +69,8 @@ import {
   AoVaultedTransferParams,
   AoWalletVault,
   AoWeightedObserver,
+  ArNSNameResolutionData,
+  ArNSNameResolver,
   CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
@@ -94,6 +96,7 @@ import {
   removeEligibleRewardsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
+import { ANT } from './ant.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
@@ -202,7 +205,7 @@ export class ARIO {
   }
 }
 
-export class ARIOReadable implements AoARIORead {
+export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
@@ -934,6 +937,52 @@ export class ARIOReadable implements AoARIORead {
         ...paginationParamsToTags(params),
       ],
     });
+  }
+
+  async resolveArNSName({
+    name,
+  }: {
+    name: string;
+  }): Promise<ArNSNameResolutionData> {
+    const baseName = name.split('_').pop();
+    if (baseName === undefined) {
+      throw new Error('Invalid name');
+    }
+    const undername =
+      name === baseName ? '@' : name.replace(`_${baseName}`, '');
+    const nameData = await this.getArNSRecord({ name: baseName });
+    const ant = ANT.init({
+      process: new AOProcess({
+        ao: this.process.ao,
+        processId: nameData.processId,
+      }),
+    });
+    const [owner, antRecord] = await Promise.all([
+      ant.getOwner(),
+      ant.getRecord({ undername }),
+    ]);
+    if (antRecord === undefined) {
+      throw new Error(`Record for ${undername} not found on ANT.`);
+    }
+    if (
+      antRecord.ttlSeconds === undefined ||
+      antRecord.transactionId === undefined
+    ) {
+      throw new Error(
+        `Invalid record on ANT. Must have ttlSeconds and transactionId. Record: ${JSON.stringify(antRecord)}`,
+      );
+    }
+    return {
+      name: name,
+      owner: owner,
+      txId: antRecord.transactionId,
+      ttlSeconds: antRecord.ttlSeconds,
+      priority: antRecord.priority,
+      // NOTE: we may want return the actual index of the record based on sorting in case ANT tries to set duplicate priority values to get around undername limits
+      processId: nameData.processId,
+      undernameLimit: nameData.undernameLimit,
+      type: nameData.type,
+    };
   }
 }
 

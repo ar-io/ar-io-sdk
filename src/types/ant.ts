@@ -266,7 +266,7 @@ export interface AoANTWrite extends AoANTRead {
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
-  priority?: number;
+  priority?: number; // TODO: the SDK should always provide a priority, even if the ANT does not have a priority set
 };
 
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
