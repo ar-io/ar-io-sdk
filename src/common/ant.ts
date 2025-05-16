@@ -150,12 +150,13 @@ export class AoANTReadable implements AoANTRead {
     { undername }: { undername: string },
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTRecord> {
-    const records = await this.getRecords();
     // TODO: use sortedANTRecords to get priority on all records, even if ANT does not have a priority set
-    const record = records[undername];
-    if (record === undefined) {
-      throw new Error(`Record for ${undername} not found on ANT.`);
-    }
+    const record = await this.process.read<AoANTRecord>({
+      tags: [
+        { name: 'Action', value: 'Record' },
+        { name: 'Sub-Domain', value: undername },
+      ],
+    });
     if (strict) parseSchemaResult(AntRecordSchema.passthrough(), record);
 
     return record;

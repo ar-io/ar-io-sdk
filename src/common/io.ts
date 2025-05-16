@@ -978,6 +978,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       txId: antRecord.transactionId,
       ttlSeconds: antRecord.ttlSeconds,
       priority: antRecord.priority,
+      // NOTE: we may want return the actual index of the record based on sorting in case ANT tries to set duplicate priority values to get around undername limits
       processId: nameData.processId,
       undernameLimit: nameData.undernameLimit,
       type: nameData.type,
