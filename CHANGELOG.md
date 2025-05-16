@@ -1,3 +1,15 @@
+# [3.11.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.8...v3.11.0-alpha.9) (2025-05-16)
+
+
+### Bug Fixes
+
+* **ant:** update tests and revert priority enforcement ([edf5d15](https://github.com/ar-io/ar-io-sdk/commit/edf5d15bf1579c4660dfb92a5cf0a93d4c8beeea))
+
+
+### Features
+
+* **arns:** add resolve arns name api ([166725e](https://github.com/ar-io/ar-io-sdk/commit/166725edcf9e14d22efb063b75736b149328613d))
+
 # [3.11.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.7...v3.11.0-alpha.8) (2025-05-13)
 
 
