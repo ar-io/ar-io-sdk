@@ -219,11 +219,6 @@ function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
 export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   setLoggerIfDebug(options);
 
-  console.log('options', {
-    cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
-    ...options,
-  });
-
   return ARIO.init({
     process: aoProcessFromOptions({
       cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
