@@ -89,7 +89,7 @@ export class TrustedGatewaysHashProvider
     }
 
     if (hashSet.size === 0) {
-      throw new Error(`No trusted gateways found for txId ${txId}`);
+      throw new Error(`No trusted gateways returned a hash for txId ${txId}`);
     }
 
     if (hashSet.size > 1) {
