@@ -1,3 +1,10 @@
+# [3.11.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.9...v3.11.0-alpha.10) (2025-05-16)
+
+
+### Bug Fixes
+
+* **cli:** set default CU to https://cu.ardrive.io for ARIO ([6544f78](https://github.com/ar-io/ar-io-sdk/commit/6544f78d5ccb531116a156036a6d0f1acfb604f3))
+
 # [3.11.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.8...v3.11.0-alpha.9) (2025-05-16)
 
 
