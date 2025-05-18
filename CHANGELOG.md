@@ -1,3 +1,10 @@
+# [3.11.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.11...v3.11.0-alpha.12) (2025-05-18)
+
+
+### Bug Fixes
+
+* **ao:** propogate service errors/messages on failed dry-runs ([f3fa154](https://github.com/ar-io/ar-io-sdk/commit/f3fa154c17d39544cfa1443ee6c13e9cf6c1651d))
+
 # [3.11.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.10...v3.11.0-alpha.11) (2025-05-16)
 
 
