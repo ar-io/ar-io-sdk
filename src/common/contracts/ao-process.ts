@@ -140,7 +140,8 @@ export class AOProcess implements AOContract {
         },
       );
       throw new Error(
-        `Process ${this.processId} does not support provided action.`,
+        (result as any).message ||
+          `Process ${this.processId} did not return a valid response. Response: ${JSON.stringify(result)}`,
       );
     }
     const messageData = result.Messages?.[0]?.Data;
