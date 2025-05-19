@@ -235,8 +235,8 @@ sequenceDiagram
 
     Wayfinder->>+DataVerifier: verifyData(responseData, txId)
     DataVerifier->>DataVerifier: Calculate verification data
-    DataVerifier->>Trusted Gateway: Request trusted headers for verification
-    Trusted Gateway-->>DataVerifier: Return trusted headers for verification
+    DataVerifier->>Trusted Gateways: Request trusted headers for verification
+    Trusted Gateways-->>DataVerifier: Return trusted headers for verification
     DataVerifier->>DataVerifier: Compute trusted data hash, compare with trusted gateway
     DataVerifier-->>-Wayfinder: Verification result
 
