@@ -2,17 +2,10 @@
 
 Wayfinder is a client-side routing and verification solution for Arweave content. It enables applications to retrieve data through decentralized gateways while ensuring integrity through cryptographic verification.
 
-## Basic Usage
+## Quick Start
 
 ```javascript
-import {
-  ARIO,
-  NetworkGatewaysProvider,
-  RandomGatewayRouter,
-  SimpleCacheGatewaysProvider,
-  Wayfinder,
-} from '@ar-io/sdk';
-import axios from 'axios';
+import { Wayfinder } from '@ar-io/sdk';
 
 // create a new Wayfinder instance with default settings
 const wayfinder = new Wayfinder();
