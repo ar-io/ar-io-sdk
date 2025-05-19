@@ -696,7 +696,7 @@ export class Wayfinder<T extends HttpClientFunction> {
   public readonly emitter: WayfinderEmitter;
 
   constructor({
-    httpClient,
+    httpClient = fetch as T,
     // TODO: consider changing router to routingStrategy or strategy
     router = new RandomGatewayRouter({
       gatewaysProvider: new SimpleCacheGatewaysProvider({
@@ -716,13 +716,12 @@ export class Wayfinder<T extends HttpClientFunction> {
     events,
     // TODO: stats provider
   }: {
-    httpClient: T;
+    httpClient?: T;
     router?: WayfinderRouter;
     logger?: Logger;
     verifier?: DataVerifier;
     hashProvider?: DataHashProvider;
     events?: WayfinderEventArgs;
-    // TODO: fallback handling for when the target gateway is not available
     // TODO: stats provider
   }) {
     this.router = router;
@@ -748,25 +747,3 @@ export class Wayfinder<T extends HttpClientFunction> {
 
   // TODO: potential builder pattern to update the Router/blocklist/httpClient
 }
-
-// TODO: add a chart for verification strategies and what they do
-// include complexity, performance, and security
-// explain use cases that each strategy is best for
-
-// e.g.
-
-/**
- *
- *  type    | complexity | performance | security
- * ---------|------------|-------------|---------
- *  hash    | low        | high        | low
- * ---------|------------|-------------|---------
- *  data root    | medium       | medium      | low | only L1
- * ---------|------------|-------------|---------
- * signature    | medium       | medium      | medium
- * ---------|------------|-------------|---------
- *  composite | high       | low         | high
- * ---------|------------|-------------|---------
- *
- *
- */
