@@ -13,22 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './wayfinder.js';
+import { RoutingStrategy } from '../../../../types/wayfinder.js';
 
-// routing strategies
-export * from './routing/strategies/random.js';
-export * from './routing/strategies/static.js';
+export class StaticRoutingStrategy implements RoutingStrategy {
+  public readonly name = 'static';
+  private gateway: URL;
 
-// gateways providers
-export * from './gateways/network.js';
-export * from './gateways/simple-cache.js';
-export * from './gateways/static.js';
+  constructor({ gateway }: { gateway: string }) {
+    try {
+      this.gateway = new URL(gateway);
+    } catch (error) {
+      throw new Error(`Invalid URL provided for static gateway: ${gateway}`);
+    }
+  }
 
-// trusted gateways
-export * from './verification/trusted.js';
-
-// hash providers
-export * from './verification/strategies/data-root-verifier.js';
-export * from './verification/strategies/hash-verifier.js';
-
-// TODO: signature verification
+  async selectGateway({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    gateways,
+  }: {
+    gateways?: URL[];
+  } = {}): Promise<URL> {
+    return this.gateway;
+  }
+}

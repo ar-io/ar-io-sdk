@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export * from './wayfinder.js';
+import { GatewaysProvider } from '../../../types/wayfinder.js';
 
-// routing strategies
-export * from './routing/strategies/random.js';
-export * from './routing/strategies/static.js';
+export class StaticGatewaysProvider implements GatewaysProvider {
+  private gateways: URL[];
+  constructor({ gateways }: { gateways: string[] }) {
+    this.gateways = gateways.map((g) => new URL(g));
+  }
 
-// gateways providers
-export * from './gateways/network.js';
-export * from './gateways/simple-cache.js';
-export * from './gateways/static.js';
-
-// trusted gateways
-export * from './verification/trusted.js';
-
-// hash providers
-export * from './verification/strategies/data-root-verifier.js';
-export * from './verification/strategies/hash-verifier.js';
-
-// TODO: signature verification
+  async getGateways(): Promise<URL[]> {
+    return this.gateways;
+  }
+}

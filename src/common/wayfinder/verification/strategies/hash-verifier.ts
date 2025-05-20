@@ -15,14 +15,17 @@
  */
 import { Readable } from 'node:stream';
 
-import { DataHashProvider, DataVerifier } from '../../../types/wayfinder.js';
+import {
+  DataHashProvider,
+  DataVerificationStrategy,
+} from '../../../../types/wayfinder.js';
 import {
   hashBufferToB64Url,
   hashReadableStreamToB64Url,
   hashReadableToB64Url,
-} from '../../../utils/hash.js';
+} from '../../../../utils/hash.js';
 
-export class HashVerifier implements DataVerifier {
+export class HashVerificationStrategy implements DataVerificationStrategy {
   private readonly trustedHashProvider: DataHashProvider;
   constructor({
     trustedHashProvider,

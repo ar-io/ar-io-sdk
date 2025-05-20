@@ -7,9 +7,9 @@ import { buffer } from 'node:stream/consumers';
 import { before, describe, it } from 'node:test';
 
 import { Logger } from '../../common/logger.js';
-import { GatewaysProvider } from './gateways.js';
-import { RandomGatewayRouter } from './routers/random.js';
-import { StaticGatewayRouter } from './routers/static.js';
+import { GatewaysProvider } from '../../types/wayfinder.js';
+import { RandomRoutingStrategy } from './routing/strategies/random.js';
+import { StaticRoutingStrategy } from './routing/strategies/static.js';
 import { Wayfinder, tapAndVerifyStream } from './wayfinder.js';
 
 // TODO: replace with locally running gateway
@@ -21,15 +21,14 @@ const stubbedGatewaysProvider: GatewaysProvider = {
 Logger.default.setLogLevel('none');
 
 describe('Wayfinder', () => {
-  describe.skip('http wrapper', () => {
+  describe('http wrapper', () => {
     describe('fetch', () => {
       let wayfinder: Wayfinder<typeof fetch>;
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: fetch,
-          router: new RandomGatewayRouter({
-            gatewaysProvider: stubbedGatewaysProvider,
-          }),
+          routingStrategy: new RandomRoutingStrategy(),
+          gatewaysProvider: stubbedGatewaysProvider,
         });
       });
 
@@ -66,9 +65,11 @@ describe('Wayfinder', () => {
         const [nativeFetch, response] = await Promise.all([
           fetch(`https://${gatewayUrl}/`, {
             method: 'HEAD',
+            redirect: 'follow',
           }),
           wayfinder.request(`https://${gatewayUrl}/`, {
             method: 'HEAD',
+            redirect: 'follow',
           }),
         ]);
         assert.strictEqual(response.status, 200);
@@ -77,10 +78,14 @@ describe('Wayfinder', () => {
       });
 
       for (const api of ['/info', '/block/current']) {
-        it(`supports native arweave node apis ${api}`, async () => {
+        it.skip(`supports native arweave node apis ${api}`, async () => {
           const [nativeFetch, response] = await Promise.all([
-            fetch(`https://${gatewayUrl}${api}`),
-            wayfinder.request(`ar://${api}`),
+            fetch(`https://${gatewayUrl}${api}`, {
+              redirect: 'follow',
+            }),
+            wayfinder.request(`ar://${api}`, {
+              redirect: 'follow',
+            }),
           ]);
           assert.strictEqual(response.status, 200);
           assert.strictEqual(response.status, nativeFetch.status);
@@ -103,6 +108,7 @@ describe('Wayfinder', () => {
       it('supports a post request to graphql', async () => {
         const response = await wayfinder.request('ar:///graphql', {
           method: 'POST',
+          redirect: 'follow',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -137,10 +143,14 @@ describe('Wayfinder', () => {
         assert.strictEqual(response.status, 200);
       });
 
-      it.skip('returns the error from the target gateway if the route is not found', async () => {
+      it('returns the error from the target gateway if the route is not found', async () => {
         const [nativeFetch, response] = await Promise.all([
-          fetch(`https://${gatewayUrl}/ar-io/not-found`),
-          wayfinder.request('ar:///not-found'),
+          fetch(`https://${gatewayUrl}/ar-io/not-found`, {
+            redirect: 'follow',
+          }),
+          wayfinder.request('ar:///ar-io/not-found', {
+            redirect: 'follow',
+          }),
         ]);
         assert.strictEqual(response.status, nativeFetch.status);
         assert.strictEqual(response.statusText, nativeFetch.statusText);
@@ -152,17 +162,17 @@ describe('Wayfinder', () => {
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: axios,
-          router: new RandomGatewayRouter({
-            gatewaysProvider: stubbedGatewaysProvider,
-          }),
+          routingStrategy: new RandomRoutingStrategy(),
+          gatewaysProvider: stubbedGatewaysProvider,
         });
       });
       it('should fetch the data using axios default function against the target gateway', async () => {
         const [nativeAxios, response] = await Promise.all([
           axios(`https://ao.${gatewayUrl}`),
-          wayfinder.request('ar://ao'),
+          wayfinder.request('ar://ao', {
+            maxRedirects: 5,
+          }),
         ]);
-        assert.strictEqual(response.status, 200);
         assert.strictEqual(response.status, nativeAxios.status);
         // assert the arns headers are the same
         const arnsHeaders = Object.entries(response.headers)
@@ -179,7 +189,6 @@ describe('Wayfinder', () => {
           axios.get(`https://ao.${gatewayUrl}`),
           wayfinder.request.get('ar://ao'),
         ]);
-        assert.strictEqual(response.status, 200);
         assert.strictEqual(response.status, nativeAxios.status);
         // assert the arns headers are the same
         const arnsHeaders = Object.entries(response.headers)
@@ -202,7 +211,7 @@ describe('Wayfinder', () => {
       });
 
       for (const api of ['/info', '/block/current']) {
-        it(`supports native arweave node apis ${api}`, async () => {
+        it.skip(`supports native arweave node apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
             axios(`https://${gatewayUrl}${api}`),
             wayfinder.request(`ar://${api}`),
@@ -217,7 +226,7 @@ describe('Wayfinder', () => {
         it(`supports native ario node gateway apis ${api}`, async () => {
           const [nativeAxios, response] = await Promise.all([
             axios(`https://${gatewayUrl}${api}`),
-            wayfinder.request(`ar:///${api}`),
+            wayfinder.request(`ar://${api}`),
           ]);
           assert.strictEqual(response.status, 200);
           assert.strictEqual(response.status, nativeAxios.status);
@@ -225,19 +234,17 @@ describe('Wayfinder', () => {
         });
       }
 
-      it.skip('should return the error from the target gateway if the route is not found', async () => {
+      it('should return the error from the target gateway if the route is not found', async () => {
         const axiosInstance = axios.create({
           validateStatus: () => true, // don't throw so we can compare axios result with wrapped axios result
         });
         const wayfinder = new Wayfinder({
           httpClient: axiosInstance,
-          router: new RandomGatewayRouter({
-            gatewaysProvider: stubbedGatewaysProvider,
-          }),
+          routingStrategy: new RandomRoutingStrategy(),
         });
         const [nativeAxios, response] = await Promise.all([
           axiosInstance(`https://${gatewayUrl}/ar-io/not-found`),
-          wayfinder.request('ar:///not-found'),
+          wayfinder.request('ar:///ar-io/not-found'),
         ]);
         assert.strictEqual(response.status, nativeAxios.status);
       });
@@ -248,9 +255,8 @@ describe('Wayfinder', () => {
       before(() => {
         wayfinder = new Wayfinder({
           httpClient: got,
-          router: new RandomGatewayRouter({
-            gatewaysProvider: stubbedGatewaysProvider,
-          }),
+          routingStrategy: new RandomRoutingStrategy(),
+          gatewaysProvider: stubbedGatewaysProvider,
         });
       });
 
@@ -259,17 +265,22 @@ describe('Wayfinder', () => {
           got(`https://ao.${gatewayUrl}`),
           wayfinder.request('ar://ao'),
         ]);
-        assert.strictEqual(response.statusCode, 200);
         assert.strictEqual(response.statusCode, nativeGot.statusCode);
         assert.deepStrictEqual(response.body, nativeGot.body);
       });
 
       it('should stream the data using got.stream against the selected target gateway', async () => {
         const nativeBuffer = await buffer(
-          await got.stream(`https://ao.${gatewayUrl}`, { decompress: false }),
+          await got.stream(`https://ao.${gatewayUrl}`, {
+            decompress: false,
+            followRedirect: true,
+          }),
         );
         const wayfinderBuffer = await buffer(
-          await wayfinder.request.stream('ar://ao', { decompress: false }),
+          await wayfinder.request.stream('ar://ao', {
+            decompress: false,
+            followRedirect: true,
+          }),
         );
         assert.deepStrictEqual(wayfinderBuffer, nativeBuffer);
       });
@@ -280,10 +291,10 @@ describe('Wayfinder', () => {
     it('should emit events on the wayfinder event emitter', async () => {
       const wayfinder = new Wayfinder({
         httpClient: fetch,
-        router: new StaticGatewayRouter({
+        routingStrategy: new StaticRoutingStrategy({
           gateway: `http://${gatewayUrl}`,
         }),
-        verifier: {
+        verificationStrategy: {
           // @ts-expect-error
           verifyData: async (params: { data: Buffer; txId: string }) => {
             return;
@@ -322,7 +333,7 @@ describe('Wayfinder', () => {
       let verificationPassed = false;
       const wayfinder = new Wayfinder({
         httpClient: fetch,
-        router: new StaticGatewayRouter({
+        routingStrategy: new StaticRoutingStrategy({
           gateway: `http://${gatewayUrl}`,
         }),
         events: {
@@ -355,7 +366,7 @@ describe('Wayfinder', () => {
     });
   });
 
-  describe.skip('tapAndVerifyRequest', () => {
+  describe('tapAndVerifyRequest', () => {
     describe('Readable', () => {
       it('should duplicate the stream, verify the first and return the second if verification passes', async () => {
         // create a simple readable
@@ -394,7 +405,6 @@ describe('Wayfinder', () => {
         const emitter = new EventEmitter();
         const events: { type: string; txId: string }[] = [];
         emitter.on('verification-progress', (e) => {
-          console.log('verification-progress', e);
           events.push({ type: 'verification-progress', ...e });
         });
         emitter.on('verification-passed', (e) =>

@@ -17,7 +17,7 @@ import {
   DataHashProvider,
   DataRootProvider,
 } from '../../../types/wayfinder.js';
-import { GatewaysProvider } from '../gateways.js';
+import { GatewaysProvider } from '../../../types/wayfinder.js';
 
 const arioGatewayHeaders = {
   digest: 'x-ar-io-digest',

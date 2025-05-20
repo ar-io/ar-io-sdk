@@ -15,12 +15,15 @@
  */
 import { Readable } from 'stream';
 
-export interface WayfinderRouter {
-  readonly name: string;
-  getTargetGateway: () => Promise<URL>;
+export interface RoutingStrategy {
+  selectGateway: ({ gateways }: { gateways: URL[] }) => Promise<URL>;
 }
 
-export interface DataVerifier {
+export interface GatewaysProvider {
+  getGateways: () => Promise<URL[]>;
+}
+
+export interface DataVerificationStrategy {
   /**
    * Verifies the provided data for a given txId
    *
