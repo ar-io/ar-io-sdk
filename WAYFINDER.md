@@ -4,6 +4,8 @@ Wayfinder is a client-side routing and verification solution for Arweave content
 
 ## Quick Start
 
+### Basic Usage
+
 ```javascript
 import { Wayfinder } from '@ar-io/sdk';
 
@@ -12,6 +14,37 @@ const wayfinder = new Wayfinder();
 
 // use Wayfinder to fetch and verify data using ar:// protocol
 const response = await wayfinder.request('ar://example-name');
+```
+
+### Customize Wayfinder
+
+Customize the wayfinder instance with different gateways, verification strategies, and routing strategies.
+
+```javascript
+const wayfinder = new Wayfinder({
+  // cache the top 10 gateways by operator stake from the ARIO Network for 1 hour
+  gatewaysProvider: new SimpleCacheGatewaysProvider({
+    gatewaysProvider: new NetworkGatewaysProvider({
+      ario: ARIO.mainnet(),
+      sortBy: 'operatorStake',
+      sortOrder: 'desc',
+      limit: 10,
+    }),
+  }),
+  // use the fastest pinging strategy to select the fastest gateway for requests
+  routingStrategy: new FastestPingRoutingStrategy({
+    timeoutMs: 1000,
+    probePath: '/ar-io/info',
+  }),
+  // verify the data using the hash of the data against a list of trusted gateways
+  verificationStrategy: new HashVerificationStrategy({
+    trustedHashProvider: new TrustedGatewaysHashProvider({
+      gatewaysProvider: new StaticGatewaysProvider({
+        gateways: ['https://arweave.net'],
+      }),
+    }),
+  }),
+});
 ```
 
 ## ar:// Protocol
