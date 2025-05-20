@@ -115,11 +115,12 @@ export async function spawnANT({
 
   if (
     bootRes === undefined ||
-    bootRes.Messages.find((m) =>
-      m.Tags.find((t) => t.value === 'Invalid-Boot-Notice'),
+    bootRes.Messages?.some((m) =>
+      m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
     )
   ) {
     if (bootRes === undefined) {
+      // …
       throw new Error('Failed to get boot result');
     }
     const bootError = errorMessageFromOutput(bootRes);
