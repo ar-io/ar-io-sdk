@@ -92,7 +92,7 @@ describe('FastestPingRoutingStrategy', () => {
 
     assert.equal(
       selectedGateway.toString(),
-      'https://fast.com',
+      'https://fast.com/',
       'Should select the gateway with the lowest latency',
     );
   });
@@ -121,7 +121,7 @@ describe('FastestPingRoutingStrategy', () => {
 
     assert.equal(
       selectedGateway.toString(),
-      'https://success.com',
+      'https://success.com/',
       'Should select the gateway that returns a 200 status code',
     );
   });
@@ -173,7 +173,7 @@ describe('FastestPingRoutingStrategy', () => {
 
     assert.equal(
       selectedGateway.toString(),
-      'https://success.com',
+      'https://success.com/',
       'Should handle network errors and select the working gateway',
     );
   });
@@ -197,7 +197,7 @@ describe('FastestPingRoutingStrategy', () => {
 
     assert.equal(
       selectedGateway.toString(),
-      'https://fast.com',
+      'https://fast.com/',
       'Should respect the timeout and select only gateways that respond within the timeout',
     );
   });

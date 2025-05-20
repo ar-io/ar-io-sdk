@@ -16,7 +16,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
+import { Logger } from '../../../../common/logger.js';
 import { RoundRobinRoutingStrategy } from './round-robin.js';
+
+Logger.default.setLogLevel('none');
 
 describe('RoundRobinRoutingStrategy', () => {
   it('selects gateways in order and cycles back to the beginning', async () => {
@@ -98,7 +101,6 @@ describe('RoundRobinRoutingStrategy', () => {
     const strategy = new RoundRobinRoutingStrategy({ gateways });
 
     const selection1 = await strategy.selectGateway({
-      // @ts-ignore
       gateways: [new URL('https://example2.com')],
     });
     assert.equal(
@@ -108,7 +110,6 @@ describe('RoundRobinRoutingStrategy', () => {
     );
 
     const selection2 = await strategy.selectGateway({
-      // @ts-ignore
       gateways: [new URL('https://example2.com')],
     });
     assert.equal(
