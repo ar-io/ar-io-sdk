@@ -4,6 +4,10 @@
     {
       "name": "alpha",
       "prerelease": true
+    },
+    {
+      "name": "wayfinder",
+      "prerelease": true
     }
   ],
   "repositoryUrl": "https://github.com/ar-io/ar-io-sdk",
