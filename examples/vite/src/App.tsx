@@ -1,46 +1,16 @@
-import {
-  ARIO,
-  ARIOToken,
-  HashVerificationStrategy,
-  Logger,
-  NetworkGatewaysProvider,
-  SimpleCacheGatewaysProvider,
-  StaticGatewaysProvider,
-  TrustedGatewaysHashProvider,
-  Wayfinder,
-  mARIOToken,
-} from '@ar.io/sdk/web';
+import { ARIO, ARIOToken, mARIOToken } from '@ar.io/sdk/web';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import './App.css';
 import { useArNSRecords } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
-Logger.default.setLogLevel('debug');
-const ario = ARIO.mainnet();
-const wayfinder = new Wayfinder({
-  gatewaysProvider: new SimpleCacheGatewaysProvider({
-    ttlSeconds: 60,
-    gatewaysProvider: new NetworkGatewaysProvider({
-      ario,
-      sortBy: 'operatorStake',
-      sortOrder: 'desc',
-      limit: 5,
-    }),
-  }),
-  verificationStrategy: new HashVerificationStrategy({
-    trustedHashProvider: new TrustedGatewaysHashProvider({
-      gatewaysProvider: new StaticGatewaysProvider({
-        gateways: ['https://permagate.io'],
-      }),
-    }),
-  }),
-});
+const ario = ARIO.testnet();
 
 function App() {
   const [balance, setBalance] = useState<number | null>(null);
@@ -49,142 +19,127 @@ function App() {
   );
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-  const [wayfinderUrl, setWayfinderUrl] = useState<string | null>(null);
-  const [wayfinderVerified, setWayfinderVerified] = useState<boolean | null>(
-    null,
-  );
-  const [wayfinderVerificationProgress, setWayfinderVerificationProgress] =
-    useState<number>(0);
-  const [wayfinderResponse, setWayfinderResponse] = useState<{
-    data: string;
-    txId: string;
-    status: number;
-    headers: Record<string, string>;
-  } | null>(null);
-  const [wayfinderStatusUpdates, setWayfinderStatusUpdates] = useState<
-    Set<string>
-  >(new Set());
 
-  // const {
-  //   data: names,
-  //   isLoading: namesLoading,
-  //   error: namesError,
-  // } = useArNSRecords({
-  //   ario,
-  //   limit: 10,
-  //   cursor: undefined,
-  //   sortBy: 'name',
-  //   sortOrder: 'asc',
-  // });
+  const {
+    data: names,
+    isLoading: namesLoading,
+    error: namesError,
+  } = useArNSRecords({
+    ario,
+    limit: 10,
+    cursor: undefined,
+    sortBy: 'name',
+    sortOrder: 'asc',
+  });
 
-  // const {
-  //   data: gateways,
-  //   isLoading: gatewaysLoading,
-  //   error: gatewaysError,
-  // } = useGateways({
-  //   ario,
-  //   limit: 10,
-  //   cursor: undefined,
-  //   sortBy: 'startTimestamp',
-  //   sortOrder: 'asc',
-  // });
+  const {
+    data: gateways,
+    isLoading: gatewaysLoading,
+    error: gatewaysError,
+  } = useGateways({
+    ario,
+    limit: 10,
+    cursor: undefined,
+    sortBy: 'startTimestamp',
+    sortOrder: 'asc',
+  });
 
-  // const namesTable = useReactTable({
-  //   data: names?.items ?? [],
-  //   columns: [
-  //     {
-  //       accessorKey: 'name',
-  //       header: 'Name',
-  //     },
-  //     {
-  //       accessorKey: 'processId',
-  //       header: 'Process',
-  //     },
-  //     {
-  //       accessorKey: 'type',
-  //       header: 'Type',
-  //     },
-  //     {
-  //       accessorKey: 'purchasePrice',
-  //       header: 'Purchase Price',
-  //       cell: ({ row }) => {
-  //         return row.original.purchasePrice
-  //           ? `${new mARIOToken(row.original.purchasePrice).toARIO().valueOf().toFixed(2)} ARIO`
-  //           : 'N/A';
-  //       },
-  //     },
-  //     {
-  //       accessorKey: 'startTimestamp',
-  //       header: 'Purchased',
-  //       cell: ({ row }) => {
-  //         return new Date(row.original.startTimestamp).toLocaleDateString();
-  //       },
-  //     },
-  //     {
-  //       accessorKey: 'endTimestamp',
-  //       header: 'Expiry',
-  //       cell: ({ row }) => {
-  //         const endTimestamp =
-  //           row.original.type === 'lease'
-  //             ? row.original.endTimestamp
-  //             : undefined;
-  //         return endTimestamp
-  //           ? new Date(endTimestamp).toLocaleDateString()
-  //           : 'Infinite';
-  //       },
-  //     },
-  //   ],
-  //   getCoreRowModel: getCoreRowModel(),
-  // });
+  const namesTable = useReactTable({
+    data: names?.items ?? [],
+    columns: [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+      },
+      {
+        accessorKey: 'processId',
+        header: 'Process',
+      },
+      {
+        accessorKey: 'type',
+        header: 'Type',
+      },
+      {
+        accessorKey: 'purchasePrice',
+        header: 'Purchase Price',
+        cell: ({ row }) => {
+          return row.original.purchasePrice
+            ? `${new mARIOToken(row.original.purchasePrice).toARIO().valueOf().toFixed(2)} ARIO`
+            : 'N/A';
+        },
+      },
+      {
+        accessorKey: 'startTimestamp',
+        header: 'Purchased',
+        cell: ({ row }) => {
+          return new Date(row.original.startTimestamp).toLocaleDateString();
+        },
+      },
+      {
+        accessorKey: 'endTimestamp',
+        header: 'Expiry',
+        cell: ({ row }) => {
+          const endTimestamp =
+            row.original.type === 'lease'
+              ? row.original.endTimestamp
+              : undefined;
+          return endTimestamp
+            ? new Date(endTimestamp).toLocaleDateString()
+            : 'Infinite';
+        },
+      },
+    ],
+    getCoreRowModel: getCoreRowModel(),
+  });
 
-  // const gatewaysTable = useReactTable({
-  //   data: gateways?.items ?? [],
-  //   columns: [
-  //     {
-  //       accessorKey: 'gatewayAddress',
-  //       header: 'Address',
-  //     },
-  //     {
-  //       accessorKey: 'observerAddress',
-  //       header: 'Observer',
-  //     },
-  //     {
-  //       accessorKey: 'status',
-  //       header: 'Status',
-  //     },
-  //     {
-  //       accessorKey: 'startTimestamp',
-  //       header: 'Joined',
-  //       cell: ({ row }) => {
-  //         return new Date(row.original.startTimestamp).toLocaleDateString();
-  //       },
-  //     },
-  //     {
-  //       accessorKey: 'operatorStake',
-  //       header: 'Operator Stake',
-  //     },
-  //     {
-  //       accessorKey: 'totalDelegatedStake',
-  //       header: 'Total Delegated Stake',
-  //     },
-  //     {
-  //       accessorKey: 'totalDelegations',
-  //       header: 'Total Delegations',
-  //       cell: ({ row }) => {
-  //         const { data: delegations, isLoading: delegationsLoading } =
-  //           useGatewayDelegations({
-  //             ario,
-  //             gatewayAddress: row.original.gatewayAddress,
-  //             limit: 10,
-  //             cursor: undefined,
-  //           });
-  //         if (delegationsLoading) return 'Loading...';
-  //         return delegations?.totalItems;
-  //       },
-  //     },
-  //   ],
-  //   getCoreRowModel: getCoreRowModel(),
-  // });
+  const gatewaysTable = useReactTable({
+    data: gateways?.items ?? [],
+    columns: [
+      {
+        accessorKey: 'gatewayAddress',
+        header: 'Address',
+      },
+      {
+        accessorKey: 'observerAddress',
+        header: 'Observer',
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+      },
+      {
+        accessorKey: 'startTimestamp',
+        header: 'Joined',
+        cell: ({ row }) => {
+          return new Date(row.original.startTimestamp).toLocaleDateString();
+        },
+      },
+      {
+        accessorKey: 'operatorStake',
+        header: 'Operator Stake',
+      },
+      {
+        accessorKey: 'totalDelegatedStake',
+        header: 'Total Delegated Stake',
+      },
+      {
+        accessorKey: 'totalDelegations',
+        header: 'Total Delegations',
+        cell: ({ row }) => {
+          const { data: delegations, isLoading: delegationsLoading } =
+            useGatewayDelegations({
+              ario,
+              gatewayAddress: row.original.gatewayAddress,
+              limit: 10,
+              cursor: undefined,
+            });
+          if (delegationsLoading) return 'Loading...';
+          return delegations?.totalItems;
+        },
+      },
+    ],
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   useEffect(() => {
     if (window.arweaveWallet) {
@@ -261,89 +216,6 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    setWayfinderStatusUpdates(new Set());
-    setWayfinderResponse(null);
-    setWayfinderVerified(null);
-    setWayfinderVerificationProgress(0);
-    if (wayfinderUrl) {
-      const resolveUrl = async () => {
-        // do a head request on the URL to see if it's a video stream
-        wayfinder
-          .request(wayfinderUrl, {
-            mode: 'cors',
-            redirect: 'follow',
-          })
-          .then(async (res) => {
-            setWayfinderResponse({
-              data: await res.text(),
-              txId: (res as any).txId,
-              status: res.status,
-              headers: Object.fromEntries(res.headers.entries()),
-            });
-          })
-          .catch((err) => {
-            console.error('Failed to fetch video:', err);
-          });
-      };
-      resolveUrl();
-    }
-  }, [wayfinderUrl]);
-
-  useEffect(() => {
-    wayfinder.emitter.on('routing-failed', (event) => {
-      setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`❌ Routing failed: ${event.error.message}`);
-        return prevUpdates;
-      });
-    });
-    wayfinder.emitter.on('routing-succeeded', (event) => {
-      setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`🔄 Routed request to: ${event.selectedGateway}`);
-        return prevUpdates;
-      });
-    });
-    wayfinder.emitter.on('identified-transaction-id', (event) => {
-      setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`🔍 Identified transaction id: ${event.txId}`);
-        return prevUpdates;
-      });
-    });
-    wayfinder.emitter.on('verification-passed', (event) => {
-      setWayfinderVerified(true);
-      setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`✅ Verification passed for ${event.txId}`);
-        return prevUpdates;
-      });
-    });
-    wayfinder.emitter.on('verification-failed', (event) => {
-      console.log('verification failed', event);
-      setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`❌ Verification failed for ${event.txId}`);
-        return prevUpdates;
-      });
-    });
-    wayfinder.emitter.on('verification-progress', (event) => {
-      if (event.totalBytes === 0) {
-        return;
-      }
-      const newEventProcessedBytes =
-        (event.processedBytes / (event.totalBytes ?? 1)) * 100;
-      // for every 10% of progress, update the progress bar
-      const newRoundedProgress = Math.round(newEventProcessedBytes / 10) * 10;
-      if (
-        newRoundedProgress >= wayfinderVerificationProgress &&
-        newRoundedProgress > 0
-      ) {
-        setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`⏳ Verifying... ${newRoundedProgress}%`);
-          return prevUpdates;
-        });
-        setWayfinderVerificationProgress(newRoundedProgress);
-      }
-    });
-  }, [wayfinder]);
-
   return (
     <div
       className="App"
@@ -355,30 +227,42 @@ function App() {
         margin: '0 auto',
       }}
     >
-      {/* <div className="header">
+      <div className="header">
         <h1>AR.IO Network Explorer</h1>
-      </div> */}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h2 style={{ textAlign: 'center' }}>
-          Wayfinder Routing and Verification
-        </h2>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          alignItems: 'center',
+          padding: '2rem',
+        }}
+      >
+        <div className="header">
+          <h2>Testnet Faucet Integration</h2>
+        </div>
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
             alignItems: 'center',
+            gap: '15px',
           }}
         >
+          <span>
+            Current Balance:{' '}
+            {balance ? `${balance.toFixed(2)} ARIO` : 'Loading...'}
+          </span>
+
           <input
             type="text"
-            placeholder="Enter ar:// URL"
+            placeholder={selectedAddress ?? 'Enter wallet address'}
             onChange={(e) => {
-              // wait one second before setting the wayfinder url and clear previous timeout if it exists
-              clearTimeout((window as any).wayfinderUrlTimeout);
-              (window as any).wayfinderUrlTimeout = setTimeout(() => {
-                setWayfinderUrl(e.target.value);
+              const value = e.target.value;
+              clearTimeout((window as any).addressTimeout);
+              (window as any).addressTimeout = setTimeout(() => {
+                setSelectedAddress(value);
               }, 1000);
             }}
             style={{
@@ -388,40 +272,119 @@ function App() {
               border: '1px solid #ccc',
             }}
           />
-          <div>
-            {wayfinderStatusUpdates.size > 0 && (
-              <pre
-                style={{
-                  marginTop: '10px',
-                  textAlign: 'left',
-                  maxWidth: '500px',
-                  overflow: 'auto',
-                }}
-              >
-                {Array.from(wayfinderStatusUpdates).map((update) => (
-                  <div key={update}>{update}</div>
-                ))}
-              </pre>
-            )}
-          </div>
-          {wayfinderResponse && (
-            <div>
-              <h3>Response headers</h3>
-              <pre
-                style={{
-                  marginTop: '10px',
-                  textAlign: 'left',
-                  maxWidth: '500px',
-                  overflow: 'auto',
-                }}
-              >
-                {JSON.stringify(wayfinderResponse, null, 2)}
-              </pre>
-            </div>
+
+          {/* Example of using the testnet faucet to request tokens */}
+          <button onClick={requestTokens} disabled={!selectedAddress}>
+            Request 100 tARIO
+          </button>
+          {tokenRequestMessage && (
+            <span
+              style={{
+                color: 'green',
+                opacity: tokenRequestMessage ? 1 : 0,
+                transition: 'opacity 0.3s',
+              }}
+              onAnimationEnd={() => {
+                setTimeout(() => {
+                  setTokenRequestMessage(null);
+                }, 5000);
+              }}
+            >
+              {tokenRequestMessage}
+            </span>
           )}
         </div>
+        <div
+          style={{
+            fontSize: '0.8em',
+            color: '#666',
+            textAlign: 'center',
+            maxWidth: '500px',
+          }}
+        >
+          Note: This example uses the AR.IO testnet faucet to request test
+          tokens (tARIO). A captcha verification is required to claim tokens.
+        </div>
+      </div>
+      <div style={{ padding: '10px' }}>
+        <hr />
       </div>
 
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <h1 style={{ textAlign: 'left' }}>ArNS Names</h1>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            {namesTable.getHeaderGroups().map((headerGroup) => {
+              return (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={{ textAlign: 'left' }}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              );
+            })}
+          </thead>
+          <tbody>
+            {namesTable.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} style={{ textAlign: 'left' }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ padding: '10px' }}>
+        <hr />
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <h1 style={{ textAlign: 'left' }}>Gateways</h1>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            {gatewaysTable.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    style={{ textAlign: 'left' }}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {gatewaysTable.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td key={cell.id} style={{ textAlign: 'left' }}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div style={{ padding: '10px' }}>
         <hr />
       </div>
