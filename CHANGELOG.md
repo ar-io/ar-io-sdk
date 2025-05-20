@@ -1,10 +1,3 @@
-# [3.11.0-alpha.13](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.12...v3.11.0-alpha.13) (2025-05-20)
-
-
-### Bug Fixes
-
-* **wayfinder:** replace `routers` with `routingStratgies` and `verifiers` with `verificationStrategies` ([0566bd2](https://github.com/ar-io/ar-io-sdk/commit/0566bd286ac4a18e2afbbeecde643006d7996a04))
-
 ## [3.10.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.1...v3.10.2) (2025-05-06)
 
 

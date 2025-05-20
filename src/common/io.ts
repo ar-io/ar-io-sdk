@@ -722,7 +722,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       });
 
       return {
-        tokenCost: +mARIO,
+        tokenCost: mARIO.valueOf(),
         wincQty: winc,
         discounts: [],
       };

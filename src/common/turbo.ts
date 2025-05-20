@@ -123,7 +123,7 @@ export async function signedRequestHeadersFromSigner({
     'x-public-key': publicKey,
     'x-nonce': nonce,
     'x-signature': signature,
-    'x-signature-type': signatureType,
+    'x-signature-type': signatureType.toString(),
   };
 }
 
