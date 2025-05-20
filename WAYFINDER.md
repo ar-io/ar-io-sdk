@@ -16,14 +16,19 @@ const wayfinder = new Wayfinder();
 const response = await wayfinder.request('ar://example-name');
 ```
 
-### Customize Wayfinder
+### Custom Configuration
 
-Customize the wayfinder instance with different gateways, verification strategies, and routing strategies.
+You can customize the wayfinder instance with different gateways, verification strategies, and routing strategies based on your use case.
+
+Example:
+
+> _Wayfinder client that caches the top 10 gateways by operator stake from the ARIO Network for 1 hour and uses the fastest pinging routing strategy to select the fastest gateway for requests._
 
 ```javascript
 const wayfinder = new Wayfinder({
   // cache the top 10 gateways by operator stake from the ARIO Network for 1 hour
   gatewaysProvider: new SimpleCacheGatewaysProvider({
+    ttlSeconds: 60 * 60, // cache the gateways for 1 hour
     gatewaysProvider: new NetworkGatewaysProvider({
       ario: ARIO.mainnet(),
       sortBy: 'operatorStake',
