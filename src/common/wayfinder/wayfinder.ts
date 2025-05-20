@@ -59,31 +59,30 @@ export const resolveWayfinderUrl = ({
     logger?.debug(`Applying wayfinder routing protocol to ${originalUrl}`, {
       originalUrl,
     });
-    const selectedGatewayUrl = new URL(selectedGateway);
     const [, path] = originalUrl.toString().split('ar://');
 
     // e.g. ar:///info should route to the info endpoint of the target gateway
     if (path.startsWith('/')) {
-      logger?.debug(`Routing to ${path.slice(1)} on ${selectedGatewayUrl}`, {
+      logger?.debug(`Routing to ${path.slice(1)} on ${selectedGateway}`, {
         originalUrl,
-        selectedGateway: selectedGatewayUrl,
+        selectedGateway,
       });
-      return new URL(path.slice(1), selectedGatewayUrl);
+      return new URL(path.slice(1), selectedGateway);
     }
 
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
     if (txIdRegex.test(path)) {
       const [txId, ...rest] = path.split('/');
-      return new URL(`${txId}${rest.join('/')}`, selectedGatewayUrl);
+      return new URL(`${txId}${rest.join('/')}`, selectedGateway);
     }
 
     if (arnsRegex.test(path)) {
       // TODO: tests to ensure arns names support query params and paths
       const [name, ...rest] = path.split('/');
-      const arnsUrl = `${selectedGatewayUrl.protocol}//${name}.${selectedGatewayUrl.hostname}${selectedGatewayUrl.port ? `:${selectedGatewayUrl.port}` : ''}`;
+      const arnsUrl = `${selectedGateway.protocol}//${name}.${selectedGateway.hostname}${selectedGateway.port ? `:${selectedGateway.port}` : ''}`;
       logger?.debug(`Routing to ${path} on ${arnsUrl}`, {
         originalUrl,
-        selectedGateway: selectedGatewayUrl,
+        selectedGateway,
       });
       return new URL(rest.join('/'), arnsUrl);
     }
@@ -114,7 +113,16 @@ export type WayfinderEvent =
       totalBytes: number;
     }
   | { type: 'routing-started'; originalUrl: string }
-  | { type: 'routing-succeeded'; originalUrl: string; targetGateway: string }
+  | {
+      type: 'routing-skipped';
+      originalUrl: string;
+    }
+  | {
+      type: 'routing-succeeded';
+      originalUrl: string;
+      selectedGateway: string;
+      redirectUrl: string;
+    }
   | { type: 'routing-failed'; originalUrl: string; error: Error }
   | {
       type: 'identified-transaction-id';
@@ -385,6 +393,9 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       logger?.debug('Original URL is not a string, skipping routing', {
         originalUrl,
       });
+      emitter?.emit('routing-skipped', {
+        originalUrl: JSON.stringify(originalUrl),
+      });
       return fn(...rawArgs);
     }
 
@@ -411,6 +422,12 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           originalUrl,
           selectedGateway,
           logger,
+        });
+
+        emitter?.emit('routing-succeeded', {
+          originalUrl,
+          selectedGateway: selectedGateway.toString(),
+          redirectUrl: redirectUrl.toString(),
         });
 
         logger?.debug(`Redirecting request to ${redirectUrl}`, {
@@ -628,23 +645,17 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
  */
 export class Wayfinder<T extends HttpClientFunction> {
   /**
-   * The native http client used by wayfinder
+   * The native http client used by wayfinder. By default, the native fetch api is used.
    *
    * @example
    * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
-   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
-   *       ttlSeconds: 60 * 60 * 24, // 1 day
-   *     }),
-   *   }),
    *   httpClient: axios,
    * });
    *
    */
   public readonly httpClient: T;
   /**
-   * The gateways provider to use for routing requests. The gateways provider is responsible for providing the list of gateways to use for routing requests.
+   * The gateways provider is responsible for providing the list of gateways to use for routing requests.
    *
    * @example
    * const wayfinder = new Wayfinder({
@@ -656,7 +667,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    */
   public readonly gatewaysProvider: GatewaysProvider;
   /**
-   * The strategy to use for routing requests
+   * The routing strategy to use when routing requests.
    *
    * @example
    * const wayfinder = new Wayfinder({
@@ -667,46 +678,48 @@ export class Wayfinder<T extends HttpClientFunction> {
    */
   public readonly routingStrategy: RoutingStrategy;
   /**
-   * The function that resolves the redirect url for ar:// requests to a target gateway
+   * A helper function that resolves the redirect url for ar:// requests to a target gateway.
+   *
+   * Note: no verification is done when resolving an ar://<path> url to a wayfinder route.
+   * In order to verify the data, you must use the `request` function or request the data and
+   * verify it yourself via the `verifyData` function.
    *
    * @example
-   * const wayfinder = new Wayfinder({
-   *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
-   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
-   *       ttlSeconds: 60 * 60 * 24, // 1 day
-   *     }),
-   *   }),
-   *   httpClient: axios,
-   * });
+   * const { resolveUrl } = new Wayfinder();
    *
    * // returns the redirected URL based on the routing strategy and the original url
-   * const redirectUrl = await wayfinder.resolveUrl({ originalUrl: 'ar://example' });
+   * const redirectUrl = await resolveUrl({ originalUrl: 'ar://example' });
+   *
+   * window.open(redirectUrl.toString(), '_blank');
    */
   public readonly resolveUrl: (params: {
     originalUrl: string;
     logger?: Logger;
   }) => Promise<URL>;
   /**
-   * A wrapped http client that supports ar:// protocol
+   *
+   * A wrapped http client that supports ar:// protocol. If a verification strategy is provided,
+   * the request will be verified and events will be emitted as the request is processed.
    *
    * @example
-   * const { request: wayfind } = new Wayfinder({
-   *   router: new RandomGatewayRouter({
-   *     gatewaysProvider: new SimpleCacheGatewaysProvider({
-   *       gatewaysProvider: new NetworkGatewaysProvider({ ario: ARIO.mainnet() }),
-   *       ttlSeconds: 60 * 60 * 24, // 1 day
+   * const wayfinder = new Wayfinder({
+   *   verificationStrategy: new HashVerificationStrategy({
+   *     trustedHashProvider: new TrustedGatewaysHashProvider({
+   *       gatewaysProvider: new StaticGatewaysProvider({
+   *         gateways: ['https://permagate.io'],
+   *       }),
    *     }),
    *   }),
-   *   httpClient: axios,
-   * });;
-   *
-   * const response = await wayfind('ar://example', {
-   *   method: 'POST',
-   *   data: {
-   *     name: 'John Doe',
-   *   },
    * })
+   *
+   * // request an arns name
+   * const response = await wayfinder.request('ar://ardrive')
+   *
+   * // request a transaction id
+   * const response = await wayfinder.request('ar://1234567890')
+   *
+   * // request a transaction id with a custom http client
+   * const response = await wayfinder.request('ar://1234567890')
    */
   public readonly request: WayfinderHttpClient<T>;
 
@@ -716,7 +729,8 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @example
    * const wayfinder = new Wayfinder({
    *   verifyData: (data, txId) => {
-   *     return verifyData(data, txId);
+   *     // some custom verification logic
+   *     return true;
    *   },
    * });
    */
@@ -767,7 +781,6 @@ export class Wayfinder<T extends HttpClientFunction> {
     httpClient = fetch as T,
     logger = Logger.default,
     gatewaysProvider = new SimpleCacheGatewaysProvider({
-      // TODO: we could create some stats provider for when requests are made to a gateway
       gatewaysProvider: new NetworkGatewaysProvider({
         ario: ARIO.mainnet(),
       }),
