@@ -23,8 +23,11 @@ import {
 } from 'arweave/node/lib/merkle.js';
 import { Readable } from 'node:stream';
 
-import { DataRootProvider, DataVerifier } from '../../../types/wayfinder.js';
-import { toB64Url } from '../../../utils/base64.js';
+import {
+  DataRootProvider,
+  DataVerificationStrategy,
+} from '../../../../types/wayfinder.js';
+import { toB64Url } from '../../../../utils/base64.js';
 
 export async function convertBufferToDataRoot({
   buffer,
@@ -122,7 +125,7 @@ export const convertReadableToDataRoot = async <
   return toB64Url(Buffer.from(root.id));
 };
 
-export class DataRootVerifier implements DataVerifier {
+export class DataRootVerificationStrategy implements DataVerificationStrategy {
   private readonly trustedDataRootProvider: DataRootProvider;
   constructor({
     trustedDataRootProvider,

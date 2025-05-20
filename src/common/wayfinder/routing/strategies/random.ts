@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { WayfinderRouter } from '../../../types/wayfinder.js';
+import { RoutingStrategy } from '../../../../types/wayfinder.js';
+import { randomInt } from '../../../../utils/random.js';
 
-export class StaticGatewayRouter implements WayfinderRouter {
-  public readonly name = 'static';
-  private gateway: URL;
-
-  constructor({ gateway }: { gateway: string }) {
-    this.gateway = new URL(gateway);
-  }
-
-  async getTargetGateway(): Promise<URL> {
-    return this.gateway;
+export class RandomRoutingStrategy implements RoutingStrategy {
+  async selectGateway({ gateways }: { gateways: URL[] }): Promise<URL> {
+    if (gateways.length === 0) {
+      throw new Error('No gateways available');
+    }
+    return gateways[randomInt(0, gateways.length)];
   }
 }

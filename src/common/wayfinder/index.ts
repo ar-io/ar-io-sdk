@@ -15,19 +15,22 @@
  */
 export * from './wayfinder.js';
 
-// routers
-export * from './routers/random.js';
-export * from './routers/priority.js';
-export * from './routers/static.js';
+// routing strategies
+export * from './routing/strategies/random.js';
+export * from './routing/strategies/static.js';
+export * from './routing/strategies/ping.js';
+export * from './routing/strategies/round-robin.js';
 
 // gateways providers
-export * from './gateways.js';
+export * from './gateways/network.js';
+export * from './gateways/simple-cache.js';
+export * from './gateways/static.js';
 
 // trusted gateways
-export * from './gateways/trusted-gateways.js';
+export * from './verification/trusted.js';
 
 // hash providers
-export * from './verification/data-root-verifier.js';
-export * from './verification/hash-verifier.js';
+export * from './verification/strategies/data-root-verifier.js';
+export * from './verification/strategies/hash-verifier.js';
 
 // TODO: signature verification

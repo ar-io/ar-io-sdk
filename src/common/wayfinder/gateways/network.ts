@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoARIORead, AoGatewayWithAddress } from '../../types/io.js';
-
-export interface GatewaysProvider {
-  getGateways(): Promise<URL[]>;
-}
+import { AoARIORead, AoGatewayWithAddress } from '../../../types/io.js';
+import { GatewaysProvider } from '../../../types/wayfinder.js';
+import { ARIO } from '../../io.js';
 
 export class NetworkGatewaysProvider implements GatewaysProvider {
   private ario: AoARIORead;
@@ -26,13 +24,13 @@ export class NetworkGatewaysProvider implements GatewaysProvider {
   private limit: number;
   private filter: (gateway: AoGatewayWithAddress) => boolean;
   constructor({
-    ario,
+    ario = ARIO.mainnet(),
     sortBy = 'operatorStake',
     sortOrder = 'desc',
     limit = 1000,
     filter = (g) => g.status === 'joined',
   }: {
-    ario: AoARIORead;
+    ario?: AoARIORead;
     sortBy?: 'totalDelegatedStake' | 'operatorStake' | 'startTimestamp';
     sortOrder?: 'asc' | 'desc';
     limit?: number;
@@ -79,52 +77,5 @@ export class NetworkGatewaysProvider implements GatewaysProvider {
           `${g.settings.protocol}://${g.settings.fqdn}:${g.settings.port}`,
         ),
     );
-  }
-}
-
-export class StaticGatewaysProvider implements GatewaysProvider {
-  private gateways: URL[];
-  constructor({ gateways }: { gateways: string[] }) {
-    this.gateways = gateways.map((g) => new URL(g));
-  }
-
-  async getGateways(): Promise<URL[]> {
-    return this.gateways;
-  }
-}
-
-export class SimpleCacheGatewaysProvider implements GatewaysProvider {
-  private gatewaysProvider: GatewaysProvider;
-  private ttlSeconds: number;
-  private lastUpdated: number;
-  private gatewaysCache: URL[];
-  constructor({
-    gatewaysProvider,
-    ttlSeconds = 5 * 60, // 5 minutes
-  }: {
-    gatewaysProvider: GatewaysProvider;
-    ttlSeconds?: number;
-  }) {
-    this.gatewaysCache = [];
-    this.gatewaysProvider = gatewaysProvider;
-    this.ttlSeconds = ttlSeconds;
-  }
-
-  async getGateways(): Promise<URL[]> {
-    const now = Date.now();
-    if (
-      this.gatewaysCache.length === 0 ||
-      now - this.lastUpdated > this.ttlSeconds * 1000
-    ) {
-      try {
-        // preserve the cache if the fetch fails
-        const allGateways = await this.gatewaysProvider.getGateways();
-        this.gatewaysCache = allGateways;
-        this.lastUpdated = now;
-      } catch (error) {
-        console.error('Error fetching gateways', error);
-      }
-    }
-    return this.gatewaysCache;
   }
 }

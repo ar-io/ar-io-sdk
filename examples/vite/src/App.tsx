@@ -1,11 +1,10 @@
 import {
   ARIO,
   ARIOToken,
-  HashVerifier,
+  HashVerificationStrategy,
   Logger,
   NetworkGatewaysProvider,
-  PriorityGatewayRouter,
-  StaticGatewayRouter,
+  SimpleCacheGatewaysProvider,
   StaticGatewaysProvider,
   TrustedGatewaysHashProvider,
   Wayfinder,
@@ -23,14 +22,18 @@ import { useArNSRecords } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
 Logger.default.setLogLevel('debug');
-const ario = ARIO.testnet();
-// @ts-ignore
-const wayfinder = new Wayfinder<typeof fetch>({
-  httpClient: fetch,
-  router: new StaticGatewayRouter({
-    gateway: 'https://permagate.io',
+const ario = ARIO.mainnet();
+const wayfinder = new Wayfinder({
+  gatewaysProvider: new SimpleCacheGatewaysProvider({
+    ttlSeconds: 60,
+    gatewaysProvider: new NetworkGatewaysProvider({
+      ario,
+      sortBy: 'operatorStake',
+      sortOrder: 'desc',
+      limit: 5,
+    }),
   }),
-  verifier: new HashVerifier({
+  verificationStrategy: new HashVerificationStrategy({
     trustedHashProvider: new TrustedGatewaysHashProvider({
       gatewaysProvider: new StaticGatewaysProvider({
         gateways: ['https://permagate.io'],
@@ -296,7 +299,7 @@ function App() {
     });
     wayfinder.emitter.on('routing-succeeded', (event) => {
       setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`🔄 Routed request to: ${event.targetGateway}`);
+        prevUpdates.add(`🔄 Routed request to: ${event.selectedGateway}`);
         return prevUpdates;
       });
     });
