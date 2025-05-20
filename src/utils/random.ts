@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  ArweaveSigner,
-  ArconnectSigner,
-  InjectedEthereumSigner,
-  EthereumSigner,
-} from '@dha-team/arbundles';
+import { webcrypto } from 'crypto';
 
-export * from '../types/index.js';
-export * from '../common/index.js';
-export * from '../constants.js';
-export * from '../utils/index.js';
+/**
+ * Cryptographically secure helper for randomness, does not support seeding
+ * @param min - the minimum value
+ * @param max - the maximum value
+ * @returns a random integer between min and max
+ */
+export const randomInt = (min: number, max: number): number => {
+  const [rand] = webcrypto.getRandomValues(new Uint32Array(1));
+  return min + (rand % (max - min));
+};

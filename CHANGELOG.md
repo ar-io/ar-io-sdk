@@ -1,3 +1,10 @@
+# [3.11.0-alpha.14](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.13...v3.11.0-alpha.14) (2025-05-20)
+
+
+### Bug Fixes
+
+* **ant:** update ant versions types ([4a74336](https://github.com/ar-io/ar-io-sdk/commit/4a74336646608a1a36da79a7680bca10590abebb))
+
 ## [3.10.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.1...v3.10.2) (2025-05-06)
 
 

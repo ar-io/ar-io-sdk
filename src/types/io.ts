@@ -431,7 +431,7 @@ export type AoTokenCostParams = {
   fromAddress?: WalletAddress;
 };
 
-export const fundFromOptions = ['balance', 'stakes', 'any'] as const;
+export const fundFromOptions = ['balance', 'stakes', 'any', 'turbo'] as const;
 export type FundFrom = (typeof fundFromOptions)[number];
 export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
   return fundFromOptions.indexOf(fundFrom as FundFrom) !== -1;
@@ -468,6 +468,7 @@ export type CostDetailsResult = {
     basePrice: number;
   };
   fundingPlan?: AoFundingPlan;
+  wincQty?: string;
 };
 
 export type AoGetVaultParams = {
@@ -564,7 +565,24 @@ export type DemandFactorSettings = {
 
 // Interfaces
 
-export interface AoARIORead {
+// simple interface to allow multiple implementations of ArNSNameResolver
+export type ArNSNameResolutionData = {
+  name: string;
+  owner?: string; // could be unowned
+  txId: string;
+  type: 'lease' | 'permabuy';
+  processId: string;
+  ttlSeconds: number;
+  priority?: number; // TODO: the SDK should always provide a priority index, even if the ANT does not have a priority set
+  undernameLimit: number;
+};
+
+export interface ArNSNameResolver {
+  resolveArNSName({ name }: { name: string }): Promise<ArNSNameResolutionData>;
+}
+
+export interface AoARIORead extends ArNSNameResolver {
+  process: AOProcess;
   getInfo(): Promise<{
     Ticker: string;
     Name: string;
@@ -707,10 +725,13 @@ export interface AoARIOWrite extends AoARIORead {
     failedGateways: WalletAddress[];
   }>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
-  buyRecord: AoWriteAction<AoBuyRecordParams>;
-  upgradeRecord: AoWriteAction<AoArNSPurchaseParams>;
-  extendLease: AoWriteAction<AoExtendLeaseParams>;
-  increaseUndernameLimit: AoWriteAction<AoIncreaseUndernameLimitParams>;
+  buyRecord: AoWriteAction<AoBuyRecordParams, AoMessageResult>;
+  upgradeRecord: AoWriteAction<AoArNSPurchaseParams, AoMessageResult>;
+  extendLease: AoWriteAction<AoExtendLeaseParams, AoMessageResult>;
+  increaseUndernameLimit: AoWriteAction<
+    AoIncreaseUndernameLimitParams,
+    AoMessageResult
+  >;
   cancelWithdrawal: AoWriteAction<{
     gatewayAddress?: WalletAddress;
     vaultId: string;

@@ -25,5 +25,10 @@
     "strictNullChecks": true
   },
   "include": ["src"],
-  "exclude": ["lib", "node_modules", "bundles", "tests"]
+  "exclude": ["lib", "node_modules", "bundles", "tests"],
+  "ts-node": {
+    "esm": true,
+    "swc": true,
+    "logError": true
+  }
 }

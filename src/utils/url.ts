@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  ArweaveSigner,
-  ArconnectSigner,
-  InjectedEthereumSigner,
-  EthereumSigner,
-} from '@dha-team/arbundles';
-
-export * from '../types/index.js';
-export * from '../common/index.js';
-export * from '../constants.js';
-export * from '../utils/index.js';
+export const urlWithSearchParams = ({
+  baseUrl,
+  params,
+}: {
+  baseUrl: string;
+  params: Record<string, string | number | boolean | null | undefined>;
+}) => {
+  const urlObj = new URL(baseUrl);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    urlObj.searchParams.set(key, value.toString());
+  });
+  return urlObj.toString();
+};

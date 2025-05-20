@@ -27,27 +27,17 @@ import {
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
-import { AoANTRecord } from '../types/ant.js';
+import { SpawnANTState, SpawnANTStateSchema } from '../types/ant.js';
 import {
   AoClient,
   AoEpochData,
   AoEpochDistributed,
   AoSigner,
   ContractSigner,
+  MessageResult,
   WalletAddress,
 } from '../types/index.js';
-
-export type SpawnANTState = {
-  owner: WalletAddress;
-  controllers: WalletAddress[];
-  name: string;
-  description: string;
-  keywords: string[];
-  ticker: string;
-  records: Record<string, AoANTRecord>;
-  balances: Record<WalletAddress, number>;
-  logo: string;
-};
+import { parseSchemaResult } from './schema.js';
 
 export type SpawnANTParams = {
   signer: AoSigner;
@@ -80,6 +70,9 @@ export async function spawnANT({
   authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
   // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
+  if (state) {
+    parseSchemaResult(SpawnANTStateSchema, state);
+  }
   const processId = await ao.spawn({
     module,
     scheduler,
@@ -97,6 +90,50 @@ export async function spawnANT({
       },
     ],
   });
+
+  let bootRes: MessageResult | undefined;
+  let attempts = 0;
+  while (attempts < 5 && bootRes === undefined) {
+    try {
+      bootRes = await ao.result({
+        process: processId,
+        message: processId,
+      });
+      break;
+    } catch (error) {
+      logger.debug('Retrying ANT boot result fetch', {
+        processId,
+        module,
+        scheduler,
+        attempts,
+        error,
+      });
+      attempts++;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempts ** 2));
+    }
+  }
+
+  if (
+    bootRes === undefined ||
+    bootRes.Messages?.some((m) =>
+      m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
+    )
+  ) {
+    if (bootRes === undefined) {
+      // …
+      throw new Error('Failed to get boot result');
+    }
+    const bootError = errorMessageFromOutput(bootRes);
+    logger.error('ANT failed to boot correctly', {
+      processId,
+      module,
+      scheduler,
+      bootRes,
+      bootError,
+    });
+
+    throw new Error(`ANT failed to boot correctly: ${bootError}`);
+  }
 
   logger.debug(`Spawned ANT`, {
     processId,

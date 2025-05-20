@@ -69,10 +69,13 @@ import {
   AoVaultedTransferParams,
   AoWalletVault,
   AoWeightedObserver,
+  ArNSNameResolutionData,
+  ArNSNameResolver,
   CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
   OptionalArweave,
+  OptionalPaymentUrl,
   PaginationParams,
   PaginationResult,
   ProcessConfig,
@@ -93,13 +96,25 @@ import {
   removeEligibleRewardsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
+import { ANT } from './ant.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
+import {
+  TurboArNSPaymentFactory,
+  TurboArNSPaymentProviderAuthenticated,
+  TurboArNSPaymentProviderUnauthenticated,
+  isTurboArNSSigner,
+} from './turbo.js';
 
-type ARIOConfigNoSigner = OptionalArweave<ProcessConfiguration>;
-type ARIOConfigWithSigner = WithSigner<OptionalArweave<ProcessConfiguration>>;
+type ARIOConfigNoSigner = OptionalPaymentUrl<
+  OptionalArweave<ProcessConfiguration>
+>;
+type ARIOConfigWithSigner = WithSigner<
+  OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
+>;
+
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
 export class ARIO {
@@ -190,11 +205,13 @@ export class ARIO {
   }
 }
 
-export class ARIOReadable implements AoARIORead {
+export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
-  constructor(config?: OptionalArweave<ProcessConfiguration>) {
+  protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
+
+  constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
@@ -209,6 +226,9 @@ export class ARIOReadable implements AoARIORead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+    this.paymentProvider = TurboArNSPaymentFactory.init({
+      paymentUrl: config?.paymentUrl,
+    });
   }
 
   async getInfo(): Promise<{
@@ -274,8 +294,8 @@ export class ARIOReadable implements AoARIORead {
     }));
   }
 
-  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(): Promise<AoEpochData<AoEpochDistributionTotalsData>>;
+  async getEpoch(epoch: EpochInput): Promise<AoEpochData<AoEpochDistributed>>;
   async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
     const epochIndex = await this.computeEpochIndex(epoch);
     const currentIndex = await this.computeCurrentEpochIndex();
@@ -691,6 +711,23 @@ export class ARIOReadable implements AoARIORead {
   }: AoGetCostDetailsParams): Promise<CostDetailsResult> {
     const replacedBuyRecordWithBuyName =
       intent === 'Buy-Record' ? 'Buy-Name' : intent;
+
+    if (fundFrom === 'turbo') {
+      const { mARIO, winc } = await this.paymentProvider.getArNSPriceDetails({
+        intent: replacedBuyRecordWithBuyName,
+        name,
+        quantity,
+        type,
+        years,
+      });
+
+      return {
+        tokenCost: mARIO.valueOf(),
+        wincQty: winc,
+        discounts: [],
+      };
+    }
+
     const allTags = [
       { name: 'Action', value: 'Cost-Details' },
       {
@@ -901,12 +938,73 @@ export class ARIOReadable implements AoARIORead {
       ],
     });
   }
+
+  async resolveArNSName({
+    name,
+  }: {
+    name: string;
+  }): Promise<ArNSNameResolutionData> {
+    // derive baseName & undername using last underscore
+    const lastUnderscore = name.lastIndexOf('_');
+    const baseName =
+      lastUnderscore === -1 ? name : name.slice(lastUnderscore + 1);
+    const undername =
+      lastUnderscore === -1 ? '@' : name.slice(0, lastUnderscore);
+
+    // guard against missing or unregistered ARNS record
+    const nameData = await this.getArNSRecord({ name: baseName });
+
+    if (nameData === undefined || nameData.processId === undefined) {
+      throw new Error(
+        `Base ArNS name ${baseName} not found on ARIO contract (${this.process.processId}).`,
+      );
+    }
+
+    const ant = ANT.init({
+      process: new AOProcess({
+        ao: this.process.ao,
+        processId: nameData.processId,
+      }),
+    });
+    const [owner, antRecord] = await Promise.all([
+      ant.getOwner(),
+      ant.getRecord({ undername }),
+    ]);
+    if (antRecord === undefined) {
+      throw new Error(`Record for ${undername} not found on ANT.`);
+    }
+    if (
+      antRecord.ttlSeconds === undefined ||
+      antRecord.transactionId === undefined
+    ) {
+      throw new Error(
+        `Invalid record on ANT. Must have ttlSeconds and transactionId. Record: ${JSON.stringify(
+          antRecord,
+        )}`,
+      );
+    }
+    return {
+      name,
+      owner,
+      txId: antRecord.transactionId,
+      ttlSeconds: antRecord.ttlSeconds,
+      priority: antRecord.priority,
+      // NOTE: we may want return the actual index of the record based on sorting
+      // in case ANT tries to set duplicate priority values to get around undername limits
+      processId: nameData.processId,
+      undernameLimit: nameData.undernameLimit,
+      type: nameData.type,
+    };
+  }
 }
 
 export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
-  declare public readonly process: AOProcess;
   private signer: AoSigner;
-  constructor({ signer, ...config }: ARIOConfigWithSigner) {
+  protected paymentProvider:
+    | TurboArNSPaymentProviderAuthenticated
+    | TurboArNSPaymentProviderUnauthenticated;
+
+  constructor({ signer, paymentUrl, ...config }: ARIOConfigWithSigner) {
     if (config === undefined) {
       super({
         process: new AOProcess({
@@ -917,6 +1015,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       super(config);
     }
     this.signer = createAoSigner(signer);
+    this.paymentProvider = TurboArNSPaymentFactory.init({
+      signer: isTurboArNSSigner(signer) ? signer : undefined,
+      paymentUrl,
+    });
   }
 
   async transfer(
@@ -1314,6 +1416,23 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Buy-Name',
+        name: params.name,
+        years: params.years,
+        type: params.type,
+        processId: params.processId,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1343,6 +1462,20 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Upgrade-Name',
+        name: params.name,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1369,6 +1502,21 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoExtendLeaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Extend-Lease',
+        name: params.name,
+        years: params.years,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1387,6 +1535,21 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoIncreaseUndernameLimitParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      if (
+        !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
+      ) {
+        throw new Error(
+          'Turbo funding is not supported for this payment provider',
+        );
+      }
+      return this.paymentProvider.initiateArNSPurchase({
+        intent: 'Increase-Undername-Limit',
+        quantity: params.increaseCount,
+        name: params.name,
+      });
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
@@ -1433,6 +1596,12 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    if (params.fundFrom === 'turbo') {
+      throw new Error(
+        'Turbo funding is not yet supported for primary name requests',
+      );
+    }
+
     const { tags = [] } = options || {};
     const allTags = [
       ...tags,
