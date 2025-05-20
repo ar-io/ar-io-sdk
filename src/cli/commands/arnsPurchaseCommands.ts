@@ -29,6 +29,7 @@ import {
   recordTypeFromOptions,
   requiredPositiveIntegerFromOptions,
   requiredStringFromOptions,
+  stringArrayFromOptions,
   writeARIOFromOptions,
 } from '../utils.js';
 
@@ -81,6 +82,7 @@ export async function buyRecordCLICommand(
       type,
       years,
       fundFrom: fundFromFromOptions(o),
+      paidBy: stringArrayFromOptions(o, 'paidBy'),
     },
     customTagsFromOptions(o),
   );
@@ -122,6 +124,7 @@ export async function upgradeRecordCLICommand(
   return ario.upgradeRecord({
     name,
     fundFrom,
+    paidBy: stringArrayFromOptions(o, 'paidBy'),
   });
 }
 
@@ -166,6 +169,7 @@ export async function extendLeaseCLICommand(
     {
       name,
       years,
+      paidBy: stringArrayFromOptions(o, 'paidBy'),
     },
     customTagsFromOptions(o),
   );
@@ -209,6 +213,7 @@ export async function increaseUndernameLimitCLICommand(
     {
       name,
       increaseCount,
+      paidBy: stringArrayFromOptions(o, 'paidBy'),
     },
     customTagsFromOptions(o),
   );
@@ -245,6 +250,7 @@ export async function requestPrimaryNameCLICommand(
     {
       name,
       fundFrom,
+      paidBy: stringArrayFromOptions(o, 'paidBy'),
     },
     customTagsFromOptions(o),
   );
