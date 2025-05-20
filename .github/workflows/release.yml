@@ -9,7 +9,7 @@ on:
     branches:
       - main
       - alpha
-
+      - beta
 jobs:
   build:
     uses: ar-io/ar-io-sdk/.github/workflows/build.yml@alpha
