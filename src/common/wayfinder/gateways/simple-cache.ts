@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 import { GatewaysProvider } from '../../../types/wayfinder.js';
+import { Logger } from '../../../web/index.js';
 
 export class SimpleCacheGatewaysProvider implements GatewaysProvider {
   private gatewaysProvider: GatewaysProvider;
   private ttlSeconds: number;
   private lastUpdated: number;
   private gatewaysCache: URL[];
+  private logger: Logger;
   constructor({
     gatewaysProvider,
     ttlSeconds = 60 * 60, // 1 hour
+    logger = Logger.default,
   }: {
     gatewaysProvider: GatewaysProvider;
     ttlSeconds?: number;
+    logger?: Logger;
   }) {
     this.gatewaysCache = [];
     this.gatewaysProvider = gatewaysProvider;
     this.ttlSeconds = ttlSeconds;
+    this.logger = logger;
   }
 
   async getGateways(): Promise<URL[]> {
@@ -44,7 +49,7 @@ export class SimpleCacheGatewaysProvider implements GatewaysProvider {
         this.gatewaysCache = allGateways;
         this.lastUpdated = now;
       } catch (error) {
-        console.error('Error fetching gateways', error);
+        this.logger.error('Error fetching gateways', error);
       }
     }
     return this.gatewaysCache;
