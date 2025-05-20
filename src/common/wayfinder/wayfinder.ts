@@ -103,7 +103,7 @@ export const resolveWayfinderUrl = ({
  * Wayfinder event emitter with verification events
  */
 export type WayfinderEvent =
-  | { type: 'verification-passed'; txId: string }
+  | { type: 'verification-succeeded'; txId: string }
   | { type: 'verification-failed'; txId: string; error: Error }
   | { type: 'verification-skipped'; originalUrl: string }
   | {
@@ -134,7 +134,7 @@ export type WayfinderEvent =
 export interface WayfinderEventArgs {
   onVerificationPassed?: (
     payload: Omit<
-      Extract<WayfinderEvent, { type: 'verification-passed' }>,
+      Extract<WayfinderEvent, { type: 'verification-succeeded' }>,
       'type'
     >,
   ) => void;
@@ -161,7 +161,7 @@ export class WayfinderEmitter extends EventEmitter {
   }: WayfinderEventArgs = {}) {
     super();
     if (onVerificationPassed) {
-      this.on('verification-passed', onVerificationPassed);
+      this.on('verification-succeeded', onVerificationPassed);
     }
     if (onVerificationFailed) {
       this.on('verification-failed', onVerificationFailed);
@@ -196,12 +196,14 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
   verifyData,
   txId,
   emitter,
+  strict = false,
 }: {
   originalStream: T;
   contentLength: number;
   verifyData: DataVerificationStrategy['verifyData'];
   txId: string;
   emitter?: WayfinderEmitter;
+  strict?: boolean;
 }): T extends Readable ? PassThrough : T {
   // taps node streams
   if (
@@ -235,26 +237,43 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
 
     originalStream.on('end', async () => {
       streamToVerify.end(); // triggers verifier completion and completes the verification promise
-      try {
-        await verificationPromise;
-        emitter?.emit('verification-passed', {
-          txId,
-        });
+
+      if (strict) {
+        // in strict mode, we wait for verification to complete before ending the client stream
+        try {
+          await verificationPromise;
+          emitter?.emit('verification-succeeded', { txId });
+          tappedClientStream.end();
+        } catch (error) {
+          emitter?.emit('verification-failed', { error, txId });
+          // In strict mode, destroy the client stream with the error
+          tappedClientStream.destroy(
+            new Error('Verification failed', { cause: error }),
+          );
+        }
+      } else {
+        // in non-strict mode, we end the client stream immediately and handle verification asynchronously
         tappedClientStream.end();
-      } catch (error) {
-        emitter?.emit('verification-failed', {
-          error,
-          txId,
-        });
-        tappedClientStream.destroy(error);
+
+        // trigger the verification promise and emit events for the result
+        verificationPromise
+          .then(() => {
+            emitter?.emit('verification-succeeded', { txId });
+          })
+          .catch((error) => {
+            emitter?.emit('verification-failed', { error, txId });
+          });
       }
     });
 
     originalStream.on('error', (err) => {
+      // emit the verification failed event
       emitter?.emit('verification-failed', {
         error: err,
         txId,
       });
+
+      // destroy both streams and propagate the original stream error
       streamToVerify.destroy(err);
       tappedClientStream.destroy(err);
     });
@@ -280,19 +299,38 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
       async pull(controller) {
         const { done, value } = await reader.read();
         if (done) {
-          try {
-            // due to backpressure, if the client does not consume the stream, the verification will not complete (particularly important for fetch, where the response body needs to be awaited for verification to complete)
-            await verificationPromise;
-            emitter?.emit('verification-passed', {
-              txId,
-            });
+          if (strict) {
+            // in strict mode, we wait for verification to complete before closing the controller
+            try {
+              await verificationPromise;
+              emitter?.emit('verification-succeeded', { txId });
+              controller.close();
+            } catch (err) {
+              emitter?.emit('verification-failed', {
+                txId,
+                error: err as Error,
+              });
+              // In strict mode, we report the error to the client stream
+              controller.error(
+                new Error('Verification failed', { cause: err }),
+              );
+            }
+          } else {
+            // in non-strict mode, we close the controller immediately and handle verification asynchronously
             controller.close();
-          } catch (err) {
-            emitter?.emit('verification-failed', {
-              txId,
-              error: err as Error,
-            });
-            controller.error(err);
+
+            // trigger the verification promise and emit events for the result
+            verificationPromise
+              .then(() => {
+                emitter?.emit('verification-succeeded', { txId });
+              })
+              .catch((err) => {
+                emitter?.emit('verification-failed', {
+                  txId,
+                  error: err as Error,
+                });
+                // we don't call controller.error() to avoid breaking the client stream
+              });
           }
         } else {
           bytesProcessed += value.length;
@@ -305,7 +343,10 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
         }
       },
       cancel(reason) {
+        // cancel the reader regardless of verification status
         reader.cancel(reason);
+
+        // emit the verification cancellation event
         emitter?.emit('verification-failed', {
           txId,
           error: new Error('Verification cancelled', {
@@ -314,6 +355,9 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
             },
           }),
         });
+
+        // note: we don't block or throw errors here even in strict mode
+        // since the stream is already being cancelled by the client
       },
     });
     return clientStreamWithVerification as T extends Readable ? PassThrough : T;
@@ -363,6 +407,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   selectGateway,
   emitter = new WayfinderEmitter(),
   logger,
+  strict = false,
 }: {
   httpClient: T;
   selectGateway: () => Promise<URL>;
@@ -380,6 +425,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   }) => Promise<void>;
   logger?: Logger;
   emitter?: WayfinderEmitter;
+  strict?: boolean;
   // TODO: retry strategy to get a new gateway router
 }): WayfinderHttpClient<T> => {
   const wayfinderRedirect = async (
@@ -561,6 +607,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
                     verifyData,
                     txId,
                     emitter,
+                    strict,
                   },
                 );
 
@@ -580,26 +627,41 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
               } else {
                 // TODO: content-application/json and it's smaller than 10mb
                 // TODO: add tests and verify this works for all non-Readable/streamed responses
-                try {
-                  // if strict set to true
-                  await verifyData({
+                if (strict) {
+                  // In strict mode, wait for verification before returning response
+                  try {
+                    await verifyData({
+                      data: responseBody,
+                      txId,
+                    });
+                    emitter?.emit('verification-succeeded', { txId });
+                    return response;
+                  } catch (error) {
+                    logger?.debug('Failed to verify data hash', {
+                      error,
+                      txId,
+                    });
+                    emitter?.emit('verification-failed', { txId, error });
+                    throw new Error('Verification failed', { cause: error });
+                  }
+                } else {
+                  // In non-strict mode, perform verification in the background
+                  verifyData({
                     data: responseBody,
                     txId,
-                  });
-                  emitter?.emit('verification-passed', {
-                    txId,
-                  });
-                } catch (error) {
-                  logger?.debug('Failed to verify data hash', {
-                    error,
-                    txId,
-                  });
-                  emitter?.emit('verification-failed', {
-                    txId,
-                    error,
-                  });
+                  })
+                    .then(() => {
+                      emitter?.emit('verification-succeeded', { txId });
+                    })
+                    .catch((error) => {
+                      logger?.debug('Failed to verify data hash', {
+                        error,
+                        txId,
+                      });
+                      emitter?.emit('verification-failed', { txId, error });
+                    });
+                  return response;
                 }
-                return response;
               }
             }
           }
@@ -729,6 +791,18 @@ export class Wayfinder<T extends HttpClientFunction> {
    *
    * // request a transaction id with a custom http client
    * const response = await wayfinder.request('ar://1234567890')
+   *
+   * // Set strict mode to true to make verification blocking
+   * const wayfinder = new Wayfinder({
+   *   strict: true,
+   * });
+   *
+   * // This will throw an error if verification fails
+   * try {
+   *   const response = await wayfinder.request('ar://1234567890');
+   * } catch (error) {
+   *   console.error('Verification failed', error);
+   * }
    */
   public readonly request: WayfinderHttpClient<T>;
 
@@ -746,11 +820,18 @@ export class Wayfinder<T extends HttpClientFunction> {
   public readonly verifyData: DataVerificationStrategy['verifyData'];
 
   /**
+   * Whether verification should be strict (blocking) or not.
+   * If true, verification failures will cause requests to fail.
+   * If false, verification will be performed asynchronously and failures will only emit events.
+   */
+  public readonly strict: boolean;
+
+  /**
    * The event emitter for wayfinder that emits verification events.
    *
    * const wayfinder = new Wayfinder()
    *
-   * wayfinder.emitter.on('verification-passed', (event) => {
+   * wayfinder.emitter.on('verification-succeeded', (event) => {
    *   console.log('Verification passed!', event);
    * })
    *
@@ -785,6 +866,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @param verificationStrategy - the verification strategy to use for requests
    * @param gatewaysProvider - the gateways provider to use for routing requests
    * @param logger - the logger to use for logging
+   * @param strict - if true, verification will be blocking and will fail requests if verification fails; if false, verification will be non-blocking
    */
   constructor({
     httpClient = fetch as T,
@@ -816,6 +898,7 @@ export class Wayfinder<T extends HttpClientFunction> {
         logger.debug('Verification progress!', event);
       },
     },
+    strict = false,
     // TODO: stats provider
   }: {
     httpClient?: T;
@@ -824,6 +907,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     verificationStrategy?: DataVerificationStrategy;
     logger?: Logger;
     events?: WayfinderEventArgs;
+    strict?: boolean;
     // TODO: stats provider
   }) {
     this.routingStrategy = routingStrategy;
@@ -832,6 +916,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     this.emitter = new WayfinderEmitter(events);
     this.verifyData =
       verificationStrategy.verifyData.bind(verificationStrategy);
+    this.strict = strict;
 
     // top level function to easily resolve wayfinder urls using the routing strategy and gateways provider
     this.resolveUrl = async ({ originalUrl, logger }) => {
@@ -849,18 +934,15 @@ export class Wayfinder<T extends HttpClientFunction> {
     this.request = createWayfinderClient<T>({
       httpClient,
       selectGateway: async () => {
-        const gateways = await this.gatewaysProvider.getGateways();
-        console.log('Provided gateways', {
-          gateways: gateways.map((g) => g.toString()),
-        });
         return this.routingStrategy.selectGateway({
-          gateways,
+          gateways: await this.gatewaysProvider.getGateways(),
         });
       },
       resolveUrl: resolveWayfinderUrl,
       verifyData: this.verifyData,
       emitter: this.emitter,
       logger,
+      strict,
     });
     logger?.debug(
       `Wayfinder initialized with ${routingStrategy.constructor.name} routing strategy`,

@@ -309,7 +309,7 @@ function App() {
         return prevUpdates;
       });
     });
-    wayfinder.emitter.on('verification-passed', (event) => {
+    wayfinder.emitter.on('verification-succeeded', (event) => {
       setWayfinderVerified(true);
       setWayfinderStatusUpdates((prevUpdates) => {
         prevUpdates.add(`✅ Verification passed for ${event.txId}`);

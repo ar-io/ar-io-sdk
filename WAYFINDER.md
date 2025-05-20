@@ -319,7 +319,7 @@ sequenceDiagram
     Verification Strategy-->>-Wayfinder: Return request data with verification result
 
     alt Verification passed
-        Wayfinder->>Wayfinder: Emit 'verification-passed' event
+        Wayfinder->>Wayfinder: Emit 'verification-succeeded' event
         Wayfinder-->>Client: Return verified response
     else Verification failed
         Wayfinder->>Wayfinder: Emit 'verification-failed' event
