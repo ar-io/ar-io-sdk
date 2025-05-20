@@ -24,9 +24,8 @@ export class RoundRobinRoutingStrategy implements RoutingStrategy {
     this.currentIndex = 0;
   }
 
-  // ignore the provided gateways list and use the internal list
   async selectGateway({
-    // - we want to ignore the provided gateways list
+    // ignore any provided gateways list and use the internal list
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     gateways,
   }: {

@@ -27,7 +27,7 @@ ar://NAME/path/to/resource       // ArNS with path
 
 ## Gateway Providers
 
-Gateway providers are responsible for providing a list of gateways to Wayfinder. By default, Wayfinder will use the ARIO Network gateway provider. This is a good choice for most users.
+Gateway providers are responsible for providing a list of gateways to Wayfinder to choose from when routing requests. By default, Wayfinder will use the `NetworkGatewaysProvider` to get a list of gateways from the ARIO Network.
 
 ### NetworkGatewaysProvider
 
@@ -45,7 +45,7 @@ const gatewayProvider = new NetworkGatewaysProvider({
 
 ### Static Gateway Provider
 
-The static gateway provider is a good choice for users who want to use a specific gateway. This is useful for testing or for users who want to use a specific gateway for all requests.
+The static gateway provider returns a list of gateways that you provide. This is useful for testing or for users who want to use a specific gateway for all requests.
 
 ```javascript
 const gatewayProvider = new StaticGatewaysProvider({
@@ -66,28 +66,52 @@ Wayfinder supports multiple routing strategies to select target gateways for you
 
 ### RandomGatewayRouter
 
-Selects a random gateway.
+Selects a random gateway from a list of gateways.
 
 ```javascript
 const routingStrategy = new RandomRoutingStrategy();
+
+const gateway = await routingStrategy.selectGateway({
+  gateways: ['https://arweave.net', 'https://permagate.io'],
+});
 ```
 
 ### StaticGatewayRouter
-
-Always uses a single gateway.
 
 ```javascript
 const routingStrategy = new StaticRoutingStrategy({
   gateway: 'https://arweave.net',
 });
+
+const gateway = await routingStrategy.selectGateway(); // always returns the same gateway
 ```
 
 ### RoundRobinGatewayRouter
 
-Selects gateways in round-robin order. Currently only supports in-memory storage of routing history.
+Selects gateways in round-robin order. The gateway list is stored in memory and is not persisted across instances.
 
 ```javascript
-const routingStrategy = new RoundRobinRoutingStrategy();
+const routingStrategy = new RoundRobinRoutingStrategy({
+  gateways: ['https://arweave.net', 'https://permagate.io'],
+});
+
+const gateway = await routingStrategy.selectGateway(); // returns the next gateway in the list
+```
+
+### FastestPingGatewayRouter
+
+Selects the fastest gateway based simple HEAD request to the specified route.
+
+```javascript
+const routingStrategy = new FastestPingRoutingStrategy({
+  timeoutMs: 1000,
+  pingPath: '/ar-io/info',
+});
+
+// will select the fastest gateway from the list based on the ping time of the /ar-io/info route
+const gateway = await routingStrategy.selectGateway({
+  gateways: ['https://slow.net', 'https://medium.net', 'https://fast.net'],
+});
 ```
 
 ## Verification Strategies
@@ -221,31 +245,31 @@ The following sequence diagram illustrates how Wayfinder processes requests:
 sequenceDiagram
     participant Client
     participant Wayfinder
-    participant WayfinderRouter
-    participant ARIO Network
-    participant Target Gateway
-    participant DataVerifier
+    participant Routing Strategy
+    participant Gateways Provider
+    participant Selected Gateway
+    participant Verification Strategy
     participant Trusted Gateways
 
     Client->>Wayfinder: request('ar://example')
     activate Wayfinder
 
-    Wayfinder->>+WayfinderRouter: getTargetGateway()
-    WayfinderRouter->>+ARIO Network: getGateways()
-    ARIO Network-->>-WayfinderRouter: List of gateway URLs
-    WayfinderRouter-->>-Wayfinder: Selected gateway URL
+    Wayfinder->>+Routing Strategy: selectGateway()
+    Routing Strategy->>+Gateways Provider: getGateways()
+    Gateways Provider-->>-Routing Strategy: List of gateway URLs
+    Routing Strategy-->>-Wayfinder: Selected gateway URL
 
     Wayfinder->>+Target Gateway: HTTP request
     Target Gateway-->>-Wayfinder: Response with data & txId
 
-    activate DataVerifier
-    Wayfinder->>+DataVerifier: verifyData(responseData, txId)
-    DataVerifier->>DataVerifier: Calculate verification data
-    DataVerifier->>Wayfinder: Emit 'verification-progress' events
-    DataVerifier->>Trusted Gateway: Request verification headers
-    Trusted Gateway-->>DataVerifier: Return verification headers
-    DataVerifier->>DataVerifier: Compare computed vs trusted data
-    DataVerifier-->>-Wayfinder: Verification result
+    activate Verification Strategy
+    Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
+    Verification Strategy->>Verification Strategy: Calculate verification data
+    Verification Strategy->>Wayfinder: Emit 'verification-progress' events
+    Verification Strategy->>Trusted Gateways: Request verification headers
+    Trusted Gateways-->>Verification Strategy: Return verification headers
+    Verification Strategy->>Verification Strategy: Compare computed vs trusted data
+    Verification Strategy-->>-Wayfinder: Verification result
 
     alt Verification passed
         Wayfinder->>Wayfinder: Emit 'verification-passed' event

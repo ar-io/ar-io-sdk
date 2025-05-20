@@ -31,7 +31,7 @@ describe('FastestPingRoutingStrategy', () => {
     mockResponses.clear();
 
     // Mock fetch to simulate network latency and response status
-    global.fetch = async (url: string | URL, options?: RequestInit) => {
+    global.fetch = async (url: string | URL) => {
       const urlString = url.toString();
 
       // Find the matching gateway

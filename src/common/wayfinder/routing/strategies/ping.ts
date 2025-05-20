@@ -17,26 +17,21 @@ import { Logger } from '../../../../common/logger.js';
 import { RoutingStrategy } from '../../../../types/wayfinder.js';
 
 export class FastestPingRoutingStrategy implements RoutingStrategy {
-  private logger?: Logger;
   private timeoutMs: number;
+  private path: string;
   constructor({
-    logger = Logger.default,
     timeoutMs = 500,
+    path = '/ar-io/info',
   }: {
     logger?: Logger;
     timeoutMs?: number;
+    path?: string;
   } = {}) {
-    this.logger = logger;
     this.timeoutMs = timeoutMs;
+    this.path = path;
   }
 
-  async selectGateway({
-    gateways,
-    txId,
-  }: {
-    gateways: URL[];
-    txId?: string;
-  }): Promise<URL> {
+  async selectGateway({ gateways }: { gateways: URL[] }): Promise<URL> {
     if (gateways.length === 0) {
       throw new Error('No gateways provided');
     }
@@ -46,7 +41,7 @@ export class FastestPingRoutingStrategy implements RoutingStrategy {
         gateways.map(async (gateway) => {
           try {
             const startTime = Date.now();
-            const response = await fetch(`${gateway}/${txId}`, {
+            const response = await fetch(`${gateway}/${this.path}`, {
               method: 'HEAD',
               signal: AbortSignal.timeout(this.timeoutMs),
             });
@@ -89,24 +84,12 @@ export class FastestPingRoutingStrategy implements RoutingStrategy {
         .filter((result) => result.status === 200)
         .sort((a, b) => a.durationMs - b.durationMs);
 
-      this.logger?.debug('Ping results', {
-        gateways: gateways.length,
-        txId,
-        results: processedResults,
-        healthyGateways: healthyGateways.length,
-      });
-
       if (healthyGateways.length > 0) {
-        this.logger?.debug('Selected gateway', {
-          gateway: healthyGateways[0].gateway.toString(),
-          durationMs: healthyGateways[0].durationMs,
-        });
         return healthyGateways[0].gateway;
       }
 
       throw new Error('No healthy gateways found');
     } catch (error) {
-      this.logger?.error('Error during gateway ping', { error });
       throw new Error(
         'Failed to ping gateways: ' +
           (error instanceof Error ? error.message : String(error)),
