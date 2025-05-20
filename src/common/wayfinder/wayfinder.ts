@@ -127,7 +127,7 @@ export type WayfinderEvent =
   | {
       type: 'identified-transaction-id';
       originalUrl: string;
-      targetGateway: string;
+      selectedGateway: string;
       txId: string;
     };
 
@@ -497,7 +497,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
 
             emitter?.emit('identified-transaction-id', {
               originalUrl,
-              targetGateway: redirectUrl.toString(),
+              selectedGateway: redirectUrl.toString(),
               txId,
             });
 
