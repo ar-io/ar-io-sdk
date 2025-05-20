@@ -28,21 +28,21 @@ describe('RoundRobinRoutingStrategy', () => {
 
     const strategy = new RoundRobinRoutingStrategy({ gateways });
 
-    const selection1 = await strategy.selectGateway({ gateways: [] });
+    const selection1 = await strategy.selectGateway();
     assert.equal(
       selection1.toString(),
       gateways[0].toString(),
       'Should select the first gateway first',
     );
 
-    const selection2 = await strategy.selectGateway({ gateways: [] });
+    const selection2 = await strategy.selectGateway();
     assert.equal(
       selection2.toString(),
       gateways[1].toString(),
       'Should select the second gateway second',
     );
 
-    const selection3 = await strategy.selectGateway({ gateways: [] });
+    const selection3 = await strategy.selectGateway();
     assert.equal(
       selection3.toString(),
       gateways[2].toString(),
@@ -50,7 +50,7 @@ describe('RoundRobinRoutingStrategy', () => {
     );
 
     // should cycle back to the first gateway
-    const selection4 = await strategy.selectGateway({ gateways: [] });
+    const selection4 = await strategy.selectGateway();
     assert.equal(
       selection4.toString(),
       gateways[0].toString(),
@@ -73,14 +73,19 @@ describe('RoundRobinRoutingStrategy', () => {
       gateways: initialGateways,
     });
 
-    const selection1 = await strategy.selectGateway({ gateways: newGateways });
+    const selection1 = await strategy.selectGateway({
+      gateways: newGateways,
+    });
     assert.equal(
       selection1.toString(),
       initialGateways[0].toString(),
       'Should use the internal list even when a different list is provided',
     );
 
-    const selection2 = await strategy.selectGateway({ gateways: newGateways });
+    const selection2 = await strategy.selectGateway({
+      // @ts-ignore
+      gateways: newGateways,
+    });
     assert.equal(
       selection2.toString(),
       initialGateways[1].toString(),
@@ -92,14 +97,20 @@ describe('RoundRobinRoutingStrategy', () => {
     const gateways = [new URL('https://example1.com')];
     const strategy = new RoundRobinRoutingStrategy({ gateways });
 
-    const selection1 = await strategy.selectGateway({ gateways: [] });
+    const selection1 = await strategy.selectGateway({
+      // @ts-ignore
+      gateways: [new URL('https://example2.com')],
+    });
     assert.equal(
       selection1.toString(),
       gateways[0].toString(),
       'Should return the single gateway',
     );
 
-    const selection2 = await strategy.selectGateway({ gateways: [] });
+    const selection2 = await strategy.selectGateway({
+      // @ts-ignore
+      gateways: [new URL('https://example2.com')],
+    });
     assert.equal(
       selection2.toString(),
       gateways[0].toString(),

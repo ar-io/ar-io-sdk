@@ -13,24 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Logger } from '../../../../common/logger.js';
 import { RoutingStrategy } from '../../../../types/wayfinder.js';
 
 export class RoundRobinRoutingStrategy implements RoutingStrategy {
   private gateways: URL[];
   private currentIndex: number;
-
-  constructor({ gateways }: { gateways: URL[] }) {
+  private logger: Logger;
+  constructor({
+    gateways,
+    logger = Logger.default,
+  }: {
+    gateways: URL[];
+    logger?: Logger;
+  }) {
     this.gateways = gateways;
     this.currentIndex = 0;
+    this.logger = logger;
   }
 
+  // provided gateways are ignored
   async selectGateway({
-    // ignore any provided gateways list and use the internal list
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    gateways,
+    gateways = [],
   }: {
     gateways?: URL[];
   } = {}): Promise<URL> {
+    if (gateways.length > 0) {
+      this.logger.warn(
+        'RoundRobinRoutingStrategy does not accept provided gateways. Ignoring provided gateways...',
+        {
+          providedGateways: gateways.length,
+          internalGateways: this.gateways,
+        },
+      );
+    }
     const gateway = this.gateways[this.currentIndex];
     this.currentIndex = (this.currentIndex + 1) % this.gateways.length;
     return gateway;

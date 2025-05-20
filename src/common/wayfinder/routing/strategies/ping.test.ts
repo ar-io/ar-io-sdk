@@ -25,16 +25,15 @@ describe('FastestPingRoutingStrategy', () => {
   // Mock response options for each gateway
   const mockResponses = new Map<string, { status: number; delayMs: number }>();
 
-  // Setup mock fetch function
   beforeEach(() => {
-    // Reset mock responses
+    // reset mock responses
     mockResponses.clear();
 
-    // Mock fetch to simulate network latency and response status
+    // mock fetch to simulate network latency and response status
     global.fetch = async (url: string | URL) => {
       const urlString = url.toString();
 
-      // Find the matching gateway
+      // find the matching gateway
       let matchingGateway = '';
       for (const gateway of mockResponses.keys()) {
         if (urlString.startsWith(gateway)) {
@@ -51,13 +50,13 @@ describe('FastestPingRoutingStrategy', () => {
 
       const { status, delayMs } = mockResponses.get(matchingGateway)!;
 
-      // Simulate network delay
+      // simulate network delay
       await new Promise((resolve) => setTimeout(resolve, delayMs));
 
       return new Response(null, { status });
     };
 
-    // Mock AbortSignal.timeout
+    // mock AbortSignal.timeout
     if (!AbortSignal.timeout) {
       (AbortSignal as any).timeout = (ms: number) => {
         const controller = new AbortController();
@@ -67,32 +66,30 @@ describe('FastestPingRoutingStrategy', () => {
     }
   });
 
-  // Restore original fetch after tests
+  // restore original fetch after tests
   afterEach(() => {
     global.fetch = originalFetch;
   });
 
   it('selects the gateway with the lowest latency', async () => {
-    // Arrange
     const gateways = [
       new URL('https://slow.com'),
       new URL('https://fast.com'),
       new URL('https://medium.com'),
     ];
 
-    // Configure mock responses
+    // configure mock responses
     mockResponses.set('https://slow.com', { status: 200, delayMs: 300 });
     mockResponses.set('https://fast.com', { status: 200, delayMs: 50 });
     mockResponses.set('https://medium.com', { status: 200, delayMs: 150 });
 
     const strategy = new FastestPingRoutingStrategy({ timeoutMs: 500 });
 
-    // Act
+    // select the gateway with the lowest latency
     const selectedGateway = await strategy.selectGateway({
       gateways,
     });
 
-    // Assert
     assert.equal(
       selectedGateway.toString(),
       'https://fast.com',
@@ -101,14 +98,13 @@ describe('FastestPingRoutingStrategy', () => {
   });
 
   it('ignores gateways that return non-200 status codes', async () => {
-    // Arrange
     const gateways = [
       new URL('https://error.com'),
       new URL('https://success.com'),
       new URL('https://another-error.com'),
     ];
 
-    // Configure mock responses
+    // configure mock responses
     mockResponses.set('https://error.com', { status: 404, delayMs: 50 });
     mockResponses.set('https://success.com', { status: 200, delayMs: 100 });
     mockResponses.set('https://another-error.com', {
@@ -118,12 +114,11 @@ describe('FastestPingRoutingStrategy', () => {
 
     const strategy = new FastestPingRoutingStrategy({ timeoutMs: 500 });
 
-    // Act
+    // select the gateway with the lowest latency
     const selectedGateway = await strategy.selectGateway({
       gateways,
     });
 
-    // Assert
     assert.equal(
       selectedGateway.toString(),
       'https://success.com',
@@ -132,19 +127,18 @@ describe('FastestPingRoutingStrategy', () => {
   });
 
   it('throws an error when all gateways fail', async () => {
-    // Arrange
     const gateways = [
       new URL('https://error1.com'),
       new URL('https://error2.com'),
     ];
 
-    // Configure mock responses
+    // configure mock responses
     mockResponses.set('https://error1.com', { status: 404, delayMs: 50 });
     mockResponses.set('https://error2.com', { status: 500, delayMs: 75 });
 
     const strategy = new FastestPingRoutingStrategy({ timeoutMs: 500 });
 
-    // Act & Assert
+    // select the gateway with the lowest latency
     await assert.rejects(
       async () => await strategy.selectGateway({ gateways }),
       /No healthy gateways found/,
@@ -153,16 +147,15 @@ describe('FastestPingRoutingStrategy', () => {
   });
 
   it('handles network errors gracefully', async () => {
-    // Arrange
     const gateways = [
       new URL('https://network-error.com'),
       new URL('https://success.com'),
     ];
 
-    // Configure mock responses
+    // configure mock responses
     mockResponses.set('https://success.com', { status: 200, delayMs: 100 });
 
-    // Override fetch for the network error case
+    // override fetch for the network error case
     const originalFetchMock = global.fetch;
     global.fetch = async (url: string | URL) => {
       if (url.toString().includes('network-error')) {
@@ -173,12 +166,11 @@ describe('FastestPingRoutingStrategy', () => {
 
     const strategy = new FastestPingRoutingStrategy({ timeoutMs: 500 });
 
-    // Act
+    // select the gateway with the lowest latency
     const selectedGateway = await strategy.selectGateway({
       gateways,
     });
 
-    // Assert
     assert.equal(
       selectedGateway.toString(),
       'https://success.com',
@@ -187,25 +179,22 @@ describe('FastestPingRoutingStrategy', () => {
   });
 
   it('respects the timeout parameter', async () => {
-    // Arrange
     const gateways = [
       new URL('https://timeout.com'),
       new URL('https://fast.com'),
     ];
 
-    // Configure mock responses
+    // configure mock responses
     mockResponses.set('https://timeout.com', { status: 200, delayMs: 300 });
     mockResponses.set('https://fast.com', { status: 200, delayMs: 50 });
 
-    // Set a short timeout
+    // set a short timeout
     const strategy = new FastestPingRoutingStrategy({ timeoutMs: 100 });
 
-    // Act
     const selectedGateway = await strategy.selectGateway({
       gateways,
     });
 
-    // Assert
     assert.equal(
       selectedGateway.toString(),
       'https://fast.com',
@@ -214,11 +203,10 @@ describe('FastestPingRoutingStrategy', () => {
   });
 
   it('throws an error when no gateways are provided', async () => {
-    // Arrange
     const gateways: URL[] = [];
     const strategy = new FastestPingRoutingStrategy();
 
-    // Act & Assert
+    // select the gateway with the lowest latency
     await assert.rejects(
       async () => await strategy.selectGateway({ gateways }),
       /No gateways provided/,

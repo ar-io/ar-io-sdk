@@ -90,14 +90,14 @@ const gatewayProvider = new StaticGatewaysProvider({
 
 Wayfinder supports multiple routing strategies to select target gateways for your requests.
 
-| Router                       | Description                                    | Use Case                                |
+| Strategy                     | Description                                    | Use Case                                |
 | ---------------------------- | ---------------------------------------------- | --------------------------------------- |
 | `RandomRoutingStrategy`      | Selects a random gateway from a list           | Good for load balancing and resilience  |
 | `StaticRoutingStrategy`      | Always uses a single gateway                   | When you need to use a specific gateway |
 | `RoundRobinRoutingStrategy`  | Selects gateways in round-robin order          | Good for load balancing and resilience  |
 | `FastestPingRoutingStrategy` | Selects the fastest gateway based on ping time | Good for performance and latency        |
 
-### RandomGatewayRouter
+### RandomRoutingStrategy
 
 Selects a random gateway from a list of gateways.
 
@@ -109,7 +109,7 @@ const gateway = await routingStrategy.selectGateway({
 });
 ```
 
-### StaticGatewayRouter
+### StaticRoutingStrategy
 
 ```javascript
 const routingStrategy = new StaticRoutingStrategy({
@@ -119,7 +119,7 @@ const routingStrategy = new StaticRoutingStrategy({
 const gateway = await routingStrategy.selectGateway(); // always returns the same gateway
 ```
 
-### RoundRobinGatewayRouter
+### RoundRobinRoutingStrategy
 
 Selects gateways in round-robin order. The gateway list is stored in memory and is not persisted across instances.
 
@@ -131,7 +131,7 @@ const routingStrategy = new RoundRobinRoutingStrategy({
 const gateway = await routingStrategy.selectGateway(); // returns the next gateway in the list
 ```
 
-### FastestPingGatewayRouter
+### FastestPingRoutingStrategy
 
 Selects the fastest gateway based simple HEAD request to the specified route.
 
@@ -278,8 +278,8 @@ The following sequence diagram illustrates how Wayfinder processes requests:
 sequenceDiagram
     participant Client
     participant Wayfinder
-    participant Routing Strategy
     participant Gateways Provider
+    participant Routing Strategy
     participant Selected Gateway
     participant Verification Strategy
     participant Trusted Gateways
@@ -287,22 +287,22 @@ sequenceDiagram
     Client->>Wayfinder: request('ar://example')
     activate Wayfinder
 
-    Wayfinder->>+Routing Strategy: selectGateway()
-    Routing Strategy->>+Gateways Provider: getGateways()
-    Gateways Provider-->>-Routing Strategy: List of gateway URLs
-    Routing Strategy-->>-Wayfinder: Selected gateway URL
+    Wayfinder->>+Gateways Provider: getGateways()
+    Gateways Provider-->>-Wayfinder: List of gateway URLs
 
-    Wayfinder->>+Target Gateway: HTTP request
-    Target Gateway-->>-Wayfinder: Response with data & txId
+    Wayfinder->>+Routing Strategy: selectGateway() from list of gateways
+    Routing Strategy-->>-Wayfinder: Select gateway for request
+
+    Wayfinder->>+Selected Gateway: Send HTTP request to target gateway
+    Selected Gateway-->>-Wayfinder: Response with data & txId
 
     activate Verification Strategy
     Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
-    Verification Strategy->>Verification Strategy: Calculate verification data
     Verification Strategy->>Wayfinder: Emit 'verification-progress' events
     Verification Strategy->>Trusted Gateways: Request verification headers
     Trusted Gateways-->>Verification Strategy: Return verification headers
     Verification Strategy->>Verification Strategy: Compare computed vs trusted data
-    Verification Strategy-->>-Wayfinder: Verification result
+    Verification Strategy-->>-Wayfinder: Return request data with verification result
 
     alt Verification passed
         Wayfinder->>Wayfinder: Emit 'verification-passed' event

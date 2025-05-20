@@ -403,7 +403,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
       originalUrl: originalUrl.toString(),
     });
 
-    // by default we will retry 3 times
+    // TODO: by default we will retry 3 times but this should be configurable and moved to a routing strategy
     const maxRetries = 3;
     const retryDelay = 1000;
 
@@ -617,6 +617,13 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
         }
       }
     }
+
+    throw new Error('Failed to route request after max retries', {
+      cause: {
+        originalUrl,
+        maxRetries,
+      },
+    });
   };
 
   return new Proxy(httpClient, {

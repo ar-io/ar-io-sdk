@@ -14,25 +14,42 @@
  * limitations under the License.
  */
 import { RoutingStrategy } from '../../../../types/wayfinder.js';
+import { Logger } from '../../../logger.js';
 
 export class StaticRoutingStrategy implements RoutingStrategy {
   public readonly name = 'static';
   private gateway: URL;
-
-  constructor({ gateway }: { gateway: string }) {
+  private logger: Logger;
+  constructor({
+    gateway,
+    logger = Logger.default,
+  }: {
+    gateway: string;
+    logger?: Logger;
+  }) {
     try {
       this.gateway = new URL(gateway);
     } catch (error) {
       throw new Error(`Invalid URL provided for static gateway: ${gateway}`);
     }
+    this.logger = logger;
   }
 
+  // provided gateways are ignored
   async selectGateway({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    gateways,
+    gateways = [],
   }: {
     gateways?: URL[];
   } = {}): Promise<URL> {
+    if (gateways.length > 0) {
+      this.logger.warn(
+        'StaticRoutingStrategy does not accept provided gateways. Ignoring provided gateways...',
+        {
+          providedGateways: gateways.length,
+          internalGateway: this.gateway,
+        },
+      );
+    }
     return this.gateway;
   }
 }

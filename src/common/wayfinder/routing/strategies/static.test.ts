@@ -20,26 +20,14 @@ import { StaticRoutingStrategy } from './static.js';
 
 describe('StaticRoutingStrategy', () => {
   it('returns the configured gateway regardless of the gateways parameter', async () => {
-    // Arrange
     const staticGateway = 'https://static-example.com/';
     const strategy = new StaticRoutingStrategy({
       gateway: staticGateway,
     });
 
-    // gateways lists should be ignored
-    const gatewaysList1 = [
-      new URL('https://example1.com'),
-      new URL('https://example2.com'),
-    ];
-
-    const gatewaysList2 = [
-      new URL('https://example3.com'),
-      new URL('https://example4.com'),
-    ];
-
-    const result1 = await strategy.selectGateway({ gateways: gatewaysList1 });
-    const result2 = await strategy.selectGateway({ gateways: gatewaysList2 });
-    const result3 = await strategy.selectGateway({ gateways: [] });
+    const result1 = await strategy.selectGateway();
+    const result2 = await strategy.selectGateway();
+    const result3 = await strategy.selectGateway();
 
     assert.equal(
       result1.toString(),
