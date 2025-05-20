@@ -13,22 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Logger } from '../../../../common/logger.js';
 import { RoutingStrategy } from '../../../../types/wayfinder.js';
 
 export class FastestPingRoutingStrategy implements RoutingStrategy {
   private timeoutMs: number;
-  private path: string;
+  private probePath: string;
   constructor({
     timeoutMs = 500,
-    path = '/ar-io/info',
+    probePath = '/ar-io/info', // TODO: limit to allowed /ar-io and arweave node endpoints
   }: {
-    logger?: Logger;
     timeoutMs?: number;
-    path?: string;
+    probePath?: string;
   } = {}) {
     this.timeoutMs = timeoutMs;
-    this.path = path;
+    this.probePath = probePath;
   }
 
   async selectGateway({ gateways }: { gateways: URL[] }): Promise<URL> {
@@ -41,7 +39,7 @@ export class FastestPingRoutingStrategy implements RoutingStrategy {
         gateways.map(async (gateway) => {
           try {
             const startTime = Date.now();
-            const response = await fetch(`${gateway}/${this.path}`, {
+            const response = await fetch(`${gateway}${this.probePath}`, {
               method: 'HEAD',
               signal: AbortSignal.timeout(this.timeoutMs),
             });

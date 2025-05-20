@@ -105,7 +105,7 @@ Selects the fastest gateway based simple HEAD request to the specified route.
 ```javascript
 const routingStrategy = new FastestPingRoutingStrategy({
   timeoutMs: 1000,
-  pingPath: '/ar-io/info',
+  probePath: '/ar-io/info',
 });
 
 // will select the fastest gateway from the list based on the ping time of the /ar-io/info route
