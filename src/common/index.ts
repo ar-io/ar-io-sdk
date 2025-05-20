@@ -23,6 +23,3 @@ export * from './faucet.js';
 // ao
 export * from './io.js';
 export * from './contracts/ao-process.js';
-
-// wayfinder
-export * from './wayfinder/index.js';
