@@ -15,12 +15,7 @@
  */
 import { ANT_REGISTRY_ID } from '../constants.js';
 import { AoANTVersionsRead, AoANTVersionsWrite } from '../types/ant.js';
-import {
-  AoMessageResult,
-  AoWriteAction,
-  WithSigner,
-  WriteOptions,
-} from '../types/common.js';
+import { AoMessageResult, WithSigner, WriteOptions } from '../types/common.js';
 import {
   ProcessConfiguration,
   isProcessConfiguration,
