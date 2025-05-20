@@ -948,16 +948,16 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     const lastUnderscore = name.lastIndexOf('_');
     const baseName =
       lastUnderscore === -1 ? name : name.slice(lastUnderscore + 1);
-    if (!baseName) {
-      throw new Error('Invalid name');
-    }
     const undername =
       lastUnderscore === -1 ? '@' : name.slice(0, lastUnderscore);
 
     // guard against missing or unregistered ARNS record
     const nameData = await this.getArNSRecord({ name: baseName });
-    if (!nameData || !nameData.processId) {
-      throw new Error(`Base name ${baseName} not found on ARIO.`);
+
+    if (nameData === undefined || nameData.processId === undefined) {
+      throw new Error(
+        `Base ArNS name ${baseName} not found on ARIO contract (${this.process.processId}).`,
+      );
     }
 
     const ant = ANT.init({
