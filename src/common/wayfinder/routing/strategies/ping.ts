@@ -39,10 +39,13 @@ export class FastestPingRoutingStrategy implements RoutingStrategy {
         gateways.map(async (gateway) => {
           try {
             const startTime = Date.now();
-            const response = await fetch(`${gateway}${this.probePath}`, {
-              method: 'HEAD',
-              signal: AbortSignal.timeout(this.timeoutMs),
-            });
+            const response = await fetch(
+              `${gateway.toString().replace(/\/$/, '')}${this.probePath}`,
+              {
+                method: 'HEAD',
+                signal: AbortSignal.timeout(this.timeoutMs),
+              },
+            );
             const endTime = Date.now();
             const durationMs = endTime - startTime;
             return {

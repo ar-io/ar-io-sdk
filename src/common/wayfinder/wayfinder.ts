@@ -414,7 +414,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
 
         logger?.debug('Selected gateway', {
           originalUrl,
-          selectedGateway,
+          selectedGateway: selectedGateway.toString(),
         });
 
         // route the request to the target gateway
@@ -430,16 +430,16 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           redirectUrl: redirectUrl.toString(),
         });
 
-        logger?.debug(`Redirecting request to ${redirectUrl}`, {
+        logger?.debug(`Redirecting request`, {
           originalUrl,
-          redirectUrl,
+          redirectUrl: redirectUrl.toString(),
         });
         // make the request to the target gateway using the redirect url and http client
         const response = await fn(redirectUrl.toString(), ...rest);
         // TODO: trigger a routing event with the raw response object?
-        logger?.debug(`Successfully routed request to ${redirectUrl}`, {
-          redirectUrl,
-          originalUrl,
+        logger?.debug(`Successfully routed request to gateway`, {
+          redirectUrl: redirectUrl.toString(),
+          originalUrl: originalUrl.toString(),
         });
 
         // only verify data if the redirect url is different from the original url
@@ -447,31 +447,33 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           if (verifyData) {
             // if the headers do not have .get on them, we need to parse the headers manually
             const headers = new Headers();
-            let headersObject = (response as any).headers ?? {};
+            const headersObject = (response as any).headers ?? {};
 
-            if (typeof headersObject.get !== 'function') {
-              headersObject = Array.isArray(headersObject)
-                ? Object.fromEntries(headersObject)
-                : headersObject;
-              for (const [key, value] of Object.entries(headersObject)) {
-                headers.set(key, value as string);
-              }
-            } else if (headersObject.entries === 'function') {
+            if (headersObject instanceof Map) {
               for (const [key, value] of headersObject.entries()) {
                 headers.set(key, value);
               }
-            } else if (headersObject !== undefined) {
+            } else if (headersObject instanceof Headers) {
+              for (const [key, value] of headersObject.entries()) {
+                headers.set(key, value);
+              }
+            } else if (
+              headersObject !== undefined &&
+              typeof headersObject === 'object'
+            ) {
               for (const [key, value] of Object.entries(headersObject)) {
                 headers.set(key, value as string);
               }
             } else {
-              logger?.debug('Headers object is not a function or undefined', {
-                headersObject,
-              });
-              emitter?.emit('verification-skipped', {
-                originalUrl,
-              });
-              return response;
+              throw new Error(
+                'Gateway did not return headers needed for verification',
+                {
+                  cause: {
+                    redirectUrl: redirectUrl.toString(),
+                    originalUrl: originalUrl.toString(),
+                  },
+                },
+              );
             }
 
             // transaction id is either in the response headers or the path of the request as the first parameter
@@ -486,7 +488,7 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
             if (!txIdRegex.test(txId)) {
               // no transaction id found, skip verification
               logger?.debug('No transaction id found, skipping verification', {
-                redirectUrl,
+                redirectUrl: redirectUrl.toString(),
                 originalUrl,
               });
               emitter?.emit('verification-skipped', {

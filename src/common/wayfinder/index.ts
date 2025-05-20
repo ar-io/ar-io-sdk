@@ -18,6 +18,8 @@ export * from './wayfinder.js';
 // routing strategies
 export * from './routing/strategies/random.js';
 export * from './routing/strategies/static.js';
+export * from './routing/strategies/ping.js';
+export * from './routing/strategies/round-robin.js';
 
 // gateways providers
 export * from './gateways/network.js';
