@@ -129,8 +129,17 @@ const gateway = await routingStrategy.selectGateway(); // always returns the sam
 Selects gateways in round-robin order. The gateway list is stored in memory and is not persisted across instances.
 
 ```javascript
+const gatewayProvider = new NetworkGatewaysProvider({
+  ario: ARIO.mainnet(),
+  sortBy: 'operatorStake',
+  sortOrder: 'desc',
+  limit: 10,
+});
+
+// provide the gateways to the routing strategy on initialization to track the request count per gateway.
+// Any additional gateways provided to the selectGateway method will be ignored.
 const routingStrategy = new RoundRobinRoutingStrategy({
-  gateways: ['https://arweave.net', 'https://permagate.io'],
+  gateways: await gatewayProvider.getGateways(),
 });
 
 const gateway = await routingStrategy.selectGateway(); // returns the next gateway in the list
