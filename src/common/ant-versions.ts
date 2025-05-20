@@ -15,7 +15,12 @@
  */
 import { ANT_REGISTRY_ID } from '../constants.js';
 import { AoANTVersionsRead, AoANTVersionsWrite } from '../types/ant.js';
-import { AoMessageResult, WithSigner } from '../types/common.js';
+import {
+  AoMessageResult,
+  AoWriteAction,
+  WithSigner,
+  WriteOptions,
+} from '../types/common.js';
 import {
   ProcessConfiguration,
   isProcessConfiguration,
@@ -108,19 +113,15 @@ export class ANTVersionsWritable
     this.signer = createAoSigner(signer);
   }
   async addVersion(
-    {
-      version,
-      moduleId,
-      luaSourceId,
-      notes,
-    }: {
+    params: {
       version: string;
       moduleId: string;
       luaSourceId?: string;
       notes?: string;
     },
-    { tags },
+    options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    const { version, moduleId, luaSourceId, notes } = params;
     return this.process.send({
       tags: pruneTags([
         { name: 'Action', value: 'Add-Version' },
@@ -128,7 +129,7 @@ export class ANTVersionsWritable
         { name: 'Module-Id', value: moduleId },
         { name: 'Lua-Source-Id', value: luaSourceId },
         { name: 'Notes', value: notes },
-        ...(tags ?? []),
+        ...(options?.tags ?? []),
       ]),
       signer: this.signer,
     });
