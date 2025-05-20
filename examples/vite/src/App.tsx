@@ -22,11 +22,10 @@ import { useArNSRecords } from './hooks/useArNS';
 import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
 Logger.default.setLogLevel('debug');
-const ario = ARIO.testnet();
-// @ts-ignore
-const wayfinder = new Wayfinder<typeof fetch>({
-  gatewayProvider: new SimpleCacheGatewaysProvider({
-    ttlSeconds: 10,
+const ario = ARIO.mainnet();
+const wayfinder = new Wayfinder({
+  gatewaysProvider: new SimpleCacheGatewaysProvider({
+    ttlSeconds: 60,
     gatewaysProvider: new NetworkGatewaysProvider({
       ario,
       sortBy: 'operatorStake',
@@ -34,7 +33,7 @@ const wayfinder = new Wayfinder<typeof fetch>({
       limit: 5,
     }),
   }),
-  verifier: new HashVerificationStrategy({
+  verificationStrategy: new HashVerificationStrategy({
     trustedHashProvider: new TrustedGatewaysHashProvider({
       gatewaysProvider: new StaticGatewaysProvider({
         gateways: ['https://permagate.io'],

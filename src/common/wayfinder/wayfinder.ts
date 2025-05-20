@@ -848,10 +848,15 @@ export class Wayfinder<T extends HttpClientFunction> {
     // create a wayfinder client with the routing strategy and gateways provider
     this.request = createWayfinderClient<T>({
       httpClient,
-      selectGateway: async () =>
-        this.routingStrategy.selectGateway({
-          gateways: await this.gatewaysProvider.getGateways(),
-        }),
+      selectGateway: async () => {
+        const gateways = await this.gatewaysProvider.getGateways();
+        console.log('Provided gateways', {
+          gateways: gateways.map((g) => g.toString()),
+        });
+        return this.routingStrategy.selectGateway({
+          gateways,
+        });
+      },
       resolveUrl: resolveWayfinderUrl,
       verifyData: this.verifyData,
       emitter: this.emitter,
