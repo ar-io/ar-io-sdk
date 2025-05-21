@@ -316,21 +316,19 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
               );
             }
           } else {
-            // in non-strict mode, we close the controller immediately and handle verification asynchronously
-            controller.close();
-
             // trigger the verification promise and emit events for the result
             verificationPromise
               .then(() => {
                 emitter?.emit('verification-succeeded', { txId });
               })
-              .catch((err) => {
+              .catch((error) => {
                 emitter?.emit('verification-failed', {
                   txId,
-                  error: err as Error,
+                  error,
                 });
-                // we don't call controller.error() to avoid breaking the client stream
               });
+            // in non-strict mode, we close the controller immediately and handle verification asynchronously
+            controller.close();
           }
         } else {
           bytesProcessed += value.length;
