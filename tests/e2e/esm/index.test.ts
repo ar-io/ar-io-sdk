@@ -46,6 +46,7 @@ const signers = [
 ] as const;
 
 const aoClient = connect({
+  MODE: 'legacy',
   CU_URL: 'http://localhost:6363',
 });
 const arweave = Arweave.init({});
@@ -1200,6 +1201,7 @@ describe('e2e esm tests', async () => {
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
+              MODE: 'legacy',
               CU_URL: 'http://localhost:6363',
             }),
           }),
