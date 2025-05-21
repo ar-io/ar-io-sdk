@@ -211,6 +211,7 @@ function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
   return new AOProcess({
     processId: arioProcessIdFromOptions(options),
     ao: connect({
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });
@@ -565,6 +566,7 @@ function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
   return new AOProcess({
     processId: requiredProcessIdFromOptions(options),
     ao: connect({
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });

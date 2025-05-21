@@ -62,7 +62,9 @@ export type SpawnANTParams = {
 export async function spawnANT({
   signer,
   module = AOS_MODULE_ID,
-  ao = connect(),
+  ao = connect({
+    MODE: 'legacy',
+  }),
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
   antRegistryId = ANT_REGISTRY_ID,
@@ -148,7 +150,9 @@ export async function evolveANT({
   signer,
   processId,
   luaCodeTxId = ANT_LUA_ID,
-  ao = connect(),
+  ao = connect({
+    MODE: 'legacy',
+  }),
   logger = Logger.default,
   arweave = defaultArweave,
 }: {
