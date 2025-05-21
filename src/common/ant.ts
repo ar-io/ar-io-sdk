@@ -79,6 +79,7 @@ export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
   public readonly processId: string;
   private strict: boolean;
+  private checkHyperBeamPromise: Promise<boolean> | undefined;
 
   constructor(config: ANTConfigOptionalStrict) {
     this.strict = config.strict || false;
@@ -93,11 +94,81 @@ export class AoANTReadable implements AoANTRead {
     }
 
     this.processId = this.process.processId;
+    this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
+  }
+
+  private async checkHyperBeamCompatibility(): Promise<boolean> {
+    const res = await fetch(
+      `https://permanode.xyz/${this.processId}~process@1.0/now/cache`,
+      {
+        method: 'HEAD',
+      },
+    );
+
+    if (res.ok && res.headers.get('initialized') === '"true"') {
+      return true;
+    }
+
+    return false;
   }
 
   async getState(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
+    // TODO: detect if process is hyperbeam compatible, if so fetch state via hyperbeam node
+    if (await this.checkHyperBeamPromise) {
+      const res = await fetch(
+        `https://permanode.xyz/${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+        {
+          method: 'GET',
+          redirect: 'follow',
+        },
+      );
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch ant state');
+      }
+
+      const body = (await res.json()) as {
+        name: string;
+        ticker: string;
+        description: string;
+        keywords: string[];
+        denomination: string;
+        owner: string;
+        controllers: string[];
+        records: Record<string, { transactionid: string; ttlseconds: number }>;
+        balances: Record<string, number>;
+        logo: string;
+        totalsupply: number;
+        initialized: boolean;
+      };
+
+      return {
+        Name: body.name,
+        Ticker: body.ticker,
+        Description: body.description,
+        Keywords: body.keywords,
+        Denomination: parseInt(body.denomination),
+        Owner: body.owner,
+        Controllers: body.controllers,
+        Records: Object.entries(body.records).reduce(
+          (acc, [key, record]) => {
+            acc[key] = {
+              transactionId: record.transactionid,
+              ttlSeconds: record.ttlseconds,
+            };
+            return acc;
+          },
+          {} as Record<string, AoANTRecord>,
+        ),
+        Balances: body.balances,
+        Logo: body.logo,
+        TotalSupply: body.totalsupply || 1,
+        Initialized: body.initialized,
+      };
+    }
+
     const tags = [{ name: 'Action', value: 'State' }];
     const res = await this.process.read<AoANTState>({
       tags,
@@ -119,6 +190,21 @@ export class AoANTReadable implements AoANTRead {
   async getInfo(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTInfo> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return {
+        Name: state.Name,
+        Ticker: state.Ticker,
+        Description: state.Description,
+        Keywords: state.Keywords,
+        Denomination: state.Denomination.toString(),
+        Owner: state.Owner,
+        Logo: state.Logo,
+        'Total-Supply': state.TotalSupply.toString(),
+        Handlers: [], // TODO: support for handler in patched state
+      };
+    }
+
     const tags = [{ name: 'Action', value: 'Info' }];
     const info = await this.process.read<AoANTInfo>({
       tags,
@@ -150,6 +236,18 @@ export class AoANTReadable implements AoANTRead {
     { undername }: { undername: string },
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTRecord> {
+    if (await this.checkHyperBeamPromise) {
+      const records = await this.getRecords();
+      const cachedRecord = records[undername];
+
+      // if the record is not found, throw an error
+      if (cachedRecord === undefined) {
+        throw new Error('Record not found');
+      }
+
+      return cachedRecord;
+    }
+
     // TODO: use sortedANTRecords to get priority on all records, even if ANT does not have a priority set
     const record = await this.process.read<AoANTRecord>({
       tags: [
@@ -173,6 +271,11 @@ export class AoANTReadable implements AoANTRead {
   async getRecords(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<SortedANTRecords> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return sortANTRecords(state.Records);
+    }
+
     const tags = [{ name: 'Action', value: 'Records' }];
     const records = await this.process.read<ANTRecords>({
       tags,
@@ -195,6 +298,11 @@ export class AoANTReadable implements AoANTRead {
   async getOwner(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return state.Owner;
+    }
+
     const info = await this.getInfo({ strict });
     return info.Owner;
   }
@@ -210,6 +318,11 @@ export class AoANTReadable implements AoANTRead {
   async getControllers(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<WalletAddress[]> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return state.Controllers;
+    }
+
     const tags = [{ name: 'Action', value: 'Controllers' }];
     const controllers = await this.process.read<WalletAddress[]>({
       tags,
@@ -229,6 +342,10 @@ export class AoANTReadable implements AoANTRead {
   async getName(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return state.Name;
+    }
     const info = await this.getInfo({ strict });
     return info.Name;
   }
@@ -244,6 +361,10 @@ export class AoANTReadable implements AoANTRead {
   async getTicker(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
+    if (await this.checkHyperBeamPromise) {
+      const state = await this.getState();
+      return state.Ticker;
+    }
     const info = await this.getInfo({ strict });
     return info.Ticker;
   }
@@ -259,6 +380,25 @@ export class AoANTReadable implements AoANTRead {
   async getBalances(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<Record<string, number>> {
+    if (await this.checkHyperBeamPromise) {
+      const res = await fetch(
+        `https://permanode.xyz/${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
+        {
+          method: 'GET',
+          redirect: 'follow',
+        },
+      );
+      if (!res.ok) {
+        throw new Error('Failed to fetch ant balances');
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { device, ...balances } = (await res.json()) as {
+        device: string;
+        [key: string]: any;
+      };
+      return balances as Record<string, number>;
+    }
+
     const tags = [{ name: 'Action', value: 'Balances' }];
     const balances = await this.process.read<Record<string, number>>({
       tags,
@@ -280,6 +420,10 @@ export class AoANTReadable implements AoANTRead {
     { address }: { address: string },
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<number> {
+    if (await this.checkHyperBeamPromise) {
+      const balances = await this.getBalances();
+      return balances[address] ?? 0;
+    }
     const tags = [
       { name: 'Action', value: 'Balance' },
       { name: 'Recipient', value: address },
@@ -300,8 +444,10 @@ export class AoANTReadable implements AoANTRead {
    * ```
    */
   async getHandlers(): Promise<AoANTHandler[]> {
+    if (await this.checkHyperBeamPromise) {
+      throw new Error('Handlers are not supported on HyperBeam');
+    }
     const info = await this.getInfo();
-
     return (info.Handlers ?? info.HandlerNames) as AoANTHandler[];
   }
 }
@@ -642,7 +788,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
   /**
    * Releases an ArNS name associated with the ANT. This will release the name to the public and allow anyone to register it. All primary names must be removed before the name can be released.
-   *
    *
    * @param name @type {string} The name you want to release. The name will be put up for as a recently returned name on the ARIO contract. 50% of the winning bid will be distributed to the ANT owner at the time of purchase. If no purchase in the recently returned name period (14 epochs), the name will be released and can be reregistered by anyone.
    * @param arioProcessId @type {string} The processId of the ARIO contract. This is where the ANT will send the message to release the name.
