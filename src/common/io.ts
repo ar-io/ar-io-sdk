@@ -1434,6 +1434,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         years: params.years,
         type: params.type,
         processId: params.processId,
+        paidBy: params.paidBy,
       });
     }
 

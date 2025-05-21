@@ -284,6 +284,11 @@ export const optionMap = {
     description: 'Crypto token type for wallet or action',
     default: 'arweave',
   },
+  paidBy: {
+    alias: '--paid-by <paidBy...>',
+    description: 'Addresses to pay for the interaction',
+    type: 'array',
+  },
 };
 
 export const walletOptions = [
@@ -309,6 +314,7 @@ export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
+  optionMap.paidBy,
   optionMap.paymentUrl,
 ];
 
