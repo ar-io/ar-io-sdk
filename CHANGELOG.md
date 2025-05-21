@@ -1,3 +1,10 @@
+# [3.12.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.11.1-alpha.1...v3.12.0-alpha.1) (2025-05-21)
+
+
+### Features
+
+* **arns:** append paidBy to query params on fundfrom turbo arns purcahaes PE-7943 ([11333e8](https://github.com/ar-io/ar-io-sdk/commit/11333e8abf0e07d284eba43f85ecefc7c9733f18))
+
 ## [3.11.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.11.1-alpha.1) (2025-05-21)
 
 
