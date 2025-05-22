@@ -1,3 +1,16 @@
+# [3.12.0](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.12.0) (2025-05-22)
+
+
+### Bug Fixes
+
+* **deps:** update aoconnect and add required MODE ([a4c5b16](https://github.com/ar-io/ar-io-sdk/commit/a4c5b165a75b46cfcd8db672dc7d9eacd103e143))
+* **utils:** update url util to else statement ([c0f3354](https://github.com/ar-io/ar-io-sdk/commit/c0f335490c881536000d5381ef67078befe2ff4a))
+
+
+### Features
+
+* **arns:** append paidBy to query params on fundfrom turbo arns purcahaes PE-7943 ([11333e8](https://github.com/ar-io/ar-io-sdk/commit/11333e8abf0e07d284eba43f85ecefc7c9733f18))
+
 # [3.12.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-alpha.1...v3.12.0-alpha.2) (2025-05-22)
 
 
