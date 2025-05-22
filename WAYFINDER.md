@@ -6,7 +6,7 @@ Wayfinder is a client-side routing and verification solution for Arweave content
 
 ### Installation
 
-Wayfinder is currently available as a beta release in the `@ar-io/sdk` package. To install the latest version, run:
+Wayfinder is currently available as a beta release in the `@ar.io/sdk` package. To install the latest version, run:
 
 ```bash
 npm install @ar-io/sdk@beta
