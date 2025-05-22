@@ -145,9 +145,14 @@ export interface ArNSPaymentProvider {
   }>;
 }
 
+export interface TurboInitiateArNSPurchaseParams extends AoTokenCostParams {
+  processId?: TransactionId;
+  paidBy?: string | string[];
+}
+
 export interface ArNSAuthenticatedPaymentProvider extends ArNSPaymentProvider {
   initiateArNSPurchase(
-    params: AoTokenCostParams & { processId?: TransactionId },
+    params: TurboInitiateArNSPurchaseParams,
   ): Promise<AoMessageResult<ArNSPurchaseReceipt>>;
 }
 
@@ -284,10 +289,10 @@ export class TurboArNSPaymentProviderAuthenticated
     type,
     processId,
     years,
-  }: AoTokenCostParams & {
-    processId?: TransactionId;
-    // options parameter removed as it wasn't used
-  }): Promise<AoMessageResult<ArNSPurchaseReceipt>> {
+    paidBy = [],
+  }: TurboInitiateArNSPurchaseParams): Promise<
+    AoMessageResult<ArNSPurchaseReceipt>
+  > {
     // Signer check is implicitly handled by requiring it in the constructor
     const url = urlWithSearchParams({
       baseUrl: `${this.paymentUrl}/v1/arns/purchase/${intent}/${name}`,
@@ -296,6 +301,7 @@ export class TurboArNSPaymentProviderAuthenticated
         processId,
         type,
         years,
+        paidBy,
       },
     });
 

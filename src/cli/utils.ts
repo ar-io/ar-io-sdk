@@ -211,6 +211,7 @@ function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
   return new AOProcess({
     processId: arioProcessIdFromOptions(options),
     ao: connect({
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });
@@ -490,6 +491,7 @@ export async function assertEnoughBalanceForArNSPurchase({
   costDetailsParams: AoGetCostDetailsParams;
 }) {
   if (costDetailsParams.fundFrom === 'turbo') {
+    // TODO: Get turbo balance and assert it is enough -- retain paid-by from balance result and pass to CLI logic
     return;
   }
 
@@ -565,6 +567,7 @@ function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
   return new AOProcess({
     processId: requiredProcessIdFromOptions(options),
     ao: connect({
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });
@@ -605,16 +608,27 @@ export function requiredStringFromOptions<O extends GlobalCLIOptions>(
   return value;
 }
 
+export function stringArrayFromOptions<O extends GlobalCLIOptions>(
+  options: O,
+  key: string,
+): string[] | undefined {
+  const value = options[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value)) {
+    throw new Error(`--${key} must be an array`);
+  }
+  return value;
+}
+
 export function requiredStringArrayFromOptions<O extends GlobalCLIOptions>(
   options: O,
   key: string,
 ): string[] {
-  const value = options[key];
+  const value = stringArrayFromOptions(options, key);
   if (value === undefined) {
     throw new Error(`--${key} is required`);
-  }
-  if (!Array.isArray(value)) {
-    throw new Error(`--${key} must be an array`);
   }
   return value;
 }

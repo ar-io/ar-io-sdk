@@ -145,6 +145,7 @@ export class ARIO {
         process: new AOProcess({
           processId: ARIO_MAINNET_PROCESS_ID,
           ao: connect({
+            MODE: 'legacy',
             CU_URL: 'https://cu.ardrive.io',
             ...(config as ProcessConfig)?.process?.ao,
           }),
@@ -157,6 +158,7 @@ export class ARIO {
         processId: ARIO_MAINNET_PROCESS_ID,
         ao: connect({
           CU_URL: 'https://cu.ardrive.io',
+          MODE: 'legacy',
           ...(config as ProcessConfig)?.process?.ao,
         }),
       }),
@@ -180,6 +182,7 @@ export class ARIO {
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
+              MODE: 'legacy',
               CU_URL: 'https://cu.ardrive.io',
               ...(config as ProcessConfig)?.process?.ao,
             }),
@@ -195,6 +198,7 @@ export class ARIO {
         process: new AOProcess({
           processId: ARIO_TESTNET_PROCESS_ID,
           ao: connect({
+            MODE: 'legacy',
             CU_URL: 'https://cu.ardrive.io',
             ...(config as ProcessConfig)?.process?.ao,
           }),
@@ -1430,6 +1434,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         years: params.years,
         type: params.type,
         processId: params.processId,
+        paidBy: params.paidBy,
       });
     }
 

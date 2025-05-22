@@ -36,7 +36,9 @@ export class AOProcess implements AOContract {
 
   constructor({
     processId,
-    ao = connect(),
+    ao = connect({
+      MODE: 'legacy',
+    }),
     logger = Logger.default,
   }: {
     processId: string;

@@ -18,12 +18,22 @@ export const urlWithSearchParams = ({
   params,
 }: {
   baseUrl: string;
-  params: Record<string, string | number | boolean | null | undefined>;
+  params: Record<
+    string,
+    string | number | boolean | string[] | null | undefined
+  >;
 }) => {
   const urlObj = new URL(baseUrl);
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null) return;
-    urlObj.searchParams.set(key, value.toString());
+    if (Array.isArray(value) && value.length > 0) {
+      for (const v of value) {
+        if (v === undefined || v === null) continue;
+        urlObj.searchParams.append(key, v.toString());
+      }
+    } else {
+      urlObj.searchParams.set(key, value.toString());
+    }
   });
   return urlObj.toString();
 };
