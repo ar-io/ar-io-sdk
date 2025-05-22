@@ -1,58 +1,32 @@
-# [3.11.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.11...v3.11.0-alpha.12) (2025-05-18)
+# [3.12.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-alpha.1...v3.12.0-alpha.2) (2025-05-22)
 
 
 ### Bug Fixes
 
-* **ao:** propogate service errors/messages on failed dry-runs ([f3fa154](https://github.com/ar-io/ar-io-sdk/commit/f3fa154c17d39544cfa1443ee6c13e9cf6c1651d))
+* **utils:** update url util to else statement ([c0f3354](https://github.com/ar-io/ar-io-sdk/commit/c0f335490c881536000d5381ef67078befe2ff4a))
 
-# [3.11.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.10...v3.11.0-alpha.11) (2025-05-16)
-
-
-### Bug Fixes
-
-* **cli:** remove console.log for options ([2dfcbf9](https://github.com/ar-io/ar-io-sdk/commit/2dfcbf95b3cc219648306a770d20189efa773d12))
-
-# [3.11.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.9...v3.11.0-alpha.10) (2025-05-16)
+# [3.11.0](https://github.com/ar-io/ar-io-sdk/compare/v3.10.2...v3.11.0) (2025-05-20)
 
 
 ### Bug Fixes
 
+* **ant:** update ant versions types ([4a74336](https://github.com/ar-io/ar-io-sdk/commit/4a74336646608a1a36da79a7680bca10590abebb))
+* **ao:** propagate service errors/messages on failed dry-runs ([f3fa154](https://github.com/ar-io/ar-io-sdk/commit/f3fa154c17d39544cfa1443ee6c13e9cf6c1651d))
 * **cli:** set default CU to https://cu.ardrive.io for ARIO ([6544f78](https://github.com/ar-io/ar-io-sdk/commit/6544f78d5ccb531116a156036a6d0f1acfb604f3))
-
-# [3.11.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.8...v3.11.0-alpha.9) (2025-05-16)
-
-
-### Bug Fixes
-
-* **ant:** update tests and revert priority enforcement ([edf5d15](https://github.com/ar-io/ar-io-sdk/commit/edf5d15bf1579c4660dfb92a5cf0a93d4c8beeea))
-
+* **signing:** add arconnect signer ([35ae6aa](https://github.com/ar-io/ar-io-sdk/commit/35ae6aa2f2e7a5429c35df9a4a4cabbbb499fed3))
+* **signing:** export signers for web and throw if not configured in io class ([6ae1973](https://github.com/ar-io/ar-io-sdk/commit/6ae1973ec5990194973bac6d18cd2f1f222c63e4))
+* **spawn ant:** check results for invalid-boot-notice on spawning ([1f3382b](https://github.com/ar-io/ar-io-sdk/commit/1f3382bb1f1045d67ea9fa9b18116f15ad49d345))
+* **spawn:** validate spawn ant state if provided PE-7986 ([f7696cf](https://github.com/ar-io/ar-io-sdk/commit/f7696cf4314af6cfe74bf6ef3e54526e1494b7ba))
+* **turbo arns:** remove write options from initiate arns purchase ([77bb518](https://github.com/ar-io/ar-io-sdk/commit/77bb5188a91e012f9f02acb398961caa3917c8f2))
+* **turbo arns:** use singular init in factory ([0527b83](https://github.com/ar-io/ar-io-sdk/commit/0527b8357fe47f1dee8831832b43a520555a5770))
+* **turbo signer:** detect wander wallet, use undeprecated method PE-7751 ([6f45983](https://github.com/ar-io/ar-io-sdk/commit/6f459830f5e6a7830bd4e58e6017399123a66936))
+* **turbo:** check if public key is undefined before setting it ([5bea941](https://github.com/ar-io/ar-io-sdk/commit/5bea9416244ebec1b499e01526bb5c7855a6b9e3))
 
 ### Features
 
 * **arns:** add resolve arns name api ([166725e](https://github.com/ar-io/ar-io-sdk/commit/166725edcf9e14d22efb063b75736b149328613d))
 
-# [3.11.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.7...v3.11.0-alpha.8) (2025-05-13)
-
-
-### Bug Fixes
-
-* **streams:** destroy the client stream on verification failure ([5b24063](https://github.com/ar-io/ar-io-sdk/commit/5b24063ae2f17c0208832ee675102eab19a2ed7a))
-* **wayfinder:** add initial data root verificaion class ([c154224](https://github.com/ar-io/ar-io-sdk/commit/c154224091adfaba02e52d80af0981db6eecf0c4))
-* **wayfinder:** conver buffer and streams to data roots ([63672db](https://github.com/ar-io/ar-io-sdk/commit/63672db1e7443b5abedea2abfbc7db72189de59d))
-* **wayfinder:** fix headers parsing ([e6d967f](https://github.com/ar-io/ar-io-sdk/commit/e6d967f9c7270b0c5f83e4b675d0036107b2990d))
-* **wayfinder:** manually construct headers if get is not available on them ([4e2ce99](https://github.com/ar-io/ar-io-sdk/commit/4e2ce99a5b29bb59101afca10bb819f64d867a2a))
-* **wayfinder:** replace reqeustId with txId, listen to only verification events for given txId ([099d4fd](https://github.com/ar-io/ar-io-sdk/commit/099d4fd9e82c97974dcea5cf600b855071717898))
-* **wayfinder:** update gateway provider implementation, move fixed to static, remove unnecessary web digest implementations ([25f9908](https://github.com/ar-io/ar-io-sdk/commit/25f9908f10fa4d4a5d688bb980b20b674235958c))
-
-
-### Features
-
-* **wayfinder:** add a wayfinder event emitter to track status of verification, introduce web digest ([2305816](https://github.com/ar-io/ar-io-sdk/commit/2305816b7ba637c1e69d8a7550d6b105f29fc920))
-* **wayfinder:** add initial data verification interfaces and classes ([5308a28](https://github.com/ar-io/ar-io-sdk/commit/5308a2840d9254d2795d48188c8cfb5ef02e639e))
-* **wayfinder:** add tapResponseStream helper, add events ([3da439f](https://github.com/ar-io/ar-io-sdk/commit/3da439f5810979c51259e9c37183df3b79898443))
-* **wayfinder:** use hash provider for getting trusted hash, and compare that to locally computed one ([3aae883](https://github.com/ar-io/ar-io-sdk/commit/3aae8837bb66a3457fa46fbe21a4d3de2489336c))
-
-# [3.11.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0-alpha.6...v3.11.0-alpha.7) (2025-05-08)
+## [3.10.2](https://github.com/ar-io/ar-io-sdk/compare/v3.10.1...v3.10.2) (2025-05-06)
 
 
 ### Bug Fixes

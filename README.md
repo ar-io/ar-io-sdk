@@ -1927,6 +1927,7 @@ const ario = ARIO.mainnet({
   process: new AOProcess({
     processId: 'ARIO_PROCESS_ID'
     ao: connect({
+      MODE: 'legacy',
       MU_URL: 'https://mu-testnet.xyz',
       CU_URL: 'https://cu-testnet.xyz',
       GRAPHQL_URL: 'https://arweave.net/graphql',
@@ -2417,6 +2418,7 @@ const ant = ANT.init({
   process: new AoProcess({
     processId: 'ANT_PROCESS_ID'
     ao: connect({
+      MODE: 'legacy',
       MU_URL: 'https://mu-testnet.xyz',
       CU_URL: 'https://cu-testnet.xyz',
       GRAPHQL_URL: 'https://arweave.net/graphql',

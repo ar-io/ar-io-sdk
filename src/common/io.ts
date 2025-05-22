@@ -145,6 +145,7 @@ export class ARIO {
         process: new AOProcess({
           processId: ARIO_MAINNET_PROCESS_ID,
           ao: connect({
+            MODE: 'legacy',
             CU_URL: 'https://cu.ardrive.io',
             ...(config as ProcessConfig)?.process?.ao,
           }),
@@ -157,6 +158,7 @@ export class ARIO {
         processId: ARIO_MAINNET_PROCESS_ID,
         ao: connect({
           CU_URL: 'https://cu.ardrive.io',
+          MODE: 'legacy',
           ...(config as ProcessConfig)?.process?.ao,
         }),
       }),
@@ -180,6 +182,7 @@ export class ARIO {
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
+              MODE: 'legacy',
               CU_URL: 'https://cu.ardrive.io',
               ...(config as ProcessConfig)?.process?.ao,
             }),
@@ -195,6 +198,7 @@ export class ARIO {
         process: new AOProcess({
           processId: ARIO_TESTNET_PROCESS_ID,
           ao: connect({
+            MODE: 'legacy',
             CU_URL: 'https://cu.ardrive.io',
             ...(config as ProcessConfig)?.process?.ao,
           }),
@@ -722,7 +726,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       });
 
       return {
-        tokenCost: +mARIO,
+        tokenCost: mARIO.valueOf(),
         wincQty: winc,
         discounts: [],
       };
@@ -944,13 +948,22 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   }: {
     name: string;
   }): Promise<ArNSNameResolutionData> {
-    const baseName = name.split('_').pop();
-    if (baseName === undefined) {
-      throw new Error('Invalid name');
-    }
+    // derive baseName & undername using last underscore
+    const lastUnderscore = name.lastIndexOf('_');
+    const baseName =
+      lastUnderscore === -1 ? name : name.slice(lastUnderscore + 1);
     const undername =
-      name === baseName ? '@' : name.replace(`_${baseName}`, '');
+      lastUnderscore === -1 ? '@' : name.slice(0, lastUnderscore);
+
+    // guard against missing or unregistered ARNS record
     const nameData = await this.getArNSRecord({ name: baseName });
+
+    if (nameData === undefined || nameData.processId === undefined) {
+      throw new Error(
+        `Base ArNS name ${baseName} not found on ARIO contract (${this.process.processId}).`,
+      );
+    }
+
     const ant = ANT.init({
       process: new AOProcess({
         ao: this.process.ao,
@@ -969,16 +982,19 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       antRecord.transactionId === undefined
     ) {
       throw new Error(
-        `Invalid record on ANT. Must have ttlSeconds and transactionId. Record: ${JSON.stringify(antRecord)}`,
+        `Invalid record on ANT. Must have ttlSeconds and transactionId. Record: ${JSON.stringify(
+          antRecord,
+        )}`,
       );
     }
     return {
-      name: name,
-      owner: owner,
+      name,
+      owner,
       txId: antRecord.transactionId,
       ttlSeconds: antRecord.ttlSeconds,
       priority: antRecord.priority,
-      // NOTE: we may want return the actual index of the record based on sorting in case ANT tries to set duplicate priority values to get around undername limits
+      // NOTE: we may want return the actual index of the record based on sorting
+      // in case ANT tries to set duplicate priority values to get around undername limits
       processId: nameData.processId,
       undernameLimit: nameData.undernameLimit,
       type: nameData.type,
@@ -1418,6 +1434,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         years: params.years,
         type: params.type,
         processId: params.processId,
+        paidBy: params.paidBy,
       });
     }
 

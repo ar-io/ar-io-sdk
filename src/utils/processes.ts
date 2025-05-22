@@ -80,7 +80,9 @@ export class ArNSEventEmitter extends EventEmitter {
     concurrency = 30,
     logger = Logger.default,
     strict = false,
-    antAoClient = connect(),
+    antAoClient = connect({
+      MODE: 'legacy',
+    }),
   }: {
     contract?: AoARIORead;
     timeoutMs?: number;
