@@ -1,3 +1,10 @@
+## [3.12.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0...v3.12.1) (2025-05-23)
+
+
+### Bug Fixes
+
+* **deps:** add uuid as required dependency ([3cecc50](https://github.com/ar-io/ar-io-sdk/commit/3cecc507fb90e73500fe62266e73fd4d2811b84f))
+
 # [3.12.0](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.12.0) (2025-05-22)
 
 
