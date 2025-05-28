@@ -652,4 +652,333 @@ describe('Wayfinder', () => {
       });
     });
   });
+
+  describe('URL resolution', () => {
+    let wayfinder: Wayfinder<typeof fetch>;
+    before(() => {
+      wayfinder = new Wayfinder({
+        httpClient: fetch,
+        routingStrategy: new StaticRoutingStrategy({
+          gateway: `http://${gatewayUrl}`,
+        }),
+        gatewaysProvider: stubbedGatewaysProvider,
+      });
+    });
+
+    describe('Non-ar:// URLs (fallback)', () => {
+      it('should pass through non-ar:// URLs unchanged', async () => {
+        const originalUrl = 'https://example.com/path';
+        const resolvedUrl = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(resolvedUrl.toString(), originalUrl);
+      });
+
+      it('should return unchanged HTTPS URLs with query params', async () => {
+        const originalUrl =
+          'https://api.example.com/v1/data?key=value&limit=10';
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+
+      it('should return unchanged file:// URLs', async () => {
+        const originalUrl = 'file:///path/to/local/file.txt';
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+    });
+
+    describe('Gateway endpoint routing (path starts with /)', () => {
+      it('should route to gateway endpoints correctly', async () => {
+        const resolvedUrl = await wayfinder.resolveUrl({
+          originalUrl: 'ar:///ar-io/info',
+        });
+
+        assert.strictEqual(
+          resolvedUrl.toString(),
+          `http://${gatewayUrl}/ar-io/info`,
+        );
+      });
+
+      it('should route single-level gateway endpoints', async () => {
+        const result = await wayfinder.resolveUrl({
+          originalUrl: 'ar:///info',
+        });
+
+        assert.strictEqual(result.toString(), `http://${gatewayUrl}/info`);
+      });
+
+      it('should route gateway endpoints with query params', async () => {
+        const result = await wayfinder.resolveUrl({
+          originalUrl: 'ar:///graphql?query=test',
+        });
+
+        assert.strictEqual(
+          result.toString(),
+          `http://${gatewayUrl}/graphql?query=test`,
+        );
+      });
+
+      it('should handle empty gateway endpoint (just ar:///)', async () => {
+        const result = await wayfinder.resolveUrl({
+          originalUrl: 'ar:///',
+        });
+
+        assert.strictEqual(result.toString(), `http://${gatewayUrl}/`);
+      });
+    });
+
+    describe('Transaction ID routing (txIdRegex)', () => {
+      const validTxId = 'c7wkwt6TKgcWJUfgvpJ5q5qi4DIZyJ1_TqhjXgURh0U';
+
+      it('should resolve transaction IDs without path components', async () => {
+        const resolvedUrl = await wayfinder.resolveUrl({
+          originalUrl: `ar://${validTxId}`,
+        });
+
+        assert.strictEqual(
+          resolvedUrl.toString(),
+          `http://${gatewayUrl}/${validTxId}`,
+        );
+      });
+
+      it('should resolve transaction IDs with path segments', async () => {
+        const resolvedUrl = await wayfinder.resolveUrl({
+          originalUrl: `ar://${validTxId}/path/to/file.html`,
+        });
+
+        assert.strictEqual(
+          resolvedUrl.toString(),
+          `http://${gatewayUrl}/${validTxId}/path/to/file.html`,
+        );
+      });
+
+      it('should route transaction IDs with multiple path segments', async () => {
+        const result = await wayfinder.resolveUrl({
+          originalUrl: `ar://${validTxId}/assets/images/logo.png`,
+        });
+
+        assert.strictEqual(
+          result.toString(),
+          `http://${gatewayUrl}/${validTxId}/assets/images/logo.png`,
+        );
+      });
+
+      it('should route transaction IDs with query parameters', async () => {
+        const result = await wayfinder.resolveUrl({
+          originalUrl: `ar://${validTxId}/api/data?format=json&limit=50`,
+        });
+
+        assert.strictEqual(
+          result.toString(),
+          `http://${gatewayUrl}/${validTxId}/api/data?format=json&limit=50`,
+        );
+      });
+    });
+
+    describe('ARNS name routing (arnsRegex)', () => {
+      describe('Basic ARNS names with path components', () => {
+        it('should resolve ARNS names without path components', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://cookbook_ao',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://cookbook_ao.${gatewayUrl}/`,
+          );
+        });
+
+        it('should resolve top-level ARNS names with single path segment', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://ao/welcome',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://ao.${gatewayUrl}/welcome`,
+          );
+        });
+
+        it('should resolve top-level ARNS names with multiple path segments', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://ao/welcome/getting-started.html',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://ao.${gatewayUrl}/welcome/getting-started.html`,
+          );
+        });
+
+        it('should resolve ARNS names with undernames and single path segment', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://cookbook_ao/welcome',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://cookbook_ao.${gatewayUrl}/welcome`,
+          );
+        });
+
+        it('should resolve ARNS names with undernames and multiple path segments', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://cookbook_ao/welcome/getting-started.html',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://cookbook_ao.${gatewayUrl}/welcome/getting-started.html`,
+          );
+        });
+
+        it('should resolve ARNS names with deep nested paths', async () => {
+          const resolvedUrl = await wayfinder.resolveUrl({
+            originalUrl: 'ar://cookbook_ao/api/v1/users/123/profile',
+          });
+
+          assert.strictEqual(
+            resolvedUrl.toString(),
+            `http://cookbook_ao.${gatewayUrl}/api/v1/users/123/profile`,
+          );
+        });
+      });
+
+      describe('ARNS names with special characters', () => {
+        it('should route ARNS names with hyphens', async () => {
+          const result = await wayfinder.resolveUrl({
+            originalUrl: 'ar://my-app/dashboard',
+          });
+
+          assert.strictEqual(
+            result.toString(),
+            `http://my-app.${gatewayUrl}/dashboard`,
+          );
+        });
+
+        it('should route ARNS names with numbers', async () => {
+          const result = await wayfinder.resolveUrl({
+            originalUrl: 'ar://app2024/features',
+          });
+
+          assert.strictEqual(
+            result.toString(),
+            `http://app2024.${gatewayUrl}/features`,
+          );
+        });
+      });
+
+      describe('ARNS names with query parameters', () => {
+        it('should preserve query parameters in ARNS routing', async () => {
+          const result = await wayfinder.resolveUrl({
+            originalUrl: 'ar://cookbook_ao/search?q=testing&category=tutorials',
+          });
+
+          assert.strictEqual(
+            result.toString(),
+            `http://cookbook_ao.${gatewayUrl}/search?q=testing&category=tutorials`,
+          );
+        });
+      });
+
+      describe('Edge cases for valid ARNS names', () => {
+        it('should handle single character ARNS names', async () => {
+          const result = await wayfinder.resolveUrl({
+            originalUrl: 'ar://x/path',
+          });
+
+          assert.strictEqual(result.toString(), `http://x.${gatewayUrl}/path`);
+        });
+
+        it('should handle maximum length ARNS names (51 chars)', async () => {
+          const maxLengthName = 'a'.repeat(51);
+          const result = await wayfinder.resolveUrl({
+            originalUrl: `ar://${maxLengthName}/test`,
+          });
+
+          assert.strictEqual(
+            result.toString(),
+            `http://${maxLengthName}.${gatewayUrl}/test`,
+          );
+        });
+
+        it('should treat short IDs as ARNS names when they match arnsRegex', async () => {
+          const shortId = 'abc123';
+          const originalUrl = `ar://${shortId}/path`;
+          const result = await wayfinder.resolveUrl({
+            originalUrl,
+          });
+
+          // Short IDs that don't match txIdRegex but match arnsRegex get treated as ARNS names
+          assert.strictEqual(
+            result.toString(),
+            `http://${shortId}.${gatewayUrl}/path`,
+          );
+        });
+
+        it('should treat long IDs as ARNS names when they match arnsRegex', async () => {
+          const longId = 'a'.repeat(44);
+          const originalUrl = `ar://${longId}/path`;
+          const result = await wayfinder.resolveUrl({
+            originalUrl,
+          });
+
+          // Long IDs that don't match txIdRegex but match arnsRegex get treated as ARNS names
+          assert.strictEqual(
+            result.toString(),
+            `http://${longId}.${gatewayUrl}/path`,
+          );
+        });
+      });
+    });
+
+    describe('Invalid names (no regex match - fallback)', () => {
+      it('should fallback for ARNS names that are too long (>51 chars)', async () => {
+        const tooLongName = 'a'.repeat(52);
+        const originalUrl = `ar://${tooLongName}/path`;
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+
+      it('should fallback for names with invalid characters', async () => {
+        const invalidName = 'my.app';
+        const originalUrl = `ar://${invalidName}/path`;
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+
+      it('should fallback for names with uppercase letters', async () => {
+        const upperCaseName = 'MyApp';
+        const originalUrl = `ar://${upperCaseName}/path`;
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+
+      it('should fallback for empty names', async () => {
+        const originalUrl = 'ar://';
+        const result = await wayfinder.resolveUrl({
+          originalUrl,
+        });
+
+        assert.strictEqual(result.toString(), originalUrl);
+      });
+    });
+  });
 });
