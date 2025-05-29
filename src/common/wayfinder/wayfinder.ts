@@ -70,21 +70,25 @@ export const resolveWayfinderUrl = ({
       return new URL(path.slice(1), selectedGateway);
     }
 
+    // Split path to get the first part (name/txId) and remaining path components
+    const [firstPart, ...rest] = path.split('/');
+
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
-    if (txIdRegex.test(path)) {
-      const [txId, ...rest] = path.split('/');
-      return new URL(`${txId}${rest.join('/')}`, selectedGateway);
+    if (txIdRegex.test(firstPart)) {
+      return new URL(
+        `${firstPart}${rest.length > 0 ? '/' + rest.join('/') : ''}`,
+        selectedGateway,
+      );
     }
 
-    if (arnsRegex.test(path)) {
+    if (arnsRegex.test(firstPart)) {
       // TODO: tests to ensure arns names support query params and paths
-      const [name, ...rest] = path.split('/');
-      const arnsUrl = `${selectedGateway.protocol}//${name}.${selectedGateway.hostname}${selectedGateway.port ? `:${selectedGateway.port}` : ''}`;
+      const arnsUrl = `${selectedGateway.protocol}//${firstPart}.${selectedGateway.hostname}${selectedGateway.port ? `:${selectedGateway.port}` : ''}`;
       logger?.debug(`Routing to ${path} on ${arnsUrl}`, {
         originalUrl,
         selectedGateway,
       });
-      return new URL(rest.join('/'), arnsUrl);
+      return new URL(rest.length > 0 ? rest.join('/') : '', arnsUrl);
     }
 
     // TODO: support .eth addresses
