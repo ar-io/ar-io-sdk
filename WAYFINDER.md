@@ -30,7 +30,7 @@ const response = await wayfinder.request('ar://example-name');
 
 You can customize the wayfinder instance with different gateways, verification strategies, and routing strategies based on your use case.
 
-Example:
+Example 1:
 
 > _Wayfinder client that caches the top 10 gateways by operator stake from the ARIO Network for 1 hour and uses the fastest pinging routing strategy to select the fastest gateway for requests._
 
@@ -56,6 +56,30 @@ const wayfinder = new Wayfinder({
     trustedHashProvider: new TrustedGatewaysHashProvider({
       gatewaysProvider: new StaticGatewaysProvider({
         gateways: ['https://arweave.net'],
+      }),
+    }),
+  }),
+});
+```
+
+Example 2:
+
+> _Wayfinder client that uses a preferred gateway with fallback to the fastest gateway if the preferred gateway is unavailable._
+
+```javascript
+const wayfinder = new Wayfinder({
+  // use a preferred gateway with fallback to the fastest gateway for reliability
+  routingStrategy: new PreferredWithFallbackRoutingStrategy({
+    preferredGateway: 'https://my-preferred-gateway.com',
+    fallbackStrategy: new FastestPingRoutingStrategy({
+      timeoutMs: 1000,
+    }),
+  }),
+  // verify data using the default verification strategy
+  verificationStrategy: new HashVerificationStrategy({
+    trustedHashProvider: new TrustedGatewaysHashProvider({
+      gatewaysProvider: new StaticGatewaysProvider({
+        gateways: ['https://permagate.io'],
       }),
     }),
   }),
@@ -105,12 +129,13 @@ const gatewayProvider = new StaticGatewaysProvider({
 
 Wayfinder supports multiple routing strategies to select target gateways for your requests.
 
-| Strategy                     | Description                                    | Use Case                                |
-| ---------------------------- | ---------------------------------------------- | --------------------------------------- |
-| `RandomRoutingStrategy`      | Selects a random gateway from a list           | Good for load balancing and resilience  |
-| `StaticRoutingStrategy`      | Always uses a single gateway                   | When you need to use a specific gateway |
-| `RoundRobinRoutingStrategy`  | Selects gateways in round-robin order          | Good for load balancing and resilience  |
-| `FastestPingRoutingStrategy` | Selects the fastest gateway based on ping time | Good for performance and latency        |
+| Strategy                               | Description                                                             | Use Case                                                            |
+| -------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `RandomRoutingStrategy`                | Selects a random gateway from a list                                    | Good for load balancing and resilience                              |
+| `StaticRoutingStrategy`                | Always uses a single gateway                                            | When you need to use a specific gateway                             |
+| `RoundRobinRoutingStrategy`            | Selects gateways in round-robin order                                   | Good for load balancing and resilience                              |
+| `FastestPingRoutingStrategy`           | Selects the fastest gateway based on ping time                          | Good for performance and latency                                    |
+| `PreferredWithFallbackRoutingStrategy` | Tries a preferred gateway first, falls back to another routing strategy | When you want to prioritize a specific gateway but need reliability |
 
 ### RandomRoutingStrategy
 
@@ -169,6 +194,23 @@ const routingStrategy = new FastestPingRoutingStrategy({
 const gateway = await routingStrategy.selectGateway({
   gateways: ['https://slow.net', 'https://medium.net', 'https://fast.net'],
 });
+```
+
+### PreferredWithFallbackRoutingStrategy
+
+Attempts to use a preferred gateway first, and falls back to another routing strategy if the preferred gateway is unavailable. By default, it uses the FastestPingRoutingStrategy as the fallback.
+
+```javascript
+// Use a specific gateway with fallback to ping-based routing for reliability
+const routingStrategy = new PreferredWithFallbackRoutingStrategy({
+  preferredGateway: 'https://my-preferred-gateway.com',
+  fallbackStrategy: new FastestPingRoutingStrategy({
+    timeoutMs: 1000,
+  }),
+});
+
+// First tries the preferred gateway; if it fails, selects from the provided gateways using the fallback strategy
+const gateway = await routingStrategy.selectGateway();
 ```
 
 ## Verification Strategies
