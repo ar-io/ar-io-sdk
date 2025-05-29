@@ -148,6 +148,7 @@ export interface ArNSPaymentProvider {
 export interface TurboInitiateArNSPurchaseParams extends AoTokenCostParams {
   processId?: TransactionId;
   paidBy?: string | string[];
+  referer?: string;
 }
 
 export interface ArNSAuthenticatedPaymentProvider extends ArNSPaymentProvider {
@@ -290,6 +291,7 @@ export class TurboArNSPaymentProviderAuthenticated
     processId,
     years,
     paidBy = [],
+    referer,
   }: TurboInitiateArNSPurchaseParams): Promise<
     AoMessageResult<ArNSPurchaseReceipt>
   > {
@@ -302,6 +304,7 @@ export class TurboArNSPaymentProviderAuthenticated
         type,
         years,
         paidBy,
+        referer,
       },
     });
 
