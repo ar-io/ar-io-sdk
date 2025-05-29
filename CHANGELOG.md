@@ -1,3 +1,10 @@
+# [3.12.0-beta.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.1...v3.12.0-beta.2) (2025-05-29)
+
+
+### Bug Fixes
+
+* **wayfinder:** resolve ARNS names with path components correctly ([58055fd](https://github.com/ar-io/ar-io-sdk/commit/58055fd96b4fa50b062bdc1acc6e1050b733be0a))
+
 # [3.12.0-beta.1](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.12.0-beta.1) (2025-05-22)
 
 
