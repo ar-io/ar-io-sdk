@@ -223,7 +223,7 @@ Wayfinder includes verification mechanisms to ensure the integrity of retrieved 
 | ------------------------------- | ---------- | ----------- | -------- | ------------------------------------------------------------------------------------------------------------ |
 | `HashVerificationStrategy`      | Low        | High        | Low      | Verifies data integrity using SHA-256 hash comparison                                                        |
 | `DataRootVerificationStrategy`  | Medium     | Medium      | Low      | Verifies data using Arweave by computing the data root for the transaction (most useful for L1 transactions) |
-| `SignatureVerificationStrategy` | Medium     | Medium      | Medium   | Verifies signature of n Arweave transaction or data item using offsets provided by trusted gateway           |
+| `SignatureVerificationStrategy` | Medium     | Medium      | Medium   | Verifies signature of an Arweave transaction or data item using offsets provided by trusted gateway          |
 
 ### HashVerificationStrategy
 
