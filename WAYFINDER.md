@@ -356,47 +356,45 @@ sequenceDiagram
     Client->>Wayfinder: request('ar://example')
     activate Wayfinder
 
-    Wayfinder->>+Gateways Provider: getGateways()
-    Gateways Provider-->>-Wayfinder: List of gateway URLs
+    Wayfinder->>+Gateways Provider: Request list of available gateways
+    Gateways Provider-->>-Wayfinder: Return list of available gateways
 
-    Wayfinder->>+Routing Strategy: selectGateway() from list of gateways
-    Routing Strategy-->>-Wayfinder: Select gateway for request
+    Wayfinder->>+Routing Strategy: Select gateway for request from list of gateways
+    Routing Strategy-->>-Wayfinder: Return selected gateway for request
 
-    Wayfinder->>+Selected Gateway: Send HTTP request to target gateway
-    Selected Gateway-->>-Wayfinder: Response with data & txId
-
-
+    Wayfinder->>+Selected Gateway: Send HTTP request to selected gateway
+    Selected Gateway-->>-Wayfinder: Return raw response with data & txId
 
     alt Strict mode disabled (return response immediately, verify in background)
-        Wayfinder->>Client: Return response immediately
+        Wayfinder-->>Client: Return response immediately
         activate Verification Strategy
-        Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
-        Verification Strategy->>Trusted Gateways: Request verification headers
-        Trusted Gateways-->>Verification Strategy: Return verification headers
-        Verification Strategy->>Verification Strategy: Compare computed vs trusted data
-        Verification Strategy-->>Client: Emit 'verification-progress' event
+        Wayfinder->>+Verification Strategy: Kick off verification process
+        Verification Strategy->>+Trusted Gateways: Request verification headers
+        Trusted Gateways-->>-Verification Strategy: Return verification headers
+        Verification Strategy->>Verification Strategy: Verify response data using headers
+        Verification Strategy->>Client: Emit 'verification-progress' events
         alt Verification failed
-            Verification Strategy-->>Client: Emit 'verification-failed' event with error
+            Verification Strategy->>Client: Emit 'verification-failed' event with error
         else Verification succeeded
-            Verification Strategy-->>Client: Emit 'verification-succeeded' event
+            Verification Strategy->>Client: Emit 'verification-succeeded' event
         end
         deactivate Verification Strategy
     end
 
     alt Strict mode enabled (block last byte until verification is complete)
-        Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
+        Wayfinder->>+Verification Strategy: Kick off verification process
         activate Verification Strategy
-        Verification Strategy->>Trusted Gateways: Request verification headers
-        Trusted Gateways-->>Verification Strategy: Return verification headers
-        Verification Strategy->>Verification Strategy: Compare computed vs trusted data
-        Verification Strategy-->>Wayfinder: Emit 'verification-progress' event
+        Verification Strategy->>+Trusted Gateways: Request verification headers
+        Trusted Gateways-->>-Verification Strategy: Return verification headers
+        Verification Strategy->>Verification Strategy: Verify response data using headers
+        Verification Strategy->>Wayfinder: Emit 'verification-progress' events
         Wayfinder->>Wayfinder: Wait for verification to complete
         alt Verification failed
-            Verification Strategy-->>Wayfinder: Emit 'verification-failed' event with error
-            Wayfinder->>Client: Return verification error
+            Verification Strategy->>Wayfinder: Emit 'verification-failed' event with error
+            Wayfinder-->>Client: Return verification error
         else Verification succeeded
-            Verification Strategy-->>Wayfinder: Emit 'verification-succeeded' event
-            Wayfinder->>Client: Return verified response
+            Verification Strategy->>Wayfinder: Emit 'verification-succeeded' event
+            Wayfinder-->>Client: Return verified response
         end
         deactivate Verification Strategy
       end
