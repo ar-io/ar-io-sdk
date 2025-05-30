@@ -31,9 +31,7 @@ import { HashVerificationStrategy } from './verification/strategies/hash-verifie
 import { TrustedGatewaysHashProvider } from './verification/trusted.js';
 
 // local types for wayfinder
-type HttpClientArgs = unknown[];
-type HttpClientFunction = (...args: HttpClientArgs) => unknown;
-type WayfinderHttpClient<T extends HttpClientFunction> = T;
+type WayfinderHttpClient = typeof fetch;
 
 // known regexes for wayfinder urls
 export const arnsRegex = /^[a-z0-9_-]{1,51}$/;
@@ -367,43 +365,18 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
   throw new Error('Unsupported body type for cloning');
 }
 
-export function wrapVerifiedResponse(
-  original: Response,
-  newBody: ReadableStream<Uint8Array>,
-  txId: string,
-): Response {
-  // Clone headers (Header objects aren't serializable)
-  const headers = new Headers();
-  original.headers.forEach((value, key) => headers.set(key, value));
-
-  // Create a new Response with the new body and cloned headers
-  const wrapped = new Response(newBody, {
-    status: original.status,
-    statusText: original.statusText,
-    headers,
-  });
-
-  // Attach txId for downstream tracking
-  (wrapped as any).txId = txId;
-  (wrapped as any).redirectedFrom = original.url;
-
-  return wrapped;
-}
 /**
- * Creates a wrapped http client that supports ar:// protocol
+ * Creates a wrapped fetch function that supports ar:// protocol
  *
- * This function leverages a Proxy to intercept calls to the http client
- * and redirects them to the target gateway using the resolveUrl function url.
- * It also supports the http client methods like get(), post(), put(), delete(), etc.
+ * This function leverages a Proxy to intercept calls to fetch
+ * and redirects them to the target gateway using the resolveUrl function.
  *
- * Any URLs provided that are not wayfinder urls will be returned as is.
+ * Any URLs provided that are not wayfinder urls will be passed directly to fetch.
  *
- * @param httpClient - the http client to wrap (e.g. axios, fetch, got, etc.)
  * @param resolveUrl - the function to construct the redirect url for ar:// requests
- * @returns a wrapped http client that supports ar:// protocol
+ * @returns a wrapped fetch function that supports ar:// protocol and always returns Response
  */
-export const createWayfinderClient = <T extends HttpClientFunction>({
-  httpClient,
+export const createWayfinderClient = ({
   resolveUrl,
   verifyData,
   selectGateway,
@@ -411,53 +384,50 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
   logger,
   strict = false,
 }: {
-  httpClient: T;
   selectGateway: () => Promise<URL>;
   resolveUrl: (params: {
     originalUrl: string | URL;
     selectedGateway: URL;
     logger?: Logger;
   }) => URL;
-  verifyData?: <T extends Readable | ReadableStream | Buffer>({
-    data,
-    txId,
-  }: {
-    data: T;
-    txId: string;
-  }) => Promise<void>;
+  verifyData?: DataVerificationStrategy['verifyData'];
   logger?: Logger;
   emitter?: WayfinderEmitter;
   strict?: boolean;
-  // TODO: retry strategy to get a new gateway router
-}): WayfinderHttpClient<T> => {
+}): WayfinderHttpClient => {
+  // Create a function that will handle the redirection logic for ar:// URLs
   const wayfinderRedirect = async (
-    fn: HttpClientFunction,
-    rawArgs: HttpClientArgs,
-  ) => {
-    // TODO: handle if first arg is not a string (i.e. just return the result of the function call)
-    const [originalUrl, ...rest] = rawArgs;
+    url: string | URL | Request,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    // If the url is not a string or URL (e.g., it's a Request object), extract the URL from it
+    const originalUrl = url instanceof Request ? url.url : url.toString();
 
-    if (typeof originalUrl !== 'string') {
-      logger?.debug('Original URL is not a string, skipping routing', {
+    // If it's not an ar:// URL, pass it directly to fetch
+    if (!originalUrl.startsWith('ar://')) {
+      logger?.debug('Not a wayfinder URL, passing to fetch directly', {
         originalUrl,
       });
       emitter?.emit('routing-skipped', {
-        originalUrl: JSON.stringify(originalUrl),
+        originalUrl,
       });
-      return fn(...rawArgs);
+      // we don't do anything special with non-ar:// urls, just pass them through
+      return fetch(url, init);
     }
 
+    // Start the routing process
     emitter?.emit('routing-started', {
-      originalUrl: originalUrl.toString(),
+      originalUrl,
     });
 
-    // TODO: by default we will retry 3 times but this should be configurable and moved to a routing strategy
+    // Retry logic for gateway selection
     const maxRetries = 3;
     const retryDelay = 1000;
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         // select the target gateway
+        // TODO: we may want to provide the `path` to select gateway so the HEAD checks in routers check the existence of the actual path/request
         const selectedGateway = await selectGateway();
 
         logger?.debug('Selected gateway', {
@@ -482,194 +452,83 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
           originalUrl,
           redirectUrl: redirectUrl.toString(),
         });
-        // make the request to the target gateway using the redirect url and http client
-        const response = await fn(redirectUrl.toString(), ...rest);
-        // TODO: trigger a routing event with the raw response object?
-        logger?.debug(`Successfully routed request to gateway`, {
-          redirectUrl: redirectUrl.toString(),
-          originalUrl: originalUrl.toString(),
+
+        // Make the request to the target gateway
+        const response = await fetch(redirectUrl.toString(), {
+          ...init,
+          // follow redirects as gateways use sandboxing on /txId requests
+          redirect: 'follow',
         });
 
-        // only verify data if the redirect url is different from the original url
-        if (response && redirectUrl.toString() !== originalUrl.toString()) {
-          if (verifyData) {
-            // if the headers do not have .get on them, we need to parse the headers manually
-            const headers = new Headers();
-            const headersObject = (response as any).headers ?? {};
+        // TODO: update any caching we use for the request and gateway response
 
-            if (headersObject instanceof Map) {
-              for (const [key, value] of headersObject.entries()) {
-                headers.set(key, value);
-              }
-            } else if (headersObject instanceof Headers) {
-              for (const [key, value] of headersObject.entries()) {
-                headers.set(key, value);
-              }
-            } else if (
-              headersObject !== undefined &&
-              typeof headersObject === 'object'
-            ) {
-              for (const [key, value] of Object.entries(headersObject)) {
-                headers.set(key, value as string);
-              }
-            } else {
-              throw new Error(
-                'Gateway did not return headers needed for verification',
-                {
-                  cause: {
-                    redirectUrl: redirectUrl.toString(),
-                    originalUrl: originalUrl.toString(),
-                  },
-                },
-              );
-            }
+        logger?.debug(`Successfully routed request to gateway`, {
+          redirectUrl: redirectUrl.toString(),
+          originalUrl,
+        });
 
-            // transaction id is either in the response headers or the path of the request as the first parameter
-            // TODO: we may want to move this parsing to be returned by the resolveUrl function depending on the redirect URL we've constructed
-            const txId =
-              headers.get('x-arns-resolved-id') ??
-              redirectUrl.pathname.split('/')[1];
-
-            // TODO: validate nodes return content length for all responses
-            const contentLength = +(headers.get('content-length') ?? 0);
-
-            if (!txIdRegex.test(txId)) {
-              // no transaction id found, skip verification
-              logger?.debug('No transaction id found, skipping verification', {
-                redirectUrl: redirectUrl.toString(),
-                originalUrl,
-              });
-              emitter?.emit('verification-skipped', {
-                originalUrl,
-              });
-              return response;
-            }
-
-            emitter?.emit('identified-transaction-id', {
-              originalUrl,
-              selectedGateway: redirectUrl.toString(),
-              txId,
-            });
-
-            // parse out the key that contains the response body, we'll use it later when updating the response object
-            const responseDataKey = (response as any).body
-              ? 'body'
-              : (response as any).data
-                ? 'data'
-                : undefined;
-
-            if (responseDataKey === undefined) {
-              throw new Error(
-                'No data body or data provided, skipping verification',
-                {
-                  cause: {
-                    redirectUrl: redirectUrl.toString(),
-                    originalUrl: originalUrl.toString(),
-                  },
-                },
-              );
-            }
-
-            const responseBody = (response as any)[responseDataKey];
-            // TODO: determine if it is data item or L1 transaction, and tell the verifier accordingly, just drop in hit to graphql now
-            if (txId === undefined) {
-              throw new Error(
-                'Failed to parse data hash from response headers',
-                {
-                  cause: {
-                    redirectUrl: redirectUrl.toString(),
-                    originalUrl: originalUrl.toString(),
-                    txId,
-                  },
-                },
-              );
-            } else if (responseBody === undefined) {
-              throw new Error('No data body provided, skipping verification', {
-                cause: {
-                  redirectUrl: redirectUrl.toString(),
-                  originalUrl: originalUrl.toString(),
-                  txId,
-                },
-              });
-            } else {
-              logger?.debug('Verifying data hash for txId', {
-                redirectUrl: redirectUrl.toString(),
-                originalUrl: originalUrl.toString(),
-                txId,
-              });
-
-              if (
-                responseBody instanceof ReadableStream ||
-                responseBody instanceof Readable
-              ) {
-                const newClientStream = tapAndVerifyStream<typeof responseBody>(
-                  {
-                    originalStream: responseBody,
-                    contentLength,
-                    verifyData,
-                    txId,
-                    emitter,
-                    strict,
-                  },
-                );
-
-                if (response instanceof Response) {
-                  // specific to fetch
-                  return wrapVerifiedResponse(
-                    response,
-                    newClientStream as ReadableStream,
-                    txId,
-                  );
-                } else {
-                  // overwrite the response body with the new client stream
-                  (response as any).txId = txId;
-                  (response as any).body = newClientStream;
-                  return response;
-                }
-              } else {
-                // TODO: content-application/json and it's smaller than 10mb
-                // TODO: add tests and verify this works for all non-Readable/streamed responses
-                if (strict) {
-                  // In strict mode, wait for verification before returning response
-                  try {
-                    await verifyData({
-                      data: responseBody,
-                      txId,
-                    });
-                    emitter?.emit('verification-succeeded', { txId });
-                    return response;
-                  } catch (error) {
-                    logger?.debug('Failed to verify data hash', {
-                      error,
-                      txId,
-                    });
-                    emitter?.emit('verification-failed', { txId, error });
-                    throw new Error('Verification failed', { cause: error });
-                  }
-                } else {
-                  // In non-strict mode, perform verification in the background
-                  verifyData({
-                    data: responseBody,
-                    txId,
-                  })
-                    .then(() => {
-                      emitter?.emit('verification-succeeded', { txId });
-                    })
-                    .catch((error) => {
-                      logger?.debug('Failed to verify data hash', {
-                        error,
-                        txId,
-                      });
-                      emitter?.emit('verification-failed', { txId, error });
-                    });
-                  return response;
-                }
-              }
-            }
-          }
+        // return the response right away if no redirect was made
+        if (redirectUrl.toString() === originalUrl) {
+          return response;
         }
-        // TODO: if strict - wait for verification to finish and succeed before returning the response
-        return response;
+
+        // return the response right away if no verification is needed or if there is no body
+        if (!verifyData) {
+          return response;
+        }
+
+        // the txId is either in the response headers or the path of the request as the first parameter
+        const txId =
+          response.headers.get('x-arns-resolved-id') ??
+          redirectUrl.pathname.split('/')[1];
+
+        const contentLength = +(response.headers.get('content-length') ?? 0);
+
+        if (!txIdRegex.test(txId)) {
+          // No transaction ID found, skip verification
+          logger?.debug('No transaction ID found, skipping verification', {
+            redirectUrl: redirectUrl.toString(),
+            originalUrl,
+          });
+          emitter?.emit('verification-skipped', {
+            originalUrl,
+          });
+          return response;
+        }
+
+        emitter?.emit('identified-transaction-id', {
+          originalUrl,
+          selectedGateway: redirectUrl.toString(),
+          txId,
+        });
+
+        if (!response.body) {
+          logger?.debug('No body, skipping verification', {
+            redirectUrl: redirectUrl.toString(),
+            originalUrl,
+          });
+          emitter?.emit('verification-skipped', {
+            originalUrl,
+          });
+          return response;
+        }
+
+        const verifiedStream = tapAndVerifyStream<ReadableStream>({
+          originalStream: response.body,
+          contentLength,
+          verifyData,
+          txId,
+          emitter,
+          strict,
+        });
+
+        // wrap the response with the verified stream
+        return new Response(verifiedStream, {
+          status: response.status,
+          statusText: response.statusText,
+          // TODO: we could add identified transaction id to the headers here, but it would be changing information from the original response
+          headers: response.headers,
+        });
       } catch (error) {
         logger?.debug('Failed to route request', {
           error: error.message,
@@ -680,6 +539,11 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
         });
         if (i < maxRetries - 1) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        } else {
+          emitter?.emit('routing-failed', {
+            originalUrl,
+            error,
+          });
         }
       }
     }
@@ -692,41 +556,13 @@ export const createWayfinderClient = <T extends HttpClientFunction>({
     });
   };
 
-  return new Proxy(httpClient, {
-    // support direct calls: fetch('ar://…', options)
-    // axios() or got()
-    apply: (_target, _thisArg, argArray) =>
-      wayfinderRedirect(httpClient, argArray as HttpClientArgs),
-
-    // support http clients that use functions like `got.get`, `got.post`, `axios.get`, etc. while still using the wayfinder redirect function
-    get: (target, prop, receiver) => {
-      const value = Reflect.get(target, prop, receiver);
-      if (typeof value === 'function') {
-        return (...inner: HttpClientArgs) =>
-          wayfinderRedirect(value.bind(target), inner);
-      }
-      return value; // numbers, objects, symbols pass through untouched
-    },
-  }) as WayfinderHttpClient<T>;
+  return wayfinderRedirect;
 };
 
 /**
  * The main class for the wayfinder
- * @param router - the router to use for requests
- * @param httpClient - the http client to use for requests
- * @param blocklist - the blocklist of gateways to avoid
  */
-export class Wayfinder<T extends HttpClientFunction> {
-  /**
-   * The native http client used by wayfinder. By default, the native fetch api is used.
-   *
-   * @example
-   * const wayfinder = new Wayfinder({
-   *   httpClient: axios,
-   * });
-   *
-   */
-  public readonly httpClient: T;
+export class Wayfinder {
   /**
    * The gateways provider is responsible for providing the list of gateways to use for routing requests.
    *
@@ -739,6 +575,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    * });
    */
   public readonly gatewaysProvider: GatewaysProvider;
+
   /**
    * The routing strategy to use when routing requests.
    *
@@ -750,6 +587,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    * });
    */
   public readonly routingStrategy: RoutingStrategy;
+
   /**
    * A helper function that resolves the redirect url for ar:// requests to a target gateway.
    *
@@ -769,9 +607,9 @@ export class Wayfinder<T extends HttpClientFunction> {
     originalUrl: string;
     logger?: Logger;
   }) => Promise<URL>;
+
   /**
-   *
-   * A wrapped http client that supports ar:// protocol. If a verification strategy is provided,
+   * A wrapped fetch function that supports ar:// protocol. If a verification strategy is provided,
    * the request will be verified and events will be emitted as the request is processed.
    *
    * @example
@@ -791,9 +629,6 @@ export class Wayfinder<T extends HttpClientFunction> {
    * // request a transaction id
    * const response = await wayfinder.request('ar://1234567890')
    *
-   * // request a transaction id with a custom http client
-   * const response = await wayfinder.request('ar://1234567890')
-   *
    * // Set strict mode to true to make verification blocking
    * const wayfinder = new Wayfinder({
    *   strict: true,
@@ -806,7 +641,7 @@ export class Wayfinder<T extends HttpClientFunction> {
    *   console.error('Verification failed', error);
    * }
    */
-  public readonly request: WayfinderHttpClient<T>;
+  public readonly request: WayfinderHttpClient;
 
   /**
    * The function that verifies the data hash for a given transaction id.
@@ -863,7 +698,6 @@ export class Wayfinder<T extends HttpClientFunction> {
 
   /**
    * The constructor for the wayfinder
-   * @param httpClient - the http client to use for requests
    * @param routingStrategy - the routing strategy to use for requests
    * @param verificationStrategy - the verification strategy to use for requests
    * @param gatewaysProvider - the gateways provider to use for routing requests
@@ -871,7 +705,6 @@ export class Wayfinder<T extends HttpClientFunction> {
    * @param strict - if true, verification will be blocking and will fail requests if verification fails; if false, verification will be non-blocking
    */
   constructor({
-    httpClient = fetch as T,
     logger = Logger.default,
     gatewaysProvider = new SimpleCacheGatewaysProvider({
       gatewaysProvider: new NetworkGatewaysProvider({
@@ -901,20 +734,16 @@ export class Wayfinder<T extends HttpClientFunction> {
       },
     },
     strict = false,
-    // TODO: stats provider
   }: {
-    httpClient?: T;
     routingStrategy?: RoutingStrategy;
     gatewaysProvider?: GatewaysProvider;
     verificationStrategy?: DataVerificationStrategy;
     logger?: Logger;
     events?: WayfinderEventArgs;
     strict?: boolean;
-    // TODO: stats provider
   }) {
     this.routingStrategy = routingStrategy;
     this.gatewaysProvider = gatewaysProvider;
-    this.httpClient = httpClient;
     this.emitter = new WayfinderEmitter(events);
     this.verifyData =
       verificationStrategy.verifyData.bind(verificationStrategy);
@@ -933,8 +762,7 @@ export class Wayfinder<T extends HttpClientFunction> {
     };
 
     // create a wayfinder client with the routing strategy and gateways provider
-    this.request = createWayfinderClient<T>({
-      httpClient,
+    this.request = createWayfinderClient({
       selectGateway: async () => {
         return this.routingStrategy.selectGateway({
           gateways: await this.gatewaysProvider.getGateways(),
@@ -946,10 +774,9 @@ export class Wayfinder<T extends HttpClientFunction> {
       logger,
       strict,
     });
+
     logger?.debug(
       `Wayfinder initialized with ${routingStrategy.constructor.name} routing strategy`,
     );
   }
-
-  // TODO: potential builder pattern to update the Router/blocklist/httpClient
 }
