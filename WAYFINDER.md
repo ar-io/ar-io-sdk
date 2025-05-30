@@ -28,7 +28,7 @@ const response = await wayfinder.request('ar://example-name');
 
 ### Custom Configuration
 
-You can customize the wayfinder instance with different gateways, verification strategies, and routing strategies based on your use case.
+You can customize the Wayfinder instance with different gateways, verification strategies, and routing strategies based on your use case.
 
 Example 1:
 
@@ -83,6 +83,8 @@ const wayfinder = new Wayfinder({
       }),
     }),
   }),
+  // enable strict mode to fail requests if verification fails
+  strict: true,
 });
 ```
 
@@ -315,25 +317,26 @@ const redirectUrl = await wayfinder.resolveUrl({
 console.log(`This request would be routed to: ${redirectUrl}`);
 ```
 
-### Using With Different HTTP Clients
+### Making Requests with Wayfinder
 
-By default, Wayfinder uses native `fetch` for HTTP requests. You can also use other HTTP clients like `axios` or `node-fetch`. When making a request, Wayfinder will use the HTTP client you provide and any additional configuration you provide.
+Wayfinder uses the native [fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) for all HTTP requests and always returns [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response) objects. You can provide any options supported by the fetch API's RequestInit interface when making requests.
 
-```javascript
-import axios from 'axios';
+```javascrip
+// Create a wayfinder instance
+const wayfinder = new Wayfinder();
 
-// create a custom axios instance
-const axios = axios.create({
-  timeout: 10000,
-});
-const wayfinderAxios = new Wayfinder({ httpClient: axios });
-
-// add custom headers on the request
-const response = await wayfinderAxios.request('ar://example', {
+// Make a request with custom headers
+const response = await wayfinder.request('ar://example', {
   headers: {
     'X-Custom-Header': 'test',
   },
+  // Any other fetch RequestInit options are supported
+  redirect: 'follow',
+  cache: 'no-cache',
 });
+
+// The response is a standard fetch Response object
+const data = await response.json();
 ```
 
 ## Request Flow
@@ -362,21 +365,42 @@ sequenceDiagram
     Wayfinder->>+Selected Gateway: Send HTTP request to target gateway
     Selected Gateway-->>-Wayfinder: Response with data & txId
 
-    activate Verification Strategy
-    Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
-    Verification Strategy->>Wayfinder: Emit 'verification-progress' events
-    Verification Strategy->>Trusted Gateways: Request verification headers
-    Trusted Gateways-->>Verification Strategy: Return verification headers
-    Verification Strategy->>Verification Strategy: Compare computed vs trusted data
-    Verification Strategy-->>-Wayfinder: Return request data with verification result
 
-    alt Verification passed
-        Wayfinder->>Wayfinder: Emit 'verification-succeeded' event
-        Wayfinder-->>Client: Return verified response
-    else Verification failed
-        Wayfinder->>Wayfinder: Emit 'verification-failed' event
-        Wayfinder-->>Client: Throw verification error
+
+    alt Strict mode disabled (return response immediately, verify in background)
+        Wayfinder->>Client: Return response immediately
+        activate Verification Strategy
+        Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
+        Verification Strategy->>Trusted Gateways: Request verification headers
+        Trusted Gateways-->>Verification Strategy: Return verification headers
+        Verification Strategy->>Verification Strategy: Compare computed vs trusted data
+        Verification Strategy-->>Client: Emit 'verification-progress' event
+        alt Verification failed
+            Verification Strategy-->>Client: Emit 'verification-failed' event with error
+        else Verification succeeded
+            Verification Strategy-->>Client: Emit 'verification-succeeded' event
+        end
+        deactivate Verification Strategy
     end
+
+    alt Strict mode enabled (block last byte until verification is complete)
+        Wayfinder->>+Verification Strategy: verifyData(responseData, txId)
+        activate Verification Strategy
+        Verification Strategy->>Trusted Gateways: Request verification headers
+        Trusted Gateways-->>Verification Strategy: Return verification headers
+        Verification Strategy->>Verification Strategy: Compare computed vs trusted data
+        Verification Strategy-->>Wayfinder: Emit 'verification-progress' event
+        Wayfinder->>Wayfinder: Wait for verification to complete
+        alt Verification failed
+            Verification Strategy-->>Wayfinder: Emit 'verification-failed' event with error
+            Wayfinder->>Client: Return verification error
+        else Verification succeeded
+            Verification Strategy-->>Wayfinder: Emit 'verification-succeeded' event
+            Wayfinder->>Client: Return verified response
+        end
+        deactivate Verification Strategy
+      end
+
 
     deactivate Wayfinder
 ```
