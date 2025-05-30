@@ -281,13 +281,7 @@ export const createWayfinderClient = ({
     selectedGateway: URL;
     logger?: Logger;
   }) => URL;
-  verifyData?: <T extends AsyncIterable<Uint8Array>>({
-    data,
-    txId,
-  }: {
-    data: T;
-    txId: string;
-  }) => Promise<void>;
+  verifyData?: DataVerificationStrategy['verifyData'];
   logger?: Logger;
   emitter?: WayfinderEmitter;
   strict?: boolean;

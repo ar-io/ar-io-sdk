@@ -21,6 +21,7 @@ export interface GatewaysProvider {
   getGateways: () => Promise<URL[]>;
 }
 
+export type DataStream = AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>;
 export interface DataVerificationStrategy {
   /**
    * Verifies the provided data for a given txId
@@ -37,7 +38,7 @@ export interface DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: AsyncIterable<Uint8Array>;
+    data: DataStream;
     txId: string;
   }) => Promise<void>;
 }

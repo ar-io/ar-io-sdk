@@ -15,9 +15,10 @@
  */
 import {
   DataHashProvider,
+  DataStream,
   DataVerificationStrategy,
 } from '../../../../types/wayfinder.js';
-import { hashAsyncIterableToB64Url } from '../../../../utils/hash.js';
+import { hashDataStreamToB64Url } from '../../../../utils/hash.js';
 
 export class HashVerificationStrategy implements DataVerificationStrategy {
   private readonly trustedHashProvider: DataHashProvider;
@@ -32,11 +33,11 @@ export class HashVerificationStrategy implements DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: AsyncIterable<Uint8Array>;
+    data: DataStream;
     txId: string;
   }): Promise<void> {
     const hashPromise = this.trustedHashProvider.getHash({ txId });
-    const computedHash = await hashAsyncIterableToB64Url(data);
+    const computedHash = await hashDataStreamToB64Url(data);
     // await on the hash promise and compare to get a little concurrency when computing hashes over larger data
     const { hash } = await hashPromise;
     if (computedHash === undefined) {
