@@ -36,14 +36,20 @@ export const WayfinderExample = () => {
   const [wayfinderResponse, setWayfinderResponse] = useState<any>(null);
   const [wayfinderVerificationProgress, setWayfinderVerificationProgress] =
     useState<number>(0);
-  const [wayfinderUrl, setWayfinderUrl] = useState<string>('');
+  const [wayfinderUrl, setWayfinderUrl] = useState<string>('ar://');
 
   useEffect(() => {
     setWayfinderStatusUpdates(new Set());
     setWayfinderResponse(null);
     setWayfinderVerificationProgress(0);
-    if (wayfinderUrl) {
+    if (wayfinderUrl && wayfinderUrl.trim() !== 'ar://') {
       const resolveUrl = async () => {
+        setWayfinderStatusUpdates((prevUpdates) => {
+          return new Set([
+            ...prevUpdates,
+            `🔍 Fetching data from AR.IO network...`,
+          ]);
+        });
         wayfinder
           .request(wayfinderUrl)
           .then(async (res) => {
@@ -66,31 +72,39 @@ export const WayfinderExample = () => {
     wayfinder.emitter.on('routing-failed', (event) => {
       setWayfinderStatusUpdates((prevUpdates) => {
         prevUpdates.add(`❌ Routing failed: ${event.error.message}`);
-        return prevUpdates;
+        return new Set(prevUpdates);
       });
     });
     wayfinder.emitter.on('routing-succeeded', (event) => {
       setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`🔄 Routed request to: ${event.selectedGateway}`);
-        return prevUpdates;
+        return new Set([
+          ...prevUpdates,
+          `🔄 Routed request to: ${event.selectedGateway}`,
+        ]);
       });
     });
     wayfinder.emitter.on('identified-transaction-id', (event) => {
       setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`🔍 Identified transaction id: ${event.txId}`);
-        return prevUpdates;
+        return new Set([
+          ...prevUpdates,
+          `🔍 Identified transaction id: ${event.txId}`,
+        ]);
       });
     });
     wayfinder.emitter.on('verification-succeeded', (event) => {
       setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`✅ Verification passed for ${event.txId}`);
-        return prevUpdates;
+        return new Set([
+          ...prevUpdates,
+          `✅ Verification passed for ${event.txId}`,
+        ]);
       });
     });
-    wayfinder.emitter.on('verification-failed', (event) => {
+    wayfinder.emitter.on('verification-failed', (error) => {
       setWayfinderStatusUpdates((prevUpdates) => {
-        prevUpdates.add(`❌ Verification failed for ${event.txId}`);
-        return prevUpdates;
+        return new Set([
+          ...prevUpdates,
+          `❌ Verification failed: ${error.message}`,
+        ]);
       });
     });
     wayfinder.emitter.on('verification-progress', (event) => {
@@ -106,8 +120,10 @@ export const WayfinderExample = () => {
         newRoundedProgress > 0
       ) {
         setWayfinderStatusUpdates((prevUpdates) => {
-          prevUpdates.add(`⏳ Verifying... ${newRoundedProgress}%`);
-          return prevUpdates;
+          return new Set([
+            ...prevUpdates,
+            `⏳ Verifying... ${newRoundedProgress}%`,
+          ]);
         });
         setWayfinderVerificationProgress(newRoundedProgress);
       }
@@ -185,6 +201,101 @@ export const WayfinderExample = () => {
             >
               {JSON.stringify(wayfinderResponse, null, 2)}
             </pre>
+          </div>
+        )}
+
+        {wayfinderResponse && (
+          <div>
+            <h3>Response Data</h3>
+            <div
+              style={{
+                marginTop: '10px',
+                textAlign: 'left',
+                maxWidth: '500px',
+                overflow: 'auto',
+              }}
+            >
+              {(() => {
+                const contentType = wayfinderResponse.headers['content-type'];
+                if (contentType?.includes('image/')) {
+                  return (
+                    <img
+                      src={URL.createObjectURL(
+                        new Blob([wayfinderResponse.data], {
+                          type: contentType,
+                        }),
+                      )}
+                      alt="Response"
+                      style={{ maxWidth: '100%' }}
+                    />
+                  );
+                } else if (contentType?.includes('video/')) {
+                  return (
+                    <video
+                      controls
+                      src={URL.createObjectURL(
+                        new Blob([wayfinderResponse.data], {
+                          type: contentType,
+                        }),
+                      )}
+                      style={{ maxWidth: '100%' }}
+                    />
+                  );
+                } else if (contentType?.includes('audio/')) {
+                  return (
+                    <audio
+                      controls
+                      src={URL.createObjectURL(
+                        new Blob([wayfinderResponse.data], {
+                          type: contentType,
+                        }),
+                      )}
+                    />
+                  );
+                } else if (contentType?.includes('application/pdf')) {
+                  return (
+                    <iframe
+                      src={URL.createObjectURL(
+                        new Blob([wayfinderResponse.data], {
+                          type: contentType,
+                        }),
+                      )}
+                      style={{ width: '100%', height: '400px', border: 'none' }}
+                    />
+                  );
+                } else if (contentType?.includes('application/pdf')) {
+                  return <pre>{wayfinderResponse.data}</pre>;
+                } else if (contentType?.includes('text/html')) {
+                  return (
+                    <iframe
+                      src={URL.createObjectURL(
+                        new Blob([wayfinderResponse.data], {
+                          type: 'text/html',
+                        }),
+                      )}
+                      style={{
+                        width: '100%',
+                        height: '400px',
+                        border: 'none',
+                        overflow: 'hidden',
+                      }}
+                    />
+                  );
+                } else if (contentType?.includes('application/json')) {
+                  return (
+                    <pre>
+                      {JSON.stringify(
+                        JSON.parse(wayfinderResponse.data),
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  );
+                } else {
+                  return <pre>{wayfinderResponse.data}</pre>;
+                }
+              })()}
+            </div>
           </div>
         )}
       </div>

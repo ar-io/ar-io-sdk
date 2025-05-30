@@ -14,18 +14,18 @@ function App() {
       name: 'Wayfinder',
       component: <WayfinderExample />,
     },
-    {
-      name: 'Faucet',
-      component: <FaucetExample />,
-    },
-    {
-      name: 'Gateways',
-      component: <GatewaysExample />,
-    },
-    {
-      name: 'ArNS Names',
-      component: <ArNSNamesExample />,
-    },
+    // {
+    //   name: 'Faucet',
+    //   component: <FaucetExample />,
+    // },
+    // {
+    //   name: 'Gateways',
+    //   component: <GatewaysExample />,
+    // },
+    // {
+    //   name: 'ArNS Names',
+    //   component: <ArNSNamesExample />,
+    // },
   ];
   return (
     <div

@@ -455,13 +455,14 @@ export const createWayfinderClient = ({
 
         // Make the request to the target gateway
         const response = await fetch(redirectUrl.toString(), {
-          ...init,
           // follow redirects as gateways use sandboxing on /txId requests
           redirect: 'follow',
+          mode: 'cors', // allow cors on all requests
+          // allow requestor to override and any additional request configuration
+          ...init,
         });
 
         // TODO: update any caching we use for the request and gateway response
-
         logger?.debug(`Successfully routed request to gateway`, {
           redirectUrl: redirectUrl.toString(),
           originalUrl,
