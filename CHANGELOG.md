@@ -1,3 +1,10 @@
+# [3.12.0-beta.3](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.2...v3.12.0-beta.3) (2025-05-30)
+
+
+### Features
+
+* **wayfinder:** add PreferredWithFallback router strategy ([d9a1e13](https://github.com/ar-io/ar-io-sdk/commit/d9a1e13b4c004adadf4b11e42ce412ef258b31b4))
+
 # [3.12.0-beta.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.1...v3.12.0-beta.2) (2025-05-29)
 
 
