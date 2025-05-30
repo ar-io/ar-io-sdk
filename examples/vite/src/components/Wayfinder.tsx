@@ -10,7 +10,7 @@ import {
 import { useEffect, useState } from 'react';
 
 // @ts-ignore
-const wayfinder = new Wayfinder<typeof fetch>({
+const wayfinder = new Wayfinder({
   gatewaysProvider: new SimpleCacheGatewaysProvider({
     ttlSeconds: 60,
     gatewaysProvider: new NetworkGatewaysProvider({
