@@ -91,10 +91,10 @@ const wayfinder = new Wayfinder({
 Wayfinder supports several ar:// URL formats:
 
 ```bash
-ar://TRANSACTION_ID              // Direct transaction ID
-ar://NAME                        // ArNS name
-ar:///info                       // Gateway endpoint (/info)
-ar://NAME/path/to/resource       // ArNS with path
+ar://TRANSACTION_ID              # Direct transaction ID
+ar://<arns-name>                        # ArNS name
+ar://<arns-name>/path/to/resource       # ArNS with path
+ar:///info                       # (three slashes) Gateway endpoint (/info)
 ```
 
 ## Gateway Providers
@@ -315,24 +315,17 @@ const redirectUrl = await wayfinder.resolveUrl({
 console.log(`This request would be routed to: ${redirectUrl}`);
 ```
 
-### Using With Different HTTP Clients
+### Request Options
 
-By default, Wayfinder uses native `fetch` for HTTP requests. You can also use other HTTP clients like `axios` or `node-fetch`. When making a request, Wayfinder will use the HTTP client you provide and any additional configuration you provide.
+You can pass standard `fetch` options when making requests with Wayfinder:
 
 ```javascript
-import axios from 'axios';
-
-// create a custom axios instance
-const axios = axios.create({
-  timeout: 10000,
-});
-const wayfinderAxios = new Wayfinder({ httpClient: axios });
-
-// add custom headers on the request
-const response = await wayfinderAxios.request('ar://example', {
+const response = await wayfinder.request('ar://example', {
   headers: {
     'X-Custom-Header': 'test',
   },
+  method: 'POST',
+  body: JSON.stringify({ foo: 'bar' }),
 });
 ```
 

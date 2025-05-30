@@ -21,7 +21,6 @@ import {
   buildLayers,
   generateLeaves,
 } from 'arweave/node/lib/merkle.js';
-import { Readable } from 'node:stream';
 
 import {
   DataRootProvider,
@@ -66,7 +65,7 @@ export async function convertBufferToDataRoot({
   return Buffer.from(result.id).toString('base64url');
 }
 
-export const convertReadableToDataRoot = async <
+export const convertIterableToDataRoot = async <
   T extends AsyncIterable<Uint8Array>,
 >({
   iterable,
@@ -138,21 +137,15 @@ export class DataRootVerificationStrategy implements DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream;
+    data: AsyncIterable<Uint8Array>;
     txId: string;
   }): Promise<void> {
     const trustedDataRootPromise = this.trustedDataRootProvider.getDataRoot({
       txId,
     });
-    let computedDataRoot: string | undefined;
-    if (Buffer.isBuffer(data)) {
-      computedDataRoot = await convertBufferToDataRoot({ buffer: data });
-    } else if (data instanceof Readable || data instanceof ReadableStream) {
-      computedDataRoot = await convertReadableToDataRoot({ iterable: data });
-    }
-    if (computedDataRoot === undefined) {
-      throw new Error('Data root could not be computed');
-    }
+    const computedDataRoot = await convertIterableToDataRoot({
+      iterable: data,
+    });
     const trustedDataRoot = await trustedDataRootPromise;
     if (computedDataRoot !== trustedDataRoot) {
       throw new Error('Data root does not match', {

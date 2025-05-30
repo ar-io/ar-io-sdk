@@ -1,56 +1,14 @@
-import { ARIO, ARIOToken, Logger, mARIOToken } from '@ar.io/sdk/web';
-import {
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { useEffect, useRef, useState } from 'react';
+import { ARIO, Logger } from '@ar.io/sdk/web';
 
 import './App.css';
 import { ArNSNamesExample } from './components/ArNSNames';
 import { FaucetExample } from './components/Faucet';
 import { GatewaysExample } from './components/Gateways';
 import { WayfinderExample } from './components/Wayfinder';
-import { useArNSRecords } from './hooks/useArNS';
-import { useGatewayDelegations, useGateways } from './hooks/useGatewayRegistry';
 
 Logger.default.setLogLevel('debug');
-const ario = ARIO.testnet();
 
 function App() {
-  const [balance, setBalance] = useState<number | null>(null);
-  const [tokenRequestMessage, setTokenRequestMessage] = useState<string | null>(
-    null,
-  );
-  const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
-  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (window.arweaveWallet) {
-      window.arweaveWallet.getActiveAddress().then((address) => {
-        setConnectedAddress(address);
-        setSelectedAddress(address);
-      });
-    }
-  }, [window.arweaveWallet]);
-
-  useEffect(() => {
-    fetchBalance();
-  }, [ario, selectedAddress]);
-
-  const fetchBalance = async () => {
-    setBalance(null);
-    if (!selectedAddress) return;
-    await ario
-      .getBalance({
-        address: selectedAddress,
-      })
-      .then((balance) => {
-        const arioBalance = new mARIOToken(balance).toARIO().valueOf();
-        setBalance(arioBalance);
-      });
-  };
-
   const examples = [
     {
       name: 'Wayfinder',

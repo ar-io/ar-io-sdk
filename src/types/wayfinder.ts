@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Readable } from 'stream';
-
 export interface RoutingStrategy {
   selectGateway: ({ gateways }: { gateways: URL[] }) => Promise<URL>;
 }
@@ -39,7 +37,7 @@ export interface DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream;
+    data: AsyncIterable<Uint8Array>;
     txId: string;
   }) => Promise<void>;
 }

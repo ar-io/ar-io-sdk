@@ -14,49 +14,16 @@
  * limitations under the License.
  */
 import { createHash } from 'crypto';
-import { Readable } from 'stream';
 
 import { toB64Url } from './base64.js';
 
-export const hashReadableToB64Url = (
-  stream: Readable,
+export const hashAsyncIterableToB64Url = async (
+  stream: AsyncIterable<Uint8Array>,
   algorithm = 'sha256',
 ): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const hash = createHash(algorithm);
-    stream.on('data', (chunk) => hash.update(chunk));
-    stream.on('end', () => resolve(toB64Url(hash.digest())));
-    stream.on('error', (err) => reject(err));
-  });
-};
-
-export const hashReadableStreamToB64Url = (
-  stream: ReadableStream,
-  algorithm = 'sha256',
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const hash = createHash(algorithm);
-    const reader = stream.getReader();
-    const read = async () => {
-      try {
-        const { done, value } = await reader.read();
-        if (done) {
-          resolve(toB64Url(hash.digest()));
-        } else {
-          hash.update(value);
-          read();
-        }
-      } catch (err) {
-        reject(err);
-      }
-    };
-    read().catch(reject);
-  });
-};
-
-export const hashBufferToB64Url = (
-  buffer: Buffer,
-  algorithm = 'sha256',
-): string => {
-  return toB64Url(createHash(algorithm).update(buffer).digest());
+  const hash = createHash(algorithm);
+  for await (const chunk of stream) {
+    hash.update(chunk);
+  }
+  return toB64Url(hash.digest());
 };
