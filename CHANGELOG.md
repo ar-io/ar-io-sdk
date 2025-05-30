@@ -1,3 +1,10 @@
+# [3.12.0-beta.4](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.3...v3.12.0-beta.4) (2025-05-30)
+
+
+### Bug Fixes
+
+* **wayfinder:** use native fetch http client for allr requests, ([76d5aed](https://github.com/ar-io/ar-io-sdk/commit/76d5aedd1ec95c2ca852a4828b7fc3e20c64673f))
+
 # [3.12.0-beta.3](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.2...v3.12.0-beta.3) (2025-05-30)
 
 
