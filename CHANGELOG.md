@@ -1,3 +1,10 @@
+## [3.12.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.1...v3.12.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* **ao:** revert dep bump of aoconnect ([5b013f7](https://github.com/ar-io/ar-io-sdk/commit/5b013f7e08589f8b86de6255ad52898b3282bd56))
+
 ## [3.12.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0...v3.12.1) (2025-05-23)
 
 
