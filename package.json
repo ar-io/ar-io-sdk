@@ -75,7 +75,7 @@
     "test:unit": "c8 node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
-    "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
+    "test:integration": "c8 node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'tests/integration/**/*.test.ts'",
     "prepare": "husky install",
     "docs:update": "markdown-toc-gen insert README.md --max-depth 2",
     "example:esm": "cd examples/esm && yarn && node index.mjs",

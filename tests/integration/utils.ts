@@ -1,7 +1,8 @@
-import { AOProcess, AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
 import AoLoader from '@permaweb/ao-loader';
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { AOProcess, AOS_MODULE_ID, AoClient } from '../../src/node/index.js';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 export const TEST_AOS_ANT_WASM = fs.readFileSync(
@@ -129,15 +130,15 @@ export class LocalAO implements Partial<AoClient> {
   async dryrun(
     params: Parameters<AoClient['dryrun']>[0],
     handlerEnvOverrides?: typeof AO_LOADER_HANDLER_ENV,
-  ): ReturnType<AoClient['dryrun']> {
+  ): Promise<ReturnType<AoClient['dryrun']>> {
     const res = await this.handle(
       this.memory,
       {
         ...DEFAULT_HANDLE_OPTIONS,
         Id: this.nonce,
-        Data: params.data || DEFAULT_HANDLE_OPTIONS.Data,
-        Tags: params.tags || DEFAULT_HANDLE_OPTIONS.Tags,
-        ...params,
+        Data: (params as any).data || DEFAULT_HANDLE_OPTIONS.Data,
+        Tags: (params as any).tags || DEFAULT_HANDLE_OPTIONS.Tags,
+        ...(params as any),
       },
       {
         ...AO_LOADER_HANDLER_ENV,
@@ -162,8 +163,8 @@ export class LocalAO implements Partial<AoClient> {
       {
         ...DEFAULT_HANDLE_OPTIONS,
         Id: newNonce,
-        Data: params.data || DEFAULT_HANDLE_OPTIONS.Data,
-        Tags: params.tags || DEFAULT_HANDLE_OPTIONS.Tags,
+        Data: (params as any).data || DEFAULT_HANDLE_OPTIONS.Data,
+        Tags: (params as any).tags || DEFAULT_HANDLE_OPTIONS.Tags,
       },
       {
         ...AO_LOADER_HANDLER_ENV,
@@ -180,8 +181,8 @@ export class LocalAO implements Partial<AoClient> {
 
   async result(
     params: Parameters<AoClient['result']>[0],
-  ): ReturnType<AoClient['result']> {
-    const res = this.resultsCache.get(params.message);
+  ): Promise<ReturnType<AoClient['result']>> {
+    const res = this.resultsCache.get((params as any).message);
     if (!res) throw new Error('Message does exist');
     return res;
   }

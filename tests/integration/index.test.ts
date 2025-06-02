@@ -1,13 +1,18 @@
-import { ANT, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import * as fs from 'node:fs';
+import path from 'node:path';
 import { describe, it } from 'node:test';
 
+import { ANT, ArweaveSigner, createAoSigner } from '../../src/node/index.js';
 import { createLocalProcess } from './utils.js';
 
-const testWalletJSON = fs.readFileSync('./setup/test-wallet.json', {
-  encoding: 'utf-8',
-});
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const testWalletJSON = fs.readFileSync(
+  path.join(__dirname, 'setup', 'test-wallet.json'),
+  {
+    encoding: 'utf-8',
+  },
+);
 
 const testWallet = JSON.parse(testWalletJSON);
 const signers = [
@@ -48,7 +53,7 @@ describe('integration esm tests', async () => {
         const record = await ant.getRecord({ undername: '@' });
 
         assert.strictEqual(
-          record.transactionId,
+          record?.transactionId,
           ''.padEnd(43, '1'),
           'record not set',
         );

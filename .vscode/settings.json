@@ -22,5 +22,12 @@
       "allowed_elements": ["details", "summary"]
     }
   },
-  "cSpell.words": ["ARIO", "redelegate", "redelegating", "wayfind", "Wayfinder"]
+  "cSpell.words": [
+    "ARIO",
+    "dryrun",
+    "redelegate",
+    "redelegating",
+    "wayfind",
+    "Wayfinder"
+  ]
 }
