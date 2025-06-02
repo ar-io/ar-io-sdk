@@ -718,12 +718,12 @@ export function fundFromFromOptions<
   return o.fundFrom ?? 'balance';
 }
 
-export function refererFromOptions<
+export function referrerFromOptions<
   O extends {
-    referer?: string;
+    referrer?: string;
   },
 >(o: O): string | undefined {
-  return o.referer;
+  return o.referrer;
 }
 
 export function assertLockLengthInRange(

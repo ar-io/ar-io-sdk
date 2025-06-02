@@ -27,7 +27,7 @@ import {
   fundFromFromOptions,
   positiveIntegerFromOptions,
   recordTypeFromOptions,
-  refererFromOptions,
+  referrerFromOptions,
   requiredPositiveIntegerFromOptions,
   requiredStringFromOptions,
   stringArrayFromOptions,
@@ -42,7 +42,7 @@ export async function buyRecordCLICommand(
   const type = recordTypeFromOptions(o);
   const years = positiveIntegerFromOptions(o, 'years');
   const fundFrom = fundFromFromOptions(o);
-  const referer = refererFromOptions(o);
+  const referrer = referrerFromOptions(o);
 
   const processId = o.processId;
   if (processId === undefined) {
@@ -85,7 +85,7 @@ export async function buyRecordCLICommand(
       years,
       fundFrom: fundFromFromOptions(o),
       paidBy: stringArrayFromOptions(o, 'paidBy'),
-      referer,
+      referrer,
     },
     customTagsFromOptions(o),
   );
@@ -97,7 +97,7 @@ export async function upgradeRecordCLICommand(
   const name = requiredStringFromOptions(o, 'name');
   const { ario, signerAddress } = writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
-  const referer = refererFromOptions(o);
+  const referrer = referrerFromOptions(o);
 
   if (!o.skipConfirmation) {
     const existingRecord = await ario.getArNSRecord({
@@ -129,7 +129,7 @@ export async function upgradeRecordCLICommand(
     name,
     fundFrom,
     paidBy: stringArrayFromOptions(o, 'paidBy'),
-    referer,
+    referrer,
   });
 }
 
@@ -139,7 +139,7 @@ export async function extendLeaseCLICommand(
   const name = requiredStringFromOptions(o, 'name');
   const years = requiredPositiveIntegerFromOptions(o, 'years');
   const fundFrom = fundFromFromOptions(o);
-  const referer = refererFromOptions(o);
+  const referrer = referrerFromOptions(o);
   const { ario, signerAddress } = writeARIOFromOptions(o);
 
   if (!o.skipConfirmation) {
@@ -176,7 +176,7 @@ export async function extendLeaseCLICommand(
       name,
       years,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
-      referer,
+      referrer,
     },
     customTagsFromOptions(o),
   );
@@ -188,7 +188,7 @@ export async function increaseUndernameLimitCLICommand(
   const name = requiredStringFromOptions(o, 'name');
   const increaseCount = requiredPositiveIntegerFromOptions(o, 'increaseCount');
   const fundFrom = fundFromFromOptions(o);
-  const referer = refererFromOptions(o);
+  const referrer = referrerFromOptions(o);
   const { ario, signerAddress } = writeARIOFromOptions(o);
 
   if (!o.skipConfirmation) {
@@ -222,7 +222,7 @@ export async function increaseUndernameLimitCLICommand(
       name,
       increaseCount,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
-      referer,
+      referrer,
     },
     customTagsFromOptions(o),
   );
@@ -233,7 +233,7 @@ export async function requestPrimaryNameCLICommand(
 ) {
   const { ario, signerAddress } = writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
-  const referer = refererFromOptions(o);
+  const referrer = referrerFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
 
   if (!o.skipConfirmation) {
@@ -261,7 +261,7 @@ export async function requestPrimaryNameCLICommand(
       name,
       fundFrom,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
-      referer,
+      referrer,
     },
     customTagsFromOptions(o),
   );

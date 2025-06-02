@@ -1244,7 +1244,7 @@ const record = await ario.buyRecord(
     name: 'ardrive',
     type: 'lease',
     years: 1,
-    referer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   {
     // optional tags
@@ -1255,7 +1255,7 @@ const record = await ario.buyRecord(
 
 #### `upgradeRecord({ name })`
 
-Upgrades an existing leased ArNS record to a permanent ownership. The record must be currently owned by the caller and be of type "lease". Optionally include a `referer` parameter to track which application facilitated the purchase.
+Upgrades an existing leased ArNS record to a permanent ownership. The record must be currently owned by the caller and be of type "lease".
 
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
@@ -1264,7 +1264,7 @@ const ario = ARIO.mainnet({ signer });
 const record = await ario.upgradeRecord(
   {
     name: 'ardrive',
-    referer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   {
     // optional tags
@@ -1388,7 +1388,7 @@ const { id: txId } = await ario.increaseUndernameLimit(
   {
     name: 'ar-io',
     qty: 420,
-    referer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -1405,7 +1405,7 @@ const { id: txId } = await ario.extendLease(
   {
     name: 'ar-io',
     years: 1,
-    referer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
