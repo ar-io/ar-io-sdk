@@ -584,15 +584,17 @@ describe('Wayfinder', () => {
 
     describe('Transaction ID routing (txIdRegex)', () => {
       const validTxId = 'c7wkwt6TKgcWJUfgvpJ5q5qi4DIZyJ1_TqhjXgURh0U';
+      const sandboxForTxId =
+        'oo6cjqw6smvaofrfi7ql5etzvonkfybsdhej272ovbrv4birq5cq';
 
-      it('should resolve transaction IDs without path components', async () => {
+      it('should resolve transaction IDs without path components to the proper sandbox url', async () => {
         const resolvedUrl = await wayfinder.resolveUrl({
           originalUrl: `ar://${validTxId}`,
         });
 
         assert.strictEqual(
           resolvedUrl.toString(),
-          `http://${gatewayUrl}/${validTxId}`,
+          `http://${sandboxForTxId}.${gatewayUrl}/${validTxId}`,
         );
       });
 
@@ -603,7 +605,7 @@ describe('Wayfinder', () => {
 
         assert.strictEqual(
           resolvedUrl.toString(),
-          `http://${gatewayUrl}/${validTxId}/path/to/file.html`,
+          `http://${sandboxForTxId}.${gatewayUrl}/${validTxId}/path/to/file.html`,
         );
       });
 
@@ -614,7 +616,7 @@ describe('Wayfinder', () => {
 
         assert.strictEqual(
           result.toString(),
-          `http://${gatewayUrl}/${validTxId}/assets/images/logo.png`,
+          `http://${sandboxForTxId}.${gatewayUrl}/${validTxId}/assets/images/logo.png`,
         );
       });
 
@@ -625,7 +627,7 @@ describe('Wayfinder', () => {
 
         assert.strictEqual(
           result.toString(),
-          `http://${gatewayUrl}/${validTxId}/api/data?format=json&limit=50`,
+          `http://${sandboxForTxId}.${gatewayUrl}/${validTxId}/api/data?format=json&limit=50`,
         );
       });
     });
