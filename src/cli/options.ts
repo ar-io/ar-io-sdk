@@ -289,6 +289,10 @@ export const optionMap = {
     description: 'Addresses to pay for the interaction',
     type: 'array',
   },
+  referer: {
+    alias: '--referer <referer>',
+    description: 'The referer for ArNS purchase tracking',
+  },
 };
 
 export const walletOptions = [
@@ -316,6 +320,7 @@ export const arnsPurchaseOptions = [
   optionMap.fundFrom,
   optionMap.paidBy,
   optionMap.paymentUrl,
+  optionMap.referer,
 ];
 
 export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];

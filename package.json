@@ -128,7 +128,7 @@
   },
   "dependencies": {
     "@dha-team/arbundles": "^1.0.1",
-    "@permaweb/aoconnect": "^0.0.85",
+    "@permaweb/aoconnect": "0.0.57",
     "arweave": "1.15.5",
     "axios": "1.8.4",
     "axios-retry": "^4.3.0",
@@ -139,6 +139,9 @@
     "uuid": "^11.1.0",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
+  },
+  "resolutions": {
+    "@permaweb/aoconnect": "0.0.57"
   },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
