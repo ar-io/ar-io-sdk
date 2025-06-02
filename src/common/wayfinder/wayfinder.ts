@@ -15,6 +15,7 @@
  */
 import EventEmitter from 'node:events';
 import { PassThrough, Readable } from 'node:stream';
+import { base32 } from 'rfc4648';
 
 import {
   DataVerificationStrategy,
@@ -73,9 +74,10 @@ export const resolveWayfinderUrl = ({
 
     // TODO: this breaks 43 character named arns names - we should check a a local name cache list before resolving raw transaction ids
     if (txIdRegex.test(firstPart)) {
+      const sandbox = sandboxFromId(firstPart);
       return new URL(
         `${firstPart}${rest.length > 0 ? '/' + rest.join('/') : ''}`,
-        selectedGateway,
+        `${selectedGateway.protocol}//${sandbox}.${selectedGateway.hostname}`,
       );
     }
 
@@ -363,6 +365,15 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
     return clientStreamWithVerification as T extends Readable ? PassThrough : T;
   }
   throw new Error('Unsupported body type for cloning');
+}
+
+/**
+ * Gets the sandbox hash for a given transaction id
+ */
+export function sandboxFromId(id: string): string {
+  return base32
+    .stringify(Buffer.from(id, 'base64'), { pad: false })
+    .toLowerCase();
 }
 
 /**

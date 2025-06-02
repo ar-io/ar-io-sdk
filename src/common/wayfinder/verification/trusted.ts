@@ -18,6 +18,7 @@ import {
   DataRootProvider,
 } from '../../../types/wayfinder.js';
 import { GatewaysProvider } from '../../../types/wayfinder.js';
+import { sandboxFromId } from '../wayfinder.js';
 
 const arioGatewayHeaders = {
   digest: 'x-ar-io-digest',
@@ -56,20 +57,37 @@ export class TrustedGatewaysHashProvider
     const gateways = await this.gatewaysProvider.getGateways();
     const hashes = await Promise.all(
       gateways.map(async (gateway: URL): Promise<string | undefined> => {
-        const response = await fetch(`${gateway.toString()}${txId}`, {
-          method: 'HEAD',
-          redirect: 'follow',
-        });
+        const sandbox = sandboxFromId(txId);
+        const urlWithSandbox = `${gateway.protocol}//${sandbox}.${gateway.hostname}/${txId}/`;
+        let txIdHash: string | undefined;
+        /**
+         * This is a problem because we're not able to verify the hash of the data item if the gateway doesn't have the data in its cache.
+         * We should add the ability to send a HEAD request to trigger a GET request to hydrate the cache on the trusted gateway via a header.
+         * For now, we'll just do a GET request to hydrate the cache if the HEAD request doesn't contain the digest.
+         */
+        for (const method of ['HEAD', 'GET']) {
+          const response = await fetch(urlWithSandbox, {
+            method,
+            redirect: 'follow',
+            mode: 'cors',
+          });
+          if (!response.ok) {
+            // skip this gateway if the request failed
+            break;
+          }
 
-        if (!response.ok) {
-          // skip this gateway
-          return undefined;
+          const fetchedTxIdHash = response.headers.get(
+            arioGatewayHeaders.digest,
+          );
+
+          if (fetchedTxIdHash !== null && fetchedTxIdHash !== undefined) {
+            txIdHash = fetchedTxIdHash;
+            break;
+          }
         }
 
-        const txIdHash = response.headers.get(arioGatewayHeaders.digest);
-
-        if (txIdHash === null || txIdHash === undefined) {
-          // skip this gateway
+        if (txIdHash === undefined) {
+          // skip this gateway if we didn't get a hash
           return undefined;
         }
 
