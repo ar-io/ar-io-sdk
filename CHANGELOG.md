@@ -1,3 +1,10 @@
+# [3.12.0-beta.6](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.5...v3.12.0-beta.6) (2025-06-02)
+
+
+### Bug Fixes
+
+* **wayfinder:** precompute sandbox for /tx-id request, trigger GET request if HEAD request does not contain hash ([ffc03fa](https://github.com/ar-io/ar-io-sdk/commit/ffc03faf39bbbaa8cc3cb7a083c45ab76420890f))
+
 # [3.12.0-beta.5](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.4...v3.12.0-beta.5) (2025-06-02)
 
 
