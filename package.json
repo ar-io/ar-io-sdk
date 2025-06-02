@@ -140,6 +140,9 @@
     "winston": "^3.13.0",
     "zod": "^3.23.8"
   },
+  "resolutions": {
+    "@permaweb/aoconnect": "0.0.57"
+  },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."

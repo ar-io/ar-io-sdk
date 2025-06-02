@@ -1398,7 +1398,7 @@
   dependencies:
     "@octokit/openapi-types" "^24.2.0"
 
-"@permaweb/ao-scheduler-utils@~0.0.25":
+"@permaweb/ao-scheduler-utils@~0.0.20", "@permaweb/ao-scheduler-utils@~0.0.25":
   version "0.0.25"
   resolved "https://registry.npmjs.org/@permaweb/ao-scheduler-utils/-/ao-scheduler-utils-0.0.25.tgz#50c96a411d59f58010ace322d6abd3cd5e11e4cd"
   integrity sha512-b0UYSTgnLMIYLScrfNBgcqK7ZMmd78L3J0Jz4RIsIq2P5PtkdRqQ7fYqLlltg7bD1f3dvl4TkO1925ED4ei7LA==
@@ -1406,6 +1406,20 @@
     lru-cache "^10.2.2"
     ramda "^0.30.0"
     zod "^3.23.5"
+
+"@permaweb/aoconnect@0.0.57":
+  version "0.0.57"
+  resolved "https://registry.npmjs.org/@permaweb/aoconnect/-/aoconnect-0.0.57.tgz#dd779563e1b994e78509251b74df64dc89ea62ea"
+  integrity sha512-l1+47cZuQ8pOIMOdRXymcegCmefXjqR8Bc2MY6jIzWv9old/tG6mfCue2W1QviGyhjP3zEVQgr7YofkY2lq35Q==
+  dependencies:
+    "@permaweb/ao-scheduler-utils" "~0.0.20"
+    buffer "^6.0.3"
+    debug "^4.3.5"
+    hyper-async "^1.1.2"
+    mnemonist "^0.39.8"
+    ramda "^0.30.1"
+    warp-arbundles "^1.0.4"
+    zod "^3.23.8"
 
 "@permaweb/aoconnect@0.0.68":
   version "0.0.68"
