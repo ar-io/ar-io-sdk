@@ -1,3 +1,10 @@
+# [3.12.0-beta.5](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.4...v3.12.0-beta.5) (2025-06-02)
+
+
+### Bug Fixes
+
+* **wayfinder:** add log on redirect ([a43321e](https://github.com/ar-io/ar-io-sdk/commit/a43321e52c3ee5a748119c2ea44c6dad1b1ac9fe))
+
 # [3.12.0-beta.4](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.3...v3.12.0-beta.4) (2025-05-30)
 
 
