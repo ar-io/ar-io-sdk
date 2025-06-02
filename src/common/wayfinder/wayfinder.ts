@@ -457,7 +457,7 @@ export const createWayfinderClient = ({
         const response = await fetch(redirectUrl.toString(), {
           // follow redirects as gateways use sandboxing on /txId requests
           redirect: 'follow',
-          mode: 'cors', // allow cors on all requests
+          mode: 'cors',
           // allow requestor to override and any additional request configuration
           ...init,
         });
