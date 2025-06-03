@@ -1,3 +1,10 @@
+# [3.12.0-beta.7](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.6...v3.12.0-beta.7) (2025-06-03)
+
+
+### Bug Fixes
+
+* **wayfinder:** use only readable streams ([9d0e5ba](https://github.com/ar-io/ar-io-sdk/commit/9d0e5bacfda684b88527d9a675c53db77b4cc122))
+
 # [3.12.0-beta.6](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.5...v3.12.0-beta.6) (2025-06-02)
 
 
