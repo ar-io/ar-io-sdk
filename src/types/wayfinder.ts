@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Readable } from 'stream';
-
 export interface RoutingStrategy {
+  // TODO: support providing path and subdomain, so our HEAD checks when selecting a gateway are more accurate
   selectGateway: ({ gateways }: { gateways: URL[] }) => Promise<URL>;
 }
 
@@ -23,6 +22,7 @@ export interface GatewaysProvider {
   getGateways: () => Promise<URL[]>;
 }
 
+export type DataStream = AsyncIterable<Uint8Array> | ReadableStream<Uint8Array>;
 export interface DataVerificationStrategy {
   /**
    * Verifies the provided data for a given txId
@@ -39,7 +39,7 @@ export interface DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream;
+    data: DataStream;
     txId: string;
   }) => Promise<void>;
 }

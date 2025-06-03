@@ -30,6 +30,7 @@ describe('FastestPingRoutingStrategy', () => {
     mockResponses.clear();
 
     // mock fetch to simulate network latency and response status
+    // @ts-expect-error - we're mocking the fetch function
     global.fetch = async (url: string | URL) => {
       const urlString = url.toString();
 
@@ -157,6 +158,7 @@ describe('FastestPingRoutingStrategy', () => {
 
     // override fetch for the network error case
     const originalFetchMock = global.fetch;
+    // @ts-expect-error - we're mocking the fetch function
     global.fetch = async (url: string | URL) => {
       if (url.toString().includes('network-error')) {
         throw new Error('Network error');

@@ -21,63 +21,32 @@ import {
   buildLayers,
   generateLeaves,
 } from 'arweave/node/lib/merkle.js';
-import { Readable } from 'node:stream';
 
 import {
   DataRootProvider,
+  DataStream,
   DataVerificationStrategy,
 } from '../../../../types/wayfinder.js';
 import { toB64Url } from '../../../../utils/base64.js';
+import {
+  isAsyncIterable,
+  readableStreamToAsyncIterable,
+} from '../../../../utils/hash.js';
 
-export async function convertBufferToDataRoot({
-  buffer,
+export const convertDataStreamToDataRoot = async ({
+  dataStream,
 }: {
-  buffer: Buffer;
-}): Promise<string> {
-  const chunks: Chunk[] = [];
-  let cursor = 0;
-  let offset = 0;
-
-  while (offset < buffer.byteLength) {
-    let chunkSize = Math.min(MAX_CHUNK_SIZE, buffer.byteLength - offset);
-
-    const remainder = buffer.byteLength - offset - chunkSize;
-    if (remainder > 0 && remainder < MIN_CHUNK_SIZE) {
-      chunkSize = Math.ceil((buffer.byteLength - offset) / 2);
-    }
-
-    // subarray does not exist on web Buffer type
-    const slice = buffer.subarray(offset, offset + chunkSize);
-    const hash = await crypto.subtle.digest('SHA-256', slice);
-    const hashArray = new Uint8Array(hash);
-
-    chunks.push({
-      dataHash: hashArray,
-      minByteRange: cursor,
-      maxByteRange: cursor + chunkSize,
-    });
-
-    cursor += chunkSize;
-    offset += chunkSize;
-  }
-  const leaves = await generateLeaves(chunks);
-  const result = await buildLayers(leaves);
-
-  return Buffer.from(result.id).toString('base64url');
-}
-
-export const convertReadableToDataRoot = async <
-  T extends AsyncIterable<Uint8Array>,
->({
-  iterable,
-}: {
-  iterable: T;
+  dataStream: DataStream;
 }): Promise<string> => {
   const chunks: Chunk[] = [];
   let leftover = new Uint8Array(0);
   let cursor = 0;
 
-  for await (const data of iterable) {
+  const asyncIterable = isAsyncIterable(dataStream)
+    ? dataStream
+    : readableStreamToAsyncIterable(dataStream);
+
+  for await (const data of asyncIterable) {
     const inputChunk = new Uint8Array(
       data.buffer,
       data.byteOffset,
@@ -112,6 +81,7 @@ export const convertReadableToDataRoot = async <
   }
 
   if (leftover.length > 0) {
+    // TODO: ensure a web friendly crypto hash function is used in web
     const dataHash = await Arweave.crypto.hash(leftover);
     chunks.push({
       dataHash,
@@ -138,22 +108,17 @@ export class DataRootVerificationStrategy implements DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream;
+    data: DataStream;
     txId: string;
   }): Promise<void> {
-    const trustedDataRootPromise = this.trustedDataRootProvider.getDataRoot({
-      txId,
-    });
-    let computedDataRoot: string | undefined;
-    if (Buffer.isBuffer(data)) {
-      computedDataRoot = await convertBufferToDataRoot({ buffer: data });
-    } else if (data instanceof Readable || data instanceof ReadableStream) {
-      computedDataRoot = await convertReadableToDataRoot({ iterable: data });
-    }
-    if (computedDataRoot === undefined) {
-      throw new Error('Data root could not be computed');
-    }
-    const trustedDataRoot = await trustedDataRootPromise;
+    const [computedDataRoot, trustedDataRoot] = await Promise.all([
+      convertDataStreamToDataRoot({
+        dataStream: data,
+      }),
+      this.trustedDataRootProvider.getDataRoot({
+        txId,
+      }),
+    ]);
     if (computedDataRoot !== trustedDataRoot) {
       throw new Error('Data root does not match', {
         cause: { computedDataRoot, trustedDataRoot },
@@ -161,7 +126,6 @@ export class DataRootVerificationStrategy implements DataVerificationStrategy {
     }
   }
 }
-
 // some data item options
 // compute and verify data root, use offsets from server and verify the signature that the data item at the offset matches the signature
 // does not give you assurance of valid bundle, but gives verification that the data item itself is valid

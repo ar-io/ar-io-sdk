@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Readable } from 'node:stream';
-
 import {
   DataHashProvider,
+  DataStream,
   DataVerificationStrategy,
 } from '../../../../types/wayfinder.js';
-import {
-  hashBufferToB64Url,
-  hashReadableStreamToB64Url,
-  hashReadableToB64Url,
-} from '../../../../utils/hash.js';
+import { hashDataStreamToB64Url } from '../../../../utils/hash.js';
 
 export class HashVerificationStrategy implements DataVerificationStrategy {
   private readonly trustedHashProvider: DataHashProvider;
@@ -38,26 +33,21 @@ export class HashVerificationStrategy implements DataVerificationStrategy {
     data,
     txId,
   }: {
-    data: Buffer | Readable | ReadableStream;
+    data: DataStream;
     txId: string;
   }): Promise<void> {
-    const hashPromise = this.trustedHashProvider.getHash({ txId });
-    let computedHash: string | undefined;
-    if (Buffer.isBuffer(data)) {
-      computedHash = hashBufferToB64Url(data);
-    } else if (data instanceof Readable) {
-      computedHash = await hashReadableToB64Url(data);
-    } else if (data instanceof ReadableStream) {
-      computedHash = await hashReadableStreamToB64Url(data);
-    }
+    // kick off the hash computation, but don't wait for it until we compute our own hash
+    const [computedHash, fetchedHash] = await Promise.all([
+      hashDataStreamToB64Url(data),
+      this.trustedHashProvider.getHash({ txId }),
+    ]);
     // await on the hash promise and compare to get a little concurrency when computing hashes over larger data
-    const { hash } = await hashPromise;
     if (computedHash === undefined) {
       throw new Error('Hash could not be computed');
     }
-    if (computedHash !== hash) {
+    if (computedHash !== fetchedHash.hash) {
       throw new Error('Hash does not match', {
-        cause: { computedHash, trustedHash: hash },
+        cause: { computedHash, trustedHash: fetchedHash },
       });
     }
   }
