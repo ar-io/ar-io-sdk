@@ -1,16 +1,16 @@
 import assert from 'node:assert';
 import { EventEmitter } from 'node:events';
-import { Readable } from 'node:stream';
 import { before, describe, it } from 'node:test';
 
 import { Logger } from '../../common/logger.js';
-import {
-  DataVerificationStrategy,
-  GatewaysProvider,
-} from '../../types/wayfinder.js';
+import { GatewaysProvider } from '../../types/wayfinder.js';
 import { RandomRoutingStrategy } from './routing/strategies/random.js';
 import { StaticRoutingStrategy } from './routing/strategies/static.js';
-import { Wayfinder, tapAndVerifyStream } from './wayfinder.js';
+import {
+  Wayfinder,
+  WayfinderEmitter,
+  tapAndVerifyReadableStream,
+} from './wayfinder.js';
 
 // TODO: replace with locally running gateway
 const gatewayUrl = 'permagate.io';
@@ -152,12 +152,15 @@ describe('Wayfinder', () => {
           gateway: `http://${gatewayUrl}`,
         }),
         verificationStrategy: {
-          verifyData: async () => {
+          verifyData: async (params: {
+            data: AsyncIterable<Uint8Array>;
+            txId: string;
+          }) => {
             return;
           },
         },
       });
-      const events: { type: string; txId: string }[] = [];
+      const events: unknown[] = [];
       wayfinder.emitter.on('verification-failed', (event) => {
         events.push({ type: 'verification-failed', ...event });
       });
@@ -175,7 +178,7 @@ describe('Wayfinder', () => {
       await response.text();
       assert.strictEqual(response.status, 200);
       assert.ok(
-        events.find((e) => e.type === 'verification-succeeded'),
+        events.find((e: any) => e.type === 'verification-succeeded'),
         'Should emit at least one verification-succeeded',
       );
     });
@@ -183,7 +186,7 @@ describe('Wayfinder', () => {
     it('should execute callbacks provided to the wayfinder constructor', async () => {
       let verificationFailed = false;
       let verificationProgress = false;
-      let verificationPassed = false;
+      let verificationSucceeded = false;
       const wayfinder = new Wayfinder({
         routingStrategy: new StaticRoutingStrategy({
           gateway: `http://${gatewayUrl}`,
@@ -195,8 +198,8 @@ describe('Wayfinder', () => {
           onVerificationProgress: () => {
             verificationProgress = true;
           },
-          onVerificationPassed: () => {
-            verificationPassed = true;
+          onVerificationSucceeded: () => {
+            verificationSucceeded = true;
           },
         },
         strict: true,
@@ -212,291 +215,168 @@ describe('Wayfinder', () => {
         'Should not emit verification-failed',
       );
       assert.ok(verificationProgress, 'Should emit verification-progress');
-      assert.ok(verificationPassed, 'Should emit verification-succeeded');
+      assert.ok(verificationSucceeded, 'Should emit verification-succeeded');
     });
   });
 
-  describe('tapAndVerifyRequest', () => {
-    describe('Readable', () => {
-      describe('strict mode enabled', () => {
-        it('should duplicate the stream, verify the first and return the second if verification passes', async () => {
-          // create a simple readable
-          const chunks = [
-            Buffer.from('foo'),
-            Buffer.from('bar'),
-            Buffer.from('baz'),
-          ];
-          const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
+  describe('tapAndVerifyReadableStream', () => {
+    describe('strict mode enabled', () => {
+      it('should duplicate the ReadableStream, verify the first and return the second if verification passes', async () => {
+        // create a simple readable
+        const chunks = [
+          Buffer.from('foo'),
+          Buffer.from('bar'),
+          Buffer.from('baz'),
+        ];
+        const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
 
-          // a stream that will emit chunks
-          const originalStream = Readable.from(chunks);
-          let seen = Buffer.alloc(0);
-
-          const verifyData: DataVerificationStrategy['verifyData'] = async ({
-            data,
-            txId,
-          }) => {
-            return new Promise((resolve, reject) => {
-              (data as Readable).on('data', (chunk) => {
-                seen = Buffer.concat([seen, chunk]);
-              });
-              (data as Readable).on('end', () => {
-                // Should have seen exactly the full payload
-                assert.strictEqual(seen.length, contentLength);
-                resolve();
-              });
-              (data as Readable).on('error', reject);
-            });
-          };
-
-          const txId = 'test-tx-1';
-          const emitter = new EventEmitter();
-          const events: { type: string; txId: string }[] = [];
-          emitter.on('verification-progress', (e) => {
-            events.push({ type: 'verification-progress', ...e });
-          });
-          emitter.on('verification-succeeded', (e) =>
-            events.push({ type: 'verification-succeeded', ...e }),
-          );
-
-          // tap with verification
-          const tapped = tapAndVerifyStream({
-            originalStream,
-            contentLength,
-            verifyData,
-            txId,
-            emitter,
-            strict: true,
-          });
-
-          // read the stream
-          const out: Buffer[] = [];
-          for await (const chunk of tapped) {
-            out.push(chunk);
-          }
-
-          // assert the stream is the same
-          assert.strictEqual(
-            Buffer.concat(out).toString(),
-            Buffer.concat(chunks).toString(),
-            'The tapped stream should emit exactly the original data',
-          );
-
-          assert.ok(
-            events.find((e) => e.type === 'verification-progress'),
-            'Should emit at least one verification-progress',
-          );
-          assert.ok(
-            events.find(
-              (e) => e.type === 'verification-succeeded' && e.txId === txId,
-            ),
-            'Should emit at least one verification-succeeded',
-          );
-        });
-
-        it('should throw an error on the client stream if verification fails', async () => {
-          const chunks = [
-            Buffer.from('foo'),
-            Buffer.from('bar'),
-            Buffer.from('baz'),
-          ];
-          const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
-
-          // a stream that will emit chunks
-          const originalStream = Readable.from(chunks);
-
-          const verifyData: DataVerificationStrategy['verifyData'] = async ({
-            data,
-            txId,
-          }) => {
-            throw new Error('Verification failed for txId: ' + txId);
-          };
-
-          const txId = 'test-tx-1';
-          const emitter = new EventEmitter();
-          const events: { type: string; txId: string }[] = [];
-          emitter.on('verification-progress', (e) =>
-            events.push({ type: 'verification-progress', ...e }),
-          );
-          emitter.on('verification-failed', (e) =>
-            events.push({ type: 'verification-failed', ...e }),
-          );
-
-          // tap with verification (using strict mode)
-          const tapped = tapAndVerifyStream({
-            originalStream,
-            contentLength,
-            verifyData,
-            txId,
-            emitter,
-            strict: true,
-          });
-
-          // read the stream
-          try {
-            const out: Buffer[] = [];
-            for await (const chunk of tapped) {
-              out.push(chunk);
+        // a stream that will emit chunks
+        const originalStream = new ReadableStream({
+          start(controller) {
+            for (const chunk of chunks) {
+              controller.enqueue(chunk);
             }
-          } catch (error) {
-            assert.ok(
-              events.find(
-                (e) => e.type === 'verification-failed' && e.txId === txId,
-              ),
-              'Should emit at least one verification-failed',
-            );
-            // stream should be closed
-            assert.ok(tapped.closed);
-          }
+            controller.close();
+          },
         });
+        let seen = Buffer.alloc(0);
+        const verifyData = async ({
+          data,
+          txId,
+        }: {
+          data: AsyncIterable<Uint8Array>;
+          txId: string;
+        }): Promise<void> => {
+          // verify the data
+          for await (const chunk of data) {
+            seen = Buffer.concat([seen, chunk]);
+          }
+        };
+
+        const txId = 'test-tx-1';
+        const emitter = new WayfinderEmitter();
+        const events: any[] = [];
+        emitter.on('verification-progress', (e) =>
+          events.push({ type: 'verification-progress', ...e }),
+        );
+        emitter.on('verification-succeeded', (e) =>
+          events.push({ type: 'verification-succeeded', ...e }),
+        );
+
+        // tap with verification
+        const tapped = tapAndVerifyReadableStream({
+          originalStream,
+          contentLength,
+          verifyData,
+          txId,
+          emitter,
+          strict: true,
+        });
+
+        // read the stream
+        const out: Buffer[] = [];
+        for await (const chunk of tapped) {
+          out.push(chunk);
+        }
+
+        // assert the stream is the same
+        assert.strictEqual(
+          Buffer.concat(out).toString(),
+          Buffer.concat(chunks).toString(),
+          'The tapped stream should emit exactly the original data',
+        );
+
+        assert.ok(
+          events.find((e) => e.type === 'verification-progress'),
+          'Should emit at least one verification-progress',
+        );
+        assert.ok(
+          events.find(
+            (e) => e.type === 'verification-succeeded' && e.txId === txId,
+          ),
+          'Should emit at least one verification-succeeded',
+        );
       });
-    });
 
-    describe('ReadableStream', () => {
-      describe('strict mode enabled', () => {
-        it('should duplicate the ReadableStream, verify the first and return the second if verification passes', async () => {
-          // create a simple readable
-          const chunks = [
-            Buffer.from('foo'),
-            Buffer.from('bar'),
-            Buffer.from('baz'),
-          ];
-          const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
+      it('should throw an error on the client stream if verification fails', async () => {
+        const chunks = [
+          Buffer.from('foo'),
+          Buffer.from('bar'),
+          Buffer.from('baz'),
+        ];
+        const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
 
-          // a stream that will emit chunks
-          const originalStream = new ReadableStream({
-            start(controller) {
-              chunks.forEach((chunk) => controller.enqueue(chunk));
-              controller.close();
-            },
-          });
-
-          let seen = Buffer.alloc(0);
-
-          const verifyData: DataVerificationStrategy['verifyData'] = async ({
-            data,
-            txId,
-          }) => {
-            return new Promise(async (resolve, reject) => {
-              const reader = (data as ReadableStream).getReader();
-              while (true) {
-                try {
-                  const { done, value } = await reader.read();
-                  if (done) {
-                    resolve();
-                    break;
-                  }
-                  seen = Buffer.concat([seen, value]);
-                } catch (error) {
-                  reject(error);
-                }
-              }
-            });
-          };
-
-          const txId = 'test-tx-1';
-          const emitter = new EventEmitter();
-          const events: { type: string; txId: string }[] = [];
-          emitter.on('verification-progress', (e) =>
-            events.push({ type: 'verification-progress', ...e }),
-          );
-          emitter.on('verification-succeeded', (e) =>
-            events.push({ type: 'verification-succeeded', ...e }),
-          );
-
-          // tap with verification
-          const tapped = tapAndVerifyStream({
-            originalStream,
-            contentLength,
-            verifyData,
-            txId,
-            emitter,
-            strict: true,
-          });
-
-          // read the stream
-          const out: Buffer[] = [];
-          for await (const chunk of tapped) {
-            out.push(chunk);
-          }
-
-          // assert the stream is the same
-          assert.strictEqual(
-            Buffer.concat(out).toString(),
-            Buffer.concat(chunks).toString(),
-            'The tapped stream should emit exactly the original data',
-          );
-
-          assert.ok(
-            events.find((e) => e.type === 'verification-progress'),
-            'Should emit at least one verification-progress',
-          );
-          assert.ok(
-            events.find(
-              (e) => e.type === 'verification-succeeded' && e.txId === txId,
-            ),
-            'Should emit at least one verification-succeeded',
-          );
-        });
-
-        it('should throw an error on the client stream if verification fails', async () => {
-          const chunks = [
-            Buffer.from('foo'),
-            Buffer.from('bar'),
-            Buffer.from('baz'),
-          ];
-          const contentLength = chunks.reduce((sum, c) => sum + c.length, 0);
-
-          // a stream that will emit chunks
-          const originalStream = new ReadableStream({
-            start(controller) {
-              chunks.forEach((chunk) => controller.enqueue(chunk));
-              controller.close();
-            },
-          });
-
-          const verifyData: DataVerificationStrategy['verifyData'] = async ({
-            data,
-            txId,
-          }) => {
-            throw new Error('Verification failed for txId: ' + txId);
-          };
-
-          const txId = 'test-tx-1';
-          const emitter = new EventEmitter();
-          const events: { type: string; txId: string }[] = [];
-          emitter.on('verification-progress', (e) =>
-            events.push({ type: 'verification-progress', ...e }),
-          );
-          emitter.on('verification-failed', (e) =>
-            events.push({ type: 'verification-failed', ...e }),
-          );
-
-          // tap with verification (using strict mode)
-          const tapped = tapAndVerifyStream({
-            originalStream,
-            contentLength,
-            verifyData,
-            txId,
-            emitter,
-            strict: true,
-          });
-
-          // read the stream
-          try {
-            const out: Buffer[] = [];
-            for await (const chunk of tapped) {
-              out.push(chunk);
+        // a stream that will emit chunks
+        const originalStream = new ReadableStream({
+          start(controller) {
+            for (const chunk of chunks) {
+              controller.enqueue(chunk);
             }
-          } catch (error) {
-            assert.ok(
-              events.find(
-                (e) => e.type === 'verification-failed' && e.txId === txId,
-              ),
-              'Should emit at least one verification-failed',
-            );
-          }
+            controller.close();
+          },
         });
+        const verifyData = async ({
+          data,
+          txId,
+        }: {
+          data: AsyncIterable<Uint8Array>;
+          txId: string;
+        }): Promise<void> => {
+          throw new Error('Verification failed for txId: ' + txId);
+        };
+
+        const txId = 'test-tx-1';
+        const emitter = new WayfinderEmitter();
+        const events: any[] = [];
+        emitter.on('verification-progress', (e) =>
+          events.push({ type: 'verification-progress', ...e }),
+        );
+        emitter.on('verification-failed', (e) =>
+          events.push({ type: 'verification-failed', ...e }),
+        );
+
+        // tap with verification (using strict mode)
+        const tapped = tapAndVerifyReadableStream({
+          originalStream,
+          contentLength,
+          verifyData,
+          txId,
+          emitter,
+          strict: true,
+        });
+
+        // read the stream and expect verification to fail
+        try {
+          const out: Buffer[] = [];
+          const reader = tapped.getReader();
+          while (true) {
+            try {
+              const { done, value } = await reader.read();
+              if (done) break;
+              out.push(Buffer.from(value));
+            } catch (error) {
+              // This is expected - verification should fail
+              break;
+            }
+          }
+          // If we get here, verification didn't throw as expected
+          assert.fail('Should have thrown an error during verification');
+        } catch (error) {
+          // Wait a bit for the event to be emitted
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
+          // Now we should have the verification-failed event
+          assert.ok(events.length > 0, 'Should have emitted events');
+
+          // Check if one of them is verification-failed
+          const failedEvent = events.find(
+            (e) => e.type === 'verification-failed',
+          );
+          assert.ok(
+            failedEvent,
+            'Should emit at least one verification-failed event',
+          );
+        }
       });
     });
   });

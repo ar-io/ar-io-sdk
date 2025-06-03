@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import EventEmitter from 'node:events';
-import { PassThrough, Readable } from 'node:stream';
+import { EventEmitter } from 'eventemitter3';
 import { base32 } from 'rfc4648';
 
 import {
@@ -49,8 +48,7 @@ export const resolveWayfinderUrl = ({
   selectedGateway,
   logger,
 }: {
-  // TODO: consider changing variable wayfinderUrl
-  originalUrl: string | URL; // TODO: add union type to UrlString
+  originalUrl: string | URL;
   selectedGateway: URL;
   logger?: Logger;
 }): URL => {
@@ -92,80 +90,65 @@ export const resolveWayfinderUrl = ({
     }
 
     // TODO: support .eth addresses
-    // TODO: "gasless" routing via DNS TXT records (e.g. ar://gatewaypie.com -> TXT record lookup for TX ID and redirect to that gateway)
+    // TODO: "gasless" routing via DNS TXT records
   }
 
   logger?.debug('No wayfinder routing protocol applied', {
     originalUrl,
   });
 
-  // return the original url if it's not a wayfinder url (allows you to use the wayfinder client with non-wayfinder urls)
+  // return the original url if it's not a wayfinder url
   return new URL(originalUrl);
 };
 
 /**
  * Wayfinder event emitter with verification events
  */
-export type WayfinderEvent =
-  | { type: 'verification-succeeded'; txId: string }
-  | { type: 'verification-failed'; txId: string; error: Error }
-  | { type: 'verification-skipped'; originalUrl: string }
-  | {
-      type: 'verification-progress';
-      txId: string;
-      processedBytes: number;
-      totalBytes: number;
-    }
-  | { type: 'routing-started'; originalUrl: string }
-  | {
-      type: 'routing-skipped';
-      originalUrl: string;
-    }
-  | {
-      type: 'routing-succeeded';
-      originalUrl: string;
-      selectedGateway: string;
-      redirectUrl: string;
-    }
-  | { type: 'routing-failed'; originalUrl: string; error: Error }
-  | {
-      type: 'identified-transaction-id';
-      originalUrl: string;
-      selectedGateway: string;
-      txId: string;
-    };
+export type WayfinderEvent = {
+  'verification-succeeded': { txId: string };
+  'verification-failed': Error;
+  'verification-skipped': { originalUrl: string };
+  'verification-progress': {
+    txId: string;
+    processedBytes: number;
+    totalBytes: number;
+  };
+  'routing-started': { originalUrl: string };
+  'routing-skipped': { originalUrl: string };
+  'routing-succeeded': {
+    originalUrl: string;
+    selectedGateway: string;
+    redirectUrl: string;
+  };
+  'routing-failed': Error;
+  'identified-transaction-id': {
+    originalUrl: string;
+    selectedGateway: string;
+    txId: string;
+  };
+};
 
 export interface WayfinderEventArgs {
-  onVerificationPassed?: (
-    payload: Omit<
-      Extract<WayfinderEvent, { type: 'verification-succeeded' }>,
-      'type'
-    >,
+  onVerificationSucceeded?: (
+    payload: WayfinderEvent['verification-succeeded'],
   ) => void;
   onVerificationFailed?: (
-    payload: Omit<
-      Extract<WayfinderEvent, { type: 'verification-failed' }>,
-      'type'
-    >,
+    payload: WayfinderEvent['verification-failed'],
   ) => void;
   onVerificationProgress?: (
-    payload: Omit<
-      Extract<WayfinderEvent, { type: 'verification-progress' }>,
-      'type'
-    >,
+    payload: WayfinderEvent['verification-progress'],
   ) => void;
 }
 
-export class WayfinderEmitter extends EventEmitter {
+export class WayfinderEmitter extends EventEmitter<WayfinderEvent> {
   constructor({
-    onVerificationPassed,
+    onVerificationSucceeded,
     onVerificationFailed,
     onVerificationProgress,
-    // TODO: continue this pattern for all events
   }: WayfinderEventArgs = {}) {
     super();
-    if (onVerificationPassed) {
-      this.on('verification-succeeded', onVerificationPassed);
+    if (onVerificationSucceeded) {
+      this.on('verification-succeeded', onVerificationSucceeded);
     }
     if (onVerificationFailed) {
       this.on('verification-failed', onVerificationFailed);
@@ -174,27 +157,9 @@ export class WayfinderEmitter extends EventEmitter {
       this.on('verification-progress', onVerificationProgress);
     }
   }
-
-  emit<E extends WayfinderEvent['type']>(
-    event: E,
-    payload: Omit<Extract<WayfinderEvent, { type: E }>, 'type'>,
-  ): boolean {
-    return super.emit(event, payload);
-  }
-
-  on<E extends WayfinderEvent['type']>(
-    event: E,
-    listener: (
-      payload: Omit<Extract<WayfinderEvent, { type: E }>, 'type'>,
-    ) => void,
-  ): this {
-    return super.on(event, listener);
-  }
-
-  // TODO: additional callback support defined on the emitter, provided via the constructor
 }
 
-export function tapAndVerifyStream<T extends Readable | ReadableStream>({
+export function tapAndVerifyReadableStream({
   originalStream,
   contentLength,
   verifyData,
@@ -202,95 +167,26 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
   emitter,
   strict = false,
 }: {
-  originalStream: T;
+  originalStream: ReadableStream;
   contentLength: number;
   verifyData: DataVerificationStrategy['verifyData'];
   txId: string;
   emitter?: WayfinderEmitter;
   strict?: boolean;
-}): T extends Readable ? PassThrough : T {
-  // taps node streams
-  if (
-    originalStream instanceof Readable &&
-    typeof originalStream.pipe === 'function'
-  ) {
-    const tappedClientStream = new PassThrough();
-    const streamToVerify = new PassThrough();
-
-    // kick off the verification promise, this will be awaited when the original stream ends
-    const verificationPromise = verifyData({
-      data: streamToVerify,
-      txId,
-    });
-
-    let bytesProcessed = 0;
-    // pipe the original stream to the verifier and the client stream
-    originalStream.on('data', (chunk) => {
-      streamToVerify.write(chunk);
-      tappedClientStream.write(chunk);
-      bytesProcessed += chunk.length;
-      // only emit if contentLength is not 0
-      if (contentLength !== 0) {
-        emitter?.emit('verification-progress', {
-          txId,
-          totalBytes: contentLength,
-          processedBytes: bytesProcessed,
-        });
-      }
-    });
-
-    originalStream.on('end', async () => {
-      streamToVerify.end(); // triggers verifier completion and completes the verification promise
-
-      if (strict) {
-        // in strict mode, we wait for verification to complete before ending the client stream
-        try {
-          await verificationPromise;
-          emitter?.emit('verification-succeeded', { txId });
-          tappedClientStream.end();
-        } catch (error) {
-          emitter?.emit('verification-failed', { error, txId });
-          // In strict mode, destroy the client stream with the error
-          tappedClientStream.destroy(
-            new Error('Verification failed', { cause: error }),
-          );
-        }
-      } else {
-        // in non-strict mode, we end the client stream immediately and handle verification asynchronously
-        tappedClientStream.end();
-
-        // trigger the verification promise and emit events for the result
-        verificationPromise
-          .then(() => {
-            emitter?.emit('verification-succeeded', { txId });
-          })
-          .catch((error) => {
-            emitter?.emit('verification-failed', { error, txId });
-          });
-      }
-    });
-
-    originalStream.on('error', (err) => {
-      // emit the verification failed event
-      emitter?.emit('verification-failed', {
-        error: err,
-        txId,
-      });
-
-      // destroy both streams and propagate the original stream error
-      streamToVerify.destroy(err);
-      tappedClientStream.destroy(err);
-    });
-    // send the stream to the verify function and if it errors end the client stream
-    return tappedClientStream as T extends Readable ? PassThrough : T;
-  }
-
-  // taps web readable streams
+}): ReadableStream {
   if (
     originalStream instanceof ReadableStream &&
     typeof originalStream.tee === 'function'
   ) {
+    /**
+     * NOTE: tee requires the streams both streams to be consumed, so we need to make sure we consume the client branch
+     * by the caller. This means when `request` is called, the client stream must be consumed by the caller via await request.text()
+     * for verification to complete.
+     *
+     * It is feasible to make the verification stream not to depend on the client branch being consumed, should the DX not be obvious.
+     */
     const [verifyBranch, clientBranch] = originalStream.tee();
+
     // setup our promise to verify the data
     const verificationPromise = verifyData({
       data: verifyBranch,
@@ -310,10 +206,9 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
               emitter?.emit('verification-succeeded', { txId });
               controller.close();
             } catch (err) {
-              emitter?.emit('verification-failed', {
-                txId,
-                error: err as Error,
-              });
+              // emit the verification failed event
+              emitter?.emit('verification-failed', err);
+
               // In strict mode, we report the error to the client stream
               controller.error(
                 new Error('Verification failed', { cause: err }),
@@ -326,10 +221,7 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
                 emitter?.emit('verification-succeeded', { txId });
               })
               .catch((error) => {
-                emitter?.emit('verification-failed', {
-                  txId,
-                  error,
-                });
+                emitter?.emit('verification-failed', error);
               });
             // in non-strict mode, we close the controller immediately and handle verification asynchronously
             controller.close();
@@ -357,12 +249,9 @@ export function tapAndVerifyStream<T extends Readable | ReadableStream>({
             },
           }),
         });
-
-        // note: we don't block or throw errors here even in strict mode
-        // since the stream is already being cancelled by the client
       },
     });
-    return clientStreamWithVerification as T extends Readable ? PassThrough : T;
+    return clientStreamWithVerification;
   }
   throw new Error('Unsupported body type for cloning');
 }
@@ -405,170 +294,145 @@ export const createWayfinderClient = ({
   logger?: Logger;
   emitter?: WayfinderEmitter;
   strict?: boolean;
-}): WayfinderHttpClient => {
-  // Create a function that will handle the redirection logic for ar:// URLs
-  const wayfinderRedirect = async (
-    url: string | URL | Request,
-    init?: RequestInit,
-  ): Promise<Response> => {
-    // If the url is not a string or URL (e.g., it's a Request object), extract the URL from it
-    const originalUrl = url instanceof Request ? url.url : url.toString();
-
-    // If it's not an ar:// URL, pass it directly to fetch
-    if (!originalUrl.startsWith('ar://')) {
-      logger?.debug('Not a wayfinder URL, passing to fetch directly', {
-        originalUrl,
+}) => {
+  return async (url: string, init?: RequestInit): Promise<Response> => {
+    if (typeof url !== 'string') {
+      logger?.debug('URL is not a string, skipping routing', {
+        url,
       });
       emitter?.emit('routing-skipped', {
-        originalUrl,
+        originalUrl: JSON.stringify(url),
       });
-      // we don't do anything special with non-ar:// urls, just pass them through
       return fetch(url, init);
     }
 
-    // Start the routing process
     emitter?.emit('routing-started', {
-      originalUrl,
+      originalUrl: url.toString(),
     });
 
-    // Retry logic for gateway selection
     const maxRetries = 3;
     const retryDelay = 1000;
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         // select the target gateway
-        // TODO: we may want to provide the `path` to select gateway so the HEAD checks in routers check the existence of the actual path/request
         const selectedGateway = await selectGateway();
 
         logger?.debug('Selected gateway', {
-          originalUrl,
+          originalUrl: url,
           selectedGateway: selectedGateway.toString(),
         });
 
         // route the request to the target gateway
         const redirectUrl = resolveUrl({
-          originalUrl,
+          originalUrl: url,
           selectedGateway,
           logger,
         });
 
         emitter?.emit('routing-succeeded', {
-          originalUrl,
+          originalUrl: url,
           selectedGateway: selectedGateway.toString(),
           redirectUrl: redirectUrl.toString(),
         });
 
         logger?.debug(`Redirecting request`, {
-          originalUrl,
+          originalUrl: url,
           redirectUrl: redirectUrl.toString(),
         });
 
-        // Make the request to the target gateway
+        // make the request to the target gateway using the redirect url
         const response = await fetch(redirectUrl.toString(), {
-          // follow redirects as gateways use sandboxing on /txId requests
+          // enforce CORS given we're likely going to a different origin, but always allow the client to override
           redirect: 'follow',
           mode: 'cors',
-          // allow requestor to override and any additional request configuration
           ...init,
         });
 
-        // TODO: update any caching we use for the request and gateway response
         logger?.debug(`Successfully routed request to gateway`, {
           redirectUrl: redirectUrl.toString(),
-          originalUrl,
+          originalUrl: url.toString(),
         });
 
-        // return the response right away if no redirect was made
-        if (redirectUrl.toString() === originalUrl) {
-          return response;
+        // only verify data if the redirect url is different from the original url
+        if (redirectUrl.toString() !== url.toString()) {
+          if (verifyData) {
+            const headers = response.headers;
+
+            // transaction id is either in the response headers or the path of the request as the first parameter
+            const txId =
+              headers.get('x-arns-resolved-id') ??
+              redirectUrl.pathname.split('/')[1];
+
+            const contentLength = +(headers.get('content-length') ?? 0);
+
+            if (!txIdRegex.test(txId)) {
+              // no transaction id found, skip verification
+              logger?.debug('No transaction id found, skipping verification', {
+                redirectUrl: redirectUrl.toString(),
+                originalUrl: url,
+              });
+              emitter?.emit('verification-skipped', {
+                originalUrl: url,
+              });
+              return response;
+            }
+
+            emitter?.emit('identified-transaction-id', {
+              originalUrl: url,
+              selectedGateway: redirectUrl.toString(),
+              txId,
+            });
+
+            // Check if the response has a body
+            if (response.body) {
+              const newClientStream = tapAndVerifyReadableStream({
+                originalStream: response.body,
+                contentLength,
+                verifyData,
+                txId,
+                emitter,
+                strict,
+              });
+
+              return new Response(newClientStream, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+              });
+            } else {
+              // No response body to verify, skip verification
+              logger?.debug('No response body to verify', {
+                redirectUrl: redirectUrl.toString(),
+                originalUrl: url,
+                txId,
+              });
+              return response;
+            }
+          }
         }
-
-        // return the response right away if no verification is needed or if there is no body
-        if (!verifyData) {
-          return response;
-        }
-
-        // the txId is either in the response headers or the path of the request as the first parameter
-        const txId =
-          response.headers.get('x-arns-resolved-id') ??
-          redirectUrl.pathname.split('/')[1];
-
-        const contentLength = +(response.headers.get('content-length') ?? 0);
-
-        if (!txIdRegex.test(txId)) {
-          // No transaction ID found, skip verification
-          logger?.debug('No transaction ID found, skipping verification', {
-            redirectUrl: redirectUrl.toString(),
-            originalUrl,
-          });
-          emitter?.emit('verification-skipped', {
-            originalUrl,
-          });
-          return response;
-        }
-
-        emitter?.emit('identified-transaction-id', {
-          originalUrl,
-          selectedGateway: redirectUrl.toString(),
-          txId,
-        });
-
-        if (!response.body) {
-          logger?.debug('No body, skipping verification', {
-            redirectUrl: redirectUrl.toString(),
-            originalUrl,
-          });
-          emitter?.emit('verification-skipped', {
-            originalUrl,
-          });
-          return response;
-        }
-
-        const verifiedStream = tapAndVerifyStream<ReadableStream>({
-          originalStream: response.body,
-          contentLength,
-          verifyData,
-          txId,
-          emitter,
-          strict,
-        });
-
-        // wrap the response with the verified stream
-        return new Response(verifiedStream, {
-          status: response.status,
-          statusText: response.statusText,
-          // TODO: we could add identified transaction id to the headers here, but it would be changing information from the original response
-          headers: response.headers,
-        });
+        return response;
       } catch (error) {
         logger?.debug('Failed to route request', {
           error: error.message,
           stack: error.stack,
-          originalUrl,
+          originalUrl: url,
           attempt: i + 1,
           maxRetries,
         });
         if (i < maxRetries - 1) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        } else {
-          emitter?.emit('routing-failed', {
-            originalUrl,
-            error,
-          });
         }
       }
     }
 
     throw new Error('Failed to route request after max retries', {
       cause: {
-        originalUrl,
+        originalUrl: url,
         maxRetries,
       },
     });
   };
-
-  return wayfinderRedirect;
 };
 
 /**
@@ -735,7 +599,7 @@ export class Wayfinder {
       }),
     }),
     events = {
-      onVerificationPassed: (event) => {
+      onVerificationSucceeded: (event) => {
         logger.debug('Verification passed!', event);
       },
       onVerificationFailed: (event) => {
@@ -753,7 +617,7 @@ export class Wayfinder {
     logger?: Logger;
     events?: WayfinderEventArgs;
     strict?: boolean;
-  }) {
+  } = {}) {
     this.routingStrategy = routingStrategy;
     this.gatewaysProvider = gatewaysProvider;
     this.emitter = new WayfinderEmitter(events);
