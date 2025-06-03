@@ -479,20 +479,24 @@ export type AoGetVaultParams = {
 export type AoArNSPurchaseParams = AoArNSNameParams & {
   fundFrom?: FundFrom;
   paidBy?: WalletAddress | WalletAddress[];
+  referrer?: string;
 };
 
 export type AoBuyRecordParams = AoArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
   processId: string;
+  referrer?: string;
 };
 
 export type AoExtendLeaseParams = AoArNSPurchaseParams & {
   years: number;
+  referrer?: string;
 };
 
 export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
+  referrer?: string;
 };
 
 export type AoVaultedTransferParams = {
