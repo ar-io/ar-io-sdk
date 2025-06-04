@@ -1,3 +1,10 @@
+# [3.12.0-beta.9](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.8...v3.12.0-beta.9) (2025-06-04)
+
+
+### Bug Fixes
+
+* **wayfinder:** set no-cache header on trusted gateway check ([71a22b3](https://github.com/ar-io/ar-io-sdk/commit/71a22b3caf2c023199aecd388716b6cde9550a40))
+
 # [3.12.0-beta.8](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.7...v3.12.0-beta.8) (2025-06-04)
 
 
