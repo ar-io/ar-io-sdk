@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.12.0-beta.9",
+  "version": "3.13.0-alpha.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -128,7 +128,7 @@
   },
   "dependencies": {
     "@dha-team/arbundles": "^1.0.1",
-    "@permaweb/aoconnect": "^0.0.85",
+    "@permaweb/aoconnect": "0.0.68",
     "arweave": "1.15.5",
     "axios": "1.8.4",
     "axios-retry": "^4.3.0",
@@ -137,6 +137,7 @@
     "plimit-lit": "^3.0.1",
     "prompts": "^2.4.2",
     "rfc4648": "^1.5.4",
+    "uuid": "^11.1.0",
     "winston": "^3.13.0",
     "zod": "^3.23.8"
   },

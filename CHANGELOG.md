@@ -1,60 +1,31 @@
-# [3.12.0-beta.9](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.8...v3.12.0-beta.9) (2025-06-04)
+# [3.13.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0-alpha.1) (2025-06-03)
 
 
 ### Bug Fixes
 
-* **wayfinder:** set no-cache header on trusted gateway check ([71a22b3](https://github.com/ar-io/ar-io-sdk/commit/71a22b3caf2c023199aecd388716b6cde9550a40))
-
-# [3.12.0-beta.8](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.7...v3.12.0-beta.8) (2025-06-04)
-
-
-### Bug Fixes
-
-* **wayfinder:** do a HEAD, and 2 GETS on trusted gateways ([d0efce5](https://github.com/ar-io/ar-io-sdk/commit/d0efce5b0ebb4f781ea70108d1bf07a804168763))
-
-# [3.12.0-beta.7](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.6...v3.12.0-beta.7) (2025-06-03)
-
-
-### Bug Fixes
-
-* **wayfinder:** use only readable streams ([9d0e5ba](https://github.com/ar-io/ar-io-sdk/commit/9d0e5bacfda684b88527d9a675c53db77b4cc122))
-
-# [3.12.0-beta.6](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.5...v3.12.0-beta.6) (2025-06-02)
-
-
-### Bug Fixes
-
-* **wayfinder:** precompute sandbox for /tx-id request, trigger GET request if HEAD request does not contain hash ([ffc03fa](https://github.com/ar-io/ar-io-sdk/commit/ffc03faf39bbbaa8cc3cb7a083c45ab76420890f))
-
-# [3.12.0-beta.5](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.4...v3.12.0-beta.5) (2025-06-02)
-
-
-### Bug Fixes
-
-* **wayfinder:** add log on redirect ([a43321e](https://github.com/ar-io/ar-io-sdk/commit/a43321e52c3ee5a748119c2ea44c6dad1b1ac9fe))
-
-# [3.12.0-beta.4](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.3...v3.12.0-beta.4) (2025-05-30)
-
-
-### Bug Fixes
-
-* **wayfinder:** use native fetch http client for allr requests, ([76d5aed](https://github.com/ar-io/ar-io-sdk/commit/76d5aedd1ec95c2ca852a4828b7fc3e20c64673f))
-
-# [3.12.0-beta.3](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.2...v3.12.0-beta.3) (2025-05-30)
+* **deps:** add uuid as required dependency ([6c83033](https://github.com/ar-io/ar-io-sdk/commit/6c830335f87e761313c2e390d7446ea1fa578288))
 
 
 ### Features
 
-* **wayfinder:** add PreferredWithFallback router strategy ([d9a1e13](https://github.com/ar-io/ar-io-sdk/commit/d9a1e13b4c004adadf4b11e42ce412ef258b31b4))
+* add referer support to ArNS purchase APIs (PE-8088) ([36034db](https://github.com/ar-io/ar-io-sdk/commit/36034db4f4611f1a05d6cb95fe8d42e46205c5a6))
+* add referer support to ArNS purchase APIs (PE-8088) ([5ab0a7e](https://github.com/ar-io/ar-io-sdk/commit/5ab0a7edec9b36cdb9d163edc0695cd2f51e59b3))
 
-# [3.12.0-beta.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.1...v3.12.0-beta.2) (2025-05-29)
+## [3.12.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.1...v3.12.2) (2025-06-02)
 
 
 ### Bug Fixes
 
-* **wayfinder:** resolve ARNS names with path components correctly ([58055fd](https://github.com/ar-io/ar-io-sdk/commit/58055fd96b4fa50b062bdc1acc6e1050b733be0a))
+* **ao:** revert dep bump of aoconnect ([5b013f7](https://github.com/ar-io/ar-io-sdk/commit/5b013f7e08589f8b86de6255ad52898b3282bd56))
 
-# [3.12.0-beta.1](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.12.0-beta.1) (2025-05-22)
+## [3.12.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0...v3.12.1) (2025-05-23)
+
+
+### Bug Fixes
+
+* **deps:** add uuid as required dependency ([3cecc50](https://github.com/ar-io/ar-io-sdk/commit/3cecc507fb90e73500fe62266e73fd4d2811b84f))
+
+# [3.12.0](https://github.com/ar-io/ar-io-sdk/compare/v3.11.0...v3.12.0) (2025-05-22)
 
 
 ### Bug Fixes
@@ -66,7 +37,10 @@
 ### Features
 
 * **arns:** append paidBy to query params on fundfrom turbo arns purcahaes PE-7943 ([11333e8](https://github.com/ar-io/ar-io-sdk/commit/11333e8abf0e07d284eba43f85ecefc7c9733f18))
+<<<<<<< HEAD
 * **wayfinder:** support `strict` mode, which blocks returning client data until verified ([6cd31cb](https://github.com/ar-io/ar-io-sdk/commit/6cd31cb56fe83eaa163d84eb7b9d2020ea7db564))
+=======
+>>>>>>> origin/alpha
 
 # [3.12.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-alpha.1...v3.12.0-alpha.2) (2025-05-22)
 
