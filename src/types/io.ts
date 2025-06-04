@@ -486,17 +486,14 @@ export type AoBuyRecordParams = AoArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
   processId: string;
-  referrer?: string;
 };
 
 export type AoExtendLeaseParams = AoArNSPurchaseParams & {
   years: number;
-  referrer?: string;
 };
 
 export type AoIncreaseUndernameLimitParams = AoArNSPurchaseParams & {
   increaseCount: number;
-  referrer?: string;
 };
 
 export type AoVaultedTransferParams = {
