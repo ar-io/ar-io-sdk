@@ -1,3 +1,25 @@
+# [3.13.0-beta.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0-beta.1) (2025-06-04)
+
+
+### Bug Fixes
+
+* **deps:** add uuid as required dependency ([6c83033](https://github.com/ar-io/ar-io-sdk/commit/6c830335f87e761313c2e390d7446ea1fa578288))
+* **wayfinder:** add log on redirect ([a43321e](https://github.com/ar-io/ar-io-sdk/commit/a43321e52c3ee5a748119c2ea44c6dad1b1ac9fe))
+* **wayfinder:** do a HEAD, and 2 GETS on trusted gateways ([d0efce5](https://github.com/ar-io/ar-io-sdk/commit/d0efce5b0ebb4f781ea70108d1bf07a804168763))
+* **wayfinder:** precompute sandbox for /tx-id request, trigger GET request if HEAD request does not contain hash ([ffc03fa](https://github.com/ar-io/ar-io-sdk/commit/ffc03faf39bbbaa8cc3cb7a083c45ab76420890f))
+* **wayfinder:** resolve ARNS names with path components correctly ([58055fd](https://github.com/ar-io/ar-io-sdk/commit/58055fd96b4fa50b062bdc1acc6e1050b733be0a))
+* **wayfinder:** set no-cache header on trusted gateway check ([71a22b3](https://github.com/ar-io/ar-io-sdk/commit/71a22b3caf2c023199aecd388716b6cde9550a40))
+* **wayfinder:** use native fetch http client for allr requests, ([76d5aed](https://github.com/ar-io/ar-io-sdk/commit/76d5aedd1ec95c2ca852a4828b7fc3e20c64673f))
+* **wayfinder:** use only readable streams ([9d0e5ba](https://github.com/ar-io/ar-io-sdk/commit/9d0e5bacfda684b88527d9a675c53db77b4cc122))
+
+
+### Features
+
+* add referer support to ArNS purchase APIs (PE-8088) ([36034db](https://github.com/ar-io/ar-io-sdk/commit/36034db4f4611f1a05d6cb95fe8d42e46205c5a6))
+* add referer support to ArNS purchase APIs (PE-8088) ([5ab0a7e](https://github.com/ar-io/ar-io-sdk/commit/5ab0a7edec9b36cdb9d163edc0695cd2f51e59b3))
+* **wayfinder:** add PreferredWithFallback router strategy ([d9a1e13](https://github.com/ar-io/ar-io-sdk/commit/d9a1e13b4c004adadf4b11e42ce412ef258b31b4))
+* **wayfinder:** support `strict` mode, which blocks returning client data until verified ([6cd31cb](https://github.com/ar-io/ar-io-sdk/commit/6cd31cb56fe83eaa163d84eb7b9d2020ea7db564))
+
 # [3.13.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0-alpha.1) (2025-06-03)
 
 
