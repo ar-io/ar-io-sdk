@@ -1,3 +1,10 @@
+# [3.12.0-beta.8](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.7...v3.12.0-beta.8) (2025-06-04)
+
+
+### Bug Fixes
+
+* **wayfinder:** do a HEAD, and 2 GETS on trusted gateways ([d0efce5](https://github.com/ar-io/ar-io-sdk/commit/d0efce5b0ebb4f781ea70108d1bf07a804168763))
+
 # [3.12.0-beta.7](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-beta.6...v3.12.0-beta.7) (2025-06-03)
 
 
