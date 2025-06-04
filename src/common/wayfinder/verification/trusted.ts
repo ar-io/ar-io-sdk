@@ -65,15 +65,18 @@ export class TrustedGatewaysHashProvider
          * We should add the ability to send a HEAD request to trigger a GET request to hydrate the cache on the trusted gateway via a header.
          * For now, we'll just do a GET request to hydrate the cache if the HEAD request doesn't contain the digest.
          */
-        for (const method of ['HEAD', 'GET', 'GET']) {
+        for (const method of ['GET', 'GET']) {
           const response = await fetch(urlWithSandbox, {
             method,
             redirect: 'follow',
             mode: 'cors',
+            headers: {
+              'Cache-Control': 'no-cache',
+            },
           });
           if (!response.ok) {
-            // skip this gateway if the request failed
-            break;
+            // skip if the request failed or the digest is not present
+            return;
           }
 
           const fetchedTxIdHash = response.headers.get(
