@@ -58,14 +58,14 @@ export class TrustedGatewaysHashProvider
     const hashes = await Promise.all(
       gateways.map(async (gateway: URL): Promise<string | undefined> => {
         const sandbox = sandboxFromId(txId);
-        const urlWithSandbox = `${gateway.protocol}//${sandbox}.${gateway.hostname}/${txId}/`;
+        const urlWithSandbox = `${gateway.protocol}//${sandbox}.${gateway.hostname}/${txId}`;
         let txIdHash: string | undefined;
         /**
          * This is a problem because we're not able to verify the hash of the data item if the gateway doesn't have the data in its cache.
          * We should add the ability to send a HEAD request to trigger a GET request to hydrate the cache on the trusted gateway via a header.
          * For now, we'll just do a GET request to hydrate the cache if the HEAD request doesn't contain the digest.
          */
-        for (const method of ['HEAD', 'GET']) {
+        for (const method of ['HEAD', 'GET', 'GET']) {
           const response = await fetch(urlWithSandbox, {
             method,
             redirect: 'follow',
