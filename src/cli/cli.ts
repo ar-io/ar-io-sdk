@@ -695,6 +695,15 @@ makeCommand<ProcessIdCLIOptions>({
   },
 });
 
+makeCommand<ProcessIdCLIOptions>({
+  name: 'get-ant-logo',
+  description: 'Get the logo of an ANT process',
+  options: [optionMap.processId],
+  action: async (options) => {
+    return readANTFromOptions(options).getLogo();
+  },
+});
+
 makeCommand<ProcessIdCLIOptions & { address?: string }>({
   name: 'get-ant-balance',
   description: 'Get the balance of an ANT process',
