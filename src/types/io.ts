@@ -479,6 +479,7 @@ export type AoGetVaultParams = {
 export type AoArNSPurchaseParams = AoArNSNameParams & {
   fundFrom?: FundFrom;
   paidBy?: WalletAddress | WalletAddress[];
+  referrer?: string;
 };
 
 export type AoBuyRecordParams = AoArNSPurchaseParams & {

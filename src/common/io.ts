@@ -1447,6 +1447,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Process-Id', value: params.processId },
       { name: 'Purchase-Type', value: params.type || 'lease' },
       { name: 'Fund-From', value: params.fundFrom },
+      { name: 'Referrer', value: params.referrer },
     ];
 
     return this.process.send({
@@ -1487,6 +1488,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Action', value: 'Upgrade-Name' },
       { name: 'Name', value: params.name },
       { name: 'Fund-From', value: params.fundFrom },
+      { name: 'Referrer', value: params.referrer },
     ];
     return this.process.send({
       signer: this.signer,
@@ -1529,6 +1531,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Name', value: params.name },
       { name: 'Years', value: params.years.toString() },
       { name: 'Fund-From', value: params.fundFrom },
+      { name: 'Referrer', value: params.referrer },
     ];
     return this.process.send({
       signer: this.signer,
@@ -1562,6 +1565,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       { name: 'Name', value: params.name },
       { name: 'Quantity', value: params.increaseCount.toString() },
       { name: 'Fund-From', value: params.fundFrom },
+      { name: 'Referrer', value: params.referrer },
     ];
     return this.process.send({
       signer: this.signer,
