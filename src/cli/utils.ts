@@ -718,6 +718,14 @@ export function fundFromFromOptions<
   return o.fundFrom ?? 'balance';
 }
 
+export function referrerFromOptions<
+  O extends {
+    referrer?: string;
+  },
+>(o: O): string | undefined {
+  return o.referrer;
+}
+
 export function assertLockLengthInRange(
   lockLengthMs: number,
   assertMin = true, // extend-vault has no min lock length
