@@ -1,16 +1,3 @@
-# [3.13.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0-alpha.1) (2025-06-03)
-
-
-### Bug Fixes
-
-* **deps:** add uuid as required dependency ([6c83033](https://github.com/ar-io/ar-io-sdk/commit/6c830335f87e761313c2e390d7446ea1fa578288))
-
-
-### Features
-
-* add referer support to ArNS purchase APIs (PE-8088) ([36034db](https://github.com/ar-io/ar-io-sdk/commit/36034db4f4611f1a05d6cb95fe8d42e46205c5a6))
-* add referer support to ArNS purchase APIs (PE-8088) ([5ab0a7e](https://github.com/ar-io/ar-io-sdk/commit/5ab0a7edec9b36cdb9d163edc0695cd2f51e59b3))
-
 ## [3.12.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.1...v3.12.2) (2025-06-02)
 
 
@@ -37,13 +24,6 @@
 ### Features
 
 * **arns:** append paidBy to query params on fundfrom turbo arns purcahaes PE-7943 ([11333e8](https://github.com/ar-io/ar-io-sdk/commit/11333e8abf0e07d284eba43f85ecefc7c9733f18))
-
-# [3.12.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.0-alpha.1...v3.12.0-alpha.2) (2025-05-22)
-
-
-### Bug Fixes
-
-* **utils:** update url util to else statement ([c0f3354](https://github.com/ar-io/ar-io-sdk/commit/c0f335490c881536000d5381ef67078befe2ff4a))
 
 # [3.11.0](https://github.com/ar-io/ar-io-sdk/compare/v3.10.2...v3.11.0) (2025-05-20)
 
