@@ -33,6 +33,7 @@ import {
   AoANTState,
   AoANTVersionsRead,
   AoANTWrite,
+  HyperBeamANTState,
   SortedANTRecords,
 } from '../types/ant.js';
 import {
@@ -45,7 +46,10 @@ import {
   isProcessConfiguration,
   isProcessIdConfiguration,
 } from '../types/index.js';
-import { sortANTRecords } from '../utils/ant.js';
+import {
+  convertHyperBeamStateToAoANTState,
+  sortANTRecords,
+} from '../utils/ant.js';
 import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
@@ -53,6 +57,7 @@ import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
 type ANTConfigOptionalStrict = Required<ProcessConfiguration> & {
   strict?: boolean;
+  hyperbeamUrl?: string;
 };
 type ANTConfigNoSigner = ANTConfigOptionalStrict;
 type ANTConfigWithSigner = WithSigner<ANTConfigOptionalStrict>;
@@ -79,6 +84,7 @@ export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
   public readonly processId: string;
   private strict: boolean;
+  private hyperbeamUrl: string;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
 
   constructor(config: ANTConfigOptionalStrict) {
@@ -94,6 +100,7 @@ export class AoANTReadable implements AoANTRead {
     }
 
     this.processId = this.process.processId;
+    this.hyperbeamUrl = config.hyperbeamUrl || 'https://permanode.xyz'; // TODO: replace this with hyperbeam.ario.permaweb.services once deployed
     this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
   }
 
@@ -105,7 +112,7 @@ export class AoANTReadable implements AoANTRead {
       },
     );
 
-    if (res.ok && res.headers.get('initialized') === '"true"') {
+    if (res.ok) {
       return true;
     }
 
@@ -115,13 +122,16 @@ export class AoANTReadable implements AoANTRead {
   async getState(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
-    // TODO: detect if process is hyperbeam compatible, if so fetch state via hyperbeam node
     if (await this.checkHyperBeamPromise) {
       const res = await fetch(
-        `https://permanode.xyz/${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+        `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
         {
           method: 'GET',
           redirect: 'follow',
+          mode: 'cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
       );
 
@@ -129,44 +139,9 @@ export class AoANTReadable implements AoANTRead {
         throw new Error('Failed to fetch ant state');
       }
 
-      const body = (await res.json()) as {
-        name: string;
-        ticker: string;
-        description: string;
-        keywords: string[];
-        denomination: string;
-        owner: string;
-        controllers: string[];
-        records: Record<string, { transactionid: string; ttlseconds: number }>;
-        balances: Record<string, number>;
-        logo: string;
-        totalsupply: number;
-        initialized: boolean;
-      };
-
-      return {
-        Name: body.name,
-        Ticker: body.ticker,
-        Description: body.description,
-        Keywords: body.keywords,
-        Denomination: parseInt(body.denomination),
-        Owner: body.owner,
-        Controllers: body.controllers,
-        Records: Object.entries(body.records).reduce(
-          (acc, [key, record]) => {
-            acc[key] = {
-              transactionId: record.transactionid,
-              ttlSeconds: record.ttlseconds,
-            };
-            return acc;
-          },
-          {} as Record<string, AoANTRecord>,
-        ),
-        Balances: body.balances,
-        Logo: body.logo,
-        TotalSupply: body.totalsupply || 1,
-        Initialized: body.initialized,
-      };
+      return convertHyperBeamStateToAoANTState(
+        (await res.json()) as HyperBeamANTState,
+      );
     }
 
     const tags = [{ name: 'Action', value: 'State' }];
@@ -382,10 +357,14 @@ export class AoANTReadable implements AoANTRead {
   ): Promise<Record<string, number>> {
     if (await this.checkHyperBeamPromise) {
       const res = await fetch(
-        `https://permanode.xyz/${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
+        `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
         {
           method: 'GET',
           redirect: 'follow',
+          mode: 'cors',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         },
       );
       if (!res.ok) {
