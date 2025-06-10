@@ -2442,7 +2442,7 @@ ANT clients can be configured to use custom AO process. Refer to [AO Connect] fo
 ```typescript
 
 const ant = ANT.init({
-  process: new AoProcess({
+  process: new AOProcess({
     processId: 'ANT_PROCESS_ID'
     ao: connect({
       MODE: 'legacy',
