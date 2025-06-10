@@ -106,7 +106,7 @@ export class AoANTReadable implements AoANTRead {
 
   private async checkHyperBeamCompatibility(): Promise<boolean> {
     const res = await fetch(
-      `https://permanode.xyz/${this.processId}~process@1.0/now/cache`,
+      `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',
       },
