@@ -104,9 +104,14 @@ export class AoANTReadable implements AoANTRead {
     this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
   }
 
+  /**
+   * Check if the process is hyperbeam compatible. If so, we'll use the hyperbeam node to fetch the state.
+   *
+   * @returns {Promise<boolean>} True if the process is hyperbeam compatible, false otherwise.
+   */
   private async checkHyperBeamCompatibility(): Promise<boolean> {
     const res = await fetch(
-      `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache`,
+      `https://permanode.xyz/${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',
       },
@@ -370,12 +375,11 @@ export class AoANTReadable implements AoANTRead {
       if (!res.ok) {
         throw new Error('Failed to fetch ant balances');
       }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { device, ...balances } = (await res.json()) as {
+      const result = (await res.json()) as {
         device: string;
-        [key: string]: any;
+        balances: Record<string, number>;
       };
-      return balances as Record<string, number>;
+      return result.balances;
     }
 
     const tags = [{ name: 'Action', value: 'Balances' }];
