@@ -110,6 +110,10 @@ export class AoANTReadable implements AoANTRead {
    * @returns {Promise<boolean>} True if the process is hyperbeam compatible, false otherwise.
    */
   private async checkHyperBeamCompatibility(): Promise<boolean> {
+    if (this.checkHyperBeamPromise !== undefined) {
+      return this.checkHyperBeamPromise;
+    }
+
     const res = await fetch(
       `https://permanode.xyz/${this.processId}~process@1.0/now/cache`,
       {
@@ -117,17 +121,21 @@ export class AoANTReadable implements AoANTRead {
       },
     );
 
+    let isHyperBeamCompatible = false;
+
     if (res.ok) {
-      return true;
+      isHyperBeamCompatible = true;
     }
 
-    return false;
+    this.checkHyperBeamPromise = Promise.resolve(isHyperBeamCompatible);
+
+    return isHyperBeamCompatible;
   }
 
   async getState(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const res = await fetch(
         `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
         {
@@ -170,7 +178,7 @@ export class AoANTReadable implements AoANTRead {
   async getInfo(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTInfo> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return {
         Name: state.Name,
@@ -216,7 +224,7 @@ export class AoANTReadable implements AoANTRead {
     { undername }: { undername: string },
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTRecord> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const records = await this.getRecords();
       const cachedRecord = records[undername];
 
@@ -251,7 +259,7 @@ export class AoANTReadable implements AoANTRead {
   async getRecords(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<SortedANTRecords> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return sortANTRecords(state.Records);
     }
@@ -278,7 +286,7 @@ export class AoANTReadable implements AoANTRead {
   async getOwner(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return state.Owner;
     }
@@ -298,7 +306,7 @@ export class AoANTReadable implements AoANTRead {
   async getControllers(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<WalletAddress[]> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return state.Controllers;
     }
@@ -322,7 +330,7 @@ export class AoANTReadable implements AoANTRead {
   async getName(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return state.Name;
     }
@@ -341,7 +349,7 @@ export class AoANTReadable implements AoANTRead {
   async getTicker(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<string> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const state = await this.getState();
       return state.Ticker;
     }
@@ -360,7 +368,7 @@ export class AoANTReadable implements AoANTRead {
   async getBalances(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<Record<string, number>> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const res = await fetch(
         `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
         {
@@ -403,7 +411,7 @@ export class AoANTReadable implements AoANTRead {
     { address }: { address: string },
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<number> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       const balances = await this.getBalances();
       return balances[address] ?? 0;
     }
@@ -427,7 +435,7 @@ export class AoANTReadable implements AoANTRead {
    * ```
    */
   async getHandlers(): Promise<AoANTHandler[]> {
-    if (await this.checkHyperBeamPromise) {
+    if (await this.checkHyperBeamCompatibility()) {
       throw new Error('Handlers are not supported on HyperBeam');
     }
     const info = await this.getInfo();
