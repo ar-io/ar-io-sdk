@@ -13,7 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANTRecords, SortedANTRecords } from '../types/ant.js';
+import {
+  ANTRecords,
+  AoANTRecord,
+  AoANTState,
+  HyperBeamANTState,
+  SortedANTRecords,
+} from '../types/ant.js';
 
 /**
  * Sorts ANT records by priority and then lexicographically.
@@ -57,4 +63,46 @@ export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
   return Object.fromEntries(
     sortedEntries.map(([a, aRecord], index) => [a, { ...aRecord, index }]),
   );
+};
+
+/**
+ * Convert HyperBeam serialized ANT state to backwards compatible format.
+ *
+ * @param state - The HyperBeam serialized ANT state.
+ */
+export const convertHyperBeamStateToAoANTState = (
+  state: HyperBeamANTState,
+): AoANTState => {
+  return {
+    Name: state.name,
+    Ticker: state.ticker,
+    Description: state.description,
+    Keywords: state.keywords,
+    Denomination: parseInt(state.denomination),
+    Owner: state.owner,
+    Controllers: state.controllers,
+    Records: Object.entries(state.records).reduce(
+      (
+        acc,
+        [key, record]: [
+          string,
+          { transactionid: string; ttlseconds: number; priority?: number },
+        ],
+      ) => {
+        acc[key] = {
+          transactionId: record.transactionid,
+          ttlSeconds: record.ttlseconds,
+          ...(record.priority !== undefined
+            ? { priority: record.priority }
+            : {}),
+        };
+        return acc;
+      },
+      {} as Record<string, AoANTRecord>,
+    ),
+    Balances: state.balances,
+    Logo: state.logo,
+    TotalSupply: state.totalsupply || 1,
+    Initialized: state.initialized,
+  };
 };
