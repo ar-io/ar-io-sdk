@@ -100,7 +100,9 @@ export class AoANTReadable implements AoANTRead {
     }
 
     this.processId = this.process.processId;
-    this.hyperbeamUrl = config.hyperbeamUrl || 'https://permanode.xyz'; // TODO: replace this with hyperbeam.ario.permaweb.services once deployed
+    this.hyperbeamUrl = new URL(
+      config.hyperbeamUrl || 'https://hyperbeam.ario.permaweb.services',
+    ).toString();
     this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
   }
 
@@ -115,7 +117,7 @@ export class AoANTReadable implements AoANTRead {
     }
 
     const res = await fetch(
-      `https://permanode.xyz/${this.processId}~process@1.0/now/cache`,
+      `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',
       },
