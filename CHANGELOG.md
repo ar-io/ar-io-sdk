@@ -1,3 +1,17 @@
+# [3.14.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0-alpha.1) (2025-06-13)
+
+
+### Bug Fixes
+
+* **ant:** use utility to convert hyperbeam state, allow hyperbeam url on ANT instantiattion ([c90b652](https://github.com/ar-io/ar-io-sdk/commit/c90b6523d70f7d675a2ff59eac057446d719abfc))
+* **hb:** utilize memoized result in checker ([8af41f2](https://github.com/ar-io/ar-io-sdk/commit/8af41f26456afe36dc6c7eeb7414a23a20e510c8))
+* **url:** use configured hb url ([63b1300](https://github.com/ar-io/ar-io-sdk/commit/63b1300ea50da5123404563b303c0179c287a067))
+
+
+### Features
+
+* **ants:** add support for fetching ant state from hyperbeam nodes ([2665f88](https://github.com/ar-io/ar-io-sdk/commit/2665f885638126381ca9c334a3db58ce3e8fabfe))
+
 # [3.13.0](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0) (2025-06-09)
 
 
