@@ -1,3 +1,10 @@
+# [3.14.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.1...v3.14.0-alpha.2) (2025-06-13)
+
+
+### Bug Fixes
+
+* **hyperbeam:** use hyperbeam.ario.permaweb.serivces by default on ANTs for hyperbeam ([8c980ac](https://github.com/ar-io/ar-io-sdk/commit/8c980aca1d99477ad97f64859e58402b08204f3c))
+
 # [3.14.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0-alpha.1) (2025-06-13)
 
 
