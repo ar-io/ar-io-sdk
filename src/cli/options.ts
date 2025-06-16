@@ -193,6 +193,12 @@ export const optionMap = {
     alias: '--sort-order <sortOrder>',
     description: 'The order to sort by, either "asc" or "desc"',
   },
+  filters: {
+    alias: '--filters <filters...>',
+    description:
+      'The filters to apply for pagination. Format: --filters key1 value1,value2 key2 value3,value4 key3 value5',
+    type: 'array',
+  },
   tags: {
     description:
       'An array of additional tags for the write action, in "--tags name1 value1 name2 value2" format',
@@ -334,6 +340,7 @@ export const paginationOptions = [
   optionMap.limit,
   optionMap.sortBy,
   optionMap.sortOrder,
+  optionMap.filters,
 ];
 
 export const paginationAddressOptions = [

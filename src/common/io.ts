@@ -631,7 +631,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     // on current epoch, go to process and fetch the distributions
     const allTags = [
       { name: 'Action', value: 'Epoch-Eligible-Rewards' },
-      ...paginationParamsToTags(params),
+      ...paginationParamsToTags<AoEligibleDistribution>(params),
     ];
 
     return this.process.read<PaginationResult<AoEligibleDistribution>>({
@@ -816,7 +816,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     const allTags = [
       { name: 'Action', value: 'Paginated-Delegations' },
       { name: 'Address', value: params.address },
-      ...paginationParamsToTags(params),
+      ...paginationParamsToTags<AoDelegation>(params),
     ];
 
     return this.process.read<PaginationResult<AoDelegation>>({
@@ -837,7 +837,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       tags: [
         { name: 'Action', value: 'Paginated-Gateway-Vaults' },
         { name: 'Address', value: params.address },
-        ...paginationParamsToTags(params),
+        ...paginationParamsToTags<AoGatewayVault>(params),
       ],
     });
   }
@@ -864,7 +864,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     return this.process.read<PaginationResult<AoPrimaryNameRequest>>({
       tags: [
         { name: 'Action', value: 'Primary-Name-Requests' },
-        ...paginationParamsToTags(params),
+        ...paginationParamsToTags<AoPrimaryNameRequest>(params),
       ],
     });
   }
@@ -892,7 +892,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     return this.process.read<PaginationResult<AoPrimaryName>>({
       tags: [
         { name: 'Action', value: 'Primary-Names' },
-        ...paginationParamsToTags(params),
+        ...paginationParamsToTags<AoPrimaryName>(params),
       ],
     });
   }
@@ -927,7 +927,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     return this.process.read({
       tags: [
         { name: 'Action', value: 'All-Paginated-Delegates' },
-        ...paginationParamsToTags(params),
+        ...paginationParamsToTags<AoAllDelegates>(params),
       ],
     });
   }
@@ -938,7 +938,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     return this.process.read({
       tags: [
         { name: 'Action', value: 'All-Gateway-Vaults' },
-        ...paginationParamsToTags(params),
+        ...paginationParamsToTags<AoAllGatewayVaults>(params),
       ],
     });
   }
