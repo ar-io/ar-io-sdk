@@ -53,7 +53,9 @@ export type PaginationParams<T = Record<string, never>> = {
   limit?: number;
   sortBy?: SortBy<T>; // default to string if T is empty
   sortOrder?: 'asc' | 'desc';
-  filters?: Record<keyof T, string | string[]>; // TODO: add support for number and number[]
+  filters?: Partial<
+    Record<keyof T, string | string[] | number | number[] | boolean | boolean[]>
+  >;
 };
 
 export type PaginationResult<T> = {
