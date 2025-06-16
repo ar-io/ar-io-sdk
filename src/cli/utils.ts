@@ -352,7 +352,12 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
     if (Array.isArray(filters)) {
       // every odd value is a key, every even value is a value for that key
       for (let i = 0; i < filters.length; i += 2) {
-        filtersObject[filters[i]] = filters[i + 1].split(',');
+        // convert any strings that are numbers to numbers
+        const value = filters[i + 1].split(',').map((v) => {
+          const num = +v;
+          return isNaN(num) ? v : num;
+        });
+        filtersObject[filters[i]] = value;
       }
     }
   }
