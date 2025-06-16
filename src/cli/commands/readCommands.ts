@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import {
-  AoArNSNameData,
+  AoArNSNameDataWithName,
   AoDelegation,
   AoGatewayDelegateWithAddress,
   AoGatewayVault,
@@ -125,7 +125,9 @@ export async function getArNSRecord(o: NameCLIOptions) {
 
 export async function listArNSRecords(o: PaginationCLIOptions) {
   const records = await readARIOFromOptions(o).getArNSRecords(
-    paginationParamsFromOptions<PaginationCLIOptions, AoArNSNameData>(o),
+    paginationParamsFromOptions<PaginationCLIOptions, AoArNSNameDataWithName>(
+      o,
+    ),
   );
   return records.items.length ? records : { message: 'No records found' };
 }
