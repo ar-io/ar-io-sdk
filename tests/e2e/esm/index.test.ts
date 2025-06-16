@@ -176,6 +176,65 @@ describe('e2e esm tests', async () => {
         assert(typeof record.undernameLimit === 'number');
       });
     });
+
+    it('should handle filters for arns records', async () => {
+      const records = await ario.getArNSRecords({
+        limit: 5,
+        sortOrder: 'desc',
+        sortBy: 'name',
+        filters: {
+          type: 'lease',
+        },
+      });
+      assert.ok(records);
+      assert(records.limit === 5);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'name');
+      assert(records.items.every((record) => record.type === 'lease'));
+    });
+
+    it('should handle filters for arns records with multiple filters', async () => {
+      const records = await ario.getArNSRecords({
+        limit: 5,
+        sortOrder: 'desc',
+        sortBy: 'name',
+        filters: {
+          type: 'lease',
+          processId: ['4_zQY9ZhaiiODch4r1YCUKQWq6-CQcs1TdJc3AQHzQY'],
+        },
+      });
+      assert.ok(records);
+      assert(records.limit === 5);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'name');
+      assert(records.items.every((record) => record.type === 'lease'));
+      assert(
+        records.items.every(
+          (record) =>
+            record.processId === '4_zQY9ZhaiiODch4r1YCUKQWq6-CQcs1TdJc3AQHzQY',
+        ),
+      );
+    });
+
+    it('should return an empty array if no records are found for a filter', async () => {
+      const records = await ario.getArNSRecords({
+        filters: {
+          type: 'lease',
+          processId: 'non-existent-process-id',
+        },
+      });
+      assert.ok(records);
+      assert(records.items.length === 0);
+      assert(records.limit === 100);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'name');
+      assert(records.hasMore === false);
+      assert(typeof records.totalItems === 'number');
+      assert(typeof records.sortBy === 'string');
+      assert(typeof records.sortOrder === 'string');
+      assert(typeof records.limit === 'number');
+    });
+
     it('should be able to get a single arns record', async () => {
       const arns = await ario.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
