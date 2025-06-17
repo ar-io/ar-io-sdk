@@ -235,6 +235,27 @@ describe('e2e esm tests', async () => {
       assert(typeof records.limit === 'number');
     });
 
+    it('should properly paginate through all the arns records', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const records = await ario.getArNSRecords({
+          cursor,
+        });
+        fetchedTotal += records.items.length;
+        totalRecords = records.totalItems;
+        if (!records.hasMore) {
+          break;
+        }
+        cursor = records.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Records pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
     it('should be able to get a single arns record', async () => {
       const arns = await ario.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
@@ -437,6 +458,27 @@ describe('e2e esm tests', async () => {
         assert(gateway.weights.compositeWeight <= lastWeight);
         lastWeight = gateway.weights.compositeWeight;
       });
+    });
+
+    it('should properly paginate through all the gateways', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const gateways = await ario.getGateways({
+          cursor,
+        });
+        fetchedTotal += gateways.items.length;
+        totalRecords = gateways.totalItems;
+        if (!gateways.hasMore) {
+          break;
+        }
+        cursor = gateways.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Gateways pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
     });
 
     it('should be able to get a single gateway', async () => {
@@ -1012,6 +1054,27 @@ describe('e2e esm tests', async () => {
       );
     });
 
+    it('should be able to get paginated vaults', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const vaults = await ario.getVaults({
+          cursor,
+        });
+        fetchedTotal += vaults.items.length;
+        totalRecords = vaults.totalItems;
+        if (!vaults.hasMore) {
+          break;
+        }
+        cursor = vaults.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Vaults pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
     it('should be able to get paginated delegations for a delegate address', async () => {
       const delegations = await ario.getDelegations({
         address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
@@ -1103,6 +1166,13 @@ describe('e2e esm tests', async () => {
     it('should be able to get paginated primary names', async () => {
       const primaryNames = await ario.getPrimaryNames();
       assert.ok(primaryNames);
+      assert.equal(primaryNames.limit, 100);
+      assert.equal(primaryNames.sortOrder, 'desc');
+      assert.equal(primaryNames.sortBy, 'name');
+      assert.equal(typeof primaryNames.totalItems, 'number');
+      assert.equal(typeof primaryNames.sortBy, 'string');
+      assert.equal(typeof primaryNames.sortOrder, 'string');
+      assert.equal(typeof primaryNames.limit, 'number');
     });
 
     it('should be able to get paginated primary names with custom sort', async () => {
@@ -1111,6 +1181,13 @@ describe('e2e esm tests', async () => {
         sortOrder: 'desc',
       });
       assert.ok(primaryNames);
+      assert.equal(primaryNames.limit, 100);
+      assert.equal(primaryNames.sortOrder, 'desc');
+      assert.equal(primaryNames.sortBy, 'startTimestamp');
+      assert.equal(typeof primaryNames.totalItems, 'number');
+      assert.equal(typeof primaryNames.sortBy, 'string');
+      assert.equal(typeof primaryNames.sortOrder, 'string');
+      assert.equal(typeof primaryNames.limit, 'number');
     });
 
     it('should be able to get a specific primary name by address', async () => {
