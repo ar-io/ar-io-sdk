@@ -227,7 +227,7 @@ describe('e2e esm tests', async () => {
       assert(records.items.length === 0);
       assert(records.limit === 100);
       assert(records.sortOrder === 'desc');
-      assert(records.sortBy === 'name');
+      assert(records.sortBy === 'startTimestamp');
       assert(records.hasMore === false);
       assert(typeof records.totalItems === 'number');
       assert(typeof records.sortBy === 'string');
