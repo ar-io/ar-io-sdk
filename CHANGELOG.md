@@ -1,3 +1,10 @@
+# [3.14.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.2...v3.14.0-alpha.3) (2025-06-17)
+
+
+### Bug Fixes
+
+* **spawn ant:** add hyperbeam patch compatibility to spawnANT ([8f4e3c2](https://github.com/ar-io/ar-io-sdk/commit/8f4e3c2fa64abe91710a17aa30430040db2482d7))
+
 # [3.14.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.1...v3.14.0-alpha.2) (2025-06-13)
 
 
