@@ -242,6 +242,7 @@ describe('e2e esm tests', async () => {
       while (true) {
         const records = await ario.getArNSRecords({
           cursor,
+          limit: 100,
         });
         fetchedTotal += records.items.length;
         totalRecords = records.totalItems;
@@ -263,7 +264,7 @@ describe('e2e esm tests', async () => {
       while (true) {
         const records = await ario.getArNSRecords({
           cursor,
-          limit: 1,
+          limit: 100,
           filters: {
             type: 'lease',
           },
