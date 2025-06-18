@@ -139,7 +139,7 @@ export class AoANTReadable implements AoANTRead {
   ): Promise<AoANTState> {
     if (await this.checkHyperBeamCompatibility()) {
       const res = await fetch(
-        `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+        `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
         {
           method: 'GET',
           redirect: 'follow',
@@ -372,7 +372,7 @@ export class AoANTReadable implements AoANTRead {
   ): Promise<Record<string, number>> {
     if (await this.checkHyperBeamCompatibility()) {
       const res = await fetch(
-        `${this.hyperbeamUrl}/${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
+        `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
         {
           method: 'GET',
           redirect: 'follow',
