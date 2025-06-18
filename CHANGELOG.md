@@ -1,3 +1,10 @@
+# [3.14.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.3...v3.14.0-alpha.4) (2025-06-18)
+
+
+### Bug Fixes
+
+* **hb:** fix slash in hb url ([6c8daf0](https://github.com/ar-io/ar-io-sdk/commit/6c8daf0cec245367ebbd0bfda9795afaaa371d77))
+
 # [3.14.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.2...v3.14.0-alpha.3) (2025-06-17)
 
 
