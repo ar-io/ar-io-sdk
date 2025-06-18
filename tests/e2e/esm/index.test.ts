@@ -235,13 +235,38 @@ describe('e2e esm tests', async () => {
       assert(typeof records.limit === 'number');
     });
 
-    it('should properly paginate through all the arns records', async () => {
+    it('should properly paginate through all the arns records without filters', async () => {
       let cursor: string | undefined = undefined;
       let fetchedTotal = 0;
       let totalRecords = 0;
       while (true) {
         const records = await ario.getArNSRecords({
           cursor,
+        });
+        fetchedTotal += records.items.length;
+        totalRecords = records.totalItems;
+        if (!records.hasMore) {
+          break;
+        }
+        cursor = records.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Records pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
+    it('should properly paginate through all the arns records with filters', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const records = await ario.getArNSRecords({
+          cursor,
+          limit: 1,
+          filters: {
+            type: 'lease',
+          },
         });
         fetchedTotal += records.items.length;
         totalRecords = records.totalItems;
