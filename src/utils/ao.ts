@@ -71,7 +71,6 @@ export async function spawnANT({
   logger = Logger.default,
   authority = AO_AUTHORITY,
 }: SpawnANTParams): Promise<string> {
-  // TODO: use On-Boot data handler for bootstrapping state instead of initialize-state
   if (state) {
     parseSchemaResult(SpawnANTStateSchema, state);
   }
@@ -97,10 +96,13 @@ export async function spawnANT({
   let attempts = 0;
   while (attempts < 5 && bootRes === undefined) {
     try {
-      bootRes = await ao.result({
-        process: processId,
-        message: processId,
-      });
+      if (bootRes === undefined) {
+        bootRes = await ao.result({
+          process: processId,
+          message: processId,
+        });
+      }
+
       break;
     } catch (error) {
       logger.debug('Retrying ANT boot result fetch', {
@@ -136,6 +138,17 @@ export async function spawnANT({
 
     throw new Error(`ANT failed to boot correctly: ${bootError}`);
   }
+  // for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
+  // We wait for the first message to be processed before sending the second one to ensure this is the second message
+  const processApi = new AOProcess({
+    processId,
+    ao,
+    logger,
+  });
+  await processApi.send({
+    tags: [{ name: 'Action', value: 'State' }],
+    signer,
+  });
 
   logger.debug(`Spawned ANT`, {
     processId,
