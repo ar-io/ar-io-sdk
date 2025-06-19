@@ -1,3 +1,10 @@
+# [3.14.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.5...v3.14.0-alpha.6) (2025-06-19)
+
+
+### Bug Fixes
+
+* **hb check:** use get instead of head request to check for cache ([0d79cbc](https://github.com/ar-io/ar-io-sdk/commit/0d79cbc419b34a4425030a9b9254242e4c269822))
+
 # [3.14.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.4...v3.14.0-alpha.5) (2025-06-19)
 
 
