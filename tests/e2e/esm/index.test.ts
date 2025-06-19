@@ -176,6 +176,112 @@ describe('e2e esm tests', async () => {
         assert(typeof record.undernameLimit === 'number');
       });
     });
+
+    it('should handle filters for arns records', async () => {
+      const records = await ario.getArNSRecords({
+        limit: 5,
+        sortOrder: 'desc',
+        sortBy: 'name',
+        filters: {
+          type: 'lease',
+        },
+      });
+      assert.ok(records);
+      assert(records.limit === 5);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'name');
+      assert(records.items.every((record) => record.type === 'lease'));
+    });
+
+    it('should handle filters for arns records with multiple filters', async () => {
+      const records = await ario.getArNSRecords({
+        limit: 5,
+        sortOrder: 'desc',
+        sortBy: 'name',
+        filters: {
+          type: 'lease',
+          processId: ['4_zQY9ZhaiiODch4r1YCUKQWq6-CQcs1TdJc3AQHzQY'],
+        },
+      });
+      assert.ok(records);
+      assert(records.limit === 5);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'name');
+      assert(records.items.every((record) => record.type === 'lease'));
+      assert(
+        records.items.every(
+          (record) =>
+            record.processId === '4_zQY9ZhaiiODch4r1YCUKQWq6-CQcs1TdJc3AQHzQY',
+        ),
+      );
+    });
+
+    it('should return an empty array if no records are found for a filter', async () => {
+      const records = await ario.getArNSRecords({
+        filters: {
+          type: 'lease',
+          processId: 'non-existent-process-id',
+        },
+      });
+      assert.ok(records);
+      assert(records.items.length === 0);
+      assert(records.limit === 100);
+      assert(records.sortOrder === 'desc');
+      assert(records.sortBy === 'startTimestamp');
+      assert(records.hasMore === false);
+      assert(typeof records.totalItems === 'number');
+      assert(typeof records.sortBy === 'string');
+      assert(typeof records.sortOrder === 'string');
+      assert(typeof records.limit === 'number');
+    });
+
+    it('should properly paginate through all the arns records without filters', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const records = await ario.getArNSRecords({
+          cursor,
+          limit: 100,
+        });
+        fetchedTotal += records.items.length;
+        totalRecords = records.totalItems;
+        if (!records.hasMore) {
+          break;
+        }
+        cursor = records.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Records pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
+    it('should properly paginate through all the arns records with filters', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const records = await ario.getArNSRecords({
+          cursor,
+          limit: 100,
+          filters: {
+            type: 'lease',
+          },
+        });
+        fetchedTotal += records.items.length;
+        totalRecords = records.totalItems;
+        if (!records.hasMore) {
+          break;
+        }
+        cursor = records.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Records pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
     it('should be able to get a single arns record', async () => {
       const arns = await ario.getArNSRecord({ name: 'ardrive' });
       assert.ok(arns);
@@ -378,6 +484,27 @@ describe('e2e esm tests', async () => {
         assert(gateway.weights.compositeWeight <= lastWeight);
         lastWeight = gateway.weights.compositeWeight;
       });
+    });
+
+    it('should properly paginate through all the gateways', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const gateways = await ario.getGateways({
+          cursor,
+        });
+        fetchedTotal += gateways.items.length;
+        totalRecords = gateways.totalItems;
+        if (!gateways.hasMore) {
+          break;
+        }
+        cursor = gateways.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Gateways pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
     });
 
     it('should be able to get a single gateway', async () => {
@@ -953,6 +1080,27 @@ describe('e2e esm tests', async () => {
       );
     });
 
+    it('should be able to get paginated vaults', async () => {
+      let cursor: string | undefined = undefined;
+      let fetchedTotal = 0;
+      let totalRecords = 0;
+      while (true) {
+        const vaults = await ario.getVaults({
+          cursor,
+        });
+        fetchedTotal += vaults.items.length;
+        totalRecords = vaults.totalItems;
+        if (!vaults.hasMore) {
+          break;
+        }
+        cursor = vaults.nextCursor;
+      }
+      assert(
+        fetchedTotal === totalRecords,
+        `Vaults pagination fetched ${fetchedTotal} records, but total records from the process is ${totalRecords}`,
+      );
+    });
+
     it('should be able to get paginated delegations for a delegate address', async () => {
       const delegations = await ario.getDelegations({
         address: 'N4h8M9A9hasa3tF47qQyNvcKjm4APBKuFs7vqUVm-SI',
@@ -1044,6 +1192,13 @@ describe('e2e esm tests', async () => {
     it('should be able to get paginated primary names', async () => {
       const primaryNames = await ario.getPrimaryNames();
       assert.ok(primaryNames);
+      assert.equal(primaryNames.limit, 100);
+      assert.equal(primaryNames.sortOrder, 'desc');
+      assert.equal(primaryNames.sortBy, 'name');
+      assert.equal(typeof primaryNames.totalItems, 'number');
+      assert.equal(typeof primaryNames.sortBy, 'string');
+      assert.equal(typeof primaryNames.sortOrder, 'string');
+      assert.equal(typeof primaryNames.limit, 'number');
     });
 
     it('should be able to get paginated primary names with custom sort', async () => {
@@ -1052,6 +1207,13 @@ describe('e2e esm tests', async () => {
         sortOrder: 'desc',
       });
       assert.ok(primaryNames);
+      assert.equal(primaryNames.limit, 100);
+      assert.equal(primaryNames.sortOrder, 'desc');
+      assert.equal(primaryNames.sortBy, 'startTimestamp');
+      assert.equal(typeof primaryNames.totalItems, 'number');
+      assert.equal(typeof primaryNames.sortBy, 'string');
+      assert.equal(typeof primaryNames.sortOrder, 'string');
+      assert.equal(typeof primaryNames.limit, 'number');
     });
 
     it('should be able to get a specific primary name by address', async () => {
