@@ -119,7 +119,7 @@ export class AoANTReadable implements AoANTRead {
     const res = await fetch(
       `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
-        method: 'HEAD',
+        method: 'GET',
       },
     );
 
