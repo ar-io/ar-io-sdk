@@ -2507,8 +2507,7 @@ Paginated APIs also support filtering by providing a `filters` parameter. Filter
 Example:
 
 ```typescript
-// Get all gateways with protocol "https" AND port either 443 or 80
-const gateways = await ario.getArNSRecords({
+const records = await ario.getArNSRecords({
   filters: {
     type: 'lease',
     processId: [
