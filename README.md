@@ -187,7 +187,7 @@ const ario = ARIO.mainnet(); // or ARIO.init()
 ```typescript
 import { ARIO } from '@ar.io/sdk';
 
-const testnet = ARIO.testnet(); // or ARIO.mainnet({ processId: ARIO_TESTNET_PROCESS_ID })
+const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID })
 ```
 
 #### Faucet
@@ -274,13 +274,13 @@ Factory function to that creates a read-only or writeable client. By providing a
 
 ```typescript
 // read-only client
-const ario = ARIO.mainnet();
+const ario = ARIO.init();
 
 // read-write client for browser environments
-const ario = ARIO.mainnet({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
+const ario = ARIO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
 
 // read-write client for node environments
-const ario = ARIO.mainnet({ signer: new ArweaveSigner(JWK) });
+const ario = ARIO.init({ signer: new ArweaveSigner(JWK) });
 
 ```
 
@@ -298,8 +298,8 @@ const info = await ario.getInfo();
 
 ```json
 {
-  "Name": "Testnet ARIO",
-  "Ticker": "tARIO",
+  "Name": "ARIO",
+  "Ticker": "ARIO",
   "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
   "Denomination": 6,
   "Handlers": ["_eval", "_default_"], // full list of handlers, useful for debugging
