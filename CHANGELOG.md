@@ -1,3 +1,10 @@
+# [3.14.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.4...v3.14.0-alpha.5) (2025-06-19)
+
+
+### Features
+
+* **pagination:** add filter suppor to paginatied handlers ([ce79d2e](https://github.com/ar-io/ar-io-sdk/commit/ce79d2e84b1d36e4ff13d1cb2937827c1e038d5e))
+
 # [3.14.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.3...v3.14.0-alpha.4) (2025-06-18)
 
 
