@@ -263,6 +263,48 @@ describe('convertHyperBeamStateToAoANTState', () => {
     assert.strictEqual('priority' in result.Records['@'], false);
   });
 
+  it('should preserve balances keys case without mutation', () => {
+    const hyperBeamState = {
+      name: 'TestANT',
+      ticker: 'TANT',
+      description: 'A test ANT',
+      keywords: ['test', 'ant'],
+      denomination: '0',
+      owner: 'owner-address',
+      controllers: [],
+      records: {},
+      balances: {
+        Address1: 100,
+        ADDRESS2: 200,
+        address3: 300,
+        MixedCase: 400,
+      },
+      logo: 'logo-tx-id',
+      totalsupply: 1000,
+      initialized: true,
+    };
+
+    const result = convertHyperBeamStateToAoANTState(hyperBeamState);
+
+    // Balances keys should be preserved exactly as they were
+    assert.deepStrictEqual(result.Balances, {
+      Address1: 100,
+      ADDRESS2: 200,
+      address3: 300,
+      MixedCase: 400,
+    });
+
+    // Verify that the keys are not converted to lowercase
+    assert.strictEqual('Address1' in result.Balances, true);
+    assert.strictEqual('ADDRESS2' in result.Balances, true);
+    assert.strictEqual('address3' in result.Balances, true);
+    assert.strictEqual('MixedCase' in result.Balances, true);
+
+    // Verify that lowercase versions don't exist
+    assert.strictEqual('address1' in result.Balances, false);
+    assert.strictEqual('address2' in result.Balances, false);
+  });
+
   it('should convert mixed case keys to lowercase', () => {
     // This test uses a type assertion to bypass TypeScript's type checking
     // since we want to test the case conversion functionality
