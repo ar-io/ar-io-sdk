@@ -71,8 +71,25 @@ export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
  * @param state - The HyperBeam serialized ANT state.
  */
 export const convertHyperBeamStateToAoANTState = (
-  state: HyperBeamANTState,
+  initialState: HyperBeamANTState,
 ): AoANTState => {
+  function lowerCaseKeys(obj: Record<string, any>): Record<string, any> {
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => {
+        if (
+          typeof value === 'object' &&
+          !Array.isArray(value) &&
+          value !== null
+        ) {
+          return [key.toLowerCase(), lowerCaseKeys(value)];
+        }
+        return [key.toLowerCase(), value];
+      }),
+    );
+  }
+  // we need to ensure keys are lower cased because hyperbeam json serializes keys to lowercase inconsistently
+  const state = lowerCaseKeys(initialState);
+
   return {
     Name: state.name,
     Ticker: state.ticker,

@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { sortANTRecords } from './ant.js';
+import { convertHyperBeamStateToAoANTState, sortANTRecords } from './ant.js';
 
 describe('sortANTRecordsByPriority', () => {
   it('should sort records by priority and then lexicographically', () => {
@@ -108,5 +108,221 @@ describe('sortANTRecordsByPriority', () => {
       const sorted = sortANTRecords(scenario.records);
       assert.deepStrictEqual(sorted, scenario.expected);
     }
+  });
+});
+
+describe('convertHyperBeamStateToAoANTState', () => {
+  it('should convert HyperBeam ANT state to Ao ANT state format', () => {
+    const hyperBeamState = {
+      name: 'TestANT',
+      ticker: 'TANT',
+      description: 'A test ANT',
+      keywords: ['test', 'ant'],
+      denomination: '0',
+      owner: 'owner-address',
+      controllers: ['controller1', 'controller2'],
+      records: {
+        '@': {
+          transactionid: 'tx-id-1',
+          ttlseconds: 3600,
+        },
+        subdomain: {
+          transactionid: 'tx-id-2',
+          ttlseconds: 7200,
+          priority: 1,
+        },
+      },
+      balances: {
+        address1: 100,
+        address2: 200,
+      },
+      logo: 'logo-tx-id',
+      totalsupply: 1000,
+      initialized: true,
+    };
+
+    const expectedAoState = {
+      Name: 'TestANT',
+      Ticker: 'TANT',
+      Description: 'A test ANT',
+      Keywords: ['test', 'ant'],
+      Denomination: 0,
+      Owner: 'owner-address',
+      Controllers: ['controller1', 'controller2'],
+      Records: {
+        '@': {
+          transactionId: 'tx-id-1',
+          ttlSeconds: 3600,
+        },
+        subdomain: {
+          transactionId: 'tx-id-2',
+          ttlSeconds: 7200,
+          priority: 1,
+        },
+      },
+      Balances: {
+        address1: 100,
+        address2: 200,
+      },
+      Logo: 'logo-tx-id',
+      TotalSupply: 1000,
+      Initialized: true,
+    };
+
+    const result = convertHyperBeamStateToAoANTState(hyperBeamState);
+    assert.deepStrictEqual(result, expectedAoState);
+  });
+
+  it('should handle mixed case keys in HyperBeam state', () => {
+    const hyperBeamState = {
+      name: 'TestANT',
+      ticker: 'TANT',
+      description: 'A test ANT',
+      keywords: ['test', 'ant'],
+      denomination: '0',
+      owner: 'owner-address',
+      controllers: ['controller1', 'controller2'],
+      records: {
+        '@': {
+          transactionid: 'tx-id-1',
+          ttlseconds: 3600,
+        },
+        subdomain: {
+          transactionid: 'tx-id-2',
+          ttlseconds: 7200,
+          priority: 1,
+        },
+      },
+      balances: {
+        address1: 100,
+        address2: 200,
+      },
+      logo: 'logo-tx-id',
+      totalsupply: 1000,
+      initialized: true,
+    };
+
+    const expectedAoState = {
+      Name: 'TestANT',
+      Ticker: 'TANT',
+      Description: 'A test ANT',
+      Keywords: ['test', 'ant'],
+      Denomination: 0,
+      Owner: 'owner-address',
+      Controllers: ['controller1', 'controller2'],
+      Records: {
+        '@': {
+          transactionId: 'tx-id-1',
+          ttlSeconds: 3600,
+        },
+        subdomain: {
+          transactionId: 'tx-id-2',
+          ttlSeconds: 7200,
+          priority: 1,
+        },
+      },
+      Balances: {
+        address1: 100,
+        address2: 200,
+      },
+      Logo: 'logo-tx-id',
+      TotalSupply: 1000,
+      Initialized: true,
+    };
+
+    const result = convertHyperBeamStateToAoANTState(hyperBeamState);
+    assert.deepStrictEqual(result, expectedAoState);
+  });
+
+  it('should handle records without priority', () => {
+    const hyperBeamState = {
+      name: 'TestANT',
+      ticker: 'TANT',
+      description: 'A test ANT',
+      keywords: ['test', 'ant'],
+      denomination: '0',
+      owner: 'owner-address',
+      controllers: [],
+      records: {
+        '@': {
+          transactionid: 'tx-id-1',
+          ttlseconds: 3600,
+        },
+      },
+      balances: {},
+      logo: 'logo-tx-id',
+      totalsupply: 1000,
+      initialized: true,
+    };
+
+    const result = convertHyperBeamStateToAoANTState(hyperBeamState);
+    assert.deepStrictEqual(result.Records['@'], {
+      transactionId: 'tx-id-1',
+      ttlSeconds: 3600,
+    });
+    assert.strictEqual('priority' in result.Records['@'], false);
+  });
+
+  it('should convert mixed case keys to lowercase', () => {
+    // This test uses a type assertion to bypass TypeScript's type checking
+    // since we want to test the case conversion functionality
+    const hyperBeamState = {
+      Name: 'TestANT',
+      TICKER: 'TANT',
+      Description: 'A test ANT',
+      Keywords: ['test', 'ant'],
+      Denomination: '0',
+      Owner: 'owner-address',
+      Controllers: ['controller1', 'controller2'],
+      Records: {
+        '@': {
+          TransactionId: 'tx-id-1',
+          TTLSeconds: 3600,
+        },
+        subdomain: {
+          transactionid: 'tx-id-2',
+          ttlseconds: 7200,
+          Priority: 1,
+        },
+      },
+      Balances: {
+        address1: 100,
+        address2: 200,
+      },
+      Logo: 'logo-tx-id',
+      TotalSupply: 1000,
+      Initialized: true,
+    } as any; // Type assertion to test case conversion
+
+    const expectedAoState = {
+      Name: 'TestANT',
+      Ticker: 'TANT',
+      Description: 'A test ANT',
+      Keywords: ['test', 'ant'],
+      Denomination: 0,
+      Owner: 'owner-address',
+      Controllers: ['controller1', 'controller2'],
+      Records: {
+        '@': {
+          transactionId: 'tx-id-1',
+          ttlSeconds: 3600,
+        },
+        subdomain: {
+          transactionId: 'tx-id-2',
+          ttlSeconds: 7200,
+          priority: 1,
+        },
+      },
+      Balances: {
+        address1: 100,
+        address2: 200,
+      },
+      Logo: 'logo-tx-id',
+      TotalSupply: 1000,
+      Initialized: true,
+    };
+
+    const result = convertHyperBeamStateToAoANTState(hyperBeamState);
+    assert.deepStrictEqual(result, expectedAoState);
   });
 });
