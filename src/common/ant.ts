@@ -119,7 +119,7 @@ export class AoANTReadable implements AoANTRead {
     const res = await fetch(
       `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
-        method: 'GET',
+        method: 'HEAD',
       },
     );
 
@@ -138,37 +138,46 @@ export class AoANTReadable implements AoANTRead {
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
     if (await this.checkHyperBeamCompatibility()) {
-      let res: Response | undefined = undefined;
-      let retries = 0;
-      while (retries < 3) {
-        res = await fetch(
-          `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
-          {
-            method: 'GET',
-            redirect: 'follow',
-            mode: 'cors',
-            headers: {
-              'Content-Type': 'application/json',
+      try {
+        let res: Response | undefined = undefined;
+
+        let retries = 0;
+        while (retries < 3) {
+          res = await fetch(
+            `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+            {
+              method: 'GET',
+              redirect: 'follow',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'application/json',
+              },
             },
-          },
-        );
-        if (res.ok) {
-          break;
-        } else {
-          retries++;
-          await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * retries ** 2),
+          );
+          if (res.ok) {
+            break;
+          } else {
+            retries++;
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retries ** 2),
+            );
+          }
+        }
+        if (res === undefined || !res.ok) {
+          throw new Error(
+            `Failed to fetch ant state: ${res?.statusText ?? 'Unknown error'}`,
           );
         }
+        return convertHyperBeamStateToAoANTState(
+          (await res.json()) as HyperBeamANTState,
+        );
+      } catch (error) {
+        console.error(
+          new Error(
+            `Failed to use hyperbeam, failing over to legacy net: ${error.message}`,
+          ),
+        );
       }
-
-      if (res === undefined || !res.ok) {
-        throw new Error('Failed to fetch ant state');
-      }
-
-      return convertHyperBeamStateToAoANTState(
-        (await res.json()) as HyperBeamANTState,
-      );
     }
 
     const tags = [{ name: 'Action', value: 'State' }];
@@ -383,25 +392,50 @@ export class AoANTReadable implements AoANTRead {
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<Record<string, number>> {
     if (await this.checkHyperBeamCompatibility()) {
-      const res = await fetch(
-        `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
-        {
-          method: 'GET',
-          redirect: 'follow',
-          mode: 'cors',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-      if (!res.ok) {
-        throw new Error('Failed to fetch ant balances');
+      try {
+        let res: Response | undefined = undefined;
+        let retries = 0;
+
+        while (retries < 3) {
+          res = await fetch(
+            `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
+            {
+              method: 'GET',
+              redirect: 'follow',
+              mode: 'cors',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            },
+          );
+          if (res.ok) {
+            break;
+          } else {
+            retries++;
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * retries ** 2),
+            );
+          }
+        }
+
+        if (res === undefined || !res.ok) {
+          throw new Error(
+            `Failed to fetch ant balances: ${res?.statusText ?? 'Unknown error'}`,
+          );
+        }
+        const result = (await res.json()) as {
+          device: string;
+          balances: Record<string, number>;
+        };
+        if (strict) parseSchemaResult(AntBalancesSchema, result.balances);
+        return result.balances;
+      } catch (error) {
+        console.error(
+          new Error(
+            `Failed to use hyperbeam, failing over to legacy net: ${error.message}`,
+          ),
+        );
       }
-      const result = (await res.json()) as {
-        device: string;
-        balances: Record<string, number>;
-      };
-      return result.balances;
     }
 
     const tags = [{ name: 'Action', value: 'Balances' }];
