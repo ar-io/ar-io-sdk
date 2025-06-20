@@ -76,6 +76,9 @@ export const convertHyperBeamStateToAoANTState = (
   function lowerCaseKeys(obj: Record<string, any>): Record<string, any> {
     return Object.fromEntries(
       Object.entries(obj).map(([key, value]) => {
+        if (key.toLowerCase().includes('balances')) {
+          return [key.toLowerCase(), value];
+        }
         if (
           typeof value === 'object' &&
           !Array.isArray(value) &&
