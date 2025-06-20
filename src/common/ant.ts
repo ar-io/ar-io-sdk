@@ -138,19 +138,31 @@ export class AoANTReadable implements AoANTRead {
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
     if (await this.checkHyperBeamCompatibility()) {
-      const res = await fetch(
-        `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
-        {
-          method: 'GET',
-          redirect: 'follow',
-          mode: 'cors',
-          headers: {
-            'Content-Type': 'application/json',
+      let res: Response | undefined = undefined;
+      let retries = 0;
+      while (retries < 3) {
+        res = await fetch(
+          `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+          {
+            method: 'GET',
+            redirect: 'follow',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+            },
           },
-        },
-      );
+        );
+        if (res.ok) {
+          break;
+        } else {
+          retries++;
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retries ** 2),
+          );
+        }
+      }
 
-      if (!res.ok) {
+      if (res === undefined || !res.ok) {
         throw new Error('Failed to fetch ant state');
       }
 
