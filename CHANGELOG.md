@@ -1,3 +1,10 @@
+# [3.14.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.7...v3.14.0-alpha.8) (2025-06-20)
+
+
+### Bug Fixes
+
+* **hb util:** do not mutate balances keys as addresses are case sensitive ([3edc37a](https://github.com/ar-io/ar-io-sdk/commit/3edc37a0cf80c80d0c956289c2a359e762b0d992))
+
 # [3.14.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.6...v3.14.0-alpha.7) (2025-06-20)
 
 
