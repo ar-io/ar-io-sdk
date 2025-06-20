@@ -1,3 +1,11 @@
+# [3.14.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.6...v3.14.0-alpha.7) (2025-06-20)
+
+
+### Bug Fixes
+
+* **ant hb util:** add recursive lowercase util and unit tests ([f858219](https://github.com/ar-io/ar-io-sdk/commit/f8582194886f21f6a8004caee9d0715ce527e043))
+* **util:** do not mangle arrays ([6f5defa](https://github.com/ar-io/ar-io-sdk/commit/6f5defaef6d3962636d64939fd6807efbc3bcf5f))
+
 # [3.14.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.5...v3.14.0-alpha.6) (2025-06-19)
 
 
