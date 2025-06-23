@@ -48,12 +48,17 @@ import {
 } from '../types/index.js';
 import {
   convertHyperBeamStateToAoANTState,
+  isHyperBeamANTState,
   sortANTRecords,
 } from '../utils/ant.js';
 import { createAoSigner } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
-import { AOProcess, InvalidContractConfigurationError } from './index.js';
+import {
+  AOProcess,
+  InvalidContractConfigurationError,
+  Logger,
+} from './index.js';
 
 type ANTConfigOptionalStrict = Required<ProcessConfiguration> & {
   strict?: boolean;
@@ -86,6 +91,7 @@ export class AoANTReadable implements AoANTRead {
   private strict: boolean;
   private hyperbeamUrl: string;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
+  private logger: Logger = Logger.default;
 
   constructor(config: ANTConfigOptionalStrict) {
     this.strict = config.strict || false;
@@ -107,44 +113,39 @@ export class AoANTReadable implements AoANTRead {
   }
 
   /**
-   * Check if the process is hyperbeam compatible. If so, we'll use the hyperbeam node to fetch the state.
+   * Check if the process is HyperBeam compatible. If so, we'll use the HyperBeam node to fetch the state.
    *
-   * @returns {Promise<boolean>} True if the process is hyperbeam compatible, false otherwise.
+   * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
    */
   private async checkHyperBeamCompatibility(): Promise<boolean> {
     if (this.checkHyperBeamPromise !== undefined) {
       return this.checkHyperBeamPromise;
     }
 
-    const res = await fetch(
+    this.checkHyperBeamPromise = fetch(
       `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',
       },
-    );
+    ).then((res) => {
+      if (res.ok) {
+        return true;
+      }
+      return false;
+    });
 
-    let isHyperBeamCompatible = false;
-
-    if (res.ok) {
-      isHyperBeamCompatible = true;
-    }
-
-    this.checkHyperBeamPromise = Promise.resolve(isHyperBeamCompatible);
-
-    return isHyperBeamCompatible;
+    return this.checkHyperBeamPromise;
   }
 
   async getState(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<AoANTState> {
     if (await this.checkHyperBeamCompatibility()) {
-      try {
-        let res: Response | undefined = undefined;
-
-        let retries = 0;
-        while (retries < 3) {
-          res = await fetch(
-            `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/serialize~json@1.0`,
+      let retries = 0;
+      while (retries < 3) {
+        try {
+          const res = await fetch(
+            `${this.hyperbeamUrl}${this.processId}~process@1.0/compute/cache/serialize~json@1.0`,
             {
               method: 'GET',
               redirect: 'follow',
@@ -154,29 +155,35 @@ export class AoANTReadable implements AoANTRead {
               },
             },
           );
-          if (res.status >= 500) {
-            retries++;
-            await new Promise((resolve) =>
-              setTimeout(resolve, 1000 * retries ** 2),
+
+          if (res.status !== 200) {
+            throw new Error(
+              `Failed to fetch ant state: ${res?.statusText ?? 'Unknown error'}`,
             );
-          } else {
-            break;
           }
-        }
-        if (res === undefined || !res.ok) {
-          throw new Error(
-            `Failed to fetch ant state: ${res?.statusText ?? 'Unknown error'}`,
+
+          const unnormalizedState = (await res.json()) as HyperBeamANTState;
+
+          if (!isHyperBeamANTState(unnormalizedState)) {
+            throw new Error('Invalid HyperBeam ANT state', {
+              cause: { state: unnormalizedState },
+            });
+          }
+
+          // normalize and return the state
+          return convertHyperBeamStateToAoANTState(unnormalizedState);
+        } catch (error) {
+          this.logger.error(
+            `Failed to fetch process state from HyperBEAM (attempt ${retries + 1} / 3)`,
+            {
+              cause: error,
+            },
+          );
+          retries++;
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retries ** 2),
           );
         }
-        return convertHyperBeamStateToAoANTState(
-          (await res.json()) as HyperBeamANTState,
-        );
-      } catch (error) {
-        console.error(
-          new Error(
-            `Failed to use hyperbeam, failing over to legacy net: ${error.message}`,
-          ),
-        );
       }
     }
 
