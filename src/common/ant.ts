@@ -391,57 +391,8 @@ export class AoANTReadable implements AoANTRead {
   async getBalances(
     { strict }: AntReadOptions = { strict: this.strict },
   ): Promise<Record<string, number>> {
-    if (await this.checkHyperBeamCompatibility()) {
-      try {
-        let res: Response | undefined = undefined;
-        let retries = 0;
-
-        while (retries < 3) {
-          res = await fetch(
-            `${this.hyperbeamUrl}${this.processId}~process@1.0/now/cache/balances/serialize~json@1.0`,
-            {
-              method: 'GET',
-              redirect: 'follow',
-              mode: 'cors',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            },
-          );
-          if (res.ok) {
-            break;
-          } else {
-            retries++;
-            await new Promise((resolve) =>
-              setTimeout(resolve, 1000 * retries ** 2),
-            );
-          }
-        }
-
-        if (res === undefined || !res.ok) {
-          throw new Error(
-            `Failed to fetch ant balances: ${res?.statusText ?? 'Unknown error'}`,
-          );
-        }
-        const result = (await res.json()) as {
-          device: string;
-          balances: Record<string, number>;
-        };
-        if (strict) parseSchemaResult(AntBalancesSchema, result.balances);
-        return result.balances;
-      } catch (error) {
-        console.error(
-          new Error(
-            `Failed to use hyperbeam, failing over to legacy net: ${error.message}`,
-          ),
-        );
-      }
-    }
-
-    const tags = [{ name: 'Action', value: 'Balances' }];
-    const balances = await this.process.read<Record<string, number>>({
-      tags,
-    });
+    const state = await this.getState();
+    const balances = state.Balances;
     if (strict) parseSchemaResult(AntBalancesSchema, balances);
     return balances;
   }
