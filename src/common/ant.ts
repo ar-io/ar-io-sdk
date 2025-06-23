@@ -154,13 +154,13 @@ export class AoANTReadable implements AoANTRead {
               },
             },
           );
-          if (res.ok) {
-            break;
-          } else {
+          if (res.status >= 500) {
             retries++;
             await new Promise((resolve) =>
               setTimeout(resolve, 1000 * retries ** 2),
             );
+          } else {
+            break;
           }
         }
         if (res === undefined || !res.ok) {
