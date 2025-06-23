@@ -65,6 +65,23 @@ export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
   );
 };
 
+export const isHyperBeamANTState = (state: any): state is HyperBeamANTState => {
+  return (
+    'name' in state &&
+    'ticker' in state &&
+    'description' in state &&
+    'keywords' in state &&
+    'denomination' in state &&
+    'owner' in state &&
+    'controllers' in state &&
+    'records' in state &&
+    'balances' in state &&
+    'logo' in state &&
+    'totalsupply' in state &&
+    'initialized' in state
+  );
+};
+
 /**
  * Convert HyperBeam serialized ANT state to backwards compatible format.
  *
