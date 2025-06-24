@@ -29,8 +29,13 @@ import {
 import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
-type ANTRegistryNoSigner = ProcessConfiguration;
-type ANTRegistryWithSigner = WithSigner<ProcessConfiguration>;
+type ANTRegistryConfigOptionalStrict = Required<ProcessConfiguration> & {
+  strict?: boolean;
+  hyperbeamUrl?: string;
+};
+
+type ANTRegistryNoSigner = ANTRegistryConfigOptionalStrict;
+type ANTRegistryWithSigner = WithSigner<ANTRegistryConfigOptionalStrict>;
 type ANTRegistryConfig = ANTRegistryNoSigner | ANTRegistryWithSigner;
 
 export class ANTRegistry {
@@ -55,8 +60,10 @@ export class ANTRegistry {
 
 export class AoANTRegistryReadable implements AoANTRegistryRead {
   protected process: AOProcess;
+  private hyperbeamUrl: string;
+  private checkHyperBeamPromise: Promise<boolean> | undefined;
 
-  constructor(config?: ProcessConfiguration) {
+  constructor(config?: ANTRegistryConfigOptionalStrict) {
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ANT_REGISTRY_ID,
@@ -70,6 +77,40 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     } else {
       throw new InvalidContractConfigurationError();
     }
+
+    if (config?.hyperbeamUrl !== undefined) {
+      this.hyperbeamUrl = new URL(
+        config.hyperbeamUrl || 'https://hyperbeam.ario.permaweb.services',
+      ).toString();
+      this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
+    }
+  }
+
+  /**
+   * Check if the process is HyperBeam compatible. If so, we'll use the HyperBeam node to fetch the state.
+   *
+   * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
+   */
+  private async checkHyperBeamCompatibility(): Promise<boolean> {
+    if (this.checkHyperBeamPromise !== undefined) {
+      return this.checkHyperBeamPromise;
+    }
+    console.debug('Checking HyperBeam compatibility');
+    this.checkHyperBeamPromise = fetch(
+      `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache`,
+      {
+        method: 'HEAD',
+      },
+    ).then((res) => {
+      if (res.ok) {
+        console.debug('HyperBeam compatible');
+        return true;
+      }
+      console.debug('HyperBeam not compatible');
+      return false;
+    });
+
+    return this.checkHyperBeamPromise;
   }
 
   // Should we rename this to "getANTsByAddress"? seems more clear, though not same as handler name
@@ -78,6 +119,54 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
   }: {
     address: string;
   }): Promise<{ Owned: string[]; Controlled: string[] }> {
+    if (await this.checkHyperBeamCompatibility()) {
+      let retries = 0;
+      while (retries < 3) {
+        try {
+          console.debug(
+            'Fetching ant registry acl for address from hyperbeam',
+            address,
+          );
+          const res = await fetch(
+            `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl/${address}/serialize~json@1.0`,
+          );
+          if (res.status !== 200) {
+            console.debug(
+              'Failed to fetch ant registry acl for address from hyperbeam',
+              address,
+              res.status,
+              res.statusText,
+            );
+            throw new Error(
+              `Failed to fetch ant registry acl for address ${address}: ${res?.statusText ?? 'Unknown error'}`,
+            );
+          }
+          console.debug(
+            'Fetched ant registry acl for address from hyperbeam',
+            address,
+          );
+          return (await res.json()) as {
+            Owned: string[];
+            Controlled: string[];
+          };
+        } catch (error) {
+          retries++;
+          console.debug(
+            'Failed to fetch ant registry acl for address from hyperbeam',
+            address,
+            retries,
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * retries ** 2),
+          );
+        }
+      }
+    }
+
+    console.debug(
+      'Fetching ant registry acl for address from process',
+      address,
+    );
     return this.process.read({
       tags: [
         { name: 'Action', value: 'Access-Control-List' },
@@ -93,7 +182,10 @@ export class AoANTRegistryWriteable
 {
   private signer: AoSigner;
 
-  constructor({ signer, ...config }: WithSigner<ProcessConfiguration>) {
+  constructor({
+    signer,
+    ...config
+  }: WithSigner<ANTRegistryConfigOptionalStrict>) {
     super(config);
     this.signer = createAoSigner(signer);
   }
