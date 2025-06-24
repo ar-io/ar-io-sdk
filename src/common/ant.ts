@@ -165,9 +165,8 @@ export class AoANTReadable implements AoANTRead {
           const unnormalizedState = (await res.json()) as HyperBeamANTState;
 
           if (!isHyperBeamANTState(unnormalizedState)) {
-            throw new Error('Invalid HyperBeam ANT state', {
-              cause: { state: unnormalizedState },
-            });
+            // don't retry if the state is bad, fallback to the CU
+            break;
           }
 
           // normalize and return the state
