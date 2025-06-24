@@ -1,67 +1,3 @@
-# [3.14.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.7...v3.14.0-alpha.8) (2025-06-20)
-
-
-### Bug Fixes
-
-* **hb util:** do not mutate balances keys as addresses are case sensitive ([3edc37a](https://github.com/ar-io/ar-io-sdk/commit/3edc37a0cf80c80d0c956289c2a359e762b0d992))
-
-# [3.14.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.6...v3.14.0-alpha.7) (2025-06-20)
-
-
-### Bug Fixes
-
-* **ant hb util:** add recursive lowercase util and unit tests ([f858219](https://github.com/ar-io/ar-io-sdk/commit/f8582194886f21f6a8004caee9d0715ce527e043))
-* **util:** do not mangle arrays ([6f5defa](https://github.com/ar-io/ar-io-sdk/commit/6f5defaef6d3962636d64939fd6807efbc3bcf5f))
-
-# [3.14.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.5...v3.14.0-alpha.6) (2025-06-19)
-
-
-### Bug Fixes
-
-* **hb check:** use get instead of head request to check for cache ([0d79cbc](https://github.com/ar-io/ar-io-sdk/commit/0d79cbc419b34a4425030a9b9254242e4c269822))
-
-# [3.14.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.4...v3.14.0-alpha.5) (2025-06-19)
-
-
-### Features
-
-* **pagination:** add filter suppor to paginatied handlers ([ce79d2e](https://github.com/ar-io/ar-io-sdk/commit/ce79d2e84b1d36e4ff13d1cb2937827c1e038d5e))
-
-# [3.14.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.3...v3.14.0-alpha.4) (2025-06-18)
-
-
-### Bug Fixes
-
-* **hb:** fix slash in hb url ([6c8daf0](https://github.com/ar-io/ar-io-sdk/commit/6c8daf0cec245367ebbd0bfda9795afaaa371d77))
-
-# [3.14.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.2...v3.14.0-alpha.3) (2025-06-17)
-
-
-### Bug Fixes
-
-* **spawn ant:** add hyperbeam patch compatibility to spawnANT ([8f4e3c2](https://github.com/ar-io/ar-io-sdk/commit/8f4e3c2fa64abe91710a17aa30430040db2482d7))
-
-# [3.14.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0-alpha.1...v3.14.0-alpha.2) (2025-06-13)
-
-
-### Bug Fixes
-
-* **hyperbeam:** use hyperbeam.ario.permaweb.serivces by default on ANTs for hyperbeam ([8c980ac](https://github.com/ar-io/ar-io-sdk/commit/8c980aca1d99477ad97f64859e58402b08204f3c))
-
-# [3.14.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0-alpha.1) (2025-06-13)
-
-
-### Bug Fixes
-
-* **ant:** use utility to convert hyperbeam state, allow hyperbeam url on ANT instantiattion ([c90b652](https://github.com/ar-io/ar-io-sdk/commit/c90b6523d70f7d675a2ff59eac057446d719abfc))
-* **hb:** utilize memoized result in checker ([8af41f2](https://github.com/ar-io/ar-io-sdk/commit/8af41f26456afe36dc6c7eeb7414a23a20e510c8))
-* **url:** use configured hb url ([63b1300](https://github.com/ar-io/ar-io-sdk/commit/63b1300ea50da5123404563b303c0179c287a067))
-
-
-### Features
-
-* **ants:** add support for fetching ant state from hyperbeam nodes ([2665f88](https://github.com/ar-io/ar-io-sdk/commit/2665f885638126381ca9c334a3db58ce3e8fabfe))
-
 # [3.13.0](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0) (2025-06-09)
 
 
@@ -73,7 +9,6 @@
 ### Features
 
 * add referer support to ArNS purchase APIs (PE-8088) ([36034db](https://github.com/ar-io/ar-io-sdk/commit/36034db4f4611f1a05d6cb95fe8d42e46205c5a6))
-* add referer support to ArNS purchase APIs (PE-8088) ([5ab0a7e](https://github.com/ar-io/ar-io-sdk/commit/5ab0a7edec9b36cdb9d163edc0695cd2f51e59b3))
 
 ## [3.12.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.1...v3.12.2) (2025-06-02)
 
