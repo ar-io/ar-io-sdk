@@ -1,0 +1,38 @@
+{
+  "16": {
+    "moduleId": "pb4fCvdJqwT-_bn38ERMdqnOF4weRMjoJ6bY6yfl4a8",
+    "messageId": "x2i6Es2fPuPXKghluQYwevCmgVh1YrWmBbFD38_wFlQ",
+    "notes": "## Changed\n\n- Increased stack memory and initial memory on modules to 3MiB and 4MiB\n  respectively.",
+    "luaSourceId": "OO2ewZKq4AHoqGQmYUIl-NhJ-llQyFJ3ha4Uf4-w5RI"
+  },
+  "17": {
+    "moduleId": "KYY40_eiO-m-vjzfI6QxEOFRQtx1Ib6-8Cbg4XJUpew",
+    "messageId": "eMGja21JxcoKh2LZSv9_stZCAcjbrJr-Xov6cYz_9YY",
+    "notes": "### Changed\n\n- Added Logo to initialize state handling.",
+    "luaSourceId": "BkdvmeNW3Hz3b37cUAa5RoUW_NI83EIsLDmboU1vH6A"
+  },
+  "18": {
+    "moduleId": "30hPfyKdu-FidGj_qzr3jgOb-SHQc9B-d2H4BM0Y0S4",
+    "messageId": "EidcbgjiCE4pQbWdHd4On9KNHCY9t7kqz0QtkIU2EEk",
+    "notes": "### Fixed\n\n- Modified `Send` to validate message tags before sending.",
+    "luaSourceId": "PMuRmTA2YQFK6kBx2ym2xq3XfRGAZZYnvqUV4siElVc"
+  },
+  "19": {
+    "moduleId": "zHQW1hz_eJlxKCv1LW0bcrfpFXnkBoAN-It2lQuw_wA",
+    "messageId": "CyNlPmyMaw_THXF73sQQLXF1uSXp-k1ndhKnzpjnqjA",
+    "notes": "### Added\n\n- Adds patch messages on state changes. These messages will be used by HyperBeam\n  nodes to provide cacheable and verified state for ANTs.",
+    "luaSourceId": "FO0kICRPzeLd9d9oIINMrvPuV1eHYQYOhFKS2hdQXxk"
+  },
+  "20": {
+    "moduleId": "-bocfupFweTvpNQ5rnoBHqCRbG0GDt5l_Jkr7FpJZ9g",
+    "messageId": "ZxQgcWx4ObnyofIeQrOcsLHdVGzopI1qfX_nKFCJ2B0",
+    "notes": "### Changed\n\n- Updated ANT state initialization to send a patch notice on boot.",
+    "luaSourceId": "TwP5rq-oQdElnbF2DdRjlILb7k4PTt91kdElaN-rzL4"
+  },
+  "21": {
+    "moduleId": "mzFmF0rEoA5JyOX6G7Fwc97L6dQfwMUFuQmZNQFg6yc",
+    "messageId": "E53CmOkGOc82y_3bMCiKLq1cprwTkK29mtIj-T7NhGs",
+    "notes": "### Changed\n\n- Updated Boot handler to send a self initialization message for hyperbeam\n  compatibility.",
+    "luaSourceId": "HAMq7Xj-lGhwx9OfB7b2G7EgJI4C4oWSoCIwVnj1Z-8"
+  }
+}
