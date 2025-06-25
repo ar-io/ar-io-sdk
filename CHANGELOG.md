@@ -1,3 +1,11 @@
+# [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
+
+
+### Features
+
+* **ants:** add support for fetching ant state from hyperbeam nodes ([f5cbc76](https://github.com/ar-io/ar-io-sdk/commit/f5cbc76a761f9f3633e4115cae556d58a6da69e0))
+* **pagination:** add filter suppor to paginatied handlers ([8445dca](https://github.com/ar-io/ar-io-sdk/commit/8445dcac0da436bc01b1040c36752804def35ca4))
+
 # [3.13.0](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0) (2025-06-09)
 
 
