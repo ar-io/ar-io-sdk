@@ -106,10 +106,13 @@ export class AoANTReadable implements AoANTRead {
     }
 
     this.processId = this.process.processId;
-    this.hyperbeamUrl = new URL(
-      config.hyperbeamUrl || 'https://hyperbeam.ario.permaweb.services',
-    ).toString();
-    this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
+
+    // only use hyperbeam if the client has provided a hyperbeamUrl
+    // this will avoid overwhelming the HyperBeam node with requests
+    // as we shift using HyperBEAM for all ANT operations
+    if (config.hyperbeamUrl) {
+      this.hyperbeamUrl = new URL(config.hyperbeamUrl).toString();
+    }
   }
 
   /**
@@ -118,6 +121,10 @@ export class AoANTReadable implements AoANTRead {
    * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
    */
   private async checkHyperBeamCompatibility(): Promise<boolean> {
+    if (!this.hyperbeamUrl) {
+      return false;
+    }
+
     if (this.checkHyperBeamPromise !== undefined) {
       return this.checkHyperBeamPromise;
     }
