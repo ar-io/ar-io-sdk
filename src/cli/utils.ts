@@ -330,7 +330,7 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
   // TODO: Use a type for sortBy and we could assert against arrays of the fields we want sort by
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PaginationParams<R> {
-  const { cursor, limit, sortBy, sortOrder } = options;
+  const { cursor, limit, sortBy, sortOrder, filters } = options;
   if (sortOrder !== undefined && !['asc', 'desc'].includes(sortOrder)) {
     throw new Error(
       `Invalid sort order: ${sortOrder}, must be "asc" or "desc"`,
@@ -341,11 +341,33 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
   if (isNaN(numberLimit) || numberLimit <= 0) {
     throw new Error(`Invalid limit: ${numberLimit}, must be a positive number`);
   }
+
+  const filtersObject: Record<string, string[]> = {};
+
+  if (filters !== undefined) {
+    if (typeof filters !== 'object') {
+      throw new Error('Filters must be an object');
+    }
+
+    if (Array.isArray(filters)) {
+      // every odd value is a key, every even value is a value for that key
+      for (let i = 0; i < filters.length; i += 2) {
+        // convert any strings that are numbers to numbers
+        const value = filters[i + 1].split(',').map((v) => {
+          const num = +v;
+          return isNaN(num) ? v : num;
+        });
+        filtersObject[filters[i]] = value;
+      }
+    }
+  }
+
   return {
     cursor,
     limit: numberLimit,
     sortBy: sortBy as SortBy<R>,
     sortOrder,
+    filters: filtersObject as Record<keyof R, string | string[]>,
   };
 }
 

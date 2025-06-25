@@ -9,7 +9,6 @@
 ### Features
 
 * add referer support to ArNS purchase APIs (PE-8088) ([36034db](https://github.com/ar-io/ar-io-sdk/commit/36034db4f4611f1a05d6cb95fe8d42e46205c5a6))
-* add referer support to ArNS purchase APIs (PE-8088) ([5ab0a7e](https://github.com/ar-io/ar-io-sdk/commit/5ab0a7edec9b36cdb9d163edc0695cd2f51e59b3))
 
 ## [3.12.2](https://github.com/ar-io/ar-io-sdk/compare/v3.12.1...v3.12.2) (2025-06-02)
 

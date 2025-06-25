@@ -60,6 +60,9 @@ export const paginationParamsToTags = <T>(
     { name: 'Limit', value: params?.limit?.toString() },
     { name: 'Sort-By', value: params?.sortBy?.toString() },
     { name: 'Sort-Order', value: params?.sortOrder?.toString() },
+    ...(params?.filters
+      ? [{ name: 'Filters', value: JSON.stringify(params.filters) }]
+      : []),
   ];
 
   return pruneTags(tags);

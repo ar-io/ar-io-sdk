@@ -14,6 +14,7 @@ services:
       PROCESS_CHECKPOINT_TRUSTED_OWNERS: ${PROCESS_CHECKPOINT_TRUSTED_OWNERS:-fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY,-HFe6PleLxj1EdFMYMSetT2NIJioDsZIktn-Y0AwP54,WjnS-s03HWsDSdMnyTdzB1eHZB2QheUWP_FVRVYxkXk}
       GRAPHQL_URL: ${GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
       CHECKPOINT_GRAPHQL_URL: ${CHECKPOINT_GRAPHQL_URL:-https://arweave-search.goldsky.com/graphql}
+      PROCESS_WASM_MEMORY_MAX_LIMIT: ${PROCESS_WASM_MEMORY_MAX_LIMIT:-17179869184}
 
   faucet:
     image: ghcr.io/ar-io/ar-io-faucet:latest
