@@ -1,3 +1,11 @@
+## [3.14.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0...v3.14.1-alpha.1) (2025-06-25)
+
+
+### Bug Fixes
+
+* **ant:** add debug log when using hyperbeam for ant ([8c29ddd](https://github.com/ar-io/ar-io-sdk/commit/8c29ddd6ec09a4ec53a571782b89600284df32e1))
+* **ao:** return error cause for failed dry runs ([e4b25b5](https://github.com/ar-io/ar-io-sdk/commit/e4b25b5b589ffc2b7883ebab018157d90d2fa49f))
+
 # [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
 
 
