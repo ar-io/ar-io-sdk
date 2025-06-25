@@ -1,3 +1,34 @@
+# [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
+
+
+### Bug Fixes
+
+* **ant hb util:** add recursive lowercase util and unit tests ([8f868fa](https://github.com/ar-io/ar-io-sdk/commit/8f868fa3e62dee67c631f3fe3706cb9210d4204a))
+* **ant:** dont retry if cahed state is bad ([3c83c0f](https://github.com/ar-io/ar-io-sdk/commit/3c83c0fc9125bda7807fcb82de2ef8664fb72ed8))
+* **ant:** only call HyperBEAM URL if client provides it ([2f4b185](https://github.com/ar-io/ar-io-sdk/commit/2f4b1853fed04e8f12c2d100efb65f0d4ff76fdb))
+* **ants:** update retry logic and check ([2baade9](https://github.com/ar-io/ar-io-sdk/commit/2baade9654608e743126f11eb6404e315753a2fb))
+* **ant:** use utility to convert hyperbeam state, allow hyperbeam url on ANT instantiattion ([2587805](https://github.com/ar-io/ar-io-sdk/commit/2587805e8687db7cba3a854b99967ed4163e21a4))
+* **docs:** update changlog and remove extra file ([e53a84d](https://github.com/ar-io/ar-io-sdk/commit/e53a84dc65477c4ba35c9990c8fa237cc627b425))
+* **git:** use full commit history when releasing ([9a1db88](https://github.com/ar-io/ar-io-sdk/commit/9a1db88d4353cf7a35d733611e0b6e935bd05a8c))
+* **hb check:** use get instead of head request to check for cache ([9e71078](https://github.com/ar-io/ar-io-sdk/commit/9e71078772889d93d4a998bbee7aa7e8d524e869))
+* **hb fetch:** add retries to hb state fetch ([a386c89](https://github.com/ar-io/ar-io-sdk/commit/a386c8948cc4bbb8cd637c719b0932deb66b463b))
+* **hb util:** do not mutate balances keys as addresses are case sensitive ([e936914](https://github.com/ar-io/ar-io-sdk/commit/e936914cfb454dd9b1bc9d46c007ce64ba192212))
+* **hb:** add retries and fallback to hyperbeam calls ([66a8af0](https://github.com/ar-io/ar-io-sdk/commit/66a8af0ea3b0dcc82a54a0287d30fc5c9999e425))
+* **hb:** fix slash in hb url ([7165b4e](https://github.com/ar-io/ar-io-sdk/commit/7165b4e4403d9dd4ee588165fd6dbf28747a95fd))
+* **hb:** use state for balances ([fd032e4](https://github.com/ar-io/ar-io-sdk/commit/fd032e464641aec1a427e77b3920e1ad5f2a6e3c))
+* **hb:** utilize memoized result in checker ([386ed13](https://github.com/ar-io/ar-io-sdk/commit/386ed132fbfc9677a40276edf03a0377954f22d5))
+* **hyperbeam:** use hyperbeam.ario.permaweb.serivces by default on ANTs for hyperbeam ([4daa56a](https://github.com/ar-io/ar-io-sdk/commit/4daa56abc6ab62c80ee2becd9c1a9485bf1f3c42))
+* **spawn ant:** add hyperbeam patch compatibility to spawnANT ([75edb76](https://github.com/ar-io/ar-io-sdk/commit/75edb76289279c80b0faf3334c3e44493dcd617a))
+* **status:** retry on status 500 only ([e397981](https://github.com/ar-io/ar-io-sdk/commit/e397981af841401794c02eebf0dbbfea9929724c))
+* **url:** use configured hb url ([09a934c](https://github.com/ar-io/ar-io-sdk/commit/09a934c7c80beefef17e616fd7fccb799aed036a))
+* **util:** do not mangle arrays ([39612c9](https://github.com/ar-io/ar-io-sdk/commit/39612c97927644b072f731f37fed4029deafa1ce))
+
+
+### Features
+
+* **ants:** add support for fetching ant state from hyperbeam nodes ([f5cbc76](https://github.com/ar-io/ar-io-sdk/commit/f5cbc76a761f9f3633e4115cae556d58a6da69e0))
+* **pagination:** add filter suppor to paginatied handlers ([8445dca](https://github.com/ar-io/ar-io-sdk/commit/8445dcac0da436bc01b1040c36752804def35ca4))
+
 # [3.13.0](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0) (2025-06-09)
 
 
