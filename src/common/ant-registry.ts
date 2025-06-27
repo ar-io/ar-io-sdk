@@ -60,7 +60,7 @@ export class ANTRegistry {
 
 export class AoANTRegistryReadable implements AoANTRegistryRead {
   protected process: AOProcess;
-  private hyperbeamUrl: string;
+  private hyperbeamUrl: string | undefined;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
 
   constructor(config?: ANTRegistryConfigOptionalStrict) {
@@ -79,9 +79,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     }
 
     if (config?.hyperbeamUrl !== undefined) {
-      this.hyperbeamUrl = new URL(
-        config.hyperbeamUrl || 'https://hyperbeam.ario.permaweb.services',
-      ).toString();
+      this.hyperbeamUrl = new URL(config.hyperbeamUrl).toString();
       this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
     }
   }
@@ -92,6 +90,9 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
    * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
    */
   private async checkHyperBeamCompatibility(): Promise<boolean> {
+    if (this.hyperbeamUrl === undefined) {
+      return Promise.resolve(false);
+    }
     if (this.checkHyperBeamPromise !== undefined) {
       return this.checkHyperBeamPromise;
     }
@@ -128,7 +129,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             address,
           );
           const res = await fetch(
-            `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl/${address}/serialize~json@1.0`,
+            `${this.hyperbeamUrl?.toString()}${this.process.processId}~process@1.0/now/cache/acl/${address}/serialize~json@1.0`,
           );
           if (res.status !== 200) {
             console.debug(
