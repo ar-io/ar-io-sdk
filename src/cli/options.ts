@@ -46,6 +46,14 @@ export const optionMap = {
     alias: '--ario-process-id <arioProcessId>',
     description: 'Run against a custom AR.IO process id',
   },
+  antRegistryProcessId: {
+    alias: '--ant-registry-process-id <antRegistryProcessId>',
+    description: 'Run against a custom ANT registry process id',
+  },
+  hyperbeamUrl: {
+    alias: '--hyperbeam-url <hyperbeamUrl>',
+    description: 'The URL for a custom hyperbeam node',
+  },
   cuUrl: {
     alias: '--cu-url <cuUrl>',
     description: 'The URL for a custom compute unit',
