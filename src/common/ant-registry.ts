@@ -98,7 +98,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     }
     console.debug('Checking HyperBeam compatibility');
     this.checkHyperBeamPromise = fetch(
-      `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache`,
+      `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/acl`,
       {
         method: 'HEAD',
       },
@@ -131,6 +131,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
           const res = await fetch(
             `${this.hyperbeamUrl?.toString()}${this.process.processId}~process@1.0/now/cache/acl/${address}/serialize~json@1.0`,
           );
+
           if (res.status !== 200) {
             console.debug(
               'Failed to fetch ant registry acl for address from hyperbeam',
@@ -146,7 +147,14 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             'Fetched ant registry acl for address from hyperbeam',
             address,
           );
-          return (await res.json()) as {
+          const json = (await res.json()) as {
+            owned: string[];
+            controlled: string[];
+          };
+          return {
+            Owned: json.owned,
+            Controlled: json.controlled,
+          } as {
             Owned: string[];
             Controlled: string[];
           };
