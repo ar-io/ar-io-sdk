@@ -98,7 +98,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     }
     console.debug('Checking HyperBeam compatibility');
     this.checkHyperBeamPromise = fetch(
-      `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/acl`,
+      `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl`,
       {
         method: 'HEAD',
       },
