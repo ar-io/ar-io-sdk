@@ -29,14 +29,16 @@ import {
 import { createAoSigner } from '../utils/ao.js';
 import { AOProcess, InvalidContractConfigurationError } from './index.js';
 
-type ANTRegistryConfigOptionalStrict = Required<ProcessConfiguration> & {
+type ANTRegistryConfig = Required<ProcessConfiguration> & {
   strict?: boolean;
   hyperbeamUrl?: string;
 };
 
-type ANTRegistryNoSigner = ANTRegistryConfigOptionalStrict;
-type ANTRegistryWithSigner = WithSigner<ANTRegistryConfigOptionalStrict>;
-type ANTRegistryConfig = ANTRegistryNoSigner | ANTRegistryWithSigner;
+type ANTRegistryNoSigner = ANTRegistryConfig;
+type ANTRegistryWithSigner = WithSigner<ANTRegistryConfig>;
+type ANTRegistryConfigOptionalSigner =
+  | ANTRegistryNoSigner
+  | ANTRegistryWithSigner;
 
 export class ANTRegistry {
   // by default give read
@@ -49,7 +51,7 @@ export class ANTRegistry {
   static init(config: ANTRegistryWithSigner): AoANTRegistryWrite;
 
   static init(
-    config?: ANTRegistryConfig,
+    config?: ANTRegistryConfigOptionalSigner,
   ): AoANTRegistryRead | AoANTRegistryWrite {
     if (config !== undefined && 'signer' in config) {
       return new AoANTRegistryWriteable(config);
@@ -63,7 +65,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
   private hyperbeamUrl: string | undefined;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
 
-  constructor(config?: ANTRegistryConfigOptionalStrict) {
+  constructor(config?: ANTRegistryConfig) {
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ANT_REGISTRY_ID,
@@ -191,10 +193,7 @@ export class AoANTRegistryWriteable
 {
   private signer: AoSigner;
 
-  constructor({
-    signer,
-    ...config
-  }: WithSigner<ANTRegistryConfigOptionalStrict>) {
+  constructor({ signer, ...config }: WithSigner<ANTRegistryConfig>) {
     super(config);
     this.signer = createAoSigner(signer);
   }
