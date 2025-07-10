@@ -150,15 +150,12 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             address,
           );
           const json = (await res.json()) as {
-            owned: string[];
-            controlled: string[];
-          };
-          return {
-            Owned: json.owned,
-            Controlled: json.controlled,
-          } as {
             Owned: string[];
             Controlled: string[];
+          };
+          return {
+            Owned: json.Owned,
+            Controlled: json.Controlled,
           };
         } catch (error) {
           retries++;
