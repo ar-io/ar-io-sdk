@@ -40,6 +40,7 @@ import {
   fundFromFromOptions,
   getTokenCostParamsFromOptions,
   paginationParamsFromOptions,
+  readANTRegistryFromOptions,
   readARIOFromOptions,
   requiredAddressFromOptions,
   requiredStringFromOptions,
@@ -289,4 +290,12 @@ export async function resolveArNSName(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
   const result = await readARIOFromOptions(o).resolveArNSName({ name });
   return result ?? { message: `No record found for name ${name}` };
+}
+
+export async function listAntsForAddress(o: AddressCLIOptions) {
+  const address = requiredAddressFromOptions(o);
+  const result = await readANTRegistryFromOptions(o).accessControlList({
+    address,
+  });
+  return result ?? { message: `No ANTs found for address ${address}` };
 }

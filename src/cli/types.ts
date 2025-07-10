@@ -37,6 +37,8 @@ export type GlobalCLIOptions = WalletCLIOptions & {
   mainnet: boolean;
   debug: boolean;
   arioProcessId?: string;
+  antRegistryProcessId?: string;
+  hyperbeamUrl?: string;
   cuUrl?: string;
   paymentUrl?: string;
 };
