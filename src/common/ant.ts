@@ -89,7 +89,7 @@ export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
   public readonly processId: string;
   private strict: boolean;
-  private hyperbeamUrl: string;
+  private hyperbeamUrl: URL | undefined;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
   private logger: Logger = Logger.default;
 
@@ -110,8 +110,11 @@ export class AoANTReadable implements AoANTRead {
     // only use hyperbeam if the client has provided a hyperbeamUrl
     // this will avoid overwhelming the HyperBeam node with requests
     // as we shift using HyperBEAM for all ANT operations
-    if (config.hyperbeamUrl) {
-      this.hyperbeamUrl = new URL(config.hyperbeamUrl).toString();
+    if (config.hyperbeamUrl !== undefined) {
+      this.hyperbeamUrl = new URL(config.hyperbeamUrl);
+      this.logger.debug(`Using HyperBEAM node for process ${this.processId}`, {
+        hyperbeamUrl: this.hyperbeamUrl,
+      });
     }
   }
 
@@ -120,9 +123,9 @@ export class AoANTReadable implements AoANTRead {
    *
    * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
    */
-  private async checkHyperBeamCompatibility(): Promise<boolean> {
-    if (!this.hyperbeamUrl) {
-      return false;
+  private checkHyperBeamCompatibility(): Promise<boolean> {
+    if (this.hyperbeamUrl === undefined) {
+      return Promise.resolve(false);
     }
 
     if (this.checkHyperBeamPromise !== undefined) {

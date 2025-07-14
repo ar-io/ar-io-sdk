@@ -357,10 +357,12 @@ export function errorMessageFromOutput(output: {
     output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
 
   if (error !== undefined) {
-    // Consolidated regex to match and extract line number and AO error message or Error Tags
-    const match = error.match(/\[string "aos"]:(\d+):\s*(.+)/);
+    // Regex to match AO error messages like: [string ".src.main"]:5111: Primary name data not found
+    // or [string "aos"]:128: some error
+    const match = error.match(/\[string "(.+)"\]:(\d+):\s*(.*)/);
     if (match) {
-      const [, lineNumber, errorMessage] = match;
+      // The first group is the src file, the second is the line number, and the third is the error message
+      const [, , lineNumber, errorMessage] = match;
       const cleanError = removeUnicodeFromError(errorMessage);
       return `${cleanError.trim()} (line ${lineNumber.trim()})`.trim();
     }
