@@ -138,6 +138,16 @@ describe('errorMessageFromOutput', () => {
 
     assert.equal(errorMessage, 'Already registered (line 128)');
   });
+
+  it('should return error message with src file, line number and remove unicode', () => {
+    const output = {
+      Error: '[string ".src.main"]:123: Error message\u001b[0m',
+    };
+
+    const errorMessage = errorMessageFromOutput(output);
+
+    assert.equal(errorMessage, 'Error message (line 123)');
+  });
 });
 
 describe('sortAndPaginateEpochDataIntoEligibleDistributions', () => {
