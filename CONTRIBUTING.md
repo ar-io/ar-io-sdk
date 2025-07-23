@@ -28,7 +28,7 @@ NOTE: Contribution implies licensing under the terms of [LICENSE].
 - Once the changes been validated in a pre-release package, a PR will then be created **by the team** from `alpha` to `main`. When merged, a new release package will be created (e.g. `1.1.0`) and available in [npm registry] and [Github releases].
 - After release, `main` should me merged back into `alpha`, so future PR's will be based on the latest code.
 
-[license]: ./LICENSE
+[license]: ./LICENSE.md
 [conventional commits]: https://www.conventionalcommits.org/en/v1.0.0/
 [lint and format]: https://github.com/ar-io/ar-io-sdk/tree/main#linting--formatting
 [tests]: https://github.com/ar-io/ar-io-sdk/tree/main#tests
