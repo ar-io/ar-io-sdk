@@ -345,32 +345,59 @@ export function parseAoEpochData(
   return epochDataSchema.parse(value) as AoEpochData<AoEpochDistributed>;
 }
 
-export function errorMessageFromOutput(output: {
+export function isAoOutputMessage(output: unknown): output is {
   Error?: string;
   Messages?: { Tags?: { name: string; value: string }[] }[];
-}): string | undefined {
-  const errorData = output.Error;
+} {
+  return (
+    typeof output === 'object' &&
+    output !== null &&
+    ('Error' in output || 'Messages' in output)
+  );
+}
 
-  // Attempt to extract error details from Messages.Tags if Error is undefined
-  const error =
-    errorData ??
-    output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
-
-  if (error !== undefined) {
-    // Regex to match AO error messages like: [string ".src.main"]:5111: Primary name data not found
-    // or [string "aos"]:128: some error
-    const match = error.match(/\[string "(.+)"\]:(\d+):\s*(.*)/);
-    if (match) {
-      // The first group is the src file, the second is the line number, and the third is the error message
-      const [, , lineNumber, errorMessage] = match;
-      const cleanError = removeUnicodeFromError(errorMessage);
-      return `${cleanError.trim()} (line ${lineNumber.trim()})`.trim();
-    }
-    // With no match, just remove unicode
-    return removeUnicodeFromError(error);
+export function errorMessageFromDryRunResult(
+  dryRunResult: unknown,
+): string | undefined {
+  if (
+    typeof dryRunResult === 'object' &&
+    dryRunResult !== null &&
+    'error' in dryRunResult &&
+    typeof dryRunResult.error === 'string'
+  ) {
+    return dryRunResult.error;
+  } else if (isAoOutputMessage(dryRunResult)) {
+    return errorMessageFromOutput(dryRunResult) ?? 'Unknown error';
   }
 
   return undefined;
+}
+
+export function errorMessageFromOutput(output: // an ao process response
+{
+  Error?: string;
+  Messages?: { Tags?: { name: string; value: string }[] }[];
+}): string | undefined {
+  const error =
+    output.Error ??
+    output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
+
+  if (error === undefined) {
+    // no parse error, return undefined to indicate no error
+    return undefined;
+  }
+
+  // Regex to match AO error messages like: [string ".src.main"]:5111: Primary name data not found
+  // or [string "aos"]:128: some error
+  const match = error.match(/\[string "(.+)"\]:(\d+):\s*(.*)/);
+  if (match) {
+    // The first group is the src file, the second is the line number, and the third is the error message
+    const [, , lineNumber, errorMessage] = match;
+    const cleanError = removeUnicodeFromError(errorMessage);
+    return `${cleanError.trim()} (line ${lineNumber.trim()})`.trim();
+  }
+  // With no match, just remove unicode
+  return removeUnicodeFromError(error);
 }
 
 export function removeUnicodeFromError(error: string): string {

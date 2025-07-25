@@ -23,7 +23,10 @@ import {
   MessageResult,
 } from '../../types/index.js';
 import { getRandomText } from '../../utils/base64.js';
-import { errorMessageFromOutput } from '../../utils/index.js';
+import {
+  errorMessageFromDryRunResult,
+  errorMessageFromOutput,
+} from '../../utils/index.js';
 import { safeDecode } from '../../utils/json.js';
 import { version } from '../../version.js';
 import { WriteInteractionError } from '../error.js';
@@ -130,7 +133,7 @@ export class AOProcess implements AOContract {
       processId: this.processId,
     });
 
-    const error = errorMessageFromOutput(result);
+    const error = errorMessageFromDryRunResult(result);
     if (error !== undefined) {
       throw new Error(error);
     }
