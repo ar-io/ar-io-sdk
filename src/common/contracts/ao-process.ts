@@ -107,7 +107,10 @@ export class AOProcess implements AOContract {
             ao: JSON.stringify(this.ao),
           });
           throw new Error(
-            `Failed to evaluate a dry-run on process ${this.processId}.`,
+            `Failed to evaluate dry-run on process ${this.processId}.`,
+            {
+              cause: error,
+            },
           );
         }
 

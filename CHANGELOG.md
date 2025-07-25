@@ -1,10 +1,23 @@
+# [3.15.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.14.1-alpha.2...v3.15.0-alpha.1) (2025-07-25)
+
+
+### Bug Fixes
+
+* **ant:** add hyperbeam timeout to avoid hanging requests ([0627d6e](https://github.com/ar-io/ar-io-sdk/commit/0627d6edbe690fc147ef4650ac5fb1843c9e4eff))
+* **cli:** publish patch for alpha build ([66d5399](https://github.com/ar-io/ar-io-sdk/commit/66d539928130dde6ecbb5e33707e9c80ce78bff4))
+
+
+### Features
+
+* **ants:** add new API for fetching ants ([9a6c7b6](https://github.com/ar-io/ar-io-sdk/commit/9a6c7b6a2148fcc7ac0e5446843138228cec627e))
+
 # [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
 
 
 ### Features
 
 * **ants:** add support for fetching ant state from hyperbeam nodes ([f5cbc76](https://github.com/ar-io/ar-io-sdk/commit/f5cbc76a761f9f3633e4115cae556d58a6da69e0))
-* **pagination:** add filter suppor to paginatied handlers ([8445dca](https://github.com/ar-io/ar-io-sdk/commit/8445dcac0da436bc01b1040c36752804def35ca4))
+* **pagination:** add filter support to paginated handlers ([8445dca](https://github.com/ar-io/ar-io-sdk/commit/8445dcac0da436bc01b1040c36752804def35ca4))
 
 # [3.13.0](https://github.com/ar-io/ar-io-sdk/compare/v3.12.2...v3.13.0) (2025-06-09)
 

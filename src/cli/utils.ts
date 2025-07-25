@@ -22,6 +22,8 @@ import prompts from 'prompts';
 
 import {
   ANT,
+  ANTRegistry,
+  ANT_REGISTRY_ID,
   AOProcess,
   ARIO,
   ARIOToken,
@@ -29,6 +31,7 @@ import {
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
   AoANTRead,
+  AoANTRegistryRead,
   AoANTWrite,
   AoARIORead,
   AoARIOWrite,
@@ -226,6 +229,27 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
       ...options,
     }),
     paymentUrl: options.paymentUrl,
+  });
+}
+
+export function ANTRegistryProcessFromOptions(
+  options: ProcessIdCLIOptions,
+): AOProcess {
+  return new AOProcess({
+    processId: options.antRegistryProcessId ?? ANT_REGISTRY_ID,
+    ao: connect({
+      MODE: 'legacy',
+      CU_URL: options.cuUrl,
+    }),
+  });
+}
+
+export function readANTRegistryFromOptions(
+  options: ProcessIdCLIOptions,
+): AoANTRegistryRead {
+  return ANTRegistry.init({
+    process: ANTRegistryProcessFromOptions(options),
+    hyperbeamUrl: options.hyperbeamUrl,
   });
 }
 

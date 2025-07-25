@@ -63,6 +63,7 @@ import {
   getTokenCost,
   getVault,
   listAllDelegatesCLICommand,
+  listAntsForAddress,
   listArNSRecords,
   listArNSReservedNames,
   listArNSReturnedNames,
@@ -628,6 +629,19 @@ makeCommand({
   description: 'Request a primary name',
   options: arnsPurchaseOptions,
   action: requestPrimaryNameCLICommand,
+});
+
+// # ANT Registry
+makeCommand({
+  name: 'get-ants-for-address',
+  description:
+    'Get the list of ANTs owned by an address according to the ANT registry',
+  options: [
+    optionMap.address,
+    optionMap.antRegistryProcessId,
+    optionMap.hyperbeamUrl,
+  ],
+  action: listAntsForAddress,
 });
 
 // # ANTS
