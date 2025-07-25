@@ -190,7 +190,10 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     });
   }
 
-  // a cleaner DX for fetching ANTs for an address
+  /*
+   * This is the same as accessControlList, but with a cleaner DX to make it clearer
+   * that we're fetching the list of ANTs owned or controlled by an address.
+   */
   async getAntsForAddress({
     address,
   }: {
