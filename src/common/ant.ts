@@ -136,6 +136,7 @@ export class AoANTReadable implements AoANTRead {
       `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       },
     ).then((res) => {
       if (res.ok) {

@@ -110,6 +110,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
       `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl`,
       {
         method: 'HEAD',
+        signal: AbortSignal.timeout(5000), // 5 second timeout
       },
     ).then((res) => {
       if (res.ok) {
