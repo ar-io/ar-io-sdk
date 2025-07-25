@@ -189,6 +189,15 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
       ],
     });
   }
+
+  // a cleaner DX for fetching ANTs for an address
+  async getAntsForAddress({
+    address,
+  }: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }> {
+    return this.accessControlList({ address });
+  }
 }
 
 export class AoANTRegistryWriteable
