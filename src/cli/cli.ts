@@ -633,8 +633,9 @@ makeCommand({
 
 // # ANT Registry
 makeCommand({
-  name: 'get-ant-registry-acl',
-  description: 'Get the ACL of an ANT registry',
+  name: 'get-ants-for-address',
+  description:
+    'Get the list of ANTs owned by an address according to the ANT registry',
   options: [
     optionMap.address,
     optionMap.antRegistryProcessId,
