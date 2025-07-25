@@ -1,3 +1,26 @@
+# [3.15.0](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0...v3.15.0) (2025-07-25)
+
+
+### Bug Fixes
+
+* **acl:** use uppercase keys in acl fetch ([88cf858](https://github.com/ar-io/ar-io-sdk/commit/88cf85833c044b485da8b0d7e4c058316098dff6))
+* **ant registry:** add logger to configuration for ant registry ([e548f02](https://github.com/ar-io/ar-io-sdk/commit/e548f022744224cea86d2df88b682b41d932ca0e))
+* **ant:** add debug log when using hyperbeam for ant ([8c29ddd](https://github.com/ar-io/ar-io-sdk/commit/8c29ddd6ec09a4ec53a571782b89600284df32e1))
+* **ant:** add hyperbeam timeout to avoid hanging requests ([0627d6e](https://github.com/ar-io/ar-io-sdk/commit/0627d6edbe690fc147ef4650ac5fb1843c9e4eff))
+* **ao:** format all error messages, not just aos ones ([38adebf](https://github.com/ar-io/ar-io-sdk/commit/38adebf575697a5a43c3a331594791a4a20a358c))
+* **ao:** return error cause for failed dry runs ([e4b25b5](https://github.com/ar-io/ar-io-sdk/commit/e4b25b5b589ffc2b7883ebab018157d90d2fa49f))
+* **cli:** add cli command for listing an addresses ants ([b9e0c83](https://github.com/ar-io/ar-io-sdk/commit/b9e0c831850e7662bf570f2f69767f648c7e8507))
+* **cli:** publish patch for alpha build ([66d5399](https://github.com/ar-io/ar-io-sdk/commit/66d539928130dde6ecbb5e33707e9c80ce78bff4))
+* **hb:** do not default hb url ([3b0ec00](https://github.com/ar-io/ar-io-sdk/commit/3b0ec00c2fdcb4b67644e2e4b6d172a76d97da4f))
+* **hb:** use cache key to access acl ([873d356](https://github.com/ar-io/ar-io-sdk/commit/873d356739797f861d2d5bd3c042888f52c4b995))
+* **types:** better names for types ([8134184](https://github.com/ar-io/ar-io-sdk/commit/813418473ba0f82bbd9debc08dd71b0a2096408e))
+* **types:** rename types for ant registry config ([0970a50](https://github.com/ar-io/ar-io-sdk/commit/0970a50d8f9baefe6224324251f28dc359cb7856))
+
+
+### Features
+
+* **ants:** add new API for fetching ants ([9a6c7b6](https://github.com/ar-io/ar-io-sdk/commit/9a6c7b6a2148fcc7ac0e5446843138228cec627e))
+
 # [3.15.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.14.1-alpha.2...v3.15.0-alpha.1) (2025-07-25)
 
 
