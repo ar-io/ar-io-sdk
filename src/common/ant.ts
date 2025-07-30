@@ -31,7 +31,6 @@ import {
   AoANTSetBaseNameRecordParams,
   AoANTSetUndernameRecordParams,
   AoANTState,
-  AoANTVersionsRead,
   AoANTWrite,
   HyperBeamANTState,
   SortedANTRecords,
@@ -51,7 +50,7 @@ import {
   isHyperBeamANTState,
   sortANTRecords,
 } from '../utils/ant.js';
-import { createAoSigner } from '../utils/ao.js';
+import { createAoSigner, spawnANT } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
 import {
@@ -69,7 +68,14 @@ type ANTConfigWithSigner = WithSigner<ANTConfigOptionalStrict>;
 type ANTConfig = ANTConfigNoSigner | ANTConfigWithSigner;
 
 export class ANT {
-  static versions: AoANTVersionsRead = ANTVersions.init();
+  /**
+   * Versions of ANTs according to the ANT registry.
+   */
+  static versions = ANTVersions.init();
+  /**
+   * Spawn a new ANT.
+   */
+  static spawn = spawnANT;
   // no signer give read
   static init(config: ANTConfigNoSigner): AoANTRead;
 

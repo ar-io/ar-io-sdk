@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { ANT } from '../../common/ant.js';
 import {
   AoArNSPurchaseParams,
   AoBuyRecordParams,
@@ -43,12 +44,7 @@ export async function buyRecordCLICommand(
   const years = positiveIntegerFromOptions(o, 'years');
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
-
   const processId = o.processId;
-  if (processId === undefined) {
-    // TODO: Spawn ANT process, register it to ANT registry, get process ID
-    throw new Error('Process ID must be provided for buy-record');
-  }
 
   if (!o.skipConfirmation) {
     const existingRecord = await ario.getArNSRecord({
@@ -71,8 +67,15 @@ export async function buyRecordCLICommand(
       },
     });
 
+    // assert spawn new ant with module id
+    let antSpawnConfirmation = '';
+    if (processId === undefined) {
+      const { moduleId, version } = await ANT.versions.getLatestANTVersion();
+      antSpawnConfirmation = `Note: A new ANT process will be spawned with module ${moduleId} (v${version})) and assigned to this name.`;
+    }
+
     await assertConfirmationPrompt(
-      `Are you sure you want to ${type} the record ${name}?`,
+      `Are you sure you want to ${type} the record ${name}? ${antSpawnConfirmation}`,
       o,
     );
   }

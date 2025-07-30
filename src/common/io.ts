@@ -88,7 +88,7 @@ import {
   isProcessIdConfiguration,
   mARIOToken,
 } from '../types/index.js';
-import { createAoSigner } from '../utils/ao.js';
+import { createAoSigner, spawnANT } from '../utils/ao.js';
 import {
   getEpochDataFromGqlWithCUFallback,
   paginationParamsToTags,
@@ -101,6 +101,7 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
+import { Logger } from './logger.js';
 import {
   TurboArNSPaymentFactory,
   TurboArNSPaymentProviderAuthenticated,
@@ -214,6 +215,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
   protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
+  protected logger = Logger.default;
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
@@ -1420,6 +1422,20 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     params: AoBuyRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    // spawn a new ANT if not provided
+    if (params.processId === undefined) {
+      try {
+        params.processId = await spawnANT({
+          signer: this.signer,
+          ao: this.process.ao,
+          logger: this.logger,
+        });
+      } catch (error) {
+        throw new Error('Failed to spawn ANT for name purchase.', error);
+      }
+    }
+
+    // pay with turbo credits if available
     if (params.fundFrom === 'turbo') {
       if (
         !(this.paymentProvider instanceof TurboArNSPaymentProviderAuthenticated)
