@@ -18,12 +18,12 @@ import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
 
+import { ANTVersions } from '../common/ant-versions.js';
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
-  AOS_MODULE_ID,
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
@@ -35,6 +35,7 @@ import {
   AoSigner,
   ContractSigner,
   MessageResult,
+  ProcessId,
   WalletAddress,
 } from '../types/index.js';
 import { parseSchemaResult } from './schema.js';
@@ -61,7 +62,7 @@ export type SpawnANTParams = {
 
 export async function spawnANT({
   signer,
-  module = AOS_MODULE_ID,
+  module,
   ao = connect({
     MODE: 'legacy',
   }),
@@ -70,10 +71,21 @@ export async function spawnANT({
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   authority = AO_AUTHORITY,
-}: SpawnANTParams): Promise<string> {
+}: SpawnANTParams): Promise<ProcessId> {
   if (state) {
     parseSchemaResult(SpawnANTStateSchema, state);
   }
+
+  if (module === undefined) {
+    const antVersions = ANTVersions.init({
+      processId: antRegistryId,
+      // TODO: allow passing ao to init
+    });
+    const { moduleId: latestAntModule } =
+      await antVersions.getLatestANTVersion();
+    module = latestAntModule;
+  }
+
   const processId = await ao.spawn({
     module,
     scheduler,
@@ -159,6 +171,13 @@ export async function spawnANT({
   return processId;
 }
 
+// TODO: add a utility for forking an ANT to the latest module that leverages getState and spawnANT
+
+/**
+ * @deprecated
+ * Direct Evals are not encouraged when dealing with ANTs.
+ * Instead, use spawnANT to fork an ANT to new module source code
+ */
 export async function evolveANT({
   signer,
   processId,
@@ -181,6 +200,8 @@ export async function evolveANT({
     ao,
     logger,
   });
+
+  logger.warn('Directly running an Eval on a process is not encouraged.');
 
   //TODO: cache locally and only fetch if not cached
   // We do not use arweave to get the data because it may throw on l2 tx data
