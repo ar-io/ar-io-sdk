@@ -17,6 +17,7 @@ import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
 import {
+  ANT_REGISTRY_ID,
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
 } from '../constants.js';
@@ -97,6 +98,7 @@ import {
   removeEligibleRewardsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
+import { ANTRegistry } from './ant-registry.js';
 import { ANT } from './ant.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
@@ -1001,6 +1003,72 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       processId: nameData.processId,
       undernameLimit: nameData.undernameLimit,
       type: nameData.type,
+    };
+  }
+
+  /**
+   * Get all ARNS names associated with an address using the provided ANT registry address.
+   *
+   * By default it will use the mainnet ANT registry address.
+   *
+   * @param {Object} params - The parameters for fetching ARNS names
+   * @param {string} params.address - The address to fetch the ARNS names for
+   * @returns {Promise<AoArNSNameData[]>} The ARNS names associated with the address
+   */
+  async getArNSRecordsForAddress(
+    params: PaginationParams<AoArNSNameDataWithName> & {
+      antRegistryId?: string;
+      address: WalletAddress;
+    },
+  ): Promise<
+    PaginationResult<AoArNSNameDataWithName & { role: 'controller' | 'owner' }>
+  > {
+    const { antRegistryId = ANT_REGISTRY_ID, address } = params;
+    // create the ant registry
+    const antRegistry = ANTRegistry.init({
+      process: new AOProcess({
+        ao: this.process.ao,
+        processId: antRegistryId,
+      }),
+    });
+
+    // TODO: this could be memoized to avoid re-fetching the ACL for the same address
+    const { Controlled = [], Owned = [] } = await antRegistry.accessControlList(
+      {
+        address,
+      },
+    );
+
+    const allProcessIds = [...Controlled, ...Owned];
+
+    if (allProcessIds.length === 0) {
+      return {
+        items: [],
+        limit: 0,
+        totalItems: 0,
+        sortOrder: 'asc',
+        hasMore: false,
+      };
+    }
+
+    const namesForPage = await this.getArNSRecords({
+      ...params,
+      filters: {
+        // TODO: this filters cannot be larger than whatever AO allows for dry-runs, investigate and batch the requests if needed
+        processId: allProcessIds,
+      },
+    });
+
+    const namesWithRole: (AoArNSNameDataWithName & {
+      role: 'controller' | 'owner';
+    })[] = namesForPage.items.map((name) => ({
+      ...name,
+      role: Owned.includes(name.processId) ? 'owner' : 'controller',
+    }));
+
+    return {
+      ...namesForPage,
+      items: namesWithRole,
     };
   }
 }

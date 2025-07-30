@@ -133,6 +133,20 @@ export async function listArNSRecords(o: PaginationCLIOptions) {
   return records.items.length ? records : { message: 'No records found' };
 }
 
+export async function listArNSRecordsForAddress(o: PaginationCLIOptions) {
+  const paginationParams = paginationParamsFromOptions<
+    PaginationCLIOptions,
+    AoArNSNameDataWithName
+  >(o);
+  const address = requiredAddressFromOptions(o);
+  const names = await readARIOFromOptions(o).getArNSRecordsForAddress({
+    ...paginationParams,
+    address,
+    antRegistryProcessId: o.antRegistryProcessId,
+  });
+  return names.items.length ? names : { message: 'No names found' };
+}
+
 export async function getArNSReservedName(o: NameCLIOptions) {
   const name = requiredStringFromOptions(o, 'name');
   return (
