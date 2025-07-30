@@ -65,6 +65,7 @@ import {
   listAllDelegatesCLICommand,
   listAntsForAddress,
   listArNSRecords,
+  listArNSRecordsForAddress,
   listArNSReservedNames,
   listArNSReturnedNames,
   listGateways,
@@ -401,6 +402,17 @@ makeCommand({
   description: 'List all ArNS records',
   options: paginationOptions,
   action: listArNSRecords,
+});
+
+makeCommand({
+  name: 'list-arns-names-for-address',
+  description: 'List all ArNS names for an address',
+  options: [
+    ...paginationOptions,
+    optionMap.address,
+    optionMap.antRegistryProcessId,
+  ],
+  action: listArNSRecordsForAddress,
 });
 
 makeCommand({
