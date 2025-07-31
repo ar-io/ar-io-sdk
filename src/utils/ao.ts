@@ -81,8 +81,7 @@ export async function spawnANT({
       processId: antRegistryId,
       // TODO: allow passing ao to init
     });
-    const { moduleId: latestAntModule } =
-      await antVersions.getLatestANTVersion();
+    const { moduleId: latestAntModule } = await antVersions.getLatest();
     module = latestAntModule;
   }
 

@@ -53,6 +53,16 @@ export class ANTVersions {
 
 export class ANTVersionsReadable implements AoANTVersionsRead {
   protected process: AOProcess;
+
+  /**
+   * @deprecated use getLatest()
+   */
+  getLatestANTVersion = this.getLatest;
+  /**
+   * @deprecated use `getVersions()` to get all versions.
+   */
+  getANTVersions = this.getVersions;
+
   constructor(config?: ProcessConfiguration) {
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
@@ -68,7 +78,8 @@ export class ANTVersionsReadable implements AoANTVersionsRead {
       throw new InvalidContractConfigurationError();
     }
   }
-  async getANTVersions(): Promise<
+
+  async getVersions(): Promise<
     Record<string, { moduleId: string; luaSourceId?: string; notes: string }>
   > {
     const res = await this.process.read<
@@ -81,18 +92,19 @@ export class ANTVersionsReadable implements AoANTVersionsRead {
     );
   }
 
-  async getLatestANTVersion(): Promise<{
+  async getLatest(): Promise<{
     version: string;
     moduleId: string;
     luaSourceId?: string;
     notes?: string;
   }> {
     const versions = await this.getANTVersions();
-    const lastestVersion = Object.entries(versions).at(-1);
-    if (!lastestVersion) throw new Error('No version found');
+    // TODO: latest should be returned by the registry vs local sort here
+    const latestVersion = Object.entries(versions).at(-1);
+    if (!latestVersion) throw new Error('No version found');
     return {
-      version: lastestVersion[0],
-      ...lastestVersion[1],
+      version: latestVersion[0],
+      ...latestVersion[1],
     };
   }
 }

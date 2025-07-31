@@ -289,9 +289,24 @@ export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
 };
 
 export interface AoANTVersionsRead {
+  getLatest(): Promise<{
+    version: string;
+    moduleId: string;
+    luaSourceId?: string;
+    notes?: string;
+  }>;
+  getVersions(): Promise<
+    Record<string, { moduleId: string; luaSourceId?: string; notes?: string }>
+  >;
+  /**
+   * @deprecated use getVersions()
+   */
   getANTVersions(): Promise<
     Record<string, { moduleId: string; luaSourceId?: string; notes?: string }>
   >;
+  /**
+   * @deprecated use getLatest()
+   */
   getLatestANTVersion(): Promise<{
     version: string;
     moduleId: string;
