@@ -78,8 +78,11 @@ export async function spawnANT({
 
   if (module === undefined) {
     const antVersions = ANTVersions.init({
-      processId: antRegistryId,
-      // TODO: allow passing ao to init
+      process: new AOProcess({
+        processId: antRegistryId,
+        ao,
+        logger,
+      }),
     });
     const { moduleId: latestAntModule, version } =
       await antVersions.getLatestANTVersion();
