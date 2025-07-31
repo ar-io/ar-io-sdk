@@ -1425,7 +1425,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     // spawn a new ANT if not provided
     if (params.processId === undefined) {
       try {
-        params.processId = await spawnANT({
+        params.processId = await ANT.spawn({
           signer: this.signer,
           ao: this.process.ao,
           logger: this.logger,

@@ -81,8 +81,13 @@ export async function spawnANT({
       processId: antRegistryId,
       // TODO: allow passing ao to init
     });
-    const { moduleId: latestAntModule } =
+    const { moduleId: latestAntModule, version } =
       await antVersions.getLatestANTVersion();
+    logger.debug('Spawning new ANT with latest module from ANT registry', {
+      moduleId: latestAntModule,
+      version,
+      antRegistryId,
+    });
     module = latestAntModule;
   }
 
@@ -104,52 +109,65 @@ export async function spawnANT({
     ],
   });
 
-  let bootRes: MessageResult | undefined;
-  let attempts = 0;
-  while (attempts < 5 && bootRes === undefined) {
-    try {
-      if (bootRes === undefined) {
-        bootRes = await ao.result({
-          process: processId,
-          message: processId,
-        });
-      }
+  /**
+   * Note: if we are given a state, ensure the ANT was initialized with it
+   * there is a bug in the ANT source where we try to parse the empty default
+   * 'Data' string as JSON that causes the Invalid-Boot-Notice error, even though
+   * the ANT was initialized with the default state set by the ANT source code.
+   *
+   * Reference: https://github.com/ar-io/ar-io-ant-process/blob/b89018ffcce079add2e90e7ab82d0bbc9b671346/src/common/main.lua#L355-L358
+   */
+  if (state !== undefined) {
+    let bootRes: MessageResult | undefined;
+    let attempts = 0;
+    while (attempts < 5 && bootRes === undefined) {
+      try {
+        if (bootRes === undefined) {
+          bootRes = await ao.result({
+            process: processId,
+            message: processId,
+          });
+        }
 
-      break;
-    } catch (error) {
-      logger.debug('Retrying ANT boot result fetch', {
+        break;
+      } catch (error) {
+        logger.debug('Retrying ANT boot result fetch', {
+          processId,
+          module,
+          scheduler,
+          attempts,
+          error,
+        });
+        attempts++;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * attempts ** 2),
+        );
+      }
+    }
+
+    if (
+      bootRes === undefined ||
+      bootRes.Messages?.some((m) =>
+        m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
+      )
+    ) {
+      if (bootRes === undefined) {
+        // …
+        throw new Error('Failed to get boot result');
+      }
+      const bootError = errorMessageFromOutput(bootRes);
+      logger.error('ANT failed to boot correctly', {
         processId,
         module,
         scheduler,
-        attempts,
-        error,
+        bootRes,
+        bootError,
       });
-      attempts++;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attempts ** 2));
+
+      throw new Error(`ANT failed to boot correctly: ${bootError}`);
     }
   }
 
-  if (
-    bootRes === undefined ||
-    bootRes.Messages?.some((m) =>
-      m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
-    )
-  ) {
-    if (bootRes === undefined) {
-      // …
-      throw new Error('Failed to get boot result');
-    }
-    const bootError = errorMessageFromOutput(bootRes);
-    logger.error('ANT failed to boot correctly', {
-      processId,
-      module,
-      scheduler,
-      bootRes,
-      bootError,
-    });
-
-    throw new Error(`ANT failed to boot correctly: ${bootError}`);
-  }
   // for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
   // We wait for the first message to be processed before sending the second one to ensure this is the second message
   const processApi = new AOProcess({
@@ -162,10 +180,9 @@ export async function spawnANT({
     signer,
   });
 
-  logger.debug(`Spawned ANT`, {
+  logger.debug(`Successfully spawned new ANT`, {
     processId,
     module,
-    scheduler,
   });
 
   return processId;

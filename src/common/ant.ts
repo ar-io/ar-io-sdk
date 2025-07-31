@@ -70,8 +70,12 @@ type ANTConfig = ANTConfigNoSigner | ANTConfigWithSigner;
 export class ANT {
   /**
    * Versions of ANTs according to the ANT registry.
+   *
+   * Needs to be wrapped in a getter to avoid circular dependency issues.
    */
-  static versions = ANTVersions.init();
+  static get versions() {
+    return ANTVersions.init();
+  }
   /**
    * Spawn a new ANT.
    */

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANT } from '../../common/ant.js';
+import { ANTVersions } from '../../common/ant-versions.js';
 import {
   AoArNSPurchaseParams,
   AoBuyRecordParams,
@@ -70,8 +70,9 @@ export async function buyRecordCLICommand(
     // assert spawn new ant with module id
     let antSpawnConfirmation = '';
     if (processId === undefined) {
-      const { moduleId, version } = await ANT.versions.getLatestANTVersion();
-      antSpawnConfirmation = `Note: A new ANT process will be spawned with module ${moduleId} (v${version})) and assigned to this name.`;
+      const { moduleId, version } =
+        await ANTVersions.init().getLatestANTVersion();
+      antSpawnConfirmation = `Note: A new ANT process will be spawned with module ${moduleId} (v${version}) and assigned to this name.`;
     }
 
     await assertConfirmationPrompt(
