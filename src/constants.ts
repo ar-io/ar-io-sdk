@@ -44,11 +44,11 @@ export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MARIO_PER_ARIO = 1_000_000;
 
 /**
- * @deprecated - use ANTVersions.getLatestANTVersion() to get latest ANT module
+ * @deprecated - use ANT.versions.getLatestANTVersion() to get latest ANT module
  **/
 export const AOS_MODULE_ID = 'pb4fCvdJqwT-_bn38ERMdqnOF4weRMjoJ6bY6yfl4a8';
 /**
- * @deprecated - use ANTVersions.getLatestANTVersions() to get latest ANT module
+ * @deprecated - use ANT.versions.getLatestANTVersion() to get latest ANT module
  **/
 export const ANT_LUA_ID = 'OO2ewZKq4AHoqGQmYUIl-NhJ-llQyFJ3ha4Uf4-w5RI';
 
