@@ -488,7 +488,7 @@ export type AoArNSPurchaseParams = AoArNSNameParams & {
 export type AoBuyRecordParams = AoArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
-  processId: string;
+  processId?: string;
 };
 
 export type AoExtendLeaseParams = AoArNSPurchaseParams & {
