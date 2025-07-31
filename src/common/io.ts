@@ -88,7 +88,7 @@ import {
   isProcessIdConfiguration,
   mARIOToken,
 } from '../types/index.js';
-import { createAoSigner, spawnANT } from '../utils/ao.js';
+import { createAoSigner } from '../utils/ao.js';
 import {
   getEpochDataFromGqlWithCUFallback,
   paginationParamsToTags,
