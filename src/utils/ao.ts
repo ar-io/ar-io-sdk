@@ -18,6 +18,7 @@ import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
 
+import { ANTRegistry } from '../common/ant-registry.js';
 import { ANTVersions } from '../common/ant-versions.js';
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess, Logger } from '../common/index.js';
@@ -58,6 +59,7 @@ export type SpawnANTParams = {
    * @deprecated no longer in use due to compiled modules being preferred
    */
   arweave?: Arweave;
+  owner?: WalletAddress;
 };
 
 export async function spawnANT({
@@ -77,7 +79,7 @@ export async function spawnANT({
   }
 
   if (module === undefined) {
-    const antVersions = ANTVersions.init({
+    const antRegistry = ANTVersions.init({
       process: new AOProcess({
         processId: antRegistryId,
         ao,
@@ -85,7 +87,7 @@ export async function spawnANT({
       }),
     });
     const { moduleId: latestAntModule, version } =
-      await antVersions.getLatestANTVersion();
+      await antRegistry.getLatestANTVersion();
     logger.debug('Spawning new ANT with latest module from ANT registry', {
       moduleId: latestAntModule,
       version,
@@ -155,7 +157,6 @@ export async function spawnANT({
       )
     ) {
       if (bootRes === undefined) {
-        // …
         throw new Error('Failed to get boot result');
       }
       const bootError = errorMessageFromOutput(bootRes);
@@ -171,22 +172,86 @@ export async function spawnANT({
     }
   }
 
-  // for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
+  // Note: for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
   // We wait for the first message to be processed before sending the second one to ensure this is the second message
-  const processApi = new AOProcess({
-    processId,
-    ao,
-    logger,
-  });
-  await processApi.send({
-    tags: [{ name: 'Action', value: 'State' }],
-    signer,
-  });
+  // We use the resulting state to check the owner of the ANT is set in the registry. Should this be patched on MUs,
+  // we can convert to just a simple dry-run to avoid sending/signing another message.
+  let owner: WalletAddress | undefined;
+  try {
+    const processApi = new AOProcess({
+      processId,
+      ao,
+      logger,
+    });
+    const { id } = await processApi.send({
+      tags: [{ name: 'Action', value: 'State' }],
+      signer,
+    });
+    const stateResult = await ao.result({
+      process: processId,
+      message: id,
+    });
+    if (stateResult === undefined) {
+      throw new Error('Failed to get state result');
+    }
+    const { Owner } = JSON.parse(stateResult.Messages?.[0]?.Data ?? '{}') as {
+      Owner: WalletAddress;
+    };
+    owner = Owner;
+    logger.debug(`Successfully spawned new ANT and validated owner`, {
+      processId,
+      module,
+      owner,
+    });
+  } catch (error) {
+    logger.error('Failed to validate owner of spawned ANT', {
+      processId,
+      module,
+      error,
+    });
+    throw error;
+  }
 
-  logger.debug(`Successfully spawned new ANT`, {
-    processId,
-    module,
-  });
+  /**
+   * Now confirm the owner of the ANT is set in the registry
+   * This is to ensure the ANT is available via the ANT registry
+   * for the owner to find and use the ANT.
+   */
+  if (owner !== undefined) {
+    // check the ACL for the owner
+    const antRegistry = ANTRegistry.init({
+      signer,
+      processId: antRegistryId,
+    });
+    let attempts = 0;
+    const maxAttempts = 5;
+    while (attempts < maxAttempts) {
+      try {
+        const acl = await antRegistry.accessControlList({ address: owner });
+        if (acl === undefined) {
+          throw new Error('ACL not found for owner');
+        }
+        const { Owned } = acl;
+        if (!Owned.includes(processId)) {
+          throw new Error(
+            `Spawned ANT (${processId}) not found in registry for owner ${owner}`,
+          );
+        }
+        return processId;
+      } catch (error) {
+        logger.debug('Retrying ANT registry access control list fetch', {
+          owner,
+          antRegistryId,
+          attempts,
+          error,
+        });
+        attempts++;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * attempts ** 2),
+        );
+      }
+    }
+  }
 
   return processId;
 }

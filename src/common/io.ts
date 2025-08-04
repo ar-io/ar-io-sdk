@@ -1431,7 +1431,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           logger: this.logger,
         });
       } catch (error) {
-        throw new Error('Failed to spawn ANT for name purchase.', error);
+        this.logger.error('Failed to spawn ANT for name purchase.', {
+          error,
+        });
+        throw error;
       }
     }
 
