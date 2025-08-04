@@ -1233,9 +1233,17 @@ const record = await ario.resolveArNSName({ name: 'logo_ardrive' });
 
 #### `buyRecord({ name, type, years, processId })`
 
-Purchases a new ArNS record with the specified name, type, and duration.
+Purchases a new ArNS record with the specified name, type, processId, and duration.
 
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+**Arguments:**
+
+- `name` - _required_: the name of the ArNS record to purchase
+- `type` - _required_: the type of ArNS record to purchase
+- `processId` - _optional_: the process id of an existing ANT process. If not provided, a new ANT process using the provided `signer` will be spawned, and the ArNS record will be assigned to that process.
+- `years` - _optional_: the duration of the ArNS record in years. If not provided and `type` is `lease`, the record will be leased for 1 year. If not provided and `type` is `permabuy`, the record will be permanently registered.
+- `referrer` - _optional_: track purchase referrals for analytics (e.g. `my-app.com`)
 
 ```typescript
 const ario = ARIO.mainnet({ signer });
@@ -1244,6 +1252,7 @@ const record = await ario.buyRecord(
     name: 'ardrive',
     type: 'lease',
     years: 1,
+    processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM', // optional: assign to existing ANT process
     referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   {
