@@ -1,3 +1,10 @@
+## [3.15.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.0...v3.15.1) (2025-07-29)
+
+
+### Bug Fixes
+
+* **constants:** update aos and lua ids to v22 ([93e1208](https://github.com/ar-io/ar-io-sdk/commit/93e1208482d130309f00bb0654de6ffd30b0471d))
+
 # [3.15.0](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0...v3.15.0) (2025-07-25)
 
 
