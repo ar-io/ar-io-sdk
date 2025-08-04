@@ -59,7 +59,6 @@ export type SpawnANTParams = {
    * @deprecated no longer in use due to compiled modules being preferred
    */
   arweave?: Arweave;
-  owner?: WalletAddress;
 };
 
 export async function spawnANT({
