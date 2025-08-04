@@ -603,6 +603,8 @@ makeCommand({
   action: buyRecordCLICommand,
 });
 
+// TODO alias buy-record with buy-name
+
 makeCommand({
   name: 'upgrade-record',
   description: 'Upgrade the lease of a record to a permabuy',
