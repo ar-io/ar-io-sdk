@@ -216,39 +216,39 @@ export async function spawnANT({
    * This is to ensure the ANT is available via the ANT registry
    * for the owner to find and use the ANT.
    */
-  if (owner !== undefined) {
-    // check the ACL for the owner
-    const antRegistry = ANTRegistry.init({
-      signer,
-      processId: antRegistryId,
-    });
-    let attempts = 0;
-    const maxAttempts = 5;
-    while (attempts < maxAttempts) {
-      try {
-        const acl = await antRegistry.accessControlList({ address: owner });
-        if (acl === undefined) {
-          throw new Error('ACL not found for owner');
-        }
-        const { Owned } = acl;
-        if (!Owned.includes(processId)) {
-          throw new Error(
-            `Spawned ANT (${processId}) not found in registry for owner ${owner}`,
-          );
-        }
-        return processId;
-      } catch (error) {
-        logger.debug('Retrying ANT registry access control list fetch', {
-          owner,
-          antRegistryId,
-          attempts,
-          error,
-        });
-        attempts++;
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * attempts ** 2),
+  if (owner === undefined) {
+    throw new Error(`Spawning ANT (${processId}) failed to set owner`);
+  }
+
+  // check the ACL for the owner
+  const antRegistry = ANTRegistry.init({
+    signer,
+    processId: antRegistryId,
+  });
+  let attempts = 0;
+  const maxAttempts = 5;
+  while (attempts < maxAttempts) {
+    try {
+      const acl = await antRegistry.accessControlList({ address: owner });
+      if (acl === undefined) {
+        throw new Error('ACL not found for owner');
+      }
+      const { Owned } = acl;
+      if (!Owned.includes(processId)) {
+        throw new Error(
+          `Spawned ANT (${processId}) not found in registry for owner ${owner}`,
         );
       }
+      return processId;
+    } catch (error) {
+      logger.debug('Retrying ANT registry access control list fetch', {
+        owner,
+        antRegistryId,
+        attempts,
+        error,
+      });
+      attempts++;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempts ** 2));
     }
   }
 
