@@ -1998,6 +1998,56 @@ const ant = ANT.init({
 
 ```
 
+#### `spawn({ signer, module?, ao?, scheduler?, state?, antRegistryId?, logger?, authority? })`
+
+Spawns a new ANT (Arweave Name Token) process. This static function creates a new ANT process on the AO network and returns the process ID.
+
+_Note: Requires `signer` to be provided to sign the spawn transaction._
+
+```typescript
+import { ANT } from '@ar.io/sdk';
+import { ArweaveSigner } from '@ar.io/sdk/node';
+
+const processId = await ANT.spawn({
+  signer: new ArweaveSigner(jwk),
+  state: {
+    name: 'My ANT',
+    ticker: 'MYANT',
+    description: 'My custom ANT token',
+  },
+});
+```
+
+**Parameters:**
+
+- `signer: AoSigner` - The signer used to authenticate the spawn transaction
+- `module?: string` - Optional module ID to use; if not provided, gets latest from ANT registry
+- `ao?: AoClient` - Optional AO client instance (defaults to legacy mode connection)
+- `scheduler?: string` - Optional scheduler ID
+- `state?: SpawnANTState` - Optional initial state for the ANT including name, ticker, description, etc.
+- `antRegistryId?: string` - Optional ANT registry ID
+- `logger?: Logger` - Optional logger instance
+- `authority?: string` - Optional authority
+
+**Returns:** `Promise<ProcessId>` - The process ID of the newly spawned ANT
+
+#### `versions`
+
+Returns an ANTVersions instance that provides access to available ANT versions from the ANT registry. This static property allows you to query version information without needing a specific ANT process.
+
+```typescript
+import { ANT } from '@ar.io/sdk';
+
+// Get all available ANT versions
+const antVersions = ANT.versions;
+const versions = await antVersions.getANTVersions();
+
+// Get the latest ANT version
+const latestVersion = await antVersions.getLatestANTVersion();
+```
+
+**Returns:** `AoANTVersionsRead` - A read-only ANT versions client
+
 #### `getInfo()`
 
 Retrieves the information of the ANT process.
