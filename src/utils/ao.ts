@@ -101,7 +101,7 @@ export async function spawnANT({
       await antRegistry.getLatestANTVersion();
     logger.debug('Spawning new ANT with latest module from ANT registry', {
       moduleId: latestAntModule,
-      version,
+      version: latestVersion,
       antRegistryId,
     });
     module = latestAntModule;
