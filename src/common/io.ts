@@ -71,6 +71,7 @@ import {
   AoWeightedObserver,
   ArNSNameResolutionData,
   ArNSNameResolver,
+  BuyArNSNameProgressEvents,
   CostDetailsResult,
   DemandFactorSettings,
   EpochInput,
@@ -80,7 +81,6 @@ import {
   PaginationResult,
   ProcessConfig,
   ProcessConfiguration,
-  SpawnAntProgressEvent,
   TransactionId,
   WalletAddress,
   WithSigner,
@@ -1422,8 +1422,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async buyRecord(
     params: AoBuyRecordParams,
     options?: WriteOptions<
-      keyof SpawnAntProgressEvent,
-      SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
+      keyof BuyArNSNameProgressEvents,
+      BuyArNSNameProgressEvents[keyof BuyArNSNameProgressEvents]
     >,
   ): Promise<AoMessageResult> {
     // spawn a new ANT if not provided
@@ -1442,6 +1442,15 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         throw error;
       }
     }
+
+    options?.onSigningProgress?.('buying-name', {
+      name: params.name,
+      years: params.years,
+      type: params.type,
+      processId: params.processId,
+      fundFrom: params.fundFrom,
+      referrer: params.referrer,
+    });
 
     // pay with turbo credits if available
     if (params.fundFrom === 'turbo') {
