@@ -112,6 +112,7 @@ export async function spawnANT({
     moduleId: module,
     antRegistryId,
     version,
+    state,
   });
 
   const processId = await ao.spawn({

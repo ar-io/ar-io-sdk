@@ -31,6 +31,7 @@ import {
 } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
+import { SpawnANTState } from './ant.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -144,6 +145,7 @@ export type SpawnAntProgressEvent = {
     moduleId: string;
     antRegistryId: string;
     version: string | undefined;
+    state: SpawnANTState | undefined;
   };
   'verifying-state': {
     processId: ProcessId;
