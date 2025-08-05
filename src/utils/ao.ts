@@ -59,6 +59,30 @@ export type SpawnANTParams = {
    * @deprecated no longer in use due to compiled modules being preferred
    */
   arweave?: Arweave;
+  /**
+   * Callback function to be called when signing progress is made
+   */
+  onSigningProgress?: (
+    step: keyof SpawnAntProgressEvent,
+    event: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
+  ) => void;
+};
+
+export type SpawnAntProgressEvent = {
+  'spawning-ant': {
+    moduleId: string;
+    antRegistryId: string;
+  };
+  'registering-ant': {
+    antRegistryId: string;
+    processId: ProcessId;
+    owner: WalletAddress;
+  };
+  'verifying-state': {
+    processId: ProcessId;
+    moduleId: string;
+    antRegistryId: string;
+  };
 };
 
 export async function spawnANT({
@@ -72,6 +96,9 @@ export async function spawnANT({
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   authority = AO_AUTHORITY,
+  onSigningProgress = (event) => {
+    logger.debug('Signing progress', { event });
+  },
 }: SpawnANTParams): Promise<ProcessId> {
   if (state) {
     parseSchemaResult(SpawnANTStateSchema, state);
@@ -94,6 +121,11 @@ export async function spawnANT({
     });
     module = latestAntModule;
   }
+
+  onSigningProgress?.('spawning-ant', {
+    moduleId: module,
+    antRegistryId,
+  });
 
   const processId = await ao.spawn({
     module,
@@ -171,6 +203,12 @@ export async function spawnANT({
     }
   }
 
+  onSigningProgress?.('verifying-state', {
+    processId,
+    moduleId: module,
+    antRegistryId,
+  });
+
   // Note: for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
   // We wait for the first message to be processed before sending the second one to ensure this is the second message
   // We use the resulting state to check the owner of the ANT is set in the registry. Should this be patched on MUs,
@@ -219,6 +257,12 @@ export async function spawnANT({
   if (owner === undefined) {
     throw new Error(`Spawning ANT (${processId}) failed to set owner`);
   }
+
+  onSigningProgress?.('registering-ant', {
+    processId,
+    antRegistryId,
+    owner,
+  });
 
   // check the ACL for the owner
   const antRegistry = ANTRegistry.init({

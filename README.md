@@ -1258,6 +1258,37 @@ const record = await ario.buyRecord(
   {
     // optional tags
     tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+    /**
+     * BUY_RECORD_START
+SPAWN_ANT
+REGISTER_ANT
+BUY_RECORD
+BUY_RECORD_END
+*/
+    onSigningProgress: (e) => {
+      console.log(`Signing progress: ${e}`);
+      if (e.step === 'buy-name-start') {
+        console.log('Buying name:', e.progress); // 0-100
+      }
+      if (e.step === 'spawn-ant') {
+        console.log('Spawning ant:', e.progress); // 0-100
+      }
+      if (e.step === 'register-ant') {
+        console.log('Registering ant:', e.progress); // 0-100
+      }
+      if (e.step === 'buy-name') {
+        console.log('Buying name:', e.progress); // 0-100
+      }
+      if (e.step === 'buy-name-end') {
+        console.log('Buying name:', e.progress); // 0-100
+      }
+    },
+    onSigningComplete: () => {
+      console.log('Signing complete');
+    },
+    onSigningError: (error) => {
+      console.error('Signing error:', error);
+    },
   },
 );
 ```
