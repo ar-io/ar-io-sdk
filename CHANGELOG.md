@@ -1,3 +1,25 @@
+# [3.16.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0-alpha.1) (2025-08-04)
+
+
+### Bug Fixes
+
+* **ant:** check ACL after spawned ant to confirm ownership was properly assigned ([9de8272](https://github.com/ar-io/ar-io-sdk/commit/9de82722dc72b6cbb12756f60627e3bd9584e79a))
+* **ant:** on spawn, throw error if owner not returned ([85460ae](https://github.com/ar-io/ar-io-sdk/commit/85460ae7a3ce73cc04ff22f63c273ec06dd7be2b))
+* **ant:** use gettter for versions on ANT, use .spawn for buy-record ([dc8c726](https://github.com/ar-io/ar-io-sdk/commit/dc8c7267bec1875f87ee6a6ee1cca840a713211a))
+* **utils:** pass down `ao` to ant registry ([4bfab08](https://github.com/ar-io/ar-io-sdk/commit/4bfab08295b50cc71447bbba1701f5756245ad03))
+
+
+### Features
+
+* **buy-record:** relax requirement for processId on buy-record ([2d1017c](https://github.com/ar-io/ar-io-sdk/commit/2d1017c02d7b60961f729f8c581ab45f0fbe59ad))
+
+## [3.15.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.0...v3.15.1) (2025-07-29)
+
+
+### Bug Fixes
+
+* **constants:** update aos and lua ids to v22 ([93e1208](https://github.com/ar-io/ar-io-sdk/commit/93e1208482d130309f00bb0654de6ffd30b0471d))
+
 # [3.15.0](https://github.com/ar-io/ar-io-sdk/compare/v3.14.0...v3.15.0) (2025-07-25)
 
 
