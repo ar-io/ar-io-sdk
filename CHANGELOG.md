@@ -1,38 +1,3 @@
-# [3.16.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0-alpha.2...v3.16.0-alpha.3) (2025-08-05)
-
-
-### Bug Fixes
-
-* **ario:** add buying-name callback event on buyRecord ([0d995ab](https://github.com/ar-io/ar-io-sdk/commit/0d995ab0968e8b2219854c208bd9e50829167ccd))
-
-# [3.16.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0-alpha.1...v3.16.0-alpha.2) (2025-08-05)
-
-
-### Bug Fixes
-
-* **ant:** add optional state to event messages ([07fe4ed](https://github.com/ar-io/ar-io-sdk/commit/07fe4edd1936c5186cada7a240dfd4988f1d4649))
-* **ant:** add version to spawn ([edf0c46](https://github.com/ar-io/ar-io-sdk/commit/edf0c4620cfb7dda81cc46cae609975bb73389bb))
-
-
-### Features
-
-* **ant:** add onSigningProgress callabacks to spawnAnt util ([1bb61a0](https://github.com/ar-io/ar-io-sdk/commit/1bb61a0a6cd0efb97dba927fd261b8113b0d2169))
-
-# [3.16.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0-alpha.1) (2025-08-04)
-
-
-### Bug Fixes
-
-* **ant:** check ACL after spawned ant to confirm ownership was properly assigned ([9de8272](https://github.com/ar-io/ar-io-sdk/commit/9de82722dc72b6cbb12756f60627e3bd9584e79a))
-* **ant:** on spawn, throw error if owner not returned ([85460ae](https://github.com/ar-io/ar-io-sdk/commit/85460ae7a3ce73cc04ff22f63c273ec06dd7be2b))
-* **ant:** use gettter for versions on ANT, use .spawn for buy-record ([dc8c726](https://github.com/ar-io/ar-io-sdk/commit/dc8c7267bec1875f87ee6a6ee1cca840a713211a))
-* **utils:** pass down `ao` to ant registry ([4bfab08](https://github.com/ar-io/ar-io-sdk/commit/4bfab08295b50cc71447bbba1701f5756245ad03))
-
-
-### Features
-
-* **buy-record:** relax requirement for processId on buy-record ([2d1017c](https://github.com/ar-io/ar-io-sdk/commit/2d1017c02d7b60961f729f8c581ab45f0fbe59ad))
-
 ## [3.15.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.0...v3.15.1) (2025-07-29)
 
 
@@ -63,18 +28,6 @@
 
 * **ants:** add new API for fetching ants ([9a6c7b6](https://github.com/ar-io/ar-io-sdk/commit/9a6c7b6a2148fcc7ac0e5446843138228cec627e))
 
-# [3.15.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.14.1-alpha.2...v3.15.0-alpha.1) (2025-07-25)
-
-
-### Bug Fixes
-
-* **ant:** add hyperbeam timeout to avoid hanging requests ([0627d6e](https://github.com/ar-io/ar-io-sdk/commit/0627d6edbe690fc147ef4650ac5fb1843c9e4eff))
-* **cli:** publish patch for alpha build ([66d5399](https://github.com/ar-io/ar-io-sdk/commit/66d539928130dde6ecbb5e33707e9c80ce78bff4))
-
-
-### Features
-
-* **ants:** add new API for fetching ants ([9a6c7b6](https://github.com/ar-io/ar-io-sdk/commit/9a6c7b6a2148fcc7ac0e5446843138228cec627e))
 
 # [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
 
