@@ -1258,6 +1258,18 @@ const record = await ario.buyRecord(
   {
     // optional tags
     tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+    onSigningProgress: (step, event) => {
+      console.log(`Signing progress: ${step}`);
+      if (step === 'spawning-ant') {
+        console.log('Spawning ant:', event); // 0-100
+      }
+      if (step === 'registering-ant') {
+        console.log('Registering ant:', event); // 0-100
+      }
+      if (step === 'verifying-state') {
+        console.log('Verifying state:', event); // 0-100
+      }
+    },
   },
 );
 ```

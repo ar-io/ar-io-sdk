@@ -31,6 +31,7 @@ import {
 } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
+import { SpawnANTState } from './ant.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -65,8 +66,10 @@ export type ReadParameters<Input> = {
   inputs?: Input;
 };
 
-export type WriteOptions = {
+export type WriteOptions<K extends string = string, T = unknown> = {
   tags?: { name: string; value: string }[];
+  // generic type that can be used to pass any payload to the onSigningProgress callback
+  onSigningProgress?: (name: K, payload: T) => void;
 };
 
 export type WriteParameters<Input> = WithSigner<
@@ -136,6 +139,25 @@ export interface AoClient {
   unmonitor: typeof unmonitor;
   dryrun: typeof dryrun;
 }
+
+export type SpawnAntProgressEvent = {
+  'spawning-ant': {
+    moduleId: string;
+    antRegistryId: string;
+    version: string | undefined;
+    state: SpawnANTState | undefined;
+  };
+  'verifying-state': {
+    processId: ProcessId;
+    moduleId: string;
+    antRegistryId: string;
+  };
+  'registering-ant': {
+    antRegistryId: string;
+    processId: ProcessId;
+    owner: WalletAddress;
+  };
+};
 
 export interface AOContract {
   read<K>({

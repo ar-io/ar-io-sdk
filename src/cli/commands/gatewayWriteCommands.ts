@@ -181,11 +181,11 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
     o,
   );
 
-  return (
-    writeARIOFromOptions(o).ario.increaseOperatorStake({
+  return writeARIOFromOptions(o).ario.increaseOperatorStake(
+    {
       increaseQty,
-    }),
-    customTagsFromOptions(o)
+    },
+    customTagsFromOptions(o),
   );
 }
 
