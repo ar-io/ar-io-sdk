@@ -6,6 +6,7 @@ coverage
 dist
 .husky/_
 cache
+metafile.json
 
 # IDEs and editors
 .DS_Store
