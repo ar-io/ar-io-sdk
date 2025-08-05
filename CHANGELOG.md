@@ -1,3 +1,10 @@
+# [3.16.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0-alpha.2...v3.16.0-alpha.3) (2025-08-05)
+
+
+### Bug Fixes
+
+* **ario:** add buying-name callback event on buyRecord ([0d995ab](https://github.com/ar-io/ar-io-sdk/commit/0d995ab0968e8b2219854c208bd9e50829167ccd))
+
 # [3.16.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0-alpha.1...v3.16.0-alpha.2) (2025-08-05)
 
 
