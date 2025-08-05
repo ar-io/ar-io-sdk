@@ -80,6 +80,7 @@ import {
   PaginationResult,
   ProcessConfig,
   ProcessConfiguration,
+  SpawnAntProgressEvent,
   TransactionId,
   WalletAddress,
   WithSigner,
@@ -1420,7 +1421,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
 
   async buyRecord(
     params: AoBuyRecordParams,
-    options?: WriteOptions,
+    options?: WriteOptions<
+      keyof SpawnAntProgressEvent,
+      SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
+    >,
   ): Promise<AoMessageResult> {
     // spawn a new ANT if not provided
     if (params.processId === undefined) {
@@ -1429,6 +1433,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           signer: this.signer,
           ao: this.process.ao,
           logger: this.logger,
+          onSigningProgress: options?.onSigningProgress,
         });
       } catch (error) {
         this.logger.error('Failed to spawn ANT for name purchase.', {
