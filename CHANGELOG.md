@@ -1,3 +1,16 @@
+# [3.16.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0-alpha.1...v3.16.0-alpha.2) (2025-08-05)
+
+
+### Bug Fixes
+
+* **ant:** add optional state to event messages ([07fe4ed](https://github.com/ar-io/ar-io-sdk/commit/07fe4edd1936c5186cada7a240dfd4988f1d4649))
+* **ant:** add version to spawn ([edf0c46](https://github.com/ar-io/ar-io-sdk/commit/edf0c4620cfb7dda81cc46cae609975bb73389bb))
+
+
+### Features
+
+* **ant:** add onSigningProgress callabacks to spawnAnt util ([1bb61a0](https://github.com/ar-io/ar-io-sdk/commit/1bb61a0a6cd0efb97dba927fd261b8113b0d2169))
+
 # [3.16.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0-alpha.1) (2025-08-04)
 
 
