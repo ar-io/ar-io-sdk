@@ -1261,13 +1261,16 @@ const record = await ario.buyRecord(
     onSigningProgress: (step, event) => {
       console.log(`Signing progress: ${step}`);
       if (step === 'spawning-ant') {
-        console.log('Spawning ant:', event); // 0-100
+        console.log('Spawning ant:', event);
       }
       if (step === 'registering-ant') {
-        console.log('Registering ant:', event); // 0-100
+        console.log('Registering ant:', event);
       }
       if (step === 'verifying-state') {
-        console.log('Verifying state:', event); // 0-100
+        console.log('Verifying state:', event);
+      }
+      if (step === 'buying-name') {
+        console.log('Buying name:', event);
       }
     },
   },
