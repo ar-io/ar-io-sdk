@@ -143,16 +143,17 @@ export type SpawnAntProgressEvent = {
   'spawning-ant': {
     moduleId: string;
     antRegistryId: string;
-  };
-  'registering-ant': {
-    antRegistryId: string;
-    processId: ProcessId;
-    owner: WalletAddress;
+    version: string | undefined;
   };
   'verifying-state': {
     processId: ProcessId;
     moduleId: string;
     antRegistryId: string;
+  };
+  'registering-ant': {
+    antRegistryId: string;
+    processId: ProcessId;
+    owner: WalletAddress;
   };
 };
 

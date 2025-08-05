@@ -88,6 +88,7 @@ export async function spawnANT({
     parseSchemaResult(SpawnANTStateSchema, state);
   }
 
+  let version: string | undefined;
   if (module === undefined) {
     const antRegistry = ANTVersions.init({
       process: new AOProcess({
@@ -96,7 +97,7 @@ export async function spawnANT({
         logger,
       }),
     });
-    const { moduleId: latestAntModule, version } =
+    const { moduleId: latestAntModule, version: latestVersion } =
       await antRegistry.getLatestANTVersion();
     logger.debug('Spawning new ANT with latest module from ANT registry', {
       moduleId: latestAntModule,
@@ -104,11 +105,13 @@ export async function spawnANT({
       antRegistryId,
     });
     module = latestAntModule;
+    version = latestVersion;
   }
 
   onSigningProgress?.('spawning-ant', {
     moduleId: module,
     antRegistryId,
+    version,
   });
 
   const processId = await ao.spawn({
@@ -142,6 +145,7 @@ export async function spawnANT({
     let attempts = 0;
     while (attempts < 5 && bootRes === undefined) {
       try {
+        // TODO: could add a progress event here to show the boot progress and number of attempts
         if (bootRes === undefined) {
           bootRes = await ao.result({
             process: processId,
