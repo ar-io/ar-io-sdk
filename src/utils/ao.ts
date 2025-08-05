@@ -28,8 +28,13 @@ import {
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
-import { SpawnANTState, SpawnANTStateSchema } from '../types/ant.js';
 import {
+  AoANTWrite,
+  SpawnANTState,
+  SpawnANTStateSchema,
+} from '../types/ant.js';
+import {
+  AoARIORead,
   AoClient,
   AoEpochData,
   AoEpochDistributed,
@@ -291,7 +296,103 @@ export async function spawnANT({
   return processId;
 }
 
-// TODO: add a utility for forking an ANT to the latest module that leverages getState and spawnANT
+export async function upgradeAntForArnsName({
+  signer,
+  ario,
+  arnsName,
+  logger = Logger.default,
+  antRegistryId = ANT_REGISTRY_ID,
+  ant,
+  onSigningProgress = (name, payload) => {
+    logger.debug('Signing progress', { name, payload });
+  },
+}: {
+  signer: AoSigner;
+  ario: AoARIORead;
+  arnsName: string;
+  logger?: Logger;
+  ant: AoANTWrite;
+  antRegistryId?: string;
+  onSigningProgress?: (
+    name: keyof SpawnAntProgressEvent,
+    payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
+  ) => void;
+}) {
+  // confirm that the name is affiliated with the provided ant
+  const arnsNameRecord = await ario.getArNSRecord({
+    name: arnsName,
+  });
+
+  if (arnsNameRecord === undefined) {
+    throw new Error(
+      `ARNs name (${arnsName}) is not affiliated with the provided ant`,
+    );
+  }
+
+  if (arnsNameRecord.processId !== ant.processId) {
+    throw new Error(
+      `ARNs name (${arnsName}) is not affiliated with the provided ant (${ant.processId})`,
+    );
+  }
+
+  // get the current state of the ANT
+  const state = await ant.getState();
+
+  if (state === undefined) {
+    throw new Error(
+      `ANT state (${ant.processId}) is undefined and cannot be upgraded`,
+    );
+  }
+
+  // spawn the new ANT
+  const newProcessId = await spawnANT({
+    signer,
+    antRegistryId,
+    logger,
+    state: {
+      owner: state.Owner,
+      name: state.Name,
+      ticker: state.Ticker,
+      description: state.Description,
+      keywords: state.Keywords,
+      controllers: state.Controllers,
+      records: state.Records,
+      balances: state.Balances,
+      logo: state.Logo,
+    },
+    onSigningProgress,
+  });
+
+  // now send a reassign name notice to the old ant with the new process id
+  const reassignMsgId = await ant.reassignName({
+    name: state.Name,
+    arioProcessId: newProcessId,
+    antProcessId: newProcessId,
+  });
+
+  // confirm the reassignment propogated to the registry
+  const nameAfterReassign = await ario.getArNSRecord({
+    name: arnsName,
+  });
+  if (nameAfterReassign === undefined) {
+    throw new Error(
+      `ARNs name (${arnsName}) is not affiliated with the provided ant (${ant.processId})`,
+    );
+  }
+
+  if (nameAfterReassign.processId !== newProcessId) {
+    throw new Error(
+      `ARNs name (${arnsName}) reassignment failed to propagate to the registry. It is still associated with the old ANT (${ant.processId})`,
+    );
+  }
+
+  return {
+    name: newProcessId,
+    newProcessId,
+    oldProcessId: ant.processId,
+    reassignMsgId,
+  };
+}
 
 /**
  * @deprecated
