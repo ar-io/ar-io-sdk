@@ -1,3 +1,22 @@
+# [3.16.0](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0) (2025-08-06)
+
+
+### Bug Fixes
+
+* **ant:** add optional state to event messages ([07fe4ed](https://github.com/ar-io/ar-io-sdk/commit/07fe4edd1936c5186cada7a240dfd4988f1d4649))
+* **ant:** add version to spawn ([edf0c46](https://github.com/ar-io/ar-io-sdk/commit/edf0c4620cfb7dda81cc46cae609975bb73389bb))
+* **ant:** check ACL after spawned ant to confirm ownership was properly assigned ([9de8272](https://github.com/ar-io/ar-io-sdk/commit/9de82722dc72b6cbb12756f60627e3bd9584e79a))
+* **ant:** on spawn, throw error if owner not returned ([85460ae](https://github.com/ar-io/ar-io-sdk/commit/85460ae7a3ce73cc04ff22f63c273ec06dd7be2b))
+* **ant:** use gettter for versions on ANT, use .spawn for buy-record ([dc8c726](https://github.com/ar-io/ar-io-sdk/commit/dc8c7267bec1875f87ee6a6ee1cca840a713211a))
+* **ario:** add buying-name callback event on buyRecord ([0d995ab](https://github.com/ar-io/ar-io-sdk/commit/0d995ab0968e8b2219854c208bd9e50829167ccd))
+* **utils:** pass down `ao` to ant registry ([4bfab08](https://github.com/ar-io/ar-io-sdk/commit/4bfab08295b50cc71447bbba1701f5756245ad03))
+
+
+### Features
+
+* **ant:** add onSigningProgress callabacks to spawnAnt util ([1bb61a0](https://github.com/ar-io/ar-io-sdk/commit/1bb61a0a6cd0efb97dba927fd261b8113b0d2169))
+* **buy-record:** relax requirement for processId on buy-record ([2d1017c](https://github.com/ar-io/ar-io-sdk/commit/2d1017c02d7b60961f729f8c581ab45f0fbe59ad))
+
 ## [3.15.1](https://github.com/ar-io/ar-io-sdk/compare/v3.15.0...v3.15.1) (2025-07-29)
 
 
