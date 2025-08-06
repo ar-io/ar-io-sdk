@@ -18,12 +18,13 @@ import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 import { z } from 'zod';
 
+import { ANTRegistry } from '../common/ant-registry.js';
+import { ANTVersions } from '../common/ant-versions.js';
 import { defaultArweave } from '../common/arweave.js';
 import { AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
-  AOS_MODULE_ID,
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
@@ -35,6 +36,8 @@ import {
   AoSigner,
   ContractSigner,
   MessageResult,
+  ProcessId,
+  SpawnAntProgressEvent,
   WalletAddress,
 } from '../types/index.js';
 import { parseSchemaResult } from './schema.js';
@@ -57,11 +60,18 @@ export type SpawnANTParams = {
    * @deprecated no longer in use due to compiled modules being preferred
    */
   arweave?: Arweave;
+  /**
+   * Callback function to be called when signing progress is made
+   */
+  onSigningProgress?: (
+    name: keyof SpawnAntProgressEvent,
+    payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
+  ) => void;
 };
 
 export async function spawnANT({
   signer,
-  module = AOS_MODULE_ID,
+  module,
   ao = connect({
     MODE: 'legacy',
   }),
@@ -70,10 +80,41 @@ export async function spawnANT({
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   authority = AO_AUTHORITY,
-}: SpawnANTParams): Promise<string> {
+  onSigningProgress = (name, payload) => {
+    logger.debug('Signing progress', { name, payload });
+  },
+}: SpawnANTParams): Promise<ProcessId> {
   if (state) {
     parseSchemaResult(SpawnANTStateSchema, state);
   }
+
+  let version: string | undefined;
+  if (module === undefined) {
+    const antRegistry = ANTVersions.init({
+      process: new AOProcess({
+        processId: antRegistryId,
+        ao,
+        logger,
+      }),
+    });
+    const { moduleId: latestAntModule, version: latestVersion } =
+      await antRegistry.getLatestANTVersion();
+    logger.debug('Spawning new ANT with latest module from ANT registry', {
+      moduleId: latestAntModule,
+      version: latestVersion,
+      antRegistryId,
+    });
+    module = latestAntModule;
+    version = latestVersion;
+  }
+
+  onSigningProgress?.('spawning-ant', {
+    moduleId: module,
+    antRegistryId,
+    version,
+    state,
+  });
+
   const processId = await ao.spawn({
     module,
     scheduler,
@@ -92,23 +133,150 @@ export async function spawnANT({
     ],
   });
 
-  let bootRes: MessageResult | undefined;
-  let attempts = 0;
-  while (attempts < 5 && bootRes === undefined) {
-    try {
-      if (bootRes === undefined) {
-        bootRes = await ao.result({
-          process: processId,
-          message: processId,
-        });
-      }
+  /**
+   * Note: if we are given a state, ensure the ANT was initialized with it
+   * there is a bug in the ANT source where we try to parse the empty default
+   * 'Data' string as JSON that causes the Invalid-Boot-Notice error, even though
+   * the ANT was initialized with the default state set by the ANT source code.
+   *
+   * Reference: https://github.com/ar-io/ar-io-ant-process/blob/b89018ffcce079add2e90e7ab82d0bbc9b671346/src/common/main.lua#L355-L358
+   */
+  if (state !== undefined) {
+    let bootRes: MessageResult | undefined;
+    let attempts = 0;
+    while (attempts < 5 && bootRes === undefined) {
+      try {
+        // TODO: could add a progress event here to show the boot progress and number of attempts
+        if (bootRes === undefined) {
+          bootRes = await ao.result({
+            process: processId,
+            message: processId,
+          });
+        }
 
-      break;
-    } catch (error) {
-      logger.debug('Retrying ANT boot result fetch', {
+        break;
+      } catch (error) {
+        logger.debug('Retrying ANT boot result fetch', {
+          processId,
+          module,
+          scheduler,
+          attempts,
+          error,
+        });
+        attempts++;
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * attempts ** 2),
+        );
+      }
+    }
+
+    if (
+      bootRes === undefined ||
+      bootRes.Messages?.some((m) =>
+        m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
+      )
+    ) {
+      if (bootRes === undefined) {
+        throw new Error('Failed to get boot result');
+      }
+      const bootError = errorMessageFromOutput(bootRes);
+      logger.error('ANT failed to boot correctly', {
         processId,
         module,
         scheduler,
+        bootRes,
+        bootError,
+      });
+
+      throw new Error(`ANT failed to boot correctly: ${bootError}`);
+    }
+  }
+
+  onSigningProgress?.('verifying-state', {
+    processId,
+    moduleId: module,
+    antRegistryId,
+  });
+
+  // Note: for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
+  // We wait for the first message to be processed before sending the second one to ensure this is the second message
+  // We use the resulting state to check the owner of the ANT is set in the registry. Should this be patched on MUs,
+  // we can convert to just a simple dry-run to avoid sending/signing another message.
+  let owner: WalletAddress | undefined;
+  try {
+    const processApi = new AOProcess({
+      processId,
+      ao,
+      logger,
+    });
+    const { id } = await processApi.send({
+      tags: [{ name: 'Action', value: 'State' }],
+      signer,
+    });
+    const stateResult = await ao.result({
+      process: processId,
+      message: id,
+    });
+    if (stateResult === undefined) {
+      throw new Error('Failed to get state result');
+    }
+    const { Owner } = JSON.parse(stateResult.Messages?.[0]?.Data ?? '{}') as {
+      Owner: WalletAddress;
+    };
+    owner = Owner;
+    logger.debug(`Successfully spawned new ANT and validated owner`, {
+      processId,
+      module,
+      owner,
+    });
+  } catch (error) {
+    logger.error('Failed to validate owner of spawned ANT', {
+      processId,
+      module,
+      error,
+    });
+    throw error;
+  }
+
+  /**
+   * Now confirm the owner of the ANT is set in the registry
+   * This is to ensure the ANT is available via the ANT registry
+   * for the owner to find and use the ANT.
+   */
+  if (owner === undefined) {
+    throw new Error(`Spawning ANT (${processId}) failed to set owner`);
+  }
+
+  onSigningProgress?.('registering-ant', {
+    processId,
+    antRegistryId,
+    owner,
+  });
+
+  // check the ACL for the owner
+  const antRegistry = ANTRegistry.init({
+    signer,
+    processId: antRegistryId,
+  });
+  let attempts = 0;
+  const maxAttempts = 5;
+  while (attempts < maxAttempts) {
+    try {
+      const acl = await antRegistry.accessControlList({ address: owner });
+      if (acl === undefined) {
+        throw new Error('ACL not found for owner');
+      }
+      const { Owned } = acl;
+      if (!Owned.includes(processId)) {
+        throw new Error(
+          `Spawned ANT (${processId}) not found in registry for owner ${owner}`,
+        );
+      }
+      return processId;
+    } catch (error) {
+      logger.debug('Retrying ANT registry access control list fetch', {
+        owner,
+        antRegistryId,
         attempts,
         error,
       });
@@ -117,48 +285,16 @@ export async function spawnANT({
     }
   }
 
-  if (
-    bootRes === undefined ||
-    bootRes.Messages?.some((m) =>
-      m?.Tags?.some((t) => t.value === 'Invalid-Boot-Notice'),
-    )
-  ) {
-    if (bootRes === undefined) {
-      // …
-      throw new Error('Failed to get boot result');
-    }
-    const bootError = errorMessageFromOutput(bootRes);
-    logger.error('ANT failed to boot correctly', {
-      processId,
-      module,
-      scheduler,
-      bootRes,
-      bootError,
-    });
-
-    throw new Error(`ANT failed to boot correctly: ${bootError}`);
-  }
-  // for hyperbeam caching, due to a SU issue, we need to send a second message to the ANT to cache the state
-  // We wait for the first message to be processed before sending the second one to ensure this is the second message
-  const processApi = new AOProcess({
-    processId,
-    ao,
-    logger,
-  });
-  await processApi.send({
-    tags: [{ name: 'Action', value: 'State' }],
-    signer,
-  });
-
-  logger.debug(`Spawned ANT`, {
-    processId,
-    module,
-    scheduler,
-  });
-
   return processId;
 }
 
+// TODO: add a utility for forking an ANT to the latest module that leverages getState and spawnANT
+
+/**
+ * @deprecated
+ * Direct Evals are not encouraged when dealing with ANTs.
+ * Instead, use spawnANT to fork an ANT to new module source code
+ */
 export async function evolveANT({
   signer,
   processId,
@@ -181,6 +317,8 @@ export async function evolveANT({
     ao,
     logger,
   });
+
+  logger.warn('Directly running an Eval on a process is not encouraged.');
 
   //TODO: cache locally and only fetch if not cached
   // We do not use arweave to get the data because it may throw on l2 tx data

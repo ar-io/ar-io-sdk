@@ -1233,9 +1233,17 @@ const record = await ario.resolveArNSName({ name: 'logo_ardrive' });
 
 #### `buyRecord({ name, type, years, processId })`
 
-Purchases a new ArNS record with the specified name, type, and duration.
+Purchases a new ArNS record with the specified name, type, processId, and duration.
 
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+**Arguments:**
+
+- `name` - _required_: the name of the ArNS record to purchase
+- `type` - _required_: the type of ArNS record to purchase
+- `processId` - _optional_: the process id of an existing ANT process. If not provided, a new ANT process using the provided `signer` will be spawned, and the ArNS record will be assigned to that process.
+- `years` - _optional_: the duration of the ArNS record in years. If not provided and `type` is `lease`, the record will be leased for 1 year. If not provided and `type` is `permabuy`, the record will be permanently registered.
+- `referrer` - _optional_: track purchase referrals for analytics (e.g. `my-app.com`)
 
 ```typescript
 const ario = ARIO.mainnet({ signer });
@@ -1244,11 +1252,27 @@ const record = await ario.buyRecord(
     name: 'ardrive',
     type: 'lease',
     years: 1,
+    processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM', // optional: assign to existing ANT process
     referrer: 'my-app.com', // optional: track purchase referrals for analytics
   },
   {
     // optional tags
     tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+    onSigningProgress: (step, event) => {
+      console.log(`Signing progress: ${step}`);
+      if (step === 'spawning-ant') {
+        console.log('Spawning ant:', event);
+      }
+      if (step === 'registering-ant') {
+        console.log('Registering ant:', event);
+      }
+      if (step === 'verifying-state') {
+        console.log('Verifying state:', event);
+      }
+      if (step === 'buying-name') {
+        console.log('Buying name:', event);
+      }
+    },
   },
 );
 ```
@@ -1988,6 +2012,56 @@ const ant = ANT.init({
 });
 
 ```
+
+#### `spawn({ signer, module?, ao?, scheduler?, state?, antRegistryId?, logger?, authority? })`
+
+Spawns a new ANT (Arweave Name Token) process. This static function creates a new ANT process on the AO network and returns the process ID.
+
+_Note: Requires `signer` to be provided to sign the spawn transaction._
+
+```typescript
+import { ANT } from '@ar.io/sdk';
+import { ArweaveSigner } from '@ar.io/sdk/node';
+
+const processId = await ANT.spawn({
+  signer: new ArweaveSigner(jwk),
+  state: {
+    name: 'My ANT',
+    ticker: 'MYANT',
+    description: 'My custom ANT token',
+  },
+});
+```
+
+**Parameters:**
+
+- `signer: AoSigner` - The signer used to authenticate the spawn transaction
+- `module?: string` - Optional module ID to use; if not provided, gets latest from ANT registry
+- `ao?: AoClient` - Optional AO client instance (defaults to legacy mode connection)
+- `scheduler?: string` - Optional scheduler ID
+- `state?: SpawnANTState` - Optional initial state for the ANT including name, ticker, description, etc.
+- `antRegistryId?: string` - Optional ANT registry ID
+- `logger?: Logger` - Optional logger instance
+- `authority?: string` - Optional authority
+
+**Returns:** `Promise<ProcessId>` - The process ID of the newly spawned ANT
+
+#### `versions`
+
+Returns an ANTVersions instance that provides access to available ANT versions from the ANT registry. This static property allows you to query version information without needing a specific ANT process.
+
+```typescript
+import { ANT } from '@ar.io/sdk';
+
+// Get all available ANT versions
+const antVersions = ANT.versions;
+const versions = await antVersions.getANTVersions();
+
+// Get the latest ANT version
+const latestVersion = await antVersions.getLatestANTVersion();
+```
+
+**Returns:** `AoANTVersionsRead` - A read-only ANT versions client
 
 #### `getInfo()`
 
