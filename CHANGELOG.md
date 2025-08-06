@@ -1,3 +1,10 @@
+## [3.16.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0...v3.16.1-alpha.1) (2025-08-06)
+
+
+### Bug Fixes
+
+* **deps:** reduce included imports in minimized bundle ([7133c46](https://github.com/ar-io/ar-io-sdk/commit/7133c467a13e4ff3aff4b5b493e5795dcced9486))
+
 # [3.16.0](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0) (2025-08-06)
 
 
