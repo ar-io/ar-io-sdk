@@ -1,3 +1,15 @@
+# [3.17.0](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0...v3.17.0) (2025-08-07)
+
+
+### Bug Fixes
+
+* **deps:** reduce included imports in minimized bundle ([7133c46](https://github.com/ar-io/ar-io-sdk/commit/7133c467a13e4ff3aff4b5b493e5795dcced9486))
+
+
+### Features
+
+* **arns:** add API to fetch arns names for a given address ([d2b2c91](https://github.com/ar-io/ar-io-sdk/commit/d2b2c915010f98757cc5acec0bc8beb70986ce32))
+
 ## [3.16.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0...v3.16.1-alpha.1) (2025-08-06)
 
 

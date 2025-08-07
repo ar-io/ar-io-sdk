@@ -629,6 +629,12 @@ export interface AoARIORead extends ArNSNameResolver {
   getArNSRecords(
     params?: AoGetArNSRecordsParams,
   ): Promise<PaginationResult<AoArNSNameDataWithName>>;
+  getArNSRecordsForAddress(
+    params: PaginationParams<AoArNSNameDataWithName> & {
+      address: WalletAddress;
+      antRegistryProcessId?: string;
+    },
+  ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(
     params?: PaginationParams<AoArNSReservedNameDataWithName>,
   ): Promise<PaginationResult<AoArNSReservedNameDataWithName>>;
