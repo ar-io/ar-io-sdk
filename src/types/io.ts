@@ -634,9 +634,7 @@ export interface AoARIORead extends ArNSNameResolver {
       address: WalletAddress;
       antRegistryProcessId?: string;
     },
-  ): Promise<
-    PaginationResult<AoArNSNameDataWithName & { role: 'controller' | 'owner' }>
-  >;
+  ): Promise<PaginationResult<AoArNSNameDataWithName>>;
   getArNSReservedNames(
     params?: PaginationParams<AoArNSReservedNameDataWithName>,
   ): Promise<PaginationResult<AoArNSReservedNameDataWithName>>;

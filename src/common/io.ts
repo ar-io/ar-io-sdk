@@ -1020,11 +1020,8 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       antRegistryId?: string;
       address: WalletAddress;
     },
-  ): Promise<
-    PaginationResult<AoArNSNameDataWithName & { role: 'controller' | 'owner' }>
-  > {
+  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
     const { antRegistryId = ANT_REGISTRY_ID, address } = params;
-    // create the ant registry
     const antRegistry = ANTRegistry.init({
       process: new AOProcess({
         ao: this.process.ao,
@@ -1032,44 +1029,38 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       }),
     });
 
-    // TODO: this could be memoized to avoid re-fetching the ACL for the same address
+    // Note: there could be a race condition here if the ACL changes during pagination requests, resulting in different results from the `getArNSRecords`.
+    // This is an unlikely scenario, so to give the client control, and keep this API consistent with other ArNS APIs, we refetch the ACL for each page, and
+    // return paginated results.
     const { Controlled = [], Owned = [] } = await antRegistry.accessControlList(
       {
         address,
       },
     );
 
-    const allProcessIds = [...Controlled, ...Owned];
+    const allProcessIds = new Set([...Controlled, ...Owned]);
 
-    if (allProcessIds.length === 0) {
+    if (allProcessIds.size === 0) {
       return {
         items: [],
-        limit: 0,
-        totalItems: 0,
-        sortOrder: 'asc',
         hasMore: false,
+        nextCursor: undefined,
+        limit: params.limit ?? 1000,
+        totalItems: 0,
+        sortOrder: params.sortOrder ?? 'asc',
       };
     }
 
-    const namesForPage = await this.getArNSRecords({
+    const currentPage = await this.getArNSRecords({
       ...params,
       filters: {
-        // TODO: this filters cannot be larger than whatever AO allows for dry-runs, investigate and batch the requests if needed
-        processId: allProcessIds,
+        // NOTE: we confirmed that dry-runs are not limited to the same tag limits as data-items.
+        // Should this change, we'll need to batch the requests.
+        processId: Array.from(allProcessIds),
       },
     });
 
-    const namesWithRole: (AoArNSNameDataWithName & {
-      role: 'controller' | 'owner';
-    })[] = namesForPage.items.map((name) => ({
-      ...name,
-      role: Owned.includes(name.processId) ? 'owner' : 'controller',
-    }));
-
-    return {
-      ...namesForPage,
-      items: namesWithRole,
-    };
+    return currentPage;
   }
 }
 
