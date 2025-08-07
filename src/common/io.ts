@@ -1701,7 +1701,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async requestPrimaryName(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult<AoPrimaryNameRequest>> {
     if (params.fundFrom === 'turbo') {
       throw new Error(
         'Turbo funding is not yet supported for primary name requests',
@@ -1719,6 +1719,52 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       signer: this.signer,
       tags: pruneTags(allTags),
     });
+  }
+
+  async setPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    // check the name exists
+    const arnsRecord = await this.getArNSRecord({ name: params.name });
+    if (arnsRecord === undefined) {
+      throw new Error(`ARNS name '${params.name}' does not exist`);
+    }
+
+    const antClient = ANT.init({
+      process: new AOProcess({
+        processId: arnsRecord.processId,
+        ao: this.process.ao,
+      }),
+      signer: this.signer,
+    });
+
+    // TODO: uncomment this when we have a way to get the owner address of the current signer
+    // const signerAddress = await this.signer.getAddress();
+    // const antOwner = await antClient.getOwner();
+    // if (antOwner !== signerAddress) {
+    //   throw new Error(
+    //     `Signer ${signerAddress} is not the owner of ANT process ${processId} for name '${params.name}'. Owner is ${antOwner}`,
+    //   );
+    // }
+
+    // create the primary name request
+    const requestResult = await this.requestPrimaryName(params, options);
+    if (!requestResult.id || requestResult.result?.initiator === undefined) {
+      throw new Error('Failed to request primary name for name ' + params.name);
+    }
+
+    // approve the primary name request with the ant
+    const approveResult = await antClient.approvePrimaryNameRequest(
+      {
+        name: params.name,
+        address: requestResult.result?.initiator,
+        arioProcessId: this.process.processId,
+      },
+      options,
+    );
+
+    return approveResult;
   }
 
   /**

@@ -748,6 +748,7 @@ export interface AoARIOWrite extends AoARIORead {
     vaultId: string;
   }>;
   requestPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
+  setPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
   redelegateStake: AoWriteAction<AoRedelegateStakeParams>;
 }
 
