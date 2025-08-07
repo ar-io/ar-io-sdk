@@ -17,6 +17,7 @@ import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
 import {
+  ANT_REGISTRY_ID,
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
 } from '../constants.js';
@@ -97,6 +98,7 @@ import {
   removeEligibleRewardsFromEpochData,
   sortAndPaginateEpochDataIntoEligibleDistributions,
 } from '../utils/arweave.js';
+import { ANTRegistry } from './ant-registry.js';
 import { ANT } from './ant.js';
 import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
@@ -1002,6 +1004,63 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       undernameLimit: nameData.undernameLimit,
       type: nameData.type,
     };
+  }
+
+  /**
+   * Get all ARNS names associated with an address using the provided ANT registry address.
+   *
+   * By default it will use the mainnet ANT registry address.
+   *
+   * @param {Object} params - The parameters for fetching ARNS names
+   * @param {string} params.address - The address to fetch the ARNS names for
+   * @returns {Promise<AoArNSNameData[]>} The ARNS names associated with the address
+   */
+  async getArNSRecordsForAddress(
+    params: PaginationParams<AoArNSNameDataWithName> & {
+      antRegistryId?: string;
+      address: WalletAddress;
+    },
+  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
+    const { antRegistryId = ANT_REGISTRY_ID, address } = params;
+    const antRegistry = ANTRegistry.init({
+      process: new AOProcess({
+        ao: this.process.ao,
+        processId: antRegistryId,
+      }),
+    });
+
+    // Note: there could be a race condition here if the ACL changes during pagination requests, resulting in different results from the `getArNSRecords`.
+    // This is an unlikely scenario, so to give the client control, and keep this API consistent with other ArNS APIs, we refetch the ACL for each page, and
+    // return paginated results.
+    const { Controlled = [], Owned = [] } = await antRegistry.accessControlList(
+      {
+        address,
+      },
+    );
+
+    const allProcessIds = new Set([...Controlled, ...Owned]);
+
+    if (allProcessIds.size === 0) {
+      return {
+        items: [],
+        hasMore: false,
+        nextCursor: undefined,
+        limit: params.limit ?? 1000,
+        totalItems: 0,
+        sortOrder: params.sortOrder ?? 'asc',
+      };
+    }
+
+    const currentPage = await this.getArNSRecords({
+      ...params,
+      filters: {
+        // NOTE: we confirmed that dry-runs are not limited to the same tag limits as data-items.
+        // Should this change, we'll need to batch the requests.
+        processId: Array.from(allProcessIds),
+      },
+    });
+
+    return currentPage;
   }
 }
 

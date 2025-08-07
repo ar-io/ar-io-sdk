@@ -1400,6 +1400,49 @@ Available `sortBy` options are any of the keys on the record object, e.g. `name`
 
 </details>
 
+#### `getArNSRecordsForAddress({ address, antRegistryProcessId, cursor, limit, sortBy, sortOrder })`
+
+Retrieves all registered ArNS records of the specified address according to the `ANTRegistry` access control list, paginated and sorted by the specified criteria. The `cursor` used for pagination is the last ArNS name from the previous request.
+
+```typescript
+const ario = ARIO.mainnet();
+const records = await ario.getArNSRecordsForAddress({
+  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  limit: 100,
+  sortBy: 'startTimestamp',
+  sortOrder: 'desc',
+});
+```
+
+Available `sortBy` options are any of the keys on the record object, e.g. `name`, `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "limit": 1,
+  "totalItems": 31,
+  "hasMore": true,
+  "nextCursor": "ardrive",
+  "items": [
+    {
+      "startTimestamp": 1740009600000,
+      "name": "ardrive",
+      "endTimestamp": 1777328018367,
+      "type": "permabuy",
+      "purchasePrice": 0,
+      "undernameLimit": 100,
+      "processId": "hpF0HdijWlBLFePjWX6u_-Lg3Z2E_PrP_AoaXDVs0bA"
+    }
+  ],
+  "sortOrder": "desc",
+  "sortBy": "startTimestamp"
+}
+```
+
+</details>
+
 #### `increaseUndernameLimit({ name, qty })`
 
 Increases the undername support of a domain up to a maximum of 10k. Domains, by default, support up to 10 undernames.

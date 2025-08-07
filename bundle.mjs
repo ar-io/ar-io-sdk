@@ -1,9 +1,10 @@
 import { build } from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
+import fs from 'fs';
 
 const bundle = async () => {
   console.log('Building minified web bundle file.');
-  await build({
+  return build({
     entryPoints: ['./src/web/index.ts'],
     bundle: true,
     minify: true,
@@ -12,6 +13,11 @@ const bundle = async () => {
     format: 'esm',
     globalName: 'ar.io',
     plugins: [
+      /**
+       * We need to polyfill the node modules that are used in the web bundle.
+       *
+       * Related: https://github.com/permaweb/ao/blob/9110d6af3be8540054c2e9ba2639fd1429033c9d/connect/esbuild.js#L43-L70
+       */
       polyfillNode({
         polyfills: {
           crypto: true,
@@ -21,17 +27,18 @@ const bundle = async () => {
         },
       }),
     ],
-    external: ['commander', 'prompts'],
+    external: ['commander', 'prompts', 'winston'],
     tsconfig: './tsconfig.web.json',
     outfile: './bundles/web.bundle.min.js',
-  })
-    .catch((e) => {
-      console.log(e);
-      process.exit(1);
-    })
-    .then(() => {
-      console.log('Successfully built web bundle.');
-    });
+    metafile: true,
+  }).catch((e) => {
+    console.log(e);
+    process.exit(1);
+  });
 };
 
-bundle();
+const result = await bundle();
+
+if (result.metafile) {
+  fs.writeFileSync('./metafile.json', JSON.stringify(result.metafile, null, 2));
+}
