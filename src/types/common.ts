@@ -32,7 +32,7 @@ import {
 import Arweave from 'arweave';
 
 import { SpawnANTState } from './ant.js';
-import { AoBuyRecordParams } from './io.js';
+import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -162,6 +162,14 @@ export type SpawnAntProgressEvent = {
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
   'buying-name': AoBuyRecordParams;
+};
+
+export type SetPrimaryNameProgressEvents = {
+  'validating-request': AoArNSPurchaseParams;
+  'requesting-primary-name': AoArNSPurchaseParams & {
+    processId: ProcessId;
+  };
+  'approving-request': AoPrimaryNameRequest;
 };
 
 export interface AOContract {

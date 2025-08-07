@@ -82,6 +82,7 @@ import {
   PaginationResult,
   ProcessConfig,
   ProcessConfiguration,
+  SetPrimaryNameProgressEvents,
   TransactionId,
   WalletAddress,
   WithSigner,
@@ -1723,8 +1724,13 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
 
   async setPrimaryName(
     params: AoArNSPurchaseParams,
-    options?: WriteOptions,
+    options?: WriteOptions<
+      keyof SetPrimaryNameProgressEvents,
+      SetPrimaryNameProgressEvents[keyof SetPrimaryNameProgressEvents]
+    >,
   ): Promise<AoMessageResult> {
+    options?.onSigningProgress?.('validating-request', params);
+
     // check the name exists
     const arnsRecord = await this.getArNSRecord({ name: params.name });
     if (arnsRecord === undefined) {
@@ -1739,6 +1745,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       signer: this.signer,
     });
 
+    // TODO: we could allow user to forcefully remove an existing primary name if they want to
+
     // TODO: uncomment this when we have a way to get the owner address of the current signer
     // const signerAddress = await this.signer.getAddress();
     // const antOwner = await antClient.getOwner();
@@ -1748,11 +1756,26 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     //   );
     // }
 
+    options?.onSigningProgress?.('requesting-primary-name', {
+      name: params.name,
+      fundFrom: params.fundFrom,
+      referrer: params.referrer,
+      processId: arnsRecord.processId,
+    });
+
     // create the primary name request
     const requestResult = await this.requestPrimaryName(params, options);
     if (!requestResult.id || requestResult.result?.initiator === undefined) {
       throw new Error('Failed to request primary name for name ' + params.name);
     }
+
+    options?.onSigningProgress?.('approving-request', {
+      name: params.name,
+      initiator: requestResult.result?.initiator,
+      startTimestamp: requestResult.result?.startTimestamp,
+      endTimestamp: requestResult.result?.endTimestamp,
+      processId: this.process.processId,
+    });
 
     // approve the primary name request with the ant
     const approveResult = await antClient.approvePrimaryNameRequest(
