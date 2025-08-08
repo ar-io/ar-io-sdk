@@ -113,10 +113,12 @@ import {
 } from './turbo.js';
 
 type ARIOConfigNoSigner = OptionalPaymentUrl<
-  OptionalArweave<ProcessConfiguration>
+  OptionalArweave<ProcessConfiguration & { hyperbeamUrl?: string }>
 >;
 type ARIOConfigWithSigner = WithSigner<
-  OptionalPaymentUrl<OptionalArweave<ProcessConfiguration>>
+  OptionalPaymentUrl<
+    OptionalArweave<ProcessConfiguration & { hyperbeamUrl?: string }>
+  >
 >;
 
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
@@ -217,11 +219,13 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   public readonly process: AOProcess;
   protected epochSettings: AoEpochSettings | undefined;
   protected arweave: Arweave;
+  protected hyperbeamUrl: string | undefined;
   protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
   protected logger = Logger.default;
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
+    this.hyperbeamUrl = config?.hyperbeamUrl;
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ARIO_MAINNET_PROCESS_ID,
@@ -1023,6 +1027,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   ): Promise<PaginationResult<AoArNSNameDataWithName>> {
     const { antRegistryId = ANT_REGISTRY_ID, address } = params;
     const antRegistry = ANTRegistry.init({
+      hyperbeamUrl: this.hyperbeamUrl,
       process: new AOProcess({
         ao: this.process.ao,
         processId: antRegistryId,
