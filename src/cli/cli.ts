@@ -358,13 +358,6 @@ makeCommand<InitiatorCLIOptions>({
       ),
 });
 
-makeCommand<AddressAndNameCLIOptions>({
-  name: 'set-primary-name',
-  description: 'Set primary name',
-  options: [optionMap.address, optionMap.name],
-  action: setPrimaryNameCLICommand,
-});
-
 makeCommand<AddressCLIOptions>({
   name: 'get-redelegation-fee',
   description: 'Get redelegation fee',
@@ -651,6 +644,13 @@ makeCommand({
   description: 'Request a primary name',
   options: arnsPurchaseOptions,
   action: requestPrimaryNameCLICommand,
+});
+
+makeCommand<AddressAndNameCLIOptions>({
+  name: 'set-primary-name',
+  description: 'Set an ArNS name you own as your primary name',
+  options: arnsPurchaseOptions,
+  action: setPrimaryNameCLICommand,
 });
 
 // # ANT Registry

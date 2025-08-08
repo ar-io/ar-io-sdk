@@ -259,7 +259,7 @@ export async function requestPrimaryNameCLICommand(
     );
   }
 
-  const { result } = await ario.requestPrimaryName(
+  return ario.requestPrimaryName(
     {
       name,
       fundFrom,
@@ -268,12 +268,6 @@ export async function requestPrimaryNameCLICommand(
     },
     customTagsFromOptions(o),
   );
-
-  if (result?.request === undefined) {
-    throw new Error('Failed to request primary name for name ' + name);
-  }
-
-  return result.request;
 }
 
 export async function setPrimaryNameCLICommand(
