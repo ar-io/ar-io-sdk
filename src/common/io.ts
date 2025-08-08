@@ -1756,7 +1756,6 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           });
           // check the name exists
           const arnsRecord = await this.getArNSRecord({ name: params.name });
-          // TODO: potentially provide callback saying primary name request already exists
           if (arnsRecord === undefined) {
             throw new Error(`ARNS name '${params.name}' does not exist`);
           }
@@ -1768,6 +1767,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           return {
             id: 'stub-id', // stub-id to indicate that the request already exists
             result: {
+              // this is a partial stub of the AoCreatePrimaryNameRequest result
+              // we only need the request and base name owner for the approval
               request: primaryNameRequest,
               baseNameOwner: arnsRecord.processId,
               fundingPlan: {
@@ -1783,32 +1784,29 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
 
     // the result is either a new primary name request or an existing one
     // for new primary name requests the result includes the request, funding plan, and base name owner
-    // for existing primary name requests the result includes just the request and base name owner
+    // for existing primary name requests the result includes just the request and base name owner (see above)
     const primaryNameRequest = requestResult.result;
-
-    const initiator =
-      primaryNameRequest?.request?.initiator ??
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      primaryNameRequest?.fundingPlan?.address;
+    const antProcessId = primaryNameRequest?.baseNameOwner;
+    const initiator = primaryNameRequest?.fundingPlan?.address;
     if (
+      primaryNameRequest === undefined ||
       initiator === undefined ||
-      requestResult.result?.baseNameOwner === undefined
+      antProcessId === undefined
     ) {
       throw new Error(
-        `Failed to request primary name ${params.name} for ${initiator}`,
+        `Failed to request primary name ${params.name} for ${initiator} owned by ${antProcessId} process`,
       );
     }
 
     options?.onSigningProgress?.('approving-request', {
       name: params.name,
-      processId: requestResult.result?.baseNameOwner,
-      request: requestResult.result?.request,
+      processId: antProcessId,
+      request: primaryNameRequest.request,
     });
 
     const antClient = ANT.init({
       process: new AOProcess({
-        processId: requestResult.result?.baseNameOwner,
+        processId: antProcessId,
         ao: this.process.ao,
       }),
       signer: this.signer,
