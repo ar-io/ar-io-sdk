@@ -1406,12 +1406,29 @@ Retrieves all registered ArNS records of the specified address according to the 
 
 ```typescript
 const ario = ARIO.mainnet();
-const records = await ario.getArNSRecordsForAddress({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  limit: 100,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
-});
+
+const records = {};
+let cursor = undefined;
+let hasMore = true;
+
+// Note that its highly unlikely any individual has more than 1000 domains, but if they do, you will need to paginate.
+while (hasMore) {
+  const res = await ario.getArNSRecordsForAddress({
+    address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    limit: 100,
+    sortBy: 'startTimestamp',
+    sortOrder: 'desc',
+    cursor,
+  });
+
+  res.items.forEach((nameRecord) => {
+    const { name, ...record } = nameRecord;
+    records[name] = record;
+  });
+
+  cursor = res.nextCursor;
+  hasMore = res.hasMore;
+}
 ```
 
 Available `sortBy` options are any of the keys on the record object, e.g. `name`, `processId`, `endTimestamp`, `startTimestamp`, `type`, `undernames`.
