@@ -1,3 +1,10 @@
+## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
+
+
+### Bug Fixes
+
+* **types:** update versions type ([3424f4d](https://github.com/ar-io/ar-io-sdk/commit/3424f4dd49c7265c20ea7e4e16b1ddbc0ed8ce1e))
+
 ## [3.17.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1-alpha.1) (2025-08-08)
 
 
