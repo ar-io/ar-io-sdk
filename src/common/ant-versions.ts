@@ -69,10 +69,26 @@ export class ANTVersionsReadable implements AoANTVersionsRead {
     }
   }
   async getANTVersions(): Promise<
-    Record<string, { moduleId: string; luaSourceId?: string; notes: string }>
+    Record<
+      string,
+      {
+        moduleId: string;
+        luaSourceId?: string;
+        notes?: string;
+        releaseTimestamp: number;
+      }
+    >
   > {
     const res = await this.process.read<
-      Record<string, { moduleId: string; luaSourceId?: string; notes: string }>
+      Record<
+        string,
+        {
+          moduleId: string;
+          luaSourceId?: string;
+          notes?: string;
+          releaseTimestamp: number;
+        }
+      >
     >({
       tags: [{ name: 'Action', value: 'Get-Versions' }],
     });
@@ -86,6 +102,7 @@ export class ANTVersionsReadable implements AoANTVersionsRead {
     moduleId: string;
     luaSourceId?: string;
     notes?: string;
+    releaseTimestamp: number;
   }> {
     const versions = await this.getANTVersions();
     const lastestVersion = Object.entries(versions).at(-1);
