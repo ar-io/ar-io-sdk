@@ -16,6 +16,7 @@
 import { AOProcess } from '../common/index.js';
 import { validateArweaveId } from '../utils/arweave.js';
 import {
+  AoCreatePrimaryNameRequest,
   AoMessageResult,
   AoPrimaryName,
   AoPrimaryNameRequest,
@@ -747,7 +748,10 @@ export interface AoARIOWrite extends AoARIORead {
     gatewayAddress?: WalletAddress;
     vaultId: string;
   }>;
-  requestPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
+  requestPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions,
+  ): Promise<AoMessageResult<AoCreatePrimaryNameRequest>>;
   setPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
   redelegateStake: AoWriteAction<AoRedelegateStakeParams>;
 }

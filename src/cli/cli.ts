@@ -30,6 +30,7 @@ import {
   extendLeaseCLICommand,
   increaseUndernameLimitCLICommand,
   requestPrimaryNameCLICommand,
+  setPrimaryNameCLICommand,
   upgradeRecordCLICommand,
 } from './commands/arnsPurchaseCommands.js';
 import {
@@ -355,6 +356,13 @@ makeCommand<InitiatorCLIOptions>({
             message: `No primary name request found`,
           },
       ),
+});
+
+makeCommand<AddressAndNameCLIOptions>({
+  name: 'set-primary-name',
+  description: 'Set primary name',
+  options: [optionMap.address, optionMap.name],
+  action: setPrimaryNameCLICommand,
 });
 
 makeCommand<AddressCLIOptions>({

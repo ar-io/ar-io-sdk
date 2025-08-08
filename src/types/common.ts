@@ -91,6 +91,17 @@ export type AoPrimaryNameRequest = {
   endTimestamp: Timestamp;
 };
 
+export type AoCreatePrimaryNameRequest = {
+  request: Omit<AoPrimaryNameRequest, 'initiator'> & {
+    initiator: WalletAddress;
+  };
+  newPrimaryName: AoPrimaryName;
+  baseNameOwner: WalletAddress;
+  fundingPlan: Record<string, unknown>;
+  fundingResult: Record<string, unknown>;
+  demandFactor: Record<string, unknown>;
+};
+
 export type AoPrimaryName = {
   owner: WalletAddress;
   processId: ProcessId;
@@ -165,11 +176,16 @@ export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
 };
 
 export type SetPrimaryNameProgressEvents = {
-  'validating-request': AoArNSPurchaseParams;
-  'requesting-primary-name': AoArNSPurchaseParams & {
+  'requesting-primary-name': AoArNSPurchaseParams;
+  'request-already-exists': {
+    name: string;
+    initiator: WalletAddress;
+  };
+  'approving-request': {
+    request: AoPrimaryNameRequest;
+    name: string;
     processId: ProcessId;
   };
-  'approving-request': AoPrimaryNameRequest;
 };
 
 export interface AOContract {
