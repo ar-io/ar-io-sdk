@@ -1,3 +1,10 @@
+## [3.17.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.1...v3.17.2-alpha.1) (2025-08-08)
+
+
+### Bug Fixes
+
+* **ant registry:** add hyperbeam url to ario read for ant registry ([9e9b528](https://github.com/ar-io/ar-io-sdk/commit/9e9b528ae48028eb29e45fdba5cde7363f620c64))
+
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
 
 
