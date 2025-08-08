@@ -1739,7 +1739,6 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     // create the primary name request, if it already exists, get the request and base name owner
     const requestResult = await this.requestPrimaryName(params, options).catch(
       async (error) => {
-        console.log('error', error);
         // check for the error message, it may be due to the request already being made
         if (error.message.includes('already exists')) {
           // parse out the initiator from the error message `		"Primary name request by '" .. initiator .. "' for '" .. name .. "' already exists"
@@ -1771,6 +1770,9 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
             result: {
               request: primaryNameRequest,
               baseNameOwner: arnsRecord.processId,
+              fundingPlan: {
+                address: initiator,
+              },
             },
           };
         }
@@ -1779,12 +1781,16 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       },
     );
 
+    // the result is either a new primary name request or an existing one
+    // for new primary name requests the result includes the request, funding plan, and base name owner
+    // for existing primary name requests the result includes just the request and base name owner
+    const primaryNameRequest = requestResult.result;
+
     const initiator =
-      requestResult.result?.request?.initiator === undefined
-        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          requestResult.result?.fundingPlan?.address
-        : requestResult.result?.request?.initiator;
+      primaryNameRequest?.request?.initiator ??
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      primaryNameRequest?.fundingPlan?.address;
     if (
       initiator === undefined ||
       requestResult.result?.baseNameOwner === undefined
