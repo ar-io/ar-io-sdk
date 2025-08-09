@@ -34,6 +34,7 @@ import {
   AoArNSReservedNameDataWithName,
   AoBalanceWithAddress,
   AoBuyRecordParams,
+  AoCreatePrimaryNameRequest,
   AoCreateVaultParams,
   AoDelegation,
   AoEligibleDistribution,
@@ -82,6 +83,7 @@ import {
   PaginationResult,
   ProcessConfig,
   ProcessConfiguration,
+  SetPrimaryNameProgressEvents,
   TransactionId,
   WalletAddress,
   WithSigner,
@@ -1701,7 +1703,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
   async requestPrimaryName(
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<AoMessageResult<AoCreatePrimaryNameRequest>> {
     if (params.fundFrom === 'turbo') {
       throw new Error(
         'Turbo funding is not yet supported for primary name requests',
@@ -1719,6 +1721,108 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       signer: this.signer,
       tags: pruneTags(allTags),
     });
+  }
+
+  async setPrimaryName(
+    params: AoArNSPurchaseParams,
+    options?: WriteOptions<
+      keyof SetPrimaryNameProgressEvents,
+      SetPrimaryNameProgressEvents[keyof SetPrimaryNameProgressEvents]
+    >,
+  ): Promise<AoMessageResult> {
+    options?.onSigningProgress?.('requesting-primary-name', {
+      name: params.name,
+      fundFrom: params.fundFrom,
+      referrer: params.referrer,
+    });
+
+    // create the primary name request, if it already exists, get the request and base name owner
+    const requestResult = await this.requestPrimaryName(params, options).catch(
+      async (error) => {
+        // check for the error message, it may be due to the request already being made
+        if (error.message.includes('already exists')) {
+          // parse out the initiator from the error message `		"Primary name request by '" .. initiator .. "' for '" .. name .. "' already exists"
+          const initiator = error.message.match(/by '([^']+)'/)?.[1];
+          if (initiator === undefined) {
+            throw error;
+          }
+          options?.onSigningProgress?.('request-already-exists', {
+            name: params.name,
+            initiator,
+          });
+          // get the primary name request
+          const primaryNameRequest = await this.getPrimaryNameRequest({
+            initiator,
+          });
+          // check the name exists
+          const arnsRecord = await this.getArNSRecord({ name: params.name });
+          if (arnsRecord === undefined) {
+            throw new Error(`ARNS name '${params.name}' does not exist`);
+          }
+          if (primaryNameRequest.initiator !== initiator) {
+            throw new Error(
+              `Primary name request for name '${params.name}' was not approved`,
+            );
+          }
+          return {
+            id: 'stub-id', // stub-id to indicate that the request already exists
+            result: {
+              // this is a partial stub of the AoCreatePrimaryNameRequest result
+              // we only need the request and base name owner for the approval
+              request: primaryNameRequest,
+              baseNameOwner: arnsRecord.processId,
+              fundingPlan: {
+                address: initiator,
+              },
+            },
+          };
+        }
+        // throw any other errors from the contract
+        throw error;
+      },
+    );
+
+    // the result is either a new primary name request or an existing one
+    // for new primary name requests the result includes the request, funding plan, and base name owner
+    // for existing primary name requests the result includes just the request and base name owner (see above)
+    const primaryNameRequest = requestResult.result;
+    const antProcessId = primaryNameRequest?.baseNameOwner;
+    const initiator = primaryNameRequest?.fundingPlan?.address;
+    if (
+      primaryNameRequest === undefined ||
+      initiator === undefined ||
+      antProcessId === undefined
+    ) {
+      throw new Error(
+        `Failed to request primary name ${params.name} for ${initiator} owned by ${antProcessId} process`,
+      );
+    }
+
+    options?.onSigningProgress?.('approving-request', {
+      name: params.name,
+      processId: antProcessId,
+      request: primaryNameRequest.request,
+    });
+
+    const antClient = ANT.init({
+      process: new AOProcess({
+        processId: antProcessId,
+        ao: this.process.ao,
+      }),
+      signer: this.signer,
+    });
+
+    // approve the primary name request with the ant
+    const approveResult = await antClient.approvePrimaryNameRequest(
+      {
+        name: params.name,
+        address: initiator,
+        arioProcessId: this.process.processId,
+      },
+      options,
+    );
+
+    return approveResult;
   }
 
   /**

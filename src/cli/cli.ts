@@ -30,6 +30,7 @@ import {
   extendLeaseCLICommand,
   increaseUndernameLimitCLICommand,
   requestPrimaryNameCLICommand,
+  setPrimaryNameCLICommand,
   upgradeRecordCLICommand,
 } from './commands/arnsPurchaseCommands.js';
 import {
@@ -643,6 +644,13 @@ makeCommand({
   description: 'Request a primary name',
   options: arnsPurchaseOptions,
   action: requestPrimaryNameCLICommand,
+});
+
+makeCommand<AddressAndNameCLIOptions>({
+  name: 'set-primary-name',
+  description: 'Set an ArNS name you own as your primary name',
+  options: arnsPurchaseOptions,
+  action: setPrimaryNameCLICommand,
 });
 
 // # ANT Registry

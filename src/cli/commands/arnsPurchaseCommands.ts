@@ -240,8 +240,6 @@ export async function requestPrimaryNameCLICommand(
   const name = requiredStringFromOptions(o, 'name');
 
   if (!o.skipConfirmation) {
-    // TODO: Assert name requested is not already owned?
-    // TODO: More assertions?
     await assertEnoughBalanceForArNSPurchase({
       ario,
       address: signerAddress,
@@ -259,7 +257,7 @@ export async function requestPrimaryNameCLICommand(
     );
   }
 
-  return ario.requestPrimaryName(
+  const { result } = await ario.requestPrimaryName(
     {
       name,
       fundFrom,
@@ -268,4 +266,28 @@ export async function requestPrimaryNameCLICommand(
     },
     customTagsFromOptions(o),
   );
+
+  if (result?.request === undefined) {
+    throw new Error('Failed to request primary name for name ' + name);
+  }
+
+  return result.request;
+}
+
+export async function setPrimaryNameCLICommand(
+  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+) {
+  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const name = requiredStringFromOptions(o, 'name');
+  const fundFrom = fundFromFromOptions(o);
+  const referrer = referrerFromOptions(o);
+
+  if (!o.skipConfirmation) {
+    await assertConfirmationPrompt(
+      `Are you sure you want to set the primary name ${name} for address ${signerAddress}?`,
+      o,
+    );
+  }
+
+  return ario.setPrimaryName({ name, fundFrom, referrer });
 }
