@@ -1970,9 +1970,21 @@ const name = await ario.getPrimaryName({
 
 </details>
 
+#### `setPrimaryName({ name })`
+
+Sets an ArNS name already owned by the `signer` as their primary name. Note: `signer` must be the owner of the `processId` that is assigned to the name. If not, the transaction will fail.
+
+_Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
+
+```typescript
+const signer = new ArweaveSigner(jwk);
+const ario = ARIO.mainnet({ signer });
+await ario.setPrimaryName({ name: 'my-arns-name' }); // the caller must already have purchased the name my-arns-name and be assigned as the owner of the processId that is assigned to the name
+```
+
 #### `requestPrimaryName({ name })`
 
-Requests a primary name for the caller's address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
+Requests a primary name for the `signer`'s address. The request must be approved by the new owner of the requested name via the `approvePrimaryNameRequest`[#approveprimarynamerequest-name-address-] API.
 
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 

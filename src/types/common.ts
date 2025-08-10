@@ -32,7 +32,7 @@ import {
 import Arweave from 'arweave';
 
 import { SpawnANTState } from './ant.js';
-import { AoBuyRecordParams } from './io.js';
+import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -89,6 +89,17 @@ export type AoPrimaryNameRequest = {
   initiator: WalletAddress;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
+};
+
+export type AoCreatePrimaryNameRequest = {
+  request: Omit<AoPrimaryNameRequest, 'initiator'> & {
+    initiator: WalletAddress;
+  };
+  newPrimaryName: AoPrimaryName;
+  baseNameOwner: WalletAddress;
+  fundingPlan: Record<string, unknown>;
+  fundingResult: Record<string, unknown>;
+  demandFactor: Record<string, unknown>;
 };
 
 export type AoPrimaryName = {
@@ -162,6 +173,19 @@ export type SpawnAntProgressEvent = {
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
   'buying-name': AoBuyRecordParams;
+};
+
+export type SetPrimaryNameProgressEvents = {
+  'requesting-primary-name': AoArNSPurchaseParams;
+  'request-already-exists': {
+    name: string;
+    initiator: WalletAddress;
+  };
+  'approving-request': {
+    request: AoPrimaryNameRequest;
+    name: string;
+    processId: ProcessId;
+  };
 };
 
 export interface AOContract {
