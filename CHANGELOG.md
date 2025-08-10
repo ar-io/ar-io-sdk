@@ -1,3 +1,15 @@
+# [3.18.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.2-alpha.1...v3.18.0-alpha.1) (2025-08-10)
+
+
+### Bug Fixes
+
+* **ario:** update set-primary-name API and error handling ([bb61e1a](https://github.com/ar-io/ar-io-sdk/commit/bb61e1ab446767f5b3c061ae5707565cf86d264f))
+
+
+### Features
+
+* **arns:** add support for `setPrimaryName` API, which allows the owner of an ANT that controls an ArNS name set their primary name in a single API ([b21a36c](https://github.com/ar-io/ar-io-sdk/commit/b21a36c2868ad32b125a7801f83f68e187e7f535))
+
 ## [3.17.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.1...v3.17.2-alpha.1) (2025-08-08)
 
 
