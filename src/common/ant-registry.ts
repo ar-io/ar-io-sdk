@@ -112,14 +112,21 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000), // 5 second timeout
       },
-    ).then((res) => {
-      if (res.ok) {
-        this.logger.debug('HyperBeam compatible');
-        return true;
-      }
-      this.logger.debug('HyperBeam not compatible');
-      return false;
-    });
+    )
+      .then((res) => {
+        if (res.ok) {
+          this.logger.debug('HyperBeam compatible');
+          return true;
+        }
+        this.logger.debug('HyperBeam not compatible');
+        return false;
+      })
+      .catch((error) => {
+        this.logger.debug('Failed to check HyperBeam compatibility', {
+          cause: error,
+        });
+        return false;
+      });
 
     return this.checkHyperBeamPromise;
   }

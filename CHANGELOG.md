@@ -1,30 +1,4 @@
-# [3.18.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.2-alpha.1...v3.18.0-alpha.1) (2025-08-10)
-
-
-### Bug Fixes
-
-* **ario:** update set-primary-name API and error handling ([bb61e1a](https://github.com/ar-io/ar-io-sdk/commit/bb61e1ab446767f5b3c061ae5707565cf86d264f))
-
-
-### Features
-
-* **arns:** add support for `setPrimaryName` API, which allows the owner of an ANT that controls an ArNS name set their primary name in a single API ([b21a36c](https://github.com/ar-io/ar-io-sdk/commit/b21a36c2868ad32b125a7801f83f68e187e7f535))
-
-## [3.17.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.1...v3.17.2-alpha.1) (2025-08-08)
-
-
-### Bug Fixes
-
-* **ant registry:** add hyperbeam url to ario read for ant registry ([9e9b528](https://github.com/ar-io/ar-io-sdk/commit/9e9b528ae48028eb29e45fdba5cde7363f620c64))
-
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
-
-
-### Bug Fixes
-
-* **types:** update versions type ([3424f4d](https://github.com/ar-io/ar-io-sdk/commit/3424f4dd49c7265c20ea7e4e16b1ddbc0ed8ce1e))
-
-## [3.17.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1-alpha.1) (2025-08-08)
 
 
 ### Bug Fixes
@@ -42,13 +16,6 @@
 ### Features
 
 * **arns:** add API to fetch arns names for a given address ([d2b2c91](https://github.com/ar-io/ar-io-sdk/commit/d2b2c915010f98757cc5acec0bc8beb70986ce32))
-
-## [3.16.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0...v3.16.1-alpha.1) (2025-08-06)
-
-
-### Bug Fixes
-
-* **deps:** reduce included imports in minimized bundle ([7133c46](https://github.com/ar-io/ar-io-sdk/commit/7133c467a13e4ff3aff4b5b493e5795dcced9486))
 
 # [3.16.0](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0) (2025-08-06)
 
