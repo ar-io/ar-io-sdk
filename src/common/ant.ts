@@ -148,12 +148,19 @@ export class AoANTReadable implements AoANTRead {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000), // 5 second timeout
       },
-    ).then((res) => {
-      if (res.ok) {
-        return true;
-      }
-      return false;
-    });
+    )
+      .then((res) => {
+        if (res.ok) {
+          return true;
+        }
+        return false;
+      })
+      .catch((error) => {
+        this.logger.debug('Failed to check HyperBeam compatibility', {
+          cause: error,
+        });
+        return false;
+      });
 
     return this.checkHyperBeamPromise;
   }
