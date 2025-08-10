@@ -1,3 +1,10 @@
+## [3.17.2](https://github.com/ar-io/ar-io-sdk/compare/v3.17.1...v3.17.2) (2025-08-10)
+
+
+### Bug Fixes
+
+* **hb:** catch fetch errors to trigger fallback ([491f1c2](https://github.com/ar-io/ar-io-sdk/commit/491f1c20c050749286538f0952032a15b7fd4cfb))
+
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
 
 
