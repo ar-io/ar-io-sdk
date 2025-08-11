@@ -485,7 +485,10 @@ export function parseAoEpochData(
 
 export function errorMessageFromOutput(output: {
   Error?: string;
-  Messages?: { Tags?: { name: string; value: string }[] }[];
+  Messages?: {
+    Tags?: { name: string; value: string }[];
+    Data?: string;
+  }[];
 }): string | undefined {
   const errorData = output.Error;
 
@@ -495,9 +498,11 @@ export function errorMessageFromOutput(output: {
     output.Messages?.[0]?.Tags?.find((tag) => tag.name === 'Error')?.value;
 
   if (error !== undefined) {
+    const errorStackTrace = output.Messages?.[0]?.Data;
+    const errorMessage = errorStackTrace ?? error;
     // Regex to match AO error messages like: [string ".src.main"]:5111: Primary name data not found
     // or [string "aos"]:128: some error
-    const match = error.match(/\[string "(.+)"\]:(\d+):\s*(.*)/);
+    const match = errorMessage?.match(/\[string "(.+)"\]:(\d+):\s*(.*)/);
     if (match) {
       // The first group is the src file, the second is the line number, and the third is the error message
       const [, , lineNumber, errorMessage] = match;

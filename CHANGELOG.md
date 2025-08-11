@@ -1,4 +1,11 @@
-## [3.17.2](https://github.com/ar-io/ar-io-sdk/compare/v3.17.1...v3.17.2) (2025-08-10)
+# [3.18.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.2...v3.18.0-alpha.3) (2025-08-11)
+
+
+### Bug Fixes
+
+* **types:** add callback types to AoARIOWrite methods ([82bd790](https://github.com/ar-io/ar-io-sdk/commit/82bd7908feff8eb9c4843e16c9ce1b49aa955de6))
+
+# [3.18.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.1...v3.18.0-alpha.2) (2025-08-10)
 
 
 ### Bug Fixes
@@ -6,13 +13,6 @@
 * **hb:** catch fetch errors to trigger fallback ([491f1c2](https://github.com/ar-io/ar-io-sdk/commit/491f1c20c050749286538f0952032a15b7fd4cfb))
 
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
-
-
-### Bug Fixes
-
-* **types:** update versions type ([3424f4d](https://github.com/ar-io/ar-io-sdk/commit/3424f4dd49c7265c20ea7e4e16b1ddbc0ed8ce1e))
-
-## [3.17.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1-alpha.1) (2025-08-08)
 
 
 ### Bug Fixes
@@ -30,13 +30,6 @@
 ### Features
 
 * **arns:** add API to fetch arns names for a given address ([d2b2c91](https://github.com/ar-io/ar-io-sdk/commit/d2b2c915010f98757cc5acec0bc8beb70986ce32))
-
-## [3.16.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.16.0...v3.16.1-alpha.1) (2025-08-06)
-
-
-### Bug Fixes
-
-* **deps:** reduce included imports in minimized bundle ([7133c46](https://github.com/ar-io/ar-io-sdk/commit/7133c467a13e4ff3aff4b5b493e5795dcced9486))
 
 # [3.16.0](https://github.com/ar-io/ar-io-sdk/compare/v3.15.1...v3.16.0) (2025-08-06)
 

@@ -32,7 +32,7 @@ import {
 import Arweave from 'arweave';
 
 import { SpawnANTState } from './ant.js';
-import { AoBuyRecordParams } from './io.js';
+import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
 import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
@@ -89,6 +89,17 @@ export type AoPrimaryNameRequest = {
   initiator: WalletAddress;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
+};
+
+export type AoCreatePrimaryNameRequest = {
+  request: Omit<AoPrimaryNameRequest, 'initiator'> & {
+    initiator: WalletAddress;
+  };
+  newPrimaryName: AoPrimaryName;
+  baseNameOwner: WalletAddress;
+  fundingPlan: Record<string, unknown>;
+  fundingResult: Record<string, unknown>;
+  demandFactor: Record<string, unknown>;
 };
 
 export type AoPrimaryName = {
@@ -164,6 +175,19 @@ export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
   'buying-name': AoBuyRecordParams;
 };
 
+export type SetPrimaryNameProgressEvents = {
+  'requesting-primary-name': AoArNSPurchaseParams;
+  'request-already-exists': {
+    name: string;
+    initiator: WalletAddress;
+  };
+  'approving-request': {
+    request: AoPrimaryNameRequest;
+    name: string;
+    processId: ProcessId;
+  };
+};
+
 export interface AOContract {
   read<K>({
     tags,
@@ -184,10 +208,12 @@ export interface AOContract {
 }
 
 /** utility type to ensure WriteOptions are appended to each parameter set */
-export type AoWriteAction<P, R = AoMessageResult> = (
-  params: P,
-  options?: WriteOptions,
-) => Promise<R>;
+export type AoWriteAction<
+  P,
+  R = AoMessageResult,
+  K extends string = string,
+  L = unknown,
+> = (params: P, options?: WriteOptions<K, L>) => Promise<R>;
 
 // the following are from @permaweb/aoconnect which does not export these types directly
 export type DryRunResult = {
