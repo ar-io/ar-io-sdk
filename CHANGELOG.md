@@ -1,3 +1,10 @@
+# [3.18.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.2...v3.18.0-alpha.3) (2025-08-11)
+
+
+### Bug Fixes
+
+* **types:** add callback types to AoARIOWrite methods ([82bd790](https://github.com/ar-io/ar-io-sdk/commit/82bd7908feff8eb9c4843e16c9ce1b49aa955de6))
+
 # [3.18.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.1...v3.18.0-alpha.2) (2025-08-10)
 
 
