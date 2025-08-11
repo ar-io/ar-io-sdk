@@ -24,7 +24,9 @@ import {
   AoWriteAction,
   AtLeastOne,
   BlockHeight,
+  BuyArNSNameProgressEvents,
   ProcessId,
+  SetPrimaryNameProgressEvents,
   Timestamp,
   TransactionId,
   WalletAddress,
@@ -737,7 +739,12 @@ export interface AoARIOWrite extends AoARIORead {
     failedGateways: WalletAddress[];
   }>;
   // END OF GATEWAY SPECIFIC INTERACTIONS
-  buyRecord: AoWriteAction<AoBuyRecordParams, AoMessageResult>;
+  buyRecord: AoWriteAction<
+    AoBuyRecordParams,
+    AoMessageResult,
+    keyof BuyArNSNameProgressEvents,
+    BuyArNSNameProgressEvents[keyof BuyArNSNameProgressEvents]
+  >;
   upgradeRecord: AoWriteAction<AoArNSPurchaseParams, AoMessageResult>;
   extendLease: AoWriteAction<AoExtendLeaseParams, AoMessageResult>;
   increaseUndernameLimit: AoWriteAction<
@@ -752,7 +759,12 @@ export interface AoARIOWrite extends AoARIORead {
     params: AoArNSPurchaseParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult<AoCreatePrimaryNameRequest>>;
-  setPrimaryName: AoWriteAction<AoArNSPurchaseParams>;
+  setPrimaryName: AoWriteAction<
+    AoArNSPurchaseParams,
+    AoMessageResult,
+    keyof SetPrimaryNameProgressEvents,
+    SetPrimaryNameProgressEvents[keyof SetPrimaryNameProgressEvents]
+  >;
   redelegateStake: AoWriteAction<AoRedelegateStakeParams>;
 }
 

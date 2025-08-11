@@ -208,10 +208,12 @@ export interface AOContract {
 }
 
 /** utility type to ensure WriteOptions are appended to each parameter set */
-export type AoWriteAction<P, R = AoMessageResult> = (
-  params: P,
-  options?: WriteOptions,
-) => Promise<R>;
+export type AoWriteAction<
+  P,
+  R = AoMessageResult,
+  K extends string = string,
+  L = unknown,
+> = (params: P, options?: WriteOptions<K, L>) => Promise<R>;
 
 // the following are from @permaweb/aoconnect which does not export these types directly
 export type DryRunResult = {
