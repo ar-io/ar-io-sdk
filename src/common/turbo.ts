@@ -86,6 +86,10 @@ export async function signedRequestHeadersFromSigner({
     if ('setPublicKey' in signer && signer['publicKey'] === undefined) {
       await signer.setPublicKey();
     }
+
+    if (signer.publicKey !== undefined) {
+      publicKey = toB64Url(signer.publicKey);
+    }
     signature = toB64Url(
       Buffer.from(await signer.sign(Uint8Array.from(Buffer.from(nonce)))),
     );
