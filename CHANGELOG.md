@@ -1,3 +1,10 @@
+## [3.18.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0...v3.18.1) (2025-08-15)
+
+
+### Bug Fixes
+
+* **turbo:** apply publicKey to signed req headers on node PE-8459 ([c07aa38](https://github.com/ar-io/ar-io-sdk/commit/c07aa38b82f05bd7ce14c45ab912ac094ad1deb3))
+
 # [3.18.0](https://github.com/ar-io/ar-io-sdk/compare/v3.17.2...v3.18.0) (2025-08-11)
 
 
