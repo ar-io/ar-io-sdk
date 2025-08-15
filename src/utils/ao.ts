@@ -52,6 +52,7 @@ export type SpawnANTParams = {
   antRegistryId?: string;
   logger?: Logger;
   authority?: string;
+  tags?: { name: string; value: string }[];
   /**
    * @deprecated Compiled modules are now being used instead of luaCodeTxId
    */
@@ -77,6 +78,7 @@ export async function spawnANT({
   }),
   scheduler = DEFAULT_SCHEDULER_ID,
   state,
+  tags = [],
   antRegistryId = ANT_REGISTRY_ID,
   logger = Logger.default,
   authority = AO_AUTHORITY,
@@ -130,6 +132,7 @@ export async function spawnANT({
         name: 'ANT-Registry-Id',
         value: antRegistryId,
       },
+      ...tags,
     ],
   });
 

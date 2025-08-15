@@ -1495,10 +1495,31 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
     // spawn a new ANT if not provided
     if (params.processId === undefined) {
       try {
+        // if a Name tag is provided, use it. Else, default to the arns name being purchased.
+        const { nameTag, otherTags } = (options?.tags || []).reduce(
+          (
+            acc: {
+              nameTag: { name: string; value: string };
+              otherTags: { name: string; value: string }[];
+            },
+            tag,
+          ) => {
+            if (tag.name === 'Name') {
+              acc.nameTag = tag;
+            } else {
+              acc.otherTags.push(tag);
+            }
+            return acc;
+          },
+          { nameTag: { name: 'Name', value: params.name }, otherTags: [] },
+        );
+
         params.processId = await ANT.spawn({
           signer: this.signer,
           ao: this.process.ao,
           logger: this.logger,
+          // This lets AOS set the ArNS name as the Name in lua state
+          tags: [nameTag, ...otherTags],
           onSigningProgress: options?.onSigningProgress,
         });
       } catch (error) {
