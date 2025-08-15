@@ -86,10 +86,6 @@ export async function signedRequestHeadersFromSigner({
     if ('setPublicKey' in signer && signer['publicKey'] === undefined) {
       await signer.setPublicKey();
     }
-
-    if (signer.publicKey !== undefined) {
-      publicKey = toB64Url(signer.publicKey);
-    }
     signature = toB64Url(
       Buffer.from(await signer.sign(Uint8Array.from(Buffer.from(nonce)))),
     );
@@ -102,7 +98,10 @@ export async function signedRequestHeadersFromSigner({
       } else if ('setPublicKey' in signer) {
         await signer.setPublicKey();
         publicKey = toB64Url(signer.publicKey);
+      } else if ((signer as ArweaveSigner).publicKey !== undefined) {
+        publicKey = toB64Url((signer as ArweaveSigner).publicKey);
       }
+
       break;
     case SignatureConfig.ETHEREUM:
       if ('publicKey' in signer) {
