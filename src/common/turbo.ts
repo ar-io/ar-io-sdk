@@ -99,7 +99,7 @@ export async function signedRequestHeadersFromSigner({
         await signer.setPublicKey();
         publicKey = toB64Url(signer.publicKey);
       } else if ('publicKey' in signer) {
-        publicKey = toB64Url((signer as ArweaveSigner).publicKey);
+        publicKey = toB64Url(signer.publicKey);
       }
 
       break;
