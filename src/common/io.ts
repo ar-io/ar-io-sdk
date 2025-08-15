@@ -1499,6 +1499,8 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
           signer: this.signer,
           ao: this.process.ao,
           logger: this.logger,
+          // This lets AOS set the ArNS name as the Name in lua state
+          tags: [{ name: 'Name', value: params.name }],
           onSigningProgress: options?.onSigningProgress,
         });
       } catch (error) {
