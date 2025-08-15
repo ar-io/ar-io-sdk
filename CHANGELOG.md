@@ -1,3 +1,13 @@
+# [3.18.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.3...v3.18.0-alpha.4) (2025-08-15)
+
+
+### Bug Fixes
+
+* **buyRecord:** add arns name as Name tag to spawn ([e23dde4](https://github.com/ar-io/ar-io-sdk/commit/e23dde414195bfd881568cb941a3ad11df493878))
+* **buyRecord:** default to arns name tag if no Name tag provided ([2d0487d](https://github.com/ar-io/ar-io-sdk/commit/2d0487d11500d074e9eaab782139dec300f92713))
+* **buyRecord:** pass tags option to spawn ant ([b46d252](https://github.com/ar-io/ar-io-sdk/commit/b46d25204bd9e8ff0c9a4e81a335cd9cec4ba2bb))
+* **buyRecord:** use reduce to create default tag ([53089c0](https://github.com/ar-io/ar-io-sdk/commit/53089c0990eb9d918eb7ee9b581179ec6231531e))
+
 # [3.18.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.2...v3.18.0-alpha.3) (2025-08-11)
 
 
