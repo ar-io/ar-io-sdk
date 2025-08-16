@@ -98,7 +98,10 @@ export async function signedRequestHeadersFromSigner({
       } else if ('setPublicKey' in signer) {
         await signer.setPublicKey();
         publicKey = toB64Url(signer.publicKey);
+      } else if ('publicKey' in signer) {
+        publicKey = toB64Url(signer.publicKey);
       }
+
       break;
     case SignatureConfig.ETHEREUM:
       if ('publicKey' in signer) {

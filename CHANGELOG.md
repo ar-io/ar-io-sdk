@@ -1,12 +1,23 @@
-# [3.18.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.3...v3.18.0-alpha.4) (2025-08-15)
+## [3.18.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0...v3.18.1) (2025-08-15)
 
 
 ### Bug Fixes
 
-* **buyRecord:** add arns name as Name tag to spawn ([e23dde4](https://github.com/ar-io/ar-io-sdk/commit/e23dde414195bfd881568cb941a3ad11df493878))
-* **buyRecord:** default to arns name tag if no Name tag provided ([2d0487d](https://github.com/ar-io/ar-io-sdk/commit/2d0487d11500d074e9eaab782139dec300f92713))
-* **buyRecord:** pass tags option to spawn ant ([b46d252](https://github.com/ar-io/ar-io-sdk/commit/b46d25204bd9e8ff0c9a4e81a335cd9cec4ba2bb))
-* **buyRecord:** use reduce to create default tag ([53089c0](https://github.com/ar-io/ar-io-sdk/commit/53089c0990eb9d918eb7ee9b581179ec6231531e))
+* **turbo:** apply publicKey to signed req headers on node PE-8459 ([c07aa38](https://github.com/ar-io/ar-io-sdk/commit/c07aa38b82f05bd7ce14c45ab912ac094ad1deb3))
+
+# [3.18.0](https://github.com/ar-io/ar-io-sdk/compare/v3.17.2...v3.18.0) (2025-08-11)
+
+
+### Bug Fixes
+
+* **ant registry:** add hyperbeam url to ario read for ant registry ([9e9b528](https://github.com/ar-io/ar-io-sdk/commit/9e9b528ae48028eb29e45fdba5cde7363f620c64))
+* **ario:** update set-primary-name API and error handling ([bb61e1a](https://github.com/ar-io/ar-io-sdk/commit/bb61e1ab446767f5b3c061ae5707565cf86d264f))
+* **types:** add callback types to AoARIOWrite methods ([82bd790](https://github.com/ar-io/ar-io-sdk/commit/82bd7908feff8eb9c4843e16c9ce1b49aa955de6))
+
+
+### Features
+
+* **arns:** add support for `setPrimaryName` API, which allows the owner of an ANT that controls an ArNS name set their primary name in a single API ([b21a36c](https://github.com/ar-io/ar-io-sdk/commit/b21a36c2868ad32b125a7801f83f68e187e7f535))
 
 # [3.18.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.2...v3.18.0-alpha.3) (2025-08-11)
 
