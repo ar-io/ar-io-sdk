@@ -20,16 +20,6 @@ export const FQDN_REGEX = new RegExp(
   '^(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{1,63}$',
 );
 
-// sortkey: padded blockheight to 12, JS timestamp, hash of transactionID + block hash. Timestamp only applicable to L2 and normally is all zeros.
-export const SORT_KEY_REGEX = new RegExp(
-  '^[0-9]{12},[0-9]{13},[a-fA-F0-9]{64}$',
-);
-export const ARNS_TESTNET_REGISTRY_TX =
-  process.env.ARNS_REGISTRY_TX ?? 'bLAgYxAdX2Ry-nt6aH2ixgvJXbpsEYm28NgJgyqfs-U';
-
-export const ARNS_DEVNET_REGISTRY_TX =
-  '_NctcA2sRy1-J4OmIQZbYFPM17piNcbdBPH2ncX2RL8';
-
 export const ARIO_DEVNET_PROCESS_ID =
   'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
 // backwards compatibility - TODO: remove in v2.0.0
