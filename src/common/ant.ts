@@ -143,6 +143,7 @@ export class AoANTReadable implements AoANTRead {
     }
 
     this.checkHyperBeamPromise = fetch(
+      // use /now to force a refresh of the cache state, then compute when calling it for keys
       `${this.hyperbeamUrl.toString()}${this.processId}~process@1.0/now/cache`,
       {
         method: 'HEAD',

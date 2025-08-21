@@ -107,6 +107,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     }
     this.logger.debug('Checking HyperBeam compatibility');
     this.checkHyperBeamPromise = fetch(
+      // use /now to force a refresh of the cache state, then compute when calling it for keys
       `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl`,
       {
         method: 'HEAD',
@@ -146,7 +147,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             address,
           );
           const res = await fetch(
-            `${this.hyperbeamUrl?.toString()}${this.process.processId}~process@1.0/now/cache/acl/${address}/serialize~json@1.0`,
+            `${this.hyperbeamUrl?.toString()}${this.process.processId}~process@1.0/compute/cache/acl/${address}/serialize~json@1.0`,
           );
 
           if (res.status !== 200) {
