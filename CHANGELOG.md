@@ -1,13 +1,3 @@
-## [3.18.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.1...v3.18.2-alpha.1) (2025-08-16)
-
-
-### Bug Fixes
-
-* **buyRecord:** add arns name as Name tag to spawn ([e23dde4](https://github.com/ar-io/ar-io-sdk/commit/e23dde414195bfd881568cb941a3ad11df493878))
-* **buyRecord:** default to arns name tag if no Name tag provided ([2d0487d](https://github.com/ar-io/ar-io-sdk/commit/2d0487d11500d074e9eaab782139dec300f92713))
-* **buyRecord:** pass tags option to spawn ant ([b46d252](https://github.com/ar-io/ar-io-sdk/commit/b46d25204bd9e8ff0c9a4e81a335cd9cec4ba2bb))
-* **buyRecord:** use reduce to create default tag ([53089c0](https://github.com/ar-io/ar-io-sdk/commit/53089c0990eb9d918eb7ee9b581179ec6231531e))
-
 ## [3.18.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0...v3.18.1) (2025-08-15)
 
 
@@ -29,19 +19,6 @@
 
 * **arns:** add support for `setPrimaryName` API, which allows the owner of an ANT that controls an ArNS name set their primary name in a single API ([b21a36c](https://github.com/ar-io/ar-io-sdk/commit/b21a36c2868ad32b125a7801f83f68e187e7f535))
 
-# [3.18.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.2...v3.18.0-alpha.3) (2025-08-11)
-
-
-### Bug Fixes
-
-* **types:** add callback types to AoARIOWrite methods ([82bd790](https://github.com/ar-io/ar-io-sdk/commit/82bd7908feff8eb9c4843e16c9ce1b49aa955de6))
-
-# [3.18.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.0-alpha.1...v3.18.0-alpha.2) (2025-08-10)
-
-
-### Bug Fixes
-
-* **hb:** catch fetch errors to trigger fallback ([491f1c2](https://github.com/ar-io/ar-io-sdk/commit/491f1c20c050749286538f0952032a15b7fd4cfb))
 
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
 
