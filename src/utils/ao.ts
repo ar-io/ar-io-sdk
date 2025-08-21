@@ -297,6 +297,9 @@ export async function forkANT({
   logger = Logger.default,
   ao,
   antRegistryId = ANT_REGISTRY_ID,
+  onSigningProgress = (name, payload) => {
+    logger.debug('Forking ANT', { name, payload });
+  },
 }: {
   signer: AoSigner;
   antProcessId: string;
@@ -329,6 +332,7 @@ export async function forkANT({
     signer,
     antRegistryId,
     logger,
+    onSigningProgress,
     state: {
       owner: state.Owner,
       name: state.Name,
