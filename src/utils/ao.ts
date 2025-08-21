@@ -21,20 +21,15 @@ import { z } from 'zod';
 import { ANTRegistry } from '../common/ant-registry.js';
 import { ANTVersions } from '../common/ant-versions.js';
 import { defaultArweave } from '../common/arweave.js';
-import { AOProcess, Logger } from '../common/index.js';
+import { ANT, AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
   AO_AUTHORITY,
   DEFAULT_SCHEDULER_ID,
 } from '../constants.js';
+import { SpawnANTState, SpawnANTStateSchema } from '../types/ant.js';
 import {
-  AoANTWrite,
-  SpawnANTState,
-  SpawnANTStateSchema,
-} from '../types/ant.js';
-import {
-  AoARIORead,
   AoClient,
   AoEpochData,
   AoEpochDistributed,
@@ -296,56 +291,41 @@ export async function spawnANT({
   return processId;
 }
 
-export async function upgradeAntForArnsName({
+export async function forkANT({
   signer,
-  ario,
-  arnsName,
+  antProcessId,
   logger = Logger.default,
+  ao,
   antRegistryId = ANT_REGISTRY_ID,
-  ant,
-  onSigningProgress = (name, payload) => {
-    logger.debug('Signing progress', { name, payload });
-  },
 }: {
   signer: AoSigner;
-  ario: AoARIORead;
-  arnsName: string;
+  antProcessId: string;
   logger?: Logger;
-  ant: AoANTWrite;
+  ao?: AoClient;
   antRegistryId?: string;
   onSigningProgress?: (
     name: keyof SpawnAntProgressEvent,
     payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
   ) => void;
 }) {
-  // confirm that the name is affiliated with the provided ant
-  const arnsNameRecord = await ario.getArNSRecord({
-    name: arnsName,
+  // get the state of the current ANT and use it to spawn a new ANT
+  const ant = ANT.init({
+    process: new AOProcess({
+      processId: antProcessId,
+      ao,
+      logger,
+    }),
   });
 
-  if (arnsNameRecord === undefined) {
-    throw new Error(
-      `ARNs name (${arnsName}) is not affiliated with the provided ant`,
-    );
-  }
-
-  if (arnsNameRecord.processId !== ant.processId) {
-    throw new Error(
-      `ARNs name (${arnsName}) is not affiliated with the provided ant (${ant.processId})`,
-    );
-  }
-
-  // get the current state of the ANT
   const state = await ant.getState();
 
   if (state === undefined) {
     throw new Error(
-      `ANT state (${ant.processId}) is undefined and cannot be upgraded`,
+      `ANT state (${antProcessId}) is undefined and cannot be upgraded`,
     );
   }
 
-  // spawn the new ANT
-  const newProcessId = await spawnANT({
+  const forkedProcessId = await spawnANT({
     signer,
     antRegistryId,
     logger,
@@ -360,38 +340,9 @@ export async function upgradeAntForArnsName({
       balances: state.Balances,
       logo: state.Logo,
     },
-    onSigningProgress,
   });
 
-  // now send a reassign name notice to the old ant with the new process id
-  const reassignMsgId = await ant.reassignName({
-    name: state.Name,
-    arioProcessId: newProcessId,
-    antProcessId: newProcessId,
-  });
-
-  // confirm the reassignment propogated to the registry
-  const nameAfterReassign = await ario.getArNSRecord({
-    name: arnsName,
-  });
-  if (nameAfterReassign === undefined) {
-    throw new Error(
-      `ARNs name (${arnsName}) is not affiliated with the provided ant (${ant.processId})`,
-    );
-  }
-
-  if (nameAfterReassign.processId !== newProcessId) {
-    throw new Error(
-      `ARNs name (${arnsName}) reassignment failed to propagate to the registry. It is still associated with the old ANT (${ant.processId})`,
-    );
-  }
-
-  return {
-    name: newProcessId,
-    newProcessId,
-    oldProcessId: ant.processId,
-    reassignMsgId,
-  };
+  return forkedProcessId;
 }
 
 /**
