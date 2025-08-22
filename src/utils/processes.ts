@@ -34,7 +34,7 @@ import {
 } from '../types/index.js';
 
 /**
- * @beta This API is in beta and may change in the future.
+ * @deprecated Use getArNSRecordsForAddress instead
  */
 export const getANTProcessesOwnedByWallet = async ({
   address,
