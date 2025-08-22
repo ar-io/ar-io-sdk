@@ -50,7 +50,7 @@ import {
   isHyperBeamANTState,
   sortANTRecords,
 } from '../utils/ant.js';
-import { createAoSigner, spawnANT } from '../utils/ao.js';
+import { createAoSigner, forkANT, spawnANT } from '../utils/ao.js';
 import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
 import {
@@ -80,13 +80,20 @@ export class ANT {
    * Spawn a new ANT.
    */
   static spawn = spawnANT;
-  // no signer give read
+  /**
+   * Fork an ANT to a new process.
+   *
+   * @param config
+   */
+  static fork = forkANT;
+
+  /**
+   * Initialize overloads.
+   *
+   * @param config
+   */
   static init(config: ANTConfigNoSigner): AoANTRead;
-
-  // with signer give write
   static init(config: ANTConfigWithSigner): AoANTWrite;
-
-  // implementation
   static init(config: ANTConfig): AoANTRead | AoANTWrite {
     if (config !== undefined && 'signer' in config) {
       return new AoANTWriteable(config);
