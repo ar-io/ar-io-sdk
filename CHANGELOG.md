@@ -1,3 +1,10 @@
+# [3.19.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.19.0-alpha.1) (2025-08-22)
+
+
+### Features
+
+* **ant:** add upgrade capability for ANTs ([cf9859a](https://github.com/ar-io/ar-io-sdk/commit/cf9859aa825679dfc2e3fa72e5b89f4962a3d77f))
+
 ## [3.18.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.1...v3.18.2) (2025-08-21)
 
 
