@@ -1,3 +1,10 @@
+## [3.18.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.18.3) (2025-08-22)
+
+
+### Bug Fixes
+
+* **io:** fix ant-registry-id param ([7398c6d](https://github.com/ar-io/ar-io-sdk/commit/7398c6d97af0cff49c87aad5f078bc8897844664))
+
 ## [3.18.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.1...v3.18.2) (2025-08-21)
 
 
