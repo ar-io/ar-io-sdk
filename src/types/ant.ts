@@ -16,7 +16,11 @@
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { AoWriteAction, WalletAddress } from './common.js';
+import {
+  AoWriteAction,
+  SpawnAntProgressEvent,
+  WalletAddress,
+} from './common.js';
 
 /**
  * example error:
@@ -242,6 +246,15 @@ export interface AoANTRead {
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
   getHandlers(): Promise<AoANTHandler[]>;
+  getModuleId(opts?: {
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
+  getVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
 }
 
 export interface AoANTWrite extends AoANTRead {
@@ -275,6 +288,21 @@ export interface AoANTWrite extends AoANTRead {
     names: string[];
     arioProcessId: string;
     notifyOwners?: boolean;
+  }>;
+  upgrade(params: {
+    names: string[];
+    arioProcessId?: string;
+    antRegistryId?: string;
+    onSigningProgress?: (
+      name: keyof SpawnAntProgressEvent | 'reassigning-name',
+      payload:
+        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
+        | { name: string },
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
   }>;
 }
 
