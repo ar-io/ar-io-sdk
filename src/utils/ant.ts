@@ -65,6 +65,9 @@ export const sortANTRecords = (antRecords: ANTRecords): SortedANTRecords => {
   );
 };
 
+/**
+ * @deprecated - this is no longer necessary because HyperBeam now uses the AoANTState type
+ */
 export const isHyperBeamANTState = (state: any): state is HyperBeamANTState => {
   return (
     'name' in state &&
@@ -85,6 +88,7 @@ export const isHyperBeamANTState = (state: any): state is HyperBeamANTState => {
 /**
  * Convert HyperBeam serialized ANT state to backwards compatible format.
  *
+ * @deprecated - this is no longer necessary because HyperBeam now uses the AOANTState type
  * @param state - The HyperBeam serialized ANT state.
  */
 export const convertHyperBeamStateToAoANTState = (
