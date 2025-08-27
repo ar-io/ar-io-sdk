@@ -94,8 +94,6 @@ export class ANT {
   /**
    * Upgrade an ANT by forking it to the latest version and reassigning names.
    *
-   * TODO: Add version checking by implementing a getVersion API on ANTs to compare
-   * current version with latest ANT registry version and skip if already up to date.
    *
    * @param config Configuration object for the upgrade process
    * @returns Promise resolving to the forked process ID and successfully reassigned names
@@ -108,12 +106,19 @@ export class ANT {
     ao,
     logger = Logger.default,
     antRegistryId,
+    skipVersionCheck = false,
+    antProcess = ANT.init({
+      process: new AOProcess({ processId: antProcessId, ao }),
+      signer,
+    }),
     onSigningProgress,
   }: {
     signer: AoSigner;
     antProcessId: string;
+    antProcess?: AoANTRead;
     names: string[];
     arioProcessId?: string;
+    skipVersionCheck?: boolean;
     ao?: AoClient;
     logger?: Logger;
     antRegistryId?: string;
@@ -128,7 +133,18 @@ export class ANT {
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
-    // TODO: add version checking by using ant.getVersion() to compare current version with ANT.versions.getLatestANTVersion()
+    if (!skipVersionCheck) {
+      const currentVersion = await antProcess.getVersion();
+      const latestVersion = await ANT.versions.getLatestANTVersion();
+      if (currentVersion === latestVersion.version) {
+        return {
+          forkedProcessId: antProcessId,
+          reassignedNames: [],
+          failedReassignedNames: [],
+        };
+      }
+    }
+
     const forkedProcessId = await ANT.fork({
       signer,
       antProcessId,
@@ -1294,27 +1310,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
-    // If the version check is skipped, or the current version is the latest version, return early
-    if (!skipVersionCheck) {
-      const currentVersion = await this.getVersion();
-      const latestVersion = await ANT.versions.getLatestANTVersion();
-      if (currentVersion === latestVersion.version) {
-        // ANT is already up to date, no need to upgrade
-        return {
-          forkedProcessId: this.processId,
-          reassignedNames: [],
-          failedReassignedNames: [],
-        };
-      }
-    }
-
     return ANT.upgrade({
       signer: this.signer,
+      antProcess: this, // allows for the static function to use cached version info if available
       antProcessId: this.processId,
+      ao: this.process.ao,
       names,
       arioProcessId,
       antRegistryId,
       onSigningProgress,
+      skipVersionCheck,
     });
   }
 }
