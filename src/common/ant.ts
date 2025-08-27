@@ -36,9 +36,11 @@ import {
   SortedANTRecords,
 } from '../types/ant.js';
 import {
+  AoClient,
   AoMessageResult,
   AoSigner,
   ProcessConfiguration,
+  SpawnAntProgressEvent,
   WalletAddress,
   WithSigner,
   WriteOptions,
@@ -86,6 +88,84 @@ export class ANT {
    * @param config
    */
   static fork = forkANT;
+
+  /**
+   * Upgrade an ANT by forking it to the latest version and reassigning names.
+   *
+   * TODO: Add version checking by implementing a getVersion API on ANTs to compare
+   * current version with latest ANT registry version and skip if already up to date.
+   *
+   * @param config Configuration object for the upgrade process
+   * @returns Promise resolving to the forked process ID and successfully reassigned names
+   */
+  static async upgrade({
+    signer,
+    antProcessId,
+    names,
+    arioProcessId,
+    ao,
+    logger = Logger.default,
+    antRegistryId,
+    onSigningProgress,
+  }: {
+    signer: AoSigner;
+    antProcessId: string;
+    names: string[];
+    arioProcessId?: string;
+    ao?: AoClient;
+    logger?: Logger;
+    antRegistryId?: string;
+    onSigningProgress?: (
+      name: keyof SpawnAntProgressEvent | 'reassigning-name',
+      payload:
+        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
+        | { name: string },
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
+  }> {
+    // TODO: add a getVersion API to ANTs that fetches the moduleId from the process and compares it to the latest version of the ANT registry
+
+    const forkedProcessId = await ANT.fork({
+      signer,
+      antProcessId,
+      ao,
+      logger,
+      antRegistryId,
+      onSigningProgress,
+    });
+
+    // Step 2: Create a writable instance of the original ANT for reassigning names
+    const writableAnt = ANT.init({
+      process: new AOProcess({ processId: antProcessId, ao, logger }),
+      signer,
+    });
+
+    // we could parallelize this, but then signing progress would be harder to track
+    const reassignedNames: string[] = [];
+    const failedReassignedNames: string[] = [];
+    for (const name of names) {
+      try {
+        onSigningProgress?.('reassigning-name', { name });
+
+        await writableAnt.reassignName({
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
+
+        reassignedNames.push(name);
+      } catch (error) {
+        logger.error(`Failed to reassign name ${name}:`, { error });
+        // Continue with other names rather than failing completely
+        failedReassignedNames.push(name);
+      }
+    }
+
+    return { forkedProcessId, reassignedNames, failedReassignedNames };
+  }
 
   /**
    * Initialize overloads.
@@ -941,6 +1021,59 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Notify-Owners', value: notifyOwners.toString() },
       ],
       signer: this.signer,
+    });
+  }
+
+  /**
+   * Upgrade this ANT by forking it to the latest version and reassigning names.
+   *
+   * This is a convenience method that calls the static ANT.upgrade() method
+   * using this instance's process ID and signer.
+   *
+   * TODO: Add version checking by implementing a getVersion API on ANTs to compare
+   * current version with latest ANT registry version and skip if already up to date.
+   *
+   * @param names @type {string[]} The ArNS names to reassign to the upgraded ANT.
+   * @param arioProcessId @type {string} The processId of the ARIO contract.
+   * @param antRegistryId @type {string} Optional ANT registry ID.
+   * @param onSigningProgress Progress callback function.
+   * @returns {Promise} The upgrade results.
+   * @example
+   * ```ts
+   * const result = await ant.upgrade({
+   *   names: ["example", "test"],
+   *   arioProcessId: ARIO_MAINNET_PROCESS_ID
+   * });
+   * console.log(`Upgraded to process: ${result.forkedProcessId}`);
+   * ```
+   */
+  async upgrade({
+    names,
+    arioProcessId,
+    antRegistryId,
+    onSigningProgress,
+  }: {
+    names: string[];
+    arioProcessId?: string;
+    antRegistryId?: string;
+    onSigningProgress?: (
+      name: keyof SpawnAntProgressEvent | 'reassigning-name',
+      payload:
+        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
+        | { name: string },
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
+  }> {
+    return ANT.upgrade({
+      signer: this.signer,
+      antProcessId: this.processId,
+      names,
+      arioProcessId,
+      antRegistryId,
+      onSigningProgress,
     });
   }
 }
