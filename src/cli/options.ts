@@ -256,6 +256,14 @@ export const optionMap = {
     description: 'The keywords for the ANT',
     type: 'array',
   },
+  owner: {
+    alias: '--owner <owner>',
+    description: 'The owner address for the record',
+  },
+  displayName: {
+    alias: '--display-name <displayName>',
+    description: 'The display name for the record',
+  },
   names: {
     alias: '--names <names...>',
     description: 'The names to interact with',
@@ -442,10 +450,22 @@ export const setAntBaseNameOptions = [
   optionMap.processId,
   optionMap.transactionId,
   optionMap.ttlSeconds,
+  optionMap.owner,
+  optionMap.displayName,
+  optionMap.logo,
+  optionMap.description,
+  optionMap.keywords,
   ...writeActionOptions,
 ];
 
 export const setAntUndernameOptions = [
   ...setAntBaseNameOptions,
   optionMap.undername,
+];
+
+export const transferRecordOwnershipOptions = [
+  optionMap.processId,
+  optionMap.undername,
+  optionMap.recipient,
+  ...writeActionOptions,
 ];

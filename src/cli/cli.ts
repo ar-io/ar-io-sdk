@@ -24,6 +24,8 @@ import { version } from '../version.js';
 import {
   setAntBaseNameCLICommand,
   setAntRecordCLICommand,
+  setAntUndernameCLICommand,
+  transferRecordOwnershipCLICommand,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -100,6 +102,7 @@ import {
   setAntUndernameOptions,
   tokenCostOptions,
   transferOptions,
+  transferRecordOwnershipOptions,
   updateGatewaySettingsOptions,
   vaultedTransferOptions,
   writeActionOptions,
@@ -893,7 +896,15 @@ makeCommand({
   name: 'set-ant-undername',
   description: 'Set an undername of an ANT process',
   options: setAntUndernameOptions,
-  action: setAntRecordCLICommand,
+  action: setAntUndernameCLICommand,
+});
+
+makeCommand({
+  name: 'transfer-record-ownership',
+  description:
+    'Transfer ownership of a specific record (undername) to another address',
+  options: transferRecordOwnershipOptions,
+  action: transferRecordOwnershipCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({

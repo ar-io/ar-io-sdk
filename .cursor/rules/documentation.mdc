@@ -1,0 +1,9 @@
+---
+description: Documentation
+globs:
+alwaysApply: true
+---
+
+When creating and modifying APIs, ensure to check the README.md to see if those docs need updating.
+
+When creating those APIs match them with jsdoc appropriately.
