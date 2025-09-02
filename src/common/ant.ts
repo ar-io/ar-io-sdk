@@ -163,15 +163,14 @@ export class ANT {
     }
 
     if (!skipVersionCheck) {
-      const currentVersion = await antProcess.getVersion();
-      const latestVersion = await ANT.versions.getLatestANTVersion();
       onSigningProgress?.('checking-version', {
-        currentVersion,
-        latestVersion: latestVersion.version,
         antProcessId,
         antRegistryId,
       });
-      if (currentVersion === latestVersion.version) {
+      const isLatestVersion = await antProcess.isLatestVersion({
+        antRegistryId,
+      });
+      if (isLatestVersion) {
         return {
           forkedProcessId: antProcessId,
           reassignedNames: [],
@@ -634,6 +633,38 @@ export class AoANTReadable implements AoANTRead {
       .find((obj) => obj.moduleId === currentModuleId);
 
     return versionForModuleId?.version ?? 'unknown';
+  }
+
+  /**
+   * Checks if the current ANT version is the latest according to the ANT registry.
+   *
+   * @param antRegistryId Optional ANT registry process ID. Defaults to mainnet ANT registry.
+   * @param graphqlUrl Optional GraphQL endpoint. Defaults to https://arweave.net/graphql.
+   * @param retries Optional number of retries for fetching module ID. Defaults to 3.
+   * @returns {Promise<boolean>} True if current ANT version is the latest, false otherwise.
+   */
+  async isLatestVersion({
+    antRegistryId = ANT_REGISTRY_ID,
+    graphqlUrl = 'https://arweave.net/graphql',
+    retries = 3,
+  }: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  } = {}): Promise<boolean> {
+    // Get the current ANT's version
+    const currentVersion = await this.getVersion({
+      antRegistryId,
+      graphqlUrl,
+      retries,
+    });
+
+    // Get all versions from the ANT registry
+    const antVersions = ANTVersions.init({
+      processId: antRegistryId,
+    });
+    const latestVersion = await antVersions.getLatestANTVersion();
+    return currentVersion === latestVersion.version;
   }
 
   /**

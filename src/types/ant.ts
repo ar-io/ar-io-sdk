@@ -255,6 +255,11 @@ export interface AoANTRead {
     graphqlUrl?: string;
     retries?: number;
   }): Promise<string>;
+  isLatestVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<boolean>;
 }
 
 export interface AoANTWrite extends AoANTRead {

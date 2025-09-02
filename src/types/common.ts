@@ -175,8 +175,6 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
   'checking-version': {
     antProcessId: string;
     antRegistryId: string;
-    currentVersion: string;
-    latestVersion: string;
   };
   'fetching-affiliated-names': {
     arioProcessId: string;
