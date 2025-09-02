@@ -42,7 +42,7 @@ import {
   AoMessageResult,
   AoSigner,
   ProcessConfiguration,
-  SpawnAntProgressEvent,
+  UpgradeAntProgressEvent,
   WalletAddress,
   WithSigner,
   WriteOptions,
@@ -59,6 +59,7 @@ import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
 import {
   AOProcess,
+  ARIO,
   InvalidContractConfigurationError,
   Logger,
 } from './index.js';
@@ -101,11 +102,12 @@ export class ANT {
   static async upgrade({
     signer,
     antProcessId,
-    names,
+    reassignAffiliatedNames = true, // if true, will reassign all affiliated names, otherwise will use the names parameter
+    names = [],
     arioProcessId = ARIO_MAINNET_PROCESS_ID,
+    antRegistryId = ANT_REGISTRY_ID,
     ao,
     logger = Logger.default,
-    antRegistryId,
     skipVersionCheck = false,
     antProcess = ANT.init({
       process: new AOProcess({ processId: antProcessId, ao }),
@@ -116,26 +118,59 @@ export class ANT {
     signer: AoSigner;
     antProcessId: string;
     antProcess?: AoANTRead;
-    names: string[];
+    names?: string[];
+    reassignAffiliatedNames?: boolean;
     arioProcessId?: string;
     skipVersionCheck?: boolean;
     ao?: AoClient;
     logger?: Logger;
     antRegistryId?: string;
     onSigningProgress?: (
-      name: keyof SpawnAntProgressEvent | 'reassigning-name',
-      payload:
-        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
-        | { name: string },
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
   }): Promise<{
     forkedProcessId: string;
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
+    // if names is not empty but reassignAffiliatedNames it true, throw
+    if (names.length > 0 && reassignAffiliatedNames) {
+      throw new Error(
+        'Cannot reassign all affiliated names and provide specific names',
+      );
+    }
+    // get all the affiliated names if reassign all affiliated names is true
+    if (reassignAffiliatedNames) {
+      const ario = ARIO.init({
+        process: new AOProcess({ processId: arioProcessId, ao }),
+      });
+      onSigningProgress?.('fetching-affiliated-names', {
+        arioProcessId,
+        antProcessId,
+      });
+      const allAffiliatedNames = await ario.getArNSRecords({
+        filters: {
+          processId: antProcessId,
+        },
+      });
+      names.push(...allAffiliatedNames.items.map((record) => record.name));
+    }
+
+    // if names is empty and reassign all affiliated names is false, throw an error
+    if (names.length === 0) {
+      throw new Error('There are no names to reassign for this ANT.');
+    }
+
     if (!skipVersionCheck) {
       const currentVersion = await antProcess.getVersion();
       const latestVersion = await ANT.versions.getLatestANTVersion();
+      onSigningProgress?.('checking-version', {
+        currentVersion,
+        latestVersion: latestVersion.version,
+        antProcessId,
+        antRegistryId,
+      });
       if (currentVersion === latestVersion.version) {
         return {
           forkedProcessId: antProcessId,
@@ -165,7 +200,11 @@ export class ANT {
     const failedReassignedNames: string[] = [];
     for (const name of names) {
       try {
-        onSigningProgress?.('reassigning-name', { name });
+        onSigningProgress?.('reassigning-name', {
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
 
         await writableAnt.reassignName({
           name,
@@ -1290,20 +1329,20 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    */
   async upgrade({
     names,
+    reassignAffiliatedNames,
     arioProcessId,
     antRegistryId,
     onSigningProgress,
     skipVersionCheck = false,
   }: {
-    names: string[];
+    names?: string[];
     arioProcessId?: string;
     antRegistryId?: string;
     skipVersionCheck?: boolean;
+    reassignAffiliatedNames?: boolean; // if true, will reassign all affiliated names, otherwise will use the names parameter
     onSigningProgress?: (
-      name: keyof SpawnAntProgressEvent | 'reassigning-name',
-      payload:
-        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
-        | { name: string },
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
   }): Promise<{
     forkedProcessId: string;
@@ -1316,6 +1355,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       antProcessId: this.processId,
       ao: this.process.ao,
       names,
+      reassignAffiliatedNames,
       arioProcessId,
       antRegistryId,
       onSigningProgress,

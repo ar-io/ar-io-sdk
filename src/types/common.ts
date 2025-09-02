@@ -171,6 +171,24 @@ export type SpawnAntProgressEvent = {
   };
 };
 
+export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
+  'checking-version': {
+    antProcessId: string;
+    antRegistryId: string;
+    currentVersion: string;
+    latestVersion: string;
+  };
+  'fetching-affiliated-names': {
+    arioProcessId: string;
+    antProcessId: string;
+  };
+  'reassigning-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  };
+};
+
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
   'buying-name': AoBuyRecordParams;
 };

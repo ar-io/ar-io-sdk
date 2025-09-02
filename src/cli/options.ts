@@ -449,3 +449,5 @@ export const setAntUndernameOptions = [
   ...setAntBaseNameOptions,
   optionMap.undername,
 ];
+
+export const upgradeAntOptions = [optionMap.processId, ...writeActionOptions];

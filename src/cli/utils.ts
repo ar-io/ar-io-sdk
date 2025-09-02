@@ -24,6 +24,7 @@ import {
   ANT,
   ANTRegistry,
   ANT_REGISTRY_ID,
+  ANT_REGISTRY_TESTNET_ID,
   AOProcess,
   ARIO,
   ARIOToken,
@@ -170,6 +171,19 @@ export function arioProcessIdFromOptions({
   return ARIO_MAINNET_PROCESS_ID;
 }
 
+export function antRegistryIdFromOptions({
+  antRegistryProcessId,
+  testnet,
+}: GlobalCLIOptions): string {
+  if (antRegistryProcessId !== undefined) {
+    return antRegistryProcessId;
+  }
+  if (testnet) {
+    return ANT_REGISTRY_TESTNET_ID;
+  }
+  return ANT_REGISTRY_ID;
+}
+
 function walletFromOptions({
   privateKey,
   walletFile,
@@ -232,23 +246,11 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   });
 }
 
-export function ANTRegistryProcessFromOptions(
-  options: ProcessIdCLIOptions,
-): AOProcess {
-  return new AOProcess({
-    processId: options.antRegistryProcessId ?? ANT_REGISTRY_ID,
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: options.cuUrl,
-    }),
-  });
-}
-
 export function readANTRegistryFromOptions(
   options: ProcessIdCLIOptions,
 ): AoANTRegistryRead {
   return ANTRegistry.init({
-    process: ANTRegistryProcessFromOptions(options),
+    process: aoProcessFromOptions(options),
     hyperbeamUrl: options.hyperbeamUrl,
   });
 }

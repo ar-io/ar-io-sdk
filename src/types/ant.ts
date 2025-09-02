@@ -18,7 +18,7 @@ import { z } from 'zod';
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 import {
   AoWriteAction,
-  SpawnAntProgressEvent,
+  UpgradeAntProgressEvent,
   WalletAddress,
 } from './common.js';
 
@@ -290,14 +290,13 @@ export interface AoANTWrite extends AoANTRead {
     notifyOwners?: boolean;
   }>;
   upgrade(params: {
-    names: string[];
+    names?: string[];
+    reassignAffiliatedNames?: boolean;
     arioProcessId?: string;
     antRegistryId?: string;
     onSigningProgress?: (
-      name: keyof SpawnAntProgressEvent | 'reassigning-name',
-      payload:
-        | SpawnAntProgressEvent[keyof SpawnAntProgressEvent]
-        | { name: string },
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
   }): Promise<{
     forkedProcessId: string;
