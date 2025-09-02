@@ -15,6 +15,8 @@
  */
 import { z } from 'zod';
 
+import { ARIO_MAINNET_PROCESS_ID } from '../constants.js';
+import { ANT_REGISTRY_ID } from '../constants.js';
 import {
   ANTRecords,
   AntBalancesSchema,
@@ -36,9 +38,11 @@ import {
   SortedANTRecords,
 } from '../types/ant.js';
 import {
+  AoClient,
   AoMessageResult,
   AoSigner,
   ProcessConfiguration,
+  UpgradeAntProgressEvent,
   WalletAddress,
   WithSigner,
   WriteOptions,
@@ -55,6 +59,7 @@ import { parseSchemaResult } from '../utils/schema.js';
 import { ANTVersions } from './ant-versions.js';
 import {
   AOProcess,
+  ARIO,
   InvalidContractConfigurationError,
   Logger,
 } from './index.js';
@@ -88,6 +93,137 @@ export class ANT {
   static fork = forkANT;
 
   /**
+   * Upgrade an ANT by forking it to the latest version and reassigning names.
+   *
+   *
+   * @param config Configuration object for the upgrade process
+   * @returns Promise resolving to the forked process ID and successfully reassigned names
+   */
+  static async upgrade({
+    signer,
+    antProcessId,
+    reassignAffiliatedNames = true, // if true, will reassign all affiliated names, otherwise will use the names parameter
+    names = [],
+    arioProcessId = ARIO_MAINNET_PROCESS_ID,
+    antRegistryId = ANT_REGISTRY_ID,
+    ao,
+    logger = Logger.default,
+    skipVersionCheck = false,
+    onSigningProgress,
+    hyperbeamUrl,
+  }: {
+    signer: AoSigner;
+    antProcessId: string;
+    names?: string[];
+    reassignAffiliatedNames?: boolean;
+    arioProcessId?: string;
+    skipVersionCheck?: boolean;
+    ao?: AoClient;
+    logger?: Logger;
+    antRegistryId?: string;
+    hyperbeamUrl?: string;
+    onSigningProgress?: (
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
+  }> {
+    // if names is not empty but reassignAffiliatedNames it true, throw
+    if (names.length > 0 && reassignAffiliatedNames) {
+      throw new Error(
+        'Cannot reassign all affiliated names and provide specific names',
+      );
+    }
+    // get all the affiliated names if reassign all affiliated names is true
+    if (reassignAffiliatedNames) {
+      const ario = ARIO.init({
+        process: new AOProcess({ processId: arioProcessId, ao }),
+      });
+      onSigningProgress?.('fetching-affiliated-names', {
+        arioProcessId,
+        antProcessId,
+      });
+      const allAffiliatedNames = await ario.getArNSRecords({
+        filters: {
+          processId: antProcessId,
+        },
+      });
+      names.push(...allAffiliatedNames.items.map((record) => record.name));
+    }
+
+    // if names is empty and reassign all affiliated names is false, throw an error
+    if (names.length === 0) {
+      throw new Error('There are no names to reassign for this ANT.');
+    }
+
+    const existingAntProcess = ANT.init({
+      process: new AOProcess({
+        processId: antProcessId,
+        ao,
+        logger,
+      }),
+      hyperbeamUrl,
+      signer,
+    });
+
+    if (!skipVersionCheck) {
+      onSigningProgress?.('checking-version', {
+        antProcessId,
+        antRegistryId,
+      });
+      const isLatestVersion = await existingAntProcess.isLatestVersion({
+        antRegistryId,
+      });
+      if (isLatestVersion) {
+        return {
+          forkedProcessId: antProcessId,
+          reassignedNames: [],
+          failedReassignedNames: [],
+        };
+      }
+    }
+
+    const forkedProcessId = await ANT.fork({
+      signer,
+      antProcessId,
+      ao,
+      logger,
+      antRegistryId,
+      onSigningProgress,
+    });
+
+    // we could parallelize this, but then signing progress would be harder to track
+    const reassignedNames: string[] = [];
+    const failedReassignedNames: string[] = [];
+    for (const name of names) {
+      try {
+        onSigningProgress?.('reassigning-name', {
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
+
+        await existingAntProcess.reassignName({
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
+
+        reassignedNames.push(name);
+      } catch (error) {
+        logger.error(`Failed to reassign name ${name}:`, { error });
+        // Continue with other names rather than failing completely
+        failedReassignedNames.push(name);
+      }
+    }
+
+    return { forkedProcessId, reassignedNames, failedReassignedNames };
+  }
+
+  /**
    * Initialize overloads.
    *
    * @param config
@@ -108,10 +244,13 @@ export class AoANTReadable implements AoANTRead {
   private strict: boolean;
   private hyperbeamUrl: URL | undefined;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
+  private moduleId: string | undefined;
+  private moduleIdPromise: Promise<string> | undefined;
   private logger: Logger = Logger.default;
 
   constructor(config: ANTConfigOptionalStrict) {
     this.strict = config.strict || false;
+
     if (isProcessConfiguration(config)) {
       this.process = config.process;
     } else if (isProcessIdConfiguration(config)) {
@@ -274,6 +413,259 @@ export class AoANTReadable implements AoANTRead {
   async getLogo(): Promise<string> {
     const info = await this.getInfo();
     return info.Logo;
+  }
+
+  /**
+   * Gets the module ID of the current ANT process by querying its spawn transaction tags.
+   * Results are cached after the first successful fetch.
+   *
+   * @param graphqlUrl The GraphQL endpoint URL (defaults to Arweave's GraphQL endpoint)
+   * @param retries Number of retry attempts (defaults to 3)
+   * @returns Promise<string> The module ID used to spawn this ANT process
+   * @example
+   * ```ts
+   * const moduleId = await ant.getModuleId();
+   * console.log(`ANT was spawned with module: ${moduleId}`);
+   * ```
+   */
+  async getModuleId({
+    // TODO: we could use wayfinder for this
+    graphqlUrl = 'https://arweave.net/graphql',
+    retries = 3,
+  }: { graphqlUrl?: string; retries?: number } = {}): Promise<string> {
+    // Return cached result if available
+    if (this.moduleId !== undefined) {
+      this.logger.debug('Returning cached module ID', {
+        processId: this.processId,
+        moduleId: this.moduleId,
+      });
+      return this.moduleId;
+    }
+
+    // Return existing promise if already in flight
+    if (this.moduleIdPromise) {
+      this.logger.debug('Returning in-flight module ID promise', {
+        processId: this.processId,
+      });
+      return this.moduleIdPromise;
+    }
+
+    // Create and cache the promise to prevent multiple concurrent requests
+    this.moduleIdPromise = this.fetchModuleId({ graphqlUrl, retries });
+
+    try {
+      const moduleId = await this.moduleIdPromise;
+      this.moduleId = moduleId;
+      this.logger.debug('Successfully fetched and cached module ID', {
+        processId: this.processId,
+        moduleId,
+      });
+      return moduleId;
+    } finally {
+      // Clear the promise so future calls can retry if this one failed
+      this.moduleIdPromise = undefined;
+    }
+  }
+
+  /**
+   * Internal method to fetch the module ID from GraphQL.
+   *
+   * TODO: this could be more like get process headers/metadata and fetch additional details.
+   *
+   * It seems like module is the only relevant one, but scheduler and authority are also available.
+   */
+  private async fetchModuleId({
+    graphqlUrl,
+    retries,
+  }: {
+    graphqlUrl: string;
+    retries: number;
+  }): Promise<string> {
+    const query = JSON.stringify({
+      query: `
+        query {
+          transactions(
+            ids: ["${this.processId}"]
+            first: 1,
+          ) {
+            edges {
+              node {
+                tags {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }
+      `,
+    });
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(graphqlUrl, {
+          method: 'POST',
+          body: query,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`GraphQL request failed: ${response.statusText}`);
+        }
+
+        const result = (await response.json()) as {
+          data?: {
+            transactions?: {
+              edges?: Array<{
+                node: {
+                  tags: Array<{ name: string; value: string }>;
+                };
+              }>;
+            };
+          };
+          errors?: Array<{ message: string }>;
+        };
+
+        if (result.errors) {
+          throw new Error(
+            `GraphQL errors: ${result.errors.map((e) => e.message).join(', ')}`,
+          );
+        }
+
+        const edges = result.data?.transactions?.edges;
+        if (!edges || edges.length === 0) {
+          throw new Error(
+            `No transaction found for process ID: ${this.processId}`,
+          );
+        }
+
+        const tags = edges[0].node.tags;
+        const moduleTag = tags.find((tag) => tag.name === 'Module');
+
+        if (!moduleTag) {
+          throw new Error(
+            `No Module tag found for process ID: ${this.processId}`,
+          );
+        }
+
+        return moduleTag.value;
+      } catch (error) {
+        if (i === retries - 1) {
+          // Final attempt failed
+          this.logger.error('Failed to get ANT module ID after all retries:', {
+            error,
+          });
+          throw new Error(
+            `Unable to determine module ID for ANT process ${this.processId}: ${error.message}`,
+          );
+        }
+
+        // Exponential backoff
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, i) * 1000),
+        );
+      }
+    }
+
+    throw new Error(
+      `Unexpected error getting module ID for process ${this.processId}`,
+    );
+  }
+
+  /**
+   * Gets the version string of the current ANT by matching its module ID
+   * with versions from the ANT registry.
+   *
+   * @param antRegistryId The ANT registry process ID (defaults to mainnet registry)
+   * @param graphqlUrl The GraphQL endpoint URL for getModuleId (defaults to Arweave's GraphQL endpoint)
+   * @param retries Number of retry attempts for getModuleId (defaults to 3)
+   * @returns Promise<string> The version string (e.g., "1.0.15") or "unknown" if not found
+   * @example
+   * ```ts
+   * const version = await ant.getVersion();
+   * console.log(`ANT is running version: ${version}`);
+   * ```
+   */
+  async getVersion({
+    antRegistryId = ANT_REGISTRY_ID,
+    graphqlUrl = 'https://arweave.net/graphql',
+    retries = 3,
+  }: {
+    antRegistryId?: string; // TODO: could support providing the ANT registry class so it can memoize the versions
+    graphqlUrl?: string;
+    retries?: number;
+  } = {}): Promise<string> {
+    // Get the current ANT's module ID
+    const currentModuleId = await this.getModuleId({ graphqlUrl, retries });
+
+    // Get all versions from the ANT registry
+    const antVersions = ANTVersions.init({
+      processId: antRegistryId,
+    });
+    const versions = await antVersions.getANTVersions();
+
+    // Find the version that matches our module ID
+    for (const [version, versionInfo] of Object.entries(versions)) {
+      if (versionInfo.moduleId === currentModuleId) {
+        this.logger.debug('Found matching ANT version', {
+          processId: this.processId,
+          moduleId: currentModuleId,
+          version,
+        });
+        return version;
+      }
+    }
+
+    const versionForModuleId:
+      | {
+          version: string;
+          moduleId: string;
+          luaSourceId?: string;
+          notes?: string;
+          releaseTimestamp: number;
+        }
+      | undefined = Object.entries(versions)
+      .map(([version, versionInfo]) => ({
+        version,
+        ...versionInfo,
+      }))
+      .find((obj) => obj.moduleId === currentModuleId);
+
+    return versionForModuleId?.version ?? 'unknown';
+  }
+
+  /**
+   * Checks if the current ANT version is the latest according to the ANT registry.
+   *
+   * @param antRegistryId Optional ANT registry process ID. Defaults to mainnet ANT registry.
+   * @param graphqlUrl Optional GraphQL endpoint. Defaults to https://arweave.net/graphql.
+   * @param retries Optional number of retries for fetching module ID. Defaults to 3.
+   * @returns {Promise<boolean>} True if current ANT version is the latest, false otherwise.
+   */
+  async isLatestVersion({
+    antRegistryId = ANT_REGISTRY_ID,
+    graphqlUrl = 'https://arweave.net/graphql',
+    retries = 3,
+  }: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  } = {}): Promise<boolean> {
+    // Get the current ANT's version
+    const currentVersion = await this.getVersion({
+      antRegistryId,
+      graphqlUrl,
+      retries,
+    });
+
+    // Get all versions from the ANT registry
+    const antVersions = ANTVersions.init({
+      processId: antRegistryId,
+    });
+    const latestVersion = await antVersions.getLatestANTVersion();
+    return currentVersion === latestVersion.version;
   }
 
   /**
@@ -941,6 +1333,64 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         { name: 'Notify-Owners', value: notifyOwners.toString() },
       ],
       signer: this.signer,
+    });
+  }
+
+  /**
+   * Upgrade this ANT by forking it to the latest version and reassigning names.
+   *
+   * This is a convenience method that calls the static ANT.upgrade() method
+   * using this instance's process ID and signer.
+   *
+   * TODO: Add version checking by implementing a getVersion API on ANTs to compare
+   * current version with latest ANT registry version and skip if already up to date.
+   *
+   * @param names @type {string[]} The ArNS names to reassign to the upgraded ANT.
+   * @param arioProcessId @type {string} The processId of the ARIO contract.
+   * @param antRegistryId @type {string} Optional ANT registry ID.
+   * @param onSigningProgress Progress callback function.
+   * @returns {Promise} The upgrade results.
+   * @example
+   * ```ts
+   * const result = await ant.upgrade({
+   *   names: ["example", "test"],
+   *   arioProcessId: ARIO_MAINNET_PROCESS_ID
+   * });
+   * console.log(`Upgraded to process: ${result.forkedProcessId}`);
+   * ```
+   */
+  async upgrade({
+    names,
+    reassignAffiliatedNames,
+    arioProcessId,
+    antRegistryId,
+    onSigningProgress,
+    skipVersionCheck = false,
+  }: {
+    names?: string[];
+    arioProcessId?: string;
+    antRegistryId?: string;
+    skipVersionCheck?: boolean;
+    reassignAffiliatedNames?: boolean; // if true, will reassign all affiliated names, otherwise will use the names parameter
+    onSigningProgress?: (
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
+  }> {
+    return ANT.upgrade({
+      signer: this.signer,
+      antProcessId: this.processId,
+      ao: this.process.ao,
+      names,
+      reassignAffiliatedNames,
+      arioProcessId,
+      antRegistryId,
+      onSigningProgress,
+      skipVersionCheck,
     });
   }
 }

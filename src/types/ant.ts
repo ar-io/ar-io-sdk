@@ -16,7 +16,11 @@
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { AoWriteAction, WalletAddress } from './common.js';
+import {
+  AoWriteAction,
+  UpgradeAntProgressEvent,
+  WalletAddress,
+} from './common.js';
 
 /**
  * example error:
@@ -242,6 +246,20 @@ export interface AoANTRead {
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
   getHandlers(): Promise<AoANTHandler[]>;
+  getModuleId(opts?: {
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
+  getVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
+  isLatestVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<boolean>;
 }
 
 export interface AoANTWrite extends AoANTRead {
@@ -275,6 +293,20 @@ export interface AoANTWrite extends AoANTRead {
     names: string[];
     arioProcessId: string;
     notifyOwners?: boolean;
+  }>;
+  upgrade(params: {
+    names?: string[];
+    reassignAffiliatedNames?: boolean;
+    arioProcessId?: string;
+    antRegistryId?: string;
+    onSigningProgress?: (
+      name: keyof UpgradeAntProgressEvent,
+      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
+    ) => void;
+  }): Promise<{
+    forkedProcessId: string;
+    reassignedNames: string[];
+    failedReassignedNames: string[];
   }>;
 }
 
