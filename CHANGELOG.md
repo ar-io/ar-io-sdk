@@ -1,3 +1,11 @@
+# [3.19.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.1...v3.19.0-alpha.2) (2025-09-02)
+
+
+### Features
+
+* **ant:** add module id and version APIs to ant class ([f48dcbc](https://github.com/ar-io/ar-io-sdk/commit/f48dcbcc20031b0fb03aef078d6b75add131c19c))
+* **ants:** add .upgrade API to ant class ([22fea51](https://github.com/ar-io/ar-io-sdk/commit/22fea51de7714cc3e00ac2533e6fad209eb5b50b))
+
 # [3.19.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.19.0-alpha.1) (2025-08-22)
 
 
