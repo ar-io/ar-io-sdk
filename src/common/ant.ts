@@ -109,15 +109,11 @@ export class ANT {
     ao,
     logger = Logger.default,
     skipVersionCheck = false,
-    antProcess = ANT.init({
-      process: new AOProcess({ processId: antProcessId, ao }),
-      signer,
-    }),
     onSigningProgress,
+    hyperbeamUrl,
   }: {
     signer: AoSigner;
     antProcessId: string;
-    antProcess?: AoANTRead;
     names?: string[];
     reassignAffiliatedNames?: boolean;
     arioProcessId?: string;
@@ -125,6 +121,7 @@ export class ANT {
     ao?: AoClient;
     logger?: Logger;
     antRegistryId?: string;
+    hyperbeamUrl?: string;
     onSigningProgress?: (
       name: keyof UpgradeAntProgressEvent,
       payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
@@ -162,12 +159,22 @@ export class ANT {
       throw new Error('There are no names to reassign for this ANT.');
     }
 
+    const existingAntProcess = ANT.init({
+      process: new AOProcess({
+        processId: antProcessId,
+        ao,
+        logger,
+      }),
+      hyperbeamUrl,
+      signer,
+    });
+
     if (!skipVersionCheck) {
       onSigningProgress?.('checking-version', {
         antProcessId,
         antRegistryId,
       });
-      const isLatestVersion = await antProcess.isLatestVersion({
+      const isLatestVersion = await existingAntProcess.isLatestVersion({
         antRegistryId,
       });
       if (isLatestVersion) {
@@ -188,12 +195,6 @@ export class ANT {
       onSigningProgress,
     });
 
-    // Step 2: Create a writable instance of the original ANT for reassigning names
-    const writableAnt = ANT.init({
-      process: new AOProcess({ processId: antProcessId, ao, logger }),
-      signer,
-    });
-
     // we could parallelize this, but then signing progress would be harder to track
     const reassignedNames: string[] = [];
     const failedReassignedNames: string[] = [];
@@ -205,7 +206,7 @@ export class ANT {
           antProcessId: forkedProcessId,
         });
 
-        await writableAnt.reassignName({
+        await existingAntProcess.reassignName({
           name,
           arioProcessId,
           antProcessId: forkedProcessId,
@@ -1382,7 +1383,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
   }> {
     return ANT.upgrade({
       signer: this.signer,
-      antProcess: this, // allows for the static function to use cached version info if available
       antProcessId: this.processId,
       ao: this.process.ao,
       names,
