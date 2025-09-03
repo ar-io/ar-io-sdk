@@ -1,3 +1,11 @@
+# [3.19.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.3...v3.19.0-alpha.4) (2025-09-03)
+
+
+### Bug Fixes
+
+* **ant:** fix predicate for arns name on upgrade ([36c6e85](https://github.com/ar-io/ar-io-sdk/commit/36c6e85d8b399a74fca6e82ec3ecb3c72712f680))
+* **typess:** update upgrade type to enforce not providing names ([b53265b](https://github.com/ar-io/ar-io-sdk/commit/b53265b2187756b2b816c275fca6352f2adf00e1))
+
 # [3.19.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.2...v3.19.0-alpha.3) (2025-09-03)
 
 
