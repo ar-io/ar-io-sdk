@@ -137,11 +137,13 @@ export class ANT {
         'Cannot reassign all affiliated names and provide specific names',
       );
     }
+
+    const ario = ARIO.init({
+      process: new AOProcess({ processId: arioProcessId, ao }),
+    });
+
     // get all the affiliated names if reassign all affiliated names is true
     if (reassignAffiliatedNames) {
-      const ario = ARIO.init({
-        process: new AOProcess({ processId: arioProcessId, ao }),
-      });
       onSigningProgress?.('fetching-affiliated-names', {
         arioProcessId,
         antProcessId,
@@ -152,6 +154,34 @@ export class ANT {
         },
       });
       names.push(...allAffiliatedNames.items.map((record) => record.name));
+    } else {
+      onSigningProgress?.('validating-names', {
+        arioProcessId,
+        antProcessId,
+        names,
+      });
+      // TODO: add callback saying validating affiliated names
+      // confirm all names are affiliated with the ANT
+      const allAffiliatedNames = await ario.getArNSRecords({
+        filters: {
+          processId: antProcessId,
+        },
+      });
+
+      if (
+        names.every((name) =>
+          allAffiliatedNames.items.some((record) => record.name === name),
+        )
+      ) {
+        // find any that are not affiliated with the ANT
+        const notAffiliatedNames = names.filter(
+          (name) =>
+            !allAffiliatedNames.items.some((record) => record.name === name),
+        );
+        throw new Error(
+          `All names must be affiliated with the ANT on the provided ARIO process. The following names are not affiliated to this ANT: ${notAffiliatedNames.join(', ')}`,
+        );
+      }
     }
 
     // if names is empty and reassign all affiliated names is false, throw an error

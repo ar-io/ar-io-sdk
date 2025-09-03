@@ -185,6 +185,11 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
     arioProcessId: string;
     antProcessId: string;
   };
+  'validating-names': {
+    arioProcessId: string;
+    antProcessId: string;
+    names: string[];
+  };
 };
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
