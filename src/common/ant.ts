@@ -173,7 +173,7 @@ export class ANT {
       });
 
       if (
-        names.every((name) =>
+        !names.every((name) =>
           allAffiliatedNames.items.some((record) => record.name === name),
         )
       ) {
