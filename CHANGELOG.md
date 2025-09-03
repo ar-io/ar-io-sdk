@@ -1,3 +1,10 @@
+# [3.19.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.2...v3.19.0-alpha.3) (2025-09-03)
+
+
+### Bug Fixes
+
+* **ant:** set reassignAffiliatedNames as false ([ef5c9d6](https://github.com/ar-io/ar-io-sdk/commit/ef5c9d6fe34d6eecff256024026826c1c60f7322))
+
 # [3.19.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.1...v3.19.0-alpha.2) (2025-09-02)
 
 
