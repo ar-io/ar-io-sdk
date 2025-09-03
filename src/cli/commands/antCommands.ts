@@ -159,9 +159,15 @@ export async function upgradeAntCLICommand(
     );
   }
 
-  return writeANTFromOptions(o).upgrade({
-    reassignAffiliatedNames,
-    names,
-    arioProcessId,
-  });
+  if (reassignAffiliatedNames) {
+    return writeANTFromOptions(o).upgrade({
+      reassignAffiliatedNames,
+      arioProcessId,
+    });
+  } else {
+    return writeANTFromOptions(o).upgrade({
+      names,
+      arioProcessId,
+    });
+  }
 }
