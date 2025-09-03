@@ -102,7 +102,7 @@ export class ANT {
   static async upgrade({
     signer,
     antProcessId,
-    reassignAffiliatedNames = false, // if true, will reassign all affiliated names, otherwise will use the names parameter
+    reassignAffiliatedNames = false,
     names = [],
     arioProcessId = ARIO_MAINNET_PROCESS_ID,
     antRegistryId = ANT_REGISTRY_ID,
@@ -114,8 +114,6 @@ export class ANT {
   }: {
     signer: AoSigner;
     antProcessId: string;
-    names?: string[];
-    reassignAffiliatedNames?: boolean;
     arioProcessId?: string;
     skipVersionCheck?: boolean;
     ao?: AoClient;
@@ -126,17 +124,22 @@ export class ANT {
       name: keyof UpgradeAntProgressEvent,
       payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
-  }): Promise<{
+  } & ( // provide names or reassign all affiliated names
+    | { names: string[]; reassignAffiliatedNames?: false }
+    | { reassignAffiliatedNames: true; names?: never[] }
+  )): Promise<{
     forkedProcessId: string;
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
-    // if names is not empty but reassignAffiliatedNames it true, throw
-    if (names.length > 0 && reassignAffiliatedNames) {
+    // run time check if names is not empty but reassignAffiliatedNames it true, throw
+    if (names.length > 0 && reassignAffiliatedNames !== undefined) {
       throw new Error(
         'Cannot reassign all affiliated names and provide specific names',
       );
     }
+
+    const namesToReassign: string[] = names.length > 0 ? names : [];
 
     const ario = ARIO.init({
       process: new AOProcess({ processId: arioProcessId, ao }),
@@ -153,7 +156,9 @@ export class ANT {
           processId: antProcessId,
         },
       });
-      names.push(...allAffiliatedNames.items.map((record) => record.name));
+      namesToReassign.push(
+        ...allAffiliatedNames.items.map((record) => record.name),
+      );
     } else {
       onSigningProgress?.('validating-names', {
         arioProcessId,
@@ -227,7 +232,7 @@ export class ANT {
     // we could parallelize this, but then signing progress would be harder to track
     const reassignedNames: string[] = [];
     const failedReassignedNames: string[] = [];
-    for (const name of names) {
+    for (const name of namesToReassign) {
       try {
         onSigningProgress?.('reassigning-name', {
           name,
@@ -270,8 +275,8 @@ export class ANT {
 export class AoANTReadable implements AoANTRead {
   protected process: AOProcess;
   public readonly processId: string;
+  public readonly hyperbeamUrl: URL | undefined;
   private strict: boolean;
-  private hyperbeamUrl: URL | undefined;
   private checkHyperBeamPromise: Promise<boolean> | undefined;
   private moduleId: string | undefined;
   private moduleIdPromise: Promise<string> | undefined;
@@ -1389,36 +1394,52 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    */
   async upgrade({
     names,
-    reassignAffiliatedNames = true,
+    reassignAffiliatedNames,
     arioProcessId,
     antRegistryId,
+    skipVersionCheck,
     onSigningProgress,
-    skipVersionCheck = false,
   }: {
-    names?: string[];
     arioProcessId?: string;
     antRegistryId?: string;
     skipVersionCheck?: boolean;
-    reassignAffiliatedNames?: boolean; // if true, will reassign all affiliated names, otherwise will use the names parameter
     onSigningProgress?: (
       name: keyof UpgradeAntProgressEvent,
       payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
-  }): Promise<{
+  } & (
+    | { reassignAffiliatedNames?: false; names: string[] }
+    | { reassignAffiliatedNames: true; names?: never[] }
+  )): Promise<{
     forkedProcessId: string;
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
-    return ANT.upgrade({
-      signer: this.signer,
-      antProcessId: this.processId,
-      ao: this.process.ao,
-      names,
-      reassignAffiliatedNames,
-      arioProcessId,
-      antRegistryId,
-      onSigningProgress,
-      skipVersionCheck,
-    });
+    if (reassignAffiliatedNames) {
+      return ANT.upgrade({
+        signer: this.signer,
+        antProcessId: this.processId,
+        ao: this.process.ao,
+        hyperbeamUrl: this.hyperbeamUrl?.toString(),
+        reassignAffiliatedNames: true,
+        arioProcessId: arioProcessId,
+        antRegistryId: antRegistryId,
+        onSigningProgress: onSigningProgress,
+        skipVersionCheck: skipVersionCheck,
+      });
+    } else {
+      return ANT.upgrade({
+        signer: this.signer,
+        antProcessId: this.processId,
+        ao: this.process.ao,
+        hyperbeamUrl: this.hyperbeamUrl?.toString(),
+        names: names,
+        reassignAffiliatedNames: false,
+        arioProcessId: arioProcessId,
+        antRegistryId: antRegistryId,
+        onSigningProgress: onSigningProgress,
+        skipVersionCheck: skipVersionCheck,
+      });
+    }
   }
 }
