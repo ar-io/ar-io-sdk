@@ -133,7 +133,11 @@ export class ANT {
     failedReassignedNames: string[];
   }> {
     // run time check if names is not empty but reassignAffiliatedNames it true, throw
-    if (names.length > 0 && reassignAffiliatedNames !== undefined) {
+    if (
+      names.length > 0 &&
+      reassignAffiliatedNames !== undefined &&
+      reassignAffiliatedNames !== false
+    ) {
       throw new Error(
         'Cannot reassign all affiliated names and provide specific names',
       );
