@@ -102,7 +102,7 @@ export class ANT {
   static async upgrade({
     signer,
     antProcessId,
-    reassignAffiliatedNames = true, // if true, will reassign all affiliated names, otherwise will use the names parameter
+    reassignAffiliatedNames = false, // if true, will reassign all affiliated names, otherwise will use the names parameter
     names = [],
     arioProcessId = ARIO_MAINNET_PROCESS_ID,
     antRegistryId = ANT_REGISTRY_ID,
@@ -1389,7 +1389,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    */
   async upgrade({
     names,
-    reassignAffiliatedNames,
+    reassignAffiliatedNames = true,
     arioProcessId,
     antRegistryId,
     onSigningProgress,
