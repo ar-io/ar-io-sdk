@@ -160,7 +160,6 @@ export class ANT {
         antProcessId,
         names,
       });
-      // TODO: add callback saying validating affiliated names
       // confirm all names are affiliated with the ANT
       const allAffiliatedNames = await ario.getArNSRecords({
         filters: {
@@ -1372,7 +1371,6 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * This is a convenience method that calls the static ANT.upgrade() method
    * using this instance's process ID and signer.
    *
-   * TODO: Add version checking by implementing a getVersion API on ANTs to compare
    * current version with latest ANT registry version and skip if already up to date.
    *
    * @param names @type {string[]} The ArNS names to reassign to the upgraded ANT.
