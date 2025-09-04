@@ -295,16 +295,17 @@ export interface AoANTWrite extends AoANTRead {
     notifyOwners?: boolean;
   }>;
   upgrade(
-    params: {
+    params?: {
       arioProcessId?: string;
       antRegistryId?: string;
+      skipVersionCheck?: boolean;
       onSigningProgress?: (
         name: keyof UpgradeAntProgressEvent,
         payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
       ) => void;
     } & (
-      | { reassignAffiliatedNames?: false; names: string[] }
-      | { reassignAffiliatedNames: true; names?: never[] }
+      | { names: string[]; reassignAffiliatedNames?: false }
+      | { names?: never; reassignAffiliatedNames?: true }
     ),
   ): Promise<{
     forkedProcessId: string;

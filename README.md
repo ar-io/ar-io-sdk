@@ -2572,9 +2572,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 // Upgrade ANT and reassign all affiliated ArNS names to the new process
-const result = await ant.upgrade({
-  reassignAffiliatedNames: true,
-});
+const result = await ant.upgrade();
 
 // Upgrade ANT and reassign specific ArNS names to the new process
 const result = await ant.upgrade({
@@ -2588,11 +2586,11 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 
 **Parameters:**
 
-- `reassignAffiliatedNames: boolean` - If true, reassigns all names associated with this process to the new forked process
+- `reassignAffiliatedNames?: boolean` - If true, reassigns all names associated with this process to the new forked process (defaults to true when names is empty)
 - `names?: string[]` - Optional array of specific names to reassign (cannot be used with `reassignAffiliatedNames: true`)
 - `arioProcessId?: string` - Optional ARIO process ID (defaults to mainnet)
-- `antRegistryId?: string` - Optional ANT registry ID (defaults to mainnet)
-- `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version (defaults to false)
+- `antRegistryId?: string` - Optional ANT registry ID
+- `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version
 - `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
 
 **Returns:** `Promise<{ forkedProcessId: string, reassignedNames: string[], failedReassignedNames: string[] }>`

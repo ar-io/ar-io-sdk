@@ -102,8 +102,8 @@ export class ANT {
   static async upgrade({
     signer,
     antProcessId,
-    reassignAffiliatedNames = false,
-    names = [],
+    reassignAffiliatedNames = true,
+    names,
     arioProcessId = ARIO_MAINNET_PROCESS_ID,
     antRegistryId = ANT_REGISTRY_ID,
     ao,
@@ -124,9 +124,9 @@ export class ANT {
       name: keyof UpgradeAntProgressEvent,
       payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
     ) => void;
-  } & ( // provide names or reassign all affiliated names
+  } & (
     | { names: string[]; reassignAffiliatedNames?: false }
-    | { reassignAffiliatedNames: true; names?: never[] }
+    | { names?: never; reassignAffiliatedNames: true }
   )): Promise<{
     forkedProcessId: string;
     reassignedNames: string[];
@@ -134,6 +134,7 @@ export class ANT {
   }> {
     // run time check if names is not empty but reassignAffiliatedNames it true, throw
     if (
+      names !== undefined &&
       names.length > 0 &&
       reassignAffiliatedNames !== undefined &&
       reassignAffiliatedNames !== false
@@ -143,14 +144,21 @@ export class ANT {
       );
     }
 
-    const namesToReassign: string[] = names.length > 0 ? names : [];
+    const namesToReassign: string[] =
+      names !== undefined && names.length > 0 ? names : [];
+
+    // use reassignAffiliatedNames if names is empty
+    const shouldReassignAll =
+      names === undefined || names.length === 0
+        ? (reassignAffiliatedNames ?? true)
+        : false;
 
     const ario = ARIO.init({
       process: new AOProcess({ processId: arioProcessId, ao }),
     });
 
     // get all the affiliated names if reassign all affiliated names is true
-    if (reassignAffiliatedNames) {
+    if (shouldReassignAll) {
       onSigningProgress?.('fetching-affiliated-names', {
         arioProcessId,
         antProcessId,
@@ -193,7 +201,7 @@ export class ANT {
     }
 
     // if names is empty and reassign all affiliated names is false, throw an error
-    if (names.length === 0) {
+    if (namesToReassign.length === 0) {
       throw new Error('There are no names to reassign for this ANT.');
     }
 
@@ -1396,30 +1404,40 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * console.log(`Upgraded to process: ${result.forkedProcessId}`);
    * ```
    */
-  async upgrade({
-    names,
-    reassignAffiliatedNames,
-    arioProcessId,
-    antRegistryId,
-    skipVersionCheck,
-    onSigningProgress,
-  }: {
-    arioProcessId?: string;
-    antRegistryId?: string;
-    skipVersionCheck?: boolean;
-    onSigningProgress?: (
-      name: keyof UpgradeAntProgressEvent,
-      payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
-    ) => void;
-  } & (
-    | { reassignAffiliatedNames?: false; names: string[] }
-    | { reassignAffiliatedNames: true; names?: never[] }
-  )): Promise<{
+  async upgrade(
+    params?: {
+      arioProcessId?: string;
+      antRegistryId?: string;
+      skipVersionCheck?: boolean;
+      onSigningProgress?: (
+        name: keyof UpgradeAntProgressEvent,
+        payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
+      ) => void;
+    } & (
+      | { names: string[]; reassignAffiliatedNames?: false }
+      | { names?: never; reassignAffiliatedNames?: true }
+    ),
+  ): Promise<{
     forkedProcessId: string;
     reassignedNames: string[];
     failedReassignedNames: string[];
   }> {
-    if (reassignAffiliatedNames) {
+    const {
+      names,
+      reassignAffiliatedNames,
+      arioProcessId,
+      antRegistryId,
+      skipVersionCheck,
+      onSigningProgress,
+    } = params ?? {};
+
+    // Determine if we should reassign all names or specific names
+    const shouldReassignAll =
+      names === undefined || names.length === 0
+        ? (reassignAffiliatedNames ?? true)
+        : false;
+
+    if (shouldReassignAll) {
       return ANT.upgrade({
         signer: this.signer,
         antProcessId: this.processId,
@@ -1437,7 +1455,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         antProcessId: this.processId,
         ao: this.process.ao,
         hyperbeamUrl: this.hyperbeamUrl?.toString(),
-        names: names,
+        names: names as string[],
         reassignAffiliatedNames: false,
         arioProcessId: arioProcessId,
         antRegistryId: antRegistryId,
