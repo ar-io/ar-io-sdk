@@ -1,3 +1,11 @@
+# [3.19.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.5...v3.19.0-alpha.6) (2025-09-04)
+
+
+### Bug Fixes
+
+* **ant:** check name length ([8e5e66f](https://github.com/ar-io/ar-io-sdk/commit/8e5e66f8ce9aab3e752ae35b8607c565112a542b))
+* **ant:** update upgrade logic ([12d8e2c](https://github.com/ar-io/ar-io-sdk/commit/12d8e2c394ddee690eff4e926c089783e66c1cb1))
+
 # [3.19.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.4...v3.19.0-alpha.5) (2025-09-04)
 
 
