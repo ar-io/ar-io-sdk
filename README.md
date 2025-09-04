@@ -2564,7 +2564,7 @@ const { id: txId } = await ant.removePrimaryNames({
 });
 ```
 
-#### `upgrade({ reassignAffiliatedNames, names?, arioProcessId?, antRegistryId?, skipVersionCheck?, onSigningProgress? })`
+#### `upgrade({ reassignAffiliatedNames?, names?, arioProcessId?, antRegistryId?, skipVersionCheck?, onSigningProgress? })`
 
 Upgrades an ANT by forking it to the latest version from the ANT registry and optionally reassigning ArNS names to the new process. This function first checks the version of the existing ANT, creates a new ANT using `.fork()` to the latest version, and then reassigns the ArNS names affiliated with this process to the new process.
 
@@ -2587,10 +2587,9 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 **Parameters:**
 
 - `reassignAffiliatedNames?: boolean` - If true, reassigns all names associated with this process to the new forked process (defaults to true when names is empty)
-- `names?: string[]` - Optional array of specific names to reassign (cannot be used with `reassignAffiliatedNames: true`)
+- `names?: string[]` - Optional array of specific names to reassign (cannot be used with `reassignAffiliatedNames: true`). These names must be affiliated with this ANT on the provided ARIO process.
 - `arioProcessId?: string` - Optional ARIO process ID (defaults to mainnet)
-- `antRegistryId?: string` - Optional ANT registry ID
-- `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version
+- `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version (defaults to false)
 - `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
 
 **Returns:** `Promise<{ forkedProcessId: string, reassignedNames: string[], failedReassignedNames: string[] }>`
