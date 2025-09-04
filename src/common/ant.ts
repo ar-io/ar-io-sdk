@@ -263,10 +263,20 @@ export class ANT {
           arioProcessId,
           antProcessId: forkedProcessId,
         });
+        onSigningProgress?.('successfully-reassigned-name', {
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
 
         reassignedNames.push(name);
       } catch (error) {
         logger.error(`Failed to reassign name ${name}:`, { error });
+        onSigningProgress?.('failed-to-reassign-name', {
+          name,
+          arioProcessId,
+          antProcessId: forkedProcessId,
+        });
         // Continue with other names rather than failing completely
         failedReassignedNames.push(name);
       }

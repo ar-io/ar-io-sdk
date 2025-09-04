@@ -2579,6 +2579,27 @@ const result = await ant.upgrade({
   names: ['ardrive', 'example'],
 });
 
+// with callbacks
+const result = await ant.upgrade({
+  names: ['ardrive', 'example'],
+  onSigningProgress: (event, payload) => {
+    console.log(`${event}:`, payload);
+    if (event === 'checking-version') {
+      console.log(`Checking version: ${payload.antProcessId}`);
+    }
+    if (event === 'fetching-affiliated-names') {
+      console.log(`Fetching affiliated names: ${payload.arioProcessId}`);
+    }
+    if (event === 'reassigning-name') {
+      console.log(`Reassigning name: ${payload.name}`);
+    }
+    if (event === 'validating-names') {
+      console.log(`Validating names: ${payload.names}`);
+    }
+    // other callback events...
+  },
+});
+
 console.log(`Upgraded to process: ${result.forkedProcessId}`);
 console.log(`Successfully reassigned names: ${result.reassignedNames}`);
 console.log(`Failed to reassign names: ${result.failedReassignedNames}`);

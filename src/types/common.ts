@@ -190,6 +190,16 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
     antProcessId: string;
     names: string[];
   };
+  'failed-to-reassign-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  };
+  'successfully-reassigned-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  };
 };
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
