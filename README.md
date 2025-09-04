@@ -2564,6 +2564,39 @@ const { id: txId } = await ant.removePrimaryNames({
 });
 ```
 
+#### `upgrade({ reassignAffiliatedNames, names?, arioProcessId?, antRegistryId?, skipVersionCheck?, onSigningProgress? })`
+
+Upgrades an ANT by forking it to the latest version from the ANT registry and optionally reassigning ArNS names to the new process. This function first checks the version of the existing ANT, creates a new ANT using `.fork()` to the latest version, and then reassigns the ArNS names affiliated with this process to the new process.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+// Upgrade ANT and reassign all affiliated ArNS names to the new process
+const result = await ant.upgrade({
+  reassignAffiliatedNames: true,
+});
+
+// Upgrade ANT and reassign specific ArNS names to the new process
+const result = await ant.upgrade({
+  names: ['ardrive', 'example'],
+});
+
+console.log(`Upgraded to process: ${result.forkedProcessId}`);
+console.log(`Successfully reassigned names: ${result.reassignedNames}`);
+console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
+```
+
+**Parameters:**
+
+- `reassignAffiliatedNames: boolean` - If true, reassigns all names associated with this process to the new forked process
+- `names?: string[]` - Optional array of specific names to reassign (cannot be used with `reassignAffiliatedNames: true`)
+- `arioProcessId?: string` - Optional ARIO process ID (defaults to mainnet)
+- `antRegistryId?: string` - Optional ANT registry ID (defaults to mainnet)
+- `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version (defaults to false)
+- `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
+
+**Returns:** `Promise<{ forkedProcessId: string, reassignedNames: string[], failedReassignedNames: string[] }>`
+
 ### Configuration
 
 ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
