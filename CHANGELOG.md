@@ -1,3 +1,10 @@
+# [3.19.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.4...v3.19.0-alpha.5) (2025-09-04)
+
+
+### Bug Fixes
+
+* **ant:** add check if reassign is false ([7cbdc0d](https://github.com/ar-io/ar-io-sdk/commit/7cbdc0da4db35ecb7f784d7118903cbac1463889))
+
 # [3.19.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.3...v3.19.0-alpha.4) (2025-09-03)
 
 
