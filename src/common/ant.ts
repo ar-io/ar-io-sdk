@@ -172,6 +172,12 @@ export class ANT {
         ...allAffiliatedNames.items.map((record) => record.name),
       );
     } else {
+      if (names === undefined || names.length === 0) {
+        throw new Error(
+          'Names are required when reassignAffiliatedNames is false.',
+        );
+      }
+
       onSigningProgress?.('validating-names', {
         arioProcessId,
         antProcessId,
