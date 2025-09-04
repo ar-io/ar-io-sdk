@@ -1,3 +1,10 @@
+# [3.19.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.6...v3.19.0-alpha.7) (2025-09-04)
+
+
+### Bug Fixes
+
+* **ant:** update callback events ([391143c](https://github.com/ar-io/ar-io-sdk/commit/391143c6e47c1008253d09ff358d4b8392fad47f))
+
 # [3.19.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.5...v3.19.0-alpha.6) (2025-09-04)
 
 
