@@ -159,15 +159,31 @@ export async function upgradeAntCLICommand(
     );
   }
 
-  if (reassignAffiliatedNames) {
-    return writeANTFromOptions(o).upgrade({
-      reassignAffiliatedNames,
-      arioProcessId,
-    });
-  } else {
-    return writeANTFromOptions(o).upgrade({
-      names,
-      arioProcessId,
-    });
+  const result = reassignAffiliatedNames
+    ? await writeANTFromOptions(o).upgrade({
+        reassignAffiliatedNames,
+        arioProcessId,
+      })
+    : await writeANTFromOptions(o).upgrade({
+        names,
+        arioProcessId,
+      });
+
+  // Serialize error objects for JSON compatibility
+  const serializedFailedReassignedNames: Record<
+    string,
+    { id?: string; error: string }
+  > = {};
+  for (const [name, failure] of Object.entries(result.failedReassignedNames)) {
+    serializedFailedReassignedNames[name] = {
+      id: failure.id,
+      error: failure.error.message,
+    };
   }
+
+  return {
+    forkedProcessId: result.forkedProcessId,
+    reassignedNames: result.reassignedNames,
+    failedReassignedNames: serializedFailedReassignedNames,
+  };
 }

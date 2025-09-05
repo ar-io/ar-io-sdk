@@ -194,6 +194,7 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
     name: string;
     arioProcessId: string;
     antProcessId: string;
+    error?: Error;
   };
   'successfully-reassigned-name': {
     name: string;
