@@ -1,3 +1,10 @@
+# [3.19.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.7...v3.19.0-alpha.8) (2025-09-05)
+
+
+### Bug Fixes
+
+* **ant:** improve response type of upgrade API ([0acd3c8](https://github.com/ar-io/ar-io-sdk/commit/0acd3c8bdc53ae2ddfb4836a5079ae997bf7ae3e))
+
 # [3.19.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.6...v3.19.0-alpha.7) (2025-09-04)
 
 
