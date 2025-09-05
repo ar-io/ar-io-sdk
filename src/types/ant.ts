@@ -17,6 +17,7 @@ import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 import {
+  AoMessageResult,
   AoWriteAction,
   UpgradeAntProgressEvent,
   WalletAddress,
@@ -309,8 +310,8 @@ export interface AoANTWrite extends AoANTRead {
     ),
   ): Promise<{
     forkedProcessId: string;
-    reassignedNames: string[];
-    failedReassignedNames: string[];
+    reassignedNames: Record<string, AoMessageResult>;
+    failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }>;
 }
 

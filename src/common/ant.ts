@@ -129,8 +129,8 @@ export class ANT {
     | { names?: never; reassignAffiliatedNames: true }
   )): Promise<{
     forkedProcessId: string;
-    reassignedNames: string[];
-    failedReassignedNames: string[];
+    reassignedNames: Record<string, AoMessageResult>;
+    failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }> {
     // run time check if names is not empty but reassignAffiliatedNames it true, throw
     if (
@@ -232,8 +232,8 @@ export class ANT {
       if (isLatestVersion) {
         return {
           forkedProcessId: antProcessId,
-          reassignedNames: [],
-          failedReassignedNames: [],
+          reassignedNames: {},
+          failedReassignedNames: {},
         };
       }
     }
@@ -248,9 +248,11 @@ export class ANT {
     });
 
     // we could parallelize this, but then signing progress would be harder to track
-    const reassignedNames: string[] = [];
-    const failedReassignedNames: string[] = [];
+    const reassignedNames: Record<string, AoMessageResult> = {};
+    const failedReassignedNames: Record<string, { id?: string; error: Error }> =
+      {};
     for (const name of namesToReassign) {
+      let reassignmentResult: AoMessageResult | undefined;
       try {
         onSigningProgress?.('reassigning-name', {
           name,
@@ -258,7 +260,7 @@ export class ANT {
           antProcessId: forkedProcessId,
         });
 
-        await existingAntProcess.reassignName({
+        reassignmentResult = await existingAntProcess.reassignName({
           name,
           arioProcessId,
           antProcessId: forkedProcessId,
@@ -269,16 +271,20 @@ export class ANT {
           antProcessId: forkedProcessId,
         });
 
-        reassignedNames.push(name);
+        reassignedNames[name] = reassignmentResult;
       } catch (error) {
         logger.error(`Failed to reassign name ${name}:`, { error });
         onSigningProgress?.('failed-to-reassign-name', {
           name,
           arioProcessId,
           antProcessId: forkedProcessId,
+          error,
         });
         // Continue with other names rather than failing completely
-        failedReassignedNames.push(name);
+        failedReassignedNames[name] = {
+          id: reassignmentResult?.id,
+          error,
+        };
       }
     }
 
@@ -1435,8 +1441,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     ),
   ): Promise<{
     forkedProcessId: string;
-    reassignedNames: string[];
-    failedReassignedNames: string[];
+    reassignedNames: Record<string, AoMessageResult>;
+    failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }> {
     const {
       names,

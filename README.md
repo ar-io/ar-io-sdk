@@ -2613,7 +2613,7 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 - `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version (defaults to false)
 - `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
 
-**Returns:** `Promise<{ forkedProcessId: string, reassignedNames: string[], failedReassignedNames: string[] }>`
+**Returns:** `Promise<{ forkedProcessId: string, reassignedNames: Record<string, AoMessageResult>, failedReassignedNames: Record<string, { id?: string; error: Error }> }>`
 
 ### Configuration
 
