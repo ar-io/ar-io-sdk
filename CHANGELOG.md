@@ -1,68 +1,9 @@
-# [3.19.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.8...v3.19.0-alpha.9) (2025-09-10)
+## [3.18.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.18.3) (2025-08-22)
 
 
 ### Bug Fixes
 
-* **ant:** address PR reccomendations ([2e32600](https://github.com/ar-io/ar-io-sdk/commit/2e32600550f95bd219b46a43d8e585cb340f3796))
-
-# [3.19.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.7...v3.19.0-alpha.8) (2025-09-05)
-
-
-### Bug Fixes
-
-* **ant:** improve response type of upgrade API ([0acd3c8](https://github.com/ar-io/ar-io-sdk/commit/0acd3c8bdc53ae2ddfb4836a5079ae997bf7ae3e))
-
-# [3.19.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.6...v3.19.0-alpha.7) (2025-09-04)
-
-
-### Bug Fixes
-
-* **ant:** update callback events ([391143c](https://github.com/ar-io/ar-io-sdk/commit/391143c6e47c1008253d09ff358d4b8392fad47f))
-
-# [3.19.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.5...v3.19.0-alpha.6) (2025-09-04)
-
-
-### Bug Fixes
-
-* **ant:** check name length ([8e5e66f](https://github.com/ar-io/ar-io-sdk/commit/8e5e66f8ce9aab3e752ae35b8607c565112a542b))
-* **ant:** update upgrade logic ([12d8e2c](https://github.com/ar-io/ar-io-sdk/commit/12d8e2c394ddee690eff4e926c089783e66c1cb1))
-
-# [3.19.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.4...v3.19.0-alpha.5) (2025-09-04)
-
-
-### Bug Fixes
-
-* **ant:** add check if reassign is false ([7cbdc0d](https://github.com/ar-io/ar-io-sdk/commit/7cbdc0da4db35ecb7f784d7118903cbac1463889))
-
-# [3.19.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.3...v3.19.0-alpha.4) (2025-09-03)
-
-
-### Bug Fixes
-
-* **ant:** fix predicate for arns name on upgrade ([36c6e85](https://github.com/ar-io/ar-io-sdk/commit/36c6e85d8b399a74fca6e82ec3ecb3c72712f680))
-* **typess:** update upgrade type to enforce not providing names ([b53265b](https://github.com/ar-io/ar-io-sdk/commit/b53265b2187756b2b816c275fca6352f2adf00e1))
-
-# [3.19.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.2...v3.19.0-alpha.3) (2025-09-03)
-
-
-### Bug Fixes
-
-* **ant:** set reassignAffiliatedNames as false ([ef5c9d6](https://github.com/ar-io/ar-io-sdk/commit/ef5c9d6fe34d6eecff256024026826c1c60f7322))
-
-# [3.19.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.1...v3.19.0-alpha.2) (2025-09-02)
-
-
-### Features
-
-* **ant:** add module id and version APIs to ant class ([f48dcbc](https://github.com/ar-io/ar-io-sdk/commit/f48dcbcc20031b0fb03aef078d6b75add131c19c))
-* **ants:** add .upgrade API to ant class ([22fea51](https://github.com/ar-io/ar-io-sdk/commit/22fea51de7714cc3e00ac2533e6fad209eb5b50b))
-
-# [3.19.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.19.0-alpha.1) (2025-08-22)
-
-
-### Features
-
-* **ant:** add upgrade capability for ANTs ([cf9859a](https://github.com/ar-io/ar-io-sdk/commit/cf9859aa825679dfc2e3fa72e5b89f4962a3d77f))
+* **io:** fix ant-registry-id param ([7398c6d](https://github.com/ar-io/ar-io-sdk/commit/7398c6d97af0cff49c87aad5f078bc8897844664))
 
 ## [3.18.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.1...v3.18.2) (2025-08-21)
 
