@@ -1,3 +1,10 @@
+# [3.19.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.8...v3.19.0-alpha.9) (2025-09-10)
+
+
+### Bug Fixes
+
+* **ant:** address PR reccomendations ([2e32600](https://github.com/ar-io/ar-io-sdk/commit/2e32600550f95bd219b46a43d8e585cb340f3796))
+
 # [3.19.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.7...v3.19.0-alpha.8) (2025-09-05)
 
 
