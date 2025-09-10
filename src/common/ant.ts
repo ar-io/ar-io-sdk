@@ -558,7 +558,7 @@ export class AoANTReadable implements AoANTRead {
         query {
           transactions(
             ids: ["${this.processId}"]
-            first: 1,
+            first: 1
           ) {
             edges {
               node {
