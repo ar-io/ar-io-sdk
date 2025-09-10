@@ -38,6 +38,7 @@ import {
   SortedANTRecords,
 } from '../types/ant.js';
 import {
+  AoArNSNameDataWithName,
   AoClient,
   AoMessageResult,
   AoSigner,
@@ -144,8 +145,8 @@ export class ANT {
       );
     }
 
-    const namesToReassign: string[] =
-      names !== undefined && names.length > 0 ? names : [];
+    let namesToReassign: Set<string> =
+      names !== undefined && names.length > 0 ? new Set(names) : new Set();
 
     // use reassignAffiliatedNames if names is empty
     const shouldReassignAll =
@@ -157,20 +158,32 @@ export class ANT {
       process: new AOProcess({ processId: arioProcessId, ao }),
     });
 
+    const getAllAffiliatedNames = async (): Promise<Set<string>> => {
+      let cursor: string | undefined = undefined;
+      let hasMore = true;
+      const affiliatedNames = new Set<string>();
+      while (hasMore) {
+        const page = await ario.getArNSRecords({
+          filters: { processId: antProcessId },
+          cursor,
+          limit: 100,
+        });
+        page.items.forEach((r: AoArNSNameDataWithName) => {
+          affiliatedNames.add(r.name);
+        });
+        cursor = page.nextCursor;
+        hasMore = page.hasMore;
+      }
+      return affiliatedNames;
+    };
+
     // get all the affiliated names if reassign all affiliated names is true
     if (shouldReassignAll) {
       onSigningProgress?.('fetching-affiliated-names', {
         arioProcessId,
         antProcessId,
       });
-      const allAffiliatedNames = await ario.getArNSRecords({
-        filters: {
-          processId: antProcessId,
-        },
-      });
-      namesToReassign.push(
-        ...allAffiliatedNames.items.map((record) => record.name),
-      );
+      namesToReassign = await getAllAffiliatedNames();
     } else {
       if (names === undefined || names.length === 0) {
         throw new Error(
@@ -184,21 +197,12 @@ export class ANT {
         names,
       });
       // confirm all names are affiliated with the ANT
-      const allAffiliatedNames = await ario.getArNSRecords({
-        filters: {
-          processId: antProcessId,
-        },
-      });
+      const allAffiliatedNames = await getAllAffiliatedNames();
 
-      if (
-        !names.every((name) =>
-          allAffiliatedNames.items.some((record) => record.name === name),
-        )
-      ) {
+      if (!names.every((name) => allAffiliatedNames.has(name))) {
         // find any that are not affiliated with the ANT
         const notAffiliatedNames = names.filter(
-          (name) =>
-            !allAffiliatedNames.items.some((record) => record.name === name),
+          (name) => !allAffiliatedNames.has(name),
         );
         throw new Error(
           `All names must be affiliated with the ANT on the provided ARIO process. The following names are not affiliated to this ANT: ${notAffiliatedNames.join(', ')}`,
@@ -207,7 +211,7 @@ export class ANT {
     }
 
     // if names is empty and reassign all affiliated names is false, throw an error
-    if (namesToReassign.length === 0) {
+    if (namesToReassign.size === 0) {
       throw new Error('There are no names to reassign for this ANT.');
     }
 
@@ -577,6 +581,7 @@ export class AoANTReadable implements AoANTRead {
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: AbortSignal.timeout(10_000), // 10 second timeout
         });
 
         if (!response.ok) {

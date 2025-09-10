@@ -2610,6 +2610,7 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 - `reassignAffiliatedNames?: boolean` - If true, reassigns all names associated with this process to the new forked process (defaults to true when names is empty)
 - `names?: string[]` - Optional array of specific names to reassign (cannot be used with `reassignAffiliatedNames: true`). These names must be affiliated with this ANT on the provided ARIO process.
 - `arioProcessId?: string` - Optional ARIO process ID (defaults to mainnet)
+- `antRegistryId?: string` - Optional ANT registry process ID used to resolve the latest version (defaults to mainnet registry)
 - `skipVersionCheck?: boolean` - Skip checking if ANT is already latest version (defaults to false)
 - `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
 

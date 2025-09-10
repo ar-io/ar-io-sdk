@@ -333,6 +333,7 @@ export async function forkANT({
   const forkedProcessId = await spawnANT({
     signer,
     antRegistryId,
+    ao,
     logger,
     module: moduleId,
     onSigningProgress,

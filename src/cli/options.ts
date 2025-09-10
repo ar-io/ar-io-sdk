@@ -307,6 +307,11 @@ export const optionMap = {
     alias: '--referrer <referrer>',
     description: 'The referrer for ArNS purchase tracking',
   },
+  reassignAffiliatedNames: {
+    alias: '--reassign-affiliated-names',
+    description: 'Reassign all affiliated names to the new process',
+    type: 'boolean',
+  },
 };
 
 export const walletOptions = [
@@ -450,4 +455,9 @@ export const setAntUndernameOptions = [
   optionMap.undername,
 ];
 
-export const upgradeAntOptions = [optionMap.processId, ...writeActionOptions];
+export const upgradeAntOptions = [
+  optionMap.processId,
+  optionMap.names,
+  optionMap.reassignAffiliatedNames,
+  ...writeActionOptions,
+];
