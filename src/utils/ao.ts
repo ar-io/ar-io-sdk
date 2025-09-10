@@ -21,7 +21,7 @@ import { z } from 'zod';
 import { ANTRegistry } from '../common/ant-registry.js';
 import { ANTVersions } from '../common/ant-versions.js';
 import { defaultArweave } from '../common/arweave.js';
-import { AOProcess, Logger } from '../common/index.js';
+import { ANT, AOProcess, Logger } from '../common/index.js';
 import {
   ANT_LUA_ID,
   ANT_REGISTRY_ID,
@@ -291,7 +291,67 @@ export async function spawnANT({
   return processId;
 }
 
-// TODO: add a utility for forking an ANT to the latest module that leverages getState and spawnANT
+export async function forkANT({
+  signer,
+  antProcessId,
+  logger = Logger.default,
+  ao,
+  moduleId,
+  antRegistryId = ANT_REGISTRY_ID,
+  onSigningProgress = (name, payload) => {
+    logger.debug('Forking ANT', { name, payload });
+  },
+}: {
+  signer: AoSigner;
+  antProcessId: string;
+  moduleId?: string;
+  logger?: Logger;
+  ao?: AoClient;
+  antRegistryId?: string;
+  onSigningProgress?: (
+    name: keyof SpawnAntProgressEvent,
+    payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
+  ) => void;
+}) {
+  // get the state of the current ANT and use it to spawn a new ANT
+  const ant = ANT.init({
+    process: new AOProcess({
+      processId: antProcessId,
+      ao,
+      logger,
+    }),
+  });
+
+  const state = await ant.getState();
+
+  if (state === undefined) {
+    throw new Error(
+      `ANT state (${antProcessId}) is undefined and cannot be upgraded`,
+    );
+  }
+
+  const forkedProcessId = await spawnANT({
+    signer,
+    antRegistryId,
+    ao,
+    logger,
+    module: moduleId,
+    onSigningProgress,
+    state: {
+      owner: state.Owner,
+      name: state.Name,
+      ticker: state.Ticker,
+      description: state.Description,
+      keywords: state.Keywords,
+      controllers: state.Controllers,
+      records: state.Records,
+      balances: state.Balances,
+      logo: state.Logo,
+    },
+  });
+
+  return forkedProcessId;
+}
 
 /**
  * @deprecated

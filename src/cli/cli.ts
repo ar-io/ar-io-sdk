@@ -24,6 +24,7 @@ import { version } from '../version.js';
 import {
   setAntBaseNameCLICommand,
   setAntRecordCLICommand,
+  upgradeAntCLICommand,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -101,6 +102,7 @@ import {
   tokenCostOptions,
   transferOptions,
   updateGatewaySettingsOptions,
+  upgradeAntOptions,
   vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
@@ -894,6 +896,14 @@ makeCommand({
   description: 'Set an undername of an ANT process',
   options: setAntUndernameOptions,
   action: setAntRecordCLICommand,
+});
+
+makeCommand({
+  name: 'upgrade-ant',
+  description:
+    'Upgrade an ANT by forking it to the latest version and reassigning names',
+  options: upgradeAntOptions,
+  action: upgradeAntCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({

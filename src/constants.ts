@@ -30,6 +30,8 @@ export const ARIO_TESTNET_PROCESS_ID =
 export const ARIO_MAINNET_PROCESS_ID =
   'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE';
 
+export const ANT_REGISTRY_TESTNET_ID =
+  'RR0vheYqtsKuJCWh6xj0beE35tjaEug5cejMw9n2aa8';
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
 export const MARIO_PER_ARIO = 1_000_000;
 

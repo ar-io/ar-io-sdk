@@ -19,10 +19,14 @@ import {
 } from '../../types/ant.js';
 import { CLIWriteOptionsFromAoAntParams } from '../types.js';
 import {
+  arioProcessIdFromOptions,
   assertConfirmationPrompt,
+  booleanFromOptions,
   customTagsFromOptions,
   defaultTtlSecondsCLI,
+  readARIOFromOptions,
   requiredStringFromOptions,
+  stringArrayFromOptions,
   writeANTFromOptions,
 } from '../utils.js';
 
@@ -113,4 +117,73 @@ export async function setAntUndernameCLICommand(
     },
     customTagsFromOptions(o),
   );
+}
+
+export async function upgradeAntCLICommand(
+  o: CLIWriteOptionsFromAoAntParams<Record<string, unknown>>,
+) {
+  const writeAnt = writeANTFromOptions(o);
+  const arioProcessId = arioProcessIdFromOptions(o);
+  const ario = readARIOFromOptions(o);
+  const reassignAffiliatedNames = booleanFromOptions(
+    o,
+    'reassignAffiliatedNames',
+  );
+
+  const names = stringArrayFromOptions(o, 'names') || [];
+
+  if (reassignAffiliatedNames) {
+    // Fetch all ArNS records that point to this ANT process
+    const allRecords = await ario.getArNSRecords({
+      filters: {
+        processId: writeAnt.processId,
+      },
+    });
+
+    // Filter records that belong to this ANT
+    const affiliatedNames = allRecords.items.map((record) => record.name);
+    names.push(...affiliatedNames);
+  }
+
+  if (names.length === 0) {
+    throw new Error('No names to reassign');
+  }
+
+  if (!o.skipConfirmation) {
+    await assertConfirmationPrompt(
+      `Upgrade all names affiliated with this ANT on ARIO process?\n` +
+        `ARIO Process ID: ${arioProcessId}\n` +
+        `ANT Process ID: ${writeAnt.processId}\n` +
+        `Names that will be reassigned (${names.length}): ${names.join(', ')}`,
+      o,
+    );
+  }
+
+  const result = reassignAffiliatedNames
+    ? await writeANTFromOptions(o).upgrade({
+        reassignAffiliatedNames,
+        arioProcessId,
+      })
+    : await writeANTFromOptions(o).upgrade({
+        names,
+        arioProcessId,
+      });
+
+  // Serialize error objects for JSON compatibility
+  const serializedFailedReassignedNames: Record<
+    string,
+    { id?: string; error: string }
+  > = {};
+  for (const [name, failure] of Object.entries(result.failedReassignedNames)) {
+    serializedFailedReassignedNames[name] = {
+      id: failure.id,
+      error: failure.error.message,
+    };
+  }
+
+  return {
+    forkedProcessId: result.forkedProcessId,
+    reassignedNames: result.reassignedNames,
+    failedReassignedNames: serializedFailedReassignedNames,
+  };
 }
