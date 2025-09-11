@@ -901,7 +901,7 @@ makeCommand({
 });
 
 makeCommand({
-  name: 'transfer-record-ownership',
+  name: 'transfer-record',
   description:
     'Transfer ownership of a specific record (undername) to another address',
   options: transferRecordOwnershipOptions,

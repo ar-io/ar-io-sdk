@@ -143,7 +143,7 @@ export async function transferRecordOwnershipCLICommand(
     );
   }
 
-  return writeANTFromOptions(o).transferRecordOwnership(
+  return writeANTFromOptions(o).transferRecord(
     { undername, recipient },
     customTagsFromOptions(o),
   );

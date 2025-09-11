@@ -190,7 +190,7 @@ Commands:
   set-ant-record [options]                Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername
   set-ant-base-name [options]             Set the base name of an ANT process
   set-ant-undername [options]             Set an undername of an ANT process
-  transfer-record-ownership [options]     Transfer ownership of a specific record (undername) to another address
+  transfer-record [options]               Transfer ownership of a specific record (undername) to another address
   set-ant-ticker [options]                Set the ticker of an ANT process
   set-ant-name [options]                  Set the name of an ANT process
   set-ant-description [options]           Set the description of an ANT process

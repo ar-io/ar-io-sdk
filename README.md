@@ -2633,20 +2633,31 @@ const { id: txId } = await ant.removePrimaryNames({
 });
 ```
 
-#### `transferRecordOwnership({ undername, recipient })`
+#### `transferRecord({ undername, recipient })`
 
 Transfers ownership of a specific record (undername) to another address. This enables delegation of control for individual records within an ANT while maintaining the ANT owner's ultimate authority. The current record owner or ANT owner/controllers can transfer ownership.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
-const { id: txId } = await ant.transferRecordOwnership({
+const { id: txId } = await ant.transferRecord({
   undername: 'alice', // the subdomain/record to transfer
   recipient: 'new-owner-address-123...', // address of the new owner
 });
 
 // alice_ardrive.ar.io is now owned by the new owner address
 // The new owner can update the record but not other records in the ANT
+```
+
+**CLI Usage:**
+
+```bash
+# Transfer ownership of a record using the CLI
+ar.io transfer-record \
+  --process-id "ANT_PROCESS_ID" \
+  --undername "alice" \
+  --recipient "new-owner-address-123..." \
+  --wallet-file "path/to/wallet.json"
 ```
 
 ### Configuration

@@ -1016,10 +1016,10 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
-   * ant.transferRecordOwnership({ undername: "alice", recipient: "new-owner-address-123..." }); // transfers ownership of the "alice" record to the new owner
+   * ant.transferRecord({ undername: "alice", recipient: "new-owner-address-123..." }); // transfers ownership of the "alice" record to the new owner
    * ```
    */
-  async transferRecordOwnership(
+  async transferRecord(
     {
       undername,
       recipient,
@@ -1032,7 +1032,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     return this.process.send({
       tags: [
         ...(options?.tags ?? []),
-        { name: 'Action', value: 'Transfer-Record-Ownership' },
+        { name: 'Action', value: 'Transfer-Record' },
         { name: 'Sub-Domain', value: undername },
         { name: 'Recipient', value: recipient },
       ],

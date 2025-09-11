@@ -296,7 +296,7 @@ export interface AoANTWrite extends AoANTRead {
     arioProcessId: string;
     notifyOwners?: boolean;
   }>;
-  transferRecordOwnership: AoWriteAction<{
+  transferRecord: AoWriteAction<{
     undername: string;
     recipient: string;
   }>;
