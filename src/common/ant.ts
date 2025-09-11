@@ -991,6 +991,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     {
       names,
       arioProcessId,
+      // TODO: remove this param, its not used on the ANT contract
       notifyOwners = false,
     }: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
     options?: WriteOptions,
