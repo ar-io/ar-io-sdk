@@ -1,9 +1,17 @@
-# [3.19.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.19.0-alpha.1) (2025-08-22)
+# [3.19.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.9...v3.19.0-alpha.10) (2025-09-10)
 
 
-### Features
+### Bug Fixes
 
-* **ant:** add upgrade capability for ANTs ([cf9859a](https://github.com/ar-io/ar-io-sdk/commit/cf9859aa825679dfc2e3fa72e5b89f4962a3d77f))
+* **ant:** fix graphql lookup query ([00753e3](https://github.com/ar-io/ar-io-sdk/commit/00753e3af5e273c4c6d6e55565598ff7a76e0817))
+* **io:** fix ant-registry-id param ([7398c6d](https://github.com/ar-io/ar-io-sdk/commit/7398c6d97af0cff49c87aad5f078bc8897844664))
+
+## [3.18.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.18.3) (2025-08-22)
+
+
+### Bug Fixes
+
+* **io:** fix ant-registry-id param ([7398c6d](https://github.com/ar-io/ar-io-sdk/commit/7398c6d97af0cff49c87aad5f078bc8897844664))
 
 ## [3.18.2](https://github.com/ar-io/ar-io-sdk/compare/v3.18.1...v3.18.2) (2025-08-21)
 

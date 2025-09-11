@@ -171,6 +171,38 @@ export type SpawnAntProgressEvent = {
   };
 };
 
+export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
+  'checking-version': {
+    antProcessId: string;
+    antRegistryId: string;
+  };
+  'fetching-affiliated-names': {
+    arioProcessId: string;
+    antProcessId: string;
+  };
+  'reassigning-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  };
+  'validating-names': {
+    arioProcessId: string;
+    antProcessId: string;
+    names: string[];
+  };
+  'failed-to-reassign-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+    error?: Error;
+  };
+  'successfully-reassigned-name': {
+    name: string;
+    arioProcessId: string;
+    antProcessId: string;
+  };
+};
+
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
   'buying-name': AoBuyRecordParams;
 };

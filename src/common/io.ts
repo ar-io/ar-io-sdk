@@ -1023,16 +1023,16 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
    */
   async getArNSRecordsForAddress(
     params: PaginationParams<AoArNSNameDataWithName> & {
-      antRegistryId?: string;
+      antRegistryProcessId?: string;
       address: WalletAddress;
     },
   ): Promise<PaginationResult<AoArNSNameDataWithName>> {
-    const { antRegistryId = ANT_REGISTRY_ID, address } = params;
+    const { antRegistryProcessId = ANT_REGISTRY_ID, address } = params;
     const antRegistry = ANTRegistry.init({
       hyperbeamUrl: this.hyperbeamUrl,
       process: new AOProcess({
         ao: this.process.ao,
-        processId: antRegistryId,
+        processId: antRegistryProcessId,
       }),
     });
 

@@ -16,7 +16,12 @@
 import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
-import { AoWriteAction, WalletAddress } from './common.js';
+import {
+  AoMessageResult,
+  AoWriteAction,
+  UpgradeAntProgressEvent,
+  WalletAddress,
+} from './common.js';
 
 /**
  * example error:
@@ -262,6 +267,20 @@ export interface AoANTRead {
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
   getHandlers(): Promise<AoANTHandler[]>;
+  getModuleId(opts?: {
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
+  getVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<string>;
+  isLatestVersion(opts?: {
+    antRegistryId?: string;
+    graphqlUrl?: string;
+    retries?: number;
+  }): Promise<boolean>;
 }
 
 export interface AoANTWrite extends AoANTRead {
@@ -295,6 +314,24 @@ export interface AoANTWrite extends AoANTRead {
     names: string[];
     arioProcessId: string;
     notifyOwners?: boolean;
+  }>;
+  upgrade(
+    params?: {
+      arioProcessId?: string;
+      antRegistryId?: string;
+      skipVersionCheck?: boolean;
+      onSigningProgress?: (
+        name: keyof UpgradeAntProgressEvent,
+        payload: UpgradeAntProgressEvent[keyof UpgradeAntProgressEvent],
+      ) => void;
+    } & (
+      | { names: string[]; reassignAffiliatedNames?: false }
+      | { names?: never; reassignAffiliatedNames?: true }
+    ),
+  ): Promise<{
+    forkedProcessId: string;
+    reassignedNames: Record<string, AoMessageResult>;
+    failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }>;
   transferRecord: AoWriteAction<{
     undername: string;

@@ -26,6 +26,7 @@ import {
   setAntRecordCLICommand,
   setAntUndernameCLICommand,
   transferRecordOwnershipCLICommand,
+  upgradeAntCLICommand,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -104,6 +105,7 @@ import {
   transferOptions,
   transferRecordOwnershipOptions,
   updateGatewaySettingsOptions,
+  upgradeAntOptions,
   vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
@@ -906,6 +908,14 @@ makeCommand({
     'Transfer ownership of a specific record (undername) to another address',
   options: transferRecordOwnershipOptions,
   action: transferRecordOwnershipCLICommand,
+});
+
+makeCommand({
+  name: 'upgrade-ant',
+  description:
+    'Upgrade an ANT by forking it to the latest version and reassigning names',
+  options: upgradeAntOptions,
+  action: upgradeAntCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
