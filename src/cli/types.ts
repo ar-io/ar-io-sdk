@@ -172,6 +172,7 @@ export type ANTStateCLIOptions = WriteActionCLIOptions & {
   controllers?: string[];
   ttlSeconds?: string;
   logo?: string;
+  module?: string;
 };
 
 export type JsonSerializable =

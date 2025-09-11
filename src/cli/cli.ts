@@ -765,6 +765,7 @@ makeCommand<ANTStateCLIOptions>({
       state,
       signer: requiredAoSignerFromOptions(options),
       logger: getLoggerFromOptions(options),
+      ...(options.module && { module: options.module }),
     });
 
     return {

@@ -36,11 +36,17 @@ export async function setAntRecordCLICommand(
   const transactionId = requiredStringFromOptions(o, 'transactionId');
 
   const writeAnt = writeANTFromOptions(o);
+  const recordParams = {
+    undername,
+    transactionId,
+    ttlSeconds,
+    ...antRecordMetadataFromOptions(o),
+  };
 
   if (!o.skipConfirmation) {
     await assertConfirmationPrompt(
       `Are you sure you want to set this record on the ANT process ${writeAnt.processId}?\n${JSON.stringify(
-        { undername, transactionId, ttlSeconds },
+        recordParams,
         null,
         2,
       )}`,
@@ -49,11 +55,7 @@ export async function setAntRecordCLICommand(
   }
 
   return writeANTFromOptions(o).setRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    },
+    recordParams,
     customTagsFromOptions(o),
   );
 }

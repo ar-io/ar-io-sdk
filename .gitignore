@@ -19,3 +19,4 @@ yarn-error.log
 tests/wallets
 tests/contracts
 aos-ant-*.wasm
+._*

@@ -301,6 +301,10 @@ export const optionMap = {
     alias: '--logo <logo>',
     description: 'The ANT logo',
   },
+  module: {
+    alias: '--module <module>',
+    description: 'The module ID to use for spawning the ANT process',
+  },
   token: {
     alias: '-t, --token <type>',
     description: 'Crypto token type for wallet or action',
@@ -444,6 +448,7 @@ export const antStateOptions = [
   optionMap.controllers,
   optionMap.ttlSeconds,
   optionMap.logo,
+  optionMap.module,
 ];
 
 export const setAntBaseNameOptions = [

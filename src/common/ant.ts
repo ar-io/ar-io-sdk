@@ -608,8 +608,8 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
       { name: 'Sub-Domain', value: undername },
       { name: 'Transaction-Id', value: transactionId },
       { name: 'TTL-Seconds', value: ttlSeconds.toString() },
-      { name: 'Owner', value: owner },
-      { name: 'Name', value: displayName },
+      { name: 'Record-Owner', value: owner },
+      { name: 'Display-Name', value: displayName },
       { name: 'Logo', value: logo },
       { name: 'Description', value: description },
       {

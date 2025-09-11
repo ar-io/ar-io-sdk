@@ -2086,6 +2086,27 @@ const processId = await ANT.spawn({
     description: 'My custom ANT token',
   },
 });
+
+// Using a custom module ID
+const processId = await ANT.spawn({
+  signer: new ArweaveSigner(jwk),
+  module: 'FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE', // Custom module ID
+  state: {
+    name: 'My Custom Module ANT',
+    ticker: 'CUSTOM',
+    description: 'ANT using a specific module version',
+  },
+});
+```
+
+**CLI Usage:**
+
+```bash
+# Spawn ANT with default (latest) module
+ar.io spawn-ant --wallet-file wallet.json --name "My ANT" --ticker "MYANT"
+
+# Spawn ANT with custom module ID
+ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE --name "My Custom ANT" --ticker "CUSTOM"
 ```
 
 **Parameters:**
