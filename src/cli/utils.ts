@@ -796,3 +796,33 @@ export function assertLockLengthInRange(
     );
   }
 }
+
+export function antRecordMetadataFromOptions<
+  O extends {
+    owner?: string;
+    displayName?: string;
+    logo?: string;
+    description?: string;
+    keywords?: string[];
+  },
+>(
+  options: O,
+): {
+  owner?: string;
+  displayName?: string;
+  logo?: string;
+  description?: string;
+  keywords?: string[];
+} {
+  return {
+    ...(options.owner != null &&
+      options.owner !== '' && { owner: options.owner }),
+    ...(options.displayName != null &&
+      options.displayName !== '' && { displayName: options.displayName }),
+    ...(options.logo != null && options.logo !== '' && { logo: options.logo }),
+    ...(options.description != null &&
+      options.description !== '' && { description: options.description }),
+    ...(options.keywords != null &&
+      options.keywords.length > 0 && { keywords: options.keywords }),
+  };
+}

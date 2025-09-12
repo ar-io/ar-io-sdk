@@ -19,6 +19,7 @@ import {
 } from '../../types/ant.js';
 import { CLIWriteOptionsFromAoAntParams } from '../types.js';
 import {
+  antRecordMetadataFromOptions,
   arioProcessIdFromOptions,
   assertConfirmationPrompt,
   booleanFromOptions,
@@ -39,11 +40,17 @@ export async function setAntRecordCLICommand(
   const transactionId = requiredStringFromOptions(o, 'transactionId');
 
   const writeAnt = writeANTFromOptions(o);
+  const recordParams = {
+    undername,
+    transactionId,
+    ttlSeconds,
+    ...antRecordMetadataFromOptions(o),
+  };
 
   if (!o.skipConfirmation) {
     await assertConfirmationPrompt(
       `Are you sure you want to set this record on the ANT process ${writeAnt.processId}?\n${JSON.stringify(
-        { undername, transactionId, ttlSeconds },
+        recordParams,
         null,
         2,
       )}`,
@@ -52,11 +59,7 @@ export async function setAntRecordCLICommand(
   }
 
   return writeANTFromOptions(o).setRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    },
+    recordParams,
     customTagsFromOptions(o),
   );
 }
@@ -67,12 +70,18 @@ export async function setAntBaseNameCLICommand(
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const transactionId = requiredStringFromOptions(o, 'transactionId');
 
+  const params = {
+    transactionId,
+    ttlSeconds,
+    ...antRecordMetadataFromOptions(o),
+  };
+
   const writeAnt = writeANTFromOptions(o);
 
   if (!o.skipConfirmation) {
     await assertConfirmationPrompt(
       `Are you sure you want to set this base name on the ANT process ${writeAnt.processId}?\n${JSON.stringify(
-        { transactionId, ttlSeconds },
+        params,
         null,
         2,
       )}`,
@@ -81,10 +90,7 @@ export async function setAntBaseNameCLICommand(
   }
 
   return writeANTFromOptions(o).setBaseNameRecord(
-    {
-      transactionId,
-      ttlSeconds,
-    },
+    params,
     customTagsFromOptions(o),
   );
 }
@@ -96,12 +102,19 @@ export async function setAntUndernameCLICommand(
   const undername = requiredStringFromOptions(o, 'undername');
   const transactionId = requiredStringFromOptions(o, 'transactionId');
 
+  const params = {
+    undername,
+    transactionId,
+    ttlSeconds,
+    ...antRecordMetadataFromOptions(o),
+  };
+
   const writeAnt = writeANTFromOptions(o);
 
   if (!o.skipConfirmation) {
     await assertConfirmationPrompt(
       `Are you sure you want to set this undername on the ANT process ${writeAnt.processId}?\n${JSON.stringify(
-        { undername, transactionId, ttlSeconds },
+        params,
         null,
         2,
       )}`,
@@ -110,11 +123,32 @@ export async function setAntUndernameCLICommand(
   }
 
   return writeANTFromOptions(o).setUndernameRecord(
-    {
-      undername,
-      transactionId,
-      ttlSeconds,
-    },
+    params,
+    customTagsFromOptions(o),
+  );
+}
+
+export async function transferRecordOwnershipCLICommand(
+  o: CLIWriteOptionsFromAoAntParams<{ undername: string; recipient: string }>,
+) {
+  const undername = requiredStringFromOptions(o, 'undername');
+  const recipient = requiredStringFromOptions(o, 'recipient');
+
+  const writeAnt = writeANTFromOptions(o);
+
+  if (!o.skipConfirmation) {
+    await assertConfirmationPrompt(
+      `Are you sure you want to transfer ownership of "${undername}" to "${recipient}" on ANT process ${writeAnt.processId}?\n${JSON.stringify(
+        { undername, recipient },
+        null,
+        2,
+      )}`,
+      o,
+    );
+  }
+
+  return writeANTFromOptions(o).transferRecord(
+    { undername, recipient },
     customTagsFromOptions(o),
   );
 }

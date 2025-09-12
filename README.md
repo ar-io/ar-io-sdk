@@ -2086,6 +2086,27 @@ const processId = await ANT.spawn({
     description: 'My custom ANT token',
   },
 });
+
+// Using a custom module ID
+const processId = await ANT.spawn({
+  signer: new ArweaveSigner(jwk),
+  module: 'FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE', // Custom module ID
+  state: {
+    name: 'My Custom Module ANT',
+    ticker: 'CUSTOM',
+    description: 'ANT using a specific module version',
+  },
+});
+```
+
+**CLI Usage:**
+
+```bash
+# Spawn ANT with default (latest) module
+ar.io spawn-ant --wallet-file wallet.json --name "My ANT" --ticker "MYANT"
+
+# Spawn ANT with custom module ID
+ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE --name "My Custom ANT" --ticker "CUSTOM"
 ```
 
 **Parameters:**
@@ -2204,6 +2225,15 @@ const state = await ant.getState();
       "transactionId": "2rMLb2uHAyEt7jSu6bXtKx8e-jOfIf7E-DOgQnm8EtU",
       "ttlSeconds": 3600
     },
+    "alice": {
+      "transactionId": "kMk95k_3R8x_7d3wB9tEOiL5v6n8QhR_VnFCh3aeE3f",
+      "ttlSeconds": 900,
+      "owner": "alice-wallet-address-123...",
+      "displayName": "Alice's Portfolio",
+      "logo": "avatar-tx-id-456...",
+      "description": "Personal portfolio and blog",
+      "keywords": ["portfolio", "personal", "blog"]
+    },
     "whitepaper": {
       "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
       "ttlSeconds": 900
@@ -2273,11 +2303,19 @@ const records = await ant.getRecords();
     "transactionId": "UyC5P5qKPZaltMmmZAWdakhlDXsBF6qmyrbWYFchRTk",
     "ttlSeconds": 3600
   },
+  "alice": {
+    "transactionId": "kMk95k_3R8x_7d3wB9tEOiL5v6n8QhR_VnFCh3aeE3f",
+    "ttlSeconds": 900,
+    "owner": "alice-wallet-address-123...",
+    "displayName": "Alice's Portfolio",
+    "logo": "avatar-tx-id-456...",
+    "description": "Personal portfolio and blog",
+    "keywords": ["portfolio", "personal", "blog"]
+  },
   "zed": {
     "transactionId": "-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI",
     "ttlSeconds": 900
   },
-
   "ardrive": {
     "transactionId": "-cucucachoodwedwedoiwepodiwpodiwpoidpwoiedp",
     "ttlSeconds": 900
@@ -2329,9 +2367,9 @@ const { id: txId } = await ant.removeController(
 );
 ```
 
-#### `setBaseNameRecord({ transactionId, ttlSeconds })`
+#### `setBaseNameRecord({ transactionId, ttlSeconds, owner?, displayName?, logo?, description?, keywords? })`
 
-Adds or updates the base name record for the ANT. This is the top level name of the ANT (e.g. ardrive.ar.io)
+Adds or updates the base name record for the ANT. This is the top level name of the ANT (e.g. ardrive.ar.io). Supports undername ownership delegation and metadata.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
@@ -2339,17 +2377,30 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 // get the ant for the base name
 const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
 const ant = await ANT.init({ processId: arnsName.processId });
+
+// Basic usage
 const { id: txId } = await ant.setBaseNameRecord({
   transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
   ttlSeconds: 3600,
 });
 
-// ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+// With ownership delegation and metadata
+const { id: txId } = await ant.setBaseNameRecord({
+  transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+  ttlSeconds: 3600,
+  owner: 'user-wallet-address-123...', // delegate ownership to another address
+  displayName: 'ArDrive', // display name
+  logo: 'logo-tx-id-123...', // logo transaction ID
+  description: 'Decentralized storage application',
+  keywords: ['storage', 'decentralized', 'web3'],
+});
+
+// ardrive.ar.io will now resolve to the provided transaction id and include metadata
 ```
 
-#### `setUndernameRecord({ undername, transactionId, ttlSeconds })`
+#### `setUndernameRecord({ undername, transactionId, ttlSeconds, owner?, displayName?, logo?, description?, keywords? })`
 
-Adds or updates an undername record for the ANT. An undername is appended to the base name of the ANT (e.g. dapp_ardrive.ar.io)
+Adds or updates an undername record for the ANT. An undername is appended to the base name of the ANT (e.g. dapp_ardrive.ar.io). Supports undername ownership delegation and metadata.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
@@ -2358,6 +2409,8 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 ```typescript
 const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
 const ant = await ANT.init({ processId: arnsName.processId });
+
+// Basic usage
 const { id: txId } = await ant.setUndernameRecord(
   {
     undername: 'dapp',
@@ -2368,7 +2421,23 @@ const { id: txId } = await ant.setUndernameRecord(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 
-// dapp_ardrive.ar.io will now resolve to the provided 432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM transaction id
+// With ownership delegation and metadata
+const { id: txId } = await ant.setUndernameRecord(
+  {
+    undername: 'alice',
+    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    ttlSeconds: 900,
+    owner: 'alice-wallet-address-123...', // delegate ownership to Alice
+    displayName: "Alice's Site", // display name
+    logo: 'avatar-tx-id-123...', // avatar/logo transaction ID
+    description: 'Personal portfolio and blog',
+    keywords: ['portfolio', 'personal', 'blog'],
+  },
+  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+);
+
+// dapp_ardrive.ar.io will now resolve to the provided transaction id
+// alice_ardrive.ar.io will be owned by Alice and include metadata
 ```
 
 #### `removeUndernameRecord({ undername })`
@@ -2615,6 +2684,33 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 - `onSigningProgress?: Function` - Optional progress callback for tracking upgrade steps
 
 **Returns:** `Promise<{ forkedProcessId: string, reassignedNames: Record<string, AoMessageResult>, failedReassignedNames: Record<string, { id?: string; error: Error }> }>`
+
+#### `transferRecord({ undername, recipient })`
+
+Transfers ownership of a specific record (undername) to another address. This enables delegation of control for individual records within an ANT while maintaining the ANT owner's ultimate authority. The current record owner or ANT owner/controllers can transfer ownership.
+
+_Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
+
+```typescript
+const { id: txId } = await ant.transferRecord({
+  undername: 'alice', // the subdomain/record to transfer
+  recipient: 'new-owner-address-123...', // address of the new owner
+});
+
+// alice_ardrive.ar.io is now owned by the new owner address
+// The new owner can update the record but not other records in the ANT
+```
+
+**CLI Usage:**
+
+```bash
+# Transfer ownership of a record using the CLI
+ar.io transfer-record \
+  --process-id "ANT_PROCESS_ID" \
+  --undername "alice" \
+  --recipient "new-owner-address-123..." \
+  --wallet-file "path/to/wallet.json"
+```
 
 ### Configuration
 
