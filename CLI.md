@@ -8,7 +8,6 @@ The AR.IO CLI is a Node.js command line interface for interacting with the AR.IO
 - [Usage](#usage)
 - [Options](#options)
 - [Commands](#commands)
-- [ANT Undername Ownership Features](#ant-undername-ownership-features)
 - [Development](#development)
 
 <!-- tocstop -->
