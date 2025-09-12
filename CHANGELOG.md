@@ -1,3 +1,20 @@
+# [3.19.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.10...v3.19.0-alpha.11) (2025-09-12)
+
+
+### Bug Fixes
+
+* **cli:** fix lint in cli ([329759e](https://github.com/ar-io/ar-io-sdk/commit/329759e192788ae664162c5506f6c3ab6d4459aa))
+* **cli:** update cli docs ([e1dc35e](https://github.com/ar-io/ar-io-sdk/commit/e1dc35e233933575b7b06d1a4571b4e7122e45cf))
+* **cli:** update cli interfaces for transferRecord ([3f553f1](https://github.com/ar-io/ar-io-sdk/commit/3f553f1d8d40a22342573c6c4e4d2280ffb1fa53))
+* **cli:** update cli with proper commands for setRecord ([93bf8f5](https://github.com/ar-io/ar-io-sdk/commit/93bf8f5e8bfb43c90f32039cde2668a28ea49108))
+* **files:** remove extraneous file ([e63135a](https://github.com/ar-io/ar-io-sdk/commit/e63135a27fe0944ca4102c6e57884fb772f83833))
+* **todo:** add todo on unused param ([32f502b](https://github.com/ar-io/ar-io-sdk/commit/32f502b6c5ea8f9981c951a3409ccf72a93d3398))
+
+
+### Features
+
+* **undername ownership:** add undername ownship tooling ([3aa520f](https://github.com/ar-io/ar-io-sdk/commit/3aa520f3ef2ee9606f74bd9692d287e557a64881))
+
 # [3.19.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.9...v3.19.0-alpha.10) (2025-09-10)
 
 
