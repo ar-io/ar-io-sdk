@@ -2727,7 +2727,8 @@ ANTs support ownership of undernames:
 - ❌ Modify other records in the ANT
 - ❌ Add/remove controllers or transfer ANT ownership
 
-> [!CRITICAL] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+> [!CAUTION]
+> **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
 
 #### Record Owner Workflow Examples
 
