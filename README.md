@@ -2712,6 +2712,91 @@ ar.io transfer-record \
   --wallet-file "path/to/wallet.json"
 ```
 
+#### Understanding Record Ownership
+
+ANTs support ownership of undernames:
+
+1. **ANT Owner** - Has full control over the ANT and all records
+2. **Controllers** - Can manage records but cannot transfer ANT ownership
+3. **Record Owners** - Can only update their specific delegated records
+
+**Record Owner Permissions:**
+
+- ✅ Update their own record's `transactionId`, `ttlSeconds`, and metadata
+- ✅ Transfer ownership of their record to another address
+- ❌ Modify other records in the ANT
+- ❌ Add/remove controllers or transfer ANT ownership
+
+> [!CRITICAL] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+
+#### Record Owner Workflow Examples
+
+**Checking Record Ownership:**
+
+```typescript
+const record = await ant.getRecord({ undername: 'alice' });
+console.log(`Record owner: ${record.owner}`);
+console.log(`Transaction ID: ${record.transactionId}`);
+```
+
+**Record Owner Updating Their Own Record:**
+
+```typescript
+// Alice (record owner) updating her own record
+const aliceAnt = ANT.init({
+  processId: 'ANT_PROCESS_ID',
+  signer: new ArweaveSigner(aliceJwk), // Alice's wallet
+});
+
+// ✅ CORRECT: Alice includes her own address as owner
+const { id: txId } = await aliceAnt.setUndernameRecord({
+  undername: 'alice',
+  transactionId: 'new-content-tx-id-456...',
+  ttlSeconds: 1800,
+  owner: 'alice-wallet-address-123...', // MUST be Alice's own address
+  displayName: 'Alice Updated Portfolio',
+  description: 'Updated personal portfolio and blog',
+});
+
+// ❌ WRONG: Omitting owner field will renounce ownership
+const badUpdate = await aliceAnt.setUndernameRecord({
+  undername: 'alice',
+  transactionId: 'new-content-tx-id-456...',
+  ttlSeconds: 1800,
+  // Missing owner field - this will renounce ownership!
+});
+
+// ❌ WRONG: Setting different owner will transfer ownership
+const badTransfer = await aliceAnt.setUndernameRecord({
+  undername: 'alice',
+  transactionId: 'new-content-tx-id-456...',
+  ttlSeconds: 1800,
+  owner: 'someone-else-address-789...', // This transfers ownership to someone else!
+});
+```
+
+**What Happens When Record Ownership is Renounced:**
+
+If a record owner updates their record without including the `owner` field, the record becomes owned by the ANT owner/controllers again:
+
+```typescript
+// Before: alice record is owned by alice-wallet-address-123...
+const recordBefore = await ant.getRecord({ undername: 'alice' });
+console.log(recordBefore.owner); // "alice-wallet-address-123..."
+
+// Alice updates without owner field
+await aliceAnt.setUndernameRecord({
+  undername: 'alice',
+  transactionId: 'new-tx-id...',
+  ttlSeconds: 900,
+  // No owner field = renounces ownership
+});
+
+// After: record ownership reverts to ANT owner
+const recordAfter = await ant.getRecord({ undername: 'alice' });
+console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
+```
+
 ### Configuration
 
 ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
