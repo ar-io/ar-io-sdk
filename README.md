@@ -2712,7 +2712,7 @@ ar.io transfer-record \
   --wallet-file "path/to/wallet.json"
 ```
 
-#### Understanding Record Ownership
+### Understanding Record Ownership
 
 ANTs support ownership of undernames:
 
@@ -2727,8 +2727,10 @@ ANTs support ownership of undernames:
 - ❌ Modify other records in the ANT
 - ❌ Add/remove controllers or transfer ANT ownership
 
+<!-- prettier-ignore-start -->
 > [!CAUTION]
 > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+<!-- prettier-ignore-end -->
 
 #### Record Owner Workflow Examples
 
