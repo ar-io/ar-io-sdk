@@ -1,3 +1,12 @@
+# [3.19.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.11...v3.19.0-alpha.12) (2025-09-20)
+
+
+### Bug Fixes
+
+* **note:** use CAUTION instead of CRITICAL ([3710979](https://github.com/ar-io/ar-io-sdk/commit/3710979f23d13d87a4cd2e19f12cd87994b12012))
+* **readme:** update readme with undername ownership rules ([df41a56](https://github.com/ar-io/ar-io-sdk/commit/df41a56124a80c6182be7600f64ebf6ecbc4b702))
+* **readme:** use h3 instead of h4 ([5b3232c](https://github.com/ar-io/ar-io-sdk/commit/5b3232ce7f893f8175893b1f88d19465cb8b0c89))
+
 # [3.19.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.10...v3.19.0-alpha.11) (2025-09-12)
 
 
