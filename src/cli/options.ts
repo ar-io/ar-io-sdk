@@ -144,6 +144,11 @@ export const optionMap = {
     description: 'Skip confirmation prompts',
     type: 'boolean',
   },
+  interactive: {
+    alias: '-i, --interactive',
+    description: 'Enable interactive mode with prompts for missing parameters',
+    type: 'boolean',
+  },
   vaultId: {
     alias: '--vault-id <vaultId>',
     description: 'The vault ID to interact with',
@@ -352,11 +357,17 @@ export const arnsPurchaseOptions = [
   optionMap.paidBy,
   optionMap.paymentUrl,
   optionMap.referrer,
+  optionMap.interactive,
 ];
 
 export const epochOptions = [optionMap.epochIndex, optionMap.timestamp];
 
-export const addressAndVaultIdOptions = [optionMap.address, optionMap.vaultId];
+export const addressAndVaultIdOptions = [
+  optionMap.address,
+  optionMap.vaultId,
+  ...writeActionOptions,
+  optionMap.interactive,
+];
 
 export const nameWriteOptions = [...writeActionOptions, optionMap.name];
 
@@ -390,6 +401,7 @@ export const transferOptions = [
   ...writeActionOptions,
   optionMap.quantity,
   optionMap.target,
+  optionMap.interactive,
 ];
 
 export const vaultedTransferOptions = [
@@ -398,11 +410,13 @@ export const vaultedTransferOptions = [
   optionMap.recipient,
   optionMap.lockLengthMs,
   optionMap.revokable,
+  optionMap.interactive,
 ];
 
 export const operatorStakeOptions = [
   ...writeActionOptions,
   optionMap.operatorStake,
+  optionMap.interactive,
 ];
 
 export const redelegateStakeOptions = [...transferOptions, optionMap.source];
@@ -428,6 +442,7 @@ export const updateGatewaySettingsOptions = [
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
+  optionMap.interactive,
 ];
 
 export const joinNetworkOptions = [
@@ -454,6 +469,7 @@ export const antStateOptions = [
   optionMap.ttlSeconds,
   optionMap.logo,
   optionMap.module,
+  optionMap.interactive,
 ];
 
 export const setAntBaseNameOptions = [
@@ -466,6 +482,7 @@ export const setAntBaseNameOptions = [
   optionMap.description,
   optionMap.keywords,
   ...writeActionOptions,
+  optionMap.interactive,
 ];
 
 export const setAntUndernameOptions = [
@@ -478,6 +495,7 @@ export const upgradeAntOptions = [
   optionMap.names,
   optionMap.reassignAffiliatedNames,
   ...writeActionOptions,
+  optionMap.interactive,
 ];
 
 export const transferRecordOwnershipOptions = [
@@ -485,4 +503,5 @@ export const transferRecordOwnershipOptions = [
   optionMap.undername,
   optionMap.recipient,
   ...writeActionOptions,
+  optionMap.interactive,
 ];

@@ -82,7 +82,9 @@
     "example:cjs": "yarn build:cjs && yarn link && cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
-    "cli:local": "node lib/esm/cli/cli.js"
+    "cli:local": "node lib/esm/cli/cli.js",
+    "cli:interactive": "node lib/esm/cli/interactive-cli.js",
+    "cli:interactive-dev": "tsx src/cli/interactive-cli.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
@@ -125,6 +127,7 @@
     "sinon": "^15.2.0",
     "testcontainers": "^10.13.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.1.6"
   },
   "dependencies": {
@@ -135,6 +138,7 @@
     "axios-retry": "^4.3.0",
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
+    "interactive-commander": "^0.6.0",
     "plimit-lit": "^3.0.1",
     "prompts": "^2.4.2",
     "uuid": "^11.1.0",
