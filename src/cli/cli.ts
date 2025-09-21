@@ -93,6 +93,7 @@ import {
   transferCLICommand,
   vaultedTransferCLICommand,
 } from './commands/transfer.js';
+import { runInteractiveCommandSelection } from './interactive.js';
 import {
   addressAndVaultIdOptions,
   antStateOptions,
@@ -154,7 +155,8 @@ applyOptions(
     .name('ar.io')
     .version(version)
     .description('AR.IO Network CLI')
-    .helpCommand(true),
+    .helpCommand(true)
+    .option('-i, --interactive', 'Launch interactive command selection menu'),
   globalOptions,
 );
 
@@ -1156,5 +1158,22 @@ if (
   process.argv[1].includes('bin/ar.io') || // Running from global .bin
   process.argv[1].includes('cli/cli') // Running from source
 ) {
-  program.parse(process.argv);
+  // Check if interactive flag is used without a specific command
+  const args = process.argv.slice(2);
+  const hasInteractiveFlag =
+    args.includes('-i') || args.includes('--interactive');
+  const hasCommand = args.some(
+    (arg) => !arg.startsWith('-') && arg !== 'ar.io',
+  );
+
+  if (hasInteractiveFlag && !hasCommand) {
+    // Run interactive command selection
+    runInteractiveCommandSelection().catch((error) => {
+      console.error('Error running interactive mode:', error);
+      process.exit(1);
+    });
+  } else {
+    // Normal command parsing
+    program.parse(process.argv);
+  }
 }

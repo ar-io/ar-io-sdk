@@ -1859,10 +1859,111 @@ export async function upgradeAntCLICommandInteractive(
   return upgradeAntCLICommand(options);
 }
 
+/**
+ * Handle interactive prompting for deprecated set-ant-record command
+ */
+async function handleSetAntRecordInteractivePrompts(
+  options: CLIWriteOptionsFromAoAntParams<
+    AoANTSetUndernameRecordParams & { interactive?: boolean }
+  >,
+): Promise<void> {
+  const { input, confirm, select } = await import('@inquirer/prompts');
+
+  // Prompt for wallet/private key if not provided
+  if (
+    (options.walletFile == null || options.walletFile === '') &&
+    (options.privateKey == null || options.privateKey === '')
+  ) {
+    const walletChoice = await select({
+      message: '🔑 How would you like to provide your wallet?',
+      choices: [
+        { name: 'Wallet file path (.json, .jwk)', value: 'file' },
+        { name: 'Private key (stringified JWK)', value: 'key' },
+      ],
+    });
+
+    if (walletChoice === 'file') {
+      const walletPath = await input({
+        message: '📁 Enter wallet file path:',
+        validate: validateWalletFile,
+      });
+      options.walletFile = expandTildePath(walletPath);
+    } else {
+      options.privateKey = await input({
+        message: '🔐 Enter private key (stringified JWK):',
+        validate: validatePrivateKey,
+      });
+    }
+  }
+
+  // Prompt for process ID if not provided
+  if (options.processId == null || options.processId === '') {
+    options.processId = await input({
+      message: '🔧 Enter ANT process ID:',
+      validate: validateProcessId,
+    });
+  }
+
+  // Prompt for undername if not provided
+  if (options.undername == null || options.undername === '') {
+    options.undername = await input({
+      message: '📛 Enter undername for the record:',
+      validate: validateUndername,
+    });
+  }
+
+  // Prompt for transaction ID if not provided
+  if (options.transactionId == null || options.transactionId === '') {
+    options.transactionId = await input({
+      message: '📄 Enter transaction ID target:',
+      validate: validateTransactionId,
+    });
+  }
+
+  // Show deprecated command warning and suggest alternatives
+  console.log('\n⚠️  WARNING: This command is deprecated!');
+  console.log('   Please consider using:');
+  console.log('   • set-ant-base-name (for base name records)');
+  console.log('   • set-ant-undername (for undername records)');
+
+  // Show record summary
+  console.log('\n📋 ANT Record Summary:');
+  console.log(`   ANT Process ID: ${options.processId}`);
+  console.log(`   Undername: ${options.undername}`);
+  console.log(`   Transaction ID: ${options.transactionId}`);
+  if (options.walletFile != null && options.walletFile !== '') {
+    console.log(`   Wallet: ${options.walletFile}`);
+  } else if (options.privateKey != null && options.privateKey !== '') {
+    console.log(`   Wallet: Private key provided`);
+  }
+
+  // Confirmation prompt (unless skipped)
+  if (!options.skipConfirmation) {
+    const confirmed = await confirm({
+      message:
+        'Proceed with setting this ANT record? (Consider using the new commands instead)',
+      default: false,
+    });
+
+    if (!confirmed) {
+      throw new Error('Set ANT record cancelled by user');
+    }
+  }
+}
+
 /** @deprecated -- use set-ant-base-name and set-ant-undername */
 export async function setAntRecordCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetUndernameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<
+    AoANTSetUndernameRecordParams & { interactive?: boolean }
+  >,
 ) {
+  // Handle interactive mode
+  if (o.interactive === true) {
+    console.log('🚀 Interactive Set ANT Record (Deprecated)\n');
+    await handleSetAntRecordInteractivePrompts(o);
+    console.log('\n⏳ Processing set record...');
+  }
+
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const undername = requiredStringFromOptions(o, 'undername');
   const transactionId = requiredStringFromOptions(o, 'transactionId');
@@ -1875,7 +1976,7 @@ export async function setAntRecordCLICommand(
     ...antRecordMetadataFromOptions(o),
   };
 
-  if (!o.skipConfirmation) {
+  if (!o.skipConfirmation && !o.interactive) {
     await assertConfirmationPrompt(
       `Are you sure you want to set this record on the ANT process ${writeAnt.processId}?\n${JSON.stringify(
         recordParams,
