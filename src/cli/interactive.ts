@@ -22,9 +22,9 @@ import figlet from 'figlet';
 function displayBanner(): void {
   try {
     const banner = figlet.textSync('AR.IO', {
-      font: 'Big',
-      horizontalLayout: 'full',
-      verticalLayout: 'fitted',
+      font: 'Doom',
+      horizontalLayout: 'default',
+      verticalLayout: 'default',
     });
     console.log(chalk.hex('#DF9BE8')(banner));
     console.log(chalk.hex('#F7C3A1')('━'.repeat(60)));
