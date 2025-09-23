@@ -1,36 +1,25 @@
-# [3.19.0-alpha.12](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.11...v3.19.0-alpha.12) (2025-09-20)
+# [3.19.0](https://github.com/ar-io/ar-io-sdk/compare/v3.18.3...v3.19.0) (2025-09-10)
 
 
 ### Bug Fixes
 
-* **note:** use CAUTION instead of CRITICAL ([3710979](https://github.com/ar-io/ar-io-sdk/commit/3710979f23d13d87a4cd2e19f12cd87994b12012))
-* **readme:** update readme with undername ownership rules ([df41a56](https://github.com/ar-io/ar-io-sdk/commit/df41a56124a80c6182be7600f64ebf6ecbc4b702))
-* **readme:** use h3 instead of h4 ([5b3232c](https://github.com/ar-io/ar-io-sdk/commit/5b3232ce7f893f8175893b1f88d19465cb8b0c89))
-
-# [3.19.0-alpha.11](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.10...v3.19.0-alpha.11) (2025-09-12)
-
-
-### Bug Fixes
-
-* **cli:** fix lint in cli ([329759e](https://github.com/ar-io/ar-io-sdk/commit/329759e192788ae664162c5506f6c3ab6d4459aa))
-* **cli:** update cli docs ([e1dc35e](https://github.com/ar-io/ar-io-sdk/commit/e1dc35e233933575b7b06d1a4571b4e7122e45cf))
-* **cli:** update cli interfaces for transferRecord ([3f553f1](https://github.com/ar-io/ar-io-sdk/commit/3f553f1d8d40a22342573c6c4e4d2280ffb1fa53))
-* **cli:** update cli with proper commands for setRecord ([93bf8f5](https://github.com/ar-io/ar-io-sdk/commit/93bf8f5e8bfb43c90f32039cde2668a28ea49108))
-* **files:** remove extraneous file ([e63135a](https://github.com/ar-io/ar-io-sdk/commit/e63135a27fe0944ca4102c6e57884fb772f83833))
-* **todo:** add todo on unused param ([32f502b](https://github.com/ar-io/ar-io-sdk/commit/32f502b6c5ea8f9981c951a3409ccf72a93d3398))
+* **ant:** add check if reassign is false ([7cbdc0d](https://github.com/ar-io/ar-io-sdk/commit/7cbdc0da4db35ecb7f784d7118903cbac1463889))
+* **ant:** address PR reccomendations ([2e32600](https://github.com/ar-io/ar-io-sdk/commit/2e32600550f95bd219b46a43d8e585cb340f3796))
+* **ant:** check name length ([8e5e66f](https://github.com/ar-io/ar-io-sdk/commit/8e5e66f8ce9aab3e752ae35b8607c565112a542b))
+* **ant:** fix graphql lookup query ([00753e3](https://github.com/ar-io/ar-io-sdk/commit/00753e3af5e273c4c6d6e55565598ff7a76e0817))
+* **ant:** fix predicate for arns name on upgrade ([36c6e85](https://github.com/ar-io/ar-io-sdk/commit/36c6e85d8b399a74fca6e82ec3ecb3c72712f680))
+* **ant:** improve response type of upgrade API ([0acd3c8](https://github.com/ar-io/ar-io-sdk/commit/0acd3c8bdc53ae2ddfb4836a5079ae997bf7ae3e))
+* **ant:** set reassignAffiliatedNames as false ([ef5c9d6](https://github.com/ar-io/ar-io-sdk/commit/ef5c9d6fe34d6eecff256024026826c1c60f7322))
+* **ant:** update callback events ([391143c](https://github.com/ar-io/ar-io-sdk/commit/391143c6e47c1008253d09ff358d4b8392fad47f))
+* **ant:** update upgrade logic ([12d8e2c](https://github.com/ar-io/ar-io-sdk/commit/12d8e2c394ddee690eff4e926c089783e66c1cb1))
+* **typess:** update upgrade type to enforce not providing names ([b53265b](https://github.com/ar-io/ar-io-sdk/commit/b53265b2187756b2b816c275fca6352f2adf00e1))
 
 
 ### Features
 
-* **undername ownership:** add undername ownship tooling ([3aa520f](https://github.com/ar-io/ar-io-sdk/commit/3aa520f3ef2ee9606f74bd9692d287e557a64881))
-
-# [3.19.0-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0-alpha.9...v3.19.0-alpha.10) (2025-09-10)
-
-
-### Bug Fixes
-
-* **ant:** fix graphql lookup query ([00753e3](https://github.com/ar-io/ar-io-sdk/commit/00753e3af5e273c4c6d6e55565598ff7a76e0817))
-* **io:** fix ant-registry-id param ([7398c6d](https://github.com/ar-io/ar-io-sdk/commit/7398c6d97af0cff49c87aad5f078bc8897844664))
+* **ant:** add module id and version APIs to ant class ([f48dcbc](https://github.com/ar-io/ar-io-sdk/commit/f48dcbcc20031b0fb03aef078d6b75add131c19c))
+* **ant:** add upgrade capability for ANTs ([cf9859a](https://github.com/ar-io/ar-io-sdk/commit/cf9859aa825679dfc2e3fa72e5b89f4962a3d77f))
+* **ants:** add .upgrade API to ant class ([22fea51](https://github.com/ar-io/ar-io-sdk/commit/22fea51de7714cc3e00ac2533e6fad209eb5b50b))
 
 ## [3.18.3](https://github.com/ar-io/ar-io-sdk/compare/v3.18.2...v3.18.3) (2025-08-22)
 
