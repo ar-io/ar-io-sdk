@@ -256,6 +256,14 @@ export const optionMap = {
     description: 'The keywords for the ANT',
     type: 'array',
   },
+  owner: {
+    alias: '--owner <owner>',
+    description: 'The owner address for the record',
+  },
+  displayName: {
+    alias: '--display-name <displayName>',
+    description: 'The display name for the record',
+  },
   names: {
     alias: '--names <names...>',
     description: 'The names to interact with',
@@ -292,6 +300,10 @@ export const optionMap = {
   logo: {
     alias: '--logo <logo>',
     description: 'The ANT logo',
+  },
+  module: {
+    alias: '--module <module>',
+    description: 'The module ID to use for spawning the ANT process',
   },
   token: {
     alias: '-t, --token <type>',
@@ -441,12 +453,18 @@ export const antStateOptions = [
   optionMap.controllers,
   optionMap.ttlSeconds,
   optionMap.logo,
+  optionMap.module,
 ];
 
 export const setAntBaseNameOptions = [
   optionMap.processId,
   optionMap.transactionId,
   optionMap.ttlSeconds,
+  optionMap.owner,
+  optionMap.displayName,
+  optionMap.logo,
+  optionMap.description,
+  optionMap.keywords,
   ...writeActionOptions,
 ];
 
@@ -459,5 +477,12 @@ export const upgradeAntOptions = [
   optionMap.processId,
   optionMap.names,
   optionMap.reassignAffiliatedNames,
+  ...writeActionOptions,
+];
+
+export const transferRecordOwnershipOptions = [
+  optionMap.processId,
+  optionMap.undername,
+  optionMap.recipient,
   ...writeActionOptions,
 ];

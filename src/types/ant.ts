@@ -65,6 +65,25 @@ export const AntRecordSchema = z.object({
   transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
   ttlSeconds: z.number(),
   priority: z.number().optional(),
+  owner: AOAddressSchema.describe('The owner address of the record').optional(),
+  displayName: z
+    .string()
+    .max(61)
+    .describe('Display name of the record (max 61 chars)')
+    .optional(),
+  logo: ArweaveTxIdSchema.describe(
+    'Logo transaction ID for the record',
+  ).optional(),
+  description: z
+    .string()
+    .max(512)
+    .describe('Description of the record (max 512 chars)')
+    .optional(),
+  keywords: z
+    .array(z.string().max(32))
+    .max(16)
+    .describe('Keywords array (max 16, each max 32 chars)')
+    .optional(),
 });
 export type AoANTRecord = z.infer<typeof AntRecordSchema>;
 export type ANTRecords = Record<string, AoANTRecord>;
@@ -175,6 +194,7 @@ export const AntWriteHandlers = [
   'reassignName',
   'approvePrimaryName',
   'removePrimaryNames',
+  'transferRecordOwnership',
 ] as const;
 
 export type AoANTWriteHandler = (typeof AntWriteHandlers)[number];
@@ -313,12 +333,21 @@ export interface AoANTWrite extends AoANTRead {
     reassignedNames: Record<string, AoMessageResult>;
     failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }>;
+  transferRecord: AoWriteAction<{
+    undername: string;
+    recipient: string;
+  }>;
 }
 
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
   priority?: number; // TODO: the SDK should always provide a priority, even if the ANT does not have a priority set
+  owner?: string;
+  displayName?: string;
+  logo?: string;
+  description?: string;
+  keywords?: string[];
 };
 
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {

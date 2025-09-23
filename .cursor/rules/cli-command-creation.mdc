@@ -1,0 +1,7 @@
+---
+description: CLI command creation
+globs:
+alwaysApply: true
+---
+
+When creating new apis on classes, ask if you should add them to the CLI as well.

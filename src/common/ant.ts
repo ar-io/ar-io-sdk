@@ -1047,20 +1047,47 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @param undername @type {string} The record you want to set the transactionId and ttlSeconds of.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
+   * @param owner @type {string} Optional owner address for the record.
+   * @param displayName @type {string} Optional display name for the record.
+   * @param logo @type {string} Optional logo transaction ID for the record.
+   * @param description @type {string} Optional description for the record.
+   * @param keywords @type {string[]} Optional keywords array for the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    */
   async setRecord(
-    { undername, transactionId, ttlSeconds }: AoANTSetUndernameRecordParams,
+    {
+      undername,
+      transactionId,
+      ttlSeconds,
+      owner,
+      displayName,
+      logo,
+      description,
+      keywords,
+    }: AoANTSetUndernameRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
+    const tags = [
+      ...(options?.tags ?? []),
+      { name: 'Action', value: 'Set-Record' },
+      { name: 'Sub-Domain', value: undername },
+      { name: 'Transaction-Id', value: transactionId },
+      { name: 'TTL-Seconds', value: ttlSeconds.toString() },
+      { name: 'Record-Owner', value: owner },
+      { name: 'Display-Name', value: displayName },
+      { name: 'Logo', value: logo },
+      { name: 'Description', value: description },
+      {
+        name: 'Keywords',
+        value: keywords ? JSON.stringify(keywords) : undefined,
+      },
+    ].filter((tag) => tag.value !== undefined) as Array<{
+      name: string;
+      value: string;
+    }>;
+
     return this.process.send({
-      tags: [
-        ...(options?.tags ?? []),
-        { name: 'Action', value: 'Set-Record' },
-        { name: 'Sub-Domain', value: undername },
-        { name: 'Transaction-Id', value: transactionId },
-        { name: 'TTL-Seconds', value: ttlSeconds.toString() },
-      ],
+      tags,
       signer: this.signer,
     });
   }
@@ -1070,6 +1097,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    *
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
+   * @param owner @type {string} Optional owner address for the record.
+   * @param displayName @type {string} Optional display name for the record.
+   * @param logo @type {string} Optional logo transaction ID for the record.
+   * @param description @type {string} Optional description for the record.
+   * @param keywords @type {string[]} Optional keywords array for the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
@@ -1077,7 +1109,15 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async setBaseNameRecord(
-    { transactionId, ttlSeconds }: AoANTSetBaseNameRecordParams,
+    {
+      transactionId,
+      ttlSeconds,
+      owner,
+      displayName,
+      logo,
+      description,
+      keywords,
+    }: AoANTSetBaseNameRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.setRecord(
@@ -1085,6 +1125,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         transactionId,
         ttlSeconds,
         undername: '@',
+        owner,
+        displayName,
+        logo,
+        description,
+        keywords,
       },
       options,
     );
@@ -1096,6 +1141,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * @param undername @type {string} The undername of the ANT.
    * @param transactionId @type {string} The transactionId of the record.
    * @param ttlSeconds @type {number} The time to live of the record.
+   * @param owner @type {string} Optional owner address for the record.
+   * @param displayName @type {string} Optional display name for the record.
+   * @param logo @type {string} Optional logo transaction ID for the record.
+   * @param description @type {string} Optional description for the record.
+   * @param keywords @type {string[]} Optional keywords array for the record.
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
@@ -1103,7 +1153,16 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async setUndernameRecord(
-    { undername, transactionId, ttlSeconds }: AoANTSetUndernameRecordParams,
+    {
+      undername,
+      transactionId,
+      ttlSeconds,
+      owner,
+      displayName,
+      logo,
+      description,
+      keywords,
+    }: AoANTSetUndernameRecordParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     return this.setRecord(
@@ -1111,6 +1170,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         undername,
         transactionId,
         ttlSeconds,
+        owner,
+        displayName,
+        logo,
+        description,
+        keywords,
       },
       options,
     );
@@ -1392,6 +1456,7 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
     {
       names,
       arioProcessId,
+      // TODO: remove this param, its not used on the ANT contract
       notifyOwners = false,
     }: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
     options?: WriteOptions,
@@ -1490,5 +1555,37 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
         skipVersionCheck: skipVersionCheck,
       });
     }
+  }
+
+  /**
+   * Transfers ownership of a specific record (undername) to another address. This allows delegation of control for individual records within an ANT while maintaining the ANT owner's ultimate authority.
+   *
+   * @param undername @type {string} The subdomain/record whose ownership you want to transfer.
+   * @param recipient @type {string} The address of the new owner for this record.
+   * @returns {Promise<AoMessageResult>} The result of the interaction.
+   * @example
+   * ```ts
+   * ant.transferRecord({ undername: "alice", recipient: "new-owner-address-123..." }); // transfers ownership of the "alice" record to the new owner
+   * ```
+   */
+  async transferRecord(
+    {
+      undername,
+      recipient,
+    }: {
+      undername: string;
+      recipient: string;
+    },
+    options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        ...(options?.tags ?? []),
+        { name: 'Action', value: 'Transfer-Record' },
+        { name: 'Sub-Domain', value: undername },
+        { name: 'Recipient', value: recipient },
+      ],
+      signer: this.signer,
+    });
   }
 }
