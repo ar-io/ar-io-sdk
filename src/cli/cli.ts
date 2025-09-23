@@ -18,15 +18,25 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
+import { AOProcess, AoMessageResult } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
-  setAntBaseNameCLICommand,
+  addAntControllerCLICommand,
+  removeAntControllerCLICommand,
+  removeAntRecordCLICommand,
+  setAntBaseNameCLICommandInteractive,
+  setAntDescriptionCLICommand,
+  setAntKeywordsCLICommand,
+  setAntLogoCLICommand,
+  setAntNameCLICommand,
   setAntRecordCLICommand,
-  setAntUndernameCLICommand,
-  transferRecordOwnershipCLICommand,
-  upgradeAntCLICommand,
+  setAntTickerCLICommand,
+  setAntUndernameCLICommandInteractive,
+  spawnAntCLICommand,
+  transferAntOwnershipCLICommand,
+  transferRecordOwnershipCLICommandInteractive,
+  upgradeAntCLICommandInteractive,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -83,6 +93,7 @@ import {
   transferCLICommand,
   vaultedTransferCLICommand,
 } from './commands/transfer.js';
+import { runInteractiveCommandSelection } from './interactive.js';
 import {
   addressAndVaultIdOptions,
   antStateOptions,
@@ -126,7 +137,6 @@ import {
   customTagsFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
-  getANTStateFromOptions,
   getLoggerFromOptions,
   makeCommand,
   paginationParamsFromOptions,
@@ -145,7 +155,8 @@ applyOptions(
     .name('ar.io')
     .version(version)
     .description('AR.IO Network CLI')
-    .helpCommand(true),
+    .helpCommand(true)
+    .option('-i, --interactive', 'Launch interactive command selection menu'),
   globalOptions,
 );
 
@@ -508,28 +519,48 @@ makeCommand({
 makeCommand({
   name: 'revoke-vault',
   description: 'Revoke a vaulted transfer as the controller',
-  options: [...writeActionOptions, optionMap.vaultId, optionMap.recipient],
+  options: [
+    ...writeActionOptions,
+    optionMap.vaultId,
+    optionMap.recipient,
+    optionMap.interactive,
+  ],
   action: revokeVaultCLICommand,
 });
 
 makeCommand({
   name: 'create-vault',
   description: 'Create a locked vault with balance from the sender',
-  options: [...writeActionOptions, optionMap.lockLengthMs, optionMap.quantity],
+  options: [
+    ...writeActionOptions,
+    optionMap.lockLengthMs,
+    optionMap.quantity,
+    optionMap.interactive,
+  ],
   action: createVaultCLICommand,
 });
 
 makeCommand({
   name: 'extend-vault',
   description: 'Extend the lock length of a vault as the recipient',
-  options: [...writeActionOptions, optionMap.vaultId, optionMap.extendLengthMs],
+  options: [
+    ...writeActionOptions,
+    optionMap.vaultId,
+    optionMap.extendLengthMs,
+    optionMap.interactive,
+  ],
   action: extendVaultCLICommand,
 });
 
 makeCommand({
   name: 'increase-vault',
   description: 'Increase the balance of a locked vault as the recipient',
-  options: [...writeActionOptions, optionMap.vaultId, optionMap.quantity],
+  options: [
+    ...writeActionOptions,
+    optionMap.vaultId,
+    optionMap.quantity,
+    optionMap.interactive,
+  ],
   action: increaseVaultCLICommand,
 });
 
@@ -543,6 +574,7 @@ makeCommand({
 makeCommand({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
+  options: [...writeActionOptions, optionMap.interactive],
   action: leaveNetwork,
 });
 
@@ -560,6 +592,7 @@ makeCommand({
     optionMap.failedGateways,
     optionMap.transactionId,
     ...writeActionOptions,
+    optionMap.interactive,
   ],
   action: saveObservations,
 });
@@ -761,21 +794,7 @@ makeCommand<ANTStateCLIOptions>({
   name: 'spawn-ant',
   description: 'Spawn an ANT process',
   options: antStateOptions,
-  action: async (options) => {
-    const state = getANTStateFromOptions(options);
-    const antProcessId = await spawnANT({
-      state,
-      signer: requiredAoSignerFromOptions(options),
-      logger: getLoggerFromOptions(options),
-      ...(options.module !== undefined ? { module: options.module } : {}),
-    });
-
-    return {
-      processId: antProcessId,
-      state,
-      message: `Spawned ANT process with process ID ${antProcessId}`,
-    };
-  },
+  action: spawnAntCLICommand,
 });
 
 // # ANT Paginated Handlers
@@ -807,77 +826,63 @@ makeCommand<ProcessIdCLIOptions>({
 });
 
 // # Actions
-makeCommand<ProcessIdWriteActionCLIOptions & { target?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & { target?: string; interactive?: boolean }
+>({
   name: 'transfer-ant-ownership',
   description: 'Transfer ownership of an ANT process',
-  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
-  action: async (options) => {
-    const target = requiredStringFromOptions(options, 'target');
-    await assertConfirmationPrompt(
-      `Are you sure you want to transfer ANT ownership to ${target}?`,
-      options,
-    );
-    return writeANTFromOptions(options).transfer(
-      {
-        target,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.target,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: transferAntOwnershipCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { controller?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    controller?: string;
+    interactive?: boolean;
+  }
+>({
   name: 'add-ant-controller',
   description: 'Add a controller to an ANT process',
-  options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
-  action: async (options) => {
-    const controller = requiredStringFromOptions(options, 'controller');
-    await assertConfirmationPrompt(
-      `Are you sure you want to add ${controller} as a controller?`,
-      options,
-    );
-    return writeANTFromOptions(options).addController(
-      {
-        controller: requiredStringFromOptions(options, 'controller'),
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.controller,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: addAntControllerCLICommand,
 });
 
-makeCommand<ProcessIdCLIOptions & { controller?: string }>({
+makeCommand<
+  ProcessIdCLIOptions & { controller?: string; interactive?: boolean }
+>({
   name: 'remove-ant-controller',
   description: 'Remove a controller from an ANT process',
-  options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
-  action: async (options) => {
-    return writeANTFromOptions(options).removeController(
-      {
-        controller: requiredStringFromOptions(options, 'controller'),
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.controller,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: removeAntControllerCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & { undername?: string; interactive?: boolean }
+>({
   name: 'remove-ant-record',
   description: 'Remove a record from an ANT process',
-  options: [optionMap.processId, optionMap.undername, ...writeActionOptions],
-  action: async (options) => {
-    const undername = requiredStringFromOptions(options, 'undername');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to remove the record with undername ${undername}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).removeRecord(
-      {
-        undername,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.undername,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: removeAntRecordCLICommand,
 });
 
 makeCommand({
@@ -892,14 +897,14 @@ makeCommand({
   name: 'set-ant-base-name',
   description: 'Set the base name of an ANT process',
   options: setAntBaseNameOptions,
-  action: setAntBaseNameCLICommand,
+  action: setAntBaseNameCLICommandInteractive,
 });
 
 makeCommand({
   name: 'set-ant-undername',
   description: 'Set an undername of an ANT process',
   options: setAntUndernameOptions,
-  action: setAntUndernameCLICommand,
+  action: setAntUndernameCLICommandInteractive,
 });
 
 makeCommand({
@@ -907,7 +912,7 @@ makeCommand({
   description:
     'Transfer ownership of a specific record (undername) to another address',
   options: transferRecordOwnershipOptions,
-  action: transferRecordOwnershipCLICommand,
+  action: transferRecordOwnershipCLICommandInteractive,
 });
 
 makeCommand({
@@ -915,117 +920,86 @@ makeCommand({
   description:
     'Upgrade an ANT by forking it to the latest version and reassigning names',
   options: upgradeAntOptions,
-  action: upgradeAntCLICommand,
+  action: upgradeAntCLICommandInteractive,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & { ticker?: string; interactive?: boolean }
+>({
   name: 'set-ant-ticker',
   description: 'Set the ticker of an ANT process',
-  options: [optionMap.processId, optionMap.ticker, ...writeActionOptions],
-  action: async (options) => {
-    const ticker = requiredStringFromOptions(options, 'ticker');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to set the ticker to ${ticker}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).setTicker(
-      {
-        ticker,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.ticker,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: setAntTickerCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { name?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & { name?: string; interactive?: boolean }
+>({
   name: 'set-ant-name',
   description: 'Set the name of an ANT process',
-  options: [optionMap.processId, optionMap.name, ...writeActionOptions],
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to set the name to ${requiredStringFromOptions(
-        options,
-        'name',
-      )}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).setName(
-      {
-        name,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.name,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: setAntNameCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { description?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    description?: string;
+    interactive?: boolean;
+  }
+>({
   name: 'set-ant-description',
   description: 'Set the description of an ANT process',
-  options: [optionMap.processId, optionMap.description, ...writeActionOptions],
-  action: async (options) => {
-    const description = requiredStringFromOptions(options, 'description');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to set the ANT description to ${description}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).setDescription(
-      {
-        description,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.description,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: setAntDescriptionCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { keywords?: string[] }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    keywords?: string[];
+    interactive?: boolean;
+  }
+>({
   name: 'set-ant-keywords',
   description: 'Set the keywords of an ANT process',
-  options: [optionMap.processId, optionMap.keywords, ...writeActionOptions],
-  action: async (options) => {
-    const keywords = requiredStringArrayFromOptions(options, 'keywords');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to set the ANT keywords to ${keywords}?`,
-      options,
-    );
-    return writeANTFromOptions(options).setKeywords(
-      {
-        keywords,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  options: [
+    optionMap.processId,
+    optionMap.keywords,
+    ...writeActionOptions,
+    optionMap.interactive,
+  ],
+  action: setAntKeywordsCLICommand,
 });
 
-makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    transactionId?: string;
+    interactive?: boolean;
+  }
+>({
   name: 'set-ant-logo',
   description: 'Set the logo of an ANT process',
   options: [
     optionMap.processId,
     optionMap.transactionId,
     ...writeActionOptions,
+    optionMap.interactive,
   ],
-  action: async (options) => {
-    const txId = requiredStringFromOptions(options, 'transactionId');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to set the ANT logo to target Arweave TxID ${txId}?`,
-      options,
-    );
-    return writeANTFromOptions(options).setLogo(
-      {
-        txId,
-      },
-      customTagsFromOptions(options),
-    );
-  },
+  action: setAntLogoCLICommand,
 });
 
 // # ARIO Actions
@@ -1184,5 +1158,22 @@ if (
   process.argv[1].includes('bin/ar.io') || // Running from global .bin
   process.argv[1].includes('cli/cli') // Running from source
 ) {
-  program.parse(process.argv);
+  // Check if interactive flag is used without a specific command
+  const args = process.argv.slice(2);
+  const hasInteractiveFlag =
+    args.includes('-i') || args.includes('--interactive');
+  const hasCommand = args.some(
+    (arg) => !arg.startsWith('-') && arg !== 'ar.io',
+  );
+
+  if (hasInteractiveFlag && !hasCommand) {
+    // Run interactive command selection
+    runInteractiveCommandSelection().catch((error) => {
+      console.error('Error running interactive mode:', error);
+      process.exit(1);
+    });
+  } else {
+    // Normal command parsing
+    program.parse(process.argv);
+  }
 }

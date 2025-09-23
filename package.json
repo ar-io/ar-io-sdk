@@ -82,7 +82,9 @@
     "example:cjs": "yarn build:cjs && yarn link && cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
-    "cli:local": "node lib/esm/cli/cli.js"
+    "cli:local": "node lib/esm/cli/cli.js",
+    "cli:interactive": "node lib/esm/cli/interactive-cli.js",
+    "cli:interactive-dev": "tsx src/cli/interactive-cli.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
@@ -94,6 +96,7 @@
     "@semantic-release/npm": "^11.0.3",
     "@swc/core": "^1.11.22",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "@types/figlet": "^1.7.0",
     "@types/node": "^22.14.1",
     "@types/prompts": "^2.4.9",
     "@types/sinon": "^10.0.15",
@@ -125,6 +128,7 @@
     "sinon": "^15.2.0",
     "testcontainers": "^10.13.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.1.6"
   },
   "dependencies": {
@@ -133,8 +137,11 @@
     "arweave": "1.15.5",
     "axios": "1.8.4",
     "axios-retry": "^4.3.0",
+    "chalk": "^5.6.2",
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
+    "figlet": "^1.9.3",
+    "interactive-commander": "^0.6.0",
     "plimit-lit": "^3.0.1",
     "prompts": "^2.4.2",
     "uuid": "^11.1.0",

@@ -46,6 +46,7 @@ export type GlobalCLIOptions = WalletCLIOptions & {
 export type WriteActionCLIOptions = GlobalCLIOptions & {
   tags?: string[];
   skipConfirmation?: boolean;
+  interactive?: boolean;
 };
 
 export type ProcessIdWriteActionCLIOptions = WriteActionCLIOptions & {
@@ -133,20 +134,59 @@ export type AddressAndVaultIdCLIOptions =
   CLIOptionsFromAoParams<AoGetVaultParams> & GlobalCLIOptions;
 
 export type AddressAndVaultIdCLIWriteOptions = WriteActionCLIOptions &
-  AddressAndVaultIdCLIOptions;
+  AddressAndVaultIdCLIOptions & {
+    interactive?: boolean;
+  };
 
 export type TransferCLIOptions = WriteActionCLIOptions & {
   quantity?: string;
   target?: string;
+  interactive?: boolean;
+};
+
+export type VaultedTransferCLIOptions = WriteActionCLIOptions & {
+  quantity?: string;
+  recipient?: string;
+  lockLengthMs?: string;
+  revokable?: boolean;
+  interactive?: boolean;
+};
+
+export type RevokeVaultCLIOptions = WriteActionCLIOptions & {
+  vaultId?: string;
+  recipient?: string;
+  interactive?: boolean;
+};
+
+export type CreateVaultCLIOptions = WriteActionCLIOptions & {
+  quantity?: string;
+  lockLengthMs?: string;
+  interactive?: boolean;
+};
+
+export type ExtendVaultCLIOptions = WriteActionCLIOptions & {
+  vaultId?: string;
+  extendLengthMs?: string;
+  interactive?: boolean;
+};
+
+export type IncreaseVaultCLIOptions = WriteActionCLIOptions & {
+  vaultId?: string;
+  quantity?: string;
+  interactive?: boolean;
 };
 
 export type JoinNetworkCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoJoinNetworkParams>;
+  CLIOptionsFromAoParams<AoJoinNetworkParams> & {
+    interactive?: boolean;
+  };
 
 export type UpdateGatewaySettingsCLIOptions = Omit<
   JoinNetworkCLIOptions,
   'operatorStake'
->;
+> & {
+  interactive?: boolean;
+};
 
 export type DelegateStakeCLIOptions = TransferCLIOptions;
 
@@ -157,6 +197,7 @@ export type RedelegateStakeCLIOptions = TransferCLIOptions & {
 
 export type OperatorStakeCLIOptions = WriteActionCLIOptions & {
   operatorStake?: string;
+  interactive?: boolean;
 };
 
 export type DecreaseDelegateStakeCLIOptions = DelegateStakeCLIOptions & {
@@ -173,6 +214,7 @@ export type ANTStateCLIOptions = WriteActionCLIOptions & {
   ttlSeconds?: string;
   logo?: string;
   module?: string;
+  interactive?: boolean;
 };
 
 export type JsonSerializable =

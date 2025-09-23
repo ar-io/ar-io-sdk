@@ -18,6 +18,8 @@ import { connect } from '@permaweb/aoconnect';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import { Command, OptionValues, program } from 'commander';
 import { readFileSync } from 'fs';
+import { homedir } from 'os';
+import { resolve } from 'path';
 import prompts from 'prompts';
 
 import {
@@ -184,6 +186,16 @@ export function antRegistryIdFromOptions({
   return ANT_REGISTRY_ID;
 }
 
+/**
+ * Expands tilde (~) in file paths to home directory
+ */
+export function expandTildePath(filePath: string): string {
+  if (filePath.startsWith('~/')) {
+    return resolve(homedir(), filePath.slice(2));
+  }
+  return filePath;
+}
+
 function walletFromOptions({
   privateKey,
   walletFile,
@@ -192,7 +204,8 @@ function walletFromOptions({
     return JSON.parse(privateKey);
   }
   if (walletFile !== undefined) {
-    return JSON.parse(readFileSync(walletFile, 'utf-8'));
+    const expandedPath = expandTildePath(walletFile);
+    return JSON.parse(readFileSync(expandedPath, 'utf-8'));
   }
   return undefined;
 }
