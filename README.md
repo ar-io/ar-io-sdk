@@ -2125,9 +2125,9 @@ ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewM
 
 ### Versions
 
-#### `versions`
+#### `getANTVersions`
 
-Returns an ANTVersions instance that provides access to available ANT versions from the ANT registry. This static property allows you to query version information without needing a specific ANT process.
+Returns the full array of available ANT versions and the latest version from the ANT registry.
 
 ```typescript
 import { ANT } from '@ar.io/sdk';
@@ -2135,12 +2135,45 @@ import { ANT } from '@ar.io/sdk';
 // Get all available ANT versions
 const antVersions = ANT.versions;
 const versions = await antVersions.getANTVersions();
+```
+
+Result:
+
+```json
+{
+  [
+    {
+      "moduleId": "FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE",
+      "version": "23",
+      "releaseNotes": "Initial release of the ANT module.",
+      "releaseDate": 1700000000000
+    }
+    // ...other versions
+  ],
+}
+```
+
+#### `getLatestANTVersion()`
+
+Returns the latest ANT version from the ANT registry.
+
+```typescript
+import { ANT } from '@ar.io/sdk';
 
 // Get the latest ANT version
 const latestVersion = await antVersions.getLatestANTVersion();
 ```
 
-**Returns:** `AoANTVersionsRead` - A read-only ANT versions client
+Result:
+
+```json
+{
+  "moduleId": "FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE",
+  "version": "23",
+  "releaseNotes": "Initial release of the ANT module.",
+  "releaseDate": 1700000000000
+}
+```
 
 ### State
 
