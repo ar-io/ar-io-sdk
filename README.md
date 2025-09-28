@@ -2046,7 +2046,7 @@ const ario = ARIO.mainnet({
 
 The ANT client class exposes APIs relevant to compliant Arweave Name Token processes. It can be configured to use any process ID that adheres to the ANT process spec. You must provide either a custom process data provider or a processId to the ANT class constructor to use.
 
-### ANT APIs
+### Initialize
 
 #### `init({ processId, signer })`
 
@@ -2066,6 +2066,8 @@ const ant = ANT.init({
 });
 
 ```
+
+### Spawn
 
 #### `spawn({ signer, module?, ao?, scheduler?, state?, antRegistryId?, logger?, authority? })`
 
@@ -2121,6 +2123,8 @@ ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewM
 
 **Returns:** `Promise<ProcessId>` - The process ID of the newly spawned ANT
 
+### Versions
+
 #### `versions`
 
 Returns an ANTVersions instance that provides access to available ANT versions from the ANT registry. This static property allows you to query version information without needing a specific ANT process.
@@ -2137,6 +2141,8 @@ const latestVersion = await antVersions.getLatestANTVersion();
 ```
 
 **Returns:** `AoANTVersionsRead` - A read-only ANT versions client
+
+### State
 
 #### `getInfo()`
 
@@ -2324,6 +2330,8 @@ const records = await ant.getRecords();
 
 </details>
 
+### Transfer
+
 #### `transfer({ target })`
 
 Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
@@ -2337,6 +2345,8 @@ const { id: txId } = await ant.transfer(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
+
+### Controllers
 
 #### `setController({ controller })`
 
@@ -2365,6 +2375,8 @@ const { id: txId } = await ant.removeController(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
+
+### Records
 
 #### `setBaseNameRecord({ transactionId, ttlSeconds, owner?, displayName?, logo?, description?, keywords? })`
 
@@ -2499,6 +2511,8 @@ const { id: txId } = await ant.removeRecord(
 // dapp_ardrive.ar.io will no longer resolve to the provided transaction id
 ```
 
+### Metadata
+
 #### `setName({ name })`
 
 Sets the name of the ANT process.
@@ -2577,6 +2591,8 @@ const { id: txId } = await ant.setLogo(
 );
 ```
 
+### ARIO Integrations
+
 #### `releaseName({ name, arioProcessId })`
 
 Releases a name from the current owner and makes it available for purchase on the ARIO contract. The name must be permanently owned by the releasing wallet. If purchased within the recently returned name period (14 epochs), 50% of the purchase amount will be distributed to the ANT owner at the time of release. If no purchases in the recently returned name period, the name can be reregistered by anyone for the normal fee.
@@ -2632,6 +2648,8 @@ const { id: txId } = await ant.removePrimaryNames({
 });
 ```
 
+### Upgrade
+
 #### `upgrade({ reassignAffiliatedNames?, names?, arioProcessId?, antRegistryId?, skipVersionCheck?, onSigningProgress? })`
 
 Upgrades an ANT by forking it to the latest version from the ANT registry and optionally reassigning ArNS names to the new process. This function first checks the version of the existing ANT, creates a new ANT using `.fork()` to the latest version, and then reassigns the ArNS names affiliated with this process to the new process.
@@ -2684,6 +2702,16 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 
 **Returns:** `Promise<{ forkedProcessId: string, reassignedNames: Record<string, AoMessageResult>, failedReassignedNames: Record<string, { id?: string; error: Error }> }>`
 
+### Undername Ownership
+
+NTs support ownership of undernames:
+
+1. **ANT Owner** - Has full control over the ANT and all records
+2. **Controllers** - Can manage records but cannot transfer ANT ownership
+3. **Record Owners** - Can only update their specific delegated records
+
+> [!WARNING] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+
 #### `transferRecord({ undername, recipient })`
 
 Transfers ownership of a specific record (undername) to another address. This enables delegation of control for individual records within an ANT while maintaining the ANT owner's ultimate authority. The current record owner or ANT owner/controllers can transfer ownership.
@@ -2710,28 +2738,6 @@ ar.io transfer-record \
   --recipient "new-owner-address-123..." \
   --wallet-file "path/to/wallet.json"
 ```
-
-### Understanding Record Ownership
-
-ANTs support ownership of undernames:
-
-1. **ANT Owner** - Has full control over the ANT and all records
-2. **Controllers** - Can manage records but cannot transfer ANT ownership
-3. **Record Owners** - Can only update their specific delegated records
-
-**Record Owner Permissions:**
-
-Allowed:
-
-- Update their own record's `transactionId`, `ttlSeconds`, and metadata
-- Transfer ownership of their record to another address
-
-Not allowed:
-
-- Modify other records in the ANT
-- Add/remove controllers or transfer ANT ownership
-
-> [!WARNING] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
 
 #### Record Owner Workflow Examples
 
@@ -2799,26 +2805,6 @@ await aliceAnt.setUndernameRecord({
 // After: record ownership reverts to ANT owner
 const recordAfter = await ant.getRecord({ undername: 'alice' });
 console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
-```
-
-### Configuration
-
-ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
-
-```typescript
-
-const ant = ANT.init({
-  process: new AOProcess({
-    processId: 'ANT_PROCESS_ID'
-    ao: connect({
-      MODE: 'legacy',
-      MU_URL: 'https://mu-testnet.xyz',
-      CU_URL: 'https://cu-testnet.xyz',
-      GRAPHQL_URL: 'https://arweave.net/graphql',
-      GATEWAY_URL: 'https://arweave.net',
-    })
-  })
-});
 ```
 
 ## Token Conversion
