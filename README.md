@@ -2743,7 +2743,8 @@ NTs support ownership of undernames:
 2. **Controllers** - Can manage records but cannot transfer ANT ownership
 3. **Record Owners** - Can only update their specific delegated records
 
-> [!WARNING] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+> [!WARNING]
+> When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
 
 #### `transferRecord({ undername, recipient })`
 
@@ -2873,6 +2874,8 @@ Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other lo
 ```
 
 ## Pagination
+
+### Overview
 
 Certain APIs that could return a large amount of data are paginated using cursors. The SDK uses the `cursor` pattern (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
 
