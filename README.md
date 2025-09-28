@@ -2722,15 +2722,17 @@ ANTs support ownership of undernames:
 
 **Record Owner Permissions:**
 
-- ✅ Update their own record's `transactionId`, `ttlSeconds`, and metadata
-- ✅ Transfer ownership of their record to another address
-- ❌ Modify other records in the ANT
-- ❌ Add/remove controllers or transfer ANT ownership
+Allowed:
 
-<!-- prettier-ignore-start -->
-> [!CAUTION]
-> **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
-<!-- prettier-ignore-end -->
+- Update their own record's `transactionId`, `ttlSeconds`, and metadata
+- Transfer ownership of their record to another address
+
+Not allowed:
+
+- Modify other records in the ANT
+- Add/remove controllers or transfer ANT ownership
+
+> [!WARNING] > **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
 
 #### Record Owner Workflow Examples
 
