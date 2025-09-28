@@ -13,7 +13,7 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Quick Start](#quick-start)
 - [Usage](#usage)
 - [ARIO Contract](#ario-contract)
-- [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
+- [ANT Contracts](#ant-contracts)
 - [Token Conversion](#token-conversion)
 - [Logging](#logging)
 - [Pagination](#pagination)
@@ -2042,7 +2042,7 @@ const ario = ARIO.mainnet({
 });
 ```
 
-## Arweave Name Tokens (ANT's)
+## ANT Contracts
 
 The ANT client class exposes APIs relevant to compliant Arweave Name Token processes. It can be configured to use any process ID that adheres to the ANT process spec. You must provide either a custom process data provider or a processId to the ANT class constructor to use.
 
