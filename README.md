@@ -2885,6 +2885,20 @@ Paginated results include the following properties:
 - `sortBy`: the field used to sort the items, by default this is `startTimestamp`.
 - `sortOrder`: the order used to sort the items, by default this is `desc`.
 
+To request all the items in a list, you can iterate through the list using the `nextCursor` until `hasMore` is `false`.
+
+```typescript
+let hasMore = true;
+let cursor: string | undefined;
+const gateaways = [];
+while (hasMore) {
+  const page = await ario.getGateways({ limit: 100, cursor });
+  gateaways.push(...items);
+  cursor = page.nextCursor;
+  hasMore = page.hasMore;
+}
+```
+
 ### Filtering
 
 Paginated APIs also support filtering by providing a `filters` parameter. Filters can be applied to any field in the response. When multiple keys are provided, they are treated as AND conditions (all conditions must match). When multiple values are provided for a single key (as an array), they are treated as OR conditions (any value can match).
@@ -2907,22 +2921,6 @@ In the example above, the query will return ArNS records where:
 
 - The type is "lease" AND
 - The processId is EITHER "ZkgLfyHALs5koxzojpcsEFAKA8fbpzP7l-tbM7wmQNM" OR "r61rbOjyXx3u644nGl9bkwLWlWmArMEzQgxBo2R-Vu0"
-
-### Iterating Through Pages
-
-To request all the items in a list, you can iterate through the list using the `nextCursor` until `hasMore` is `false`.
-
-```typescript
-let hasMore = true;
-let cursor: string | undefined;
-const gateaways = [];
-while (hasMore) {
-  const page = await ario.getGateways({ limit: 100, cursor });
-  gateaways.push(...items);
-  cursor = page.nextCursor;
-  hasMore = page.hasMore;
-}
-```
 
 ## Resources
 
@@ -3005,3 +3003,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
 [ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
 [ar-io-testnet-faucet]: https://github.com/ar-io/ar-io-testnet-faucet?tab=readme-ov-file#asynchronous-workflow
+
+```
+
+```
