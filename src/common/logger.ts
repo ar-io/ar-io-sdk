@@ -13,12 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  Logger as WinstonLogger,
-  createLogger,
-  format,
-  transports,
-} from 'winston';
+import type { Logger as WinstonLogger } from 'winston';
 
 import { version } from '../version.js';
 
@@ -49,21 +44,24 @@ export class Logger implements ILogger {
     if (typeof window !== 'undefined') {
       this.logger = console;
     } else {
-      this.logger = createLogger({
-        level,
-        silent: this.silent,
-        defaultMeta: {
-          name: 'ar-io-sdk',
-          version,
-        },
-        format: format.combine(format.timestamp(), format.json()),
-        transports: [
-          new transports.Console({
-            format: format.combine(format.timestamp(), format.json()),
-          }),
-        ],
-      });
+      this.initNodeLogger(level);
     }
+  }
+
+  private async initNodeLogger(level: string) {
+    const winston = await import('winston');
+    const { createLogger, format, transports } = winston;
+    this.logger = createLogger({
+      level,
+      silent: this.silent,
+      defaultMeta: { name: 'ar-io-sdk', version },
+      format: format.combine(format.timestamp(), format.json()),
+      transports: [
+        new transports.Console({
+          format: format.combine(format.timestamp(), format.json()),
+        }),
+      ],
+    });
   }
 
   info(message: string, ...args: unknown[]) {
