@@ -1,42 +1,10 @@
 # [3.20.0](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0...v3.20.0) (2025-09-24)
 
 
-### Bug Fixes
-
-* **cli:** fix lint in cli ([329759e](https://github.com/ar-io/ar-io-sdk/commit/329759e192788ae664162c5506f6c3ab6d4459aa))
-* **cli:** update cli docs ([e1dc35e](https://github.com/ar-io/ar-io-sdk/commit/e1dc35e233933575b7b06d1a4571b4e7122e45cf))
-* **cli:** update cli interfaces for transferRecord ([3f553f1](https://github.com/ar-io/ar-io-sdk/commit/3f553f1d8d40a22342573c6c4e4d2280ffb1fa53))
-* **cli:** update cli with proper commands for setRecord ([93bf8f5](https://github.com/ar-io/ar-io-sdk/commit/93bf8f5e8bfb43c90f32039cde2668a28ea49108))
-* **files:** remove extraneous file ([e63135a](https://github.com/ar-io/ar-io-sdk/commit/e63135a27fe0944ca4102c6e57884fb772f83833))
-* **note:** use CAUTION instead of CRITICAL ([3710979](https://github.com/ar-io/ar-io-sdk/commit/3710979f23d13d87a4cd2e19f12cd87994b12012))
-* **readme:** update readme with undername ownership rules ([df41a56](https://github.com/ar-io/ar-io-sdk/commit/df41a56124a80c6182be7600f64ebf6ecbc4b702))
-* **readme:** use h3 instead of h4 ([5b3232c](https://github.com/ar-io/ar-io-sdk/commit/5b3232ce7f893f8175893b1f88d19465cb8b0c89))
-* **todo:** add todo on unused param ([32f502b](https://github.com/ar-io/ar-io-sdk/commit/32f502b6c5ea8f9981c951a3409ccf72a93d3398))
-
-
 ### Features
 
 * **undername ownership:** add undername ownship tooling ([3aa520f](https://github.com/ar-io/ar-io-sdk/commit/3aa520f3ef2ee9606f74bd9692d287e557a64881))
 
-# [3.20.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0...v3.20.0-alpha.1) (2025-09-23)
-
-
-### Bug Fixes
-
-* **cli:** fix lint in cli ([329759e](https://github.com/ar-io/ar-io-sdk/commit/329759e192788ae664162c5506f6c3ab6d4459aa))
-* **cli:** update cli docs ([e1dc35e](https://github.com/ar-io/ar-io-sdk/commit/e1dc35e233933575b7b06d1a4571b4e7122e45cf))
-* **cli:** update cli interfaces for transferRecord ([3f553f1](https://github.com/ar-io/ar-io-sdk/commit/3f553f1d8d40a22342573c6c4e4d2280ffb1fa53))
-* **cli:** update cli with proper commands for setRecord ([93bf8f5](https://github.com/ar-io/ar-io-sdk/commit/93bf8f5e8bfb43c90f32039cde2668a28ea49108))
-* **files:** remove extraneous file ([e63135a](https://github.com/ar-io/ar-io-sdk/commit/e63135a27fe0944ca4102c6e57884fb772f83833))
-* **note:** use CAUTION instead of CRITICAL ([3710979](https://github.com/ar-io/ar-io-sdk/commit/3710979f23d13d87a4cd2e19f12cd87994b12012))
-* **readme:** update readme with undername ownership rules ([df41a56](https://github.com/ar-io/ar-io-sdk/commit/df41a56124a80c6182be7600f64ebf6ecbc4b702))
-* **readme:** use h3 instead of h4 ([5b3232c](https://github.com/ar-io/ar-io-sdk/commit/5b3232ce7f893f8175893b1f88d19465cb8b0c89))
-* **todo:** add todo on unused param ([32f502b](https://github.com/ar-io/ar-io-sdk/commit/32f502b6c5ea8f9981c951a3409ccf72a93d3398))
-
-
-### Features
-
-* **undername ownership:** add undername ownship tooling ([3aa520f](https://github.com/ar-io/ar-io-sdk/commit/3aa520f3ef2ee9606f74bd9692d287e557a64881))
 
 # [3.19.0](https://github.com/ar-io/ar-io-sdk/compare/v3.18.3...v3.19.0) (2025-09-10)
 

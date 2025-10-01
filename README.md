@@ -12,9 +12,8 @@ This is the home of [ar.io] SDK. This SDK provides functionality for interacting
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
-- [Networks (Mainnet, Testnet, etc.)](#networks-mainnet-testnet-etc)
-- [ARIO](#ario)
-- [Arweave Name Tokens (ANT's)](#arweave-name-tokens-ants)
+- [ARIO Contract](#ario-contract)
+- [ANT Contracts](#ant-contracts)
 - [Token Conversion](#token-conversion)
 - [Logging](#logging)
 - [Pagination](#pagination)
@@ -162,109 +161,7 @@ The SDK provides TypeScript types. When you import the SDK in a TypeScript proje
 > [!NOTE]
 > Typescript version 5.3 or higher is recommended.
 
-## Networks (Mainnet, Testnet, etc.)
-
-The SDK provides the following process IDs for the mainnet and testnet environments:
-
-- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID (production)
-- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID (testing and development)
-- `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (development)
-
-As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
-
-### Mainnet
-
-As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
-
-```typescript
-import { ARIO } from '@ar.io/sdk';
-
-const ario = ARIO.mainnet(); // or ARIO.init()
-```
-
-### Testnet
-
-```typescript
-import { ARIO } from '@ar.io/sdk';
-
-const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID })
-```
-
-#### Faucet
-
-The SDK provides APIs for claiming tokens via a faucet on the AR.IO Testnet process (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
-
-To claim testnet tokens from the testnet token faucet, you can use one of the following methods:
-
-1. Visit [faucet.ar.io](https://faucet.ar.io) - the easiest way to quickly get tokens for testing for a single address.
-
-2. Programmatically via the SDK - useful if you need to claim tokens for multiple addresses or dynamically within your application.
-
-   - `ARIO.testnet().faucet.captchaUrl()` - returns the captcha URL for the testnet faucet. Open this URL in a new browser window and listen for the `ario-jwt-success` event to be emitted.
-   - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
-   - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
-
-<details>
-  <summary><i>Example client-side code for claiming tokens</i></summary>
-
-```typescript
-import { ARIO } from '@ar.io/sdk';
-
-const testnet = ARIO.testnet();
-const captchaUrl = await ario.faucet.captchaUrl();
-
-// open the captcha URL in the browser, and listen for the auth token event
-const captchaWindow = window.open(
-  captchaUrl.captchaUrl,
-  '_blank',
-  'width=600,height=600',
-);
-/**
- * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
- * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
- */
-window.parent.addEventListener('message', async (event) => {
-  if (event.data.type === 'ario-jwt-success') {
-    localStorage.setItem('ario-jwt', event.data.token);
-    localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
-    // close our captcha window
-    captchaWindow?.close();
-    // claim the tokens using the JWT token
-    const res = await testnet.faucet
-      .claimWithAuthToken({
-        authToken: event.data.token,
-        recipient: await window.arweaveWallet.getActiveAddress(),
-        quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
-      })
-      .then((res) => {
-        alert(
-          'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
-        );
-      })
-      .catch((err) => {
-        alert(`Failed to claim tokens: ${err}`);
-      });
-  }
-});
-
-/**
- * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
- */
-if (
-  localStorage.getItem('ario-jwt-expires-at') &&
-  Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
-) {
-  const res = await testnet.faucet.claimWithAuthToken({
-    authToken: localStorage.getItem('ario-jwt') ?? '',
-    recipient: await window.arweaveWallet.getActiveAddress(),
-    quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
-  });
-}
-```
-
-</details>
-
-## ARIO
+## ARIO Contract
 
 ### General
 
@@ -426,6 +323,108 @@ const { id: txId } = await ario.transfer(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
+
+### Networks
+
+The SDK provides the following process IDs for the mainnet and testnet environments:
+
+- `ARIO_MAINNET_PROCESS_ID` - Mainnet ARIO process ID (production)
+- `ARIO_TESTNET_PROCESS_ID` - Testnet ARIO process ID (testing and development)
+- `ARIO_DEVNET_PROCESS_ID` - Devnet ARIO process ID (development)
+
+As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
+
+#### Mainnet
+
+As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const ario = ARIO.mainnet(); // or ARIO.init()
+```
+
+#### Testnet
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID })
+```
+
+##### Faucet
+
+The SDK provides APIs for claiming tokens via a faucet on the AR.IO Testnet process (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
+
+To claim testnet tokens from the testnet token faucet, you can use one of the following methods:
+
+1. Visit [faucet.ar.io](https://faucet.ar.io) - the easiest way to quickly get tokens for testing for a single address.
+
+2. Programmatically via the SDK - useful if you need to claim tokens for multiple addresses or dynamically within your application.
+
+   - `ARIO.testnet().faucet.captchaUrl()` - returns the captcha URL for the testnet faucet. Open this URL in a new browser window and listen for the `ario-jwt-success` event to be emitted.
+   - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
+   - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
+
+<details>
+  <summary><i>Example client-side code for claiming tokens</i></summary>
+
+```typescript
+import { ARIO } from '@ar.io/sdk';
+
+const testnet = ARIO.testnet();
+const captchaUrl = await ario.faucet.captchaUrl();
+
+// open the captcha URL in the browser, and listen for the auth token event
+const captchaWindow = window.open(
+  captchaUrl.captchaUrl,
+  '_blank',
+  'width=600,height=600',
+);
+/**
+ * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
+ * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
+ */
+window.parent.addEventListener('message', async (event) => {
+  if (event.data.type === 'ario-jwt-success') {
+    localStorage.setItem('ario-jwt', event.data.token);
+    localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
+    // close our captcha window
+    captchaWindow?.close();
+    // claim the tokens using the JWT token
+    const res = await testnet.faucet
+      .claimWithAuthToken({
+        authToken: event.data.token,
+        recipient: await window.arweaveWallet.getActiveAddress(),
+        quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+      })
+      .then((res) => {
+        alert(
+          'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
+        );
+      })
+      .catch((err) => {
+        alert(`Failed to claim tokens: ${err}`);
+      });
+  }
+});
+
+/**
+ * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
+ */
+if (
+  localStorage.getItem('ario-jwt-expires-at') &&
+  Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
+) {
+  const res = await testnet.faucet.claimWithAuthToken({
+    authToken: localStorage.getItem('ario-jwt') ?? '',
+    recipient: await window.arweaveWallet.getActiveAddress(),
+    quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
+  });
+}
+```
+
+</details>
 
 ### Vaults
 
@@ -2043,11 +2042,11 @@ const ario = ARIO.mainnet({
 });
 ```
 
-## Arweave Name Tokens (ANT's)
+## ANT Contracts
 
 The ANT client class exposes APIs relevant to compliant Arweave Name Token processes. It can be configured to use any process ID that adheres to the ANT process spec. You must provide either a custom process data provider or a processId to the ANT class constructor to use.
 
-### ANT APIs
+### Initialize
 
 #### `init({ processId, signer })`
 
@@ -2067,6 +2066,8 @@ const ant = ANT.init({
 });
 
 ```
+
+### Spawn
 
 #### `spawn({ signer, module?, ao?, scheduler?, state?, antRegistryId?, logger?, authority? })`
 
@@ -2122,9 +2123,11 @@ ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewM
 
 **Returns:** `Promise<ProcessId>` - The process ID of the newly spawned ANT
 
-#### `versions`
+### Versions
 
-Returns an ANTVersions instance that provides access to available ANT versions from the ANT registry. This static property allows you to query version information without needing a specific ANT process.
+#### `getANTVersions`
+
+Returns the full array of available ANT versions and the latest version from the ANT registry.
 
 ```typescript
 import { ANT } from '@ar.io/sdk';
@@ -2132,12 +2135,47 @@ import { ANT } from '@ar.io/sdk';
 // Get all available ANT versions
 const antVersions = ANT.versions;
 const versions = await antVersions.getANTVersions();
+```
+
+Result:
+
+```json
+{
+  [
+    {
+      "moduleId": "FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE",
+      "version": "23",
+      "releaseNotes": "Initial release of the ANT module.",
+      "releaseDate": 1700000000000
+    }
+    // ...other versions
+  ],
+}
+```
+
+#### `getLatestANTVersion()`
+
+Returns the latest ANT version from the ANT registry.
+
+```typescript
+import { ANT } from '@ar.io/sdk';
 
 // Get the latest ANT version
 const latestVersion = await antVersions.getLatestANTVersion();
 ```
 
-**Returns:** `AoANTVersionsRead` - A read-only ANT versions client
+Result:
+
+```json
+{
+  "moduleId": "FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE",
+  "version": "23",
+  "releaseNotes": "Initial release of the ANT module.",
+  "releaseDate": 1700000000000
+}
+```
+
+### State
 
 #### `getInfo()`
 
@@ -2325,6 +2363,8 @@ const records = await ant.getRecords();
 
 </details>
 
+### Transfer
+
 #### `transfer({ target })`
 
 Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
@@ -2338,6 +2378,8 @@ const { id: txId } = await ant.transfer(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
+
+### Controllers
 
 #### `setController({ controller })`
 
@@ -2366,6 +2408,8 @@ const { id: txId } = await ant.removeController(
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
 );
 ```
+
+### Records
 
 #### `setBaseNameRecord({ transactionId, ttlSeconds, owner?, displayName?, logo?, description?, keywords? })`
 
@@ -2500,6 +2544,8 @@ const { id: txId } = await ant.removeRecord(
 // dapp_ardrive.ar.io will no longer resolve to the provided transaction id
 ```
 
+### Metadata
+
 #### `setName({ name })`
 
 Sets the name of the ANT process.
@@ -2578,6 +2624,8 @@ const { id: txId } = await ant.setLogo(
 );
 ```
 
+### ARIO Integrations
+
 #### `releaseName({ name, arioProcessId })`
 
 Releases a name from the current owner and makes it available for purchase on the ARIO contract. The name must be permanently owned by the releasing wallet. If purchased within the recently returned name period (14 epochs), 50% of the purchase amount will be distributed to the ANT owner at the time of release. If no purchases in the recently returned name period, the name can be reregistered by anyone for the normal fee.
@@ -2633,6 +2681,8 @@ const { id: txId } = await ant.removePrimaryNames({
 });
 ```
 
+### Upgrade
+
 #### `upgrade({ reassignAffiliatedNames?, names?, arioProcessId?, antRegistryId?, skipVersionCheck?, onSigningProgress? })`
 
 Upgrades an ANT by forking it to the latest version from the ANT registry and optionally reassigning ArNS names to the new process. This function first checks the version of the existing ANT, creates a new ANT using `.fork()` to the latest version, and then reassigns the ArNS names affiliated with this process to the new process.
@@ -2685,6 +2735,17 @@ console.log(`Failed to reassign names: ${result.failedReassignedNames}`);
 
 **Returns:** `Promise<{ forkedProcessId: string, reassignedNames: Record<string, AoMessageResult>, failedReassignedNames: Record<string, { id?: string; error: Error }> }>`
 
+### Undername Ownership
+
+NTs support ownership of undernames:
+
+1. **ANT Owner** - Has full control over the ANT and all records
+2. **Controllers** - Can manage records but cannot transfer ANT ownership
+3. **Record Owners** - Can only update their specific delegated records
+
+> [!WARNING]
+> When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
+
 #### `transferRecord({ undername, recipient })`
 
 Transfers ownership of a specific record (undername) to another address. This enables delegation of control for individual records within an ANT while maintaining the ANT owner's ultimate authority. The current record owner or ANT owner/controllers can transfer ownership.
@@ -2711,26 +2772,6 @@ ar.io transfer-record \
   --recipient "new-owner-address-123..." \
   --wallet-file "path/to/wallet.json"
 ```
-
-### Understanding Record Ownership
-
-ANTs support ownership of undernames:
-
-1. **ANT Owner** - Has full control over the ANT and all records
-2. **Controllers** - Can manage records but cannot transfer ANT ownership
-3. **Record Owners** - Can only update their specific delegated records
-
-**Record Owner Permissions:**
-
-- ✅ Update their own record's `transactionId`, `ttlSeconds`, and metadata
-- ✅ Transfer ownership of their record to another address
-- ❌ Modify other records in the ANT
-- ❌ Add/remove controllers or transfer ANT ownership
-
-<!-- prettier-ignore-start -->
-> [!CAUTION]
-> **Important:** When a record owner updates their own record, they **MUST** include their own address in the `owner` field. If the `owner` field is omitted or set to a different address, the record ownership will be transferred or renounced.
-<!-- prettier-ignore-end -->
 
 #### Record Owner Workflow Examples
 
@@ -2800,33 +2841,13 @@ const recordAfter = await ant.getRecord({ undername: 'alice' });
 console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
 ```
 
-### Configuration
-
-ANT clients can be configured to use custom AO process. Refer to [AO Connect] for more information on how to configure the AO process to use specific AO infrastructure.
-
-```typescript
-
-const ant = ANT.init({
-  process: new AOProcess({
-    processId: 'ANT_PROCESS_ID'
-    ao: connect({
-      MODE: 'legacy',
-      MU_URL: 'https://mu-testnet.xyz',
-      CU_URL: 'https://cu-testnet.xyz',
-      GRAPHQL_URL: 'https://arweave.net/graphql',
-      GATEWAY_URL: 'https://arweave.net',
-    })
-  })
-});
-```
-
 ## Token Conversion
 
 The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
 
 **All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
 
-### Converting ARIO to mARIO
+#### Converting ARIO to mARIO
 
 ```typescript
 import { ARIOToken, mARIOToken } from '@ar.io/sdk';
@@ -2840,7 +2861,9 @@ const arioValue = new mARIOToken(mARIOValue).toARIO();
 
 ## Logging
 
-The library uses the [Winston] logger for node based projects, and `console` logger for web based projects by default. You can configure the log level via `setLogLevel()` API. Alternatively you can set a custom logger as the default logger so long as it satisfes the `ILogger` interface.
+The library uses a lightweight console logger by default for both Node.js and web environments. The logger outputs structured JSON logs with timestamps. You can configure the log level via `setLogLevel()` API or provide a custom logger that satisfies the `ILogger` interface.
+
+#### Default Logger
 
 ```typescript
 import { Logger } from '@ar.io/sdk';
@@ -2848,11 +2871,85 @@ import { Logger } from '@ar.io/sdk';
 // set the log level
 Logger.default.setLogLevel('debug');
 
-// provide your own logger
-Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other logger that satisifes ILogger interface
+// Create a new logger instance with a specific level
+const logger = new Logger({ level: 'debug' });
+```
+
+#### Custom Logger Implementation
+
+You can provide any custom logger that implements the `ILogger` interface:
+
+```typescript
+import { ARIO, ILogger } from '@ar.io/sdk';
+
+// Custom logger example
+const customLogger: ILogger = {
+  info: (message, ...args) => console.log(`[INFO] ${message}`, ...args),
+  warn: (message, ...args) => console.warn(`[WARN] ${message}`, ...args),
+  error: (message, ...args) => console.error(`[ERROR] ${message}`, ...args),
+  debug: (message, ...args) => console.debug(`[DEBUG] ${message}`, ...args),
+  setLogLevel: (level) => {
+    /* implement level filtering */
+  },
+};
+
+// Use custom logger with any class
+const ario = ARIO.mainnet({ logger: customLogger });
+
+// or set it as the default logger in the entire SDK
+Logger.default = customLogger;
+```
+
+#### Winston Logger (Optional)
+
+For advanced logging features, you can optionally install Winston and use the provided Winston logger adapter:
+
+```bash
+yarn add winston
+```
+
+```typescript
+import { ARIO, WinstonLogger } from '@ar.io/sdk';
+
+// Create Winston logger with custom configuration
+const winstonLogger = new WinstonLogger({
+  level: 'debug',
+});
+
+// Use with any class that accepts a logger
+const ario = ARIO.mainnet({ logger: winstonLogger });
+
+// or set it as the default logger in the entire SDK
+Logger.default = winstonLogger;
+```
+
+#### Other Popular Loggers
+
+You can easily integrate other popular logging libraries:
+
+```typescript
+// Bunyan example
+import { ARIO, ILogger } from '@ar.io/sdk';
+import bunyan from 'bunyan';
+
+const bunyanLogger = bunyan.createLogger({ name: 'ar-io-sdk' });
+const adapter: ILogger = {
+  info: (message, ...args) => bunyanLogger.info({ args }, message),
+  warn: (message, ...args) => bunyanLogger.warn({ args }, message),
+  error: (message, ...args) => bunyanLogger.error({ args }, message),
+  debug: (message, ...args) => bunyanLogger.debug({ args }, message),
+  setLogLevel: (level) => bunyanLogger.level(level),
+};
+
+const ario = ARIO.mainnet({ logger: adapter });
+
+// or set it as the default logger in the entire SDK
+Logger.default = adapter;
 ```
 
 ## Pagination
+
+#### Overview
 
 Certain APIs that could return a large amount of data are paginated using cursors. The SDK uses the `cursor` pattern (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
 
@@ -2865,7 +2962,21 @@ Paginated results include the following properties:
 - `sortBy`: the field used to sort the items, by default this is `startTimestamp`.
 - `sortOrder`: the order used to sort the items, by default this is `desc`.
 
-### Filtering
+To request all the items in a list, you can iterate through the list using the `nextCursor` until `hasMore` is `false`.
+
+```typescript
+let hasMore = true;
+let cursor: string | undefined;
+const gateaways = [];
+while (hasMore) {
+  const page = await ario.getGateways({ limit: 100, cursor });
+  gateaways.push(...items);
+  cursor = page.nextCursor;
+  hasMore = page.hasMore;
+}
+```
+
+#### Filtering
 
 Paginated APIs also support filtering by providing a `filters` parameter. Filters can be applied to any field in the response. When multiple keys are provided, they are treated as AND conditions (all conditions must match). When multiple values are provided for a single key (as an array), they are treated as OR conditions (any value can match).
 
@@ -2887,22 +2998,6 @@ In the example above, the query will return ArNS records where:
 
 - The type is "lease" AND
 - The processId is EITHER "ZkgLfyHALs5koxzojpcsEFAKA8fbpzP7l-tbM7wmQNM" OR "r61rbOjyXx3u644nGl9bkwLWlWmArMEzQgxBo2R-Vu0"
-
-### Iterating Through Pages
-
-To request all the items in a list, you can iterate through the list using the `nextCursor` until `hasMore` is `false`.
-
-```typescript
-let hasMore = true;
-let cursor: string | undefined;
-const gateaways = [];
-while (hasMore) {
-  const page = await ario.getGateways({ limit: 100, cursor });
-  gateaways.push(...items);
-  cursor = page.nextCursor;
-  hasMore = page.hasMore;
-}
-```
 
 ## Resources
 
@@ -2985,3 +3080,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
 [ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
 [ar-io-testnet-faucet]: https://github.com/ar-io/ar-io-testnet-faucet?tab=readme-ov-file#asynchronous-workflow
+
+```
+
+```
