@@ -18,72 +18,66 @@ import { ILogger } from '../logger.js';
 
 export class WinstonLogger implements ILogger {
   private logger: any;
+  private winston: any;
 
   constructor({
     level = 'info',
   }: {
     level?: 'info' | 'debug' | 'error' | 'warn' | 'none';
   } = {}) {
-    this.initializeLogger(level);
-  }
-
-  private async initializeLogger(
-    level: 'info' | 'debug' | 'error' | 'warn' | 'none',
-  ) {
     try {
-      const winston = await import('winston');
-
-      this.logger = winston.createLogger({
-        level: level === 'none' ? 'error' : level,
-        silent: level === 'none',
-        defaultMeta: {
-          name: 'ar-io-sdk',
-          version,
-        },
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.json(),
-        ),
-        transports: [
-          new winston.transports.Console({
-            format: winston.format.combine(
-              winston.format.timestamp(),
-              winston.format.json(),
-            ),
-          }),
-        ],
-      });
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      this.winston = require('winston');
     } catch (error) {
       throw new Error(
         'Winston is not installed. Install it with: npm install winston',
       );
     }
+
+    this.logger = this.winston.createLogger({
+      level: level === 'none' ? 'error' : level,
+      silent: level === 'none',
+      defaultMeta: {
+        name: 'ar-io-sdk',
+        version,
+      },
+      format: this.winston.format.combine(
+        this.winston.format.timestamp(),
+        this.winston.format.json(),
+      ),
+      transports: [
+        new this.winston.transports.Console({
+          format: this.winston.format.combine(
+            this.winston.format.timestamp(),
+            this.winston.format.json(),
+          ),
+        }),
+      ],
+    });
   }
 
   info(message: string, ...args: unknown[]) {
-    this.logger?.info(message, ...args);
+    this.logger.info(message, ...args);
   }
 
   warn(message: string, ...args: unknown[]) {
-    this.logger?.warn(message, ...args);
+    this.logger.warn(message, ...args);
   }
 
   error(message: string, ...args: unknown[]) {
-    this.logger?.error(message, ...args);
+    this.logger.error(message, ...args);
   }
 
   debug(message: string, ...args: unknown[]) {
-    this.logger?.debug(message, ...args);
+    this.logger.debug(message, ...args);
   }
 
   setLogLevel(level: 'info' | 'debug' | 'error' | 'warn' | 'none') {
-    if (this.logger) {
-      if (level === 'none') {
-        this.logger.silent = true;
-      } else {
-        this.logger.silent = false;
-        this.logger.level = level;
-      }
+    if (level === 'none') {
+      this.logger.silent = true;
+    } else {
+      this.logger.silent = false;
+      this.logger.level = level;
     }
   }
 }
