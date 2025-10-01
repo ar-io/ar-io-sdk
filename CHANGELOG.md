@@ -1,3 +1,15 @@
+# [3.21.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.20.0...v3.21.0-alpha.1) (2025-10-01)
+
+
+### Features
+
+* replace Winston with console logger as default ([ed69ddc](https://github.com/ar-io/ar-io-sdk/commit/ed69ddc37907a9e1909caa3cad744f0121d48acf))
+
+
+### Reverts
+
+* back to synchronous require for winston ([a6fa1c0](https://github.com/ar-io/ar-io-sdk/commit/a6fa1c07c69353255fca60553add5cbde37fb081))
+
 # [3.20.0](https://github.com/ar-io/ar-io-sdk/compare/v3.19.0...v3.20.0) (2025-09-24)
 
 
