@@ -2847,7 +2847,7 @@ The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point
 
 **All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
 
-### Converting ARIO to mARIO
+#### Converting ARIO to mARIO
 
 ```typescript
 import { ARIOToken, mARIOToken } from '@ar.io/sdk';
@@ -2863,7 +2863,7 @@ const arioValue = new mARIOToken(mARIOValue).toARIO();
 
 The library uses a lightweight console logger by default for both Node.js and web environments. The logger outputs structured JSON logs with timestamps. You can configure the log level via `setLogLevel()` API or provide a custom logger that satisfies the `ILogger` interface.
 
-### Default Console Logger
+#### Default Logger
 
 ```typescript
 import { Logger } from '@ar.io/sdk';
@@ -2875,7 +2875,7 @@ Logger.default.setLogLevel('debug');
 const logger = new Logger({ level: 'debug' });
 ```
 
-### Custom Logger Implementation
+#### Custom Logger Implementation
 
 You can provide any custom logger that implements the `ILogger` interface:
 
@@ -2894,15 +2894,18 @@ const customLogger: ILogger = {
 };
 
 // Use custom logger with any class
-const ario = new ARIO({ logger: customLogger });
+const ario = ARIO.mainnet({ logger: customLogger });
+
+// or set it as the default logger in the entire SDK
+Logger.default = customLogger;
 ```
 
-### Winston Logger (Optional)
+#### Winston Logger (Optional)
 
 For advanced logging features, you can optionally install Winston and use the provided Winston logger adapter:
 
 ```bash
-npm install winston
+yarn add winston
 ```
 
 ```typescript
@@ -2914,10 +2917,13 @@ const winstonLogger = new WinstonLogger({
 });
 
 // Use with any class that accepts a logger
-const ario = new ARIO({ logger: winstonLogger });
+const ario = ARIO.mainnet({ logger: winstonLogger });
+
+// or set it as the default logger in the entire SDK
+Logger.default = winstonLogger;
 ```
 
-### Other Popular Loggers
+#### Other Popular Loggers
 
 You can easily integrate other popular logging libraries:
 
@@ -2935,12 +2941,15 @@ const adapter: ILogger = {
   setLogLevel: (level) => bunyanLogger.level(level),
 };
 
-const ario = new ARIO({ logger: adapter });
+const ario = ARIO.mainnet({ logger: adapter });
+
+// or set it as the default logger in the entire SDK
+Logger.default = adapter;
 ```
 
 ## Pagination
 
-### Overview
+#### Overview
 
 Certain APIs that could return a large amount of data are paginated using cursors. The SDK uses the `cursor` pattern (as opposed to pages) to better protect against changing data while paginating through a list of items. For more information on pagination strategies refer to [this article](https://www.getknit.dev/blog/api-pagination-best-practices#api-pagination-techniques-).
 
@@ -2967,7 +2976,7 @@ while (hasMore) {
 }
 ```
 
-### Filtering
+#### Filtering
 
 Paginated APIs also support filtering by providing a `filters` parameter. Filters can be applied to any field in the response. When multiple keys are provided, they are treated as AND conditions (all conditions must match). When multiple values are provided for a single key (as an array), they are treated as OR conditions (any value can match).
 
