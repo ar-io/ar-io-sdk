@@ -2861,7 +2861,9 @@ const arioValue = new mARIOToken(mARIOValue).toARIO();
 
 ## Logging
 
-The library uses the [Winston] logger for node based projects, and `console` logger for web based projects by default. You can configure the log level via `setLogLevel()` API. Alternatively you can set a custom logger as the default logger so long as it satisfes the `ILogger` interface.
+The library uses a lightweight console logger by default for both Node.js and web environments. The logger outputs structured JSON logs with timestamps. You can configure the log level via `setLogLevel()` API or provide a custom logger that satisfies the `ILogger` interface.
+
+### Default Console Logger
 
 ```typescript
 import { Logger } from '@ar.io/sdk';
@@ -2869,8 +2871,71 @@ import { Logger } from '@ar.io/sdk';
 // set the log level
 Logger.default.setLogLevel('debug');
 
-// provide your own logger
-Logger.default = winston.createLogger({ ...loggerConfigs }); // or some other logger that satisifes ILogger interface
+// Create a new logger instance with a specific level
+const logger = new Logger({ level: 'debug' });
+```
+
+### Custom Logger Implementation
+
+You can provide any custom logger that implements the `ILogger` interface:
+
+```typescript
+import { ARIO, ILogger } from '@ar.io/sdk';
+
+// Custom logger example
+const customLogger: ILogger = {
+  info: (message, ...args) => console.log(`[INFO] ${message}`, ...args),
+  warn: (message, ...args) => console.warn(`[WARN] ${message}`, ...args),
+  error: (message, ...args) => console.error(`[ERROR] ${message}`, ...args),
+  debug: (message, ...args) => console.debug(`[DEBUG] ${message}`, ...args),
+  setLogLevel: (level) => {
+    /* implement level filtering */
+  },
+};
+
+// Use custom logger with any class
+const ario = new ARIO({ logger: customLogger });
+```
+
+### Winston Logger (Optional)
+
+For advanced logging features, you can optionally install Winston and use the provided Winston logger adapter:
+
+```bash
+npm install winston
+```
+
+```typescript
+import { ARIO, WinstonLogger } from '@ar.io/sdk';
+
+// Create Winston logger with custom configuration
+const winstonLogger = new WinstonLogger({
+  level: 'debug',
+});
+
+// Use with any class that accepts a logger
+const ario = new ARIO({ logger: winstonLogger });
+```
+
+### Other Popular Loggers
+
+You can easily integrate other popular logging libraries:
+
+```typescript
+// Bunyan example
+import { ARIO, ILogger } from '@ar.io/sdk';
+import bunyan from 'bunyan';
+
+const bunyanLogger = bunyan.createLogger({ name: 'ar-io-sdk' });
+const adapter: ILogger = {
+  info: (message, ...args) => bunyanLogger.info({ args }, message),
+  warn: (message, ...args) => bunyanLogger.warn({ args }, message),
+  error: (message, ...args) => bunyanLogger.error({ args }, message),
+  debug: (message, ...args) => bunyanLogger.debug({ args }, message),
+  setLogLevel: (level) => bunyanLogger.level(level),
+};
+
+const ario = new ARIO({ logger: adapter });
 ```
 
 ## Pagination
