@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { version } from '../../version.js';
-import { ILogger } from '../logger.js';
+import { ILogger, LogLevel } from '../logger.js';
 
 export class WinstonLogger implements ILogger {
   private logger: any;
@@ -23,7 +23,7 @@ export class WinstonLogger implements ILogger {
   constructor({
     level = 'info',
   }: {
-    level?: 'info' | 'debug' | 'error' | 'warn' | 'none';
+    level?: LogLevel;
   } = {}) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -72,7 +72,7 @@ export class WinstonLogger implements ILogger {
     this.logger.debug(message, ...args);
   }
 
-  setLogLevel(level: 'info' | 'debug' | 'error' | 'warn' | 'none') {
+  setLogLevel(level: LogLevel) {
     if (level === 'none') {
       this.logger.silent = true;
     } else {

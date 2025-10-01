@@ -15,15 +15,15 @@
  */
 import { version } from '../version.js';
 
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
+
 export interface ILogger {
-  setLogLevel: (level: 'info' | 'debug' | 'error' | 'warn' | 'none') => void;
+  setLogLevel: (level: LogLevel) => void;
   info: (message: string, ...args: unknown[]) => void;
   warn: (message: string, ...args: unknown[]) => void;
   error: (message: string, ...args: unknown[]) => void;
   debug: (message: string, ...args: unknown[]) => void;
 }
-
-type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'none';
 
 export class Logger implements ILogger {
   private level: LogLevel = 'info';
