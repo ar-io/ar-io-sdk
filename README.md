@@ -2167,7 +2167,7 @@ const version = await ant.getVersion({
   <summary>Output</summary>
 
 ```json
-"1.0.15"
+"23"
 ```
 
 </details>
