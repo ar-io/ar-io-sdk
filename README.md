@@ -2307,6 +2307,40 @@ const owner = await ant.getOwner();
 
 </details>
 
+#### `getName()`
+
+Returns the name of the ANT (not the same as ArNS name).
+
+```typescript
+const name = await ant.getName();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"ArDrive"
+```
+
+</details>
+
+#### `getTicker()`
+
+Returns the ticker symbol of the ANT.
+
+```typescript
+const ticker = await ant.getTicker();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"ANT-ARDRIVE"
+```
+
+</details>
+
 #### `getControllers()`
 
 Returns the controllers of the configured ANT process.
@@ -2363,6 +2397,72 @@ const records = await ant.getRecords();
 
 </details>
 
+#### `getRecord({ undername })`
+
+Returns a specific record by its undername.
+
+```typescript
+const record = await ant.getRecord({ undername: 'dapp' });
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "transactionId": "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "ttlSeconds": 900,
+  "owner": "alice-wallet-address-123...",
+  "displayName": "Alice's Site",
+  "logo": "avatar-tx-id-456...",
+  "description": "Personal portfolio and blog",
+  "keywords": ["portfolio", "personal", "blog"]
+}
+```
+
+</details>
+
+### Balances
+
+#### `getBalances()`
+
+Returns all token balances for the ANT.
+
+```typescript
+const balances = await ant.getBalances();
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4": 1,
+  "aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f": 0
+}
+```
+
+</details>
+
+#### `getBalance({ address })`
+
+Returns the balance of a specific address.
+
+```typescript
+const balance = await ant.getBalance({
+  address: 'ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4',
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+1
+```
+
+</details>
+
 ### Transfer
 
 #### `transfer({ target })`
@@ -2381,14 +2481,14 @@ const { id: txId } = await ant.transfer(
 
 ### Controllers
 
-#### `setController({ controller })`
+#### `addController({ controller })`
 
 Adds a new controller to the list of approved controllers on the ANT. Controllers can set records and change the ticker and name of the ANT process.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
-const { id: txId } = await ant.setController(
+const { id: txId } = await ant.addController(
   { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
   // optional additional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -2595,7 +2695,7 @@ Sets the keywords of the ANT process.
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
-const { id: txId } = await ant.setDescription(
+const { id: txId } = await ant.setKeywords(
   { keywords: ['Game', 'FPS', 'AO'] },
   // optional tags
   { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
@@ -2839,6 +2939,122 @@ await aliceAnt.setUndernameRecord({
 // After: record ownership reverts to ANT owner
 const recordAfter = await ant.getRecord({ undername: 'alice' });
 console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
+```
+
+### Version Information
+
+#### `getModuleId({ graphqlUrl?, retries? })`
+
+Gets the module ID of the current ANT process by querying its spawn transaction tags. Results are cached after the first successful fetch.
+
+```typescript
+const moduleId = await ant.getModuleId();
+console.log(`ANT was spawned with module: ${moduleId}`);
+
+// With custom GraphQL URL and retries
+const moduleId = await ant.getModuleId({
+  graphqlUrl: 'https://arweave.net/graphql',
+  retries: 5
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE"
+```
+
+</details>
+
+#### `getVersion({ antRegistryId?, graphqlUrl?, retries? })`
+
+Gets the version string of the current ANT by matching its module ID with versions from the ANT registry.
+
+```typescript
+const version = await ant.getVersion();
+console.log(`ANT is running version: ${version}`);
+
+// With custom ANT registry
+const version = await ant.getVersion({
+  antRegistryId: 'custom-ant-registry-id'
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"1.0.15"
+```
+
+</details>
+
+#### `isLatestVersion({ antRegistryId?, graphqlUrl?, retries? })`
+
+Checks if the current ANT version is the latest according to the ANT registry.
+
+```typescript
+const isLatest = await ant.isLatestVersion();
+if (!isLatest) {
+  console.log('ANT can be upgraded to the latest version');
+}
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+true
+```
+
+</details>
+
+### Static Methods
+
+#### `ANT.fork({ signer, antProcessId, module?, scheduler?, state?, ao?, antRegistryId?, onSigningProgress? })`
+
+Forks an existing ANT process to create a new one with the same state but potentially a different module. This is used for upgrading ANTs to new versions.
+
+```typescript
+const newProcessId = await ANT.fork({
+  signer: new ArweaveSigner(jwk),
+  antProcessId: 'existing-ant-process-id',
+  // Optional: specify a specific module ID, defaults to latest from registry
+  module: 'new-module-id',
+  onSigningProgress: (event, payload) => {
+    console.log(`Fork progress: ${event}`);
+  },
+});
+
+console.log(`Forked ANT to new process: ${newProcessId}`);
+```
+
+#### `ANT.upgrade({ signer, antProcessId, reassignAffiliatedNames?, names?, arioProcessId?, antRegistryId?, ao?, logger?, skipVersionCheck?, onSigningProgress?, hyperbeamUrl? })`
+
+Static method to upgrade an ANT by forking it to the latest version and reassigning names.
+
+```typescript
+// Upgrade and reassign all affiliated names
+const result = await ANT.upgrade({
+  signer: new ArweaveSigner(jwk),
+  antProcessId: 'existing-ant-process-id',
+  reassignAffiliatedNames: true,
+  arioProcessId: ARIO_MAINNET_PROCESS_ID
+});
+
+// Upgrade and reassign specific names
+const result = await ANT.upgrade({
+  signer: new ArweaveSigner(jwk),
+  antProcessId: 'existing-ant-process-id',
+  names: ['ardrive', 'example'],
+  reassignAffiliatedNames: false,
+  arioProcessId: ARIO_MAINNET_PROCESS_ID
+});
+
+console.log(`Upgraded to process: ${result.forkedProcessId}`);
+console.log(`Successfully reassigned names: ${Object.keys(result.reassignedNames)}`);
+console.log(`Failed reassignments: ${Object.keys(result.failedReassignedNames)}`);
 ```
 
 ## Token Conversion
