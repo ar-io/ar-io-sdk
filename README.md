@@ -2125,9 +2125,76 @@ ar.io spawn-ant --wallet-file wallet.json --module FKtQtOOtlcWCW2pXrwWFiCSlnuewM
 
 ### Versions
 
+#### `getModuleId({ graphqlUrl?, retries? })`
+
+Gets the module ID of the current ANT process by querying its spawn transaction tags. Results are cached after the first successful fetch.
+
+```typescript
+const moduleId = await ant.getModuleId();
+console.log(`ANT was spawned with module: ${moduleId}`);
+
+// With custom GraphQL URL and retries
+const moduleId = await ant.getModuleId({
+  graphqlUrl: 'https://arweave.net/graphql',
+  retries: 5
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE"
+```
+
+</details>
+
+#### `getVersion({ antRegistryId?, graphqlUrl?, retries? })`
+
+Gets the version string of the current ANT by matching its module ID with versions from the ANT registry.
+
+```typescript
+const version = await ant.getVersion();
+console.log(`ANT is running version: ${version}`);
+
+// With custom ANT registry
+const version = await ant.getVersion({
+  antRegistryId: 'custom-ant-registry-id'
+});
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+"1.0.15"
+```
+
+</details>
+
+#### `isLatestVersion({ antRegistryId?, graphqlUrl?, retries? })`
+
+Checks if the current ANT version is the latest according to the ANT registry.
+
+```typescript
+const isLatest = await ant.isLatestVersion();
+if (!isLatest) {
+  console.log('ANT can be upgraded to the latest version');
+}
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+true
+```
+
+</details>
+
 #### `getANTVersions`
 
-Returns the full array of available ANT versions and the latest version from the ANT registry.
+Static method that returns the full array of available ANT versions and the latest version from the ANT registry.
 
 ```typescript
 import { ANT } from '@ar.io/sdk';
@@ -2155,12 +2222,17 @@ Result:
 
 #### `getLatestANTVersion()`
 
-Returns the latest ANT version from the ANT registry.
+Static method that returns the latest ANT version from the ANT registry.
 
 ```typescript
 import { ANT } from '@ar.io/sdk';
 
 // Get the latest ANT version
+import { ANT } from '@ar.io/sdk';
+
+// Get all available ANT versions
+const antVersions = ANT.versions;
+const versions = await antVersions.getANTVersions();
 const latestVersion = await antVersions.getLatestANTVersion();
 ```
 
@@ -2940,75 +3012,6 @@ await aliceAnt.setUndernameRecord({
 const recordAfter = await ant.getRecord({ undername: 'alice' });
 console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
 ```
-
-### Version Information
-
-#### `getModuleId({ graphqlUrl?, retries? })`
-
-Gets the module ID of the current ANT process by querying its spawn transaction tags. Results are cached after the first successful fetch.
-
-```typescript
-const moduleId = await ant.getModuleId();
-console.log(`ANT was spawned with module: ${moduleId}`);
-
-// With custom GraphQL URL and retries
-const moduleId = await ant.getModuleId({
-  graphqlUrl: 'https://arweave.net/graphql',
-  retries: 5
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-"FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE"
-```
-
-</details>
-
-#### `getVersion({ antRegistryId?, graphqlUrl?, retries? })`
-
-Gets the version string of the current ANT by matching its module ID with versions from the ANT registry.
-
-```typescript
-const version = await ant.getVersion();
-console.log(`ANT is running version: ${version}`);
-
-// With custom ANT registry
-const version = await ant.getVersion({
-  antRegistryId: 'custom-ant-registry-id'
-});
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-"1.0.15"
-```
-
-</details>
-
-#### `isLatestVersion({ antRegistryId?, graphqlUrl?, retries? })`
-
-Checks if the current ANT version is the latest according to the ANT registry.
-
-```typescript
-const isLatest = await ant.isLatestVersion();
-if (!isLatest) {
-  console.log('ANT can be upgraded to the latest version');
-}
-```
-
-<details>
-  <summary>Output</summary>
-
-```json
-true
-```
-
-</details>
 
 ### Static Methods
 
