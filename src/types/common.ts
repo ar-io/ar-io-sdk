@@ -260,3 +260,11 @@ export type MessageResult = {
   Spawns: any[];
   Error?: any;
 };
+
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
+  | { [key: string]: JSONValue };
