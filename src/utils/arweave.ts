@@ -15,6 +15,7 @@
  */
 import Arweave from 'arweave';
 
+import { Logger } from '../common/logger.js';
 import { ARIO_MAINNET_PROCESS_ID, ARWEAVE_TX_REGEX } from '../constants.js';
 import { AoClient, BlockHeight } from '../types/common.js';
 import {
@@ -188,20 +189,31 @@ export const getEpochDataFromGqlFallback = async ({
       continue;
     }
     for (const message of messageResult?.Messages ?? []) {
-      const data = JSON.parse(message.Data);
-      const tags: { name: string; value: string }[] = message.Tags;
-      // check if the message results include epoch-distribution-notice for the requested epoch index
-      if (
-        tags.some(
-          (tag) =>
-            tag.name === 'Action' && tag.value === 'Epoch-Distribution-Notice',
-        ) &&
-        tags.some(
-          (tag) =>
-            tag.name === 'Epoch-Index' && tag.value === epochIndex.toString(),
-        )
-      ) {
-        return parseAoEpochData(data);
+      try {
+        const tags: { name: string; value: string }[] = message.Tags;
+        // check if the message results include epoch-distribution-notice for the requested epoch index
+        if (
+          tags.some(
+            (tag) =>
+              tag.name === 'Action' &&
+              tag.value === 'Epoch-Distribution-Notice',
+          ) &&
+          tags.some(
+            (tag) =>
+              tag.name === 'Epoch-Index' && tag.value === epochIndex.toString(),
+          )
+        ) {
+          const data = JSON.parse(message.Data);
+          return parseAoEpochData(data);
+        }
+      } catch (error) {
+        // report but continue to next message
+        Logger.default.error(
+          'Failed to parse AO epoch distribution message:',
+          error,
+          '\nMessage:',
+          message,
+        );
       }
     }
   }
