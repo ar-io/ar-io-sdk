@@ -445,7 +445,7 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
 }
 
 export function servicesFromOptions(services?: string) {
-  if (!services) {
+  if (services === undefined || services === null || services === '') {
     return undefined;
   }
 
