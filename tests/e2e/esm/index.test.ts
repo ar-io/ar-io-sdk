@@ -47,7 +47,8 @@ const signers = [
 
 const aoClient = connect({
   MODE: 'legacy',
-  CU_URL: 'http://localhost:6363',
+  // CU_URL: 'http://localhost:6363',
+  CU_URL: 'https://cu.ardrive.io',
 });
 const arweave = Arweave.init({});
 const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
