@@ -87,7 +87,6 @@ export class HB implements Hyperbeam {
     path: string;
     json?: boolean;
   }): Promise<T> {
-    // json ?require-codec=application/json&accept-bundle=true
     const url = new URL(
       `${this.url}/${this.processId}~process@1.0/now/${path}`,
     );
@@ -95,9 +94,10 @@ export class HB implements Hyperbeam {
       url.searchParams.set('require-codec', 'application/json');
       url.searchParams.set('accept-bundle', 'true');
     }
-
     const res = await fetch(url);
-    return res.json() as Promise<T>;
+    const jsonResult = await res.json();
+    const body = (jsonResult as { body: T }).body;
+    return body as T;
   }
 
   /**
@@ -127,7 +127,9 @@ export class HB implements Hyperbeam {
       url.searchParams.set('accept-bundle', 'true');
     }
     const res = await fetch(url);
-    return res.json() as Promise<T>;
+    const jsonResult = await res.json();
+    const body = (jsonResult as { body: T }).body;
+    return body as T;
   }
 
   /**
@@ -145,7 +147,7 @@ export class HB implements Hyperbeam {
 
     const result = fetch(
       // use /now to force a refresh of the cache state, then compute when calling it for keys
-      `${this.url.toString()}${this.processId}~process@1.0/now`,
+      `${this.url.toString()}/${this.processId}~process@1.0/now`,
       {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000), // 5 second timeout
@@ -160,6 +162,7 @@ export class HB implements Hyperbeam {
         return false;
       })
       .catch((error) => {
+        console.log(error);
         this.logger.debug('Failed to check HyperBeam compatibility', {
           cause: error,
         });

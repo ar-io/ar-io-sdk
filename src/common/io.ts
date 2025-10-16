@@ -407,9 +407,12 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
 
   async getBalance({ address }: { address: WalletAddress }): Promise<number> {
     if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
-      return this.hb.compute<number>({
+      const res = await this.hb.compute<number>({
         path: `balances/${address}`,
       });
+
+      // hb returns numbers as strings
+      return Number(res);
     }
     return this.process.read<number>({
       tags: [
