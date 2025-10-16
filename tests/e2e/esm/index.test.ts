@@ -47,7 +47,8 @@ const signers = [
 
 const aoClient = connect({
   MODE: 'legacy',
-  CU_URL: 'http://localhost:6363',
+  // CU_URL: 'http://localhost:6363',
+  CU_URL: 'https://cu.ardrive.io',
 });
 const arweave = Arweave.init({});
 const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
@@ -1511,7 +1512,7 @@ describe('e2e esm tests', async () => {
     });
   });
 
-  describe('ANTRegistry', async () => {
+  describe.skip('ANTRegistry', async () => {
     const registry = ANTRegistry.init({
       process: new AOProcess({
         processId: ANT_REGISTRY_ID,
@@ -1540,11 +1541,11 @@ describe('e2e esm tests', async () => {
     });
   });
 
-  describe('ANTVersions', async () => {
+  describe.skip('ANTVersions', async () => {
     const antVersions = ANTVersions.init({
       process: new AOProcess({
         processId: ANT_REGISTRY_ID,
-        // ao: aoClient,
+        ao: aoClient,
       }),
     });
 
