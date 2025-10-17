@@ -238,6 +238,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   setLoggerIfDebug(options);
 
   return ARIO.init({
+    hyperbeamUrl: options.hyperbeamUrl,
     process: aoProcessFromOptions({
       cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
       ...options,
@@ -307,6 +308,7 @@ export function writeARIOFromOptions(options: GlobalCLIOptions): {
       process: aoProcessFromOptions(options),
       signer,
       paymentUrl: options.paymentUrl,
+      hyperbeamUrl: options.hyperbeamUrl,
     }),
     signerAddress,
   };

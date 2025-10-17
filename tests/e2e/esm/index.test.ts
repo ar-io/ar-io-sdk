@@ -1516,7 +1516,7 @@ describe('e2e esm tests', async () => {
     const registry = ANTRegistry.init({
       process: new AOProcess({
         processId: ANT_REGISTRY_ID,
-        // ao: aoClient,
+        ao: aoClient,
       }),
     });
     const address = '7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk';
@@ -1533,7 +1533,7 @@ describe('e2e esm tests', async () => {
           signer,
           process: new AOProcess({
             processId: ANT_REGISTRY_ID,
-            // ao: aoClient,
+            ao: aoClient,
           }),
         });
         assert(registry instanceof AoANTRegistryWriteable);
