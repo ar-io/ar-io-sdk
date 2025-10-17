@@ -1225,6 +1225,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       protocol,
       autoStake,
       observerAddress,
+      services,
     }: AoJoinNetworkParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1284,6 +1285,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         name: 'Observer-Address',
         value: observerAddress,
       },
+      {
+        name: 'Services',
+        value: services ? JSON.stringify(services) : undefined,
+      },
     ];
 
     return this.process.send({
@@ -1314,6 +1319,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       protocol,
       autoStake,
       observerAddress,
+      services,
     }: AoUpdateGatewaySettingsParams,
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
@@ -1345,6 +1351,10 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         value: minDelegatedStake?.valueOf().toString(),
       },
       { name: 'Auto-Stake', value: autoStake?.toString() },
+      {
+        name: 'Services',
+        value: services ? JSON.stringify(services) : undefined,
+      },
     ];
 
     return this.process.send({
