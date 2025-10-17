@@ -407,12 +407,24 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
 
   async getBalance({ address }: { address: WalletAddress }): Promise<number> {
     if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
-      const res = await this.hb.compute<number>({
-        path: `balances/${address}`,
-      });
-
-      // hb returns numbers as strings
-      return Number(res);
+      this.logger.debug('Getting balance from HyperBEAM', { address });
+      const res = await this.hb
+        .compute<number>({
+          path: `balances/${address}`,
+        })
+        .then((res) => Number(res))
+        .catch((error) => {
+          this.logger.error('Failed to get balance from HyperBEAM', {
+            cause: error,
+          });
+          return null;
+        });
+      if (res !== null) return res;
+      // else fall through to CU read
+      this.logger.info(
+        'Failed to get balance from HyperBEAM, failing over to to CU read',
+        { address },
+      );
     }
     return this.process.read<number>({
       tags: [
