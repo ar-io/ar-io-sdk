@@ -157,7 +157,6 @@ export class HB implements Hyperbeam {
         return false;
       })
       .catch((error) => {
-        console.log(error);
         this.logger.debug('Failed to check HyperBeam compatibility', {
           cause: error,
         });
