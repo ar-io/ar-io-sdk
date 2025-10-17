@@ -377,6 +377,7 @@ export type AoAllGatewayVaults = AoGatewayVault & {
 export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
   Partial<AoGatewaySettings> & {
     observerAddress?: WalletAddress;
+    services?: AoGatewayServices;
   };
 
 export type AoUpdateGatewaySettingsParams = AtLeastOne<

@@ -446,19 +446,68 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
   };
 }
 
-export function gatewaySettingsFromOptions({
-  allowDelegatedStaking,
-  autoStake,
-  delegateRewardShareRatio,
-  fqdn,
-  label,
-  minDelegatedStake,
-  note,
-  observerAddress,
-  port,
-  properties,
-  allowedDelegates,
-}: UpdateGatewaySettingsCLIOptions): AoUpdateGatewaySettingsParams {
+export function servicesFromOptions(services?: string) {
+  if (services === undefined || services === null || services === '') {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(services);
+
+    // Validate structure
+    if (!parsed.bundlers || !Array.isArray(parsed.bundlers)) {
+      throw new Error('Services must have a "bundlers" array');
+    }
+
+    if (parsed.bundlers.length > 20) {
+      throw new Error('Maximum 20 bundlers allowed');
+    }
+
+    // Validate each bundler
+    for (const bundler of parsed.bundlers) {
+      if (!bundler.fqdn || typeof bundler.fqdn !== 'string') {
+        throw new Error('Each bundler must have a valid "fqdn" string');
+      }
+      if (
+        typeof bundler.port !== 'number' ||
+        bundler.port < 0 ||
+        bundler.port > 65535
+      ) {
+        throw new Error('Each bundler must have a valid "port" (0-65535)');
+      }
+      if (bundler.protocol !== 'https') {
+        throw new Error('Each bundler protocol must be "https"');
+      }
+      if (!bundler.path || typeof bundler.path !== 'string') {
+        throw new Error('Each bundler must have a valid "path" string');
+      }
+    }
+
+    return parsed;
+  } catch (error) {
+    throw new Error(
+      `Invalid services JSON: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+export function gatewaySettingsFromOptions(
+  options: UpdateGatewaySettingsCLIOptions,
+): AoUpdateGatewaySettingsParams {
+  const {
+    allowDelegatedStaking,
+    autoStake,
+    delegateRewardShareRatio,
+    fqdn,
+    label,
+    minDelegatedStake,
+    note,
+    observerAddress,
+    port,
+    properties,
+    allowedDelegates,
+    services,
+  } = options;
   return {
     observerAddress,
     allowDelegatedStaking,
@@ -475,6 +524,7 @@ export function gatewaySettingsFromOptions({
     note,
     port: port !== undefined ? +port : undefined,
     properties,
+    services: servicesFromOptions(services as string | undefined),
   };
 }
 
