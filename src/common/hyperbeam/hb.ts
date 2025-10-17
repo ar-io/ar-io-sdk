@@ -59,12 +59,21 @@ export class HB implements Hyperbeam {
     this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
   }
 
-  async meta(): Promise<JSONValue> {
+  /**
+   * fetches the meta data for the process
+   *
+   * @returns The meta data for the process
+   *
+   * @example
+   * const hyperbeam = new Hyperbeam({ url: 'https://hyperbeam.ario.permaweb.services', processId: 'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE' });
+   * const meta = await hyperbeam.meta();
+   * console.log(meta);
+   */
+  async meta(): Promise<Record<string, JSONValue>> {
     const url = new URL(`${this.url}/${this.processId}~process@1.0/meta`);
-    url.searchParams.set('require-codec', 'application/json');
-    url.searchParams.set('accept-bundle', 'true');
-    const res = await fetch(url);
-    return res.json() as Promise<JSONValue>;
+    return this.fetchHyperbeamPath<Record<string, JSONValue>>({
+      path: url.toString(),
+    });
   }
 
   /**
@@ -82,22 +91,15 @@ export class HB implements Hyperbeam {
    */
   async now<T extends JSONValue>({
     path,
-    json = true,
+    json = false,
   }: {
     path: string;
     json?: boolean;
   }): Promise<T> {
-    const url = new URL(
-      `${this.url}/${this.processId}~process@1.0/now/${path}`,
-    );
-    if (json) {
-      url.searchParams.set('require-codec', 'application/json');
-      url.searchParams.set('accept-bundle', 'true');
-    }
-    const res = await fetch(url);
-    const jsonResult = await res.json();
-    const body = (jsonResult as { body: T }).body;
-    return body as T;
+    return this.fetchHyperbeamPath<T>({
+      path: `${this.url}/${this.processId}~process@1.0/now/${path}`,
+      json,
+    });
   }
 
   /**
@@ -114,22 +116,15 @@ export class HB implements Hyperbeam {
    */
   async compute<T extends JSONValue>({
     path,
-    json = true,
+    json = false,
   }: {
     path: string;
     json?: boolean;
   }): Promise<T> {
-    const url = new URL(
-      `${this.url}/${this.processId}~process@1.0/compute/${path}`,
-    );
-    if (json) {
-      url.searchParams.set('require-codec', 'application/json');
-      url.searchParams.set('accept-bundle', 'true');
-    }
-    const res = await fetch(url);
-    const jsonResult = await res.json();
-    const body = (jsonResult as { body: T }).body;
-    return body as T;
+    return this.fetchHyperbeamPath<T>({
+      path: `${this.url}/${this.processId}~process@1.0/compute/${path}`,
+      json,
+    });
   }
 
   /**
@@ -173,5 +168,59 @@ export class HB implements Hyperbeam {
     this.checkHyperBeamPromise = result;
 
     return result;
+  }
+
+  async fetchHyperbeamPath<T extends JSONValue>({
+    path,
+    json = false,
+  }: {
+    path: string;
+    json?: boolean;
+  }): Promise<T> {
+    try {
+      const url = new URL(path);
+      if (json) {
+        this.logger.debug('Fetching path as JSON', { path });
+        url.searchParams.set('require-codec', 'application/json');
+        url.searchParams.set('accept-bundle', 'true');
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch path as JSON: ${res.statusText}`);
+        }
+        const jsonResult: JSONValue = await res
+          .json()
+          .then((json) => json as JSONValue)
+          .catch((error) => {
+            this.logger.error('Failed to parse JSON', {
+              cause: error,
+            });
+            throw new Error(
+              `Received response but failed to parse JSON: ${error.message}`,
+            );
+          });
+
+        if (
+          typeof jsonResult !== 'object' ||
+          jsonResult === null ||
+          !('body' in jsonResult)
+        ) {
+          throw new Error('Response body missing in JSON response');
+        }
+        return jsonResult.body as T;
+      } else {
+        this.logger.debug('Fetching path as text', { path });
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch path: ${res.statusText}`);
+        }
+        const body = await res.text();
+        return body as T;
+      }
+    } catch (error) {
+      this.logger.error('Failed to fetch path as JSON', {
+        cause: error,
+      });
+      throw error;
+    }
   }
 }
