@@ -23,23 +23,21 @@ const defaultArIO = ARIO.init();
 //   signer: createAoSigner({} as ContractSigner),
 // });
 // validating that the ANT registry works in web context
+const aoClient = connect({
+  MODE: 'legacy',
+  CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
+});
 const antRegistry = ANTRegistry.init({
   process: new AOProcess({
     processId: ANT_REGISTRY_ID,
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
-    }),
+    ao: aoClient,
   }),
 });
 // validating that the ARIO works in web context with a process
 const ario = ARIO.init({
   process: new AOProcess({
     processId: process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID,
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
-    }),
+    ao: aoClient,
   }),
 });
 

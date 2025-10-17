@@ -1,3 +1,13 @@
+## [3.21.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.21.0...v3.21.1-alpha.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* add error handling and logging for AO epoch distribution message parsing ([0c8683c](https://github.com/ar-io/ar-io-sdk/commit/0c8683c1e543f9c808c7f845ed1c232c918e65ad))
+* skip processing messages with empty data in epoch data fallback ([59774bf](https://github.com/ar-io/ar-io-sdk/commit/59774bffc630e2f5892a7d8f68b0b2ddb104691b))
+* **tests:** update tests to use cu.ardrive.io ([14e7e7f](https://github.com/ar-io/ar-io-sdk/commit/14e7e7f896c6c7dba5c11429a05199402547e612))
+* **tests:** update tests to use cu.ardrive.io ([4780260](https://github.com/ar-io/ar-io-sdk/commit/4780260b16caf0fa7e70f8696d6ecf2cb1276965))
+
 # [3.21.0](https://github.com/ar-io/ar-io-sdk/compare/v3.20.0...v3.21.0) (2025-10-01)
 
 
