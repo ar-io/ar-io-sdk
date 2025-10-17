@@ -1,3 +1,16 @@
+# [3.22.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.21.1-alpha.1...v3.22.0-alpha.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* fixes lint error ([f24df2b](https://github.com/ar-io/ar-io-sdk/commit/f24df2ba333376b674af9f13b8647408e75143e1))
+* **schemas:** add json schema def for gateway properties ([0102ab9](https://github.com/ar-io/ar-io-sdk/commit/0102ab9f7a6ddb3872ed094d81f77cc6a06f3b3e))
+
+
+### Features
+
+* add services/bundlers support to joinNetwork and updateGatewaySettings ([02861a5](https://github.com/ar-io/ar-io-sdk/commit/02861a5de17e39c9d51852b5256ec21ce74a5ad3))
+
 ## [3.21.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.21.0...v3.21.1-alpha.1) (2025-10-17)
 
 
