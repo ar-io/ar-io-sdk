@@ -23,26 +23,7 @@ export type HBConfig = {
   hbTimeoutMs?: number;
 };
 
-export interface Hyperbeam {
-  meta(): Promise<JSONValue>;
-  now<T extends JSONValue>({
-    path,
-    json,
-  }: {
-    path: string;
-    json?: boolean;
-  }): Promise<T>;
-  compute<T extends JSONValue>({
-    path,
-    json,
-  }: {
-    path: string;
-    json?: boolean;
-  }): Promise<T>;
-  checkHyperBeamCompatibility(params?: { minSlot?: number }): Promise<boolean>;
-}
-
-export class HB implements Hyperbeam {
+export class HB {
   readonly url: string;
   readonly processId: string;
 

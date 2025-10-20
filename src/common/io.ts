@@ -106,7 +106,7 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
-import { HB, Hyperbeam } from './hyperbeam/hb.js';
+import { HB } from './hyperbeam/hb.js';
 import { Logger } from './logger.js';
 import {
   TurboArNSPaymentFactory,
@@ -225,7 +225,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   protected hyperbeamUrl: string | undefined;
   protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
   protected logger = Logger.default;
-  protected hb: Hyperbeam | undefined;
+  protected hb: HB | undefined;
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
