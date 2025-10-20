@@ -106,6 +106,7 @@ import { defaultArweave } from './arweave.js';
 import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
+import { HB } from './hyperbeam/hb.js';
 import { Logger } from './logger.js';
 import {
   TurboArNSPaymentFactory,
@@ -224,10 +225,11 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   protected hyperbeamUrl: string | undefined;
   protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
   protected logger = Logger.default;
+  protected hb: HB | undefined;
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
-    this.hyperbeamUrl = config?.hyperbeamUrl;
+
     if (config === undefined || Object.keys(config).length === 0) {
       this.process = new AOProcess({
         processId: ARIO_MAINNET_PROCESS_ID,
@@ -240,6 +242,23 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
       });
     } else {
       throw new InvalidContractConfigurationError();
+    }
+
+    // only use hyperbeam if the client has provided a hyperbeamUrl
+    // this will avoid overwhelming the HyperBeam node with requests
+    // as we shift using HyperBEAM for all ANT operations
+    if (config?.hyperbeamUrl !== undefined) {
+      this.hyperbeamUrl = config.hyperbeamUrl;
+      this.hb = new HB({
+        url: this.hyperbeamUrl,
+        processId: this.process.processId,
+      });
+      this.logger.debug(
+        `Using HyperBEAM node for process ${this.process.processId}`,
+        {
+          hyperbeamUrl: this.hyperbeamUrl,
+        },
+      );
     }
     this.paymentProvider = TurboArNSPaymentFactory.init({
       paymentUrl: config?.paymentUrl,
@@ -387,6 +406,26 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   }
 
   async getBalance({ address }: { address: WalletAddress }): Promise<number> {
+    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
+      this.logger.debug('Getting balance from HyperBEAM', { address });
+      const res = await this.hb
+        .compute<number>({
+          path: `balances/${address}`,
+        })
+        .then((res) => Number(res))
+        .catch((error) => {
+          this.logger.error('Failed to get balance from HyperBEAM', {
+            cause: error,
+          });
+          return null;
+        });
+      if (res !== null) return res;
+      // else fall through to CU read
+      this.logger.info(
+        'Failed to get balance from HyperBEAM, failing over to to CU read',
+        { address },
+      );
+    }
     return this.process.read<number>({
       tags: [
         { name: 'Action', value: 'Balance' },

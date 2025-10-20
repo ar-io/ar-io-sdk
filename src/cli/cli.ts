@@ -663,11 +663,7 @@ makeCommand({
   name: 'get-ants-for-address',
   description:
     'Get the list of ANTs owned by an address according to the ANT registry',
-  options: [
-    optionMap.address,
-    optionMap.antRegistryProcessId,
-    optionMap.hyperbeamUrl,
-  ],
+  options: [optionMap.address, optionMap.antRegistryProcessId],
   action: listAntsForAddress,
 });
 

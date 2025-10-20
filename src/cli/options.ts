@@ -346,6 +346,7 @@ export const globalOptions = [
   optionMap.debug,
   optionMap.arioProcessId,
   optionMap.cuUrl,
+  optionMap.hyperbeamUrl,
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
