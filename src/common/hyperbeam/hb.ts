@@ -202,6 +202,10 @@ export class HB implements Hyperbeam {
       const url = new URL(path);
       if (json) {
         this.logger.debug('Fetching path as JSON', { path });
+        /**
+         * This is the (current) way to access data as json
+         * the old way is /~json@1.0/serialize path
+         */
         url.searchParams.set('require-codec', 'application/json');
         url.searchParams.set('accept-bundle', 'true');
         const res = await fetch(url);
