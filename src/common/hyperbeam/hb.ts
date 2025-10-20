@@ -20,6 +20,7 @@ export type HBConfig = {
   url: string;
   processId: string;
   logger?: Logger;
+  hbTimeoutMs?: number;
 };
 
 export interface Hyperbeam {
@@ -38,7 +39,7 @@ export interface Hyperbeam {
     path: string;
     json?: boolean;
   }): Promise<T>;
-  checkHyperBeamCompatibility(): Promise<boolean>;
+  checkHyperBeamCompatibility(params?: { minSlot?: number }): Promise<boolean>;
 }
 
 export class HB implements Hyperbeam {
@@ -49,12 +50,13 @@ export class HB implements Hyperbeam {
 
   protected checkHyperBeamPromise: Promise<boolean> | undefined;
   private logger: Logger;
-
+  private hbTimeoutMs: number;
   constructor(config: HBConfig) {
     this.url = config.url;
     this.processId = config.processId;
     this.logger = config.logger ?? Logger.default;
 
+    this.hbTimeoutMs = config.hbTimeoutMs ?? 5000;
     this.isHyperBeamCompatible = undefined;
     this.checkHyperBeamPromise = this.checkHyperBeamCompatibility();
   }
@@ -132,10 +134,20 @@ export class HB implements Hyperbeam {
    *
    * @returns {Promise<boolean>} True if the process is HyperBeam compatible, false otherwise.
    */
-  async checkHyperBeamCompatibility(): Promise<boolean> {
+  async checkHyperBeamCompatibility({
+    minSlot,
+  }: {
+    minSlot?: number;
+  } = {}): Promise<boolean> {
+    // refetch if min slot is provided
+    if (minSlot !== undefined) {
+      this.isHyperBeamCompatible = undefined;
+      this.checkHyperBeamPromise = undefined;
+    }
     if (this.checkHyperBeamPromise !== undefined) {
       return this.checkHyperBeamPromise;
     }
+
     if (this.isHyperBeamCompatible !== undefined) {
       return Promise.resolve(this.isHyperBeamCompatible);
     }
@@ -145,11 +157,21 @@ export class HB implements Hyperbeam {
       `${this.url.toString()}/${this.processId}~process@1.0/now`,
       {
         method: 'HEAD',
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(this.hbTimeoutMs),
       },
     )
-      .then((res) => {
+      .then(async (res) => {
         if (res.ok) {
+          if (minSlot !== undefined) {
+            const slotRes = await this.compute({
+              path: 'at-slot',
+              json: false,
+            });
+            const slot = Number(slotRes);
+            if (slot < minSlot) {
+              return false;
+            }
+          }
           this.isHyperBeamCompatible = true;
           return true;
         }
@@ -213,6 +235,7 @@ export class HB implements Hyperbeam {
           throw new Error(`Failed to fetch path: ${res.statusText}`);
         }
         const body = await res.text();
+        console.log('body', body);
         return body as T;
       }
     } catch (error) {
