@@ -193,7 +193,7 @@ export class HB implements Hyperbeam {
 
   async fetchHyperbeamPath<T extends JSONValue>({
     path,
-    json = false,
+    json = true,
   }: {
     path: string;
     json?: boolean;
@@ -239,7 +239,6 @@ export class HB implements Hyperbeam {
           throw new Error(`Failed to fetch path: ${res.statusText}`);
         }
         const body = await res.text();
-        console.log('body', body);
         return body as T;
       }
     } catch (error) {
