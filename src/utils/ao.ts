@@ -259,7 +259,11 @@ export async function spawnANT({
   // check the ACL for the owner
   const antRegistry = ANTRegistry.init({
     signer,
-    processId: antRegistryId,
+    process: new AOProcess({
+      processId: antRegistryId,
+      ao,
+      logger,
+    }),
   });
   let attempts = 0;
   const maxAttempts = 5;
