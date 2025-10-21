@@ -249,6 +249,7 @@ export class ANT {
       logger,
       antRegistryId,
       onSigningProgress,
+      hyperbeamUrl,
     });
 
     // we could parallelize this, but then signing progress would be harder to track

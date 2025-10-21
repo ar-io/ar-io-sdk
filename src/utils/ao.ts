@@ -68,6 +68,7 @@ export type SpawnANTParams = {
     name: keyof SpawnAntProgressEvent,
     payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
   ) => void;
+  hyperbeamUrl?: string;
 };
 
 export async function spawnANT({
@@ -85,6 +86,7 @@ export async function spawnANT({
   onSigningProgress = (name, payload) => {
     logger.debug('Signing progress', { name, payload });
   },
+  hyperbeamUrl,
 }: SpawnANTParams): Promise<ProcessId> {
   if (state) {
     parseSchemaResult(SpawnANTStateSchema, state);
@@ -264,6 +266,7 @@ export async function spawnANT({
       ao,
       logger,
     }),
+    hyperbeamUrl,
   });
   let attempts = 0;
   const maxAttempts = 5;
@@ -305,6 +308,7 @@ export async function forkANT({
   onSigningProgress = (name, payload) => {
     logger.debug('Forking ANT', { name, payload });
   },
+  hyperbeamUrl,
 }: {
   signer: AoSigner;
   antProcessId: string;
@@ -316,6 +320,7 @@ export async function forkANT({
     name: keyof SpawnAntProgressEvent,
     payload: SpawnAntProgressEvent[keyof SpawnAntProgressEvent],
   ) => void;
+  hyperbeamUrl?: string;
 }) {
   // get the state of the current ANT and use it to spawn a new ANT
   const ant = ANT.init({
@@ -352,6 +357,7 @@ export async function forkANT({
       balances: state.Balances,
       logo: state.Logo,
     },
+    hyperbeamUrl,
   });
 
   return forkedProcessId;
