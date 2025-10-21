@@ -676,6 +676,7 @@ function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
 export function readANTFromOptions(options: ProcessIdCLIOptions): AoANTRead {
   return ANT.init({
     process: ANTProcessFromOptions(options),
+    hyperbeamUrl: options.hyperbeamUrl,
   });
 }
 
@@ -687,6 +688,7 @@ export function writeANTFromOptions(
   return ANT.init({
     process: ANTProcessFromOptions(options),
     signer,
+    hyperbeamUrl: options.hyperbeamUrl,
   });
 }
 
