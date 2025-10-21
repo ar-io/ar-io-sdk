@@ -156,6 +156,7 @@ export class ANT {
 
     const ario = ARIO.init({
       process: new AOProcess({ processId: arioProcessId, ao }),
+      hyperbeamUrl,
     });
 
     const getAllAffiliatedNames = async (): Promise<Set<string>> => {
@@ -676,7 +677,10 @@ export class AoANTReadable implements AoANTRead {
 
     // Get all versions from the ANT registry
     const antVersions = ANTVersions.init({
-      processId: antRegistryId,
+      process: new AOProcess({
+        processId: antRegistryId,
+        ao: this.process.ao,
+      }),
     });
     const versions = await antVersions.getANTVersions();
 
@@ -736,7 +740,10 @@ export class AoANTReadable implements AoANTRead {
 
     // Get all versions from the ANT registry
     const antVersions = ANTVersions.init({
-      processId: antRegistryId,
+      process: new AOProcess({
+        processId: antRegistryId,
+        ao: this.process.ao,
+      }),
     });
     const latestVersion = await antVersions.getLatestANTVersion();
     return currentVersion === latestVersion.version;

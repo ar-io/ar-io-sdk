@@ -329,6 +329,7 @@ export async function forkANT({
       ao,
       logger,
     }),
+    hyperbeamUrl,
   });
 
   const state = await ant.getState();
