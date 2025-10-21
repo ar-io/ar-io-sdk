@@ -1,3 +1,12 @@
+# [3.22.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.2...v3.22.0-alpha.3) (2025-10-21)
+
+
+### Bug Fixes
+
+* **ant:** add missing hb url to cli and other places ([287577b](https://github.com/ar-io/ar-io-sdk/commit/287577b55ab356325c28153ec21076a363e2a67e))
+* **ants:** use hb url in calls if provided ([c8e7b01](https://github.com/ar-io/ar-io-sdk/commit/c8e7b01d21a0fdd198e486d49dcbf3ce9c1d4a4b))
+* **spawn:** update spawn ant utility to use configured ao client for ant registry process ([27175d5](https://github.com/ar-io/ar-io-sdk/commit/27175d5a0b78bca7aba81ef78954d5f84000925d))
+
 # [3.22.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.1...v3.22.0-alpha.2) (2025-10-20)
 
 
