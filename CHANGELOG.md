@@ -1,3 +1,11 @@
+# [3.22.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.3...v3.22.0-alpha.4) (2025-11-04)
+
+
+### Bug Fixes
+
+* **git:** remove NPM_TOKEN from git, use OIDC ([d86b937](https://github.com/ar-io/ar-io-sdk/commit/d86b937ef55a72eda43c81ba31443807b68113f0))
+* **npm:** bump npm to v24 ([d08c9ce](https://github.com/ar-io/ar-io-sdk/commit/d08c9ce57a6cf8cd9276a988f020953018276286))
+
 # [3.22.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.2...v3.22.0-alpha.3) (2025-10-21)
 
 
