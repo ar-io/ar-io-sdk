@@ -1,3 +1,10 @@
+# [3.22.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.4...v3.22.0-alpha.5) (2025-11-06)
+
+
+### Bug Fixes
+
+* **hb:** update primary names api with hyperbeam usage ([1303e18](https://github.com/ar-io/ar-io-sdk/commit/1303e185d6ece5f33448e84d3476927bbcfb1ea0))
+
 # [3.22.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.3...v3.22.0-alpha.4) (2025-11-04)
 
 
