@@ -1098,6 +1098,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
         ao: this.process.ao,
         processId: nameData.processId,
       }),
+      hyperbeamUrl: this.hyperbeamUrl,
     });
     const [owner, antRecord] = await Promise.all([
       ant.getOwner(),
@@ -1959,6 +1960,7 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
         ao: this.process.ao,
       }),
       signer: this.signer,
+      hyperbeamUrl: this.hyperbeamUrl,
     });
 
     // approve the primary name request with the ant
