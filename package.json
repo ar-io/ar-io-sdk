@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.21.0",
+  "version": "3.22.0-alpha.5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -89,9 +89,9 @@
     "@commitlint/config-conventional": "^17.1.0",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^11.0.3",
+    "@semantic-release/npm": "^13.1.1",
     "@swc/core": "^1.11.22",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/node": "^22.14.1",
@@ -121,7 +121,7 @@
     "nock": "^13.5.5",
     "prettier": "^3.0.2",
     "rimraf": "^5.0.1",
-    "semantic-release": "^21.0.7",
+    "semantic-release": "^25.0.1",
     "sinon": "^15.2.0",
     "testcontainers": "^10.13.1",
     "ts-node": "^10.9.2",

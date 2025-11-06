@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ar-io.net/schemas/gateway-services.schema.json",
+  "title": "AO Gateway Services",
+  "description": "Schema for AO Gateway services configuration",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "bundlers": {
+      "type": "array",
+      "description": "Array of AO Gateway bundler services",
+      "items": {
+        "$ref": "#/$defs/AoGatewayService"
+      },
+      "minItems": 0
+    }
+  },
+  "required": ["bundlers"],
+  "additionalProperties": false,
+  "$defs": {
+    "AoGatewayService": {
+      "type": "object",
+      "description": "AO Gateway service configuration",
+      "properties": {
+        "fqdn": {
+          "type": "string",
+          "description": "Fully qualified domain name of the service",
+          "format": "hostname",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "description": "URL path for the service endpoint",
+          "pattern": "^/.*$",
+          "minLength": 1
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Protocol used for the service",
+          "const": "https",
+          "enum": ["https"]
+        },
+        "port": {
+          "type": "integer",
+          "description": "Port number for the service",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "required": ["fqdn", "path", "protocol", "port"],
+      "additionalProperties": false
+    }
+  }
+}

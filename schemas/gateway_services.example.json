@@ -1,0 +1,29 @@
+{
+  "$schema": "./gateway_services.schema.json",
+  "bundlers": [
+    {
+      "fqdn": "bundler1.ar-io.net",
+      "path": "/bundler/v1",
+      "protocol": "https",
+      "port": 443
+    },
+    {
+      "fqdn": "bundler2.ar-io.net",
+      "path": "/api/bundler",
+      "protocol": "https",
+      "port": 443
+    },
+    {
+      "fqdn": "bundler-backup.example.com",
+      "path": "/bundler",
+      "protocol": "https",
+      "port": 8443
+    },
+    {
+      "fqdn": "local-bundler.dev",
+      "path": "/bundler/v2",
+      "protocol": "https",
+      "port": 3000
+    }
+  ]
+}
