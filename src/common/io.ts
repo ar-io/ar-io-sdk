@@ -895,6 +895,36 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   async getPrimaryNameRequest(params: {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest> {
+    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
+      this.logger.debug('Getting primary name request from HyperBEAM', {
+        initiator: params.initiator,
+      });
+      const res = await this.hb
+        .compute<Omit<AoPrimaryNameRequest, 'initiator'>>({
+          path: `/primary-names/requests/${params.initiator}`,
+        })
+        .catch((error) => {
+          this.logger.error(
+            'Failed to get primary name request from HyperBEAM',
+            {
+              cause: error,
+            },
+          );
+          return null;
+        });
+      if (res !== null) {
+        // Ensure initiator is included in the result
+        return {
+          ...res,
+          initiator: params.initiator,
+        };
+      }
+      // else fall through to CU read
+      this.logger.info(
+        'Failed to get primary name request from HyperBEAM, failing over to CU read',
+        { initiator: params.initiator },
+      );
+    }
     const allTags = [
       { name: 'Action', value: 'Primary-Name-Request' },
       {
@@ -922,6 +952,55 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   async getPrimaryName(
     params: { address: WalletAddress } | { name: string },
   ): Promise<AoPrimaryName> {
+    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
+      this.logger.debug('Getting primary name from HyperBEAM', { params });
+      try {
+        let owner: WalletAddress;
+
+        if ('name' in params) {
+          // Step 1: Get owner from /primary-names/names/<name>
+          owner = await this.hb.compute<WalletAddress>({
+            path: `/primary-names/names/${params.name}`,
+          });
+        } else {
+          // If given address, skip the /names/name query
+          owner = params.address;
+        }
+
+        // Step 2: Get {name, startTimestamp} from /primary-names/owners/<owner>
+        const ownerData = await this.hb.compute<{
+          name: string;
+          startTimestamp: number;
+        }>({
+          path: `/primary-names/owners/${owner}`,
+        });
+        const name = ownerData.name;
+        const startTimestamp = ownerData.startTimestamp;
+
+        // Step 3: Get processId from getArNSRecord
+        const record = await this.getArNSRecord({ name });
+        const processId = record.processId;
+
+        // Combine all data
+        const result: AoPrimaryName = {
+          owner,
+          name,
+          startTimestamp,
+          processId,
+        };
+
+        return result;
+      } catch (error) {
+        this.logger.error('Failed to get primary name from HyperBEAM', {
+          cause: error,
+        });
+        // Fall through to CU read
+        this.logger.info(
+          'Failed to get primary name from HyperBEAM, failing over to CU read',
+          { params },
+        );
+      }
+    }
     const allTags = [
       { name: 'Action', value: 'Primary-Name' },
       {

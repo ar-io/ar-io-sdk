@@ -99,7 +99,7 @@ export class HB {
    */
   async compute<T extends JSONValue>({
     path,
-    json = false,
+    json = true,
   }: {
     path: string;
     json?: boolean;
@@ -160,7 +160,7 @@ export class HB {
         return false;
       })
       .catch((error) => {
-        this.logger.debug('Failed to check HyperBeam compatibility', {
+        this.logger.error('Failed to check HyperBeam compatibility', {
           cause: error,
         });
         this.isHyperBeamCompatible = false;
