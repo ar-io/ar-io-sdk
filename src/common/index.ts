@@ -20,6 +20,7 @@ export * from './ant.js';
 export * from './ant-registry.js';
 export * from './ant-versions.js';
 export * from './faucet.js';
+export * from './marketplace.js';
 
 // ao
 export * from './io.js';

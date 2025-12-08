@@ -1,0 +1,989 @@
+/**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import {
+  ANT,
+  AOProcess,
+  AoSigner,
+  MARKETPLACE_CONTRACT_ID,
+  paginationParamsToTags,
+} from '../node/index.js';
+import { AoMessageResult, WalletAddress } from '../types/common.js';
+import {
+  AoARIOWrite,
+  PaginationParams,
+  PaginationResult,
+} from '../types/io.js';
+
+/**
+ * User-provided order parameters for intent-based order creation
+ * These are the user-configurable fields when creating an order via the intent workflow
+ */
+export interface MarketplaceOrderIntentParams {
+  orderType?: 'fixed' | 'dutch' | 'english'; // nil defaults to 'fixed'
+  quantity?: string; // Amount to trade (string integer)
+  price?: string; // Asking price or starting bid
+  expirationTime?: string; // Unix timestamp when order expires (min 1h, max 30 days, fee rounded up to nearest hour)
+  minimumPrice?: string; // Minimum price floor (dutch auction only)
+  decreaseInterval?: string; // Price decrease interval in ms (dutch auction only)
+}
+
+/**
+ * Intent structure - matches Lua Intent type
+ */
+export interface MarketplaceIntent {
+  intentId: string; // Unique intent identifier
+  initiator: string; // Address that created the intent
+  action: string; // Action being performed (Create-Order, Cancel-Order, Settle-Auction, Transfer)
+  status:
+    | 'pending'
+    | 'active'
+    | 'settling'
+    | 'completed'
+    | 'resolved'
+    | 'failed'; // Intent status
+  createdAt: number; // Creation timestamp
+  ttl?: number; // Time-to-live timestamp (24 hours from creation)
+  resolvedAt?: number; // Resolution timestamp
+  completedAt?: number; // Completion timestamp
+  failureReason?: string; // Failure reason if status is failed
+  orderParams: MarketplaceOrderIntentParams; // Order parameters stored with the intent
+  antProcessId: string; // ANT process ID (set during Create-Intent)
+}
+
+/**
+ * Intent statistics structure
+ */
+export interface MarketplaceIntentStats {
+  total: number;
+  byStatus: Record<string, number>;
+  byType: Record<string, number>;
+  byAction: Record<string, number>;
+}
+
+/**
+ * Activity information structure
+ */
+export interface MarketplaceActivityInfo {
+  totalOrders: number;
+  activeOrders: number;
+  readyForSettlement: number;
+  executedOrders: number;
+  cancelledOrders: number;
+  expiredOrders: number;
+  listedOrders: number;
+}
+
+/**
+ * marketplace information structure
+ */
+export interface MarketplaceInfo {
+  totalPairs: number;
+  accruedFees: string;
+  arioTokenProcess: string;
+}
+/**
+ * Info response structure from the marketplace
+ */
+export interface InfoResponse {
+  name: string;
+  processId: string;
+  activity: MarketplaceActivityInfo;
+  intents: MarketplaceIntentStats;
+  ucm: MarketplaceInfo;
+  whitelistedModules: string[];
+}
+
+/**
+ * Parameters for creating an intent (Create-Order action is assumed)
+ */
+export interface CreateIntentParams {
+  antId: string; // Required: ANT process ID for this intent
+  orderType?: string;
+  quantity?: string;
+  price?: string;
+  expirationTime: string; // Required: Unix timestamp (min 1h, max 30 days, fee rounded up to nearest hour)
+  minimumPrice?: string;
+  decreaseInterval?: string;
+}
+
+/**
+ * Parameters for paginated intent queries
+ */
+export interface GetPaginatedIntentsParams {
+  cursor?: string;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, string>;
+}
+
+/**
+ * Parameters for creating an order using internal ARIO balance
+ */
+export interface CreateOrderParams {
+  swapToken: string; // Required: Token to receive in exchange for ARIO
+  quantity: string; // Required: Amount of ARIO to trade
+  orderType?: 'fixed' | 'dutch' | 'english'; // Order type (defaults to 'fixed')
+  price?: string; // Price (required for fixed and dutch, starting bid for english)
+  expirationTime?: string; // Unix timestamp when order expires
+  minimumPrice?: string; // Minimum price floor (dutch auction only)
+  decreaseInterval?: string; // Price decrease interval in ms (dutch auction only)
+  transferDenomination?: string; // Optional transfer denomination
+}
+
+/**
+ * Parameters for getting orders with flexible selectors
+ */
+export interface GetOrdersParams extends GetPaginatedIntentsParams {
+  status?:
+    | 'all'
+    | 'listed'
+    | 'completed'
+    | 'active'
+    | 'ready-for-settlement'
+    | 'executed'
+    | 'cancelled'
+    | 'expired';
+  ids?: string[]; // Array of order IDs to fetch specific orders
+  dominantToken?: string; // Filter by dominant token in trading pair
+  swapToken?: string; // Filter by swap token in trading pair
+}
+
+/**
+ * Individual order structure returned from Get-Orders and Get-Order handlers
+ */
+export interface Order {
+  id: string; // Order identifier
+  creator: string; // Order creator address
+  quantity: string; // Quantity of tokens
+  originalQuantity: string; // Original quantity before partial fills
+  token: string; // Token process ID
+  dominantToken: string; // The dominant token in the trading pair
+  swapToken: string; // The swap token in the trading pair
+  dateCreated: number; // Creation timestamp
+  price?: string; // Order price (optional for some order types)
+  expirationTime?: number; // Expiration timestamp (optional)
+  orderType: 'fixed' | 'dutch' | 'english'; // Order type
+  status:
+    | 'active'
+    | 'executed'
+    | 'cancelled'
+    | 'ready-for-settlement'
+    | 'expired'; // Order status
+  minimumPrice?: string; // Minimum price (dutch auction only)
+  decreaseInterval?: string; // Decrease interval (dutch auction only)
+  decreaseStep?: string; // Decrease step (dutch auction only)
+  sender?: string; // Order sender (set after execution)
+  receiver?: string; // Order receiver (set after execution)
+  endedAt?: number; // Timestamp when order ended
+  bids?: Record<string, boolean>; // Bidders for English auctions (bidder address -> true)
+}
+
+export interface MarketplaceBalance {
+  address: WalletAddress;
+  balance: string;
+  lockedBalance: string;
+  totalBalance: string;
+  orders: Record<string, string>;
+}
+
+export interface AoArNSMarketplaceRead {
+  getInfo(): Promise<InfoResponse>;
+  // Can be used to get user intents by using the `initiator` filter
+  getPaginatedIntents(
+    params: GetPaginatedIntentsParams,
+  ): Promise<PaginationResult<MarketplaceIntent>>;
+  getIntent(intentId: string): Promise<MarketplaceIntent>;
+  getIntentByANTId(antId: string): Promise<MarketplaceIntent>;
+  // Can be used to get user ANTs by using the `creator` filter
+  getPaginatedOrders(params: GetOrdersParams): Promise<PaginationResult<Order>>;
+  getOrder(orderId: string): Promise<Order>;
+  getOrderByANTId(antId: string): Promise<Order>;
+  getPaginatedMarketplaceBalances(
+    params: PaginationParams<MarketplaceBalance>,
+  ): Promise<PaginationResult<MarketplaceBalance>>;
+  getMarketplaceBalance({
+    address,
+  }: {
+    address: WalletAddress;
+  }): Promise<MarketplaceBalance>;
+  /**
+   * Get all user assets including intents, orders, balances, and ANT IDs
+   * @param params - Parameters including address and ARIO process ID
+   * @returns User assets including intents, orders, balances, and ANT IDs
+   */
+  getUserAssets({
+    address,
+    arioProcessId,
+  }: {
+    address: WalletAddress;
+    arioProcessId: string;
+  }): Promise<{
+    intents: MarketplaceIntent[];
+    orders: Order[];
+    balances: MarketplaceBalance;
+    antIds: string[];
+  }>;
+}
+
+export interface AoArNSMarketplaceWrite {
+  createIntent(
+    params: CreateIntentParams,
+  ): Promise<AoMessageResult<MarketplaceIntent>>;
+  cancelOrder(orderId: string): Promise<AoMessageResult>;
+  settleAuction(params: {
+    orderId: string;
+    dominantToken?: string;
+    swapToken?: string;
+  }): Promise<AoMessageResult>;
+  depositArIO(params: { amount: string }): Promise<AoMessageResult>;
+  withdrawArIO(params: { amount: string }): Promise<AoMessageResult>;
+  /**
+   * Push ANT intent resolution to the marketplace
+   * @param intentId - The intent ID to push resolution for
+   * @returns Message result
+   */
+  pushANTIntentResolution(intentId: string): Promise<AoMessageResult>;
+  /**
+   * List a name for sale on the marketplace
+   * @param params - Parameters including name, expiration time, price, type, wallet address, and optional auction parameters
+   * @returns Result containing intent, order, ANT transfer result, and any error
+   */
+  listNameForSale({
+    name,
+    expirationTime,
+    price,
+    type,
+    walletAddress,
+    minimumPrice,
+    decreaseInterval,
+  }: {
+    name: string;
+    expirationTime: number;
+    price: string;
+    type: 'fixed' | 'dutch' | 'english';
+    walletAddress: WalletAddress;
+    minimumPrice?: string;
+    decreaseInterval?: string;
+  }): Promise<{
+    intent: MarketplaceIntent;
+    order: Order | null;
+    antTransferResult: AoMessageResult<
+      Record<string, string | number | boolean | null>
+    > | null;
+    error: Error | null;
+  }>;
+  /**
+   * Create an order using internal ARIO balance
+   * @param params - Order creation parameters
+   * @returns Message result with the created order
+   */
+  createOrder(params: CreateOrderParams): Promise<AoMessageResult<Order>>;
+  /**
+   * Buy a fixed price ANT
+   * @param params - Parameters including ANT ID
+   * @returns Message result with the order
+   */
+  buyFixedPriceANT(params: { antId: string }): Promise<AoMessageResult<Order>>;
+  /**
+   * Buy a Dutch auction ANT
+   * @param params - Parameters including ANT ID
+   * @returns Message result with the order
+   */
+  buyDutchAuctionANT(params: {
+    antId: string;
+  }): Promise<AoMessageResult<Order>>;
+  /**
+   * Place a bid on an English auction
+   * @param params - Parameters including ANT ID and bid amount
+   * @returns Message result
+   */
+  bidOnANTEnglishAuction(params: {
+    antId: string;
+    bidAmount: string;
+  }): Promise<AoMessageResult>;
+  /**
+   * Settle an expired English auction
+   * @param params - Parameters including ANT ID
+   * @returns Message result
+   */
+  settleANTEnglishAuction(params: { antId: string }): Promise<AoMessageResult>;
+}
+
+export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
+  protected process: AOProcess;
+  constructor({
+    process = new AOProcess({
+      processId: MARKETPLACE_CONTRACT_ID,
+    }),
+  }: {
+    process: AOProcess;
+  }) {
+    this.process = process;
+  }
+
+  async getInfo(): Promise<InfoResponse> {
+    return this.process.read<InfoResponse>({
+      tags: [{ name: 'Action', value: 'Info' }],
+    });
+  }
+
+  async getPaginatedIntents({
+    cursor,
+    limit,
+    sortBy,
+    sortOrder,
+    filters,
+  }: GetPaginatedIntentsParams = {}): Promise<
+    PaginationResult<MarketplaceIntent>
+  > {
+    const tags: Array<{ name: string; value: string | undefined }> = [
+      { name: 'Action', value: 'Get-Paginated-Intents' },
+      { name: 'Cursor', value: cursor },
+      { name: 'Limit', value: limit?.toString() },
+      { name: 'Sort-By', value: sortBy },
+      { name: 'Sort-Order', value: sortOrder },
+      { name: 'Filters', value: JSON.stringify(filters) },
+    ];
+    const filteredTags = tags.filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+    return this.process.read<PaginationResult<MarketplaceIntent>>({
+      tags: filteredTags,
+    });
+  }
+
+  async getIntent(intentId: string): Promise<MarketplaceIntent> {
+    return this.process.read<MarketplaceIntent>({
+      tags: [
+        { name: 'Action', value: 'Get-Intent-By-Id' },
+        { name: 'Intent-Id', value: intentId },
+      ],
+    });
+  }
+
+  async getIntentByANTId(antId: string): Promise<MarketplaceIntent> {
+    const res = await this.getPaginatedIntents({
+      filters: {
+        antProcessId: antId,
+      },
+    });
+
+    if (res.items.length === 0) {
+      throw new Error(`No intent found for ANT ID: ${antId}`);
+    }
+
+    return res.items[0];
+  }
+
+  /**
+   * Get orders with flexible selectors
+   * @param params - Parameters for filtering and pagination
+   * @returns Orders matching the criteria
+   */
+  async getPaginatedOrders(
+    params?: GetOrdersParams,
+  ): Promise<PaginationResult<Order>> {
+    const tags: Array<{ name: string; value: string | undefined }> = [
+      { name: 'Action', value: 'Get-Orders' },
+      { name: 'Status', value: params?.status },
+      { name: 'Ids', value: params?.ids?.join(',') },
+      { name: 'Dominant-Token', value: params?.dominantToken },
+      { name: 'Swap-Token', value: params?.swapToken },
+      { name: 'Cursor', value: params?.cursor },
+      { name: 'Limit', value: params?.limit?.toString() },
+      { name: 'Sort-By', value: params?.sortBy },
+      { name: 'Sort-Order', value: params?.sortOrder },
+      {
+        name: 'Filters',
+        value: params?.filters ? JSON.stringify(params.filters) : undefined,
+      },
+    ];
+    const filteredTags = tags.filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+    return this.process.read<PaginationResult<Order>>({ tags: filteredTags });
+  }
+
+  /**
+   * Get a single order by ID
+   * @param orderId - The order ID to fetch
+   * @returns The order if found
+   */
+  async getOrder(orderId: string): Promise<Order> {
+    return this.process.read<Order>({
+      tags: [
+        { name: 'Action', value: 'Get-Order' },
+        { name: 'Order-Id', value: orderId },
+      ],
+    });
+  }
+
+  async getOrderByANTId(antId: string): Promise<Order> {
+    const res = await this.getPaginatedOrders({
+      dominantToken: antId,
+    });
+
+    if (res.items.length === 0) {
+      throw new Error(`No order found for ANT ID: ${antId}`);
+    }
+
+    return res.items[0];
+  }
+
+  async getPaginatedMarketplaceBalances(
+    params: PaginationParams<MarketplaceBalance>,
+  ): Promise<PaginationResult<MarketplaceBalance>> {
+    return this.process.read<PaginationResult<MarketplaceBalance>>({
+      tags: [
+        { name: 'Action', value: 'Get-Paginated-Balances' },
+        ...paginationParamsToTags<MarketplaceBalance>(params),
+      ],
+    });
+  }
+
+  /**
+   * Get ARIO balance for an address in the marketplace
+   */
+  async getMarketplaceBalance({
+    address,
+  }: {
+    address: WalletAddress;
+  }): Promise<MarketplaceBalance> {
+    return this.process.read<MarketplaceBalance>({
+      tags: [
+        { name: 'Action', value: 'Get-Balance' },
+        { name: 'Address', value: address },
+      ],
+    });
+  }
+
+  async getUserAssets({
+    address,
+    arioProcessId,
+  }: {
+    address: WalletAddress;
+    arioProcessId: string;
+  }): Promise<{
+    intents: MarketplaceIntent[];
+    orders: Order[];
+    balances: MarketplaceBalance;
+    antIds: string[];
+  }> {
+    async function fetchIntents() {
+      const intents: MarketplaceIntent[] = [];
+      // fetch all intents for user, paginating as needed and adding each ant id to the set
+      let intentsCursor: string | undefined = undefined;
+      let intentsHasMore = true;
+      while (intentsHasMore) {
+        const intentsRes = await this.getPaginatedIntents({
+          cursor: intentsCursor,
+          limit: 1000,
+          filters: {
+            initiator: address,
+          },
+        });
+        intentsRes.items.forEach((intent) => {
+          intents.push(intent);
+        });
+        intentsCursor = intentsRes.nextCursor;
+        intentsHasMore = intentsRes.hasMore;
+      }
+      return intents;
+    }
+
+    async function fetchOrders() {
+      const orders: Order[] = [];
+      // fetch all orders for user, paginating as needed
+      let ordersCursor: string | undefined = undefined;
+      let ordersHasMore = true;
+      while (ordersHasMore) {
+        const ordersRes = await this.getPaginatedOrders({
+          cursor: ordersCursor,
+          limit: 1000,
+          filters: {
+            creator: address,
+          },
+        });
+        ordersRes.items.forEach((order) => {
+          orders.push(order);
+        });
+        ordersCursor = ordersRes.nextCursor;
+        ordersHasMore = ordersRes.hasMore;
+      }
+      return orders;
+    }
+    // parallel fetch balances, intents, and orders
+    const [balances, intents, orders] = await Promise.all([
+      this.getMarketplaceBalance({ address }),
+      fetchIntents(),
+      fetchOrders(),
+    ]);
+
+    const antIdsArray = Array.from(
+      new Set<string>([
+        ...intents.map((intent) => intent.antProcessId),
+        ...orders.map((order) => order.dominantToken),
+        ...orders.map((order) => order.swapToken),
+      ]),
+    ).filter((antId) => antId !== arioProcessId); // since we add both swap and dominant token for simplicity, we need to filter out the ario token
+
+    return { intents, orders, balances, antIds: antIdsArray };
+  }
+}
+
+export class ArNSMarketplaceWrite
+  extends ArNSMarketplaceRead
+  implements AoArNSMarketplaceWrite
+{
+  protected process: AOProcess;
+  protected signer: AoSigner;
+  protected ario: AoARIOWrite;
+  constructor({
+    process = new AOProcess({
+      processId: MARKETPLACE_CONTRACT_ID,
+    }),
+    signer,
+    ario,
+  }: {
+    process: AOProcess;
+    signer: AoSigner;
+    ario: AoARIOWrite;
+  }) {
+    super({ process: process });
+    this.process = process;
+    this.signer = signer;
+    this.ario = ario;
+  }
+
+  /**
+   * Deposit ARIO to the marketplace (simulates Credit-Notice from ARIO token process)
+   * Returns the message ID for verification
+   */
+  async depositArIO(params: { amount: string }): Promise<AoMessageResult> {
+    return this.ario.transfer(
+      {
+        // the marketplace process id is the target
+        target: this.process.processId,
+        qty: Number(params.amount),
+      },
+      {
+        tags: [{ name: 'X-Action', value: 'Deposit' }],
+      },
+    );
+  }
+
+  /**
+   * Withdraw ARIO from the marketplace back to user
+   */
+  async withdrawArIO(params: { amount: string }): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Withdraw-Ario' },
+        { name: 'Quantity', value: params.amount },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  async createIntent({
+    antId,
+    orderType,
+    quantity,
+    price,
+    expirationTime,
+    minimumPrice,
+    decreaseInterval,
+  }: CreateIntentParams): Promise<AoMessageResult<MarketplaceIntent>> {
+    const tags: Array<{ name: string; value: string | undefined }> = [
+      { name: 'Action', value: 'Create-Intent' },
+      { name: 'X-Intent-ANT-Id', value: antId },
+      { name: 'X-Intent-Order-Type', value: orderType },
+      { name: 'X-Intent-Quantity', value: quantity },
+      { name: 'X-Intent-Price', value: price },
+      { name: 'X-Intent-Expiration-Time', value: expirationTime },
+      { name: 'X-Intent-Minimum-Price', value: minimumPrice },
+      { name: 'X-Intent-Decrease-Interval', value: decreaseInterval },
+    ];
+
+    const filteredTags = tags.filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    return this.process.send<MarketplaceIntent>({
+      tags: filteredTags,
+      signer: this.signer,
+    });
+  }
+
+  async pushANTIntentResolution(intentId: string): Promise<AoMessageResult> {
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Push-ANT-Intent-Resolution' },
+        { name: 'X-Intent-Id', value: intentId },
+      ],
+      signer: this.signer,
+    });
+  }
+  async settleAuction(params: {
+    orderId: string;
+    dominantToken?: string;
+    swapToken?: string;
+  }): Promise<AoMessageResult> {
+    const tags: Array<{ name: string; value: string | undefined }> = [
+      { name: 'Action', value: 'Settle-Auction' },
+      { name: 'Order-Id', value: params.orderId },
+      { name: 'Dominant-Token', value: params.dominantToken },
+      { name: 'Swap-Token', value: params.swapToken },
+    ];
+    const filteredTags = tags.filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+    return this.process.send({
+      tags: filteredTags,
+      signer: this.signer,
+    });
+  }
+
+  async listNameForSale({
+    name,
+    expirationTime,
+    price,
+    type,
+    walletAddress,
+    minimumPrice,
+    decreaseInterval,
+  }: {
+    name: string;
+    expirationTime: number;
+    price: string;
+    type: 'fixed' | 'dutch' | 'english';
+    walletAddress: WalletAddress;
+    minimumPrice?: string;
+    decreaseInterval?: string;
+  }): Promise<{
+    intent: MarketplaceIntent;
+    order: Order | null;
+    antTransferResult: AoMessageResult<
+      Record<string, string | number | boolean | null>
+    > | null;
+    error: Error | null;
+  }> {
+    // Get arns record for the current ant id associated with it
+    const record = await this.ario.getArNSRecord({ name: name });
+
+    if (record === undefined) {
+      throw new Error(`Record ${name} not found`);
+    }
+
+    const antId = record.processId;
+
+    const ant = ANT.init({
+      process: new AOProcess({
+        processId: antId,
+        ao: this.process.ao,
+      }),
+      signer: this.signer,
+    });
+
+    const antState = await ant.getState();
+
+    if (antState.Owner !== walletAddress) {
+      throw new Error(
+        'Wallet address does not match the owner of the ANT. Only the owner can list the name for sale.',
+      );
+    }
+
+    let intent: MarketplaceIntent;
+
+    try {
+      const intentResult = await this.createIntent({
+        antId,
+        orderType: type,
+        quantity: price,
+        expirationTime: expirationTime.toString(),
+        minimumPrice: minimumPrice,
+        decreaseInterval: decreaseInterval,
+      });
+      if (intentResult.result === undefined) {
+        throw new Error('Failed to create intent: ' + intentResult.id);
+      }
+      intent = intentResult.result;
+    } catch (error) {
+      // check error for existing intent. Will be a contract error message.
+      const isExistingIntentError = error.message.includes(
+        'An intent already exists for this ANT ID',
+      );
+
+      if (isExistingIntentError) {
+        throw new Error('Intent already exists for this ANT ID');
+      }
+
+      // Possible to get other errors, eg insufficient deposited ario balance. Rethrow them here.
+      throw error;
+    }
+    // Type guard to ensure intent is defined
+    if (intent === undefined) {
+      throw new Error('Failed to create intent');
+    }
+    let antTransferResult: AoMessageResult<
+      Record<string, string | number | boolean | null>
+    >;
+    try {
+      antTransferResult = await ant.transfer(
+        {
+          target: this.process.processId,
+        },
+        {
+          tags: [{ name: 'X-Intent-Id', value: intent.intentId }],
+        },
+      );
+    } catch (error) {
+      console.error(new Error('Failed to transfer ANT: ' + error.message));
+      return {
+        intent,
+        order: null,
+        antTransferResult: null,
+        error: error as Error,
+      };
+    }
+
+    // poll for the order to be created
+    // This is to ensure the order is created before returning the result for ux purposes.
+    // This may still fail, in which case we return the intent and ant transfer result and handle the error in the client.
+    let order: Order | null = null;
+    let tries = 0;
+    while (order === null && tries < 5) {
+      try {
+        order = await this.getOrderByANTId(antId).catch((error) => {
+          console.log(new Error('Failed to get order: ' + error.message));
+          return null;
+        });
+        if (order === null) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (tries === 5) {
+            throw new Error(`Failed to get order after ${tries} attempts`);
+          }
+          tries++;
+        }
+        // if the order is found, break the loop
+        break;
+      } catch (error) {
+        console.error(new Error('Failed to get order: ' + error.message));
+        return {
+          intent,
+          order: null,
+          antTransferResult,
+          error: new Error('Failed to get order: ' + error.message),
+        };
+      }
+    }
+    if (order === null) {
+      return {
+        intent,
+        order: null,
+        antTransferResult,
+        error: new Error('Failed to get order'),
+      };
+    }
+
+    return { intent, order, antTransferResult, error: null };
+  }
+
+  async cancelOrder(orderId: string): Promise<AoMessageResult> {
+    const tags: Array<{ name: string; value: string }> = [
+      { name: 'Action', value: 'Cancel-Order' },
+      { name: 'Order-Id', value: orderId },
+    ];
+
+    return this.process.send({
+      tags,
+      signer: this.signer,
+    });
+  }
+
+  async createOrder({
+    swapToken,
+    quantity,
+    orderType,
+    price,
+    expirationTime,
+    minimumPrice,
+    decreaseInterval,
+    transferDenomination,
+  }: CreateOrderParams): Promise<AoMessageResult<Order>> {
+    const tags: Array<{ name: string; value: string | undefined }> = [
+      { name: 'Action', value: 'Create-Order' },
+      { name: 'Swap-Token', value: swapToken },
+      { name: 'Quantity', value: quantity },
+      { name: 'Order-Type', value: orderType },
+      { name: 'Price', value: price },
+      { name: 'Expiration-Time', value: expirationTime },
+      { name: 'Minimum-Price', value: minimumPrice },
+      { name: 'Decrease-Interval', value: decreaseInterval },
+      { name: 'Transfer-Denomination', value: transferDenomination },
+    ];
+
+    const filteredTags = tags.filter(
+      (tag): tag is { name: string; value: string } => tag.value !== undefined,
+    );
+
+    // Send the message
+    return this.process.send<Order>({
+      tags: filteredTags,
+      signer: this.signer,
+    });
+  }
+
+  async buyFixedPriceANT(params: {
+    antId: string;
+  }): Promise<AoMessageResult<Order>> {
+    const order = await this.getOrderByANTId(params.antId);
+
+    if (order === undefined) {
+      throw new Error(`No active sell order found for ANT: ${params.antId}`);
+    }
+
+    if (order.status !== 'active') {
+      throw new Error(`Order status is ${order.status}, must be active`);
+    }
+
+    if (order.price === undefined) {
+      throw new Error(`Order price is undefined for ANT: ${params.antId}`);
+    }
+
+    // Create a buy order that matches the sell order
+    // This should trigger immediate execution if prices match
+    // For ArNS: buying 1 ANT, so quantity = price = total cost
+    return this.createOrder({
+      swapToken: params.antId,
+      quantity: order.price, // Total ARIO cost
+      orderType: 'fixed',
+      price: order.price, // Match their asking price
+    });
+  }
+
+  async buyDutchAuctionANT(params: {
+    antId: string;
+  }): Promise<AoMessageResult<Order>> {
+    const order = await this.getOrderByANTId(params.antId);
+
+    if (order === undefined) {
+      throw new Error(`No active sell order found for ANT: ${params.antId}`);
+    }
+
+    if (order.status !== 'active') {
+      throw new Error(`Order status is ${order.status}, must be active`);
+    }
+
+    if (order.orderType !== 'dutch') {
+      throw new Error(`Order is not a Dutch auction, it's: ${order.orderType}`);
+    }
+
+    if (order.price === undefined) {
+      throw new Error(
+        `Order starting price is undefined for ANT: ${params.antId}`,
+      );
+    }
+
+    // For Dutch auction, the current price will be calculated on execution
+    return this.createOrder({
+      swapToken: params.antId,
+      quantity: order.price,
+      orderType: 'fixed',
+      price: order.price,
+    });
+  }
+
+  /**
+   * Place a bid on an English auction
+   * Note: This requires you to have sufficient ARIO balance in the marketplace
+   */
+  async bidOnANTEnglishAuction(params: {
+    antId: string;
+    bidAmount: string; // Amount of ARIO to bid (must be higher than current highest bid)
+  }): Promise<AoMessageResult> {
+    const order = await this.getOrderByANTId(params.antId);
+
+    if (order === undefined) {
+      throw new Error(`No active sell order found for ANT: ${params.antId}`);
+    }
+
+    if (order.status !== 'active') {
+      throw new Error(`Order status is ${order.status}, must be active`);
+    }
+
+    if (order.orderType !== 'english') {
+      throw new Error(
+        `Order is not an English auction, it's: ${order.orderType}`,
+      );
+    }
+
+    // Check if auction has expired
+    if (
+      order.expirationTime !== undefined &&
+      Date.now() >= order.expirationTime
+    ) {
+      throw new Error(`Auction has already expired for ANT: ${params.antId}`);
+    }
+
+    return this.process.send({
+      tags: [
+        { name: 'Action', value: 'Bid-On-English-Auction' },
+        { name: 'Order-Id', value: order.id },
+        { name: 'Bid-Amount', value: params.bidAmount },
+      ],
+      signer: this.signer,
+    });
+  }
+
+  /**
+   * Settle an expired English auction
+   * Can be called by anyone after the auction expires
+   * The highest bidder wins the ANT
+   */
+  async settleANTEnglishAuction(params: {
+    antId: string;
+  }): Promise<AoMessageResult> {
+    const order = await this.getOrderByANTId(params.antId);
+
+    if (order === undefined) {
+      throw new Error(`No active sell order found for ANT: ${params.antId}`);
+    }
+
+    if (order.orderType !== 'english') {
+      throw new Error(
+        `Order is not an English auction, it's: ${order.orderType}`,
+      );
+    }
+
+    // Check if auction has expired
+    if (
+      order.expirationTime !== undefined &&
+      Date.now() < order.expirationTime
+    ) {
+      throw new Error(
+        `Auction has not yet expired for ANT: ${params.antId}. Expires at: ${new Date(order.expirationTime).toISOString()}`,
+      );
+    }
+
+    return this.settleAuction({
+      orderId: order.id,
+      dominantToken: order.dominantToken,
+      swapToken: order.swapToken,
+    });
+  }
+}
