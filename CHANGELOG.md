@@ -1,3 +1,10 @@
+# [3.22.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.5...v3.22.0-alpha.6) (2025-12-08)
+
+
+### Bug Fixes
+
+* **deps:** remove axios and axios-retry, use native fetch ([b136472](https://github.com/ar-io/ar-io-sdk/commit/b1364724733705d823bc1f7e6901b8eaae550449))
+
 # [3.22.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.4...v3.22.0-alpha.5) (2025-11-06)
 
 
