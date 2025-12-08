@@ -21,7 +21,6 @@ import {
   SignatureConfig,
   Signer,
 } from '@dha-team/arbundles';
-import { AxiosInstance, RawAxiosRequestHeaders } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
@@ -32,8 +31,8 @@ import {
 import { AoTokenCostParams } from '../types/io.js';
 import { mARIOToken } from '../types/token.js';
 import { toB64Url } from '../utils/base64.js';
-import { createAxiosInstance } from '../utils/http-client.js';
 import { urlWithSearchParams } from '../utils/url.js';
+import { version } from '../version.js';
 import { ILogger, Logger } from './logger.js';
 
 // Define separate config interfaces
@@ -42,8 +41,6 @@ export interface TurboUnauthenticatedConfig {
   paymentUrl?: string;
   // The logger to use
   logger?: ILogger;
-  // The HTTP client to use
-  axios?: AxiosInstance;
 }
 
 export interface TurboAuthenticatedConfig extends TurboUnauthenticatedConfig {
@@ -51,13 +48,18 @@ export interface TurboAuthenticatedConfig extends TurboUnauthenticatedConfig {
   signer: TurboArNSSigner;
 }
 
+export const defaultHeaders: Record<string, string> = {
+  'x-source-version': `${version}`,
+  'x-source-identifier': 'ar-io-sdk',
+};
+
 export async function signedRequestHeadersFromSigner({
   signer,
   nonce = uuidv4(),
 }: {
   signer: TurboArNSSigner;
   nonce?: string;
-}): Promise<RawAxiosRequestHeaders> {
+}): Promise<Record<string, string>> {
   let signature: string | undefined = undefined;
   let publicKey: string | undefined = undefined;
 
@@ -165,7 +167,6 @@ export class TurboArNSPaymentFactory {
   // Overload: without signer, will return unauthenticated provider
   static init({
     paymentUrl,
-    axios,
     logger,
   }: TurboUnauthenticatedConfig & {
     signer?: TurboArNSSigner;
@@ -174,7 +175,6 @@ export class TurboArNSPaymentFactory {
   static init({
     signer,
     paymentUrl,
-    axios,
     logger,
   }: TurboAuthenticatedConfig): TurboArNSPaymentProviderAuthenticated;
   static init(
@@ -184,18 +184,16 @@ export class TurboArNSPaymentFactory {
   ):
     | TurboArNSPaymentProviderAuthenticated
     | TurboArNSPaymentProviderUnauthenticated {
-    const { signer, paymentUrl, axios, logger } = config ?? {};
+    const { signer, paymentUrl, logger } = config ?? {};
     if (signer !== undefined) {
       return new TurboArNSPaymentProviderAuthenticated({
         signer,
         paymentUrl,
-        axios,
         logger,
       });
     }
     return new TurboArNSPaymentProviderUnauthenticated({
       paymentUrl,
-      axios,
       logger,
     });
   }
@@ -204,16 +202,13 @@ export class TurboArNSPaymentFactory {
 // Base class for unauthenticated operations
 export class TurboArNSPaymentProviderUnauthenticated implements ArNSPaymentProvider {
   protected readonly paymentUrl: string;
-  protected readonly axios: AxiosInstance;
   protected readonly logger: ILogger;
 
   constructor({
     paymentUrl = 'https://payment.ardrive.io',
-    axios = createAxiosInstance(),
     logger = Logger.default,
   }: TurboUnauthenticatedConfig) {
     this.paymentUrl = paymentUrl;
-    this.axios = axios;
     this.logger = logger;
   }
 
@@ -233,10 +228,16 @@ export class TurboArNSPaymentProviderUnauthenticated implements ArNSPaymentProvi
       },
     });
 
-    const { data, status } = await this.axios.get<{
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: defaultHeaders,
+    });
+
+    const status = response.status;
+    const data = (await response.json()) as {
       winc: string;
       mARIO: string;
-    }>(url);
+    };
 
     this.logger.debug('getArNSPriceDetails', {
       intent,
@@ -309,16 +310,23 @@ export class TurboArNSPaymentProviderAuthenticated
       },
     });
 
-    const headers = await signedRequestHeadersFromSigner({
+    const signedHeaders = await signedRequestHeadersFromSigner({
       signer: this.signer,
     });
 
-    const { data, status } = await this.axios.post<{
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...defaultHeaders,
+        ...signedHeaders,
+      },
+    });
+
+    const status = response.status;
+    const data = (await response.json()) as {
       arioWriteResult: AoMessageResult;
       purchaseReceipt: ArNSPurchaseReceipt;
-    }>(url, null, {
-      headers,
-    });
+    };
 
     this.logger.debug('Initiated ArNS purchase', {
       intent,
