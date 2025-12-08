@@ -1,3 +1,10 @@
+# [3.22.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.6...v3.22.0-alpha.7) (2025-12-08)
+
+
+### Bug Fixes
+
+* **deps:** remove bundles from npm package ([cf89ed8](https://github.com/ar-io/ar-io-sdk/commit/cf89ed838276b927eeddcb71bf4d5ba1dc354418))
+
 # [3.22.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.5...v3.22.0-alpha.6) (2025-12-08)
 
 
