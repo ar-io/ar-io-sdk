@@ -139,6 +139,11 @@ export const optionMap = {
       'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake unless delegating is explicitly disallowed by the gateway',
     type: 'array',
   },
+  services: {
+    alias: '--services <services>',
+    description:
+      'JSON string of gateway services configuration (e.g., \'{"bundlers":[{"fqdn":"bundler.example.com","port":443,"protocol":"https","path":"/bundler"}]}\')',
+  },
   skipConfirmation: {
     alias: '--skip-confirmation',
     description: 'Skip confirmation prompts',
@@ -341,6 +346,7 @@ export const globalOptions = [
   optionMap.debug,
   optionMap.arioProcessId,
   optionMap.cuUrl,
+  optionMap.hyperbeamUrl,
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
@@ -428,6 +434,7 @@ export const updateGatewaySettingsOptions = [
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
+  optionMap.services,
 ];
 
 export const joinNetworkOptions = [

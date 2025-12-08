@@ -1,3 +1,81 @@
+# [3.22.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.6...v3.22.0-alpha.7) (2025-12-08)
+
+
+### Bug Fixes
+
+* **deps:** remove bundles from npm package ([cf89ed8](https://github.com/ar-io/ar-io-sdk/commit/cf89ed838276b927eeddcb71bf4d5ba1dc354418))
+
+# [3.22.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.5...v3.22.0-alpha.6) (2025-12-08)
+
+
+### Bug Fixes
+
+* **deps:** remove axios and axios-retry, use native fetch ([b136472](https://github.com/ar-io/ar-io-sdk/commit/b1364724733705d823bc1f7e6901b8eaae550449))
+
+# [3.22.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.4...v3.22.0-alpha.5) (2025-11-06)
+
+
+### Bug Fixes
+
+* **hb:** update primary names api with hyperbeam usage ([1303e18](https://github.com/ar-io/ar-io-sdk/commit/1303e185d6ece5f33448e84d3476927bbcfb1ea0))
+
+# [3.22.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.3...v3.22.0-alpha.4) (2025-11-04)
+
+
+### Bug Fixes
+
+* **git:** remove NPM_TOKEN from git, use OIDC ([d86b937](https://github.com/ar-io/ar-io-sdk/commit/d86b937ef55a72eda43c81ba31443807b68113f0))
+* **npm:** bump npm to v24 ([d08c9ce](https://github.com/ar-io/ar-io-sdk/commit/d08c9ce57a6cf8cd9276a988f020953018276286))
+
+# [3.22.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.2...v3.22.0-alpha.3) (2025-10-21)
+
+
+### Bug Fixes
+
+* **ant:** add missing hb url to cli and other places ([287577b](https://github.com/ar-io/ar-io-sdk/commit/287577b55ab356325c28153ec21076a363e2a67e))
+* **ants:** use hb url in calls if provided ([c8e7b01](https://github.com/ar-io/ar-io-sdk/commit/c8e7b01d21a0fdd198e486d49dcbf3ce9c1d4a4b))
+* **spawn:** update spawn ant utility to use configured ao client for ant registry process ([27175d5](https://github.com/ar-io/ar-io-sdk/commit/27175d5a0b78bca7aba81ef78954d5f84000925d))
+
+# [3.22.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0-alpha.1...v3.22.0-alpha.2) (2025-10-20)
+
+
+### Bug Fixes
+
+* **ant registry:** use ardrive cu for tests ([a5d51a8](https://github.com/ar-io/ar-io-sdk/commit/a5d51a8e9e648347b194647e55fb6c5982dbe428))
+* **balance:** use hb if configured ([f049782](https://github.com/ar-io/ar-io-sdk/commit/f0497823b8b24004b97a089b01de14deb658d1fd))
+* **comments:** add comment on json usage ([383429b](https://github.com/ar-io/ar-io-sdk/commit/383429b1985f7ca73f72225afb1446b37bdaa64e))
+* **hb:** add error handling for cu failover ([2acdf3b](https://github.com/ar-io/ar-io-sdk/commit/2acdf3b1c809dfedda781dd7dcad8b45d8d0322b))
+* **hb:** add hb client and use in ario client for balance fetching ([84be79f](https://github.com/ar-io/ar-io-sdk/commit/84be79fa8f97a6ee1afbf47097501ee88c9b3281))
+* **hb:** add minSlot and timeout config ([8ea5165](https://github.com/ar-io/ar-io-sdk/commit/8ea5165cd262a04407da2e90bdb7fd0029d788f3))
+* **hb:** dedupe code for fetching paths ([f299228](https://github.com/ar-io/ar-io-sdk/commit/f29922814d9c13619350f94b3a28bbb1c14a9e86))
+* **hb:** default json to true ([1d128e3](https://github.com/ar-io/ar-io-sdk/commit/1d128e3668861cba9ed5e260f7c4345e74083c0c))
+* **hb:** remove interface ([c188c3f](https://github.com/ar-io/ar-io-sdk/commit/c188c3f614d9eeff420a81d926edc02b78dea28d))
+* **logs:** remove extraneous console log ([095c22b](https://github.com/ar-io/ar-io-sdk/commit/095c22b5f88422bc0452cae4b49320c8bf7f8ffa))
+* **test:** use cu ardrive for test url ([0d1dc41](https://github.com/ar-io/ar-io-sdk/commit/0d1dc41bae2f2a057fa523e409b80b18083eb94e))
+
+# [3.22.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.21.1-alpha.1...v3.22.0-alpha.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* fixes lint error ([f24df2b](https://github.com/ar-io/ar-io-sdk/commit/f24df2ba333376b674af9f13b8647408e75143e1))
+* **schemas:** add json schema def for gateway properties ([0102ab9](https://github.com/ar-io/ar-io-sdk/commit/0102ab9f7a6ddb3872ed094d81f77cc6a06f3b3e))
+
+
+### Features
+
+* add services/bundlers support to joinNetwork and updateGatewaySettings ([02861a5](https://github.com/ar-io/ar-io-sdk/commit/02861a5de17e39c9d51852b5256ec21ce74a5ad3))
+
+## [3.21.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.21.0...v3.21.1-alpha.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* add error handling and logging for AO epoch distribution message parsing ([0c8683c](https://github.com/ar-io/ar-io-sdk/commit/0c8683c1e543f9c808c7f845ed1c232c918e65ad))
+* skip processing messages with empty data in epoch data fallback ([59774bf](https://github.com/ar-io/ar-io-sdk/commit/59774bffc630e2f5892a7d8f68b0b2ddb104691b))
+* **tests:** update tests to use cu.ardrive.io ([14e7e7f](https://github.com/ar-io/ar-io-sdk/commit/14e7e7f896c6c7dba5c11429a05199402547e612))
+* **tests:** update tests to use cu.ardrive.io ([4780260](https://github.com/ar-io/ar-io-sdk/commit/4780260b16caf0fa7e70f8696d6ecf2cb1276965))
+
 # [3.21.0](https://github.com/ar-io/ar-io-sdk/compare/v3.20.0...v3.21.0) (2025-10-01)
 
 

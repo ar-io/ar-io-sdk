@@ -23,11 +23,13 @@
     </script>
 
     <script type="module" defer>
+      // For local development, use the built bundle at ../../bundles/web.bundle.min.js
+      // For production, use GitHub Releases: https://github.com/ar-io/ar-io-sdk/releases/download/v<version>/web.bundle.min.js
       import {
         ARIO,
         arioDevnetProcessId,
         mARIOToken,
-      } from 'https://unpkg.com/@ar.io/sdk@1.2.0-alpha.17/bundles/web.bundle.min.js';
+      } from '../../bundles/web.bundle.min.js';
 
       const ario = ARIO.init();
 
