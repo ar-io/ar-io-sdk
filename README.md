@@ -120,8 +120,8 @@ const gateways = await ario.getGateways();
 
 ```html
 <script type="module">
-  // replace <@version> with a pinned version (e.g. @3.8.4) or @latest, if you're risky :)
-  import { ARIO } from 'https://unpkg.com/@ar.io/sdk<@version>';
+  // replace <version> with a release version (e.g. 3.8.4)
+  import { ARIO } from 'https://github.com/ar-io/ar-io-sdk/releases/download/v<version>/web.bundle.min.js';
 
   // set up client
   const ario = ARIO.mainnet();
