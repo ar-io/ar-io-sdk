@@ -15,7 +15,6 @@
  */
 import { connect } from '@permaweb/aoconnect';
 import { EventEmitter } from 'eventemitter3';
-import { pLimit } from 'plimit-lit';
 
 import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
@@ -47,7 +46,7 @@ export const getANTProcessesOwnedByWallet = async ({
   return [...new Set([...res.Owned, ...res.Controlled])];
 };
 
-function timeout(ms: number, promise) {
+function timeout<T>(ms: number, promise: Promise<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error('Timeout'));
@@ -65,10 +64,12 @@ function timeout(ms: number, promise) {
   });
 }
 
+/**
+ * @deprecated This is an inefficient way to get ArNS records for a wallet address. Use getArNSRecordsForAddress instead.
+ */
 export class ArNSEventEmitter extends EventEmitter {
   protected contract: AoARIORead;
-  private timeoutMs: number; // timeout for each request to 3 seconds
-  private throttle;
+  private timeoutMs: number;
   private logger: ILogger;
   private strict: boolean;
   private antAoClient: AoClient;
@@ -77,7 +78,6 @@ export class ArNSEventEmitter extends EventEmitter {
       processId: ARIO_MAINNET_PROCESS_ID,
     }),
     timeoutMs = 60_000,
-    concurrency = 30,
     logger = Logger.default,
     strict = false,
     antAoClient = connect({
@@ -86,7 +86,6 @@ export class ArNSEventEmitter extends EventEmitter {
   }: {
     contract?: AoARIORead;
     timeoutMs?: number;
-    concurrency?: number;
     logger?: ILogger;
     strict?: boolean;
     antAoClient?: AoClient;
@@ -94,7 +93,6 @@ export class ArNSEventEmitter extends EventEmitter {
     super();
     this.contract = contract;
     this.timeoutMs = timeoutMs;
-    this.throttle = pLimit(concurrency);
     this.logger = logger;
     this.strict = strict;
     this.antAoClient = antAoClient;
@@ -149,44 +147,35 @@ export class ArNSEventEmitter extends EventEmitter {
     this.emit('progress', 0, idCount);
     // check the contract owner and controllers
     await Promise.all(
-      Object.keys(uniqueContractProcessIds).map(async (processId, i) =>
-        this.throttle(async () => {
-          if (uniqueContractProcessIds[processId].state !== undefined) {
-            this.emit('progress', i + 1, idCount);
-            return;
-          }
-          const ant = ANT.init({
-            process: new AOProcess({
-              processId,
-              ao: this.antAoClient,
-            }),
-            strict: this.strict,
-          });
-          const state: AoANTState | undefined = (await timeout(
-            this.timeoutMs,
-            ant.getState(),
-          ).catch((e) => {
-            this.emit(
-              'error',
-              `Error getting state for process ${processId}: ${e}`,
-            );
-            return undefined;
-          })) as AoANTState | undefined;
-
-          if (
-            state?.Owner === address ||
-            state?.Controllers.includes(address)
-          ) {
-            uniqueContractProcessIds[processId].state = state;
-            this.emit(
-              'process',
-              processId,
-              uniqueContractProcessIds[processId],
-            );
-          }
+      Object.keys(uniqueContractProcessIds).map(async (processId, i) => {
+        if (uniqueContractProcessIds[processId].state !== undefined) {
           this.emit('progress', i + 1, idCount);
-        }),
-      ),
+          return;
+        }
+        const ant = ANT.init({
+          process: new AOProcess({
+            processId,
+            ao: this.antAoClient,
+          }),
+          strict: this.strict,
+        });
+        const state: AoANTState | undefined = (await timeout(
+          this.timeoutMs,
+          ant.getState(),
+        ).catch((e) => {
+          this.emit(
+            'error',
+            `Error getting state for process ${processId}: ${e}`,
+          );
+          return undefined;
+        })) as AoANTState | undefined;
+
+        if (state?.Owner === address || state?.Controllers.includes(address)) {
+          uniqueContractProcessIds[processId].state = state;
+          this.emit('process', processId, uniqueContractProcessIds[processId]);
+        }
+        this.emit('progress', i + 1, idCount);
+      }),
     );
     this.emit('end', uniqueContractProcessIds);
   }
