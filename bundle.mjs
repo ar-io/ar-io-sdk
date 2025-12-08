@@ -12,6 +12,7 @@ const bundle = async () => {
     target: ['esnext'],
     format: 'esm',
     globalName: 'ar.io',
+    metafile: true,
     plugins: [
       /**
        * We need to polyfill the node modules that are used in the web bundle.
