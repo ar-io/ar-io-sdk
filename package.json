@@ -140,14 +140,6 @@
     "uuid": "^11.1.0",
     "zod": "^3.23.8"
   },
-  "peerDependencies": {
-    "winston": "^3.13.0"
-  },
-  "peerDependenciesMeta": {
-    "winston": {
-      "optional": true
-    }
-  },
   "lint-staged": {
     "**/*.{ts,js,mjs,cjs,md,json}": [
       "prettier --write ."
