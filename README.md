@@ -3119,53 +3119,6 @@ const ario = ARIO.mainnet({ logger: customLogger });
 Logger.default = customLogger;
 ```
 
-#### Winston Logger (Optional)
-
-For advanced logging features, you can optionally install Winston and use the provided Winston logger adapter:
-
-```bash
-yarn add winston
-```
-
-```typescript
-import { ARIO, WinstonLogger } from '@ar.io/sdk';
-
-// Create Winston logger with custom configuration
-const winstonLogger = new WinstonLogger({
-  level: 'debug',
-});
-
-// Use with any class that accepts a logger
-const ario = ARIO.mainnet({ logger: winstonLogger });
-
-// or set it as the default logger in the entire SDK
-Logger.default = winstonLogger;
-```
-
-#### Other Popular Loggers
-
-You can easily integrate other popular logging libraries:
-
-```typescript
-// Bunyan example
-import { ARIO, ILogger } from '@ar.io/sdk';
-import bunyan from 'bunyan';
-
-const bunyanLogger = bunyan.createLogger({ name: 'ar-io-sdk' });
-const adapter: ILogger = {
-  info: (message, ...args) => bunyanLogger.info({ args }, message),
-  warn: (message, ...args) => bunyanLogger.warn({ args }, message),
-  error: (message, ...args) => bunyanLogger.error({ args }, message),
-  debug: (message, ...args) => bunyanLogger.debug({ args }, message),
-  setLogLevel: (level) => bunyanLogger.level(level),
-};
-
-const ario = ARIO.mainnet({ logger: adapter });
-
-// or set it as the default logger in the entire SDK
-Logger.default = adapter;
-```
-
 ## Pagination
 
 #### Overview
