@@ -21,7 +21,6 @@ import {
   SignatureConfig,
   Signer,
 } from '@dha-team/arbundles';
-import { v4 as uuidv4 } from 'uuid';
 
 import {
   AoMessageResult,
@@ -55,7 +54,7 @@ export const defaultHeaders: Record<string, string> = {
 
 export async function signedRequestHeadersFromSigner({
   signer,
-  nonce = uuidv4(),
+  nonce = crypto.randomUUID(),
 }: {
   signer: TurboArNSSigner;
   nonce?: string;
