@@ -107,6 +107,7 @@ import { AOProcess } from './contracts/ao-process.js';
 import { InvalidContractConfigurationError } from './error.js';
 import { createFaucet } from './faucet.js';
 import { HB } from './hyperbeam/hb.js';
+import { ARIOCompositeReadProvider } from './io-providers.js';
 import { Logger } from './logger.js';
 import {
   TurboArNSPaymentFactory,
@@ -226,6 +227,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   protected paymentProvider: TurboArNSPaymentProviderUnauthenticated; // TODO: this could be an array/map of payment providers
   protected logger = Logger.default;
   protected hb: HB | undefined;
+  protected readProvider: ARIOCompositeReadProvider;
 
   constructor(config?: ARIOConfigNoSigner) {
     this.arweave = config?.arweave ?? defaultArweave;
@@ -263,6 +265,14 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
     this.paymentProvider = TurboArNSPaymentFactory.init({
       paymentUrl: config?.paymentUrl,
     });
+
+    // Initialize the composite read provider
+    this.readProvider = new ARIOCompositeReadProvider(
+      this.process,
+      this.logger,
+      (params) => this.getArNSRecord(params),
+      this.hb,
+    );
   }
 
   async getInfo(): Promise<{
@@ -406,32 +416,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   }
 
   async getBalance({ address }: { address: WalletAddress }): Promise<number> {
-    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
-      this.logger.debug('Getting balance from HyperBEAM', { address });
-      const res = await this.hb
-        .compute<number>({
-          path: `balances/${address}`,
-        })
-        .then((res) => Number(res))
-        .catch((error) => {
-          this.logger.error('Failed to get balance from HyperBEAM', {
-            cause: error,
-          });
-          return null;
-        });
-      if (res !== null) return res;
-      // else fall through to CU read
-      this.logger.info(
-        'Failed to get balance from HyperBEAM, failing over to to CU read',
-        { address },
-      );
-    }
-    return this.process.read<number>({
-      tags: [
-        { name: 'Action', value: 'Balance' },
-        { name: 'Address', value: address },
-      ],
-    });
+    return this.readProvider.getBalance({ address });
   }
 
   async getBalances(
@@ -895,47 +880,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   async getPrimaryNameRequest(params: {
     initiator: WalletAddress;
   }): Promise<AoPrimaryNameRequest> {
-    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
-      this.logger.debug('Getting primary name request from HyperBEAM', {
-        initiator: params.initiator,
-      });
-      const res = await this.hb
-        .compute<Omit<AoPrimaryNameRequest, 'initiator'>>({
-          path: `/primary-names/requests/${params.initiator}`,
-        })
-        .catch((error) => {
-          this.logger.error(
-            'Failed to get primary name request from HyperBEAM',
-            {
-              cause: error,
-            },
-          );
-          return null;
-        });
-      if (res !== null) {
-        // Ensure initiator is included in the result
-        return {
-          ...res,
-          initiator: params.initiator,
-        };
-      }
-      // else fall through to CU read
-      this.logger.info(
-        'Failed to get primary name request from HyperBEAM, failing over to CU read',
-        { initiator: params.initiator },
-      );
-    }
-    const allTags = [
-      { name: 'Action', value: 'Primary-Name-Request' },
-      {
-        name: 'Initiator',
-        value: params.initiator,
-      },
-    ];
-
-    return this.process.read<AoPrimaryNameRequest>({
-      tags: allTags,
-    });
+    return this.readProvider.getPrimaryNameRequest(params);
   }
 
   async getPrimaryNameRequests(
@@ -952,67 +897,7 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
   async getPrimaryName(
     params: { address: WalletAddress } | { name: string },
   ): Promise<AoPrimaryName> {
-    if (this.hb && (await this.hb.checkHyperBeamCompatibility())) {
-      this.logger.debug('Getting primary name from HyperBEAM', { params });
-      try {
-        let owner: WalletAddress;
-
-        if ('name' in params) {
-          // Step 1: Get owner from /primary-names/names/<name>
-          owner = await this.hb.compute<WalletAddress>({
-            path: `/primary-names/names/${params.name}`,
-          });
-        } else {
-          // If given address, skip the /names/name query
-          owner = params.address;
-        }
-
-        // Step 2: Get {name, startTimestamp} from /primary-names/owners/<owner>
-        const ownerData = await this.hb.compute<{
-          name: string;
-          startTimestamp: number;
-        }>({
-          path: `/primary-names/owners/${owner}`,
-        });
-        const name = ownerData.name;
-        const startTimestamp = ownerData.startTimestamp;
-
-        // Step 3: Get processId from getArNSRecord
-        const record = await this.getArNSRecord({ name });
-        const processId = record.processId;
-
-        // Combine all data
-        const result: AoPrimaryName = {
-          owner,
-          name,
-          startTimestamp,
-          processId,
-        };
-
-        return result;
-      } catch (error) {
-        this.logger.error('Failed to get primary name from HyperBEAM', {
-          cause: error,
-        });
-        // Fall through to CU read
-        this.logger.info(
-          'Failed to get primary name from HyperBEAM, failing over to CU read',
-          { params },
-        );
-      }
-    }
-    const allTags = [
-      { name: 'Action', value: 'Primary-Name' },
-      {
-        name: 'Address',
-        value: (params as { address: WalletAddress })?.address,
-      },
-      { name: 'Name', value: (params as { name: string })?.name },
-    ];
-
-    return this.process.read<AoPrimaryName>({
-      tags: pruneTags(allTags),
-    });
+    return this.readProvider.getPrimaryName(params);
   }
 
   async getPrimaryNames(
