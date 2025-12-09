@@ -59,7 +59,7 @@ const ario = ARIO.init({
   }),
 });
 
-describe.skip('e2e esm tests', async () => {
+describe('e2e esm tests', async () => {
   let compose: StartedDockerComposeEnvironment;
 
   before(async () => {
