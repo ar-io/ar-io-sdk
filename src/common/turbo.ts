@@ -199,9 +199,7 @@ export class TurboArNSPaymentFactory {
 }
 
 // Base class for unauthenticated operations
-export class TurboArNSPaymentProviderUnauthenticated
-  implements ArNSPaymentProvider
-{
+export class TurboArNSPaymentProviderUnauthenticated implements ArNSPaymentProvider {
   protected readonly paymentUrl: string;
   protected readonly logger: ILogger;
 
