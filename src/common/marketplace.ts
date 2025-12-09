@@ -64,6 +64,15 @@ export interface MarketplaceIntent {
 }
 
 /**
+ * Fee information structure for calculating order costs
+ */
+export interface MarketplaceFeeInfo {
+  listingFeePerHour: string; // Listing fee in mARIO per hour (1 ARIO = 1000000000 mARIO)
+  saleTaxNumerator: number; // Numerator for sale tax calculation
+  saleTaxDenominator: number; // Denominator for sale tax calculation (tax = amount * numerator / denominator)
+}
+
+/**
  * Intent statistics structure
  */
 export interface MarketplaceIntentStats {
@@ -104,6 +113,7 @@ export interface InfoResponse {
   intents: MarketplaceIntentStats;
   ucm: MarketplaceInfo;
   whitelistedModules: string[];
+  fees: MarketplaceFeeInfo;
 }
 
 /**
@@ -483,13 +493,15 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
     balances: MarketplaceBalance;
     antIds: string[];
   }> {
-    async function fetchIntents() {
+    async function fetchIntents(
+      context: ArNSMarketplaceRead,
+    ): Promise<MarketplaceIntent[]> {
       const intents: MarketplaceIntent[] = [];
       // fetch all intents for user, paginating as needed and adding each ant id to the set
       let intentsCursor: string | undefined = undefined;
       let intentsHasMore = true;
       while (intentsHasMore) {
-        const intentsRes = await this.getPaginatedIntents({
+        const intentsRes = await context.getPaginatedIntents({
           cursor: intentsCursor,
           limit: 1000,
           filters: {
@@ -505,13 +517,13 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
       return intents;
     }
 
-    async function fetchOrders() {
+    async function fetchOrders(context: ArNSMarketplaceRead): Promise<Order[]> {
       const orders: Order[] = [];
       // fetch all orders for user, paginating as needed
       let ordersCursor: string | undefined = undefined;
       let ordersHasMore = true;
       while (ordersHasMore) {
-        const ordersRes = await this.getPaginatedOrders({
+        const ordersRes = await context.getPaginatedOrders({
           cursor: ordersCursor,
           limit: 1000,
           filters: {
@@ -529,8 +541,8 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
     // parallel fetch balances, intents, and orders
     const [balances, intents, orders] = await Promise.all([
       this.getMarketplaceBalance({ address }),
-      fetchIntents(),
-      fetchOrders(),
+      fetchIntents(this),
+      fetchOrders(this),
     ]);
 
     const antIdsArray = Array.from(
@@ -986,4 +998,79 @@ export class ArNSMarketplaceWrite
       swapToken: order.swapToken,
     });
   }
+}
+
+/**
+ * Calculates the listing fee for an order based on the end timestamp.
+ * The fee is calculated by rounding up the hours until the end timestamp to the nearest hour.
+ *
+ * @param params - Parameters for calculating the listing fee
+ * @param params.listingFeePerHour - The listing fee per hour in mARIO (as a string)
+ * @param params.endTimestamp - Unix timestamp when the order expires
+ * @returns The listing fee in mARIO as a BigInt
+ *
+ * @example
+ * ```typescript
+ * const info = await marketplace.getInfo();
+ * const endTimestamp = Date.now() + 24 * 60 * 60 * 1000; // 24 hours from now
+ * const listingFee = calculateListingFee({
+ *   listingFeePerHour: info.fees.listingFeePerHour,
+ *   endTimestamp,
+ * });
+ * ```
+ */
+export function calculateListingFee({
+  listingFeePerHour,
+  endTimestamp,
+}: {
+  listingFeePerHour: string;
+  endTimestamp: number;
+}): bigint {
+  const now = Date.now();
+  const millisecondsUntilEnd = endTimestamp - now;
+
+  if (millisecondsUntilEnd <= 0) {
+    return BigInt(0);
+  }
+
+  // Convert milliseconds to hours and round up to the nearest hour
+  const hoursUntilEnd = Math.ceil(millisecondsUntilEnd / (1000 * 60 * 60));
+
+  // Calculate listing fee: hours * fee per hour
+  return BigInt(hoursUntilEnd) * BigInt(listingFeePerHour);
+}
+
+/**
+ * Calculates the sale tax for an order based on the sale amount.
+ *
+ * @param params - Parameters for calculating the sale tax
+ * @param params.saleAmount - The sale amount in mARIO (as a string or number)
+ * @param params.saleTaxNumerator - The numerator for sale tax calculation
+ * @param params.saleTaxDenominator - The denominator for sale tax calculation
+ * @returns The sale tax in mARIO as a BigInt
+ *
+ * @example
+ * ```typescript
+ * const info = await marketplace.getInfo();
+ * const saleAmount = 100000000000; // 100 ARIO in mARIO
+ * const tax = calculateSaleTax({
+ *   saleAmount,
+ *   saleTaxNumerator: info.fees.saleTaxNumerator,
+ *   saleTaxDenominator: info.fees.saleTaxDenominator,
+ * });
+ * ```
+ */
+export function calculateSaleTax({
+  saleAmount,
+  saleTaxNumerator,
+  saleTaxDenominator,
+}: {
+  saleAmount: string | number;
+  saleTaxNumerator: number;
+  saleTaxDenominator: number;
+}): bigint {
+  // Calculate tax: (saleAmount * numerator) / denominator
+  return (
+    (BigInt(saleAmount) * BigInt(saleTaxNumerator)) / BigInt(saleTaxDenominator)
+  );
 }

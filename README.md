@@ -361,7 +361,6 @@ To claim testnet tokens from the testnet token faucet, you can use one of the fo
 1. Visit [faucet.ar.io](https://faucet.ar.io) - the easiest way to quickly get tokens for testing for a single address.
 
 2. Programmatically via the SDK - useful if you need to claim tokens for multiple addresses or dynamically within your application.
-
    - `ARIO.testnet().faucet.captchaUrl()` - returns the captcha URL for the testnet faucet. Open this URL in a new browser window and listen for the `ario-jwt-success` event to be emitted.
    - `ARIO.testnet().faucet.claimWithAuthToken({ authToken, recipient, quantity })` - claims tokens for the specified recipient address using the provided auth token.
    - `ARIO.testnet().faucet.verifyAuthToken({ authToken })` - verifies if the provided auth token is still valid.
