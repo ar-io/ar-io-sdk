@@ -1,3 +1,10 @@
+## [3.22.1](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0...v3.22.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* **deps:** add back axios as dependency ([ad5b5cb](https://github.com/ar-io/ar-io-sdk/commit/ad5b5cb8a674846f29ef77b916d3afea36c4e682))
+
 # [3.22.0](https://github.com/ar-io/ar-io-sdk/compare/v3.21.0...v3.22.0) (2025-12-08)
 
 
