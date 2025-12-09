@@ -96,7 +96,6 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^6.4.0",
     "arconnect": "^1.0.3",
-    "axios": "^1.13.2",
     "c8": "^10.1.3",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
@@ -128,6 +127,7 @@
     "@dha-team/arbundles": "^1.0.1",
     "@permaweb/aoconnect": "0.0.68",
     "arweave": "1.15.5",
+    "axios": "^1.13.2",
     "commander": "^12.1.0",
     "eventemitter3": "^5.0.1",
     "prompts": "^2.4.2"
