@@ -121,9 +121,9 @@ export interface InfoResponse {
  */
 export interface CreateIntentParams {
   antId: string; // Required: ANT process ID for this intent
-  orderType?: string;
-  quantity?: string;
-  price?: string;
+  orderType: string;
+  quantity: string;
+  price: string;
   expirationTime: string; // Required: Unix timestamp (min 1h, max 30 days, fee rounded up to nearest hour)
   minimumPrice?: string;
   decreaseInterval?: string;
@@ -727,6 +727,7 @@ export class ArNSMarketplaceWrite
         orderType: type,
         quantity: price,
         expirationTime: expirationTime.toString(),
+        price: price,
         minimumPrice: minimumPrice,
         decreaseInterval: decreaseInterval,
       });
@@ -741,11 +742,16 @@ export class ArNSMarketplaceWrite
       );
 
       if (isExistingIntentError) {
-        throw new Error('Intent already exists for this ANT ID');
+        intent = await this.getIntentByANTId(antId).catch((error) => {
+          throw new Error(
+            'An intent already exists for this ANT ID but failed to get intent:\n\n' +
+              error.message,
+          );
+        });
+      } else {
+        // Possible to get other errors, eg insufficient deposited ario balance. Rethrow them here.
+        throw error;
       }
-
-      // Possible to get other errors, eg insufficient deposited ario balance. Rethrow them here.
-      throw error;
     }
     // Type guard to ensure intent is defined
     if (intent === undefined) {
