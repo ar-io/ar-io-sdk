@@ -1,7 +1,7 @@
 services:
   ao-cu:
     image: ghcr.io/permaweb/ao-cu:latest
-    restart: 'no'
+    restart: "no"
     volumes:
       - ${CU_WALLET_FILE:-./test-wallet.json}:/usr/app/test-wallet.json
     ports:
@@ -18,10 +18,11 @@ services:
       CHECKPONT_VALIDATION_THRESH: ${CHECKPONT_VALIDATION_THRESH:-0}
       CHECKPONT_VALIDATION_RETRIES: ${CHECKPONT_VALIDATION_RETRIES:-1}
       PROCESS_WASM_MEMORY_MAX_LIMIT: ${PROCESS_WASM_MEMORY_MAX_LIMIT:-17179869184}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-0}
 
   faucet:
     image: ghcr.io/ar-io/ar-io-faucet:latest
-    restart: 'no'
+    restart: "no"
     ports:
       - ${FAUCET_PORT:-3000}:${FAUCET_PORT:-3000}
     environment:
