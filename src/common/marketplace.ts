@@ -17,6 +17,7 @@ import {
   ANT,
   AOProcess,
   AoSigner,
+  Logger,
   MARKETPLACE_CONTRACT_ID,
   paginationParamsToTags,
 } from '../node/index.js';
@@ -335,14 +336,18 @@ export interface AoArNSMarketplaceWrite {
 
 export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
   protected process: AOProcess;
+  protected logger: Logger;
   constructor({
     process = new AOProcess({
       processId: MARKETPLACE_CONTRACT_ID,
     }),
+    logger = Logger.default,
   }: {
     process: AOProcess;
+    logger?: Logger;
   }) {
     this.process = process;
+    this.logger = logger;
   }
 
   async getInfo(): Promise<InfoResponse> {
@@ -449,6 +454,11 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
 
     if (res.items.length === 0) {
       throw new Error(`No order found for ANT ID: ${antId}`);
+    }
+    // Strange behaviour here. It seems that the filter logic will return an order with potentially different dominant token.
+    const order = res.items[0];
+    if (order.dominantToken !== antId) {
+      throw new Error(`No order for ANT ID: ${antId}`);
     }
 
     return res.items[0];
@@ -570,15 +580,18 @@ export class ArNSMarketplaceWrite
     }),
     signer,
     ario,
+    logger = Logger.default,
   }: {
     process: AOProcess;
     signer: AoSigner;
     ario: AoARIOWrite;
+    logger?: Logger;
   }) {
-    super({ process: process });
+    super({ process: process, logger: logger });
     this.process = process;
     this.signer = signer;
     this.ario = ario;
+    this.logger = logger;
   }
 
   /**
@@ -696,13 +709,14 @@ export class ArNSMarketplaceWrite
   }> {
     // Get arns record for the current ant id associated with it
     const record = await this.ario.getArNSRecord({ name: name });
+    this.logger.info(`Record ${name} found: ${JSON.stringify(record)}`);
 
     if (record === undefined) {
       throw new Error(`Record ${name} not found`);
     }
 
     const antId = record.processId;
-
+    this.logger.info(`ANT ID for ${name} found: ${antId}`);
     const ant = ANT.init({
       process: new AOProcess({
         processId: antId,
@@ -714,6 +728,9 @@ export class ArNSMarketplaceWrite
     const antState = await ant.getState();
 
     if (antState.Owner !== walletAddress) {
+      this.logger.error(
+        `Wallet address ${walletAddress} does not match the owner of the ANT ${antId}. Only the owner can list the name for sale.`,
+      );
       throw new Error(
         'Wallet address does not match the owner of the ANT. Only the owner can list the name for sale.',
       );
@@ -734,8 +751,12 @@ export class ArNSMarketplaceWrite
       if (intentResult.result === undefined) {
         throw new Error('Failed to create intent: ' + intentResult.id);
       }
+      this.logger.info(
+        `Intent created: ${JSON.stringify(intentResult.result)}`,
+      );
       intent = intentResult.result;
     } catch (error) {
+      this.logger.error(`Error creating intent: ${error.message}`);
       // check error for existing intent. Will be a contract error message.
       const isExistingIntentError = error.message.includes(
         'An intent already exists for this ANT ID',
@@ -743,6 +764,7 @@ export class ArNSMarketplaceWrite
 
       if (isExistingIntentError) {
         intent = await this.getIntentByANTId(antId).catch((error) => {
+          this.logger.error(`Failed to get intent: ${error.message}`);
           throw new Error(
             'An intent already exists for this ANT ID but failed to get intent:\n\n' +
               error.message,
@@ -769,8 +791,9 @@ export class ArNSMarketplaceWrite
           tags: [{ name: 'X-Intent-Id', value: intent.intentId }],
         },
       );
+      this.logger.info(`ANT transferred: ${JSON.stringify(antTransferResult)}`);
     } catch (error) {
-      console.error(new Error('Failed to transfer ANT: ' + error.message));
+      this.logger.error(`Failed to transfer ANT: ${error.message}`);
       return {
         intent,
         order: null,
@@ -792,7 +815,9 @@ export class ArNSMarketplaceWrite
         });
         if (order === null) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
+          this.logger.info(`Waiting for order to be created...`);
           if (tries === 5) {
+            this.logger.error(`Failed to get order after ${tries} attempts`);
             throw new Error(`Failed to get order after ${tries} attempts`);
           }
           tries++;
@@ -800,7 +825,7 @@ export class ArNSMarketplaceWrite
         // if the order is found, break the loop
         break;
       } catch (error) {
-        console.error(new Error('Failed to get order: ' + error.message));
+        this.logger.error(`Failed to get order: ${error.message}`);
         return {
           intent,
           order: null,
@@ -810,6 +835,7 @@ export class ArNSMarketplaceWrite
       }
     }
     if (order === null) {
+      this.logger.error(`Failed to get order`);
       return {
         intent,
         order: null,
