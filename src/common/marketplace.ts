@@ -786,6 +786,7 @@ export class ArNSMarketplaceWrite
       antTransferResult = await ant.transfer(
         {
           target: this.process.processId,
+          removeControllers: false, // important: do not remove the controllers of the ANT to prevent loss of control
         },
         {
           tags: [{ name: 'X-Intent-Id', value: intent.intentId }],
