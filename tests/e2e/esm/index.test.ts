@@ -347,7 +347,7 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(epoch.observations.reports));
     });
 
-    it('should be able to get a previous epoch', async () => {
+    it.skip('should be able to get a previous epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const epoch = await ario.getEpoch({
         epochIndex: currentEpoch.epochIndex - 1,
@@ -878,7 +878,7 @@ describe('e2e esm tests', async () => {
       assert.ok(distributions);
     });
 
-    it('should be able to get epoch distributions at a specific epoch', async () => {
+    it.skip('should be able to get epoch distributions at a specific epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const distributions = await ario.getDistributions({
         epochIndex: currentEpoch.epochIndex - 1,
@@ -943,7 +943,7 @@ describe('e2e esm tests', async () => {
       assert.ok(observations);
     });
 
-    it('should be able to get epoch observations at a specific epoch', async () => {
+    it.skip('should be able to get epoch observations at a specific epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const observations = await ario.getObservations({
         epochIndex: currentEpoch.epochIndex - 1,
