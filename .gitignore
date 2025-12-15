@@ -8,7 +8,7 @@ dist
 cache
 metafile.json
 stats.html
-
+pnpm-lock.yaml
 # IDEs and editors
 .DS_Store
 yarn-error.log

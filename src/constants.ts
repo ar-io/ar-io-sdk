@@ -33,6 +33,9 @@ export const ARIO_MAINNET_PROCESS_ID =
 export const ANT_REGISTRY_TESTNET_ID =
   'RR0vheYqtsKuJCWh6xj0beE35tjaEug5cejMw9n2aa8';
 export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
+
+export const MARKETPLACE_CONTRACT_ID =
+  'wPh88ziUF4meLpHfffmgdA6IFtzmXHgdeg-epzBjkao';
 export const MARIO_PER_ARIO = 1_000_000;
 
 /**

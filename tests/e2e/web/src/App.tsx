@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm';
 import './App.css';
 
 // minimize logs
-Logger.default.setLogLevel('none');
+Logger.default.setLogLevel('debug');
 
 // just validating that the default ARIO works in web context
 const defaultArIO = ARIO.init();
@@ -25,7 +25,8 @@ const defaultArIO = ARIO.init();
 // validating that the ANT registry works in web context
 const aoClient = connect({
   MODE: 'legacy',
-  CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
+  // CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
+  CU_URL: 'http://localhost:6363',
 });
 const antRegistry = ANTRegistry.init({
   process: new AOProcess({

@@ -4,12 +4,15 @@
   "description": "A test harness for testing the ar-io-sdk in CJS project'",
   "scripts": {
     "postinstall": "yarn link @ar.io/sdk",
-    "test": "node --import=../../../register.mjs --enable-source-maps --trace-warnings --test --test-reporter=spec index.test.ts && echo '\nNode CJS Integration ✅'"
+    "test": "tsx --enable-source-maps --trace-warnings --test --test-reporter=spec index.test.ts && echo '\nNode CJS Integration ✅'"
   },
   "dependencies": {
     "@ar.io/sdk": "*",
     "@permaweb/aoconnect": "^0.0.85",
     "arweave": "^1.15.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
   },
   "license": "AGPL-3.0-or-later"
 }
