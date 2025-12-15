@@ -240,7 +240,8 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   return ARIO.init({
     hyperbeamUrl: options.hyperbeamUrl,
     process: aoProcessFromOptions({
-      cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
+      cuUrl: 'http://localhost:6363', // default to ardrive cu for ARIO process
+      //cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
       ...options,
     }),
     paymentUrl: options.paymentUrl,
