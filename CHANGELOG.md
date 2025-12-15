@@ -1,3 +1,31 @@
+# [3.23.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.22.1...v3.23.0-alpha.1) (2025-12-15)
+
+
+### Bug Fixes
+
+* **deps:** add back axios as dependency ([1e748c9](https://github.com/ar-io/ar-io-sdk/commit/1e748c9be482bc6709dbd6f38dbf9a84a82d1a4e))
+* **deps:** remove axios and axios-retry, use native fetch ([b0f6ad9](https://github.com/ar-io/ar-io-sdk/commit/b0f6ad9552e3858b8ad37acc43666a559cbd6168))
+* **deps:** remove bundles from npm package ([3da6e88](https://github.com/ar-io/ar-io-sdk/commit/3da6e88643c864e95459810d38e30fdd6c2995a5))
+* **docker:** update compose to include rate limit flag ([9f1af38](https://github.com/ar-io/ar-io-sdk/commit/9f1af383ca5599693496936a362ea0ffd7a5cb7f))
+* **docker:** update docker compose to set no rate limit on cu ([c81b20d](https://github.com/ar-io/ar-io-sdk/commit/c81b20dca389e4fe16172efb2c07cea517e5651a))
+* **formating:** format project ([425a238](https://github.com/ar-io/ar-io-sdk/commit/425a2385315938bae66f7c739a520da9ff32694a))
+* **marketplace:** add logger ([52567fd](https://github.com/ar-io/ar-io-sdk/commit/52567fda4d9df757022e047a6c0f4a51e45e1a6f))
+* **marketplace:** use removeControllers flag on marketplace ant transfer ([3fc42dd](https://github.com/ar-io/ar-io-sdk/commit/3fc42dd26afb5b1beea497cfc0bf29979cd4171c))
+* **pnpm:** ignore pnpm lock ([ffbf9f8](https://github.com/ar-io/ar-io-sdk/commit/ffbf9f89b291dc5bb7957131c25c767e064c1671))
+* **pnpm:** remove pnpm lock ([037229b](https://github.com/ar-io/ar-io-sdk/commit/037229bf85bacfb05e7dd4d477cd5ef4c74c6661))
+* **tests:** skip epoch tests for the moment ([dd8ca1e](https://github.com/ar-io/ar-io-sdk/commit/dd8ca1e9f240ba6e4df88f35161d13f09270c64a))
+* **tests:** update tests to use local cu without fcon wallet, also use tsx ([8189f48](https://github.com/ar-io/ar-io-sdk/commit/8189f4868dab8ba55bc737b153b3d0dcfda757dd))
+* **tests:** update web test to not use docker compose wait strat ([4176151](https://github.com/ar-io/ar-io-sdk/commit/417615103fcc76ac8195006119af6a5f13958ce1))
+* **test:** use local cu ([2bbdcfc](https://github.com/ar-io/ar-io-sdk/commit/2bbdcfc9a9695c7c8b086f10e0cdb18625b768de))
+* **types:** update type requirements ([248acaf](https://github.com/ar-io/ar-io-sdk/commit/248acaf01e92aa283a1e2754eef5a8caa1973698))
+
+
+### Features
+
+* **ant:** add remove-controllers flag ([78fa6e0](https://github.com/ar-io/ar-io-sdk/commit/78fa6e0c7ad08421c714c9baf6c8c93204ada86d))
+* **ant:** add remove-controllers flag ([67a90a2](https://github.com/ar-io/ar-io-sdk/commit/67a90a2c9e74562b22d38059ca7daf4bd7791c1f))
+* **marketplace:** add marketplace class ([72bc2b7](https://github.com/ar-io/ar-io-sdk/commit/72bc2b70f5fc0c87f3648adf0e9d14904982ec9a))
+
 ## [3.22.1](https://github.com/ar-io/ar-io-sdk/compare/v3.22.0...v3.22.1) (2025-12-09)
 
 
