@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm';
 import './App.css';
 
 // minimize logs
-Logger.default.setLogLevel('none');
+Logger.default.setLogLevel('debug');
 
 // just validating that the default ARIO works in web context
 const defaultArIO = ARIO.init();

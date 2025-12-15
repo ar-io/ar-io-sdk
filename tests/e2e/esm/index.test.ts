@@ -1360,7 +1360,7 @@ describe('e2e esm tests', async () => {
       before(async () => {
         // setup our testnet instance to use local APIs
         testnet = ARIO.testnet({
-          faucetUrl: 'http://localhost:3000',
+          faucetUrl: 'http://localhost:9876',
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
@@ -1399,7 +1399,7 @@ describe('e2e esm tests', async () => {
                 ao: aoClient,
               }),
             }),
-            faucetApiUrl: 'http://localhost:3000',
+            faucetApiUrl: 'http://localhost:9876',
           });
           await assert.rejects(
             async () => await fake.faucet.captchaUrl(),
