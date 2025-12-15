@@ -284,7 +284,10 @@ export interface AoANTRead {
 }
 
 export interface AoANTWrite extends AoANTRead {
-  transfer: AoWriteAction<{ target: WalletAddress }>;
+  transfer: AoWriteAction<{
+    target: WalletAddress;
+    removeControllers?: boolean;
+  }>;
   addController: AoWriteAction<{ controller: WalletAddress }>;
   removeController: AoWriteAction<{ controller: WalletAddress }>;
   /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
