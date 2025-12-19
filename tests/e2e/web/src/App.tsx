@@ -5,16 +5,16 @@ import {
   ARIO,
   ARIO_TESTNET_PROCESS_ID, // ContractSigner,
   Logger, // createAoSigner,
-} from "@ar.io/sdk/web";
-import { connect } from "@permaweb/aoconnect";
-import { useEffect, useState } from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+} from '@ar.io/sdk/web';
+import { connect } from '@permaweb/aoconnect';
+import { useEffect, useState } from 'react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-import "./App.css";
+import './App.css';
 
 // minimize logs
-Logger.default.setLogLevel("none");
+Logger.default.setLogLevel('none');
 
 // just validating that the default ARIO works in web context
 const _defaultArIO = ARIO.init();
@@ -24,8 +24,8 @@ const _defaultArIO = ARIO.init();
 // });
 // validating that the ANT registry works in web context
 const aoClient = connect({
-  MODE: "legacy",
-  CU_URL: "https://cu.ardrive.io", // TODO: use localhost when testing locally
+  MODE: 'legacy',
+  CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
 });
 const antRegistry = ANTRegistry.init({
   process: new AOProcess({
@@ -42,8 +42,8 @@ const ario = ARIO.init({
 });
 
 function App() {
-  const [contract, setContract] = useState<string>("Loading...");
-  const [ants, setAnts] = useState<string>("Loading...");
+  const [contract, setContract] = useState<string>('Loading...');
+  const [ants, setAnts] = useState<string>('Loading...');
   const [arioContractSuccess, setArioContractSuccess] =
     useState<boolean>(false);
   const [antRegistrySuccess, setAntRegistrySuccess] = useState<boolean>(false);
@@ -61,7 +61,7 @@ function App() {
         .catch((error: any) => {
           console.error(error);
           setArioContractSuccess(false);
-          setContract("Error loading contract state");
+          setContract('Error loading contract state');
         })
         .finally(() => {
           setLoaded(true);
@@ -77,7 +77,7 @@ function App() {
         .catch((error: any) => {
           console.error(error);
           setAntRegistrySuccess(false);
-          setAnts("Error loading affiliated ants");
+          setAnts('Error loading affiliated ants');
         })
         .finally(() => {
           setRegistryLoaded(true);

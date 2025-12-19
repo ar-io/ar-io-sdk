@@ -13,32 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { version } from "../../version.js";
-import { ILogger, LogLevel } from "../logger.js";
+import { version } from '../../version.js';
+import { ILogger, LogLevel } from '../logger.js';
 
 export class WinstonLogger implements ILogger {
   private logger: any;
   private winston: any;
 
   constructor({
-    level = "info",
+    level = 'info',
   }: {
     level?: LogLevel;
   } = {}) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      this.winston = require("winston");
+      this.winston = require('winston');
     } catch (_error) {
       throw new Error(
-        "Winston is not installed. Install it with: npm install winston",
+        'Winston is not installed. Install it with: npm install winston',
       );
     }
 
     this.logger = this.winston.createLogger({
-      level: level === "none" ? "error" : level,
-      silent: level === "none",
+      level: level === 'none' ? 'error' : level,
+      silent: level === 'none',
       defaultMeta: {
-        name: "ar-io-sdk",
+        name: 'ar-io-sdk',
         version,
       },
       format: this.winston.format.combine(
@@ -73,7 +73,7 @@ export class WinstonLogger implements ILogger {
   }
 
   setLogLevel(level: LogLevel) {
-    if (level === "none") {
+    if (level === 'none') {
       this.logger.silent = true;
     } else {
       this.logger.silent = false;

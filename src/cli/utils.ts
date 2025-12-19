@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { readFileSync } from "fs";
+import { readFileSync } from 'fs';
 /**
  * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
  *
@@ -29,11 +29,11 @@ import { readFileSync } from "fs";
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { EthereumSigner } from "@dha-team/arbundles";
-import { connect } from "@permaweb/aoconnect";
-import { JWKInterface } from "arweave/node/lib/wallet.js";
-import { Command, OptionValues, program } from "commander";
-import prompts from "prompts";
+import { EthereumSigner } from '@dha-team/arbundles';
+import { connect } from '@permaweb/aoconnect';
+import { JWKInterface } from 'arweave/node/lib/wallet.js';
+import { Command, OptionValues, program } from 'commander';
+import prompts from 'prompts';
 
 import {
   ANT,
@@ -73,8 +73,8 @@ import {
   mARIOToken,
   sha256B64Url,
   validIntents,
-} from "../node/index.js";
-import { globalOptions } from "./options.js";
+} from '../node/index.js';
+import { globalOptions } from './options.js';
 import {
   ANTStateCLIOptions,
   AddressCLIOptions,
@@ -90,7 +90,7 @@ import {
   UpdateGatewaySettingsCLIOptions,
   WalletCLIOptions,
   WriteActionCLIOptions,
-} from "./types.js";
+} from './types.js';
 
 export const defaultTtlSecondsCLI = 3600;
 
@@ -207,7 +207,7 @@ function walletFromOptions({
     return JSON.parse(privateKey);
   }
   if (walletFile !== undefined) {
-    return JSON.parse(readFileSync(walletFile, "utf-8"));
+    return JSON.parse(readFileSync(walletFile, 'utf-8'));
   }
   return undefined;
 }
@@ -218,7 +218,7 @@ export function requiredJwkFromOptions(
   const jwk = walletFromOptions(options);
   if (jwk === undefined) {
     throw new Error(
-      "No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`",
+      'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
     );
   }
   return jwk;
@@ -230,7 +230,7 @@ export function jwkToAddress(jwk: JWKInterface): string {
 
 function setLoggerIfDebug(options: GlobalCLIOptions) {
   if (options.debug) {
-    Logger.default.setLogLevel("debug");
+    Logger.default.setLogLevel('debug');
   }
 }
 
@@ -243,7 +243,7 @@ function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
   return new AOProcess({
     processId: arioProcessIdFromOptions(options),
     ao: connect({
-      MODE: "legacy",
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });
@@ -255,7 +255,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   return ARIO.init({
     hyperbeamUrl: options.hyperbeamUrl,
     process: aoProcessFromOptions({
-      cuUrl: "https://cu.ardrive.io", // default to ardrive cu for ARIO process
+      cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
       ...options,
     }),
     paymentUrl: options.paymentUrl,
@@ -279,12 +279,12 @@ export function contractSignerFromOptions(
   if (wallet === undefined) {
     return undefined;
   }
-  const token = options.token ?? "arweave";
+  const token = options.token ?? 'arweave';
 
-  if (token === "ethereum") {
+  if (token === 'ethereum') {
     const signer = new EthereumSigner(wallet as unknown as string);
     // For EthereumSigner, we need to convert the JWK to a string
-    return { signer, signerAddress: signer.publicKey.toString("hex") };
+    return { signer, signerAddress: signer.publicKey.toString('hex') };
   }
 
   // TODO: Support other wallet types
@@ -299,7 +299,7 @@ export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
   const contractSigner = contractSignerFromOptions(options);
   if (contractSigner === undefined) {
     throw new Error(
-      "No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`",
+      'No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`',
     );
   }
   return contractSigner;
@@ -330,12 +330,12 @@ export function writeARIOFromOptions(options: GlobalCLIOptions): {
 }
 
 export function formatARIOWithCommas(value: ARIOToken): string {
-  const [integerPart, decimalPart] = value.toString().split(".");
-  const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const [integerPart, decimalPart] = value.toString().split('.');
+  const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   if (decimalPart === undefined) {
     return integerWithCommas;
   }
-  return integerWithCommas + "." + decimalPart;
+  return integerWithCommas + '.' + decimalPart;
 }
 
 export function formatMARIOToARIOWithCommas(value: mARIOToken): string {
@@ -364,7 +364,7 @@ export function requiredAddressFromOptions<O extends AddressCLIOptions>(
   if (address !== undefined) {
     return address;
   }
-  throw new Error("No address provided. Use --address or --wallet-file");
+  throw new Error('No address provided. Use --address or --wallet-file');
 }
 
 const defaultCliPaginationLimit = 10; // more friendly UX than 100
@@ -374,7 +374,7 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): PaginationParams<R> {
   const { cursor, limit, sortBy, sortOrder, filters } = options;
-  if (sortOrder !== undefined && !["asc", "desc"].includes(sortOrder)) {
+  if (sortOrder !== undefined && !['asc', 'desc'].includes(sortOrder)) {
     throw new Error(
       `Invalid sort order: ${sortOrder}, must be "asc" or "desc"`,
     );
@@ -388,15 +388,15 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
   const filtersObject: Record<string, string[]> = {};
 
   if (filters !== undefined) {
-    if (typeof filters !== "object") {
-      throw new Error("Filters must be an object");
+    if (typeof filters !== 'object') {
+      throw new Error('Filters must be an object');
     }
 
     if (Array.isArray(filters)) {
       // every odd value is a key, every even value is a value for that key
       for (let i = 0; i < filters.length; i += 2) {
         // convert any strings that are numbers to numbers
-        const value = filters[i + 1].split(",").map((v) => {
+        const value = filters[i + 1].split(',').map((v) => {
           const num = +v;
           return isNaN(num) ? v : num;
         });
@@ -440,13 +440,13 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
     return {};
   }
   if (!Array.isArray(options.tags)) {
-    throw new Error("Tags must be an array");
+    throw new Error('Tags must be an array');
   }
   if (options.tags.length === 0) {
     return {};
   }
   if (options.tags.length % 2 !== 0) {
-    throw new Error("Tags must be an array of key-value pairs");
+    throw new Error('Tags must be an array of key-value pairs');
   }
   const tags: { name: string; value: string }[] = [];
   for (let i = 0; i < options.tags.length; i += 2) {
@@ -462,7 +462,7 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
 }
 
 export function servicesFromOptions(services?: string) {
-  if (services === undefined || services === null || services === "") {
+  if (services === undefined || services === null || services === '') {
     return undefined;
   }
 
@@ -475,25 +475,25 @@ export function servicesFromOptions(services?: string) {
     }
 
     if (parsed.bundlers.length > 20) {
-      throw new Error("Maximum 20 bundlers allowed");
+      throw new Error('Maximum 20 bundlers allowed');
     }
 
     // Validate each bundler
     for (const bundler of parsed.bundlers) {
-      if (!bundler.fqdn || typeof bundler.fqdn !== "string") {
+      if (!bundler.fqdn || typeof bundler.fqdn !== 'string') {
         throw new Error('Each bundler must have a valid "fqdn" string');
       }
       if (
-        typeof bundler.port !== "number" ||
+        typeof bundler.port !== 'number' ||
         bundler.port < 0 ||
         bundler.port > 65535
       ) {
         throw new Error('Each bundler must have a valid "port" (0-65535)');
       }
-      if (bundler.protocol !== "https") {
+      if (bundler.protocol !== 'https') {
         throw new Error('Each bundler protocol must be "https"');
       }
-      if (!bundler.path || typeof bundler.path !== "string") {
+      if (!bundler.path || typeof bundler.path !== 'string') {
         throw new Error('Each bundler must have a valid "path" string');
       }
     }
@@ -547,10 +547,10 @@ export function requiredTargetAndQuantityFromOptions(
   options: TransferCLIOptions,
 ): { target: string; arioQuantity: ARIOToken } {
   if (options.target === undefined) {
-    throw new Error("No target provided. Use --target");
+    throw new Error('No target provided. Use --target');
   }
   if (options.quantity === undefined) {
-    throw new Error("No quantity provided. Use --quantity");
+    throw new Error('No quantity provided. Use --quantity');
   }
   return {
     target: options.target,
@@ -565,7 +565,7 @@ export function redelegateParamsFromOptions(
     requiredTargetAndQuantityFromOptions(options);
   const source = options.source;
   if (source === undefined) {
-    throw new Error("No source provided. Use --source");
+    throw new Error('No source provided. Use --source');
   }
 
   return {
@@ -578,9 +578,9 @@ export function redelegateParamsFromOptions(
 
 export function recordTypeFromOptions<O extends { type?: string }>(
   options: O,
-): "lease" | "permabuy" {
-  options.type ??= "lease";
-  if (options.type !== "lease" && options.type !== "permabuy") {
+): 'lease' | 'permabuy' {
+  options.type ??= 'lease';
+  if (options.type !== 'lease' && options.type !== 'permabuy') {
     throw new Error(`Invalid type. Valid types are: lease, permabuy`);
   }
   return options.type;
@@ -605,7 +605,7 @@ export async function assertEnoughBalanceForArNSPurchase({
   address: string;
   costDetailsParams: AoGetCostDetailsParams;
 }) {
-  if (costDetailsParams.fundFrom === "turbo") {
+  if (costDetailsParams.fundFrom === 'turbo') {
     // TODO: Get turbo balance and assert it is enough -- retain paid-by from balance result and pass to CLI logic
     return;
   }
@@ -637,7 +637,7 @@ export async function assertEnoughMARIOBalance({
   address: string;
   mARIOQuantity: mARIOToken | number;
 }) {
-  if (typeof mARIOQuantity === "number") {
+  if (typeof mARIOQuantity === 'number') {
     mARIOQuantity = new mARIOToken(mARIOQuantity);
   }
   const balance = await ario.getBalance({ address });
@@ -653,8 +653,8 @@ export async function assertEnoughMARIOBalance({
 
 export async function confirmationPrompt(message: string): Promise<boolean> {
   const { confirm } = await prompts({
-    type: "confirm",
-    name: "confirm",
+    type: 'confirm',
+    name: 'confirm',
     message,
   });
   return confirm;
@@ -673,7 +673,7 @@ export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
   o: O,
 ): string {
   if (o.processId === undefined) {
-    throw new Error("--process-id is required");
+    throw new Error('--process-id is required');
   }
   return o.processId;
 }
@@ -682,7 +682,7 @@ function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
   return new AOProcess({
     processId: requiredProcessIdFromOptions(options),
     ao: connect({
-      MODE: "legacy",
+      MODE: 'legacy',
       CU_URL: options.cuUrl,
     }),
   });
@@ -796,17 +796,17 @@ export function getANTStateFromOptions(
 }
 
 export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
-  o.intent ??= "Buy-Name";
-  o.type ??= "lease";
-  o.years ??= "1";
+  o.intent ??= 'Buy-Name';
+  o.type ??= 'lease';
+  o.years ??= '1';
 
   if (!isValidIntent(o.intent)) {
     throw new Error(
-      `Invalid intent. Valid intents are: ${validIntents.join(", ")}`,
+      `Invalid intent. Valid intents are: ${validIntents.join(', ')}`,
     );
   }
 
-  if (o.type !== "lease" && o.type !== "permabuy") {
+  if (o.type !== 'lease' && o.type !== 'permabuy') {
     throw new Error(`Invalid type. Valid types are: lease, permabuy`);
   }
 
@@ -815,7 +815,7 @@ export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
     quantity: o.quantity !== undefined ? +o.quantity : undefined,
     years: +o.years,
     intent: o.intent,
-    name: requiredStringFromOptions(o, "name"),
+    name: requiredStringFromOptions(o, 'name'),
     fromAddress: addressFromOptions(o),
   };
 }
@@ -828,11 +828,11 @@ export function fundFromFromOptions<
   if (o.fundFrom !== undefined) {
     if (!isValidFundFrom(o.fundFrom)) {
       throw new Error(
-        `Invalid fund from: ${o.fundFrom}. Please use one of ${fundFromOptions.join(", ")}`,
+        `Invalid fund from: ${o.fundFrom}. Please use one of ${fundFromOptions.join(', ')}`,
       );
     }
   }
-  return o.fundFrom ?? "balance";
+  return o.fundFrom ?? 'balance';
 }
 
 export function referrerFromOptions<
@@ -885,12 +885,12 @@ export function antRecordMetadataFromOptions<
 } {
   return {
     ...(options.owner != null &&
-      options.owner !== "" && { owner: options.owner }),
+      options.owner !== '' && { owner: options.owner }),
     ...(options.displayName != null &&
-      options.displayName !== "" && { displayName: options.displayName }),
-    ...(options.logo != null && options.logo !== "" && { logo: options.logo }),
+      options.displayName !== '' && { displayName: options.displayName }),
+    ...(options.logo != null && options.logo !== '' && { logo: options.logo }),
     ...(options.description != null &&
-      options.description !== "" && { description: options.description }),
+      options.description !== '' && { description: options.description }),
     ...(options.keywords != null &&
       options.keywords.length > 0 && { keywords: options.keywords }),
   };

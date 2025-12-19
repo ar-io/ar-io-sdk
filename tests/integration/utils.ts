@@ -1,55 +1,55 @@
-import fs from "node:fs";
-import path from "node:path";
-import { AOProcess, AOS_MODULE_ID, AoClient } from "@ar.io/sdk";
-import AoLoader from "@permaweb/ao-loader";
+import fs from 'node:fs';
+import path from 'node:path';
+import { AOProcess, AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
+import AoLoader from '@permaweb/ao-loader';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 export const TEST_AOS_ANT_WASM = fs.readFileSync(
-  path.join(__dirname, "fixtures", `aos-ant-${AOS_MODULE_ID}.wasm`),
+  path.join(__dirname, 'fixtures', `aos-ant-${AOS_MODULE_ID}.wasm`),
 );
 
-export const STUB_PROCESS_ID = "process-id-".padEnd(43, "1");
-export const STUB_AR_ADDRESS = "arweave-address-".padEnd(43, "1");
-export const STUB_ETH_ADDRESS = "0xFCAd0B19bB29D4674531d6f115237E16AfCE377c";
-export const STUB_ANT_REGISTRY_ID = "ant-registry-".padEnd(43, "1");
+export const STUB_PROCESS_ID = 'process-id-'.padEnd(43, '1');
+export const STUB_AR_ADDRESS = 'arweave-address-'.padEnd(43, '1');
+export const STUB_ETH_ADDRESS = '0xFCAd0B19bB29D4674531d6f115237E16AfCE377c';
+export const STUB_ANT_REGISTRY_ID = 'ant-registry-'.padEnd(43, '1');
 
 export const AO_LOADER_HANDLER_ENV = {
   Process: {
     Id: STUB_AR_ADDRESS,
     Owner: STUB_AR_ADDRESS,
     Tags: [
-      { name: "Authority", value: "XXXXXX" },
-      { name: "ANT-Registry-Id", value: STUB_ANT_REGISTRY_ID },
+      { name: 'Authority', value: 'XXXXXX' },
+      { name: 'ANT-Registry-Id', value: STUB_ANT_REGISTRY_ID },
     ],
   },
   Module: {
-    Id: "".padEnd(43, "1"),
-    Tags: [{ name: "Authority", value: "YYYYYY" }],
+    Id: ''.padEnd(43, '1'),
+    Tags: [{ name: 'Authority', value: 'YYYYYY' }],
   },
 };
 
 export const AO_LOADER_OPTIONS = {
-  format: "wasm32-unknown-emscripten-metering",
-  inputEncoding: "JSON-1",
-  outputEncoding: "JSON-1",
-  memoryLimit: "1073741824", // 1 GiB in bytes
+  format: 'wasm32-unknown-emscripten-metering',
+  inputEncoding: 'JSON-1',
+  outputEncoding: 'JSON-1',
+  memoryLimit: '1073741824', // 1 GiB in bytes
   computeLimit: (9e12).toString(),
   extensions: [],
 };
 
 export const DEFAULT_HANDLE_OPTIONS = {
-  Id: "".padEnd(43, "1"),
-  ["Block-Height"]: "1",
+  Id: ''.padEnd(43, '1'),
+  ['Block-Height']: '1',
   // important to set the address so that that `Authority` check passes. Else the `isTrusted` with throw an error.
   Owner: STUB_AR_ADDRESS,
   Tags: [],
-  Module: "ANT",
+  Module: 'ANT',
   Target: STUB_AR_ADDRESS,
   From: STUB_AR_ADDRESS,
   Timestamp: Date.now(),
   // for msg.reply
-  Reference: "1",
-  Data: "1234",
+  Reference: '1',
+  Data: '1234',
 };
 
 export type HandleFunction = Awaited<ReturnType<typeof AoLoader>>;
@@ -83,14 +83,14 @@ export class LocalAO implements Partial<AoClient> {
   handlerEnv: typeof AO_LOADER_HANDLER_ENV;
 
   nonce: string;
-  resultsCache: Map<string, Awaited<ReturnType<AoClient["result"]>>> =
+  resultsCache: Map<string, Awaited<ReturnType<AoClient['result']>>> =
     new Map();
   constructor({
     wasmModule,
     handle,
     handlerEnv,
     memory = null,
-    nonce = "0".padStart(43, "0"),
+    nonce = '0'.padStart(43, '0'),
   }: {
     wasmModule: any;
     handle: HandleFunction;
@@ -127,9 +127,9 @@ export class LocalAO implements Partial<AoClient> {
   }
 
   async dryrun(
-    params: Parameters<AoClient["dryrun"]>[0],
+    params: Parameters<AoClient['dryrun']>[0],
     handlerEnvOverrides?: typeof AO_LOADER_HANDLER_ENV,
-  ): ReturnType<AoClient["dryrun"]> {
+  ): ReturnType<AoClient['dryrun']> {
     const res = await this.handle(
       this.memory,
       {
@@ -144,7 +144,7 @@ export class LocalAO implements Partial<AoClient> {
         ...(handlerEnvOverrides ?? {}),
       },
     );
-    if (!res) throw new Error("oops");
+    if (!res) throw new Error('oops');
 
     delete res.Memory;
 
@@ -152,10 +152,10 @@ export class LocalAO implements Partial<AoClient> {
   }
 
   async message(
-    params: Parameters<AoClient["message"]>[0],
+    params: Parameters<AoClient['message']>[0],
     handlerEnvOverrides?: typeof AO_LOADER_HANDLER_ENV,
   ): Promise<string> {
-    const newNonce = (parseInt(this.nonce) + 1).toString().padStart(43, "0");
+    const newNonce = (parseInt(this.nonce) + 1).toString().padStart(43, '0');
 
     const res = await this.handle(
       this.memory,
@@ -170,7 +170,7 @@ export class LocalAO implements Partial<AoClient> {
         ...(handlerEnvOverrides ?? {}),
       },
     ).catch((e) => console.error(e));
-    if (!res) throw new Error("Error from handle: " + res);
+    if (!res) throw new Error('Error from handle: ' + res);
     const { Memory, ...rest } = res;
     this.memory = Memory;
     this.nonce = newNonce;
@@ -179,10 +179,10 @@ export class LocalAO implements Partial<AoClient> {
   }
 
   async result(
-    params: Parameters<AoClient["result"]>[0],
-  ): ReturnType<AoClient["result"]> {
+    params: Parameters<AoClient['result']>[0],
+  ): ReturnType<AoClient['result']> {
     const res = this.resultsCache.get(params.message);
-    if (!res) throw new Error("Message does exist");
+    if (!res) throw new Error('Message does exist');
     return res;
   }
 
@@ -190,7 +190,7 @@ export class LocalAO implements Partial<AoClient> {
 }
 
 export async function createLocalProcess({
-  processId = "process-".padEnd(43, "0"),
+  processId = 'process-'.padEnd(43, '0'),
   wasmModule = TEST_AOS_ANT_WASM,
   aoLoaderOptions = AO_LOADER_OPTIONS,
   handlerEnv = AO_LOADER_HANDLER_ENV,
