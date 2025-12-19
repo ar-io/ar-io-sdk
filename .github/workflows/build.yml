@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         node_version: [18.x, 20.x]
-        command: ["lint", "format", "build"]
+        command: ["lint:check", "format:check", "build"]
     steps:
       - uses: actions/checkout@v4
 
