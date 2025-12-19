@@ -11,12 +11,12 @@ on:
       - alpha
 
 jobs:
-  build:
-    uses: ar-io/ar-io-sdk/.github/workflows/build.yml@alpha
-    secrets: inherit
+  # build:
+  #   uses: ar-io/ar-io-sdk/.github/workflows/build.yml@alpha
+  #   secrets: inherit
   release:
     runs-on: ubuntu-latest
-    needs: build
+    # needs: build
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
@@ -32,7 +32,7 @@ jobs:
       - name: Set Up node
         uses: actions/setup-node@v4
         with:
-          cache: 'yarn'
+          cache: "yarn"
           node-version-file: .nvmrc
 
       - name: Install dependencies
