@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANT_REGISTRY_ID } from '../constants.js';
+import { ANT_REGISTRY_ID } from "../constants.js";
 import {
   AoANTRegistryRead,
   AoANTRegistryWrite,
-} from '../types/ant-registry.js';
+} from "../types/ant-registry.js";
 import {
   AoMessageResult,
   AoSigner,
@@ -25,10 +25,10 @@ import {
   WithSigner,
   isProcessConfiguration,
   isProcessIdConfiguration,
-} from '../types/index.js';
-import { createAoSigner } from '../utils/ao.js';
-import { AOProcess, InvalidContractConfigurationError } from './index.js';
-import { ILogger, Logger } from './logger.js';
+} from "../types/index.js";
+import { createAoSigner } from "../utils/ao.js";
+import { AOProcess, InvalidContractConfigurationError } from "./index.js";
+import { ILogger, Logger } from "./logger.js";
 
 type ANTRegistryProcessConfig = Required<ProcessConfiguration> & {
   strict?: boolean;
@@ -53,7 +53,7 @@ export class ANTRegistry {
   static init(
     config?: ANTRegistryConfig,
   ): AoANTRegistryRead | AoANTRegistryWrite {
-    if (config !== undefined && 'signer' in config) {
+    if (config !== undefined && "signer" in config) {
       return new AoANTRegistryWriteable(config);
     }
     return new AoANTRegistryReadable(config);
@@ -105,25 +105,25 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     if (this.checkHyperBeamPromise !== undefined) {
       return this.checkHyperBeamPromise;
     }
-    this.logger.debug('Checking HyperBeam compatibility');
+    this.logger.debug("Checking HyperBeam compatibility");
     this.checkHyperBeamPromise = fetch(
       // use /now to force a refresh of the cache state, then compute when calling it for keys
       `${this.hyperbeamUrl.toString()}${this.process.processId}~process@1.0/now/cache/acl`,
       {
-        method: 'HEAD',
+        method: "HEAD",
         signal: AbortSignal.timeout(5000), // 5 second timeout
       },
     )
       .then((res) => {
         if (res.ok) {
-          this.logger.debug('HyperBeam compatible');
+          this.logger.debug("HyperBeam compatible");
           return true;
         }
-        this.logger.debug('HyperBeam not compatible');
+        this.logger.debug("HyperBeam not compatible");
         return false;
       })
       .catch((error) => {
-        this.logger.debug('Failed to check HyperBeam compatibility', {
+        this.logger.debug("Failed to check HyperBeam compatibility", {
           cause: error,
         });
         return false;
@@ -143,7 +143,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
       while (retries < 3) {
         try {
           this.logger.debug(
-            'Fetching ant registry acl for address from hyperbeam',
+            "Fetching ant registry acl for address from hyperbeam",
             address,
           );
           const res = await fetch(
@@ -152,17 +152,17 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
 
           if (res.status !== 200) {
             this.logger.debug(
-              'Failed to fetch ant registry acl for address from hyperbeam',
+              "Failed to fetch ant registry acl for address from hyperbeam",
               address,
               res.status,
               res.statusText,
             );
             throw new Error(
-              `Failed to fetch ant registry acl for address ${address}: ${res?.statusText ?? 'Unknown error'}`,
+              `Failed to fetch ant registry acl for address ${address}: ${res?.statusText ?? "Unknown error"}`,
             );
           }
           this.logger.debug(
-            'Fetched ant registry acl for address from hyperbeam',
+            "Fetched ant registry acl for address from hyperbeam",
             address,
           );
           const json = (await res.json()) as {
@@ -173,10 +173,10 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             Owned: json.Owned,
             Controlled: json.Controlled,
           };
-        } catch (error) {
+        } catch (_error) {
           retries++;
           this.logger.debug(
-            'Failed to fetch ant registry acl for address from hyperbeam',
+            "Failed to fetch ant registry acl for address from hyperbeam",
             address,
             retries,
           );
@@ -188,13 +188,13 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
     }
 
     this.logger.debug(
-      'Fetching ant registry acl for address from process',
+      "Fetching ant registry acl for address from process",
       address,
     );
     return this.process.read({
       tags: [
-        { name: 'Action', value: 'Access-Control-List' },
-        { name: 'Address', value: address },
+        { name: "Action", value: "Access-Control-List" },
+        { name: "Address", value: address },
       ],
     });
   }
@@ -230,8 +230,8 @@ export class AoANTRegistryWriteable
   }): Promise<AoMessageResult> {
     return this.process.send({
       tags: [
-        { name: 'Action', value: 'Register' },
-        { name: 'Process-Id', value: processId },
+        { name: "Action", value: "Register" },
+        { name: "Process-Id", value: processId },
       ],
       signer: this.signer,
     });

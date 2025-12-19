@@ -42,7 +42,7 @@ yarn add @ar.io/sdk --ignore-engines
 ## Quick Start
 
 ```typescript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO } from "@ar.io/sdk";
 
 const ario = ARIO.mainnet(); // defaults to mainnet
 const gateways = await ario.getGateways();
@@ -108,7 +108,7 @@ The SDK is provided in both CommonJS and ESM formats and is compatible with bund
 #### Bundlers (Webpack, Rollup, ESbuild, etc.)
 
 ```javascript
-import { ARIO } from '@ar.io/sdk/web';
+import { ARIO } from "@ar.io/sdk/web";
 
 // set up client
 const ario = ARIO.mainnet();
@@ -121,7 +121,7 @@ const gateways = await ario.getGateways();
 ```html
 <script type="module">
   // replace <version> with a release version (e.g. 3.8.4)
-  import { ARIO } from 'https://github.com/ar-io/ar-io-sdk/releases/download/v<version>/web.bundle.min.js';
+  import { ARIO } from "https://github.com/ar-io/ar-io-sdk/releases/download/v<version>/web.bundle.min.js";
 
   // set up client
   const ario = ARIO.mainnet();
@@ -135,7 +135,7 @@ const gateways = await ario.getGateways();
 #### ESM (NodeNext)
 
 ```javascript
-import { ARIO } from '@ar.io/sdk/node';
+import { ARIO } from "@ar.io/sdk/node";
 
 // set up client
 const ario = ARIO.mainnet();
@@ -146,7 +146,7 @@ const gateways = await ario.getGateways();
 #### CJS
 
 ```javascript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO } from "@ar.io/sdk";
 
 // set up client
 const ario = ARIO.mainnet();
@@ -174,11 +174,12 @@ Factory function to that creates a read-only or writeable client. By providing a
 const ario = ARIO.init();
 
 // read-write client for browser environments
-const ario = ARIO.init({ signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({}))});
+const ario = ARIO.init({
+  signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({})),
+});
 
 // read-write client for node environments
 const ario = ARIO.init({ signer: new ArweaveSigner(JWK) });
-
 ```
 
 #### `getInfo()`
@@ -250,7 +251,7 @@ const ario = ARIO.mainnet();
 // the balance will be returned in mARIO as a value
 const balance = await ario
   .getBalance({
-    address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+    address: "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
   })
   .then((balance: number) => new mARIOToken(balance).toARIO()); // convert it to ARIO for readability
 ```
@@ -271,10 +272,10 @@ Retrieves the balances of the ARIO process in `mARIO`, paginated and sorted by t
 ```typescript
 const ario = ARIO.mainnet();
 const balances = await ario.getBalances({
-  cursor: '-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA',
+  cursor: "-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA",
   limit: 100,
-  sortBy: 'balance',
-  sortOrder: 'desc',
+  sortBy: "balance",
+  sortOrder: "desc",
 });
 ```
 
@@ -316,11 +317,11 @@ const ario = ARIO.mainnet({
 });
 const { id: txId } = await ario.transfer(
   {
-    target: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    target: "-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5",
     qty: new ARIOToken(1000).toMARIO(),
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -339,7 +340,7 @@ As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the 
 As of `v3.8.1` the SDK defaults all API interactions to **mainnet**. To use the **testnet** or **devnet** provide the appropriate `ARIO_TESTNET_PROCESS_ID` or `ARIO_DEVNET_PROCESS_ID` when initializing the client.
 
 ```typescript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO } from "@ar.io/sdk";
 
 const ario = ARIO.mainnet(); // or ARIO.init()
 ```
@@ -347,7 +348,7 @@ const ario = ARIO.mainnet(); // or ARIO.init()
 #### Testnet
 
 ```typescript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO } from "@ar.io/sdk";
 
 const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCESS_ID })
 ```
@@ -369,7 +370,7 @@ To claim testnet tokens from the testnet token faucet, you can use one of the fo
   <summary><i>Example client-side code for claiming tokens</i></summary>
 
 ```typescript
-import { ARIO } from '@ar.io/sdk';
+import { ARIO } from "@ar.io/sdk";
 
 const testnet = ARIO.testnet();
 const captchaUrl = await ario.faucet.captchaUrl();
@@ -377,17 +378,17 @@ const captchaUrl = await ario.faucet.captchaUrl();
 // open the captcha URL in the browser, and listen for the auth token event
 const captchaWindow = window.open(
   captchaUrl.captchaUrl,
-  '_blank',
-  'width=600,height=600',
+  "_blank",
+  "width=600,height=600",
 );
 /**
  * The captcha URL includes a window.parent.postMessage event that is used to send the auth token to the parent window.
  * You can store the auth token in localStorage and use it to claim tokens for the duration of the auth token's expiration (default 1 hour).
  */
-window.parent.addEventListener('message', async (event) => {
-  if (event.data.type === 'ario-jwt-success') {
-    localStorage.setItem('ario-jwt', event.data.token);
-    localStorage.setItem('ario-jwt-expires-at', event.data.expiresAt);
+window.parent.addEventListener("message", async (event) => {
+  if (event.data.type === "ario-jwt-success") {
+    localStorage.setItem("ario-jwt", event.data.token);
+    localStorage.setItem("ario-jwt-expires-at", event.data.expiresAt);
     // close our captcha window
     captchaWindow?.close();
     // claim the tokens using the JWT token
@@ -399,7 +400,7 @@ window.parent.addEventListener('message', async (event) => {
       })
       .then((res) => {
         alert(
-          'Successfully claimed 100 ARIO tokens! Transaction ID: ' + res.id,
+          "Successfully claimed 100 ARIO tokens! Transaction ID: " + res.id,
         );
       })
       .catch((err) => {
@@ -412,11 +413,11 @@ window.parent.addEventListener('message', async (event) => {
  * Once you have a valid JWT, you can check if it is still valid and use it for subsequent requests without having to open the captcha again.
  */
 if (
-  localStorage.getItem('ario-jwt-expires-at') &&
-  Date.now() < parseInt(localStorage.getItem('ario-jwt-expires-at') ?? '0')
+  localStorage.getItem("ario-jwt-expires-at") &&
+  Date.now() < parseInt(localStorage.getItem("ario-jwt-expires-at") ?? "0")
 ) {
   const res = await testnet.faucet.claimWithAuthToken({
-    authToken: localStorage.getItem('ario-jwt') ?? '',
+    authToken: localStorage.getItem("ario-jwt") ?? "",
     recipient: await window.arweaveWallet.getActiveAddress(),
     quantity: new ARIOToken(100).toMARIO().valueOf(), // 100 ARIO
   });
@@ -434,8 +435,8 @@ Retrieves the locked-balance user vault of the ARIO process by the specified wal
 ```typescript
 const ario = ARIO.mainnet();
 const vault = await ario.getVault({
-  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
-  vaultId: 'vaultIdOne',
+  address: "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  vaultId: "vaultIdOne",
 });
 ```
 
@@ -459,10 +460,10 @@ Retrieves all locked-balance user vaults of the ARIO process, paginated and sort
 ```typescript
 const ario = ARIO.mainnet();
 const vaults = await ario.getVaults({
-  cursor: '0',
+  cursor: "0",
   limit: 100,
-  sortBy: 'balance',
-  sortOrder: 'desc',
+  sortBy: "balance",
+  sortOrder: "desc",
 });
 ```
 
@@ -508,13 +509,13 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.vaultedTransfer(
   {
-    recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
+    recipient: "-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5",
     quantity: new ARIOToken(1000).toMARIO(),
     lockLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
     revokable: true,
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -527,8 +528,8 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 ```typescript
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.revokeVault({
-  recipient: '-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5',
-  vaultId: 'IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs',
+  recipient: "-5dV7nk7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5",
+  vaultId: "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
 });
 ```
 
@@ -553,7 +554,7 @@ Extends the lock length of a signer's vault by the specified `extendLengthMs` mi
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 
 const { id: txId } = await ario.extendVault({
-  vaultId: 'vaultIdOne',
+  vaultId: "vaultIdOne",
   extendLengthMs: 1000 * 60 * 60 * 24 * 365, // 1 year
 });
 ```
@@ -565,7 +566,7 @@ Increases the balance of a signer's vault by the specified `quantity` of mARIO.
 ```typescript
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.increaseVault({
-  vaultId: 'vaultIdOne',
+  vaultId: "vaultIdOne",
   quantity: new ARIOToken(1000).toMARIO(),
 });
 ```
@@ -579,7 +580,7 @@ Retrieves a gateway's info by its staking wallet address.
 ```typescript
 const ario = ARIO.mainnet();
 const gateway = await ario.getGateway({
-  address: '-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck',
+  address: "-7vXsQZQDk8TMDlpiSLy3CnLi5PDPlAaN2DaynORpck",
 });
 ```
 
@@ -629,8 +630,8 @@ Retrieves registered gateways of the ARIO process, using pagination and sorting 
 const ario = ARIO.mainnet();
 const gateways = await ario.getGateways({
   limit: 100,
-  sortOrder: 'desc',
-  sortBy: 'operatorStake',
+  sortOrder: "desc",
+  sortBy: "operatorStake",
 });
 ```
 
@@ -691,10 +692,10 @@ Retrieves all delegates for a specific gateway, paginated and sorted by the spec
 ```typescript
 const ario = ARIO.mainnet();
 const delegates = await ario.getGatewayDelegates({
-  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  address: "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
   limit: 3,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
+  sortBy: "startTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -746,16 +747,16 @@ const { id: txId } = await ario.joinNetwork(
     allowDelegatedStaking: true, // allows delegated staking
     minDelegatedStake: new ARIOToken(100).toMARIO(), // minimum delegated stake allowed
     delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
-    label: 'john smith', // min 1, max 64 characters
-    note: 'The example gateway', // max 256 characters
-    properties: 'FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44', // Arweave transaction ID containing additional properties of the Gateway
-    observerWallet: '0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj', // wallet address of the observer, must match OBSERVER_WALLET on the observer
-    fqdn: 'example.com', // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
+    label: "john smith", // min 1, max 64 characters
+    note: "The example gateway", // max 256 characters
+    properties: "FH1aVetOoulPGqgYukj0VE0wIhDy90WiQoV3U2PeY44", // Arweave transaction ID containing additional properties of the Gateway
+    observerWallet: "0VE0wIhDy90WiQoV3U2PeY44FH1aVetOoulPGqgYukj", // wallet address of the observer, must match OBSERVER_WALLET on the observer
+    fqdn: "example.com", // fully qualified domain name - note: you must own the domain and set the OBSERVER_WALLET on your gateway to match `observerWallet`
     port: 443, // port number
-    protocol: 'https', // only 'https' is supported
+    protocol: "https", // only 'https' is supported
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -770,7 +771,7 @@ const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 
 const { id: txId } = await ario.leaveNetwork(
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -788,7 +789,7 @@ const { id: txId } = await ario.updateGatewaySettings(
     minDelegatedStake: new ARIOToken(100).toMARIO(),
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -802,11 +803,11 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.increaseDelegateStake(
   {
-    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    target: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
     qty: new ARIOToken(100).toMARIO(),
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -820,11 +821,11 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.decreaseDelegateStake(
   {
-    target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    target: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
     qty: new ARIOToken(100).toMARIO(),
   },
   {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+    tags: [{ name: "App-Name", value: "My-Awesome-App" }],
   },
 );
 ```
@@ -834,7 +835,7 @@ Pay the early withdrawal fee and withdraw instantly.
 ```typescript
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.decreaseDelegateStake({
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  target: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
   qty: new ARIOToken(100).toMARIO(),
   instant: true, // Immediately withdraw this stake and pay the instant withdrawal fee
 });
@@ -847,11 +848,11 @@ Retrieves all active and vaulted stakes across all gateways for a specific addre
 ```typescript
 const ario = ARIO.mainnet();
 const vaults = await ario.getDelegations({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  cursor: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789',
+  address: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  cursor: "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ_123456789",
   limit: 2,
-  sortBy: 'startTimestamp',
-  sortOrder: 'asc',
+  sortBy: "startTimestamp",
+  sortOrder: "asc",
 });
 ```
 
@@ -901,21 +902,19 @@ const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.instantWithdrawal(
   {
     // gateway address where delegate vault exists
-    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    gatewayAddress: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
     // delegated vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+    vaultId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
   },
   // optional additional tags
   {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+    tags: [{ name: "App-Name", value: "My-Awesome-App" }],
   },
 );
 // removes an operator vault from a gateway
-const { id: txId } = await ario.instantWithdrawal(
-  {
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-);
+const { id: txId } = await ario.instantWithdrawal({
+  vaultId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
+});
 ```
 
 #### `cancelWithdrawal({ gatewayAddress, vaultId })`
@@ -930,20 +929,18 @@ const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.cancelWithdrawal(
   {
     // gateway address where vault exists
-    gatewayAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+    gatewayAddress: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
     // vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+    vaultId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 // cancels an operator vault from a gateway
-const { id: txId } = await ario.cancelWithdrawal(
-  {
-    // operator vault id to cancel
-    vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-  },
-);
+const { id: txId } = await ario.cancelWithdrawal({
+  // operator vault id to cancel
+  vaultId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
+});
 ```
 
 #### `getAllowedDelegates({ address, cursor, limit, sortBy, sortOrder })`
@@ -953,7 +950,7 @@ Retrieves all allowed delegates for a specific address. The `cursor` used for pa
 ```typescript
 const ario = ARIO.mainnet();
 const allowedDelegates = await ario.getAllowedDelegates({
-  address: 'QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ',
+  address: "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
 });
 ```
 
@@ -1020,8 +1017,8 @@ Retrieves all vaults across all gateways, paginated and sorted by the specified 
 const ario = ARIO.mainnet();
 const vaults = await ario.getAllGatewayVaults({
   limit: 1,
-  sortBy: 'endTimestamp',
-  sortOrder: 'desc',
+  sortBy: "endTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -1064,7 +1061,7 @@ const { id: txId } = await ario.increaseOperatorStake(
     qty: new ARIOToken(100).toMARIO(),
   },
   {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+    tags: [{ name: "App-Name", value: "My-Awesome-App" }],
   },
 );
 ```
@@ -1082,7 +1079,7 @@ const { id: txId } = await ario.decreaseOperatorStake(
     qty: new ARIOToken(100).toMARIO(),
   },
   {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+    tags: [{ name: "App-Name", value: "My-Awesome-App" }],
   },
 );
 ```
@@ -1097,10 +1094,10 @@ e.g: If 1000 mARIO is redelegated and the fee rate is 10%, the fee will be 100 m
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 
 const { id: txId } = await ario.redelegateStake({
-  target: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  source: 'HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA',
+  target: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  source: "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
   stakeQty: new ARIOToken(1000).toMARIO(),
-  vaultId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
+  vaultId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
 });
 ```
 
@@ -1112,7 +1109,7 @@ Retrieves the fee rate as percentage required to redelegate the stake of a speci
 const ario = ARIO.mainnet();
 
 const fee = await ario.getRedelegationFee({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  address: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
 });
 ```
 
@@ -1136,8 +1133,8 @@ Retrieves all delegates across all gateways, paginated and sorted by the specifi
 const ario = ARIO.mainnet();
 const delegates = await ario.getAllDelegates({
   limit: 2,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
+  sortBy: "startTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -1185,7 +1182,7 @@ Resolves an ArNS name to the underlying data id stored on the names correspondin
 
 ```typescript
 const ario = ARIO.mainnet();
-const record = await ario.resolveArNSName({ name: 'ardrive' });
+const record = await ario.resolveArNSName({ name: "ardrive" });
 ```
 
 <details>
@@ -1209,7 +1206,7 @@ const record = await ario.resolveArNSName({ name: 'ardrive' });
 
 ```typescript
 const ario = ARIO.mainnet();
-const record = await ario.resolveArNSName({ name: 'logo_ardrive' });
+const record = await ario.resolveArNSName({ name: "logo_ardrive" });
 ```
 
 <details>
@@ -1247,28 +1244,28 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer });
 const record = await ario.buyRecord(
   {
-    name: 'ardrive',
-    type: 'lease',
+    name: "ardrive",
+    type: "lease",
     years: 1,
-    processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM', // optional: assign to existing ANT process
-    referrer: 'my-app.com', // optional: track purchase referrals for analytics
+    processId: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", // optional: assign to existing ANT process
+    referrer: "my-app.com", // optional: track purchase referrals for analytics
   },
   {
     // optional tags
-    tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+    tags: [{ name: "App-Name", value: "ArNS-App" }],
     onSigningProgress: (step, event) => {
       console.log(`Signing progress: ${step}`);
-      if (step === 'spawning-ant') {
-        console.log('Spawning ant:', event);
+      if (step === "spawning-ant") {
+        console.log("Spawning ant:", event);
       }
-      if (step === 'registering-ant') {
-        console.log('Registering ant:', event);
+      if (step === "registering-ant") {
+        console.log("Registering ant:", event);
       }
-      if (step === 'verifying-state') {
-        console.log('Verifying state:', event);
+      if (step === "verifying-state") {
+        console.log("Verifying state:", event);
       }
-      if (step === 'buying-name') {
-        console.log('Buying name:', event);
+      if (step === "buying-name") {
+        console.log("Buying name:", event);
       }
     },
   },
@@ -1285,12 +1282,12 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer });
 const record = await ario.upgradeRecord(
   {
-    name: 'ardrive',
-    referrer: 'my-app.com', // optional: track purchase referrals for analytics
+    name: "ardrive",
+    referrer: "my-app.com", // optional: track purchase referrals for analytics
   },
   {
     // optional tags
-    tags: [{ name: 'App-Name', value: 'ArNS-App' }],
+    tags: [{ name: "App-Name", value: "ArNS-App" }],
   },
 );
 ```
@@ -1301,7 +1298,7 @@ Retrieves the record info of the specified ArNS name.
 
 ```typescript
 const ario = ARIO.mainnet();
-const record = await ario.getArNSRecord({ name: 'ardrive' });
+const record = await ario.getArNSRecord({ name: "ardrive" });
 ```
 
 <details>
@@ -1328,8 +1325,8 @@ const ario = ARIO.mainnet();
 // get the newest 100 names
 const records = await ario.getArNSRecords({
   limit: 100,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
+  sortBy: "startTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -1405,10 +1402,10 @@ Retrieves all registered ArNS records of the specified address according to the 
 ```typescript
 const ario = ARIO.mainnet();
 const records = await ario.getArNSRecordsForAddress({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  address: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
   limit: 100,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
+  sortBy: "startTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -1451,12 +1448,12 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.increaseUndernameLimit(
   {
-    name: 'ar-io',
+    name: "ar-io",
     qty: 420,
-    referrer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: "my-app.com", // optional: track purchase referrals for analytics
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -1468,12 +1465,12 @@ Extends the lease of a registered ArNS domain, with an extension of 1-5 years de
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.extendLease(
   {
-    name: 'ar-io',
+    name: "ar-io",
     years: 1,
-    referrer: 'my-app.com', // optional: track purchase referrals for analytics
+    referrer: "my-app.com", // optional: track purchase referrals for analytics
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -1484,9 +1481,9 @@ Calculates the price in mARIO to perform the interaction in question, eg a 'Buy-
 ```typescript
 const price = await ario
   .getTokenCost({
-    intent: 'Buy-Name',
-    name: 'ar-io',
-    type: 'permabuy',
+    intent: "Buy-Name",
+    name: "ar-io",
+    type: "permabuy",
   })
   .then((p) => new mARIOToken(p).toARIO()); // convert to ARIO for readability
 ```
@@ -1506,11 +1503,11 @@ Calculates the expanded cost details for the interaction in question, e.g a 'Buy
 
 ```typescript
 const costDetails = await ario.getCostDetails({
-  intent: 'Buy-Name',
-  fromAddress: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
-  fundFrom: 'stakes',
-  name: 'ar-io',
-  type: 'permabuy',
+  intent: "Buy-Name",
+  fromAddress: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
+  fundFrom: "stakes",
+  name: "ar-io",
+  type: "permabuy",
 });
 ```
 
@@ -1563,8 +1560,8 @@ Retrieves all active returned names of the ARIO process, paginated and sorted by
 const ario = ARIO.mainnet();
 const returnedNames = await ario.getArNSReturnedNames({
   limit: 100,
-  sortBy: 'endTimestamp',
-  sortOrder: 'asc', // return the returned names ending soonest first
+  sortBy: "endTimestamp",
+  sortOrder: "asc", // return the returned names ending soonest first
 });
 ```
 
@@ -1604,7 +1601,7 @@ Retrieves the returned name data for the specified returned name.
 
 ```typescript
 const ario = ARIO.mainnet();
-const returnedName = await ario.getArNSReturnedName({ name: 'permalink' });
+const returnedName = await ario.getArNSReturnedName({ name: "permalink" });
 ```
 
 <details>
@@ -1859,11 +1856,11 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.saveObservations(
   {
-    reportTxId: 'fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3',
-    failedGateways: ['t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3'],
+    reportTxId: "fDrr0_J4Iurt7caNST02cMotaz2FIbWQ4Kcj616RHl3",
+    failedGateways: ["t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3"],
   },
   {
-    tags: [{ name: 'App-Name', value: 'My-Awesome-App' }],
+    tags: [{ name: "App-Name", value: "My-Awesome-App" }],
   },
 );
 ```
@@ -1910,10 +1907,10 @@ Retrieves all primary names paginated and sorted by the specified criteria. The 
 ```typescript
 const ario = ARIO.mainnet();
 const names = await ario.getPrimaryNames({
-  cursor: 'ao', // this is the last name from the previous request
+  cursor: "ao", // this is the last name from the previous request
   limit: 1,
-  sortBy: 'startTimestamp',
-  sortOrder: 'desc',
+  sortBy: "startTimestamp",
+  sortOrder: "desc",
 });
 ```
 
@@ -1947,11 +1944,11 @@ Retrieves the primary name for a given name or address.
 ```typescript
 const ario = ARIO.mainnet();
 const name = await ario.getPrimaryName({
-  name: 'arns',
+  name: "arns",
 });
 // or
 const name = await ario.getPrimaryName({
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  address: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
 });
 ```
 
@@ -1977,7 +1974,7 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 ```typescript
 const signer = new ArweaveSigner(jwk);
 const ario = ARIO.mainnet({ signer });
-await ario.setPrimaryName({ name: 'my-arns-name' }); // the caller must already have purchased the name my-arns-name and be assigned as the owner of the processId that is assigned to the name
+await ario.setPrimaryName({ name: "my-arns-name" }); // the caller must already have purchased the name my-arns-name and be assigned as the owner of the processId that is assigned to the name
 ```
 
 #### `requestPrimaryName({ name })`
@@ -1989,7 +1986,7 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 ```typescript
 const ario = ARIO.mainnet({ signer: new ArweaveSigner(jwk) });
 const { id: txId } = await ario.requestPrimaryName({
-  name: 'arns',
+  name: "arns",
 });
 ```
 
@@ -2000,7 +1997,7 @@ Retrieves the primary name request for a a wallet address.
 ```typescript
 const ario = ARIO.mainnet();
 const request = await ario.getPrimaryNameRequest({
-  initiator: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3',
+  initiator: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
 });
 ```
 
@@ -2055,15 +2052,14 @@ Factory function to that creates a read-only or writeable client. By providing a
 // in a browser environment with ArConnect
 const ant = ANT.init({
   signer: new ArConnectSigner(window.arweaveWallet, Arweave.init({})),
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
+  processId: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
 });
 
 // in a node environment
 const ant = ANT.init({
   signer: new ArweaveSigner(JWK),
-  processId: 'bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM'
+  processId: "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
 });
-
 ```
 
 ### Spawn
@@ -2075,26 +2071,26 @@ Spawns a new ANT (Arweave Name Token) process. This static function creates a ne
 _Note: Requires `signer` to be provided to sign the spawn transaction._
 
 ```typescript
-import { ANT } from '@ar.io/sdk';
-import { ArweaveSigner } from '@ar.io/sdk/node';
+import { ANT } from "@ar.io/sdk";
+import { ArweaveSigner } from "@ar.io/sdk/node";
 
 const processId = await ANT.spawn({
   signer: new ArweaveSigner(jwk),
   state: {
-    name: 'My ANT',
-    ticker: 'MYANT',
-    description: 'My custom ANT token',
+    name: "My ANT",
+    ticker: "MYANT",
+    description: "My custom ANT token",
   },
 });
 
 // Using a custom module ID
 const processId = await ANT.spawn({
   signer: new ArweaveSigner(jwk),
-  module: 'FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE', // Custom module ID
+  module: "FKtQtOOtlcWCW2pXrwWFiCSlnuewMZOHCzhulVkyqBE", // Custom module ID
   state: {
-    name: 'My Custom Module ANT',
-    ticker: 'CUSTOM',
-    description: 'ANT using a specific module version',
+    name: "My Custom Module ANT",
+    ticker: "CUSTOM",
+    description: "ANT using a specific module version",
   },
 });
 ```
@@ -2134,8 +2130,8 @@ console.log(`ANT was spawned with module: ${moduleId}`);
 
 // With custom GraphQL URL and retries
 const moduleId = await ant.getModuleId({
-  graphqlUrl: 'https://arweave.net/graphql',
-  retries: 5
+  graphqlUrl: "https://arweave.net/graphql",
+  retries: 5,
 });
 ```
 
@@ -2158,7 +2154,7 @@ console.log(`ANT is running version: ${version}`);
 
 // With custom ANT registry
 const version = await ant.getVersion({
-  antRegistryId: 'custom-ant-registry-id'
+  antRegistryId: "custom-ant-registry-id",
 });
 ```
 
@@ -2178,7 +2174,7 @@ Checks if the current ANT version is the latest according to the ANT registry.
 ```typescript
 const isLatest = await ant.isLatestVersion();
 if (!isLatest) {
-  console.log('ANT can be upgraded to the latest version');
+  console.log("ANT can be upgraded to the latest version");
 }
 ```
 
@@ -2196,7 +2192,7 @@ true
 Static method that returns the full array of available ANT versions and the latest version from the ANT registry.
 
 ```typescript
-import { ANT } from '@ar.io/sdk';
+import { ANT } from "@ar.io/sdk";
 
 // Get all available ANT versions
 const antVersions = ANT.versions;
@@ -2224,10 +2220,10 @@ Result:
 Static method that returns the latest ANT version from the ANT registry.
 
 ```typescript
-import { ANT } from '@ar.io/sdk';
+import { ANT } from "@ar.io/sdk";
 
 // Get the latest ANT version
-import { ANT } from '@ar.io/sdk';
+import { ANT } from "@ar.io/sdk";
 
 // Get all available ANT versions
 const antVersions = ANT.versions;
@@ -2473,7 +2469,7 @@ const records = await ant.getRecords();
 Returns a specific record by its undername.
 
 ```typescript
-const record = await ant.getRecord({ undername: 'dapp' });
+const record = await ant.getRecord({ undername: "dapp" });
 ```
 
 <details>
@@ -2521,7 +2517,7 @@ Returns the balance of a specific address.
 
 ```typescript
 const balance = await ant.getBalance({
-  address: 'ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4',
+  address: "ccp3blG__gKUvG3hsGC2u06aDmqv4CuhuDJGOIg0jw4",
 });
 ```
 
@@ -2544,9 +2540,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.transfer(
-  { target: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
+  { target: "aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2560,9 +2556,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.addController(
-  { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
+  { controller: "aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2574,9 +2570,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.removeController(
-  { controller: 'aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f' },
+  { controller: "aGzM_yjralacHIUo8_nQXMbh9l1cy0aksiL_x9M359f" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2590,24 +2586,24 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 // get the ant for the base name
-const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: "ardrive" });
 const ant = await ANT.init({ processId: arnsName.processId });
 
 // Basic usage
 const { id: txId } = await ant.setBaseNameRecord({
-  transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+  transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
   ttlSeconds: 3600,
 });
 
 // With ownership delegation and metadata
 const { id: txId } = await ant.setBaseNameRecord({
-  transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+  transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
   ttlSeconds: 3600,
-  owner: 'user-wallet-address-123...', // delegate ownership to another address
-  displayName: 'ArDrive', // display name
-  logo: 'logo-tx-id-123...', // logo transaction ID
-  description: 'Decentralized storage application',
-  keywords: ['storage', 'decentralized', 'web3'],
+  owner: "user-wallet-address-123...", // delegate ownership to another address
+  displayName: "ArDrive", // display name
+  logo: "logo-tx-id-123...", // logo transaction ID
+  description: "Decentralized storage application",
+  keywords: ["storage", "decentralized", "web3"],
 });
 
 // ardrive.ar.io will now resolve to the provided transaction id and include metadata
@@ -2622,33 +2618,33 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 > Records, or `undernames` are configured with the `transactionId` - the arweave transaction id the record resolves - and `ttlSeconds`, the Time To Live in the cache of client applications.
 
 ```typescript
-const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: "ardrive" });
 const ant = await ANT.init({ processId: arnsName.processId });
 
 // Basic usage
 const { id: txId } = await ant.setUndernameRecord(
   {
-    undername: 'dapp',
-    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    undername: "dapp",
+    transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
     ttlSeconds: 900,
   },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 
 // With ownership delegation and metadata
 const { id: txId } = await ant.setUndernameRecord(
   {
-    undername: 'alice',
-    transactionId: '432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM',
+    undername: "alice",
+    transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
     ttlSeconds: 900,
-    owner: 'alice-wallet-address-123...', // delegate ownership to Alice
+    owner: "alice-wallet-address-123...", // delegate ownership to Alice
     displayName: "Alice's Site", // display name
-    logo: 'avatar-tx-id-123...', // avatar/logo transaction ID
-    description: 'Personal portfolio and blog',
-    keywords: ['portfolio', 'personal', 'blog'],
+    logo: "avatar-tx-id-123...", // avatar/logo transaction ID
+    description: "Personal portfolio and blog",
+    keywords: ["portfolio", "personal", "blog"],
   },
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 
 // dapp_ardrive.ar.io will now resolve to the provided transaction id
@@ -2663,9 +2659,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.removeUndernameRecord(
-  { undername: 'dapp' },
+  { undername: "dapp" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 
 // dapp_ardrive.ar.io will no longer resolve to the provided transaction id
@@ -2704,12 +2700,12 @@ Removes a record from the ANT process.
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
-const arnsRecord = await ario.getArNSRecord({ name: 'ardrive' });
+const arnsRecord = await ario.getArNSRecord({ name: "ardrive" });
 const ant = await ANT.init({ processId: arnsName.processId });
 const { id: txId } = await ant.removeRecord(
-  { undername: 'dapp' },
+  { undername: "dapp" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 
 // dapp_ardrive.ar.io will no longer resolve to the provided transaction id
@@ -2725,9 +2721,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.setName(
-  { name: 'My ANT' },
+  { name: "My ANT" },
   // optional additional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2739,9 +2735,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.setTicker(
-  { ticker: 'ANT-NEW-TICKER' },
+  { ticker: "ANT-NEW-TICKER" },
   // optional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2753,9 +2749,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.setDescription(
-  { description: 'A friendly description of this ANT' },
+  { description: "A friendly description of this ANT" },
   // optional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2767,9 +2763,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.setKeywords(
-  { keywords: ['Game', 'FPS', 'AO'] },
+  { keywords: ["Game", "FPS", "AO"] },
   // optional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2789,9 +2785,9 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.setLogo(
-  { txId: 'U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f' },
+  { txId: "U7RXcpaVShG4u9nIcPVmm2FJSM5Gru9gQCIiRaIPV7f" },
   // optional tags
-  { tags: [{ name: 'App-Name', value: 'My-Awesome-App' }] },
+  { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
 ```
 
@@ -2805,7 +2801,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.releaseName({
-  name: 'permalink',
+  name: "permalink",
   arioProcessId: ARIO_MAINNET_PROCESS_ID, // releases the name owned by the ANT and sends it to recently returned names on the ARIO contract
 });
 ```
@@ -2818,7 +2814,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.reassignName({
-  name: 'ardrive',
+  name: "ardrive",
   arioProcessId: ARIO_MAINNET_PROCESS_ID,
   antProcessId: NEW_ANT_PROCESS_ID, // the new ANT process id that will take over ownership of the name
 });
@@ -2832,8 +2828,8 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.approvePrimaryNameRequest({
-  name: 'arns',
-  address: 't4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3', // must match the request initiator address
+  name: "arns",
+  address: "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3", // must match the request initiator address
   arioProcessId: ARIO_MAINNET_PROCESS_ID, // the ARIO process id to use for the request
 });
 ```
@@ -2846,7 +2842,7 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.removePrimaryNames({
-  names: ['arns', 'test_arns'], // any primary names associated with a base name controlled by this ANT will be removed
+  names: ["arns", "test_arns"], // any primary names associated with a base name controlled by this ANT will be removed
   arioProcessId: ARIO_MAINNET_PROCESS_ID,
   notifyOwners: true, // if true, the owners of the removed names will be send AO messages to notify them of the removal
 });
@@ -2866,24 +2862,24 @@ const result = await ant.upgrade();
 
 // Upgrade ANT and reassign specific ArNS names to the new process
 const result = await ant.upgrade({
-  names: ['ardrive', 'example'],
+  names: ["ardrive", "example"],
 });
 
 // with callbacks
 const result = await ant.upgrade({
-  names: ['ardrive', 'example'],
+  names: ["ardrive", "example"],
   onSigningProgress: (event, payload) => {
     console.log(`${event}:`, payload);
-    if (event === 'checking-version') {
+    if (event === "checking-version") {
       console.log(`Checking version: ${payload.antProcessId}`);
     }
-    if (event === 'fetching-affiliated-names') {
+    if (event === "fetching-affiliated-names") {
       console.log(`Fetching affiliated names: ${payload.arioProcessId}`);
     }
-    if (event === 'reassigning-name') {
+    if (event === "reassigning-name") {
       console.log(`Reassigning name: ${payload.name}`);
     }
-    if (event === 'validating-names') {
+    if (event === "validating-names") {
       console.log(`Validating names: ${payload.names}`);
     }
     // other callback events...
@@ -2925,8 +2921,8 @@ _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
 ```typescript
 const { id: txId } = await ant.transferRecord({
-  undername: 'alice', // the subdomain/record to transfer
-  recipient: 'new-owner-address-123...', // address of the new owner
+  undername: "alice", // the subdomain/record to transfer
+  recipient: "new-owner-address-123...", // address of the new owner
 });
 
 // alice_ardrive.ar.io is now owned by the new owner address
@@ -2949,7 +2945,7 @@ ar.io transfer-record \
 **Checking Record Ownership:**
 
 ```typescript
-const record = await ant.getRecord({ undername: 'alice' });
+const record = await ant.getRecord({ undername: "alice" });
 console.log(`Record owner: ${record.owner}`);
 console.log(`Transaction ID: ${record.transactionId}`);
 ```
@@ -2959,34 +2955,34 @@ console.log(`Transaction ID: ${record.transactionId}`);
 ```typescript
 // Alice (record owner) updating her own record
 const aliceAnt = ANT.init({
-  processId: 'ANT_PROCESS_ID',
+  processId: "ANT_PROCESS_ID",
   signer: new ArweaveSigner(aliceJwk), // Alice's wallet
 });
 
 // ✅ CORRECT: Alice includes her own address as owner
 const { id: txId } = await aliceAnt.setUndernameRecord({
-  undername: 'alice',
-  transactionId: 'new-content-tx-id-456...',
+  undername: "alice",
+  transactionId: "new-content-tx-id-456...",
   ttlSeconds: 1800,
-  owner: 'alice-wallet-address-123...', // MUST be Alice's own address
-  displayName: 'Alice Updated Portfolio',
-  description: 'Updated personal portfolio and blog',
+  owner: "alice-wallet-address-123...", // MUST be Alice's own address
+  displayName: "Alice Updated Portfolio",
+  description: "Updated personal portfolio and blog",
 });
 
 // ❌ WRONG: Omitting owner field will renounce ownership
 const badUpdate = await aliceAnt.setUndernameRecord({
-  undername: 'alice',
-  transactionId: 'new-content-tx-id-456...',
+  undername: "alice",
+  transactionId: "new-content-tx-id-456...",
   ttlSeconds: 1800,
   // Missing owner field - this will renounce ownership!
 });
 
 // ❌ WRONG: Setting different owner will transfer ownership
 const badTransfer = await aliceAnt.setUndernameRecord({
-  undername: 'alice',
-  transactionId: 'new-content-tx-id-456...',
+  undername: "alice",
+  transactionId: "new-content-tx-id-456...",
   ttlSeconds: 1800,
-  owner: 'someone-else-address-789...', // This transfers ownership to someone else!
+  owner: "someone-else-address-789...", // This transfers ownership to someone else!
 });
 ```
 
@@ -2996,19 +2992,19 @@ If a record owner updates their record without including the `owner` field, the 
 
 ```typescript
 // Before: alice record is owned by alice-wallet-address-123...
-const recordBefore = await ant.getRecord({ undername: 'alice' });
+const recordBefore = await ant.getRecord({ undername: "alice" });
 console.log(recordBefore.owner); // "alice-wallet-address-123..."
 
 // Alice updates without owner field
 await aliceAnt.setUndernameRecord({
-  undername: 'alice',
-  transactionId: 'new-tx-id...',
+  undername: "alice",
+  transactionId: "new-tx-id...",
   ttlSeconds: 900,
   // No owner field = renounces ownership
 });
 
 // After: record ownership reverts to ANT owner
-const recordAfter = await ant.getRecord({ undername: 'alice' });
+const recordAfter = await ant.getRecord({ undername: "alice" });
 console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
 ```
 
@@ -3021,9 +3017,9 @@ Forks an existing ANT process to create a new one with the same state but potent
 ```typescript
 const newProcessId = await ANT.fork({
   signer: new ArweaveSigner(jwk),
-  antProcessId: 'existing-ant-process-id',
+  antProcessId: "existing-ant-process-id",
   // Optional: specify a specific module ID, defaults to latest from registry
-  module: 'new-module-id',
+  module: "new-module-id",
   onSigningProgress: (event, payload) => {
     console.log(`Fork progress: ${event}`);
   },
@@ -3040,23 +3036,27 @@ Static method to upgrade an ANT by forking it to the latest version and reassign
 // Upgrade and reassign all affiliated names
 const result = await ANT.upgrade({
   signer: new ArweaveSigner(jwk),
-  antProcessId: 'existing-ant-process-id',
+  antProcessId: "existing-ant-process-id",
   reassignAffiliatedNames: true,
-  arioProcessId: ARIO_MAINNET_PROCESS_ID
+  arioProcessId: ARIO_MAINNET_PROCESS_ID,
 });
 
 // Upgrade and reassign specific names
 const result = await ANT.upgrade({
   signer: new ArweaveSigner(jwk),
-  antProcessId: 'existing-ant-process-id',
-  names: ['ardrive', 'example'],
+  antProcessId: "existing-ant-process-id",
+  names: ["ardrive", "example"],
   reassignAffiliatedNames: false,
-  arioProcessId: ARIO_MAINNET_PROCESS_ID
+  arioProcessId: ARIO_MAINNET_PROCESS_ID,
 });
 
 console.log(`Upgraded to process: ${result.forkedProcessId}`);
-console.log(`Successfully reassigned names: ${Object.keys(result.reassignedNames)}`);
-console.log(`Failed reassignments: ${Object.keys(result.failedReassignedNames)}`);
+console.log(
+  `Successfully reassigned names: ${Object.keys(result.reassignedNames)}`,
+);
+console.log(
+  `Failed reassignments: ${Object.keys(result.failedReassignedNames)}`,
+);
 ```
 
 ## Token Conversion
@@ -3068,7 +3068,7 @@ The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point
 #### Converting ARIO to mARIO
 
 ```typescript
-import { ARIOToken, mARIOToken } from '@ar.io/sdk';
+import { ARIOToken, mARIOToken } from "@ar.io/sdk";
 
 const arioValue = 1;
 const mARIOValue = new ARIOToken(arioValue).toMARIO();
@@ -3084,13 +3084,13 @@ The library uses a lightweight console logger by default for both Node.js and we
 #### Default Logger
 
 ```typescript
-import { Logger } from '@ar.io/sdk';
+import { Logger } from "@ar.io/sdk";
 
 // set the log level
-Logger.default.setLogLevel('debug');
+Logger.default.setLogLevel("debug");
 
 // Create a new logger instance with a specific level
-const logger = new Logger({ level: 'debug' });
+const logger = new Logger({ level: "debug" });
 ```
 
 #### Custom Logger Implementation
@@ -3098,7 +3098,7 @@ const logger = new Logger({ level: 'debug' });
 You can provide any custom logger that implements the `ILogger` interface:
 
 ```typescript
-import { ARIO, ILogger } from '@ar.io/sdk';
+import { ARIO, ILogger } from "@ar.io/sdk";
 
 // Custom logger example
 const customLogger: ILogger = {
@@ -3156,10 +3156,10 @@ Example:
 ```typescript
 const records = await ario.getArNSRecords({
   filters: {
-    type: 'lease',
+    type: "lease",
     processId: [
-      'ZkgLfyHALs5koxzojpcsEFAKA8fbpzP7l-tbM7wmQNM',
-      'r61rbOjyXx3u644nGl9bkwLWlWmArMEzQgxBo2R-Vu0',
+      "ZkgLfyHALs5koxzojpcsEFAKA8fbpzP7l-tbM7wmQNM",
+      "r61rbOjyXx3u644nGl9bkwLWlWmArMEzQgxBo2R-Vu0",
     ],
   },
 });

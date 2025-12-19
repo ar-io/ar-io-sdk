@@ -2,6 +2,13 @@
 
 This example shows how to use the `@ar.io/sdk` within a Typescript/React project.
 
+<!-- toc -->
+
+- [Getting Started](#getting-started)
+- [Polyfills](#polyfills)
+
+<!-- tocstop -->
+
 ## Getting Started
 
 1. Install the dependencies:
@@ -38,13 +45,13 @@ The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 The [webpack.config.js](./webpack.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
 
 ```javascript
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = {
   // other webpack configuration
   resolve: {
     fallback: {
-      fs: require.resolve('browserify-fs'), // not provided by NodePolyfills, so provide it here
+      fs: require.resolve("browserify-fs"), // not provided by NodePolyfills, so provide it here
     },
   },
   polyfills: [new NodePolyfills()], // supports core node packages like `crypto`, `process`, etc.

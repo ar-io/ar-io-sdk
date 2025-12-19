@@ -1,13 +1,13 @@
-import { ARIO } from '@ar.io/sdk/web';
-import { useEffect, useState } from 'react';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { ARIO } from "@ar.io/sdk/web";
+import { useEffect, useState } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-import './App.css';
+import "./App.css";
 
 const ario = ARIO.init();
 function App() {
-  const [contract, setContract] = useState<string>('Loading...');
+  const [contract, setContract] = useState<string>("Loading...");
 
   useEffect(() => {
     ario
@@ -17,7 +17,7 @@ function App() {
       })
       .catch((error) => {
         console.error(error);
-        setContract('Error loading contract state');
+        setContract("Error loading contract state");
       });
   }, []);
 

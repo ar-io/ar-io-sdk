@@ -6,16 +6,16 @@
       tailwind.config = {
         theme: {
           borderWidth: {
-            1: '1px',
+            1: "1px",
           },
           extend: {
             colors: {
-              primary: '#FFBB38',
-              background: '#141416',
-              surface: '#222224',
-              surfaceSecondary: '#2E2E30',
-              textPrimary: '#F5F5F5',
-              textSubtle: '#7A7A7C',
+              primary: "#FFBB38",
+              background: "#141416",
+              surface: "#222224",
+              surfaceSecondary: "#2E2E30",
+              textPrimary: "#F5F5F5",
+              textSubtle: "#7A7A7C",
             },
           },
         },
@@ -29,7 +29,7 @@
         ARIO,
         arioDevnetProcessId,
         mARIOToken,
-      } from '../../bundles/web.bundle.min.js';
+      } from "../../bundles/web.bundle.min.js";
 
       const ario = ARIO.init();
 
@@ -41,14 +41,14 @@
             address: arioDevnetProcessId,
           })
           .then((mARIO) => new mARIOToken(mARIO).toARIO());
-        const record = await ario.getArNSRecord({ name: 'ardrive' });
+        const record = await ario.getArNSRecord({ name: "ardrive" });
         const records = await ario.getArNSRecords();
         const observations = await ario.getObservations();
         const distributions = await ario.getDistributions();
 
         //  update the UI
 
-        document.getElementById('table-body').innerHTML = Object.entries(
+        document.getElementById("table-body").innerHTML = Object.entries(
           gateways,
         )
           .map(([gatewayOwner, gateway]) => {
@@ -60,31 +60,31 @@
               </tr>
             `;
           })
-          .join('');
+          .join("");
 
-        document.getElementById('balance-result').textContent =
+        document.getElementById("balance-result").textContent =
           `Balance: ${balance} ARIO`;
 
-        document.getElementById('record-result').textContent = JSON.stringify(
+        document.getElementById("record-result").textContent = JSON.stringify(
           record,
           null,
           2,
         );
 
-        document.getElementById('records-table-body').innerHTML =
+        document.getElementById("records-table-body").innerHTML =
           Object.entries(records)
             .map(([domain, record]) => {
               return `
               <tr>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://${domain}.arweave.dev" target="_blank">${domain}</a></td>
                 <td class="border border-surface px-4 py-2 text-primary"><a href="https://arscan.io/tx/${record.contractTxId}" target="_blank">${record.contractTxId}</a></td>
-                <td class="border border-surface px-4 py-2">${record.endTimestamp ? 'Lease' : 'Permanent'}</td>
+                <td class="border border-surface px-4 py-2">${record.endTimestamp ? "Lease" : "Permanent"}</td>
               </tr>
             `;
             })
-            .join('');
+            .join("");
 
-        document.getElementById('observations-table-body').innerHTML =
+        document.getElementById("observations-table-body").innerHTML =
           Object.entries(observations)
             .map(([epoch, observationData]) => {
               return `
@@ -95,9 +95,9 @@
               </tr>
             `;
             })
-            .join('');
+            .join("");
 
-        document.getElementById('distributions-table-body').innerHTML = `
+        document.getElementById("distributions-table-body").innerHTML = `
               <tr>
                 <td class="border border-surface px-4 py-2 text-primary">${distributions.epochPeriod}</a></td>
                 <td class="border border-surface px-4 py-2 text-primary">${distributions.epochStartHeight}</td>
@@ -108,7 +108,7 @@
         // end init
       }
 
-      window.addEventListener('load', init);
+      window.addEventListener("load", init);
     </script>
   </head>
 

@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         node_version: [18.x, 20.x]
-        command: ['lint', 'format', 'build']
+        command: ["lint", "format", "build"]
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: "yarn"
 
       - name: Install dependencies
         run: yarn --immutable --immutable-cache
@@ -55,7 +55,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: 'yarn'
+          cache: "yarn"
 
       - name: Install dependencies
         run: yarn --immutable --immutable-cache
@@ -77,6 +77,6 @@ jobs:
       - name: Send Slack notification
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_TITLE: 'Build / E2E tests succeeded!'
-          SLACK_COLOR: 'good'
+          SLACK_TITLE: "Build / E2E tests succeeded!"
+          SLACK_COLOR: "good"
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
