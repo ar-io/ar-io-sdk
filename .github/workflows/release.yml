@@ -11,12 +11,12 @@ on:
       - alpha
 
 jobs:
-  # build:
-  #   uses: ar-io/ar-io-sdk/.github/workflows/build.yml@alpha
-  #   secrets: inherit
+  build:
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
   release:
     runs-on: ubuntu-latest
-    # needs: build
+    needs: build
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
@@ -38,8 +38,11 @@ jobs:
       - name: Install dependencies
         run: yarn --immutable --immutable-cache
 
-      - name: Build
-        run: yarn build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
 
       - name: Release
         env:
