@@ -17,7 +17,7 @@ import './App.css';
 Logger.default.setLogLevel('debug');
 
 // just validating that the default ARIO works in web context
-const defaultArIO = ARIO.init();
+const _defaultArIO = ARIO.init();
 // validating that the writeable ARIO works in web context
 // const writeableArIO = ARIO.init({
 //   signer: createAoSigner({} as ContractSigner),

@@ -1,6 +1,6 @@
-import { AOS_MODULE_ID } from '@ar.io/sdk';
 import * as fs from 'node:fs';
 import path from 'node:path';
+import { AOS_MODULE_ID } from '@ar.io/sdk';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 

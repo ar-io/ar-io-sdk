@@ -1,7 +1,7 @@
 services:
   ao-cu:
     image: ghcr.io/permaweb/ao-cu:latest
-    restart: 'no'
+    restart: "no"
     volumes:
       - ${CU_WALLET_FILE:-./test-wallet.json}:/usr/app/test-wallet.json
     ports:
@@ -22,7 +22,7 @@ services:
 
   faucet:
     image: ghcr.io/ar-io/ar-io-faucet:latest
-    restart: 'no'
+    restart: "no"
     ports:
       - ${FAUCET_PORT:-9876}:${FAUCET_PORT:-9876}
     environment:

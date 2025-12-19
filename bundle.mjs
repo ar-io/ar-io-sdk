@@ -1,6 +1,6 @@
+import fs from 'fs';
 import { build } from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
-import fs from 'fs';
 
 const bundle = async () => {
   console.log('Building minified web bundle file.');
@@ -12,7 +12,6 @@ const bundle = async () => {
     target: ['esnext'],
     format: 'esm',
     globalName: 'ar.io',
-    metafile: true,
     plugins: [
       /**
        * We need to polyfill the node modules that are used in the web bundle.

@@ -131,7 +131,7 @@ export class ArNSEventEmitter extends EventEmitter {
       .then((records: Record<string, AoArNSNameData>) => {
         Object.entries(records).forEach(([name, arnsRecord]) => {
           if (antIds.has(arnsRecord.processId)) {
-            if (uniqueContractProcessIds[arnsRecord.processId] == undefined) {
+            if (uniqueContractProcessIds[arnsRecord.processId] === undefined) {
               uniqueContractProcessIds[arnsRecord.processId] = {
                 state: undefined,
                 names: {},

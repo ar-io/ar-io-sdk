@@ -553,6 +553,7 @@ export function parseAoEpochData(
     prescribedNames: z.array(z.string()),
     observations: z.any(),
     epochIndex: z.number(),
+    arnsStats: z.any(),
   });
   return epochDataSchema.parse(value) as AoEpochData<AoEpochDistributed>;
 }

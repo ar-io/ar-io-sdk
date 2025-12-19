@@ -93,7 +93,7 @@ describe('e2e cjs tests', async () => {
     });
 
     it('should be able to instantiate AoANTRegistryReadable', async () => {
-      for (const signer of signers) {
+      for (const _signer of signers) {
         const registry = ANTRegistry.init();
         assert(registry instanceof AoANTRegistryReadable);
       }

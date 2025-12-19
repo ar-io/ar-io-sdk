@@ -1,3 +1,6 @@
+import { strict as assert } from 'node:assert';
+import fs from 'node:fs';
+import { after, before, describe, it } from 'node:test';
 /**
  * Ensure that npm link has been ran prior to running these tests
  * (simply running npm run test:integration will ensure npm link is ran)
@@ -25,9 +28,6 @@ import {
 } from '@ar.io/sdk';
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
-import { strict as assert } from 'node:assert';
-import fs from 'node:fs';
-import { after, before, describe, it } from 'node:test';
 import {
   DockerComposeEnvironment,
   StartedDockerComposeEnvironment,

@@ -17,7 +17,7 @@
 export function safeDecode<R = unknown>(data: string): R {
   try {
     return JSON.parse(data);
-  } catch (e) {
+  } catch (_e) {
     return data as R;
   }
 }

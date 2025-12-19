@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import App from './App';
 
-const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
+const _processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
 const projectRootPath = process.cwd();
 
 describe('ESM browser validation', () => {

@@ -1,7 +1,7 @@
-import { ANT, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
 import { strict as assert } from 'node:assert';
 import * as fs from 'node:fs';
 import { describe, it } from 'node:test';
+import { ANT, ArweaveSigner, createAoSigner } from '@ar.io/sdk';
 
 import { createLocalProcess } from './utils.js';
 

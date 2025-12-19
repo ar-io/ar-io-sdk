@@ -28,7 +28,7 @@ export class WinstonLogger implements ILogger {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       this.winston = require('winston');
-    } catch (error) {
+    } catch (_error) {
       throw new Error(
         'Winston is not installed. Install it with: npm install winston',
       );

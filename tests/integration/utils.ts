@@ -1,7 +1,7 @@
-import { AOProcess, AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
-import AoLoader from '@permaweb/ao-loader';
 import fs from 'node:fs';
 import path from 'node:path';
+import { AOProcess, AOS_MODULE_ID, AoClient } from '@ar.io/sdk';
+import AoLoader from '@permaweb/ao-loader';
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 export const TEST_AOS_ANT_WASM = fs.readFileSync(

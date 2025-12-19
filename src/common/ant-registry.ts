@@ -173,7 +173,7 @@ export class AoANTRegistryReadable implements AoANTRegistryRead {
             Owned: json.Owned,
             Controlled: json.Controlled,
           };
-        } catch (error) {
+        } catch (_error) {
           retries++;
           this.logger.debug(
             'Failed to fetch ant registry acl for address from hyperbeam',

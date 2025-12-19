@@ -45,13 +45,13 @@ The [tsconfig.json](./tsconfig.json) includes the following compiler options:
 The [vite.config.js](./vite.config.js) file includes the following polyfills required for the `@ar.io/sdk`:
 
 ```javascript
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
   build: {},
-  base: '/',
+  base: "/",
   plugins: [react(), nodePolyfills()],
 });
 ```
