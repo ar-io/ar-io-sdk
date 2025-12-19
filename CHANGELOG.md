@@ -1,3 +1,10 @@
+# [3.23.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.1...v3.23.0-alpha.2) (2025-12-19)
+
+
+### Bug Fixes
+
+* **epochs:** add arnsStats object to zod schema ([ba2d2c1](https://github.com/ar-io/ar-io-sdk/commit/ba2d2c1fdaef61b91ac535623fd07ca39b34847d))
+
 # [3.23.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.22.1...v3.23.0-alpha.1) (2025-12-15)
 
 
