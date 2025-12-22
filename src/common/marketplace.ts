@@ -250,6 +250,8 @@ export interface AoArNSMarketplaceRead {
   }>;
 }
 
+export type ListNameForSaleProgressEvent = 'create-intent' | 'transfer-ant';
+
 export interface AoArNSMarketplaceWrite {
   createIntent(
     params: CreateIntentParams,
@@ -281,6 +283,7 @@ export interface AoArNSMarketplaceWrite {
     walletAddress,
     minimumPrice,
     decreaseInterval,
+    onProgress,
   }: {
     name: string;
     expirationTime: number;
@@ -289,6 +292,7 @@ export interface AoArNSMarketplaceWrite {
     walletAddress: WalletAddress;
     minimumPrice?: string;
     decreaseInterval?: string;
+    onProgress?: (event: ListNameForSaleProgressEvent) => void;
   }): Promise<{
     intent: MarketplaceIntent;
     order: Order | null;
@@ -691,6 +695,9 @@ export class ArNSMarketplaceWrite
     walletAddress,
     minimumPrice,
     decreaseInterval,
+    onProgress = (event) => {
+      this.logger.info(`List name for sale progress: ${event}`);
+    },
   }: {
     name: string;
     expirationTime: number;
@@ -699,6 +706,7 @@ export class ArNSMarketplaceWrite
     walletAddress: WalletAddress;
     minimumPrice?: string;
     decreaseInterval?: string;
+    onProgress?: (event: ListNameForSaleProgressEvent) => void;
   }): Promise<{
     intent: MarketplaceIntent;
     order: Order | null;
@@ -721,6 +729,7 @@ export class ArNSMarketplaceWrite
       process: new AOProcess({
         processId: antId,
         ao: this.process.ao,
+        logger: this.logger,
       }),
       signer: this.signer,
     });
@@ -739,6 +748,7 @@ export class ArNSMarketplaceWrite
     let intent: MarketplaceIntent;
 
     try {
+      onProgress('create-intent');
       const intentResult = await this.createIntent({
         antId,
         orderType: type,
@@ -783,6 +793,7 @@ export class ArNSMarketplaceWrite
       Record<string, string | number | boolean | null>
     >;
     try {
+      onProgress('transfer-ant');
       antTransferResult = await ant.transfer(
         {
           target: this.process.processId,
