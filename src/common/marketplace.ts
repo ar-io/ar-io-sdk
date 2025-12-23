@@ -250,7 +250,101 @@ export interface AoArNSMarketplaceRead {
   }>;
 }
 
-export type ListNameForSaleProgressEvent = 'create-intent' | 'transfer-ant';
+/**
+ * Common fields for create-intent progress events
+ */
+export interface CreateIntentEventData {
+  name: string;
+  antId: string;
+  orderType: 'fixed' | 'dutch' | 'english';
+  price: string;
+  expirationTime: number;
+}
+
+/**
+ * Progress event emitted while creating the marketplace intent
+ */
+export interface CreatingIntentProgressEvent extends CreateIntentEventData {
+  step: 'creating-intent';
+}
+
+/**
+ * Progress event emitted after successfully creating the marketplace intent
+ */
+export interface IntentCreatedProgressEvent extends CreateIntentEventData {
+  step: 'intent-created';
+  intent: MarketplaceIntent;
+}
+
+/**
+ * Common fields for transfer-ant progress events
+ */
+export interface TransferAntEventData {
+  name: string;
+  antId: string;
+  intentId: string;
+  marketplaceProcessId: string;
+}
+
+/**
+ * Progress event emitted while transferring the ANT to the marketplace
+ */
+export interface TransferringAntProgressEvent extends TransferAntEventData {
+  step: 'transferring-ant';
+}
+
+/**
+ * Progress event emitted after successfully transferring the ANT to the marketplace
+ */
+export interface AntTransferredProgressEvent extends TransferAntEventData {
+  step: 'ant-transferred';
+  transferResult: AoMessageResult<
+    Record<string, string | number | boolean | null>
+  >;
+}
+
+/**
+ * Progress event emitted when an error occurs during the workflow
+ */
+export interface ListNameForSaleErrorEvent {
+  step: 'error';
+  name: string;
+  antId: string;
+  error: Error;
+  /**
+   * The step that was in progress when the error occurred
+   */
+  failedStep: 'creating-intent' | 'transferring-ant';
+  /**
+   * The intent if it was created before the error occurred
+   */
+  intent?: MarketplaceIntent;
+}
+
+/**
+ * Progress event emitted when the workflow completes successfully
+ */
+export interface ListNameForSaleCompleteEvent {
+  step: 'complete';
+  name: string;
+  antId: string;
+  intent: MarketplaceIntent;
+  order: Order;
+  transferResult: AoMessageResult<
+    Record<string, string | number | boolean | null>
+  >;
+}
+
+/**
+ * Progress events emitted during listNameForSale workflow
+ */
+export type ListNameForSaleProgressEvent =
+  | CreatingIntentProgressEvent
+  | IntentCreatedProgressEvent
+  | TransferringAntProgressEvent
+  | AntTransferredProgressEvent
+  | ListNameForSaleErrorEvent
+  | ListNameForSaleCompleteEvent;
 
 export interface AoArNSMarketplaceWrite {
   createIntent(
@@ -696,7 +790,7 @@ export class ArNSMarketplaceWrite
     minimumPrice,
     decreaseInterval,
     onProgress = (event) => {
-      this.logger.info(`List name for sale progress: ${event}`);
+      this.logger.info(`List name for sale progress: ${event.step}`);
     },
   }: {
     name: string;
@@ -747,8 +841,19 @@ export class ArNSMarketplaceWrite
 
     let intent: MarketplaceIntent;
 
+    const createIntentEventData = {
+      name,
+      antId,
+      orderType: type,
+      price,
+      expirationTime,
+    };
+
     try {
-      onProgress('create-intent');
+      onProgress({
+        step: 'creating-intent',
+        ...createIntentEventData,
+      });
       const intentResult = await this.createIntent({
         antId,
         orderType: type,
@@ -765,6 +870,11 @@ export class ArNSMarketplaceWrite
         `Intent created: ${JSON.stringify(intentResult.result)}`,
       );
       intent = intentResult.result;
+      onProgress({
+        step: 'intent-created',
+        ...createIntentEventData,
+        intent,
+      });
     } catch (error) {
       this.logger.error(`Error creating intent: ${error.message}`);
       // check error for existing intent. Will be a contract error message.
@@ -773,27 +883,60 @@ export class ArNSMarketplaceWrite
       );
 
       if (isExistingIntentError) {
-        intent = await this.getIntentByANTId(antId).catch((error) => {
-          this.logger.error(`Failed to get intent: ${error.message}`);
-          throw new Error(
+        intent = await this.getIntentByANTId(antId).catch((getIntentError) => {
+          this.logger.error(`Failed to get intent: ${getIntentError.message}`);
+          const intentError = new Error(
             'An intent already exists for this ANT ID but failed to get intent:\n\n' +
-              error.message,
+              getIntentError.message,
           );
+          onProgress({
+            step: 'error',
+            name,
+            antId,
+            error: intentError,
+            failedStep: 'creating-intent',
+          });
+          throw intentError;
         });
       } else {
         // Possible to get other errors, eg insufficient deposited ario balance. Rethrow them here.
+        onProgress({
+          step: 'error',
+          name,
+          antId,
+          error: error as Error,
+          failedStep: 'creating-intent',
+        });
         throw error;
       }
     }
     // Type guard to ensure intent is defined
     if (intent === undefined) {
-      throw new Error('Failed to create intent');
+      const intentError = new Error('Failed to create intent');
+      onProgress({
+        step: 'error',
+        name,
+        antId,
+        error: intentError,
+        failedStep: 'creating-intent',
+      });
+      throw intentError;
     }
+    const transferAntEventData = {
+      name,
+      antId,
+      intentId: intent.intentId,
+      marketplaceProcessId: this.process.processId,
+    };
+
     let antTransferResult: AoMessageResult<
       Record<string, string | number | boolean | null>
     >;
     try {
-      onProgress('transfer-ant');
+      onProgress({
+        step: 'transferring-ant',
+        ...transferAntEventData,
+      });
       antTransferResult = await ant.transfer(
         {
           target: this.process.processId,
@@ -804,8 +947,21 @@ export class ArNSMarketplaceWrite
         },
       );
       this.logger.info(`ANT transferred: ${JSON.stringify(antTransferResult)}`);
+      onProgress({
+        step: 'ant-transferred',
+        ...transferAntEventData,
+        transferResult: antTransferResult,
+      });
     } catch (error) {
       this.logger.error(`Failed to transfer ANT: ${error.message}`);
+      onProgress({
+        step: 'error',
+        name,
+        antId,
+        error: error as Error,
+        failedStep: 'transferring-ant',
+        intent,
+      });
       return {
         intent,
         order: null,
@@ -838,23 +994,50 @@ export class ArNSMarketplaceWrite
         break;
       } catch (error) {
         this.logger.error(`Failed to get order: ${error.message}`);
+        const orderError = new Error('Failed to get order: ' + error.message);
+        onProgress({
+          step: 'error',
+          name,
+          antId,
+          error: orderError,
+          failedStep: 'transferring-ant',
+          intent,
+        });
         return {
           intent,
           order: null,
           antTransferResult,
-          error: new Error('Failed to get order: ' + error.message),
+          error: orderError,
         };
       }
     }
     if (order === null) {
       this.logger.error(`Failed to get order`);
+      const orderError = new Error('Failed to get order');
+      onProgress({
+        step: 'error',
+        name,
+        antId,
+        error: orderError,
+        failedStep: 'transferring-ant',
+        intent,
+      });
       return {
         intent,
         order: null,
         antTransferResult,
-        error: new Error('Failed to get order'),
+        error: orderError,
       };
     }
+
+    onProgress({
+      step: 'complete',
+      name,
+      antId,
+      intent,
+      order,
+      transferResult: antTransferResult,
+    });
 
     return { intent, order, antTransferResult, error: null };
   }
