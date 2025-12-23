@@ -1,3 +1,12 @@
+# [3.23.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.2...v3.23.0-alpha.3) (2025-12-23)
+
+
+### Bug Fixes
+
+* **code quality:** remove prettier plugins from eslint ([001c9b9](https://github.com/ar-io/ar-io-sdk/commit/001c9b9266ba0201ff9e41038a31b5423a493c9b))
+* **events:** add further marketplace events ([64d4a88](https://github.com/ar-io/ar-io-sdk/commit/64d4a886eebdbf80c333f27cc9468ee6ac499e9c))
+* **marketplace:** add on progress callback to list name api; ([70a42cc](https://github.com/ar-io/ar-io-sdk/commit/70a42cc97968ec2f35e1c59155b590c2ee2340c7))
+
 # [3.23.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.1...v3.23.0-alpha.2) (2025-12-19)
 
 
