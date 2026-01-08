@@ -396,10 +396,13 @@ export function paginationParamsFromOptions<O extends PaginationCLIOptions, R>(
     if (Array.isArray(filters)) {
       // every odd value is a key, every even value is a value for that key
       for (let i = 0; i < filters.length; i += 2) {
-        // convert any strings that are numbers to numbers
+        // convert any strings that are numbers to numbers and any 'true'/'false' to booleans
         const value = filters[i + 1].split(',').map((v) => {
           const num = +v;
-          return isNaN(num) ? v : num;
+          if (!isNaN(num)) return num;
+          if (v === 'true') return true;
+          if (v === 'false') return false;
+          return v;
         });
         filtersObject[filters[i]] = value;
       }
