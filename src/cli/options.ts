@@ -290,6 +290,12 @@ export const optionMap = {
       'Whether the vaulted transfer is revokable by the sender. Defaults to false',
     type: 'boolean',
   },
+  removeControllers: {
+    alias: '--remove-controllers',
+    description:
+      'Whether to remove controllers when transferring ANT ownership. Defaults to true',
+    type: 'boolean',
+  },
   lockLengthMs: {
     alias: '--lock-length-ms <lockLengthMs>',
     description: 'The length of time in milliseconds to lock the vault for',

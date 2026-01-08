@@ -803,19 +803,34 @@ makeCommand<ProcessIdCLIOptions>({
 });
 
 // # Actions
-makeCommand<ProcessIdWriteActionCLIOptions & { target?: string }>({
+makeCommand<
+  ProcessIdWriteActionCLIOptions & {
+    target?: string;
+    removeControllers?: boolean;
+  }
+>({
   name: 'transfer-ant-ownership',
   description: 'Transfer ownership of an ANT process',
-  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
+  options: [
+    optionMap.processId,
+    optionMap.target,
+    optionMap.removeControllers,
+    ...writeActionOptions,
+  ],
   action: async (options) => {
     const target = requiredStringFromOptions(options, 'target');
+    const removeControllers =
+      options.removeControllers !== undefined
+        ? options.removeControllers
+        : true;
     await assertConfirmationPrompt(
-      `Are you sure you want to transfer ANT ownership to ${target}?`,
+      `Are you sure you want to transfer ANT ownership to ${target}${removeControllers ? ' (controllers will be removed)' : ' (controllers will be retained)'}?`,
       options,
     );
     return writeANTFromOptions(options).transfer(
       {
         target,
+        removeControllers,
       },
       customTagsFromOptions(options),
     );
