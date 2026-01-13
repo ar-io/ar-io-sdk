@@ -1,3 +1,10 @@
+# [3.23.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.4...v3.23.0-alpha.5) (2026-01-13)
+
+
+### Bug Fixes
+
+* **marketplace:** mark apis as experimental on marketplace ([d7f8456](https://github.com/ar-io/ar-io-sdk/commit/d7f845648cc65bae00043b76e12678594026c797))
+
 # [3.23.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.3...v3.23.0-alpha.4) (2026-01-13)
 
 
