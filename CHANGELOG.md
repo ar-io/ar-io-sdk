@@ -1,3 +1,10 @@
+# [3.23.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.3...v3.23.0-alpha.4) (2026-01-13)
+
+
+### Bug Fixes
+
+* **cli:** parse booleans in pagination filters correctly ([86d96ef](https://github.com/ar-io/ar-io-sdk/commit/86d96ef8a3423b4c6dc45e73a3c9ce22e1f65339))
+
 # [3.23.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.2...v3.23.0-alpha.3) (2025-12-23)
 
 
