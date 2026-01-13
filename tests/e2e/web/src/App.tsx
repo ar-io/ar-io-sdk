@@ -25,8 +25,8 @@ const _defaultArIO = ARIO.init();
 // validating that the ANT registry works in web context
 const aoClient = connect({
   MODE: 'legacy',
-  // CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
-  CU_URL: 'http://localhost:6363',
+  CU_URL: 'https://cu.ardrive.io', // TODO: use localhost when testing locally
+  // CU_URL: 'http://localhost:6363',
 });
 const antRegistry = ANTRegistry.init({
   process: new AOProcess({
