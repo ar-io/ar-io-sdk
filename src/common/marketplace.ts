@@ -31,6 +31,7 @@ import {
 /**
  * User-provided order parameters for intent-based order creation
  * These are the user-configurable fields when creating an order via the intent workflow
+ * @experimental
  */
 export interface MarketplaceOrderIntentParams {
   orderType?: 'fixed' | 'dutch' | 'english'; // nil defaults to 'fixed'
@@ -43,6 +44,7 @@ export interface MarketplaceOrderIntentParams {
 
 /**
  * Intent structure - matches Lua Intent type
+ * @experimental
  */
 export interface MarketplaceIntent {
   intentId: string; // Unique intent identifier
@@ -66,6 +68,7 @@ export interface MarketplaceIntent {
 
 /**
  * Fee information structure for calculating order costs
+ * @experimental
  */
 export interface MarketplaceFeeInfo {
   listingFeePerHour: string; // Listing fee in mARIO per hour (1 ARIO = 1000000000 mARIO)
@@ -75,6 +78,7 @@ export interface MarketplaceFeeInfo {
 
 /**
  * Intent statistics structure
+ * @experimental
  */
 export interface MarketplaceIntentStats {
   total: number;
@@ -85,6 +89,7 @@ export interface MarketplaceIntentStats {
 
 /**
  * Activity information structure
+ * @experimental
  */
 export interface MarketplaceActivityInfo {
   totalOrders: number;
@@ -97,7 +102,8 @@ export interface MarketplaceActivityInfo {
 }
 
 /**
- * marketplace information structure
+ * Marketplace information structure
+ * @experimental
  */
 export interface MarketplaceInfo {
   totalPairs: number;
@@ -106,6 +112,7 @@ export interface MarketplaceInfo {
 }
 /**
  * Info response structure from the marketplace
+ * @experimental
  */
 export interface InfoResponse {
   name: string;
@@ -119,6 +126,7 @@ export interface InfoResponse {
 
 /**
  * Parameters for creating an intent (Create-Order action is assumed)
+ * @experimental
  */
 export interface CreateIntentParams {
   antId: string; // Required: ANT process ID for this intent
@@ -132,6 +140,7 @@ export interface CreateIntentParams {
 
 /**
  * Parameters for paginated intent queries
+ * @experimental
  */
 export interface GetPaginatedIntentsParams {
   cursor?: string;
@@ -143,6 +152,7 @@ export interface GetPaginatedIntentsParams {
 
 /**
  * Parameters for creating an order using internal ARIO balance
+ * @experimental
  */
 export interface CreateOrderParams {
   swapToken: string; // Required: Token to receive in exchange for ARIO
@@ -157,6 +167,7 @@ export interface CreateOrderParams {
 
 /**
  * Parameters for getting orders with flexible selectors
+ * @experimental
  */
 export interface GetOrdersParams extends GetPaginatedIntentsParams {
   status?:
@@ -175,6 +186,7 @@ export interface GetOrdersParams extends GetPaginatedIntentsParams {
 
 /**
  * Individual order structure returned from Get-Orders and Get-Order handlers
+ * @experimental
  */
 export interface Order {
   id: string; // Order identifier
@@ -203,6 +215,10 @@ export interface Order {
   bids?: Record<string, boolean>; // Bidders for English auctions (bidder address -> true)
 }
 
+/**
+ * Marketplace balance information for a wallet address
+ * @experimental
+ */
 export interface MarketplaceBalance {
   address: WalletAddress;
   balance: string;
@@ -211,6 +227,10 @@ export interface MarketplaceBalance {
   orders: Record<string, string>;
 }
 
+/**
+ * Read-only interface for the ArNS marketplace
+ * @experimental
+ */
 export interface AoArNSMarketplaceRead {
   getInfo(): Promise<InfoResponse>;
   // Can be used to get user intents by using the `initiator` filter
@@ -252,6 +272,7 @@ export interface AoArNSMarketplaceRead {
 
 /**
  * Common fields for create-intent progress events
+ * @experimental
  */
 export interface CreateIntentEventData {
   name: string;
@@ -263,6 +284,7 @@ export interface CreateIntentEventData {
 
 /**
  * Progress event emitted while creating the marketplace intent
+ * @experimental
  */
 export interface CreatingIntentProgressEvent extends CreateIntentEventData {
   step: 'creating-intent';
@@ -270,6 +292,7 @@ export interface CreatingIntentProgressEvent extends CreateIntentEventData {
 
 /**
  * Progress event emitted after successfully creating the marketplace intent
+ * @experimental
  */
 export interface IntentCreatedProgressEvent extends CreateIntentEventData {
   step: 'intent-created';
@@ -278,6 +301,7 @@ export interface IntentCreatedProgressEvent extends CreateIntentEventData {
 
 /**
  * Common fields for transfer-ant progress events
+ * @experimental
  */
 export interface TransferAntEventData {
   name: string;
@@ -288,6 +312,7 @@ export interface TransferAntEventData {
 
 /**
  * Progress event emitted while transferring the ANT to the marketplace
+ * @experimental
  */
 export interface TransferringAntProgressEvent extends TransferAntEventData {
   step: 'transferring-ant';
@@ -295,6 +320,7 @@ export interface TransferringAntProgressEvent extends TransferAntEventData {
 
 /**
  * Progress event emitted after successfully transferring the ANT to the marketplace
+ * @experimental
  */
 export interface AntTransferredProgressEvent extends TransferAntEventData {
   step: 'ant-transferred';
@@ -305,6 +331,7 @@ export interface AntTransferredProgressEvent extends TransferAntEventData {
 
 /**
  * Progress event emitted when an error occurs during the workflow
+ * @experimental
  */
 export interface ListNameForSaleErrorEvent {
   step: 'error';
@@ -323,6 +350,7 @@ export interface ListNameForSaleErrorEvent {
 
 /**
  * Progress event emitted when the workflow completes successfully
+ * @experimental
  */
 export interface ListNameForSaleCompleteEvent {
   step: 'complete';
@@ -337,6 +365,7 @@ export interface ListNameForSaleCompleteEvent {
 
 /**
  * Progress events emitted during listNameForSale workflow
+ * @experimental
  */
 export type ListNameForSaleProgressEvent =
   | CreatingIntentProgressEvent
@@ -346,6 +375,10 @@ export type ListNameForSaleProgressEvent =
   | ListNameForSaleErrorEvent
   | ListNameForSaleCompleteEvent;
 
+/**
+ * Write interface for the ArNS marketplace
+ * @experimental
+ */
 export interface AoArNSMarketplaceWrite {
   createIntent(
     params: CreateIntentParams,
@@ -432,6 +465,10 @@ export interface AoArNSMarketplaceWrite {
   settleANTEnglishAuction(params: { antId: string }): Promise<AoMessageResult>;
 }
 
+/**
+ * Read-only client for the ArNS marketplace
+ * @experimental
+ */
 export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
   protected process: AOProcess;
   protected logger: Logger;
@@ -665,6 +702,10 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
   }
 }
 
+/**
+ * Write client for the ArNS marketplace
+ * @experimental
+ */
 export class ArNSMarketplaceWrite
   extends ArNSMarketplaceRead
   implements AoArNSMarketplaceWrite
@@ -1231,6 +1272,7 @@ export class ArNSMarketplaceWrite
  * Calculates the listing fee for an order based on the end timestamp.
  * The fee is calculated by rounding up the hours until the end timestamp to the nearest hour.
  *
+ * @experimental
  * @param params - Parameters for calculating the listing fee
  * @param params.listingFeePerHour - The listing fee per hour in mARIO (as a string)
  * @param params.endTimestamp - Unix timestamp when the order expires
@@ -1270,6 +1312,7 @@ export function calculateListingFee({
 /**
  * Calculates the sale tax for an order based on the sale amount.
  *
+ * @experimental
  * @param params - Parameters for calculating the sale tax
  * @param params.saleAmount - The sale amount in mARIO (as a string or number)
  * @param params.saleTaxNumerator - The numerator for sale tax calculation
