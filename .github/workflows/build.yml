@@ -46,7 +46,7 @@ jobs:
   test:
     strategy:
       matrix:
-        suite: [unit, esm, cjs, integration]
+        suite: [unit, esm, cjs, web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
