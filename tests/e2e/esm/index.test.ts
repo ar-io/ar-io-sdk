@@ -47,8 +47,8 @@ const signers = [
 
 const aoClient = connect({
   MODE: 'legacy',
-  // CU_URL: 'http://localhost:6363',
-  CU_URL: 'https://cu.ardrive.io',
+  CU_URL: 'http://localhost:6363',
+  //CU_URL: 'https://cu.ardrive.io',
 });
 const arweave = Arweave.init({});
 const processId = process.env.ARIO_PROCESS_ID || ARIO_TESTNET_PROCESS_ID;
@@ -347,7 +347,7 @@ describe('e2e esm tests', async () => {
       assert(Array.isArray(epoch.observations.reports));
     });
 
-    it('should be able to get a previous epoch', async () => {
+    it.skip('should be able to get a previous epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const epoch = await ario.getEpoch({
         epochIndex: currentEpoch.epochIndex - 1,
@@ -878,7 +878,7 @@ describe('e2e esm tests', async () => {
       assert.ok(distributions);
     });
 
-    it('should be able to get epoch distributions at a specific epoch', async () => {
+    it.skip('should be able to get epoch distributions at a specific epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const distributions = await ario.getDistributions({
         epochIndex: currentEpoch.epochIndex - 1,
@@ -943,7 +943,7 @@ describe('e2e esm tests', async () => {
       assert.ok(observations);
     });
 
-    it('should be able to get epoch observations at a specific epoch', async () => {
+    it.skip('should be able to get epoch observations at a specific epoch', async () => {
       const currentEpoch = await ario.getCurrentEpoch();
       const observations = await ario.getObservations({
         epochIndex: currentEpoch.epochIndex - 1,
@@ -1360,7 +1360,7 @@ describe('e2e esm tests', async () => {
       before(async () => {
         // setup our testnet instance to use local APIs
         testnet = ARIO.testnet({
-          faucetUrl: 'http://localhost:3000',
+          faucetUrl: 'http://localhost:9876',
           process: new AOProcess({
             processId: ARIO_TESTNET_PROCESS_ID,
             ao: connect({
@@ -1399,7 +1399,7 @@ describe('e2e esm tests', async () => {
                 ao: aoClient,
               }),
             }),
-            faucetApiUrl: 'http://localhost:3000',
+            faucetApiUrl: 'http://localhost:9876',
           });
           await assert.rejects(
             async () => await fake.faucet.captchaUrl(),

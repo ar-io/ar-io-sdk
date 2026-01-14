@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.22.2",
+  "version": "3.23.0-alpha.5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -57,7 +57,7 @@
     "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "c8 node --import=./register.mjs --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
+    "test:unit": "c8 tsx --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
     "test:link": "yarn build && yarn link",
     "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
     "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
@@ -111,6 +111,7 @@
     "sinon": "^15.2.0",
     "testcontainers": "^10.13.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.1.6"
   },
   "dependencies": {

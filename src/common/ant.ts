@@ -970,6 +970,11 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
 
   /**
    * @param target @type {string} The address of the account you want to transfer the ANT to.
+   * @param removeControllers @type {boolean} Whether to remove the controllers of the ANT. Default is true.
+   * @example
+   * ```ts
+   * ant.transfer({ target: "fGht8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk", removeControllers: false }); // will not remove the controllers of the ANT and just transfer ownership
+   * ```
    * @returns {Promise<AoMessageResult>} The result of the interaction.
    * @example
    * ```ts
@@ -977,13 +982,20 @@ export class AoANTWriteable extends AoANTReadable implements AoANTWrite {
    * ```
    */
   async transfer(
-    { target }: { target: string },
+    {
+      target,
+      removeControllers = true,
+    }: { target: string; removeControllers?: boolean },
     options?: WriteOptions,
   ): Promise<AoMessageResult> {
     const tags = [
       ...(options?.tags ?? []),
       { name: 'Action', value: 'Transfer' },
       { name: 'Recipient', value: target },
+      {
+        name: 'Remove-Controllers',
+        value: removeControllers ? 'true' : 'false',
+      },
     ];
 
     return this.process.send({
