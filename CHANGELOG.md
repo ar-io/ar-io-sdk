@@ -1,3 +1,10 @@
+# [3.23.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.5...v3.23.0-alpha.6) (2026-01-23)
+
+
+### Features
+
+* **ao process:** add msg selector cb, allows apis to define the matcher for the response message ([8dcf551](https://github.com/ar-io/ar-io-sdk/commit/8dcf551a0c7d318546cd99c33cad09c40ba1742d))
+
 # [3.23.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.4...v3.23.0-alpha.5) (2026-01-13)
 
 
