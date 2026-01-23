@@ -488,6 +488,10 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
   async getInfo(): Promise<InfoResponse> {
     return this.process.read<InfoResponse>({
       tags: [{ name: 'Action', value: 'Info' }],
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Info-Notice',
+        ),
     });
   }
 
@@ -513,6 +517,12 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
     );
     return this.process.read<PaginationResult<MarketplaceIntent>>({
       tags: filteredTags,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' &&
+            tag.value === 'Get-Paginated-Intents-Notice',
+        ),
     });
   }
 
@@ -522,6 +532,11 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
         { name: 'Action', value: 'Get-Intent-By-Id' },
         { name: 'Intent-Id', value: intentId },
       ],
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' && tag.value === 'Get-Intent-By-Id-Notice',
+        ),
     });
   }
 
@@ -565,7 +580,13 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
     const filteredTags = tags.filter(
       (tag): tag is { name: string; value: string } => tag.value !== undefined,
     );
-    return this.process.read<PaginationResult<Order>>({ tags: filteredTags });
+    return this.process.read<PaginationResult<Order>>({
+      tags: filteredTags,
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Get-Orders-Notice',
+        ),
+    });
   }
 
   /**
@@ -579,6 +600,10 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
         { name: 'Action', value: 'Get-Order' },
         { name: 'Order-Id', value: orderId },
       ],
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Get-Order-Notice',
+        ),
     });
   }
 
@@ -607,6 +632,12 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
         { name: 'Action', value: 'Get-Paginated-Balances' },
         ...paginationParamsToTags<MarketplaceBalance>(params),
       ],
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' &&
+            tag.value === 'Get-Paginated-Balances-Notice',
+        ),
     });
   }
 
@@ -623,6 +654,10 @@ export class ArNSMarketplaceRead implements AoArNSMarketplaceRead {
         { name: 'Action', value: 'Get-Balance' },
         { name: 'Address', value: address },
       ],
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Get-Balance-Notice',
+        ),
     });
   }
 
@@ -760,6 +795,11 @@ export class ArNSMarketplaceWrite
         { name: 'Quantity', value: params.amount },
       ],
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' && tag.value === 'Withdraw-Ario-Notice',
+        ),
     });
   }
 
@@ -790,6 +830,11 @@ export class ArNSMarketplaceWrite
     return this.process.send<MarketplaceIntent>({
       tags: filteredTags,
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' && tag.value === 'Create-Intent-Notice',
+        ),
     });
   }
 
@@ -800,6 +845,12 @@ export class ArNSMarketplaceWrite
         { name: 'X-Intent-Id', value: intentId },
       ],
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' &&
+            tag.value === 'Push-ANT-Intent-Resolution-Notice',
+        ),
     });
   }
   async settleAuction(params: {
@@ -819,6 +870,11 @@ export class ArNSMarketplaceWrite
     return this.process.send({
       tags: filteredTags,
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' && tag.value === 'Settle-Auction-Notice',
+        ),
     });
   }
 
@@ -1092,6 +1148,10 @@ export class ArNSMarketplaceWrite
     return this.process.send({
       tags,
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Cancel-Order-Notice',
+        ),
     });
   }
 
@@ -1125,6 +1185,10 @@ export class ArNSMarketplaceWrite
     return this.process.send<Order>({
       tags: filteredTags,
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) => tag.name === 'Action' && tag.value === 'Create-Order-Notice',
+        ),
     });
   }
 
@@ -1227,6 +1291,12 @@ export class ArNSMarketplaceWrite
         { name: 'Bid-Amount', value: params.bidAmount },
       ],
       signer: this.signer,
+      select: (message) =>
+        message.Tags.some(
+          (tag) =>
+            tag.name === 'Action' &&
+            tag.value === 'Bid-On-English-Auction-Notice',
+        ),
     });
   }
 
