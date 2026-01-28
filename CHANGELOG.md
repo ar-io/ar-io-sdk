@@ -1,3 +1,10 @@
+## [3.23.1](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0...v3.23.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* **docs:** correct capitalization and terminology in README.md ([076201d](https://github.com/ar-io/ar-io-sdk/commit/076201df90fedfee7c1f81a3e5a09d665b21ab4e))
+
 # [3.23.0](https://github.com/ar-io/ar-io-sdk/compare/v3.22.2...v3.23.0) (2026-01-14)
 
 
