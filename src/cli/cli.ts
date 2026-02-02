@@ -61,6 +61,8 @@ import {
   getGateway,
   getGatewayDelegates,
   getGatewayVaults,
+  getMessageResult,
+  getTransferResult,
   getPrescribedNames,
   getPrescribedObservers,
   getPrimaryName,
@@ -378,6 +380,21 @@ makeCommand({
   description: 'Get the vault of provided address and vault ID',
   options: getVaultOptions,
   action: getVault,
+});
+
+makeCommand({
+  name: 'get-message-result',
+  description: 'Get the raw result of a message by its ID',
+  options: [optionMap.messageId],
+  action: getMessageResult,
+});
+
+makeCommand({
+  name: 'get-transfer-result',
+  description:
+    'Get the result of a transfer message, including parsed credit/debit notices',
+  options: [optionMap.messageId],
+  action: getTransferResult,
 });
 
 // # ArNS Resolution

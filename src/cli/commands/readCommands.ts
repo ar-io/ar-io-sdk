@@ -313,3 +313,61 @@ export async function listAntsForAddress(o: AddressCLIOptions) {
   });
   return result ?? { message: `No ANTs found for address ${address}` };
 }
+
+export async function getMessageResult(
+  o: GlobalCLIOptions & { messageId?: string },
+) {
+  const messageId = requiredStringFromOptions(o, 'messageId');
+  const result = await readARIOFromOptions(o).getMessageResult({ messageId });
+
+  return {
+    id: result.id,
+    output: result.output != null ? JSON.stringify(result.output) : null,
+    messages: result.messages.map((msg) => ({
+      target: msg.target,
+      anchor: msg.anchor ?? null,
+      tags: msg.tags,
+      data: msg.data ?? null,
+    })),
+    spawns: result.spawns,
+    error: result.error ?? null,
+  };
+}
+
+export async function getTransferResult(
+  o: GlobalCLIOptions & { messageId?: string },
+) {
+  const messageId = requiredStringFromOptions(o, 'messageId');
+  const result = await readARIOFromOptions(o).getMessageResult({ messageId });
+
+  // Parse transfer notices
+  const creditNotices = result.messages
+    .filter(
+      (msg) =>
+        msg.tags.find((t) => t.name === 'Action')?.value === 'Credit-Notice',
+    )
+    .map((msg) => ({
+      target: msg.target,
+      sender: msg.tags.find((t) => t.name === 'Sender')?.value ?? '',
+      quantity: msg.tags.find((t) => t.name === 'Quantity')?.value ?? '0',
+    }));
+
+  const debitNotices = result.messages
+    .filter(
+      (msg) =>
+        msg.tags.find((t) => t.name === 'Action')?.value === 'Debit-Notice',
+    )
+    .map((msg) => ({
+      target: msg.target,
+      recipient: msg.tags.find((t) => t.name === 'Recipient')?.value ?? '',
+      quantity: msg.tags.find((t) => t.name === 'Quantity')?.value ?? '0',
+    }));
+
+  return {
+    id: result.id,
+    creditNotices,
+    debitNotices,
+    isTransferSuccessful: creditNotices.length > 0,
+    error: result.error ?? null,
+  };
+}

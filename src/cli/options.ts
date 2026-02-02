@@ -66,6 +66,10 @@ export const optionMap = {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
   },
+  messageId: {
+    alias: '--message-id <messageId>',
+    description: 'The message ID to look up',
+  },
   debug: {
     alias: '--debug',
     description: 'Enable debug log output',

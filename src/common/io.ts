@@ -56,6 +56,7 @@ import {
   AoIncreaseVaultParams,
   AoJoinNetworkParams,
   AoMessageResult,
+  AoMessageResultDetails,
   AoPaginatedAddressParams,
   AoPrimaryName,
   AoPrimaryNameRequest,
@@ -92,7 +93,7 @@ import {
   isProcessIdConfiguration,
   mARIOToken,
 } from '../types/index.js';
-import { createAoSigner } from '../utils/ao.js';
+import { createAoSigner, errorMessageFromOutput } from '../utils/ao.js';
 import {
   getEpochDataFromGqlWithCUFallback,
   paginationParamsToTags,
@@ -1070,6 +1071,40 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
         ...paginationParamsToTags<AoAllGatewayVaults>(params),
       ],
     });
+  }
+
+  async getMessageResult({
+    messageId,
+  }: {
+    messageId: string;
+  }): Promise<AoMessageResultDetails> {
+    const result = await this.process.ao.result({
+      message: messageId,
+      process: this.process.processId,
+    });
+
+    const error = errorMessageFromOutput(result);
+
+    return {
+      id: messageId,
+      output: result.Output,
+      messages:
+        result.Messages?.map(
+          (msg: {
+            Target?: string;
+            Anchor?: string;
+            Tags?: { name: string; value: string }[];
+            Data?: string;
+          }) => ({
+            target: msg.Target ?? '',
+            anchor: msg.Anchor,
+            tags: msg.Tags ?? [],
+            data: msg.Data,
+          }),
+        ) ?? [],
+      spawns: result.Spawns ?? [],
+      error,
+    };
   }
 
   async resolveArNSName({

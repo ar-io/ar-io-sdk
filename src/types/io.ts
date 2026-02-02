@@ -572,6 +572,55 @@ export type DemandFactorSettings = {
   criteria: string;
 };
 
+// Message Result Types
+
+/**
+ * Represents an output message from an AO process interaction
+ */
+export type AoOutputMessage = {
+  target: string;
+  anchor?: string;
+  tags: { name: string; value: string }[];
+  data?: string;
+};
+
+/**
+ * Detailed result from retrieving a message result
+ */
+export type AoMessageResultDetails = {
+  id: string;
+  output?: unknown;
+  messages: AoOutputMessage[];
+  spawns: string[];
+  error?: string;
+};
+
+/**
+ * Represents a Credit-Notice message from a token transfer
+ */
+export type AoCreditNotice = {
+  target: string;
+  sender: string;
+  quantity: string;
+};
+
+/**
+ * Represents a Debit-Notice message from a token transfer
+ */
+export type AoDebitNotice = {
+  target: string;
+  recipient: string;
+  quantity: string;
+};
+
+/**
+ * Aggregated notices from a transfer operation
+ */
+export type AoTransferNotices = {
+  creditNotices: AoCreditNotice[];
+  debitNotices: AoDebitNotice[];
+};
+
 // Interfaces
 
 // simple interface to allow multiple implementations of ArNSNameResolver
@@ -705,6 +754,15 @@ export interface AoARIORead extends ArNSNameResolver {
   getAllGatewayVaults(
     params?: PaginationParams<AoAllGatewayVaults>,
   ): Promise<PaginationResult<AoAllGatewayVaults>>;
+  /**
+   * Retrieves the result details for a previously sent message.
+   * Useful for verifying transfer success by checking for credit/debit notices.
+   * @param params - The message ID to look up
+   * @returns Detailed result including all output messages, spawns, and any errors
+   */
+  getMessageResult(params: {
+    messageId: string;
+  }): Promise<AoMessageResultDetails>;
 }
 
 export interface AoARIOWrite extends AoARIORead {
