@@ -376,6 +376,18 @@ export type ListNameForSaleProgressEvent =
   | ListNameForSaleCompleteEvent;
 
 /**
+ * Timeout and retry options for listNameForSale status checks and polling.
+ * Used when checking for intent (e.g. getIntentByANTId), transfer confirmation, and order listing.
+ * @experimental
+ */
+export interface ListNameForSaleTimeoutOptions {
+  /** Max retries when polling for intent, transfer confirmation, or order listing. Default 5. */
+  maxRetries?: number;
+  /** Base interval in ms for exponential backoff between status polls / retries. Wait time is base * 2^attempt. Default 1000. */
+  statusPollIntervalMs?: number;
+}
+
+/**
  * Write interface for the ArNS marketplace
  * @experimental
  */
@@ -400,27 +412,31 @@ export interface AoArNSMarketplaceWrite {
   /**
    * List a name for sale on the marketplace
    * @param params - Parameters including name, expiration time, price, type, wallet address, and optional auction parameters
+   * @param timeoutOptions - Optional retries and wait times for intent, transfer, and order listing status polling
    * @returns Result containing intent, order, ANT transfer result, and any error
    */
-  listNameForSale({
-    name,
-    expirationTime,
-    price,
-    type,
-    walletAddress,
-    minimumPrice,
-    decreaseInterval,
-    onProgress,
-  }: {
-    name: string;
-    expirationTime: number;
-    price: string;
-    type: 'fixed' | 'dutch' | 'english';
-    walletAddress: WalletAddress;
-    minimumPrice?: string;
-    decreaseInterval?: string;
-    onProgress?: (event: ListNameForSaleProgressEvent) => void;
-  }): Promise<{
+  listNameForSale(
+    {
+      name,
+      expirationTime,
+      price,
+      type,
+      walletAddress,
+      minimumPrice,
+      decreaseInterval,
+      onProgress,
+    }: {
+      name: string;
+      expirationTime: number;
+      price: string;
+      type: 'fixed' | 'dutch' | 'english';
+      walletAddress: WalletAddress;
+      minimumPrice?: string;
+      decreaseInterval?: string;
+      onProgress?: (event: ListNameForSaleProgressEvent) => void;
+    },
+    timeoutOptions?: ListNameForSaleTimeoutOptions,
+  ): Promise<{
     intent: MarketplaceIntent;
     order: Order | null;
     antTransferResult: AoMessageResult<
@@ -878,27 +894,30 @@ export class ArNSMarketplaceWrite
     });
   }
 
-  async listNameForSale({
-    name,
-    expirationTime,
-    price,
-    type,
-    walletAddress,
-    minimumPrice,
-    decreaseInterval,
-    onProgress = (event) => {
-      this.logger.info(`List name for sale progress: ${event.step}`);
+  async listNameForSale(
+    {
+      name,
+      expirationTime,
+      price,
+      type,
+      walletAddress,
+      minimumPrice,
+      decreaseInterval,
+      onProgress = (event) => {
+        this.logger.info(`List name for sale progress: ${event.step}`);
+      },
+    }: {
+      name: string;
+      expirationTime: number;
+      price: string;
+      type: 'fixed' | 'dutch' | 'english';
+      walletAddress: WalletAddress;
+      minimumPrice?: string;
+      decreaseInterval?: string;
+      onProgress?: (event: ListNameForSaleProgressEvent) => void;
     },
-  }: {
-    name: string;
-    expirationTime: number;
-    price: string;
-    type: 'fixed' | 'dutch' | 'english';
-    walletAddress: WalletAddress;
-    minimumPrice?: string;
-    decreaseInterval?: string;
-    onProgress?: (event: ListNameForSaleProgressEvent) => void;
-  }): Promise<{
+    timeoutOptions?: ListNameForSaleTimeoutOptions,
+  ): Promise<{
     intent: MarketplaceIntent;
     order: Order | null;
     antTransferResult: AoMessageResult<
@@ -906,6 +925,9 @@ export class ArNSMarketplaceWrite
     > | null;
     error: Error | null;
   }> {
+    const maxRetries = timeoutOptions?.maxRetries ?? 15;
+    const statusPollIntervalMs = timeoutOptions?.statusPollIntervalMs ?? 3000;
+
     // Get arns record for the current ant id associated with it
     const record = await this.ario.getArNSRecord({ name: name });
     this.logger.info(`Record ${name} found: ${JSON.stringify(record)}`);
@@ -980,11 +1002,28 @@ export class ArNSMarketplaceWrite
       );
 
       if (isExistingIntentError) {
-        intent = await this.getIntentByANTId(antId).catch((getIntentError) => {
-          this.logger.error(`Failed to get intent: ${getIntentError.message}`);
+        let fetchedIntent: MarketplaceIntent | undefined;
+        let lastIntentError: Error | null = null;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            fetchedIntent = await this.getIntentByANTId(antId);
+            lastIntentError = null;
+            break;
+          } catch (getIntentError) {
+            lastIntentError = getIntentError as Error;
+            this.logger.error(
+              `Failed to get intent (attempt ${attempt + 1}/${maxRetries + 1}): ${getIntentError.message}`,
+            );
+            if (attempt < maxRetries) {
+              const backoffMs = statusPollIntervalMs * Math.pow(2, attempt);
+              await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            }
+          }
+        }
+        if (lastIntentError !== null || fetchedIntent === undefined) {
           const intentError = new Error(
             'An intent already exists for this ANT ID but failed to get intent:\n\n' +
-              getIntentError.message,
+              (lastIntentError?.message ?? 'Unknown error'),
           );
           onProgress({
             step: 'error',
@@ -994,7 +1033,8 @@ export class ArNSMarketplaceWrite
             failedStep: 'creating-intent',
           });
           throw intentError;
-        });
+        }
+        intent = fetchedIntent;
       } else {
         // Possible to get other errors, eg insufficient deposited ario balance. Rethrow them here.
         onProgress({
@@ -1034,15 +1074,38 @@ export class ArNSMarketplaceWrite
         step: 'transferring-ant',
         ...transferAntEventData,
       });
-      antTransferResult = await ant.transfer(
-        {
-          target: this.process.processId,
-          removeControllers: false, // important: do not remove the controllers of the ANT to prevent loss of control
-        },
-        {
-          tags: [{ name: 'X-Intent-Id', value: intent.intentId }],
-        },
-      );
+      let transferResult:
+        | AoMessageResult<Record<string, string | number | boolean | null>>
+        | undefined;
+      let lastTransferError: Error | null = null;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          transferResult = await ant.transfer(
+            {
+              target: this.process.processId,
+              removeControllers: false, // important: do not remove the controllers of the ANT to prevent loss of control
+            },
+            {
+              tags: [{ name: 'X-Intent-Id', value: intent.intentId }],
+            },
+          );
+          lastTransferError = null;
+          break;
+        } catch (error) {
+          lastTransferError = error as Error;
+          this.logger.error(
+            `Failed to transfer ANT (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message}`,
+          );
+          if (attempt < maxRetries) {
+            const backoffMs = statusPollIntervalMs * Math.pow(2, attempt);
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+          }
+        }
+      }
+      if (lastTransferError !== null || transferResult === undefined) {
+        throw lastTransferError ?? new Error('Failed to transfer ANT');
+      }
+      antTransferResult = transferResult;
       this.logger.info(`ANT transferred: ${JSON.stringify(antTransferResult)}`);
       onProgress({
         step: 'ant-transferred',
@@ -1071,24 +1134,20 @@ export class ArNSMarketplaceWrite
     // This is to ensure the order is created before returning the result for ux purposes.
     // This may still fail, in which case we return the intent and ant transfer result and handle the error in the client.
     let order: Order | null = null;
-    let tries = 0;
-    while (order === null && tries < 5) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         order = await this.getOrderByANTId(antId).catch((error) => {
-          console.log(new Error('Failed to get order: ' + error.message));
+          this.logger.warn(`Failed to get order: ${error.message}`);
           return null;
         });
-        if (order === null) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          this.logger.info(`Waiting for order to be created...`);
-          if (tries === 5) {
-            this.logger.error(`Failed to get order after ${tries} attempts`);
-            throw new Error(`Failed to get order after ${tries} attempts`);
-          }
-          tries++;
+        if (order !== null) {
+          break;
         }
-        // if the order is found, break the loop
-        break;
+        if (attempt < maxRetries) {
+          this.logger.info(`Waiting for order to be created...`);
+          const backoffMs = statusPollIntervalMs * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        }
       } catch (error) {
         this.logger.error(`Failed to get order: ${error.message}`);
         const orderError = new Error('Failed to get order: ' + error.message);
