@@ -1,3 +1,10 @@
+# [3.23.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.6...v3.23.0-alpha.7) (2026-02-11)
+
+
+### Bug Fixes
+
+* **marketplace:** add polling controls ([d092ef8](https://github.com/ar-io/ar-io-sdk/commit/d092ef89837453356f6ed5325ab26352d962947f))
+
 # [3.23.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v3.23.0-alpha.5...v3.23.0-alpha.6) (2026-01-23)
 
 
