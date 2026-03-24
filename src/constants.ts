@@ -49,3 +49,5 @@ export const ANT_LUA_ID = 'sOW9Sdm1yoPRrzerC5iu1nsupp4e6I-HnJyYVHzvzQo';
 export const AO_AUTHORITY = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY';
 export const DEFAULT_SCHEDULER_ID =
   '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
+
+export const DEFAULT_CU_URL = 'https://cu.ardrive.io';
