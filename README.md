@@ -2,7 +2,7 @@
 
 [![codecov](https://codecov.io/gh/ar-io/ar-io-sdk/graph/badge.svg?token=7dXKcT7dJy)](https://codecov.io/gh/ar-io/ar-io-sdk)
 
-This is the home of [ar.io] SDK. This SDK provides functionality for interacting with the ar.io ecosystem of services (e.g. gateways and observers) and protocols (e.g. ArNS and AO). It is available for both NodeJS and Web environments.
+This is the home of the ar.io SDK. This SDK provides functionality for interacting with the ar.io ecosystem of services (e.g. gateways and observers) and protocols (e.g. ArNS and AO). It is available for both NodeJS and Web environments.
 
 ## Table of Contents
 
@@ -60,8 +60,8 @@ const gateways = await ario.getGateways();
       "operatorStake": 250000000000,
       "settings": {
         "fqdn": "ar-io.dev",
-        "label": "AR.IO Test",
-        "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+        "label": "ar.io Test",
+        "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
         "port": 443,
         "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
         "protocol": "https"
@@ -355,7 +355,7 @@ const testnet = ARIO.testnet(); // or ARIO.init({ processId: ARIO_TESTNET_PROCES
 
 ##### Faucet
 
-The SDK provides APIs for claiming tokens via a faucet on the AR.IO Testnet process (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
+The SDK provides APIs for claiming tokens via a faucet on the ar.io Testnet process (`tARIO`) via the [ar-io-testnet-faucet] service. All token requests require a captcha to be solved, and the faucet is rate limited to prevent abuse.
 
 To claim testnet tokens from the testnet token faucet, you can use one of the following methods:
 
@@ -593,8 +593,8 @@ const gateway = await ario.getGateway({
   "operatorStake": 250000000000,
   "settings": {
     "fqdn": "ar-io.dev",
-    "label": "AR.IO Test",
-    "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+    "label": "ar.io Test",
+    "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
     "port": 443,
     "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
     "protocol": "https"
@@ -649,8 +649,8 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
       "operatorStake": 250000000000,
       "settings": {
         "fqdn": "ar-io.dev",
-        "label": "AR.IO Test",
-        "note": "Test Gateway operated by PDS for the AR.IO ecosystem.",
+        "label": "ar.io Test",
+        "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
         "port": 443,
         "properties": "raJgvbFU-YAnku-WsupIdbTsqqGLQiYpGzoqk9SCVgY",
         "protocol": "https"
@@ -2350,7 +2350,7 @@ const state = await ant.getState();
   "Keywords": ["keyword1", "keyword2", "keyword3"],
   "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
   "Denomination": 0,
-  "Name": "AR.IO Foundation",
+  "Name": "ar.io Foundation",
   "Owner": "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY"
 }
 ```
@@ -3061,7 +3061,7 @@ console.log(
 
 ## Token Conversion
 
-The ARIO process stores all values as mARIO (milli-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
+The ARIO process stores all values as mARIO (micro-ARIO) to avoid floating-point arithmetic issues. The SDK provides an `ARIOToken` and `mARIOToken` classes to handle the conversion between ARIO and mARIO, along with rounding logic for precision.
 
 **All process interactions expect values in mARIO. If numbers are provided as inputs, they are assumed to be in raw mARIO values.**
 
@@ -3176,7 +3176,7 @@ In the example above, the query will return ArNS records where:
 
 For [ANS-104] bundling compatible with ar.io gateways, we recommend using [turbo-sdk](https://github.com/ardriveapp/turbo-sdk). Turbo SDK provides efficient and reliable methods for creating and uploading data bundles to the Arweave network, which are fully compatible with ar.io gateways. Turbo supports fiat and crypto bundling and uploading with a focus on ease of use and reliability.
 
-### AR.IO Gateways
+### ar.io Gateways
 
 ### Running a Gateway
 
