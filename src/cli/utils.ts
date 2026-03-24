@@ -57,6 +57,7 @@ import {
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
+  DEFAULT_CU_URL,
   EpochInput,
   FundFrom,
   Logger,
@@ -255,8 +256,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   return ARIO.init({
     hyperbeamUrl: options.hyperbeamUrl,
     process: aoProcessFromOptions({
-      cuUrl: 'http://localhost:6363', // default to ardrive cu for ARIO process
-      //cuUrl: 'https://cu.ardrive.io', // default to ardrive cu for ARIO process
+      cuUrl: DEFAULT_CU_URL,
       ...options,
     }),
     paymentUrl: options.paymentUrl,

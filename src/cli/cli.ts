@@ -1191,9 +1191,11 @@ makeCommand({
   },
 });
 
+// Normalize separators so includes() works on Windows (argv uses backslashes).
+const argvScript = process.argv[1].replace(/\\/g, '/');
 if (
-  process.argv[1].includes('bin/ar.io') || // Running from global .bin
-  process.argv[1].includes('cli/cli') // Running from source
+  argvScript.includes('bin/ar.io') || // Running from global .bin
+  argvScript.includes('cli/cli') // Running from source
 ) {
   program.parse(process.argv);
 }
