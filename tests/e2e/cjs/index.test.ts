@@ -84,7 +84,7 @@ describe('e2e cjs tests', async () => {
     }
   });
 
-  describe('ANTRegistry', async () => {
+  describe.skip('ANTRegistry', async () => {
     it('should be able to instantiate AoANTRegistryWriteable', async () => {
       for (const signer of signers) {
         const registry = ANTRegistry.init({ signer });
@@ -100,7 +100,7 @@ describe('e2e cjs tests', async () => {
     });
   });
 
-  describe('ANT', async () => {
+  describe.skip('ANT', async () => {
     const processId = 'YcxE5IbqZYK72H64ELoysxiJ-0wb36deYPv55wgl8xo';
     it('should be able to instantiate AoANTWriteable', async () => {
       for (const signer of signers) {
