@@ -10,6 +10,7 @@ on:
       - main
       - alpha
       - solana
+  workflow_dispatch:
 
 jobs:
   build:
