@@ -108,9 +108,7 @@ const CANONICAL_HEADER_V2 = 'ar.io escrow claim v2';
  *
  * @throws if `assetId` or `nonce` aren't exactly 32 bytes.
  */
-export function canonicalMessageV2(
-  input: CanonicalMessageV2Input,
-): Uint8Array {
+export function canonicalMessageV2(input: CanonicalMessageV2Input): Uint8Array {
   if (input.assetId.length !== 32) {
     throw new Error(
       `canonicalMessageV2: assetId must be 32 bytes, got ${input.assetId.length}`,

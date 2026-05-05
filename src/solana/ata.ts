@@ -14,7 +14,10 @@ import {
   getProgramDerivedAddress,
 } from '@solana/kit';
 
-import { SYSTEM_PROGRAM_ADDRESS, TOKEN_PROGRAM_ADDRESS } from './instruction.js';
+import {
+  SYSTEM_PROGRAM_ADDRESS,
+  TOKEN_PROGRAM_ADDRESS,
+} from './instruction.js';
 
 export const ATA_PROGRAM_ADDRESS: Address = address(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',

@@ -41,8 +41,14 @@ describe('fundingPlanFromOptions', () => {
     assert.equal(out!.length, 2);
     assert.equal(out![0].kind, 'delegation');
     assert.equal(out![0].amount, 100n);
-    assert.equal(out![0].gateway, 'GwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-    assert.equal(out![1].gateway, 'GwBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB');
+    assert.equal(
+      out![0].gateway,
+      'GwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    );
+    assert.equal(
+      out![1].gateway,
+      'GwBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    );
   });
 
   it('parses operatorStake source with gateway', () => {
@@ -55,7 +61,10 @@ describe('fundingPlanFromOptions', () => {
     ]);
     const out = fundingPlanFromOptions({ fundingPlanJson: json });
     assert.equal(out![0].kind, 'operatorStake');
-    assert.equal(out![0].gateway, 'OpGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG');
+    assert.equal(
+      out![0].gateway,
+      'OpGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG',
+    );
   });
 
   it('rejects gateway field on balance source', () => {

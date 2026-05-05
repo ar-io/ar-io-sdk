@@ -30,9 +30,9 @@
  */
 
 import {
+  AccountRole,
   type Address,
   type Rpc,
-  AccountRole,
   type SolanaRpcApi,
   type SolanaRpcApiMainnet,
   fetchEncodedAccount,
@@ -46,17 +46,14 @@ import {
  */
 export type FundingPlanRpc = Rpc<SolanaRpcApi> | Rpc<SolanaRpcApiMainnet>;
 
-import {
-  type FundingSourceKind,
-  type FundingSourceSpec,
-} from '../types/io.js';
+import { type FundingSourceKind, type FundingSourceSpec } from '../types/io.js';
+import { ARIO_GAR_PROGRAM_ADDRESS as ARIO_GAR_PROGRAM_ID } from './generated/gar/program-address.js';
 import {
   getDelegationPDA,
   getGatewayPDA,
-  getWithdrawalPDA,
   getWithdrawalCounterPDA,
+  getWithdrawalPDA,
 } from './pda.js';
-import { ARIO_GAR_PROGRAM_ADDRESS as ARIO_GAR_PROGRAM_ID } from './generated/gar/program-address.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -333,8 +330,10 @@ export function buildFundingPlan(
       }
     }
   }
-  if (shortfall === 0n) return finalizePlan(sourceSpecs, gatewayPerSource, raws);
-  if (fundFrom === 'balance') return insufficient(amountNeeded, shortfall, sources);
+  if (shortfall === 0n)
+    return finalizePlan(sourceSpecs, gatewayPerSource, raws);
+  if (fundFrom === 'balance')
+    return insufficient(amountNeeded, shortfall, sources);
 
   // 2. Withdrawal vaults (oldest-maturing first; gateway-independent).
   // Defensive sort — `discoverFundingSources` returns presorted, but explicit
@@ -374,8 +373,10 @@ export function buildFundingPlan(
     }
     shortfall -= take;
   }
-  if (shortfall === 0n) return finalizePlan(sourceSpecs, gatewayPerSource, raws);
-  if (fundFrom === 'withdrawal') return insufficient(amountNeeded, shortfall, sources);
+  if (shortfall === 0n)
+    return finalizePlan(sourceSpecs, gatewayPerSource, raws);
+  if (fundFrom === 'withdrawal')
+    return insufficient(amountNeeded, shortfall, sources);
 
   // 3+4. Delegation + OperatorStake — multi-gateway.
   // Build gateway iteration order: opts.preferGateway first (if it has a
@@ -387,7 +388,9 @@ export function buildFundingPlan(
   for (const s of sources) {
     if (s.kind === 'delegation') delegationsByGateway.set(s.gateway, s);
   }
-  const orderedDelegations: (DiscoveredFundingSource & { kind: 'delegation' })[] = [];
+  const orderedDelegations: (DiscoveredFundingSource & {
+    kind: 'delegation';
+  })[] = [];
   if (opts.preferGateway && delegationsByGateway.has(opts.preferGateway)) {
     orderedDelegations.push(delegationsByGateway.get(opts.preferGateway)!);
   }
@@ -410,7 +413,8 @@ export function buildFundingPlan(
     }
     shortfall -= take;
   }
-  if (shortfall === 0n) return finalizePlan(sourceSpecs, gatewayPerSource, raws);
+  if (shortfall === 0n)
+    return finalizePlan(sourceSpecs, gatewayPerSource, raws);
 
   // Solana extension: OperatorStake (only when caller opts in).
   if (opts.fundAsOperator) {
@@ -437,7 +441,8 @@ export function buildFundingPlan(
       }
     }
   }
-  if (shortfall === 0n) return finalizePlan(sourceSpecs, gatewayPerSource, raws);
+  if (shortfall === 0n)
+    return finalizePlan(sourceSpecs, gatewayPerSource, raws);
 
   // 4. Minimum pass — drain the floor on each touched delegation, bumping
   //    the existing source rather than adding a new one. Mirrors Lua's
@@ -625,7 +630,11 @@ export async function buildFundingPlanRemainingAccounts(
         );
       }
       const [gatewayPda] = await getGatewayPDA(gateway, garProgram);
-      const [delegationPda] = await getDelegationPDA(gateway, owner, garProgram);
+      const [delegationPda] = await getDelegationPDA(
+        gateway,
+        owner,
+        garProgram,
+      );
       out.push({ address: gatewayPda, role: AccountRole.WRITABLE });
       out.push({ address: delegationPda, role: AccountRole.WRITABLE });
     } else if (source.kind === 'operatorStake') {
@@ -678,7 +687,10 @@ export async function buildFundingPlanRemainingAccounts(
  */
 export function computeResidueIndexes(
   sources: { kind: string; amount: bigint }[],
-  delegationStates: ({ delegationAmount: bigint; minDelegationAmount: bigint } | undefined)[],
+  delegationStates: (
+    | { delegationAmount: bigint; minDelegationAmount: bigint }
+    | undefined
+  )[],
 ): number[] {
   const out: number[] = [];
   for (let i = 0; i < sources.length; i++) {
@@ -705,17 +717,22 @@ export async function predictResidueVaults(
   owner: Address,
   plan: FundingPlan,
   opts: { garProgram?: Address } = {},
-): Promise<{ residueVaults: Address[]; withdrawalCounter: Address; nextId: bigint }> {
+): Promise<{
+  residueVaults: Address[];
+  withdrawalCounter: Address;
+  nextId: bigint;
+}> {
   const garProgram = opts.garProgram ?? ARIO_GAR_PROGRAM_ID;
   const [withdrawalCounter] = await getWithdrawalCounterPDA(owner, garProgram);
   const acct = await fetchEncodedAccount(rpc, withdrawalCounter);
   let nextId = 0n;
   if (acct.exists && acct.data.length >= 48) {
     // WithdrawalCounter layout: disc(8) + owner(32) + next_id(u64 le) at 40..48.
-    nextId = new DataView(acct.data.buffer, acct.data.byteOffset, 48).getBigUint64(
-      40,
-      true,
-    );
+    nextId = new DataView(
+      acct.data.buffer,
+      acct.data.byteOffset,
+      48,
+    ).getBigUint64(40, true);
   }
   const residueVaults: Address[] = [];
   for (let i = 0; i < plan.residueDelegationIndexes.length; i++) {
@@ -768,11 +785,7 @@ async function fetchUserWithdrawals(
     }>) {
       const data = Buffer.from(entry.account.data[0], 'base64');
       if (data.length < 108) continue;
-      const dv = new DataView(
-        data.buffer,
-        data.byteOffset,
-        data.byteLength,
-      );
+      const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
       const withdrawalId = dv.getBigUint64(40, true);
       const gateway = ADDRESS_DECODER.decode(data.subarray(48, 80));
       const amount = dv.getBigUint64(80, true);
@@ -830,11 +843,7 @@ async function fetchUserDelegations(
     }>) {
       const data = Buffer.from(entry.account.data[0], 'base64');
       if (data.length < 105) continue;
-      const dv = new DataView(
-        data.buffer,
-        data.byteOffset,
-        data.byteLength,
-      );
+      const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
       const gateway = ADDRESS_DECODER.decode(data.subarray(8, 40));
       const amount = dv.getBigUint64(72, true);
       if (amount === 0n) continue;

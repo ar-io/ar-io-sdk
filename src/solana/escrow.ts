@@ -518,8 +518,7 @@ function buildCreateAtaIdempotentIx(
   owner: Address,
   mint: Address,
 ): Instruction {
-  const SYSTEM_PROGRAM: Address =
-    '11111111111111111111111111111111' as Address;
+  const SYSTEM_PROGRAM: Address = '11111111111111111111111111111111' as Address;
   const TOKEN_PROGRAM: Address =
     'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address;
   return {

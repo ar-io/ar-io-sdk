@@ -13,12 +13,7 @@
     "node": ">=18"
   },
   "license": "Apache-2.0",
-  "files": [
-    "lib",
-    "LICENSE",
-    "README.md",
-    "package.json"
-  ],
+  "files": ["lib", "LICENSE", "README.md", "package.json"],
   "publishConfig": {
     "access": "public"
   },
@@ -27,14 +22,7 @@
     "email": "info@ar.io",
     "website": "https://ar.io"
   },
-  "keywords": [
-    "arweave",
-    "ar",
-    "blockchain",
-    "ar.io",
-    "ao",
-    "solana"
-  ],
+  "keywords": ["arweave", "ar", "blockchain", "ar.io", "ao", "solana"],
   "exports": {
     ".": {
       "types": "./lib/types/node/index.d.ts",
@@ -154,11 +142,7 @@
     "prompts": "^2.4.2"
   },
   "lint-staged": {
-    "**/*.{ts,js,mjs,cjs,md,json}": [
-      "biome format --write"
-    ],
-    "**/README.md": [
-      "markdown-toc-gen insert --max-depth 2"
-    ]
+    "**/*.{ts,js,mjs,cjs,md,json}": ["biome format --write"],
+    "**/README.md": ["markdown-toc-gen insert --max-depth 2"]
   }
 }

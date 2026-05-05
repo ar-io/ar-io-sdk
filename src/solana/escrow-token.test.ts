@@ -6,33 +6,29 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import {
-  type Address,
-  address,
-  createNoopSigner,
-} from '@solana/kit';
+import { type Address, address, createNoopSigner } from '@solana/kit';
 
 import { getVaultedTransferInstructionAsync } from './generated/core/instructions/vaultedTransfer.js';
 
 describe('EscrowToken account layout', () => {
   it('total size is 711 bytes (must match Rust EscrowToken::SIZE)', () => {
     const size =
-      8 +   // Anchor discriminator
-      1 +   // version
-      1 +   // bump
-      32 +  // depositor
-      1 +   // asset_type
-      8 +   // amount
-      32 +  // ario_mint
-      32 +  // asset_id
-      1 +   // recipient_protocol
-      2 +   // recipient_pubkey_len
+      8 + // Anchor discriminator
+      1 + // version
+      1 + // bump
+      32 + // depositor
+      1 + // asset_type
+      8 + // amount
+      32 + // ario_mint
+      32 + // asset_id
+      1 + // recipient_protocol
+      2 + // recipient_pubkey_len
       512 + // recipient_pubkey
-      32 +  // nonce
-      8 +   // deposit_slot
-      8 +   // vault_end_timestamp
-      1 +   // vault_revocable
-      32;   // _reserved
+      32 + // nonce
+      8 + // deposit_slot
+      8 + // vault_end_timestamp
+      1 + // vault_revocable
+      32; // _reserved
     assert.equal(size, 711);
   });
 
@@ -45,19 +41,19 @@ describe('EscrowToken account layout', () => {
     const offsets = {
       version: 8,
       bump: 9,
-      depositor: 10,       // 32 bytes
+      depositor: 10, // 32 bytes
       assetType: 42,
-      amount: 43,           // 8 bytes
-      arioMint: 51,         // 32 bytes
-      assetId: 83,          // 32 bytes
+      amount: 43, // 8 bytes
+      arioMint: 51, // 32 bytes
+      assetId: 83, // 32 bytes
       recipientProtocol: 115,
       recipientPubkeyLen: 116, // 2 bytes
-      recipientPubkey: 118,    // 512 bytes
-      nonce: 630,              // 32 bytes
-      depositSlot: 662,        // 8 bytes
-      vaultEndTimestamp: 670,   // 8 bytes
-      vaultRevocable: 678,     // 1 byte
-      reserved: 679,           // 32 bytes → ends at 711
+      recipientPubkey: 118, // 512 bytes
+      nonce: 630, // 32 bytes
+      depositSlot: 662, // 8 bytes
+      vaultEndTimestamp: 670, // 8 bytes
+      vaultRevocable: 678, // 1 byte
+      reserved: 679, // 32 bytes → ends at 711
     };
 
     // Verify the final offset adds up

@@ -45,6 +45,7 @@ import type {
   AoUpdateGatewaySettingsParams,
   AoVaultedTransferParams,
 } from '../types/io.js';
+import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 import type { mARIOToken } from '../types/token.js';
 import {
   buildCreateAtaIdempotentIx,
@@ -54,6 +55,14 @@ import {
   deserializeArnsRecord,
   deserializeEpochSettingsFull,
 } from './deserialize.js';
+import {
+  type FundingPlan as InternalFundingPlan,
+  type InsufficientFundingError as InternalInsufficientFundingError,
+  buildFundingPlan as buildFundingPlanCore,
+  buildFundingPlanRemainingAccounts,
+  computeResidueIndexes,
+  predictResidueVaults,
+} from './funding-plan.js';
 import {
   getBuyNameFromDelegationInstructionAsync,
   getBuyNameFromFundingPlanInstructionAsync,
@@ -89,22 +98,16 @@ import {
   type FundingSourceSpec as GeneratedFundingSourceSpec,
 } from './generated/gar/types/index.js';
 import { FundingSourceKind as GeneratedFundingSourceKindEnum } from './generated/gar/types/index.js';
-import {
-  buildFundingPlan as buildFundingPlanCore,
-  buildFundingPlanRemainingAccounts,
-  computeResidueIndexes,
-  predictResidueVaults,
-  type FundingPlan as InternalFundingPlan,
-  type InsufficientFundingError as InternalInsufficientFundingError,
-} from './funding-plan.js';
-import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 
 /** Maps the SDK's user-facing FundingSourceKind string union to the
  *  Codama-generated enum used by the on-chain ix payload. */
 function toGeneratedFundingSourceSpec(
   s: PublicFundingSourceSpec,
 ): GeneratedFundingSourceSpec {
-  const kindMap: Record<PublicFundingSourceSpec['kind'], GeneratedFundingSourceKind> = {
+  const kindMap: Record<
+    PublicFundingSourceSpec['kind'],
+    GeneratedFundingSourceKind
+  > = {
     balance: GeneratedFundingSourceKindEnum.Balance,
     delegation: GeneratedFundingSourceKindEnum.Delegation,
     operatorStake: GeneratedFundingSourceKindEnum.OperatorStake,
@@ -112,9 +115,7 @@ function toGeneratedFundingSourceSpec(
   };
   return { kind: kindMap[s.kind], amount: s.amount };
 }
-import {
-  getSyncAttributesInstruction,
-} from './generated/ant/instructions/syncAttributes.js';
+import { getSyncAttributesInstruction } from './generated/ant/instructions/syncAttributes.js';
 import {
   getApprovePrimaryNameInstructionAsync,
   getCloseExpiredRequestInstruction,
@@ -129,6 +130,8 @@ import {
   getTransferInstruction,
   getVaultedTransferInstructionAsync,
 } from './generated/core/instructions/index.js';
+import { getDelegationDecoder } from './generated/gar/accounts/delegation.js';
+import { getGatewayDecoder } from './generated/gar/accounts/gateway.js';
 import {
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
@@ -153,8 +156,6 @@ import {
   getUpdateGatewaySettingsInstructionAsync,
 } from './generated/gar/instructions/index.js';
 import { Protocol } from './generated/gar/types/index.js';
-import { getDelegationDecoder } from './generated/gar/accounts/delegation.js';
-import { getGatewayDecoder } from './generated/gar/accounts/gateway.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   getAntRecordPDA,
@@ -1244,7 +1245,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         : undefined;
       const gatewayPerSource: (Address | undefined)[] = params.sources.map(
         (s) => {
-          if (s.kind !== 'delegation' && s.kind !== 'operatorStake') return undefined;
+          if (s.kind !== 'delegation' && s.kind !== 'operatorStake')
+            return undefined;
           const explicit = (s as { gateway?: string }).gateway;
           if (explicit) return address(explicit);
           if (fallbackGateway) return fallbackGateway;
@@ -1277,10 +1279,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // No explicit sources: discover + plan.
     const arnsConfig = await this.getArnsConfig();
     const { discoverFundingSources } = await import('./funding-plan.js');
-    const sources = await discoverFundingSources(this.rpc, this.signer.address, {
-      arioMint: arnsConfig.mint,
-      garProgram: this.garProgram,
-    });
+    const sources = await discoverFundingSources(
+      this.rpc,
+      this.signer.address,
+      {
+        arioMint: arnsConfig.mint,
+        garProgram: this.garProgram,
+      },
+    );
     const plan = buildFundingPlanCore(sources, amountNeeded, {
       fundFrom: params.fundFrom as
         | 'balance'
@@ -1358,7 +1364,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         programAddress: this.arnsProgram,
       },
     ).then((ix) =>
-      remainingAccounts.length > 0 ? withRemainingAccounts(ix, remainingAccounts) : ix,
+      remainingAccounts.length > 0
+        ? withRemainingAccounts(ix, remainingAccounts)
+        : ix,
     );
   }
 
@@ -1419,8 +1427,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
     const delegationDecoder = getDelegationDecoder();
     const gatewayDecoder = getGatewayDecoder();
-    const states: ({ delegationAmount: bigint; minDelegationAmount: bigint } | undefined)[] =
-      new Array(sources.length).fill(undefined);
+    const states: (
+      | { delegationAmount: bigint; minDelegationAmount: bigint }
+      | undefined
+    )[] = new Array(sources.length).fill(undefined);
     for (const { i, delAcct, gwAcct } of reads) {
       const delegation = delegationDecoder.decode(delAcct.data);
       const gateway = gatewayDecoder.decode(gwAcct.data);
@@ -1443,7 +1453,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * `params.withdrawalId` (single-withdrawal back-compat).
    */
   private async _materializeFundingPlan(
-    params: { withdrawalId?: number | bigint; sources?: PublicFundingSourceSpec[] },
+    params: {
+      withdrawalId?: number | bigint;
+      sources?: PublicFundingSourceSpec[];
+    },
     plan: InternalFundingPlan,
   ): Promise<{
     remainingAccounts: AccountMeta[];
@@ -1535,7 +1548,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       return (permabuy * 20n * demandFactor) / SCALE;
     }
     // Lease: base_fee * (1 + 0.20 * years) * demand_factor
-    const leasePct = SCALE + (200_000n * BigInt(buyNameParams.years));
+    const leasePct = SCALE + 200_000n * BigInt(buyNameParams.years);
     return (((baseFee * leasePct) / SCALE) * demandFactor) / SCALE;
   }
 
@@ -1830,10 +1843,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
     }
 
-    if (
-      args.params.fundFrom === 'plan' ||
-      args.params.fundFrom === 'any'
-    ) {
+    if (args.params.fundFrom === 'plan' || args.params.fundFrom === 'any') {
       // Cost estimation for manage variants: each operation has its own
       // pricing path. Keep it pragmatic — let the planner build the plan
       // around the user's desired total (caller can pass explicit sources
@@ -1920,15 +1930,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
     if (args.operation === 'extend') {
       // Lease extension fee: base_fee * 0.20 * years * demand_factor
-      return (baseFee * 200_000n * BigInt(args.years!) * demandFactor) /
+      return (
+        (baseFee * 200_000n * BigInt(args.years!) * demandFactor) /
         SCALE /
-        SCALE;
+        SCALE
+      );
     }
     // increaseUndername: base_fee * UNDERNAME_LEASE_FEE_PCT * quantity * demand_factor
     // UNDERNAME_LEASE_FEE_PCT = 1% = 10_000 in RATE_SCALE = 1_000_000.
-    return (baseFee * 10_000n * BigInt(args.quantity!) * demandFactor) /
+    return (
+      (baseFee * 10_000n * BigInt(args.quantity!) * demandFactor) /
       SCALE /
-      SCALE;
+      SCALE
+    );
   }
 
   // =========================================
@@ -2079,12 +2093,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       this.signer.address,
     );
 
-    const { remaining, antProgram } = await this._buildPrimaryNameValidationAccounts(
-      params.name,
-      'requestAndSet',
-    );
+    const { remaining, antProgram } =
+      await this._buildPrimaryNameValidationAccounts(
+        params.name,
+        'requestAndSet',
+      );
 
-    let ix;
     if (
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -2097,7 +2111,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       void signerATA;
       return this.requestPrimaryName(params, _options);
     }
-    ix = await this._buildPrimaryNameFromFundingPlanIx({
+    const ix = await this._buildPrimaryNameFromFundingPlanIx({
       params,
       coreConfig,
       validationAccounts: remaining,
@@ -2156,8 +2170,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       args.coreConfig.mint,
       this.signer.address,
     );
-    const { remainingAccounts: fundingRemaining, withdrawalCounter, residueVaultCount } =
-      await this._materializeFundingPlan(args.params, plan);
+    const {
+      remainingAccounts: fundingRemaining,
+      withdrawalCounter,
+      residueVaultCount,
+    } = await this._materializeFundingPlan(args.params, plan);
     const allRemaining: AccountMeta[] = [
       ...args.validationAccounts,
       ...fundingRemaining,
@@ -2245,10 +2262,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       this.coreProgram,
     );
 
-    const { remaining, antProgram } = await this._buildPrimaryNameValidationAccounts(
-      params.name,
-      'approve',
-    );
+    const { remaining, antProgram } =
+      await this._buildPrimaryNameValidationAccounts(params.name, 'approve');
 
     const ix = withRemainingAccounts(
       await getApprovePrimaryNameInstructionAsync(
@@ -2524,9 +2539,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const buyParams = {
       name: params.name,
       purchaseType:
-        params.type === 'permabuy'
-          ? PurchaseType.Permabuy
-          : PurchaseType.Lease,
+        params.type === 'permabuy' ? PurchaseType.Permabuy : PurchaseType.Lease,
       years: params.years ?? 1,
       ant: antPubkey,
     };
@@ -2691,7 +2704,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // against `newAnt`, so the bundle fires only when the reassign
     // caller is also the new ANT's holder; otherwise the ix is sent
     // alone and the new owner runs `syncAttributes()` later (BD-095/096).
-    const syncIx = await this._buildSyncAttributesIxIfOwner(params.name, newAnt);
+    const syncIx = await this._buildSyncAttributesIxIfOwner(
+      params.name,
+      newAnt,
+    );
     const reassignWithMetas = withRemainingAccounts(ix, [
       { address: newAnt, role: AccountRole.READONLY },
     ]);

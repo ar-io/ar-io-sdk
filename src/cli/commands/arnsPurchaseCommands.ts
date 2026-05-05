@@ -105,9 +105,7 @@ export async function buyRecordCLICommand(
       fundFrom: fundFromFromOptions(o),
       gatewayAddress: o.gatewayAddress as string | undefined,
       fundAsOperator: o.fundAsOperator as boolean | undefined,
-      withdrawalId: withdrawalIdFromOptions(
-        o as { withdrawalId?: string },
-      ),
+      withdrawalId: withdrawalIdFromOptions(o as { withdrawalId?: string }),
       sources: coerceFundingPlanSources(
         fundingPlanFromOptions(o as { fundingPlanJson?: string }),
       ),

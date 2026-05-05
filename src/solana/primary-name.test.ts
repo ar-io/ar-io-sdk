@@ -185,7 +185,10 @@ describe('Borsh layout: approve_primary_name', () => {
   it('is exactly 64 bytes (32-byte hash + 32-byte program_id)', () => {
     const buf = encodeApprovePrimaryNameArgs('blog_arweave');
     assert.equal(buf.length, 64);
-    assert.deepEqual(Buffer.from(buf.subarray(0, 32)), hashName('blog_arweave'));
+    assert.deepEqual(
+      Buffer.from(buf.subarray(0, 32)),
+      hashName('blog_arweave'),
+    );
     assert.deepEqual(Buffer.from(buf.subarray(32, 64)), ANT_PROGRAM_ID_BYTES);
   });
 });

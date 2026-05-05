@@ -64,10 +64,11 @@ export function setComputeUnitLimitIx(units: number): Instruction {
  * validator. Pre-supplying both keeps the wallet from rewriting the
  * message, so signatures over the original bytes still verify.
  */
-export function setComputeUnitPriceIx(microLamports: bigint | number): Instruction {
-  const lamports = typeof microLamports === 'bigint'
-    ? microLamports
-    : BigInt(microLamports);
+export function setComputeUnitPriceIx(
+  microLamports: bigint | number,
+): Instruction {
+  const lamports =
+    typeof microLamports === 'bigint' ? microLamports : BigInt(microLamports);
   const data = new Uint8Array(9);
   data[0] = 3;
   // u64 little-endian

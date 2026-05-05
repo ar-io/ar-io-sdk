@@ -16,7 +16,6 @@
 import { connect } from '@permaweb/aoconnect';
 import Arweave from 'arweave';
 
-import { createSolanaRpc } from '@solana/kit';
 import {
   ANT_REGISTRY_ID,
   ARIO_MAINNET_PROCESS_ID,
@@ -160,9 +159,6 @@ type SolanaARIOConfig = {
 export const DEFAULT_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
 export class ARIO {
-  // Overload: No arguments -> returns AoARIORead (Solana backend, default)
-  static init(): AoARIORead;
-
   // Overload: Solana backend with signer -> returns AoARIOWrite
   static init(
     config: SolanaARIOConfig & {
@@ -177,22 +173,14 @@ export class ARIO {
   // Overload: AO config with signer -> returns AoARIOWrite
   static init(config: ARIOConfigWithSigner): AoARIOWrite;
 
-  // Overload: AO config without signer -> returns AoARIORead
-  static init(config: ARIOConfigNoSigner): AoARIORead;
+  // Overload: AO config without signer (or no args) -> returns AoARIORead
+  static init(config?: ARIOConfigNoSigner): AoARIORead;
 
   // Implementation
   static init(
     config?: ARIOConfig | SolanaARIOConfig,
   ): AoARIORead | AoARIOWrite {
-    // AO backend (explicit opt-in)
-    if (config !== undefined && 'process' in config) {
-      if ('signer' in config) {
-        return new ARIOWriteable(config as ARIOConfigWithSigner);
-      }
-      return new ARIOReadable(config as ARIOConfigNoSigner);
-    }
-
-    // Solana backend (default)
+    // Solana backend (explicit opt-in via `backend: 'solana'`)
     if (
       config !== undefined &&
       'backend' in config &&
@@ -225,10 +213,11 @@ export class ARIO {
       }) as unknown as AoARIORead;
     }
 
-    // No config at all -> Solana with default RPC (read-only)
-    return new SolanaARIOReadable({
-      rpc: createSolanaRpc(DEFAULT_SOLANA_RPC_URL),
-    }) as unknown as AoARIORead;
+    // AO backend (default — preserves legacy behavior).
+    if (config !== undefined && 'signer' in config) {
+      return new ARIOWriteable(config as ARIOConfigWithSigner);
+    }
+    return new ARIOReadable(config as ARIOConfigNoSigner | undefined);
   }
 
   static mainnet(): AoARIORead;

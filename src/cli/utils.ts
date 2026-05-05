@@ -1082,7 +1082,9 @@ export function fundingPlanFromOptions<
   try {
     parsed = JSON.parse(o.fundingPlanJson);
   } catch (err) {
-    throw new Error(`--funding-plan-json is not valid JSON: ${(err as Error).message}`);
+    throw new Error(
+      `--funding-plan-json is not valid JSON: ${(err as Error).message}`,
+    );
   }
   if (!Array.isArray(parsed)) {
     throw new Error('--funding-plan-json must be a JSON array');

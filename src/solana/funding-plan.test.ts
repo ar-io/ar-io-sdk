@@ -17,11 +17,11 @@ import { describe, it } from 'node:test';
 import { type Address } from '@solana/kit';
 
 import {
+  type DiscoveredFundingSource,
+  MAX_DELEGATION_SOURCES,
+  MAX_FUNDING_SOURCES,
   buildFundingPlan,
   computeResidueIndexes,
-  type DiscoveredFundingSource,
-  MAX_FUNDING_SOURCES,
-  MAX_DELEGATION_SOURCES,
 } from './funding-plan.js';
 
 const GATEWAY_A = 'GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address;
@@ -64,7 +64,9 @@ function delegation(
 
 describe('buildFundingPlan', () => {
   it("returns a balance-only plan when balance covers under fundFrom='balance'", () => {
-    const plan = buildFundingPlan([balance(100n)], 50n, { fundFrom: 'balance' });
+    const plan = buildFundingPlan([balance(100n)], 50n, {
+      fundFrom: 'balance',
+    });
     if ('kind' in plan) throw new Error('expected a successful plan');
     assert.equal(plan.sources.length, 1);
     assert.deepEqual(plan.sources[0], { kind: 'balance', amount: 50n });
@@ -73,18 +75,18 @@ describe('buildFundingPlan', () => {
   });
 
   it("returns InsufficientFunding when balance falls short under 'balance' mode", () => {
-    const result = buildFundingPlan([balance(40n)], 50n, { fundFrom: 'balance' });
+    const result = buildFundingPlan([balance(40n)], 50n, {
+      fundFrom: 'balance',
+    });
     if (!('kind' in result)) throw new Error('expected error');
     assert.equal(result.kind, 'InsufficientFunding');
     assert.equal(result.shortfall, 10n);
   });
 
   it("composes balance + withdrawal under 'any' mode (Lua-faithful order)", () => {
-    const plan = buildFundingPlan(
-      [balance(20n), withdrawal(0n, 100n)],
-      50n,
-      { fundFrom: 'any' },
-    );
+    const plan = buildFundingPlan([balance(20n), withdrawal(0n, 100n)], 50n, {
+      fundFrom: 'any',
+    });
     if ('kind' in plan) throw new Error('expected plan');
     assert.equal(plan.sources.length, 2);
     assert.deepEqual(plan.sources[0], { kind: 'balance', amount: 20n });
@@ -175,10 +177,7 @@ describe('buildFundingPlan', () => {
       { fundFrom: 'any', preferGateway: GATEWAY_A },
     );
     if ('kind' in plan) throw new Error('expected plan');
-    assert.equal(
-      plan.sources.filter((s) => s.kind === 'delegation').length,
-      2,
-    );
+    assert.equal(plan.sources.filter((s) => s.kind === 'delegation').length, 2);
     // First delegation is GATEWAY_A (preferred), second is GATEWAY_B.
     const delegations = plan.sources
       .map((s, i) => ({ s, i }))
@@ -187,7 +186,7 @@ describe('buildFundingPlan', () => {
     assert.equal(plan.gatewayPerSource[delegations[1].i], GATEWAY_B);
   });
 
-  it("excludes operator-stake by default (Lua parity)", () => {
+  it('excludes operator-stake by default (Lua parity)', () => {
     const sources: DiscoveredFundingSource[] = [
       {
         kind: 'operatorStake',
@@ -205,7 +204,7 @@ describe('buildFundingPlan', () => {
     assert.equal(result.kind, 'InsufficientFunding');
   });
 
-  it("includes operator-stake when fundAsOperator: true (Solana extension)", () => {
+  it('includes operator-stake when fundAsOperator: true (Solana extension)', () => {
     const plan = buildFundingPlan(
       [
         {
@@ -228,14 +227,15 @@ describe('buildFundingPlan', () => {
     // Build many small withdrawals — planner caps source iteration at
     // MAX_FUNDING_SOURCES (5). With 5 × 1 = 5 covered, shortfall = 7.
     const sources: DiscoveredFundingSource[] = [];
-    for (let i = 0; i < 12; i++) sources.push(withdrawal(BigInt(i), 1n, BigInt(i)));
+    for (let i = 0; i < 12; i++)
+      sources.push(withdrawal(BigInt(i), 1n, BigInt(i)));
     const result = buildFundingPlan(sources, 12n, { fundFrom: 'any' });
     if (!('kind' in result)) throw new Error('expected error');
     assert.equal(result.kind, 'InsufficientFunding');
     assert.equal(result.shortfall, 12n - BigInt(MAX_FUNDING_SOURCES));
   });
 
-  it("InsufficientFunding error includes available-source summary", () => {
+  it('InsufficientFunding error includes available-source summary', () => {
     const result = buildFundingPlan([balance(10n)], 100n, { fundFrom: 'any' });
     if (!('kind' in result)) throw new Error('expected error');
     assert.equal(result.kind, 'InsufficientFunding');
@@ -320,9 +320,9 @@ describe('buildFundingPlan', () => {
     const lowPerfGateway: DiscoveredFundingSource = {
       kind: 'delegation',
       gateway: GATEWAY_A,
-      available: 10_000_000n,           // = min, no excess
+      available: 10_000_000n, // = min, no excess
       minDelegationAmount: 10_000_000n,
-      performanceRatio: 0.5,             // worse perf
+      performanceRatio: 0.5, // worse perf
       totalDelegatedStake: 10_000_000n,
       startTimestamp: 0n,
     };
@@ -331,7 +331,7 @@ describe('buildFundingPlan', () => {
       gateway: GATEWAY_B,
       available: 10_000_000n,
       minDelegationAmount: 10_000_000n,
-      performanceRatio: 1.0,             // perfect
+      performanceRatio: 1.0, // perfect
       totalDelegatedStake: 10_000_000n,
       startTimestamp: 0n,
     };
@@ -446,7 +446,9 @@ describe('buildFundingPlan', () => {
     );
     // Each: 5M available, 10M min → 0 excess. Floor pass: 5M total per
     // gateway. 3 gateways × 5M = 15M. Need 16M → InsufficientFunding.
-    const result = buildFundingPlan(tightSources, 16_000_000n, { fundFrom: 'any' });
+    const result = buildFundingPlan(tightSources, 16_000_000n, {
+      fundFrom: 'any',
+    });
     if (!('kind' in result)) throw new Error('expected error');
     assert.equal(result.kind, 'InsufficientFunding');
   });

@@ -362,7 +362,7 @@ export const optionMap = {
       'Funding source: balance | stakes | withdrawal | plan | any | turbo. ' +
       "'stakes' requires --gateway-address (uses delegation; add --fund-as-operator " +
       "for operator stake). 'withdrawal' requires --withdrawal-id. 'plan' / 'any' " +
-      "use the multi-source funding plan (see --funding-plan-json or auto-discover).",
+      'use the multi-source funding plan (see --funding-plan-json or auto-discover).',
   },
   gatewayAddress: {
     alias: '--gateway-address <gatewayAddress>',
