@@ -81,3 +81,29 @@ jobs:
           SLACK_TITLE: "Build / E2E tests succeeded!"
           SLACK_COLOR: "good"
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  codegen-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Up node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn --immutable --immutable-cache
+
+      - name: Regenerate Codama clients
+        run: yarn codegen
+
+      - name: Verify generated tree is in sync with idls/
+        run: |
+          if ! git diff --quiet --exit-code src/solana/generated/; then
+            echo "::error::Codama-generated client is out of sync with idls/."
+            echo "Run 'yarn codegen' locally and commit the result."
+            git diff --stat src/solana/generated/
+            exit 1
+          fi
+

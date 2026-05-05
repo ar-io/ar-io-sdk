@@ -19,7 +19,45 @@ export interface AoANTRegistryRead {
   accessControlList(params: {
     address: string;
   }): Promise<{ Owned: string[]; Controlled: string[] }>;
+  /**
+   * Alias for `accessControlList` with a clearer name. Returns the ANTs
+   * owned or controlled by the given address. Implemented by both the AO
+   * and Solana backends so consumers can switch backends without renaming
+   * calls.
+   */
+  getAntsForAddress?(params: {
+    address: string;
+  }): Promise<{ Owned: string[]; Controlled: string[] }>;
 }
+
+/**
+ * Cross-backend ACL relationship. Both AO and Solana model the same two
+ * roles today (owner / controller); the Solana paginated registry stores
+ * them as a `u8` byte (`ACL_ROLE_*` constants) but the public surface uses
+ * strings so consumers don't have to know the on-chain encoding.
+ */
+export type AclMaintenanceRole = 'owner' | 'controller';
+
+/**
+ * Mutation we want the on-chain ACL to reflect once the transaction lands.
+ * `user` and `asset` are wallet/process addresses (base58 on Solana, AO
+ * address on AO).
+ *
+ * On the Solana backend this is the input to the registry's internal
+ * preflight planner, surfaced via the workflow helpers
+ * (`bootstrapOwnerOnSpawn`, `bulkRemoveControllerEntries`) — they
+ * translate it into the minimum `register_acl_config` / `add_acl_page`
+ * / `record_acl_*` / `remove_acl_*` instruction set against the
+ * paginated `AclConfig` + `AclPage` layout (see ADR-012). On AO, the
+ * registry process owns its own ACL bookkeeping, so the equivalent is
+ * a no-op.
+ */
+export type AclMaintenanceOp = {
+  action: 'record' | 'remove';
+  role: AclMaintenanceRole;
+  user: string;
+  asset: string;
+};
 
 export interface AoANTRegistryWrite extends AoANTRegistryRead {
   register(params: { processId: string }): Promise<AoMessageResult>;

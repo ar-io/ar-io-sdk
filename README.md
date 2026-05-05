@@ -48,6 +48,22 @@ const ario = ARIO.mainnet(); // defaults to mainnet
 const gateways = await ario.getGateways();
 ```
 
+> **Solana backend (preview)** — `npm install @ar.io/sdk@solana`
+> ships the Solana port. Same `ARIO`/`ANT` API surface, kit-native:
+>
+> ```ts
+> import { ARIO } from '@ar.io/sdk/solana';
+> import { createSolanaRpc } from '@solana/kit';
+>
+> const ario = ARIO.init({
+>   backend: 'solana',
+>   rpc: createSolanaRpc('https://api.mainnet-beta.solana.com'),
+> });
+> ```
+>
+> See the **[Solana backend](#solana-backend)** section below for the
+> full kit-native usage (read + write paths, ANT spawn, escrow, etc.).
+
 <details>
   <summary>Output</summary>
 
@@ -3169,6 +3185,132 @@ In the example above, the query will return ArNS records where:
 
 - The type is "lease" AND
 - The processId is EITHER "ZkgLfyHALs5koxzojpcsEFAKA8fbpzP7l-tbM7wmQNM" OR "r61rbOjyXx3u644nGl9bkwLWlWmArMEzQgxBo2R-Vu0"
+
+## Solana backend
+
+The Solana backend ports the ARIO/ANT API surface to Solana. Same
+`ARIO.init`/`ANT.init` factory calls — pass `backend: 'solana'` plus a
+`@solana/kit` RPC client and you get the kit-native implementation.
+
+### Quick start
+
+```ts
+import { ARIO, ANT } from '@ar.io/sdk/solana';
+import {
+  createSolanaRpc,
+  createSolanaRpcSubscriptions,
+  createKeyPairSignerFromBytes,
+} from '@solana/kit';
+import { readFileSync } from 'node:fs';
+
+// Read-only client (RPC only)
+const rpc = createSolanaRpc('https://api.mainnet-beta.solana.com');
+const ario = ARIO.init({ backend: 'solana', rpc });
+
+const record = await ario.getArNSRecord({ name: 'ardrive' });
+//   record.processId === '<the ANT mint pubkey>'
+
+// Write client — pair an RPC + a signer
+const signerBytes = new Uint8Array(
+  JSON.parse(readFileSync('/path/to/keypair.json', 'utf8')),
+);
+const signer = await createKeyPairSignerFromBytes(signerBytes);
+const rpcSubs = createSolanaRpcSubscriptions(
+  'wss://api.mainnet-beta.solana.com',
+);
+
+const arioWrite = ARIO.init({
+  backend: 'solana',
+  rpc,
+  rpcSubscriptions: rpcSubs,
+  signer,
+});
+
+await arioWrite.buyRecord({
+  name: 'foo',
+  type: 'lease',
+  years: 1,
+  processId: '<ANT mint pubkey>',
+});
+```
+
+### What's available
+
+The Solana backend implements the full `AoARIOWrite` and `AoANTWrite`
+interfaces — every method on the AO-backed clients has a Solana
+equivalent. Read paths (`getArNSRecord`, `getGateway`,
+`getEpochSettings`, etc.) and write paths (`buyRecord`, `extendLease`,
+`upgradeRecord`, `joinNetwork`, `delegateStake`, `decreaseDelegateStake`,
+`createVault`, `transferAnt`, `setRecord`, etc.) all work against the
+on-chain AR.IO programs deployed on Solana.
+
+Multi-source funding works the same way as Lua's `getFundingPlan`:
+pass `fundFrom: 'any'` and the SDK composes a plan across balance,
+matured withdrawal vaults, excess delegated stake, and minimum stake
+across multiple gateways. See the planner at
+`src/solana/funding-plan.ts` for the Lua-faithful drawdown order.
+
+### ANT lifecycle
+
+ANTs on Solana are Metaplex Core NFTs with an Attributes plugin
+carrying ArNS traits (`ArNS Name`, `Type`, `Undername Limit`,
+`ANT Program`). Spawn a fresh one:
+
+```ts
+import { ANT, spawnSolanaANT } from '@ar.io/sdk/solana';
+
+const { processId } = await spawnSolanaANT({
+  rpc, rpcSubscriptions: rpcSubs, signer,
+  state: {
+    name: 'My ANT',
+    ticker: 'MYANT',
+    description: 'whatever',
+    uri: 'ar://placeholder-metadata',
+  },
+});
+
+const ant = await ANT.init({
+  backend: 'solana',
+  processId,           // the Metaplex Core asset pubkey
+  rpc, rpcSubscriptions: rpcSubs, signer,
+});
+await ant.setBaseNameRecord({ transactionId: '...', ttlSeconds: 3600 });
+await ant.addController({ controller: '<some-pubkey>' });
+```
+
+The asset's Attributes plugin tracks which ANT program (the canonical
+`ARIO_ANT_PROGRAM_ID` or a third-party-conformant program — see
+ADR-016) holds the records. The SDK reads the plugin to derive the
+correct `AntRecord` PDA on every record lookup.
+
+### Conditional imports
+
+The `@ar.io/sdk/solana` subpath bundles Solana-only deps (`@solana/kit`,
+`@solana-program/compute-budget`, etc.). The default `@ar.io/sdk` /
+`@ar.io/sdk/node` / `@ar.io/sdk/web` entries stay AO-only — bundle size
+is unchanged for AO-only consumers.
+
+You can also import the codama-emitted typed clients directly for
+custom transaction building:
+
+```ts
+import {
+  getBuyNameInstructionAsync,
+  ARIO_ARNS_PROGRAM_ADDRESS,
+} from '@ar.io/sdk/solana/generated';
+```
+
+### Networks
+
+| Network | RPC | Programs |
+|---|---|---|
+| Mainnet | not yet deployed | TBD |
+| Devnet | `https://api.devnet.solana.com` | See `src/solana/constants.ts` for current devnet program IDs |
+| Localnet | Surfpool — `https://github.com/solana-foundation/surfpool` | Localnet harness in `solana-ar-io` monorepo |
+
+The migration tooling (snapshot exporter, batch importer, claim app)
+lives in the [`solana-ar-io`](https://github.com/ar-io/solana-ar-io)
+monorepo until cutover.
 
 ## Resources
 

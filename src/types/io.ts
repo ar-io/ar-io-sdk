@@ -438,10 +438,54 @@ export type AoTokenCostParams = {
   fromAddress?: WalletAddress;
 };
 
-export const fundFromOptions = ['balance', 'stakes', 'any', 'turbo'] as const;
+export const fundFromOptions = [
+  'balance',
+  'stakes',
+  'withdrawal',
+  'plan',
+  'any',
+  'turbo',
+] as const;
 export type FundFrom = (typeof fundFromOptions)[number];
 export const isValidFundFrom = (fundFrom: string): fundFrom is FundFrom => {
   return fundFromOptions.indexOf(fundFrom as FundFrom) !== -1;
+};
+
+/**
+ * One entry in a multi-source funding plan. Mirrors the on-chain
+ * `ario_gar::FundingSourceSpec` shape (kind + amount); `gateway` is an
+ * SDK-side hint for explicit (non-discovered) plans so the executor knows
+ * which gateway PDA to slot in for `Delegation` / `OperatorStake` sources.
+ *
+ * Multi-gateway: `Delegation` sources may span up to MAX_DELEGATION_SOURCES
+ * (3) distinct gateways per plan. `Balance` and `Withdrawal` sources are
+ * gateway-independent. Hard cap of MAX_FUNDING_SOURCES (5) total sources
+ * per `pay_from_funding_plan` call.
+ */
+export type FundingSourceKind =
+  | 'balance'
+  | 'delegation'
+  | 'operatorStake'
+  | 'withdrawal';
+
+export type FundingSourceSpec = {
+  kind: FundingSourceKind;
+  /** mARIO amount drawn from this source. Must be > 0. */
+  amount: bigint;
+  /**
+   * Bound gateway (base58). Required for `delegation` / `operatorStake` in
+   * multi-gateway explicit plans; ignored for `balance` / `withdrawal`. When
+   * omitted on stake-locked sources, the executor falls back to
+   * `params.gatewayAddress`.
+   */
+  gateway?: WalletAddress;
+  /**
+   * Withdrawal vault id — required for `kind: 'withdrawal'` in multi-
+   * withdrawal plans. Single-withdrawal plans may omit it and rely on
+   * `params.withdrawalId`. Ignored for non-withdrawal kinds. Client-side
+   * metadata only — does NOT change the on-chain wire format.
+   */
+  withdrawalId?: bigint;
 };
 
 export type AoGetCostDetailsParams = AoTokenCostParams & {
@@ -485,6 +529,19 @@ export type AoGetVaultParams = {
 
 export type AoArNSPurchaseParams = AoArNSNameParams & {
   fundFrom?: FundFrom;
+  /** Gateway operator address — required when fundFrom is 'stakes' */
+  gatewayAddress?: WalletAddress;
+  /** If true, fund from operator stake instead of delegation (default: delegation) */
+  fundAsOperator?: boolean;
+  /** Withdrawal vault id — required when fundFrom is 'withdrawal' (Solana only) */
+  withdrawalId?: bigint;
+  /**
+   * Explicit funding plan — when provided AND fundFrom is 'plan' or 'any',
+   * the SDK skips source discovery and uses these sources verbatim. Caller
+   * is responsible for matching `sum(amounts) == cost` and respecting the
+   * single-gateway invariant. Solana only.
+   */
+  sources?: FundingSourceSpec[];
   paidBy?: WalletAddress | WalletAddress[];
   referrer?: string;
 };
@@ -767,6 +824,15 @@ export interface AoARIOWrite extends AoARIORead {
     SetPrimaryNameProgressEvents[keyof SetPrimaryNameProgressEvents]
   >;
   redelegateStake: AoWriteAction<AoRedelegateStakeParams>;
+  /**
+   * Reconcile an ANT NFT's on-chain Attributes plugin (`ArNS Name`, `Type`,
+   * `Undername Limit`) with its current `ArnsRecord` state. Permissionless
+   * cache-sync — useful when a `buyRecord`/`reassignName` was performed on
+   * behalf of a different ANT holder, leaving traits unpopulated.
+   *
+   * Solana-only: throws on the AO backend (AO ANTs have no NFT trait surface).
+   */
+  syncAttributes: AoWriteAction<{ name: string }, AoMessageResult>;
 }
 
 // Type-guard functions

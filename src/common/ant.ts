@@ -73,6 +73,23 @@ type ANTConfigNoSigner = ANTConfigOptionalStrict;
 type ANTConfigWithSigner = WithSigner<ANTConfigOptionalStrict>;
 type ANTConfig = ANTConfigNoSigner | ANTConfigWithSigner;
 
+type SolanaANTConfig = {
+  backend: 'solana';
+  processId: string;
+  rpc: import('../solana/types.js').SolanaRpc;
+  /** Required for write operations (needed by kit's sendAndConfirm). */
+  rpcSubscriptions?: import('../solana/types.js').SolanaRpcSubscriptions;
+  commitment?: import('@solana/kit').Commitment;
+  signer?: import('../solana/types.js').SolanaSigner;
+  /**
+   * Override the ario-ant program ID. Required against any cluster other than
+   * mainnet — devnet, localnet, and the Surfpool harness all deploy programs
+   * at addresses derived from per-cluster keypair files. Source from
+   * `migration/localnet/out/localnet.env` (`ARIO_ANT_PROGRAM_ID`) on localnet.
+   */
+  antProgramId?: import('@solana/kit').Address;
+};
+
 export class ANT {
   /**
    * Versions of ANTs according to the ANT registry.
@@ -84,8 +101,33 @@ export class ANT {
   }
   /**
    * Spawn a new ANT.
+   *
+   * Defaults to the legacy AO `spawnANT` flow. Pass `backend: 'solana'` plus a
+   * Solana `connection` and `signer` to mint a Metaplex Core asset and
+   * initialize the `ario-ant` PDAs in a single transaction.
+   *
+   * Solana return shape:
+   *   `{ processId: string; mint: Address; signature: string }`
+   *
+   * AO return shape:
+   *   `string` (the spawned AO process id)
    */
-  static spawn = spawnANT;
+  static spawn(
+    params: import('../solana/spawn-ant.js').SpawnSolanaANTParams & {
+      backend: 'solana';
+    },
+  ): Promise<import('../solana/spawn-ant.js').SpawnSolanaANTResult>;
+  static spawn(
+    params: Parameters<typeof spawnANT>[0],
+  ): ReturnType<typeof spawnANT>;
+  static async spawn(params: any): Promise<any> {
+    if (params && params.backend === 'solana') {
+      const { spawnSolanaANT } = await import('../solana/spawn-ant.js');
+      const { backend: _backend, ...rest } = params;
+      return spawnSolanaANT(rest);
+    }
+    return spawnANT(params);
+  }
   /**
    * Fork an ANT to a new process.
    *
@@ -302,13 +344,79 @@ export class ANT {
    *
    * @param config
    */
-  static init(config: ANTConfigNoSigner): AoANTRead;
+  // Solana backend with signer (async — dynamically loads Solana transport)
+  static init(
+    config: SolanaANTConfig & {
+      signer: import('../solana/types.js').SolanaSigner;
+    },
+  ): Promise<AoANTWrite>;
+  // Solana backend without signer (async — dynamically loads Solana transport)
+  static init(config: SolanaANTConfig): Promise<AoANTRead>;
+  // AO backend with signer
   static init(config: ANTConfigWithSigner): AoANTWrite;
-  static init(config: ANTConfig): AoANTRead | AoANTWrite {
-    if (config !== undefined && 'signer' in config) {
-      return new AoANTWriteable(config);
+  // AO backend without signer
+  static init(config: ANTConfigNoSigner): AoANTRead;
+  static init(
+    config: ANTConfig | SolanaANTConfig,
+  ): AoANTRead | AoANTWrite | Promise<AoANTRead | AoANTWrite> {
+    // Solana backend — async, loads transport lazily to keep AO-only bundles small
+    if ('backend' in config && config.backend === 'solana') {
+      return (async () => {
+        const { SolanaANTReadable } = await import('../solana/ant-readable.js');
+        const { SolanaANTWriteable } = await import(
+          '../solana/ant-writeable.js'
+        );
+        // ADR-016 / BD-100: when no explicit `antProgramId` is passed,
+        // resolve it from the asset's `ANT Program` Attributes-plugin
+        // entry. Without this auto-detection, third-party (BYO-ANT)
+        // assets would silently mis-derive PDAs through the canonical
+        // default. Users who already know the program (e.g. immediately
+        // after `ANT.spawn`) can short-circuit by passing it explicitly.
+        let antProgramId = config.antProgramId;
+        if (!antProgramId) {
+          const { fetchAntProgramFromAsset } = await import(
+            '../solana/mpl-core.js'
+          );
+          const { ARIO_ANT_PROGRAM_ID } = await import(
+            '../solana/constants.js'
+          );
+          const { address } = await import('@solana/kit');
+          const detected = await fetchAntProgramFromAsset(
+            config.rpc,
+            address(config.processId),
+            { commitment: config.commitment ?? 'confirmed' },
+          );
+          antProgramId = detected ?? ARIO_ANT_PROGRAM_ID;
+        }
+        if (config.signer) {
+          if (!config.rpcSubscriptions) {
+            throw new Error(
+              'ANT.init({ backend: "solana", signer }) requires rpcSubscriptions for transaction confirmation.',
+            );
+          }
+          return new SolanaANTWriteable({
+            rpc: config.rpc,
+            rpcSubscriptions: config.rpcSubscriptions,
+            processId: config.processId,
+            signer: config.signer,
+            commitment: config.commitment,
+            antProgramId,
+          }) as unknown as AoANTWrite;
+        }
+        return new SolanaANTReadable({
+          rpc: config.rpc,
+          processId: config.processId,
+          commitment: config.commitment,
+          antProgramId,
+        }) as unknown as AoANTRead;
+      })();
     }
-    return new AoANTReadable(config);
+
+    // AO backend (stays sync)
+    if ('signer' in config) {
+      return new AoANTWriteable(config as ANTConfigWithSigner);
+    }
+    return new AoANTReadable(config as ANTConfigNoSigner);
   }
 }
 
