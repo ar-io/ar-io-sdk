@@ -18,7 +18,8 @@
       ".pnp.loader.mjs",
       ".yarn",
       "metafile.json",
-      "idls"
+      "idls",
+      "test/fixtures"
     ]
   },
   "formatter": {
