@@ -133,6 +133,7 @@ export const convertHyperBeamStateToAoANTState = (
         acc[key] = {
           transactionId: record.transactionid,
           ttlSeconds: record.ttlseconds,
+          targetProtocol: 0,
           ...(record.priority !== undefined
             ? { priority: record.priority }
             : {}),

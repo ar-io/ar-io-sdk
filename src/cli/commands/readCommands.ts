@@ -308,8 +308,19 @@ export async function resolveArNSName(o: NameCLIOptions) {
 
 export async function listAntsForAddress(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readANTRegistryFromOptions(o).accessControlList({
+
+  // Both AO and Solana backends expose `accessControlList({ address })`.
+  // Solana is backed by the paginated per-user ACL (ADR-012): a head
+  // `AclConfig` PDA at ["acl_config", user] plus N `AclPage` PDAs at
+  // ["acl_page", user, page_idx_le]. The ario-ant program maintains them
+  // alongside `initialize`, `add_controller`, `remove_controller`,
+  // `transfer_record`, and the marketplace reconcile path.
+  const registry = await readANTRegistryFromOptions(o);
+  const result = await registry.accessControlList({
     address,
   });
-  return result ?? { message: `No ANTs found for address ${address}` };
+
+  const hasAny =
+    result && (result.Owned.length > 0 || result.Controlled.length > 0);
+  return hasAny ? result : { message: `No ANTs found for address ${address}` };
 }

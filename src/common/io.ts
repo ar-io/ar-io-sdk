@@ -21,6 +21,8 @@ import {
   ARIO_MAINNET_PROCESS_ID,
   ARIO_TESTNET_PROCESS_ID,
 } from '../constants.js';
+import { SolanaARIOReadable } from '../solana/io-readable.js';
+import { SolanaARIOWriteable } from '../solana/io-writeable.js';
 import {
   ARIOWithFaucet,
   AoARIORead,
@@ -126,22 +128,96 @@ type ARIOConfigWithSigner = WithSigner<
 
 type ARIOConfig = ARIOConfigNoSigner | ARIOConfigWithSigner;
 
-export class ARIO {
-  // Overload: No arguments -> returns AoARIORead
-  static init(): AoARIORead;
+/**
+ * Solana backend configuration for ARIO.init().
+ * When backend is 'solana', a kit `Rpc` is required instead of an AO process.
+ *
+ * Program ID overrides (`coreProgramId`, `garProgramId`, `arnsProgramId`) are
+ * required against any cluster other than mainnet — devnet, localnet, and the
+ * Surfpool harness all deploy programs at addresses derived from per-cluster
+ * keypair files, not the placeholder constants in `sdk/src/solana/constants.ts`.
+ * On localnet, source these from `migration/localnet/out/localnet.env`.
+ */
+type SolanaARIOConfig = {
+  backend: 'solana';
+  rpc: import('../solana/types.js').SolanaRpc;
+  /** Required for write operations (needed by kit's sendAndConfirm). */
+  rpcSubscriptions?: import('../solana/types.js').SolanaRpcSubscriptions;
+  commitment?: import('@solana/kit').Commitment;
+  signer?: import('../solana/types.js').SolanaSigner;
+  coreProgramId?: import('@solana/kit').Address;
+  garProgramId?: import('@solana/kit').Address;
+  arnsProgramId?: import('@solana/kit').Address;
+  /**
+   * Override the deployed `ario-ant` program id. Required for the
+   * ACL-driven `getArNSRecordsForAddress` pipeline on any cluster
+   * other than mainnet (devnet, localnet, Surfpool).
+   */
+  antProgramId?: import('@solana/kit').Address;
+};
 
-  // Overload: config with signer -> returns AoARIOWrite
+export const DEFAULT_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+
+export class ARIO {
+  // Overload: Solana backend with signer -> returns AoARIOWrite
+  static init(
+    config: SolanaARIOConfig & {
+      signer: import('../solana/types.js').SolanaSigner;
+      rpcSubscriptions: import('../solana/types.js').SolanaRpcSubscriptions;
+    },
+  ): AoARIOWrite;
+
+  // Overload: Solana backend without signer -> returns AoARIORead
+  static init(config: SolanaARIOConfig): AoARIORead;
+
+  // Overload: AO config with signer -> returns AoARIOWrite
   static init(config: ARIOConfigWithSigner): AoARIOWrite;
 
-  // Overload: config without signer -> returns AoARIORead
-  static init(config: ARIOConfigNoSigner): AoARIORead;
+  // Overload: AO config without signer (or no args) -> returns AoARIORead
+  static init(config?: ARIOConfigNoSigner): AoARIORead;
 
   // Implementation
-  static init(config?: ARIOConfig): AoARIORead | AoARIOWrite {
-    if (config !== undefined && 'signer' in config) {
-      return new ARIOWriteable(config);
+  static init(
+    config?: ARIOConfig | SolanaARIOConfig,
+  ): AoARIORead | AoARIOWrite {
+    // Solana backend (explicit opt-in via `backend: 'solana'`)
+    if (
+      config !== undefined &&
+      'backend' in config &&
+      config.backend === 'solana'
+    ) {
+      if (config.signer) {
+        if (!config.rpcSubscriptions) {
+          throw new Error(
+            'ARIO.init({ backend: "solana", signer }) requires rpcSubscriptions for transaction confirmation.',
+          );
+        }
+        return new SolanaARIOWriteable({
+          rpc: config.rpc,
+          rpcSubscriptions: config.rpcSubscriptions,
+          commitment: config.commitment,
+          signer: config.signer,
+          coreProgramId: config.coreProgramId,
+          garProgramId: config.garProgramId,
+          arnsProgramId: config.arnsProgramId,
+          antProgramId: config.antProgramId,
+        }) as unknown as AoARIOWrite;
+      }
+      return new SolanaARIOReadable({
+        rpc: config.rpc,
+        commitment: config.commitment,
+        coreProgramId: config.coreProgramId,
+        garProgramId: config.garProgramId,
+        arnsProgramId: config.arnsProgramId,
+        antProgramId: config.antProgramId,
+      }) as unknown as AoARIORead;
     }
-    return new ARIOReadable(config);
+
+    // AO backend (default — preserves legacy behavior).
+    if (config !== undefined && 'signer' in config) {
+      return new ARIOWriteable(config as ARIOConfigWithSigner);
+    }
+    return new ARIOReadable(config as ARIOConfigNoSigner | undefined);
   }
 
   static mainnet(): AoARIORead;
@@ -2010,5 +2086,20 @@ export class ARIOWriteable extends ARIOReadable implements AoARIOWrite {
       signer: this.signer,
       tags: pruneTags(allTags),
     });
+  }
+
+  /**
+   * AO backend stub — `syncAttributes` is a Solana-only on-chain reconciliation
+   * for the ANT NFT's Attributes plugin. AO ANTs have no NFT trait surface, so
+   * there is nothing to sync.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async syncAttributes(
+    _params: { name: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    throw new Error(
+      'syncAttributes is only supported on the Solana backend (use ARIO.init({ backend: "solana", ... })).',
+    );
   }
 }

@@ -36,6 +36,12 @@ export type GlobalCLIOptions = WalletCLIOptions & {
   testnet: boolean;
   mainnet: boolean;
   debug: boolean;
+  ao?: boolean;
+  rpcUrl?: string;
+  antProgramId?: string;
+  coreProgramId?: string;
+  garProgramId?: string;
+  arnsProgramId?: string;
   arioProcessId?: string;
   antRegistryProcessId?: string;
   hyperbeamUrl?: string;

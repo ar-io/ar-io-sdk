@@ -19,7 +19,12 @@ describe('sortANTRecordsByPriority', () => {
       noPriority11: { transactionId: 'test', ttlSeconds: 1 },
       '@': { transactionId: 'test', ttlSeconds: 1 }, // always first, even if no priority
     };
-    const sorted = sortANTRecords(records);
+    // ANTRecords now requires `targetProtocol`; the fixtures here are
+    // intentionally minimal because this test exercises sort order only,
+    // not record-shape validity. Cast through unknown to bypass.
+    const sorted = sortANTRecords(
+      records as unknown as Parameters<typeof sortANTRecords>[0],
+    );
     assert.deepStrictEqual(sorted, {
       '@': { transactionId: 'test', ttlSeconds: 1, index: 0 }, // always first, even if no priority
       undername01: {
@@ -105,7 +110,9 @@ describe('sortANTRecordsByPriority', () => {
       },
     ];
     for (const scenario of scenarios) {
-      const sorted = sortANTRecords(scenario.records);
+      const sorted = sortANTRecords(
+        scenario.records as unknown as Parameters<typeof sortANTRecords>[0],
+      );
       assert.deepStrictEqual(sorted, scenario.expected);
     }
   });
@@ -153,10 +160,12 @@ describe('convertHyperBeamStateToAoANTState', () => {
         '@': {
           transactionId: 'tx-id-1',
           ttlSeconds: 3600,
+          targetProtocol: 0,
         },
         subdomain: {
           transactionId: 'tx-id-2',
           ttlSeconds: 7200,
+          targetProtocol: 0,
           priority: 1,
         },
       },
@@ -214,10 +223,12 @@ describe('convertHyperBeamStateToAoANTState', () => {
         '@': {
           transactionId: 'tx-id-1',
           ttlSeconds: 3600,
+          targetProtocol: 0,
         },
         subdomain: {
           transactionId: 'tx-id-2',
           ttlSeconds: 7200,
+          targetProtocol: 0,
           priority: 1,
         },
       },
@@ -259,6 +270,7 @@ describe('convertHyperBeamStateToAoANTState', () => {
     assert.deepStrictEqual(result.Records['@'], {
       transactionId: 'tx-id-1',
       ttlSeconds: 3600,
+      targetProtocol: 0,
     });
     assert.strictEqual('priority' in result.Records['@'], false);
   });
@@ -348,10 +360,12 @@ describe('convertHyperBeamStateToAoANTState', () => {
         '@': {
           transactionId: 'tx-id-1',
           ttlSeconds: 3600,
+          targetProtocol: 0,
         },
         subdomain: {
           transactionId: 'tx-id-2',
           ttlSeconds: 7200,
+          targetProtocol: 0,
           priority: 1,
         },
       },

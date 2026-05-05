@@ -54,6 +54,78 @@ export const optionMap = {
     alias: '--hyperbeam-url <hyperbeamUrl>',
     description: 'The URL for a custom hyperbeam node',
   },
+  ao: {
+    alias: '--ao',
+    description: 'Use the legacy AO backend instead of Solana',
+    type: 'boolean',
+  },
+  rpcUrl: {
+    alias: '--rpc-url <rpcUrl>',
+    description: 'Solana RPC URL (defaults to mainnet-beta)',
+  },
+  antProgramId: {
+    alias: '--ant-program-id <antProgramId>',
+    description:
+      'Override the ario-ant program id (Solana backend). Defaults to the SDK-bundled mainnet id; ' +
+      'set this when querying localnet/devnet (see migration/localnet/out/localnet.env -> ARIO_ANT_PROGRAM_ID).',
+  },
+  coreProgramId: {
+    alias: '--core-program-id <coreProgramId>',
+    description:
+      'Override the ario-core program id (Solana backend). See ARIO_CORE_PROGRAM_ID in localnet.env.',
+  },
+  garProgramId: {
+    alias: '--gar-program-id <garProgramId>',
+    description:
+      'Override the ario-gar program id (Solana backend). See ARIO_GAR_PROGRAM_ID in localnet.env.',
+  },
+  arnsProgramId: {
+    alias: '--arns-program-id <arnsProgramId>',
+    description:
+      'Override the ario-arns program id (Solana backend). See ARIO_ARNS_PROGRAM_ID in localnet.env.',
+  },
+  escrowProgramId: {
+    alias: '--escrow-program-id <escrowProgramId>',
+    description:
+      'Override the ario-ant-escrow program id. Defaults to the SDK-bundled placeholder; ' +
+      'set when running against a deployed devnet/mainnet instance.',
+  },
+  ant: {
+    alias: '--ant <antMint>',
+    description: 'The Metaplex Core ANT mint pubkey (base58)',
+  },
+  recipientArweave: {
+    alias: '--recipient-arweave <jwkFile>',
+    description:
+      'Path to an Arweave JWK file. The "n" field (RSA-4096 modulus) is used as the escrow recipient identity.',
+  },
+  recipientEthereum: {
+    alias: '--recipient-ethereum <0xAddress>',
+    description:
+      'A 0x-prefixed Ethereum address to use as the escrow recipient identity.',
+  },
+  newRecipientArweave: {
+    alias: '--new-recipient-arweave <jwkFile>',
+    description: 'New Arweave JWK file (for `escrow update-recipient`).',
+  },
+  newRecipientEthereum: {
+    alias: '--new-recipient-ethereum <0xAddress>',
+    description: 'New Ethereum address (for `escrow update-recipient`).',
+  },
+  signatureFile: {
+    alias: '--signature-file <path>',
+    description:
+      'Path to a binary signature file (512 bytes for Arweave PSS, 65 bytes for Ethereum r||s||v).',
+  },
+  saltLen: {
+    alias: '--salt-len <bytes>',
+    description:
+      'PSS salt length (Arweave only; defaults to 32, the wallet-default).',
+  },
+  claimant: {
+    alias: '--claimant <pubkey>',
+    description: 'Solana pubkey that will receive the ANT on claim.',
+  },
   cuUrl: {
     alias: '--cu-url <cuUrl>',
     description: 'The URL for a custom compute unit',
@@ -242,7 +314,12 @@ export const optionMap = {
   },
   transactionId: {
     alias: '--transaction-id <transactionId>',
-    description: 'The transaction ID to interact with',
+    description: 'The content target (Arweave TX ID, IPFS CID, etc.)',
+  },
+  targetProtocol: {
+    alias: '--target-protocol <targetProtocol>',
+    description:
+      'Storage protocol for the target: "arweave" (default) or "ipfs"',
   },
   ttlSeconds: {
     alias: '--ttl-seconds <ttlSeconds>',
@@ -282,7 +359,35 @@ export const optionMap = {
   fundFrom: {
     alias: '--fund-from <fundFrom>',
     description:
-      'Where to fund the action from. e.g. "balance", "stakes", or "any',
+      'Funding source: balance | stakes | withdrawal | plan | any | turbo. ' +
+      "'stakes' requires --gateway-address (uses delegation; add --fund-as-operator " +
+      "for operator stake). 'withdrawal' requires --withdrawal-id. 'plan' / 'any' " +
+      'use the multi-source funding plan (see --funding-plan-json or auto-discover).',
+  },
+  gatewayAddress: {
+    alias: '--gateway-address <gatewayAddress>',
+    description:
+      'Gateway operator address for funding from stakes. Required when --fund-from is "stakes"',
+  },
+  fundAsOperator: {
+    alias: '--fund-as-operator',
+    description:
+      'Fund from operator stake instead of delegation (default: delegation)',
+    type: 'boolean',
+  },
+  withdrawalId: {
+    alias: '--withdrawal-id <withdrawalId>',
+    description:
+      'Withdrawal vault id (u64) — required when --fund-from is "withdrawal" (Solana). ' +
+      'Find with `ar.io listMyWithdrawals` or query Withdrawal PDAs directly.',
+  },
+  fundingPlanJson: {
+    alias: '--funding-plan-json <json>',
+    description:
+      'Explicit funding plan as JSON: [{"kind":"balance","amount":"100"},...]. ' +
+      "Used when --fund-from is 'plan' or 'any' to bypass auto-discovery. " +
+      "kind is 'balance' | 'delegation' | 'operatorStake' | 'withdrawal'; " +
+      'amount is a string-encoded mARIO bigint. Sum must equal the operation cost.',
   },
   revokable: {
     alias: '--revokable',
@@ -315,6 +420,11 @@ export const optionMap = {
   module: {
     alias: '--module <module>',
     description: 'The module ID to use for spawning the ANT process',
+  },
+  metadataUri: {
+    alias: '--metadata-uri <metadataUri>',
+    description:
+      'Solana spawn-ant only: URI baked into the Metaplex Core asset (e.g. "ar://<txid>" or "https://<gateway>/raw/<txid>"). Build the JSON with `buildAntMetadata` from `@ar.io/sdk/solana` and upload via Turbo. See sdk/scripts/devnet-validation/populate-ant.ts.',
   },
   token: {
     alias: '-t, --token <type>',
@@ -353,6 +463,12 @@ export const globalOptions = [
   optionMap.arioProcessId,
   optionMap.cuUrl,
   optionMap.hyperbeamUrl,
+  optionMap.ao,
+  optionMap.rpcUrl,
+  optionMap.antProgramId,
+  optionMap.coreProgramId,
+  optionMap.garProgramId,
+  optionMap.arnsProgramId,
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
@@ -361,6 +477,10 @@ export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
+  optionMap.gatewayAddress,
+  optionMap.fundAsOperator,
+  optionMap.withdrawalId,
+  optionMap.fundingPlanJson,
   optionMap.paidBy,
   optionMap.paymentUrl,
   optionMap.referrer,
@@ -467,11 +587,16 @@ export const antStateOptions = [
   optionMap.ttlSeconds,
   optionMap.logo,
   optionMap.module,
+  // Required for Solana spawn-ant; ignored by AO. Without this entry,
+  // Commander rejects --metadata-uri as an unknown option even though
+  // spawnSolanaANTFromOptions in utils.ts reads it as `(options as any).metadataUri`.
+  optionMap.metadataUri,
 ];
 
 export const setAntBaseNameOptions = [
   optionMap.processId,
   optionMap.transactionId,
+  optionMap.targetProtocol,
   optionMap.ttlSeconds,
   optionMap.owner,
   optionMap.displayName,

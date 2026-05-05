@@ -1,0 +1,7418 @@
+{
+  "address": "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "metadata": {
+    "name": "ario_gar",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "AR.IO GAR Program - Gateway Address Registry with staking, delegation, epochs, observations, and rewards",
+    "repository": "https://github.com/ar-io/solana-ar-io"
+  },
+  "docs": [
+    "AR.IO GAR Program (Gateway Address Registry)",
+    "",
+    "Consolidated program handling:",
+    "- Gateway join/leave network (F10-F11)",
+    "- Gateway settings management (F12)",
+    "- Operator stake management (F13-F14)",
+    "- Delegate stake management (F15-F17)",
+    "- Withdrawal management (F18-F19)",
+    "- Delegate allowlists (F20)",
+    "- Gateway pruning (F21)",
+    "- Epoch creation and ticking (F23-F24)",
+    "- Observation submission (F25-F26)",
+    "- Reward distribution (F27-F29)"
+  ],
+  "instructions": [
+    {
+      "name": "allow_delegate",
+      "docs": [
+        "Add a delegate to the gateway's allowlist (F20)",
+        "Matches Lua: gar.allowDelegates"
+      ],
+      "discriminator": [
+        206,
+        19,
+        148,
+        148,
+        171,
+        232,
+        210,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "allowlist_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  108,
+                  108,
+                  111,
+                  119,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              },
+              {
+                "kind": "account",
+                "path": "delegate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegate"
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_withdrawal",
+      "docs": [
+        "Cancel a pending withdrawal, returning stake to the gateway (F18)",
+        "Matches Lua: gar.cancelGatewayWithdrawal — returns vault balance to operator_stake or delegate.amount"
+      ],
+      "discriminator": [
+        183,
+        104,
+        181,
+        250,
+        28,
+        128,
+        210,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.withdrawal_id",
+                "account": "Withdrawal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "docs": [
+            "Optional delegation account (required when cancelling delegate withdrawal).",
+            "Validated in the instruction handler when withdrawal.is_delegate == true."
+          ],
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_delegate_from_leaving_gateway",
+      "docs": [
+        "H2: Claim delegate stake from a leaving gateway.",
+        "Matches Lua: gar.leaveNetwork -> kickDelegateFromGateway for each delegate.",
+        "In Solana, delegates must claim individually (can't iterate PDAs on-chain).",
+        "Creates a withdrawal vault for the delegate's full stake from the leaving gateway."
+      ],
+      "discriminator": [
+        121,
+        92,
+        195,
+        176,
+        102,
+        220,
+        213,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal_counter.next_id",
+                "account": "WithdrawalCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator",
+          "docs": [
+            "(the seeds constraint above re-derives `[DELEGATION_SEED, gateway,",
+            "delegator]` and requires it match the passed account address). No",
+            "signature required — the caller cannot redirect anyone's stake by",
+            "substituting a different pubkey here."
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Pays for the rent on the withdrawal counter (`init_if_needed`) and",
+            "the withdrawal vault (`init`). Typically the cranker. Permissionless:",
+            "any signer who's willing to cover ~0.003 SOL of rent can crank this."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_withdrawal",
+      "docs": [
+        "Claim matured withdrawal"
+      ],
+      "discriminator": [
+        118,
+        206,
+        173,
+        38,
+        239,
+        165,
+        65,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.withdrawal_id",
+                "account": "Withdrawal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_drained_withdrawal",
+      "docs": [
+        "Close a fully-drained Withdrawal vault and refund rent to the owner.",
+        "Permissionless cleanup; pairs with `deduct_withdrawal_for_payment`",
+        "(which never closes the vault, even at zero)."
+      ],
+      "discriminator": [
+        130,
+        18,
+        166,
+        197,
+        50,
+        21,
+        112,
+        107
+      ],
+      "accounts": [
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.owner",
+                "account": "Withdrawal"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.withdrawal_id",
+                "account": "Withdrawal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "owner",
+          "docs": [
+            "constraint. The `close = owner` constraint above redirects lamports",
+            "here, so a third-party `closer` cannot redirect rent to themselves."
+          ],
+          "writable": true
+        },
+        {
+          "name": "closer",
+          "docs": [
+            "Permissionless caller — anyone willing to pay the tx fee can clean up",
+            "a drained vault. Rent always goes to `owner` regardless of who signs."
+          ],
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_empty_delegation",
+      "docs": [
+        "Close a delegation account with zero balance (permissionless cleanup)",
+        "Matches Lua: delegation pruning when delegatedStake == 0"
+      ],
+      "discriminator": [
+        18,
+        196,
+        231,
+        96,
+        235,
+        211,
+        119,
+        213
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegation.gateway",
+                "account": "Delegation"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "docs": [
+            "GAR-016: Rent is returned to the original delegator, not the caller,",
+            "to prevent griefing where a cranker harvests rent from other users' accounts."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegation.gateway",
+                "account": "Delegation"
+              },
+              {
+                "kind": "account",
+                "path": "delegation.delegator",
+                "account": "Delegation"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator",
+          "docs": [
+            "The original delegator — receives rent refund on close."
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Anyone can close an empty delegation (permissionless)"
+          ],
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_epoch",
+      "docs": [
+        "Close a fully distributed epoch account, reclaiming rent.",
+        "Permissionless — anyone can call once the epoch is distributed and",
+        "at least `epoch_retention` epochs have passed."
+      ],
+      "discriminator": [
+        13,
+        87,
+        7,
+        133,
+        109,
+        14,
+        83,
+        25
+      ],
+      "accounts": [
+        {
+          "name": "epoch_settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "close_observation",
+      "docs": [
+        "Close an observation PDA from a fully distributed epoch, reclaiming rent.",
+        "Permissionless — anyone can call once the parent epoch is distributed."
+      ],
+      "discriminator": [
+        42,
+        230,
+        137,
+        37,
+        111,
+        148,
+        248,
+        98
+      ],
+      "accounts": [
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "observation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              },
+              {
+                "kind": "account",
+                "path": "observation.observer",
+                "account": "Observation"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "compound_delegation_rewards",
+      "docs": [
+        "Compound delegation rewards by settling the reward-per-share accumulator.",
+        "Delegates call this to materialize pending rewards into their delegation amount."
+      ],
+      "discriminator": [
+        167,
+        223,
+        202,
+        114,
+        3,
+        228,
+        117,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_epoch",
+      "docs": [
+        "Create a new epoch (F23)",
+        "This is permissionless - anyone can call when the previous epoch has ended"
+      ],
+      "discriminator": [
+        115,
+        111,
+        36,
+        230,
+        59,
+        145,
+        168,
+        27
+      ],
+      "accounts": [
+        {
+          "name": "epoch_settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "epoch_settings.current_epoch_index",
+                "account": "EpochSettings"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "settings",
+          "docs": [
+            "GAR settings PDA — used to validate protocol_token_account address"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "Protocol token account to read balance for reward calculation"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_gateway_registry",
+      "docs": [
+        "Create the GatewayRegistry zero-copy account (~120KB).",
+        "Separated from [`initialize`] so large PDAs are not created in the same tx as settings init."
+      ],
+      "discriminator": [
+        255,
+        136,
+        35,
+        171,
+        36,
+        133,
+        228,
+        102
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "settings"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "decrease_delegate_stake",
+      "docs": [
+        "Decrease delegated stake - creates withdrawal (F16)"
+      ],
+      "discriminator": [
+        18,
+        26,
+        220,
+        23,
+        11,
+        109,
+        242,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal_counter.next_id",
+                "account": "WithdrawalCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "decrease_operator_stake",
+      "docs": [
+        "Decrease operator stake - creates withdrawal (F14)"
+      ],
+      "discriminator": [
+        0,
+        0,
+        44,
+        93,
+        107,
+        194,
+        113,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal_counter.next_id",
+                "account": "WithdrawalCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deduct_delegation_for_payment",
+      "docs": [
+        "Deduct from delegation and send to protocol treasury.",
+        "Designed for CPI from ario-arns to fund ArNS purchases from delegated stake."
+      ],
+      "discriminator": [
+        139,
+        10,
+        190,
+        150,
+        68,
+        117,
+        137,
+        216
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "writable": true
+        },
+        {
+          "name": "delegator",
+          "docs": [
+            "The delegator must sign (authorizes deduction from their own stake)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deduct_operator_stake_for_payment",
+      "docs": [
+        "Deduct from operator stake and send to protocol treasury.",
+        "Designed for CPI from ario-arns to fund ArNS purchases from operator stake."
+      ],
+      "discriminator": [
+        0,
+        67,
+        152,
+        10,
+        69,
+        160,
+        19,
+        174
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "writable": true
+        },
+        {
+          "name": "operator",
+          "docs": [
+            "The operator must sign (authorizes deduction from their own stake)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "deduct_withdrawal_for_payment",
+      "docs": [
+        "Deduct from a Withdrawal vault and send to protocol treasury.",
+        "Used both directly (ArNS `_from_withdrawal` variants) and as a primitive",
+        "inside `pay_from_funding_plan` for the multi-source path. Vault stays",
+        "open even at zero — pair with `close_drained_withdrawal` for cleanup.",
+        "Gateway-status-independent."
+      ],
+      "discriminator": [
+        38,
+        68,
+        70,
+        123,
+        206,
+        196,
+        169,
+        110
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.withdrawal_id",
+                "account": "Withdrawal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "docs": [
+            "The withdrawal owner must sign (authorizes payment from their vault)"
+          ],
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "delegate_stake",
+      "docs": [
+        "Delegate stake to a gateway (F15)"
+      ],
+      "discriminator": [
+        50,
+        110,
+        95,
+        179,
+        194,
+        75,
+        140,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator_token_account",
+          "writable": true
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "delegator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "disallow_delegate",
+      "docs": [
+        "Remove a delegate from the gateway's allowlist (F20)",
+        "If delegate still has stake, they keep it but cannot add more after removal.",
+        "Matches Lua: gar.disallowDelegates"
+      ],
+      "discriminator": [
+        197,
+        36,
+        154,
+        183,
+        223,
+        144,
+        205,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "allowlist_entry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  108,
+                  108,
+                  111,
+                  119,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              },
+              {
+                "kind": "account",
+                "path": "delegate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegate"
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "distribute_epoch",
+      "docs": [
+        "Distribute rewards for an epoch in batches.",
+        "Processes gateway accounts from remaining_accounts. Call repeatedly until all gateways are processed."
+      ],
+      "discriminator": [
+        240,
+        137,
+        247,
+        4,
+        136,
+        95,
+        63,
+        68
+      ],
+      "accounts": [
+        {
+          "name": "epoch_settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "settings",
+          "docs": [
+            "GAR settings PDA — used as signer for protocol token transfers"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "Protocol token account (source of reward tokens, authority = settings PDA)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "stake_token_account",
+          "docs": [
+            "Stake token account (destination for staked rewards)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "finalize_gone",
+      "docs": [
+        "Permissionless GC for a gateway in `Leaving` status whose leave window",
+        "has expired and whose delegations have all been claimed. Sets the",
+        "gateway to `Gone`, swap-removes its registry slot, and closes the",
+        "Gateway PDA — caller receives the rent."
+      ],
+      "discriminator": [
+        119,
+        118,
+        254,
+        204,
+        248,
+        64,
+        134,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_settings",
+          "docs": [
+            "Read-only — used to compute the GC eligibility window",
+            "against `max(gateway.leave_epoch_duration, epoch_settings.epoch_duration)`."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "caller",
+          "docs": [
+            "Permissionless: anyone willing to pay the tx fee can crank GC and",
+            "receives the Gateway PDA's rent as the cleanup incentive."
+          ],
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "finalize_migration",
+      "docs": [
+        "Permanently disable migration imports (main authority only)"
+      ],
+      "discriminator": [
+        34,
+        232,
+        228,
+        252,
+        159,
+        14,
+        96,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "import_account",
+      "docs": [
+        "Import a pre-serialized account during migration"
+      ],
+      "discriminator": [
+        152,
+        118,
+        170,
+        241,
+        113,
+        209,
+        129,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "account",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "seeds",
+          "type": {
+            "vec": "bytes"
+          }
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "import_registry_entry",
+      "docs": [
+        "Import a gateway entry into the GatewayRegistry"
+      ],
+      "discriminator": [
+        205,
+        185,
+        199,
+        149,
+        23,
+        67,
+        73,
+        255
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "registry",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "entry_pubkey",
+          "type": "pubkey"
+        },
+        {
+          "name": "weight",
+          "type": "u64"
+        },
+        {
+          "name": "start_timestamp",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "increase_operator_stake",
+      "docs": [
+        "Increase operator stake (F13)"
+      ],
+      "discriminator": [
+        24,
+        43,
+        150,
+        95,
+        185,
+        50,
+        246,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator_token_account",
+          "writable": true
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "docs": [
+        "Initialize GAR program (once per deployment)"
+      ],
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Bind initialize to the program's upgrade authority — closes the",
+            "front-run window between `solana program deploy` and `initialize`",
+            "(audit H1 / Theme C). Explicit `Some(payer.key())` equality",
+            "rejects revoked upgrade authority (`None`)."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_data",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  106,
+                  45,
+                  211,
+                  160,
+                  219,
+                  51,
+                  227,
+                  115,
+                  29,
+                  120,
+                  221,
+                  28,
+                  147,
+                  66,
+                  196,
+                  169,
+                  36,
+                  252,
+                  189,
+                  89,
+                  4,
+                  140,
+                  48,
+                  224,
+                  220,
+                  136,
+                  246,
+                  107,
+                  202,
+                  26,
+                  242
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                2,
+                168,
+                246,
+                145,
+                78,
+                136,
+                161,
+                176,
+                226,
+                16,
+                21,
+                62,
+                247,
+                99,
+                174,
+                43,
+                0,
+                194,
+                185,
+                61,
+                22,
+                193,
+                36,
+                210,
+                192,
+                83,
+                122,
+                16,
+                4,
+                128,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "InitializeParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_epochs",
+      "docs": [
+        "Initialize epoch settings"
+      ],
+      "discriminator": [
+        42,
+        228,
+        193,
+        201,
+        229,
+        66,
+        26,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "epoch_settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Bind initialize_epochs to the program's upgrade authority — closes",
+            "the front-run window between `solana program deploy` and",
+            "`initialize_epochs` (audit H1 / Theme C). Explicit",
+            "`Some(payer.key())` equality rejects revoked upgrade authority."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "program_data",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  2,
+                  106,
+                  45,
+                  211,
+                  160,
+                  219,
+                  51,
+                  227,
+                  115,
+                  29,
+                  120,
+                  221,
+                  28,
+                  147,
+                  66,
+                  196,
+                  169,
+                  36,
+                  252,
+                  189,
+                  89,
+                  4,
+                  140,
+                  48,
+                  224,
+                  220,
+                  136,
+                  246,
+                  107,
+                  202,
+                  26,
+                  242
+                ]
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                2,
+                168,
+                246,
+                145,
+                78,
+                136,
+                161,
+                176,
+                226,
+                16,
+                21,
+                62,
+                247,
+                99,
+                174,
+                43,
+                0,
+                194,
+                185,
+                61,
+                22,
+                193,
+                36,
+                210,
+                192,
+                83,
+                122,
+                16,
+                4,
+                128,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "InitializeEpochParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "instant_withdrawal",
+      "docs": [
+        "Expedited (instant) withdrawal with time-decaying penalty (F19)",
+        "Penalty decays linearly from max to min as time elapses in the withdrawal period.",
+        "Matches Lua processInstantWithdrawal: penaltyRate = max - (max - min) * elapsed / total",
+        "Applies to all withdrawals including exit vaults (leave_network/prune_gateway)."
+      ],
+      "discriminator": [
+        229,
+        12,
+        70,
+        6,
+        81,
+        20,
+        123,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal.withdrawal_id",
+                "account": "Withdrawal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "writable": true
+        },
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "join_network",
+      "docs": [
+        "Join the AR.IO network as a gateway operator (F10)",
+        "",
+        "SECURITY: Re-join after leave_network is structurally prevented because the gateway PDA",
+        "uses `init` (not `init_if_needed`) and gateway accounts are never closed — they persist",
+        "with Leaving status. If gateway account closure is ever added, a re-join cooldown must",
+        "be implemented to prevent failed_consecutive counter resets."
+      ],
+      "discriminator": [
+        246,
+        184,
+        107,
+        68,
+        39,
+        172,
+        8,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator_token_account",
+          "writable": true
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "observer_lookup",
+          "docs": [
+            "SHOULD-9: Observer lookup PDA enforces observer address uniqueness.",
+            "init fails if another gateway already claims this observer address."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  114,
+                  95,
+                  108,
+                  111,
+                  111,
+                  107,
+                  117,
+                  112
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "params.observer_address"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "JoinNetworkParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "leave_network",
+      "docs": [
+        "Leave the AR.IO network (F11)",
+        "Sets gateway to Leaving status with a 90-day leave period.",
+        "Operator stake becomes withdrawable after leave period.",
+        "Delegates are notified to withdraw (handled via separate delegate withdrawal txs).",
+        "Matches Lua: gateway.status = \"leaving\", leaveLengthMs = 90 days"
+      ],
+      "discriminator": [
+        95,
+        180,
+        37,
+        177,
+        111,
+        193,
+        20,
+        19
+      ],
+      "accounts": [
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_settings",
+          "docs": [
+            "Read-only — only consulted to snapshot `epoch_duration` onto the",
+            "gateway so `finalize_gone` can compute the GC eligibility window",
+            "from a value frozen at leave time (defense against admin retuning)."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "docs": [
+            "Anchor-init slot: holds the **protected exit vault** (`is_protected:",
+            "true`) for `min(min_operator_stake, operator_stake)` — Lua's",
+            "`createGatewayExitVault`. Always created when there's any stake to",
+            "vault; an immediately-claimable zero-amount placeholder is kept for",
+            "the rent-reclaim path (matches the prune L-6 behavior, generalized",
+            "to leave for symmetry)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal_counter.next_id",
+                "account": "WithdrawalCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "excess_withdrawal",
+          "docs": [
+            "Optional **excess vault** slot (`is_protected: false`) — Lua's",
+            "`createGatewayWithdrawVault` for the `operator_stake - min_stake`",
+            "portion. The handler creates it manually (system_program::create_account",
+            "CPI) when `excess_amount > 0`; passes through unmodified when zero.",
+            "Caller derives PDA off-chain using `WITHDRAWAL_COUNTER.next_id + 1`",
+            "(i.e. the slot AFTER the exit vault).",
+            "",
+            "via system_program CPI, and the data write all run only when the",
+            "excess amount is non-zero. Skipped slot stays unowned."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "migrate_settings_set_arns_program_id",
+      "docs": [
+        "One-shot backfill of `GatewaySettings::arns_program_id` for accounts",
+        "deployed before that field existed. Idempotent — safe to call on",
+        "already-migrated accounts (returns early). See migration.rs for details."
+      ],
+      "discriminator": [
+        83,
+        55,
+        15,
+        237,
+        82,
+        233,
+        92,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Authority signer — validated against settings.authority (offset 8, 32 bytes).",
+            "The handler reads the authority pubkey directly from the account bytes",
+            "so we can authenticate without deserializing via Anchor (the old layout",
+            "would fail that deserialization)."
+          ],
+          "signer": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "arns_program_id",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "migrate_settings_supply_counters",
+      "docs": [
+        "One-shot backfill of supply counter fields on GatewaySettings.",
+        "Called after migration import with the correct totals computed from",
+        "imported gateways, delegations, and withdrawals."
+      ],
+      "discriminator": [
+        195,
+        248,
+        243,
+        155,
+        197,
+        27,
+        160,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "settings"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "total_staked",
+          "type": "u64"
+        },
+        {
+          "name": "total_delegated",
+          "type": "u64"
+        },
+        {
+          "name": "total_withdrawn",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "pay_from_funding_plan",
+      "docs": [
+        "Apply a multi-source funding plan, transferring `expected_total` mARIO",
+        "into the protocol treasury. Lua-faithful port of `gar.applyFundingPlan`:",
+        "dispatches across Balance / Delegation / OperatorStake / Withdrawal",
+        "sources, aggregates per-source bookkeeping, and issues at most two SPL",
+        "transfers. Auto-creates a Withdrawal vault for sub-min Delegation",
+        "residue. Single-gateway invariant: all Delegation/OperatorStake sources",
+        "must reference the same gateway; Withdrawal/Balance are gateway-free."
+      ],
+      "discriminator": [
+        163,
+        234,
+        60,
+        48,
+        115,
+        227,
+        196,
+        249
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "stake_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "writable": true
+        },
+        {
+          "name": "payer_token_account",
+          "docs": [
+            "Required when any Balance source is present (the payer's ATA).",
+            "Owner is verified at SPL-transfer time (Token Program enforces it)."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Funder + signer — must match the source PDAs' owner field for every",
+            "Delegation / Withdrawal / OperatorStake source."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "withdrawal_counter",
+          "docs": [
+            "Always passed. `init_if_needed` so first-time vault creators don't",
+            "need a separate setup tx. Cost is ~0.0034 SOL once per user (paid",
+            "even for plans that don't end up creating a residue vault — the",
+            "alternative is doubling the ix surface, which we prefer to avoid)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "payer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "sources",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "FundingSourceSpec"
+              }
+            }
+          }
+        },
+        {
+          "name": "expected_total",
+          "type": "u64"
+        },
+        {
+          "name": "residue_vault_count",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "prescribe_epoch",
+      "docs": [
+        "Prescribe observers and names for an epoch (single tx, deterministic selection).",
+        "Uses weighted roulette from hashchain entropy. Computes per-unit rewards."
+      ],
+      "discriminator": [
+        101,
+        230,
+        158,
+        57,
+        216,
+        210,
+        127,
+        61
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "docs": [
+            "Read-only — provides `arns_program_id` for NameRegistry validation",
+            "(formerly a hardcoded literal in this file). No write access required."
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "prune_gateway",
+      "docs": [
+        "Prune a gateway that has exceeded maximum consecutive failures (F21)",
+        "Permissionless — anyone can call if gateway has 30+ consecutive failures.",
+        "Matches Lua: slash min operator stake, return remainder in withdrawal, remove from registry."
+      ],
+      "discriminator": [
+        186,
+        178,
+        172,
+        171,
+        248,
+        52,
+        241,
+        14
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal_counter",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108,
+                  95,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "withdrawal",
+          "docs": [
+            "Anchor-init slot. Either the protected exit vault (`is_protected:",
+            "true`) for the post-slash min portion, OR an empty zero-amount",
+            "placeholder when the slash consumed everything (full-slash edge",
+            "case; placeholder is immediately claimable so rent can be reclaimed)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  119,
+                  105,
+                  116,
+                  104,
+                  100,
+                  114,
+                  97,
+                  119,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "withdrawal_counter.next_id",
+                "account": "WithdrawalCounter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "excess_withdrawal",
+          "docs": [
+            "Optional excess vault slot (`is_protected: false`) — created",
+            "manually when post-slash stake exceeds `min_operator_stake`. PDA",
+            "derived from `WITHDRAWAL_COUNTER.next_id + 1`.",
+            "",
+            "empty-data, lamport top-up, allocate + assign via system_program."
+          ],
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "stake_token_account",
+          "docs": [
+            "Stake token account holding gateway tokens (PDA-controlled)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "Protocol token account to receive slashed tokens"
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Anyone can call prune (permissionless crank)"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "redelegate_stake",
+      "docs": [
+        "Redelegate stake from one gateway to another (F17)",
+        "Fee = min(10% * redelegation_count, 60%) — first is free, resets every 7 days",
+        "Fee goes to protocol. Net amount moves to target delegation."
+      ],
+      "discriminator": [
+        240,
+        90,
+        140,
+        104,
+        96,
+        8,
+        134,
+        31
+      ],
+      "accounts": [
+        {
+          "name": "source_gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "source_gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "target_gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target_gateway.operator",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "source_delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "source_gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "target_delegation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "target_gateway.operator",
+                "account": "Gateway"
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "redelegation_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  100,
+                  101,
+                  108,
+                  101,
+                  103,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "delegator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator_token_account",
+          "docs": [
+            "`owner == delegator` and `mint == settings.mint`. Kept as `UncheckedAccount` because adding",
+            "three fully-deserialized `Box<Account<'_, TokenAccount>>` to this context overflows the",
+            "SBF 4 KB stack frame inside Anchor's generated `try_accounts` (BPF stack-frame error)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "stake_token_account",
+          "docs": [
+            "`settings.stake_token_account` and `mint == settings.mint`. Same SBF stack-frame",
+            "rationale as `delegator_token_account`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "`settings.protocol_token_account` and `mint == settings.mint`. Same SBF stack-frame",
+            "rationale as `delegator_token_account`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "delegator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "save_observations",
+      "docs": [
+        "Submit observation report (F25)"
+      ],
+      "discriminator": [
+        211,
+        24,
+        3,
+        224,
+        44,
+        64,
+        165,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "observation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              },
+              {
+                "kind": "account",
+                "path": "observer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "observer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        },
+        {
+          "name": "gateway_results",
+          "type": {
+            "array": [
+              "u8",
+              375
+            ]
+          }
+        },
+        {
+          "name": "gateway_count",
+          "type": "u16"
+        },
+        {
+          "name": "report_tx_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_allowlist_enabled",
+      "docs": [
+        "Enable or disable the allowlist for a gateway"
+      ],
+      "discriminator": [
+        204,
+        179,
+        188,
+        165,
+        225,
+        141,
+        118,
+        243
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "set_epochs_enabled",
+      "docs": [
+        "Enable/disable epoch processing"
+      ],
+      "discriminator": [
+        99,
+        200,
+        179,
+        37,
+        236,
+        65,
+        165,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "epoch_settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "epoch_settings"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "tally_weights",
+      "docs": [
+        "Tally weights for gateways in batches (permissionless crank).",
+        "Computes weights for each gateway and caches composite_weight in registry slots.",
+        "Accumulates total_composite_weight in the epoch.",
+        "Call repeatedly with batches of gateway accounts until all are processed."
+      ],
+      "discriminator": [
+        43,
+        198,
+        1,
+        60,
+        140,
+        96,
+        223,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "registry",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121,
+                  95,
+                  114,
+                  101,
+                  103,
+                  105,
+                  115,
+                  116,
+                  114,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_epoch_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_gateway_settings",
+      "docs": [
+        "Update gateway settings (F12)"
+      ],
+      "discriminator": [
+        45,
+        164,
+        60,
+        48,
+        169,
+        147,
+        88,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "UpdateGatewayParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_observer_address",
+      "docs": [
+        "Update the observer address for a gateway (SHOULD-9)",
+        "Separate instruction because it needs Anchor-managed init/close for the lookup PDAs."
+      ],
+      "discriminator": [
+        26,
+        111,
+        206,
+        193,
+        184,
+        107,
+        211,
+        110
+      ],
+      "accounts": [
+        {
+          "name": "gateway",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  116,
+                  101,
+                  119,
+                  97,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "operator"
+              }
+            ]
+          }
+        },
+        {
+          "name": "old_observer_lookup",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  114,
+                  95,
+                  108,
+                  111,
+                  111,
+                  107,
+                  117,
+                  112
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "gateway.observer_address",
+                "account": "Gateway"
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_observer_lookup",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  98,
+                  115,
+                  101,
+                  114,
+                  118,
+                  101,
+                  114,
+                  95,
+                  108,
+                  111,
+                  111,
+                  107,
+                  117,
+                  112
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "new_observer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "operator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_observer",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "AllowlistEntry",
+      "discriminator": [
+        42,
+        59,
+        88,
+        1,
+        124,
+        138,
+        92,
+        236
+      ]
+    },
+    {
+      "name": "Delegation",
+      "discriminator": [
+        237,
+        90,
+        140,
+        159,
+        124,
+        255,
+        243,
+        80
+      ]
+    },
+    {
+      "name": "Epoch",
+      "discriminator": [
+        93,
+        83,
+        120,
+        89,
+        151,
+        138,
+        152,
+        108
+      ]
+    },
+    {
+      "name": "EpochSettings",
+      "discriminator": [
+        55,
+        100,
+        247,
+        91,
+        249,
+        175,
+        16,
+        171
+      ]
+    },
+    {
+      "name": "Gateway",
+      "discriminator": [
+        210,
+        132,
+        162,
+        254,
+        10,
+        224,
+        45,
+        86
+      ]
+    },
+    {
+      "name": "GatewayRegistry",
+      "discriminator": [
+        207,
+        115,
+        197,
+        33,
+        28,
+        106,
+        182,
+        209
+      ]
+    },
+    {
+      "name": "GatewaySettings",
+      "discriminator": [
+        223,
+        159,
+        76,
+        121,
+        116,
+        231,
+        84,
+        148
+      ]
+    },
+    {
+      "name": "Observation",
+      "discriminator": [
+        109,
+        190,
+        190,
+        95,
+        28,
+        172,
+        243,
+        74
+      ]
+    },
+    {
+      "name": "ObserverLookup",
+      "discriminator": [
+        104,
+        184,
+        174,
+        94,
+        209,
+        149,
+        34,
+        188
+      ]
+    },
+    {
+      "name": "RedelegationRecord",
+      "discriminator": [
+        34,
+        10,
+        183,
+        184,
+        52,
+        50,
+        59,
+        79
+      ]
+    },
+    {
+      "name": "Withdrawal",
+      "discriminator": [
+        10,
+        45,
+        211,
+        182,
+        129,
+        235,
+        90,
+        82
+      ]
+    },
+    {
+      "name": "WithdrawalCounter",
+      "discriminator": [
+        88,
+        191,
+        76,
+        38,
+        84,
+        93,
+        61,
+        114
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "DelegationEvent",
+      "discriminator": [
+        218,
+        157,
+        197,
+        166,
+        52,
+        67,
+        225,
+        105
+      ]
+    },
+    {
+      "name": "EpochCreatedEvent",
+      "discriminator": [
+        69,
+        116,
+        184,
+        14,
+        81,
+        137,
+        13,
+        62
+      ]
+    },
+    {
+      "name": "EpochDistributedEvent",
+      "discriminator": [
+        218,
+        24,
+        57,
+        51,
+        215,
+        107,
+        52,
+        17
+      ]
+    },
+    {
+      "name": "EpochPrescribedEvent",
+      "discriminator": [
+        238,
+        115,
+        216,
+        115,
+        117,
+        120,
+        97,
+        202
+      ]
+    },
+    {
+      "name": "FundingPlanAppliedEvent",
+      "discriminator": [
+        86,
+        57,
+        200,
+        134,
+        154,
+        130,
+        119,
+        186
+      ]
+    },
+    {
+      "name": "GatewayJoinedEvent",
+      "discriminator": [
+        224,
+        82,
+        153,
+        171,
+        228,
+        228,
+        37,
+        245
+      ]
+    },
+    {
+      "name": "GatewayLeavingEvent",
+      "discriminator": [
+        163,
+        248,
+        188,
+        112,
+        155,
+        8,
+        192,
+        239
+      ]
+    },
+    {
+      "name": "InstantWithdrawalEvent",
+      "discriminator": [
+        138,
+        49,
+        120,
+        239,
+        238,
+        101,
+        116,
+        61
+      ]
+    },
+    {
+      "name": "ObservationSubmittedEvent",
+      "discriminator": [
+        99,
+        197,
+        240,
+        208,
+        253,
+        133,
+        182,
+        103
+      ]
+    },
+    {
+      "name": "ResidueVaultCreatedEvent",
+      "discriminator": [
+        17,
+        116,
+        103,
+        92,
+        169,
+        105,
+        253,
+        31
+      ]
+    },
+    {
+      "name": "StakePaymentEvent",
+      "discriminator": [
+        11,
+        219,
+        152,
+        247,
+        11,
+        11,
+        18,
+        93
+      ]
+    },
+    {
+      "name": "WithdrawalCancelledEvent",
+      "discriminator": [
+        40,
+        218,
+        165,
+        230,
+        31,
+        49,
+        238,
+        127
+      ]
+    },
+    {
+      "name": "WithdrawalClaimedEvent",
+      "discriminator": [
+        112,
+        246,
+        33,
+        174,
+        230,
+        205,
+        121,
+        26
+      ]
+    },
+    {
+      "name": "WithdrawalCreatedEvent",
+      "discriminator": [
+        173,
+        205,
+        34,
+        150,
+        97,
+        42,
+        211,
+        30
+      ]
+    },
+    {
+      "name": "WithdrawalPaymentEvent",
+      "discriminator": [
+        58,
+        7,
+        105,
+        48,
+        99,
+        164,
+        154,
+        51
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "GatewayAlreadyRegistered",
+      "msg": "Gateway already registered"
+    },
+    {
+      "code": 6001,
+      "name": "GatewayNotFound",
+      "msg": "Gateway not found"
+    },
+    {
+      "code": 6002,
+      "name": "GatewayNotJoined",
+      "msg": "Gateway is not in joined status"
+    },
+    {
+      "code": 6003,
+      "name": "GatewayLeaving",
+      "msg": "Gateway is in leaving state"
+    },
+    {
+      "code": 6004,
+      "name": "RegistryFull",
+      "msg": "Gateway registry is full"
+    },
+    {
+      "code": 6005,
+      "name": "GatewayRegistryAlreadyExists",
+      "msg": "Gateway registry account already exists"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidFqdn",
+      "msg": "Invalid FQDN format"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidLabel",
+      "msg": "Invalid gateway label"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidRewardShare",
+      "msg": "Invalid reward share ratio - must be 0-95"
+    },
+    {
+      "code": 6009,
+      "name": "InsufficientStake",
+      "msg": "Insufficient stake amount"
+    },
+    {
+      "code": 6010,
+      "name": "StakeBelowMinimum",
+      "msg": "Stake below minimum required"
+    },
+    {
+      "code": 6011,
+      "name": "MustLeaveFirst",
+      "msg": "Must leave network before withdrawing all stake"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidAmount",
+      "msg": "Invalid amount"
+    },
+    {
+      "code": 6013,
+      "name": "DelegationNotAllowed",
+      "msg": "Delegation not allowed for this gateway"
+    },
+    {
+      "code": 6014,
+      "name": "DelegationBelowMinimum",
+      "msg": "Delegation amount below gateway minimum"
+    },
+    {
+      "code": 6015,
+      "name": "DelegateNotAllowed",
+      "msg": "Delegate not in allowlist"
+    },
+    {
+      "code": 6016,
+      "name": "DelegationNotFound",
+      "msg": "Delegation not found"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidDelegateStatus",
+      "msg": "Delegate not eligible for reward distribution"
+    },
+    {
+      "code": 6018,
+      "name": "RedelegateSameGateway",
+      "msg": "Cannot redelegate to same gateway"
+    },
+    {
+      "code": 6019,
+      "name": "CannotDelegateToSelf",
+      "msg": "Cannot delegate to your own gateway - use increase_operator_stake instead"
+    },
+    {
+      "code": 6020,
+      "name": "WithdrawalNotReady",
+      "msg": "Withdrawal not ready - lock period not elapsed"
+    },
+    {
+      "code": 6021,
+      "name": "WithdrawalNotFound",
+      "msg": "Withdrawal not found"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidWithdrawalAmount",
+      "msg": "Invalid withdrawal amount"
+    },
+    {
+      "code": 6023,
+      "name": "ExitVaultCannotBeExpedited",
+      "msg": "Exit vault withdrawals cannot be expedited"
+    },
+    {
+      "code": 6024,
+      "name": "NotOperator",
+      "msg": "Not the gateway operator"
+    },
+    {
+      "code": 6025,
+      "name": "NotDelegator",
+      "msg": "Not the delegator"
+    },
+    {
+      "code": 6026,
+      "name": "InvalidOwner",
+      "msg": "Invalid owner"
+    },
+    {
+      "code": 6027,
+      "name": "Unauthorized",
+      "msg": "Unauthorized access"
+    },
+    {
+      "code": 6028,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6029,
+      "name": "ArithmeticUnderflow",
+      "msg": "Arithmetic underflow"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidParameter",
+      "msg": "Invalid parameter"
+    },
+    {
+      "code": 6031,
+      "name": "EpochsNotEnabled",
+      "msg": "Epochs not enabled"
+    },
+    {
+      "code": 6032,
+      "name": "EpochNotStarted",
+      "msg": "Epoch not started yet"
+    },
+    {
+      "code": 6033,
+      "name": "EpochEnded",
+      "msg": "Epoch has ended"
+    },
+    {
+      "code": 6034,
+      "name": "EpochInProgress",
+      "msg": "Epoch still in progress"
+    },
+    {
+      "code": 6035,
+      "name": "NotPrescribedObserver",
+      "msg": "Not a prescribed observer for this epoch"
+    },
+    {
+      "code": 6036,
+      "name": "AlreadyObserved",
+      "msg": "Observer has already submitted observations"
+    },
+    {
+      "code": 6037,
+      "name": "RewardsAlreadyDistributed",
+      "msg": "Rewards already distributed"
+    },
+    {
+      "code": 6038,
+      "name": "DistributionIncomplete",
+      "msg": "Reward distribution not complete"
+    },
+    {
+      "code": 6039,
+      "name": "InvalidObservation",
+      "msg": "Invalid observation report"
+    },
+    {
+      "code": 6040,
+      "name": "GatewayNotEligible",
+      "msg": "Gateway not eligible for epoch"
+    },
+    {
+      "code": 6041,
+      "name": "EpochAlreadyExists",
+      "msg": "Epoch already exists"
+    },
+    {
+      "code": 6042,
+      "name": "NoObserversAvailable",
+      "msg": "No more observers available to prescribe"
+    },
+    {
+      "code": 6043,
+      "name": "NoNamesAvailable",
+      "msg": "No names available to prescribe"
+    },
+    {
+      "code": 6044,
+      "name": "InvalidEpochIndex",
+      "msg": "Invalid epoch index"
+    },
+    {
+      "code": 6045,
+      "name": "WeightsAlreadyTallied",
+      "msg": "Composite weights have already been tallied for this epoch"
+    },
+    {
+      "code": 6046,
+      "name": "WeightsNotTallied",
+      "msg": "Composite weights have not been tallied yet"
+    },
+    {
+      "code": 6047,
+      "name": "InvalidGatewayAccount",
+      "msg": "Invalid gateway account"
+    },
+    {
+      "code": 6048,
+      "name": "PrescriptionsNotDone",
+      "msg": "Epoch prescriptions not yet complete"
+    },
+    {
+      "code": 6049,
+      "name": "PrescriptionsAlreadyDone",
+      "msg": "Epoch prescriptions already complete"
+    },
+    {
+      "code": 6050,
+      "name": "InvalidNameRegistry",
+      "msg": "Invalid name registry account"
+    },
+    {
+      "code": 6051,
+      "name": "EpochNotCloseable",
+      "msg": "Epoch not yet closeable — must be distributed and past retention"
+    },
+    {
+      "code": 6052,
+      "name": "MigrationInactive",
+      "msg": "Migration is not active"
+    },
+    {
+      "code": 6053,
+      "name": "MigrationAlreadyFinalized",
+      "msg": "Migration has already been finalized"
+    },
+    {
+      "code": 6054,
+      "name": "InvalidAccountData",
+      "msg": "Invalid account data for migration import"
+    },
+    {
+      "code": 6055,
+      "name": "InvalidPda",
+      "msg": "PDA derivation does not match target account"
+    },
+    {
+      "code": 6056,
+      "name": "ObserverAddressTaken",
+      "msg": "Observer address already in use by another gateway"
+    },
+    {
+      "code": 6057,
+      "name": "MigrationExpired",
+      "msg": "Migration deadline has passed"
+    },
+    {
+      "code": 6058,
+      "name": "InsufficientDelegationForPayment",
+      "msg": "Insufficient delegation for payment"
+    },
+    {
+      "code": 6059,
+      "name": "InsufficientOperatorStakeForPayment",
+      "msg": "Insufficient operator stake for payment"
+    },
+    {
+      "code": 6060,
+      "name": "InsufficientWithdrawalForPayment",
+      "msg": "Insufficient withdrawal balance for payment"
+    },
+    {
+      "code": 6061,
+      "name": "WithdrawalNotDrained",
+      "msg": "Withdrawal vault still holds funds — cannot close"
+    },
+    {
+      "code": 6062,
+      "name": "EmptyFundingPlan",
+      "msg": "Funding plan is empty"
+    },
+    {
+      "code": 6063,
+      "name": "TooManyFundingSources",
+      "msg": "Funding plan exceeds the per-tx source cap"
+    },
+    {
+      "code": 6064,
+      "name": "FundingPlanAmountMismatch",
+      "msg": "Sum of source amounts does not match the expected total"
+    },
+    {
+      "code": 6065,
+      "name": "ZeroFundingSourceAmount",
+      "msg": "Funding plan source has zero amount"
+    },
+    {
+      "code": 6066,
+      "name": "MissingGatewayForFundingSource",
+      "msg": "Delegation/OperatorStake source requires the gateway account"
+    },
+    {
+      "code": 6067,
+      "name": "MissingPayerTokenAccountForFundingSource",
+      "msg": "Balance source requires the payer's token account"
+    },
+    {
+      "code": 6068,
+      "name": "MissingFundingSourceAccount",
+      "msg": "Funding plan declared more sources than were passed in remaining_accounts"
+    },
+    {
+      "code": 6069,
+      "name": "ExtraneousFundingSourceAccount",
+      "msg": "remaining_accounts contained more entries than the funding plan declared"
+    },
+    {
+      "code": 6070,
+      "name": "OnlyOneDelegationSource",
+      "msg": "Funding plan may include at most one Delegation source per gateway"
+    },
+    {
+      "code": 6071,
+      "name": "OnlyOneOperatorStakeSource",
+      "msg": "Funding plan may include at most one OperatorStake source"
+    },
+    {
+      "code": 6072,
+      "name": "TooManyDelegationSources",
+      "msg": "Funding plan exceeds the per-tx Delegation source cap"
+    },
+    {
+      "code": 6073,
+      "name": "DuplicateGatewayInSources",
+      "msg": "Two or more sources reference the same gateway — aggregate them client-side"
+    },
+    {
+      "code": 6074,
+      "name": "MismatchedResidueVaultCount",
+      "msg": "residue_vault_count does not match the number of sub-min Delegation residues"
+    },
+    {
+      "code": 6075,
+      "name": "MissingResidueVault",
+      "msg": "Missing residue_vault slot in remaining_accounts"
+    },
+    {
+      "code": 6076,
+      "name": "GatewayNotLeaving",
+      "msg": "finalize_gone: gateway is not in Leaving status"
+    },
+    {
+      "code": 6077,
+      "name": "LeaveWindowNotExpired",
+      "msg": "finalize_gone: leave window has not yet expired"
+    },
+    {
+      "code": 6078,
+      "name": "DelegationsOutstanding",
+      "msg": "finalize_gone: outstanding delegations must be claimed first"
+    },
+    {
+      "code": 6079,
+      "name": "EpochObservationsNotClosed",
+      "msg": "close_epoch: observation PDAs must be closed first"
+    },
+    {
+      "code": 6080,
+      "name": "ProtectedVault",
+      "msg": "Vault is protected (operator min-stake exit vault); cannot be \\\n         expedited or spent. Use claim_withdrawal after the lock expires."
+    },
+    {
+      "code": 6081,
+      "name": "MissingExcessWithdrawal",
+      "msg": "leave_network/prune_gateway: post-min stake is positive but \\\n         excess_withdrawal account was not supplied"
+    },
+    {
+      "code": 6082,
+      "name": "InvalidExcessWithdrawalPda",
+      "msg": "Supplied excess_withdrawal PDA does not match the expected derivation \\\n         (must be ['withdrawal', operator, withdrawal_counter.next_id + 1])"
+    }
+  ],
+  "types": [
+    {
+      "name": "AllowlistEntry",
+      "docs": [
+        "Delegate allowlist entry",
+        "PDA: [\"allowlist\", gateway_pubkey, delegate_pubkey]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "delegate",
+            "type": "pubkey"
+          },
+          {
+            "name": "added_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Delegation",
+      "docs": [
+        "Stake delegation entry",
+        "PDA: [\"delegation\", gateway_pubkey, delegator_pubkey]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "reward_debt",
+            "docs": [
+              "Snapshot of gateway.cumulative_reward_per_token at last settlement"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DelegationEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Epoch",
+      "docs": [
+        "Epoch account tracking state for a specific epoch",
+        "PDA: [\"epoch\", epoch_index.to_le_bytes()]",
+        "",
+        "Zero-copy account with embedded observer/name prescriptions and failure tallies.",
+        "Eliminates the need for separate PrescribedObserver, PrescribedName, and",
+        "RewardDistribution PDAs."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "end_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "total_eligible_rewards",
+            "type": "u64"
+          },
+          {
+            "name": "per_gateway_reward",
+            "type": "u64"
+          },
+          {
+            "name": "per_observer_reward",
+            "type": "u64"
+          },
+          {
+            "name": "reward_rate",
+            "type": "u64"
+          },
+          {
+            "name": "total_composite_weight_lo",
+            "docs": [
+              "total_composite_weight stored as u64 pair to avoid u128 alignment issues in zero_copy.",
+              "Use total_composite_weight() / set_total_composite_weight() helpers."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_composite_weight_hi",
+            "type": "u64"
+          },
+          {
+            "name": "hashchain",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "active_gateway_count",
+            "type": "u32"
+          },
+          {
+            "name": "distribution_index",
+            "type": "u32"
+          },
+          {
+            "name": "tally_index",
+            "type": "u32"
+          },
+          {
+            "name": "observer_count",
+            "type": "u8"
+          },
+          {
+            "name": "name_count",
+            "type": "u8"
+          },
+          {
+            "name": "observations_submitted",
+            "type": "u8"
+          },
+          {
+            "name": "rewards_distributed",
+            "type": "u8"
+          },
+          {
+            "name": "weights_tallied",
+            "type": "u8"
+          },
+          {
+            "name": "prescriptions_done",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "observations_closed",
+            "docs": [
+              "Count of `Observation` PDAs that have been closed for this epoch.",
+              "`close_epoch` requires `observations_closed == observations_submitted`",
+              "so observation rent isn't orphaned when the parent epoch closes",
+              "(audit M8). Replaces a former `_padding1` byte — no layout change."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "failure_counts",
+            "type": {
+              "array": [
+                "u16",
+                3000
+              ]
+            }
+          },
+          {
+            "name": "prescribed_observers",
+            "docs": [
+              "Observer addresses (the observer_address from Gateway, used to verify signer)"
+            ],
+            "type": {
+              "array": [
+                "pubkey",
+                50
+              ]
+            }
+          },
+          {
+            "name": "prescribed_observer_gateways",
+            "docs": [
+              "Gateway addresses (the operator pubkey, used for reward distribution)"
+            ],
+            "type": {
+              "array": [
+                "pubkey",
+                50
+              ]
+            }
+          },
+          {
+            "name": "prescribed_names",
+            "docs": [
+              "Name hashes prescribed for this epoch"
+            ],
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "has_observed",
+            "docs": [
+              "Bitmap tracking which prescribed observers have submitted (50 bits = 7 bytes)"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "_padding2",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochCreatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "end_timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochDistributedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "gateways_processed",
+            "type": "u32"
+          },
+          {
+            "name": "total_eligible_rewards",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochPrescribedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "observer_count",
+            "type": "u8"
+          },
+          {
+            "name": "per_gateway_reward",
+            "type": "u64"
+          },
+          {
+            "name": "per_observer_reward",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochSettings",
+      "docs": [
+        "Global epoch settings",
+        "PDA: [\"epoch_settings\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch_duration",
+            "docs": [
+              "Duration of each epoch in seconds"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "prescribed_observer_count",
+            "docs": [
+              "Number of observers to prescribe per epoch"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "prescribed_name_count",
+            "docs": [
+              "Number of names to prescribe per epoch"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "min_observer_stake",
+            "docs": [
+              "Minimum stake required to be prescribed as observer"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "slash_rate",
+            "docs": [
+              "Percent of stake to slash for failed observations (scaled by 10000)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "enabled",
+            "docs": [
+              "Whether epochs are currently enabled"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "current_epoch_index",
+            "docs": [
+              "The current epoch index (incremented each tick)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "genesis_timestamp",
+            "docs": [
+              "Timestamp of first epoch start"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "tenure_weight_duration",
+            "docs": [
+              "Tenure weight duration in seconds (matches Lua tenureWeightDurationMs / 1000)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "max_tenure_weight",
+            "docs": [
+              "Maximum tenure weight — Lua: maxTenureWeight = 4"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "gateway_reward_ratio",
+            "docs": [
+              "Gateway reward ratio (scaled by RATE_SCALE, default 900_000 = 90%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "observer_reward_ratio",
+            "docs": [
+              "Observer reward ratio (scaled by RATE_SCALE, default 100_000 = 10%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "missed_observation_penalty_rate",
+            "docs": [
+              "Missed observation penalty rate (scaled by RATE_SCALE, default 250_000 = 25%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_reward_rate",
+            "docs": [
+              "Maximum reward rate (scaled by RATE_SCALE, default 1_000 = 0.1%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_reward_rate",
+            "docs": [
+              "Minimum reward rate (scaled by RATE_SCALE, default 500 = 0.05%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reward_decay_start_epoch",
+            "docs": [
+              "Epoch index at which reward decay begins"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "reward_decay_last_epoch",
+            "docs": [
+              "Epoch index at which reward decay completes (min rate reached)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_consecutive_failures",
+            "docs": [
+              "Maximum consecutive failures before gateway pruning"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "failed_gateway_slash_rate",
+            "docs": [
+              "Slash rate for failed gateways (scaled by RATE_SCALE, default 1_000_000 = 100%)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "disable_at",
+            "docs": [
+              "GAR-007: Timestamp at which epochs will be disabled (0 = no pending disable).",
+              "When authority calls set_epochs_enabled(false), this is set to clock + 7 days",
+              "instead of instantly disabling. create_epoch checks this timestamp."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FundingPlanAppliedEvent",
+      "docs": [
+        "Summary marker for a multi-source funding plan. Per-gateway and per-source",
+        "detail is exposed via the per-source `StakePaymentEvent` (Delegation +",
+        "OperatorStake), `WithdrawalPaymentEvent` (Withdrawal), and",
+        "`ResidueVaultCreatedEvent` (sub-min Delegation residue) emitted alongside."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_funded",
+            "type": "u64"
+          },
+          {
+            "name": "source_count",
+            "type": "u8"
+          },
+          {
+            "name": "created_residue_vault",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FundingSourceKind",
+      "docs": [
+        "Tagged enum describing one source in a funding plan.",
+        "",
+        "Multi-gateway: each source carries its own gateway PDA in remaining_accounts",
+        "(no single shared `gateway` slot). Each source consumes a known number of",
+        "`remaining_accounts` slots in declaration order — the handler iterates and",
+        "slices. See `docs/MULTI_GATEWAY_FUNDING_PLAN.md` for the full layout."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Balance"
+          },
+          {
+            "name": "Delegation"
+          },
+          {
+            "name": "OperatorStake"
+          },
+          {
+            "name": "Withdrawal"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FundingSourceSpec",
+      "docs": [
+        "One entry in the funding plan vector."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "kind",
+            "type": {
+              "defined": {
+                "name": "FundingSourceKind"
+              }
+            }
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Gateway",
+      "docs": [
+        "Gateway registry entry",
+        "PDA: [\"gateway\", operator_pubkey]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "label",
+            "type": "string"
+          },
+          {
+            "name": "fqdn",
+            "type": "string"
+          },
+          {
+            "name": "port",
+            "type": "u16"
+          },
+          {
+            "name": "protocol",
+            "type": {
+              "defined": {
+                "name": "Protocol"
+              }
+            }
+          },
+          {
+            "name": "properties",
+            "type": "string"
+          },
+          {
+            "name": "note",
+            "type": "string"
+          },
+          {
+            "name": "operator_stake",
+            "type": "u64"
+          },
+          {
+            "name": "total_delegated_stake",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "GatewayStatus"
+              }
+            }
+          },
+          {
+            "name": "start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "leave_timestamp",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "leave_epoch_duration",
+            "docs": [
+              "Snapshot of `epoch_settings.epoch_duration` (seconds) taken when this",
+              "gateway transitioned to Leaving via `leave_network` or `prune_gateway`.",
+              "Used by `finalize_gone` to compute the GC eligibility window",
+              "(`leave_timestamp + GATEWAY_LEAVE_PERIOD + 7 * leave_epoch_duration`)",
+              "without depending on a possibly-mutated live `epoch_settings.epoch_duration`.",
+              "Zero for gateways that never left (Joined). Defense-in-depth: `finalize_gone`",
+              "also takes `max(this snapshot, current_settings.epoch_duration)` so an",
+              "admin shortening of `epoch_duration` cannot retroactively bring forward",
+              "a leaver's GC eligibility."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "stats",
+            "type": {
+              "defined": {
+                "name": "GatewayStats"
+              }
+            }
+          },
+          {
+            "name": "weights",
+            "type": {
+              "defined": {
+                "name": "GatewayWeights"
+              }
+            }
+          },
+          {
+            "name": "settings",
+            "type": {
+              "defined": {
+                "name": "GatewaySettings2"
+              }
+            }
+          },
+          {
+            "name": "registry_index",
+            "type": {
+              "defined": {
+                "name": "RegistryIndex"
+              }
+            }
+          },
+          {
+            "name": "observer_address",
+            "docs": [
+              "M3: Separate observer address (matches Lua: observerAddress)",
+              "Defaults to operator address if not set. Allows a different wallet to submit observations."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "cumulative_reward_per_token",
+            "docs": [
+              "Cumulative reward per unit of delegated stake (scaled by REWARD_PRECISION = 1e18)",
+              "Increases each epoch during distribute_epoch"
+            ],
+            "type": "u128"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayJoinedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "fqdn",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayLeavingEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayRegistry",
+      "docs": [
+        "Global gateway registry for efficient enumeration",
+        "PDA: [\"gateway_registry\"]",
+        "NOTE: Uses zero-copy for performance with large gateway counts"
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "L-8: Vestigial field — not checked at runtime. Kept to preserve account layout."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "count",
+            "type": "u32"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "gateways",
+            "type": {
+              "array": [
+                {
+                  "defined": {
+                    "name": "GatewaySlot"
+                  }
+                },
+                3000
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewaySettings",
+      "docs": [
+        "Global gateway settings",
+        "PDA: [\"gateway_settings\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "min_operator_stake",
+            "type": "u64"
+          },
+          {
+            "name": "min_delegate_stake",
+            "type": "u64"
+          },
+          {
+            "name": "withdrawal_period",
+            "type": "i64"
+          },
+          {
+            "name": "max_expedited_withdrawal_penalty",
+            "type": "u64"
+          },
+          {
+            "name": "min_expedited_withdrawal_penalty",
+            "type": "u64"
+          },
+          {
+            "name": "min_expedited_withdrawal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_delegates_per_gateway",
+            "type": "u32"
+          },
+          {
+            "name": "migration_active",
+            "docs": [
+              "Whether migration import is active (permanently disabled by finalize_migration)"
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "migration_authority",
+            "docs": [
+              "Dedicated migration authority (hot key for batch imports)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_token_account",
+            "docs": [
+              "C-1: Pinned stake token account address (validated on every instruction that uses it)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_token_account",
+            "docs": [
+              "C-2: Pinned protocol token account address (validated on every instruction that uses it)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "arns_program_id",
+            "docs": [
+              "H-4: ArNS program ID. Pinned at init so `prescribe_epoch` can validate",
+              "the NameRegistry account it reads from cross-program. Replaces the",
+              "hardcoded string literal previously embedded in `epoch.rs`. Set once",
+              "via [`crate::initialize`] and migrated for pre-existing accounts via",
+              "[`crate::migrate_settings_set_arns_program_id`]."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "total_staked",
+            "docs": [
+              "Aggregate supply counters — updated atomically at every staking mutation site.",
+              "Enables the SDK to return the full AoTokenSupplyData breakdown (parity with Lua)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_delegated",
+            "type": "u64"
+          },
+          {
+            "name": "total_withdrawn",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewaySettings2",
+      "docs": [
+        "Gateway-specific settings (named differently to avoid conflict)"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "allow_delegated_staking",
+            "type": "bool"
+          },
+          {
+            "name": "delegate_reward_share_ratio",
+            "type": "u16"
+          },
+          {
+            "name": "auto_stake",
+            "type": "bool"
+          },
+          {
+            "name": "min_delegation_amount",
+            "type": "u64"
+          },
+          {
+            "name": "allowlist_enabled",
+            "docs": [
+              "When true, only delegates on the allowlist (or existing stakers) can delegate",
+              "Matches Lua: allowedDelegatesLookup ~= nil"
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewaySlot",
+      "docs": [
+        "Entry in the gateway registry, pairing address with cached state for",
+        "`create_epoch` / `tally_weights` / `prescribe_epoch` to consult without",
+        "having to deserialize the Gateway PDA. Mirrors a subset of the Gateway",
+        "record so iteration sites can filter Joined-only without 3000 PDA reads.",
+        "",
+        "`status` is stored as a raw u8 (zero-copy can't carry the typed enum):",
+        "0 = Joined, 1 = Leaving, 2 = Gone. See `GatewaySlot::STATUS_*` constants.",
+        "",
+        "`start_timestamp` is the gateway's join time and is used by `create_epoch`",
+        "to filter \"joined-after-epoch-start\" gateways out of `active_gateway_count`."
+      ],
+      "serialization": "bytemuckunsafe",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "address",
+            "type": "pubkey"
+          },
+          {
+            "name": "composite_weight",
+            "type": "u64"
+          },
+          {
+            "name": "start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "passed_epochs",
+            "type": "u32"
+          },
+          {
+            "name": "failed_epochs",
+            "type": "u32"
+          },
+          {
+            "name": "total_epochs",
+            "type": "u32"
+          },
+          {
+            "name": "prescribed_epochs",
+            "type": "u32"
+          },
+          {
+            "name": "observed_epochs",
+            "type": "u32"
+          },
+          {
+            "name": "failed_consecutive",
+            "type": "u8"
+          },
+          {
+            "name": "passed_consecutive",
+            "docs": [
+              "Tracks consecutive passed epochs (matches Lua passedConsecutiveEpochs)"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Joined"
+          },
+          {
+            "name": "Leaving"
+          },
+          {
+            "name": "Gone"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayWeights",
+      "docs": [
+        "Gateway weights for epoch observer selection and reward distribution",
+        "All values scaled by RATE_SCALE (1e6) for fixed-point precision",
+        "Matches Lua: stakeWeight, tenureWeight, gatewayPerformanceRatio, observerPerformanceRatio, compositeWeight"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stake_weight",
+            "docs": [
+              "totalStake / minOperatorStake (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tenure_weight",
+            "docs": [
+              "min(timeRunning / tenureWeightDuration, maxTenureWeight) (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "gateway_performance_ratio",
+            "docs": [
+              "(1 + passedEpochs) / (1 + totalEpochs) (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "observer_performance_ratio",
+            "docs": [
+              "(1 + observedEpochs) / (1 + prescribedEpochs) (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "composite_weight",
+            "docs": [
+              "Product of all weights (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "normalized_composite_weight",
+            "docs": [
+              "compositeWeight / totalCompositeWeight (scaled by RATE_SCALE)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "weights_epoch",
+            "docs": [
+              "M-5: Epoch index when weights were computed (prevents stale weights)"
+            ],
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeEpochParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch_duration",
+            "type": "i64"
+          },
+          {
+            "name": "observer_count",
+            "type": "u8"
+          },
+          {
+            "name": "name_count",
+            "type": "u8"
+          },
+          {
+            "name": "min_observer_stake",
+            "type": "u64"
+          },
+          {
+            "name": "slash_rate",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "migration_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_token_account",
+            "docs": [
+              "C-1: Address of the stake token account to pin in settings"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "protocol_token_account",
+            "docs": [
+              "C-2: Address of the protocol token account to pin in settings"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "arns_program_id",
+            "docs": [
+              "H-4: Address of the ario-arns program (used by `prescribe_epoch` to",
+              "validate the NameRegistry account it reads from)."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InstantWithdrawalEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "payout",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JoinNetworkParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator_stake",
+            "type": "u64"
+          },
+          {
+            "name": "label",
+            "type": "string"
+          },
+          {
+            "name": "fqdn",
+            "type": "string"
+          },
+          {
+            "name": "port",
+            "type": "u16"
+          },
+          {
+            "name": "protocol",
+            "type": {
+              "defined": {
+                "name": "Protocol"
+              }
+            }
+          },
+          {
+            "name": "properties",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "note",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "auto_stake",
+            "type": "bool"
+          },
+          {
+            "name": "allow_delegated_staking",
+            "type": "bool"
+          },
+          {
+            "name": "delegate_reward_share_ratio",
+            "type": "u8"
+          },
+          {
+            "name": "min_delegate_stake",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "observer_address",
+            "docs": [
+              "M3: Separate observer address (client passes operator key for default)"
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Observation",
+      "docs": [
+        "Observation report from a prescribed observer",
+        "PDA: [\"observation\", epoch_index.to_le_bytes(), observer.to_bytes()]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "observer",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway_results",
+            "docs": [
+              "Bitmap of gateway pass/fail results (up to 3000 gateways per observation)",
+              "Each bit represents a gateway: 1 = passed, 0 = failed"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                375
+              ]
+            }
+          },
+          {
+            "name": "gateway_count",
+            "docs": [
+              "Number of gateways evaluated"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "report_tx_id",
+            "docs": [
+              "Transaction ID of the observation report on Arweave"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "submitted_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ObservationSubmittedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "observer",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway_count",
+            "type": "u16"
+          },
+          {
+            "name": "report_tx_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ObserverLookup",
+      "docs": [
+        "Observer address uniqueness index",
+        "PDA: [\"observer_lookup\", observer_address]",
+        "Ensures each observer address is used by at most one gateway."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Protocol",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Http"
+          },
+          {
+            "name": "Https"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RedelegationRecord",
+      "docs": [
+        "Tracks redelegation history per delegator for fee calculation",
+        "PDA: [\"redelegation\", delegator_pubkey]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "redelegation_count",
+            "docs": [
+              "Number of redelegations since last fee reset"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "last_redelegation_at",
+            "docs": [
+              "Timestamp of last redelegation"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "fee_reset_at",
+            "docs": [
+              "When the fee counter resets (last_redelegation_at + 7 days)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryIndex",
+      "docs": [
+        "Gateway registry index",
+        "",
+        "`_reserved` is a layout-preserving placeholder for the legacy",
+        "`is_registered: bool` field. The status flag on the Gateway and the",
+        "registry slot replace its semantics. The byte stays so existing on-chain",
+        "account layouts deserialize correctly; no production code reads or",
+        "writes it."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "index",
+            "type": "u32"
+          },
+          {
+            "name": "_reserved",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResidueVaultCreatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "available_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StakePaymentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "is_delegate",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateGatewayParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "label",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "fqdn",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "port",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "protocol",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "Protocol"
+                }
+              }
+            }
+          },
+          {
+            "name": "properties",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "note",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "auto_stake",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "allow_delegated_staking",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "delegate_reward_share_ratio",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "min_delegate_stake",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Withdrawal",
+      "docs": [
+        "Pending withdrawal",
+        "PDA: [\"withdrawal\", owner_pubkey, withdrawal_id]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "available_at",
+            "type": "i64"
+          },
+          {
+            "name": "is_delegate",
+            "type": "bool"
+          },
+          {
+            "name": "is_exit_vault",
+            "docs": [
+              "True if this withdrawal was created by `leave_network` or",
+              "`prune_gateway`. Used for analytics + future cleanup logic;",
+              "does NOT itself gate any handler. The actual no-instant /",
+              "no-fund-from gates live on `is_protected` below."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "is_protected",
+            "docs": [
+              "True if this is the protected operator min-stake exit vault.",
+              "Lua parity (`gar.lua::createGatewayExitVault`): the min portion",
+              "of an operator's stake at leave/prune time goes into a vault",
+              "that **cannot be expedited** (`instant_withdrawal` rejects)",
+              "and **cannot be drained via the funding plan**",
+              "(`deduct_withdrawal_for_payment` rejects). Only path out is",
+              "`claim_withdrawal` after the 90-day lock expires. The excess",
+              "portion of a leave goes into a separate `is_protected: false`",
+              "vault that behaves like every other operator-side withdrawal."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalCancelledEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "is_delegate",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalClaimedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalCounter",
+      "docs": [
+        "Tracks next withdrawal ID per user",
+        "PDA: [\"withdrawal_counter\", owner_pubkey]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "next_id",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalCreatedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "available_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WithdrawalPaymentEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "withdrawal_id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "residue",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

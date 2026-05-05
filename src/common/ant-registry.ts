@@ -40,23 +40,107 @@ type ANTRegistryNoSigner = ANTRegistryProcessConfig;
 type ANTRegistryWithSigner = WithSigner<ANTRegistryProcessConfig>;
 type ANTRegistryConfig = ANTRegistryNoSigner | ANTRegistryWithSigner;
 
+/**
+ * Solana-backend config for the ANT Registry.
+ *
+ * Reads the per-user paginated ACL on-chain (ADR-012): a head `AclConfig`
+ * PDA + N `AclPage` PDAs holding `(asset, role)` tuples for ANTs the user
+ * owns or controls. Pass a `signer` to opt into the writeable variant,
+ * which adds the preflight resolvers used by the contract-required ACL
+ * accounts (`add_controller`, `remove_controller`, `transfer`) plus the
+ * spawn / ex-controller workflow helpers and the standalone heal-flow
+ * instruction builders. See
+ * `sdk/src/solana/ant-registry-{readable,writeable}.ts` for the
+ * implementations.
+ */
+export type SolanaANTRegistryReadConfig = {
+  backend: 'solana';
+  rpc: import('../solana/types.js').SolanaRpc;
+  commitment?: import('@solana/kit').Commitment;
+  logger?: ILogger;
+  /**
+   * Override the ario-ant program ID. Required against any cluster other
+   * than mainnet — devnet, localnet, and the Surfpool harness all deploy
+   * programs at addresses derived from per-cluster keypair files. Source
+   * from `migration/localnet/out/localnet.env` (`ARIO_ANT_PROGRAM_ID`) on
+   * localnet.
+   */
+  antProgramId?: import('@solana/kit').Address;
+};
+
+export type SolanaANTRegistryWriteConfig = SolanaANTRegistryReadConfig & {
+  /**
+   * Solana signer used as the rent payer on `register_acl_config` /
+   * `add_acl_page` and as the authoriser for any bundled write tx.
+   */
+  signer: import('@solana/kit').TransactionSigner;
+};
+
+/**
+ * @deprecated Prefer `SolanaANTRegistryReadConfig` /
+ * `SolanaANTRegistryWriteConfig`. Kept as an alias for back-compat.
+ */
+export type SolanaANTRegistryConfig = SolanaANTRegistryReadConfig;
+
 export class ANTRegistry {
-  // by default give read
+  // Solana backend, writeable — async to mirror ANT.init / ARIO.init and
+  // avoid `import.meta.url` in CJS output.
+  static init(
+    config: SolanaANTRegistryWriteConfig,
+  ): Promise<AoANTRegistryWrite>;
+
+  // Solana backend, read-only.
+  static init(config: SolanaANTRegistryReadConfig): Promise<AoANTRegistryRead>;
+
+  // by default give read (AO)
   static init(): AoANTRegistryRead;
 
-  // no signer give read
+  // no signer give read (AO)
   static init(config: ANTRegistryNoSigner): AoANTRegistryRead;
 
-  // with signer give write
+  // with signer give write (AO)
   static init(config: ANTRegistryWithSigner): AoANTRegistryWrite;
 
   static init(
-    config?: ANTRegistryConfig,
-  ): AoANTRegistryRead | AoANTRegistryWrite {
-    if (config !== undefined && 'signer' in config) {
-      return new AoANTRegistryWriteable(config);
+    config?:
+      | ANTRegistryConfig
+      | SolanaANTRegistryReadConfig
+      | SolanaANTRegistryWriteConfig,
+  ):
+    | AoANTRegistryRead
+    | AoANTRegistryWrite
+    | Promise<AoANTRegistryRead | AoANTRegistryWrite> {
+    if (config && 'backend' in config && config.backend === 'solana') {
+      return (async () => {
+        if ('signer' in config) {
+          const { SolanaANTRegistryWriteable } = await import(
+            '../solana/ant-registry-writeable.js'
+          );
+          return new SolanaANTRegistryWriteable({
+            rpc: config.rpc,
+            signer: config.signer,
+            commitment: config.commitment,
+            logger: config.logger,
+            antProgramId: config.antProgramId,
+          }) as AoANTRegistryWrite;
+        }
+        const { SolanaANTRegistryReadable } = await import(
+          '../solana/ant-registry-readable.js'
+        );
+        return new SolanaANTRegistryReadable({
+          rpc: config.rpc,
+          commitment: config.commitment,
+          logger: config.logger,
+          antProgramId: config.antProgramId,
+        }) as AoANTRegistryRead;
+      })();
     }
-    return new AoANTRegistryReadable(config);
+
+    const aoConfig = config as ANTRegistryConfig | undefined;
+    if (aoConfig !== undefined && 'signer' in aoConfig) {
+      return new AoANTRegistryWriteable(aoConfig);
+    }
+    return new AoANTRegistryReadable(aoConfig);
   }
 }
 

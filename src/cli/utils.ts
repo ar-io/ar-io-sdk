@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 import { readFileSync } from 'fs';
-/**
- * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 import { EthereumSigner } from '@dha-team/arbundles';
 import { connect } from '@permaweb/aoconnect';
+import {
+  type KeyPairSigner,
+  address,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+  createSolanaRpcSubscriptions,
+} from '@solana/kit';
 import { JWKInterface } from 'arweave/node/lib/wallet.js';
+import bs58 from 'bs58';
 import { Command, OptionValues, program } from 'commander';
 import prompts from 'prompts';
 
@@ -57,7 +51,6 @@ import {
   AoUpdateGatewaySettingsParams,
   ArweaveSigner,
   ContractSigner,
-  DEFAULT_CU_URL,
   EpochInput,
   FundFrom,
   Logger,
@@ -253,22 +246,52 @@ function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
 export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   setLoggerIfDebug(options);
 
+  if (options.ao) {
+    return ARIO.init({
+      hyperbeamUrl: options.hyperbeamUrl,
+      process: aoProcessFromOptions({
+        cuUrl: 'http://localhost:6363',
+        ...options,
+      }),
+      paymentUrl: options.paymentUrl,
+    });
+  }
+
+  const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ARIO.init({
-    hyperbeamUrl: options.hyperbeamUrl,
-    process: aoProcessFromOptions({
-      cuUrl: DEFAULT_CU_URL,
-      ...options,
-    }),
-    paymentUrl: options.paymentUrl,
+    backend: 'solana',
+    rpc: createSolanaRpc(rpcUrl),
+    ...(options.coreProgramId
+      ? { coreProgramId: address(options.coreProgramId) }
+      : {}),
+    ...(options.garProgramId
+      ? { garProgramId: address(options.garProgramId) }
+      : {}),
+    ...(options.arnsProgramId
+      ? { arnsProgramId: address(options.arnsProgramId) }
+      : {}),
   });
 }
 
-export function readANTRegistryFromOptions(
+export async function readANTRegistryFromOptions(
   options: ProcessIdCLIOptions,
-): AoANTRegistryRead {
+): Promise<AoANTRegistryRead> {
+  setLoggerIfDebug(options);
+
+  if (options.ao) {
+    return ANTRegistry.init({
+      process: aoProcessFromOptions(options),
+      hyperbeamUrl: options.hyperbeamUrl,
+    });
+  }
+
+  const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTRegistry.init({
-    process: aoProcessFromOptions(options),
-    hyperbeamUrl: options.hyperbeamUrl,
+    backend: 'solana',
+    rpc: createSolanaRpc(rpcUrl),
+    ...(options.antProgramId
+      ? { antProgramId: address(options.antProgramId) }
+      : {}),
   });
 }
 
@@ -312,21 +335,97 @@ export function requiredAoSignerFromOptions(
   return createAoSigner(requiredContractSignerFromOptions(options).signer);
 }
 
-export function writeARIOFromOptions(options: GlobalCLIOptions): {
+/** Derive a WS URL from an HTTP/HTTPS RPC URL by swapping the scheme. */
+function wsUrlFromRpcUrl(rpcUrl: string): string {
+  // Surfpool and `solana-test-validator` follow Solana's well-known localhost
+  // convention: HTTP RPC on 8899 and WebSocket on 8900 (a separate port).
+  // Public RPCs (mainnet/devnet/testnet) put both on the same port (443/443),
+  // so a naive `http→ws` swap works there but breaks against any local
+  // validator. Bump the port iff we recognise the localhost+8899 pair.
+  let url: URL;
+  try {
+    url = new URL(rpcUrl);
+  } catch {
+    return rpcUrl.replace(/^http/, 'ws');
+  }
+  const isLocalhost =
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '0.0.0.0';
+  if (isLocalhost && url.port === '8899') {
+    url.port = '8900';
+  }
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString().replace(/\/$/, '');
+}
+
+/**
+ * Load a Solana KeyPairSigner from --private-key (base58) or --wallet-file
+ * (JSON array of bytes). Throws with a helpful message if neither is set.
+ */
+async function loadSolanaSignerFromOptions(options: {
+  privateKey?: string;
+  walletFile?: string;
+}): Promise<KeyPairSigner> {
+  let secretKey: Uint8Array;
+  if (options.privateKey) {
+    secretKey = bs58.decode(options.privateKey);
+  } else if (options.walletFile) {
+    const raw = readFileSync(options.walletFile, 'utf-8');
+    secretKey = new Uint8Array(JSON.parse(raw));
+  } else {
+    throw new Error(
+      'Solana write operations require a signer.\n' +
+        'Provide a Solana keypair with --wallet-file <path-to-keypair.json> ' +
+        'or --private-key <base58-encoded-key>',
+    );
+  }
+  return createKeyPairSignerFromBytes(secretKey);
+}
+
+export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
   ario: AoARIOWrite;
   signerAddress: string;
-} {
-  const { signer, signerAddress } = requiredContractSignerFromOptions(options);
+}> {
   setLoggerIfDebug(options);
+
+  if (options.ao) {
+    const { signer, signerAddress } =
+      requiredContractSignerFromOptions(options);
+    return {
+      ario: ARIO.init({
+        process: aoProcessFromOptions(options),
+        signer,
+        paymentUrl: options.paymentUrl,
+        hyperbeamUrl: options.hyperbeamUrl,
+      }),
+      signerAddress,
+    };
+  }
+
+  const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
+  const signer = await loadSolanaSignerFromOptions(options);
 
   return {
     ario: ARIO.init({
-      process: aoProcessFromOptions(options),
+      backend: 'solana',
+      rpc: createSolanaRpc(rpcUrl),
+      rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
       signer,
-      paymentUrl: options.paymentUrl,
-      hyperbeamUrl: options.hyperbeamUrl,
+      // Forward program-id overrides to mirror `readARIOFromOptions` so
+      // localnet / devnet writes target the deployed program IDs instead of
+      // silently falling back to the SDK's mainnet defaults.
+      ...(options.coreProgramId
+        ? { coreProgramId: address(options.coreProgramId) }
+        : {}),
+      ...(options.garProgramId
+        ? { garProgramId: address(options.garProgramId) }
+        : {}),
+      ...(options.arnsProgramId
+        ? { arnsProgramId: address(options.arnsProgramId) }
+        : {}),
     }),
-    signerAddress,
+    signerAddress: signer.address as string,
   };
 }
 
@@ -692,22 +791,52 @@ function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
   });
 }
 
-export function readANTFromOptions(options: ProcessIdCLIOptions): AoANTRead {
+export async function readANTFromOptions(
+  options: ProcessIdCLIOptions,
+): Promise<AoANTRead> {
+  if (options.ao) {
+    return ANT.init({
+      process: ANTProcessFromOptions(options),
+      hyperbeamUrl: options.hyperbeamUrl,
+    });
+  }
+
+  const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANT.init({
-    process: ANTProcessFromOptions(options),
-    hyperbeamUrl: options.hyperbeamUrl,
+    backend: 'solana',
+    processId: requiredProcessIdFromOptions(options),
+    rpc: createSolanaRpc(rpcUrl),
+    ...(options.antProgramId
+      ? { antProgramId: address(options.antProgramId) }
+      : {}),
   });
 }
 
-export function writeANTFromOptions(
+export async function writeANTFromOptions(
   options: ProcessIdCLIOptions,
   signer?: ContractSigner,
-): AoANTWrite {
-  signer ??= requiredContractSignerFromOptions(options).signer;
+): Promise<AoANTWrite> {
+  if (options.ao) {
+    signer ??= requiredContractSignerFromOptions(options).signer;
+    return ANT.init({
+      process: ANTProcessFromOptions(options),
+      signer,
+      hyperbeamUrl: options.hyperbeamUrl,
+    });
+  }
+
+  const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
+  const kitSigner = await loadSolanaSignerFromOptions(options);
+
   return ANT.init({
-    process: ANTProcessFromOptions(options),
-    signer,
-    hyperbeamUrl: options.hyperbeamUrl,
+    backend: 'solana',
+    processId: requiredProcessIdFromOptions(options),
+    rpc: createSolanaRpc(rpcUrl),
+    rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
+    signer: kitSigner,
+    ...(options.antProgramId
+      ? { antProgramId: address(options.antProgramId) }
+      : {}),
   });
 }
 
@@ -799,6 +928,73 @@ export function getANTStateFromOptions(
   });
 }
 
+/**
+ * Spawn a fresh ANT on Solana from CLI options.
+ *
+ * Resolves the signer the same way `writeARIOFromOptions` does (KeyPairSigner
+ * from `--wallet-file` or `--private-key`), then bundles MPL Core `CreateV1` +
+ * `ario_ant::initialize` into a single transaction. The signer's address
+ * becomes the ANT owner on chain — no separate `--address` is required.
+ *
+ * Maps the CLI's AO-shaped options (`--name`, `--ticker`, `--description`,
+ * `--keywords`, `--logo`, `--target` for the @ record tx id) onto the Solana
+ * `InitializeAntParams` payload. AO-only state fields like `controllers` and
+ * `balances` are intentionally dropped — they don't exist on Solana.
+ */
+export async function spawnSolanaANTFromOptions(
+  options: ANTStateCLIOptions,
+): Promise<import('../solana/spawn-ant.js').SpawnSolanaANTResult> {
+  setLoggerIfDebug(options as any);
+
+  const { spawnSolanaANT } = await import('../solana/spawn-ant.js');
+
+  const rpcUrl =
+    (options as any).rpcUrl ?? 'https://api.mainnet-beta.solana.com';
+
+  const kitSigner = await loadSolanaSignerFromOptions(options as any);
+
+  const name =
+    options.name ?? `ANT-${(kitSigner.address as string).slice(0, 8)}`;
+
+  // ANT NFT metadata URI — required so the asset renders correctly in
+  // marketplaces. Caller must upload a JSON metadata file (build via
+  // `buildAntMetadata` from `@ar.io/sdk/solana`, host on Arweave via Turbo
+  // or any other gateway) and pass the resulting URI here.
+  const metadataUri = (options as any).metadataUri;
+  if (!metadataUri || typeof metadataUri !== 'string') {
+    throw new Error(
+      'spawn-ant: --metadata-uri is required.\n\n' +
+        'Build the JSON metadata with `buildAntMetadata` from `@ar.io/sdk/solana`,\n' +
+        'upload it to Arweave (free for files under 100 KiB via @ardrive/turbo-sdk\n' +
+        'with a `HexSolanaSigner`), then pass the resulting URI:\n' +
+        '  --metadata-uri "ar://<txid>"            (canonical AR.IO scheme)\n' +
+        '  --metadata-uri "https://<gateway>/raw/<txid>"   (immediate render)\n\n' +
+        'See sdk/scripts/devnet-validation/populate-ant.ts for an end-to-end example.',
+    );
+  }
+
+  return spawnSolanaANT({
+    rpc: createSolanaRpc(rpcUrl),
+    rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
+    signer: kitSigner,
+    state: {
+      name,
+      uri: metadataUri,
+      ticker: options.ticker,
+      description: options.description,
+      keywords: options.keywords,
+      logo: options.logo,
+      // `--target` is the AO convention for the @ record's tx id (see
+      // initANTStateForAddress). Reuse it on Solana so the CLI surface stays
+      // identical between backends.
+      transactionId: (options as any).target,
+    },
+    ...((options as any).antProgramId
+      ? { antProgramId: address((options as any).antProgramId) }
+      : {}),
+  });
+}
+
 export function getTokenCostParamsFromOptions(o: GetTokenCostCLIOptions) {
   o.intent ??= 'Buy-Name';
   o.type ??= 'lease';
@@ -845,6 +1041,109 @@ export function referrerFromOptions<
   },
 >(o: O): string | undefined {
   return o.referrer;
+}
+
+/** Parse `--withdrawal-id` from CLI options into a bigint. */
+export function withdrawalIdFromOptions<
+  O extends {
+    withdrawalId?: string;
+  },
+>(o: O): bigint | undefined {
+  if (o.withdrawalId === undefined) return undefined;
+  try {
+    return BigInt(o.withdrawalId);
+  } catch {
+    throw new Error(
+      `Invalid --withdrawal-id: '${o.withdrawalId}' is not a valid u64 integer`,
+    );
+  }
+}
+
+/**
+ * Parse `--funding-plan-json` into a `FundingSourceSpec[]`. Validates each
+ * entry's `kind` against the on-chain enum and parses `amount` as a bigint.
+ * Each Delegation/OperatorStake entry MAY carry a `gateway` field (base58
+ * Solana address) — required when the plan spans multiple gateways.
+ *
+ * Format examples:
+ *   '[{"kind":"balance","amount":"100"},{"kind":"withdrawal","amount":"500"}]'
+ *   '[{"kind":"delegation","amount":"100","gateway":"Gw1..."},{"kind":"delegation","amount":"50","gateway":"Gw2..."}]'
+ *
+ * Returns undefined when the flag isn't set; throws Error on malformed JSON
+ * or unknown kinds.
+ */
+export function fundingPlanFromOptions<
+  O extends {
+    fundingPlanJson?: string;
+  },
+>(o: O): { kind: string; amount: bigint; gateway?: string }[] | undefined {
+  if (!o.fundingPlanJson) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(o.fundingPlanJson);
+  } catch (err) {
+    throw new Error(
+      `--funding-plan-json is not valid JSON: ${(err as Error).message}`,
+    );
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error('--funding-plan-json must be a JSON array');
+  }
+  const validKinds = new Set([
+    'balance',
+    'delegation',
+    'operatorStake',
+    'withdrawal',
+  ]);
+  return parsed.map((entry, idx) => {
+    if (
+      typeof entry !== 'object' ||
+      entry === null ||
+      typeof (entry as { kind?: unknown }).kind !== 'string' ||
+      typeof (entry as { amount?: unknown }).amount !== 'string'
+    ) {
+      throw new Error(
+        `--funding-plan-json[${idx}] must be { kind: string, amount: string, gateway?: string }`,
+      );
+    }
+    const e = entry as { kind: string; amount: string; gateway?: unknown };
+    if (!validKinds.has(e.kind)) {
+      throw new Error(
+        `--funding-plan-json[${idx}].kind must be one of ${[...validKinds].join(', ')} (got '${e.kind}')`,
+      );
+    }
+    let amount: bigint;
+    try {
+      amount = BigInt(e.amount);
+    } catch {
+      throw new Error(
+        `--funding-plan-json[${idx}].amount '${e.amount}' is not a valid u64`,
+      );
+    }
+    if (amount <= 0n) {
+      throw new Error(
+        `--funding-plan-json[${idx}].amount must be > 0 (got ${e.amount})`,
+      );
+    }
+    const out: { kind: string; amount: bigint; gateway?: string } = {
+      kind: e.kind,
+      amount,
+    };
+    if (e.gateway !== undefined) {
+      if (typeof e.gateway !== 'string') {
+        throw new Error(
+          `--funding-plan-json[${idx}].gateway must be a base58 Solana address`,
+        );
+      }
+      if (e.kind !== 'delegation' && e.kind !== 'operatorStake') {
+        throw new Error(
+          `--funding-plan-json[${idx}].gateway is only valid for kind 'delegation' or 'operatorStake' (got '${e.kind}')`,
+        );
+      }
+      out.gateway = e.gateway;
+    }
+    return out;
+  });
 }
 
 export function assertLockLengthInRange(

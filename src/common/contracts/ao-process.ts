@@ -63,15 +63,10 @@ export class AOProcess implements AOContract {
     tags,
     retries = 3,
     fromAddress,
-    select,
   }: {
     tags?: Array<{ name: string; value: string }>;
     retries?: number;
     fromAddress?: string;
-    select?: (message: {
-      Data: string;
-      Tags: Array<{ name: string; value: string }>;
-    }) => boolean;
   }): Promise<K> {
     this.logger.debug(`Evaluating read interaction on process`, {
       tags,
@@ -154,9 +149,7 @@ export class AOProcess implements AOContract {
           `Process ${this.processId} did not return a valid response. Response: ${JSON.stringify(result)}`,
       );
     }
-    const messageData = select
-      ? result.Messages.find(select)?.Data
-      : result.Messages?.[0]?.Data;
+    const messageData = result.Messages?.[0]?.Data;
 
     // return undefined if no data is returned
     if (this.isMessageDataEmpty(messageData)) {
@@ -172,16 +165,11 @@ export class AOProcess implements AOContract {
     data,
     signer,
     retries = 3,
-    select,
   }: {
     tags: Array<{ name: string; value: string }>;
     data?: string | undefined;
     signer: AoSigner;
     retries?: number;
-    select?: (message: {
-      Data: string;
-      Tags: Array<{ name: string; value: string }>;
-    }) => boolean;
   }): Promise<{ id: string; result?: K }> {
     let messageId: string | undefined;
     const anchor = getRandomText(32); // anchor is a random text produce non-deterministic messages IDs when deterministic signers are provided (ETH)
@@ -299,9 +287,7 @@ export class AOProcess implements AOContract {
       return { id: messageId };
     }
 
-    const resultData: K = safeDecode<K>(
-      select ? result.Messages.find(select)?.Data : result.Messages[0].Data,
-    );
+    const resultData: K = safeDecode<K>(result.Messages[0].Data);
 
     this.logger.debug('Message result data', {
       resultData,

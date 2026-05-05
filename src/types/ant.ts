@@ -59,11 +59,25 @@ export const IntegerStringSchema = z
     { message: 'Must be a non negative integer string' },
   );
 
-export const AntDescriptionSchema = z.string(); // TODO: add specific limits for description ie max length
-export const AntKeywordsSchema = z.array(z.string()); // TODO: add specific limits for keywords ie max amount and max length
+export const AntDescriptionSchema = z.string().max(256, {
+  message: 'ANT description must be at most 256 characters',
+});
+export const AntKeywordsSchema = z
+  .array(
+    z.string().max(32, {
+      message: 'Each keyword must be at most 32 characters',
+    }),
+  )
+  .max(8, { message: 'ANT can have at most 8 keywords' });
 export const AntRecordSchema = z.object({
-  transactionId: ArweaveTxIdSchema.describe('The Target ID of the undername'),
+  transactionId: z
+    .string()
+    .describe('Content target (Arweave TX ID, IPFS CID, etc.)'),
   ttlSeconds: z.number(),
+  targetProtocol: z
+    .number()
+    .describe('Storage protocol: 0 = Arweave, 1 = IPFS')
+    .default(0),
   priority: z.number().optional(),
   owner: AOAddressSchema.describe('The owner address of the record').optional(),
   displayName: z
@@ -76,13 +90,13 @@ export const AntRecordSchema = z.object({
   ).optional(),
   description: z
     .string()
-    .max(512)
-    .describe('Description of the record (max 512 chars)')
+    .max(256)
+    .describe('Description of the record (max 256 chars)')
     .optional(),
   keywords: z
     .array(z.string().max(32))
-    .max(16)
-    .describe('Keywords array (max 16, each max 32 chars)')
+    .max(8)
+    .describe('Keywords array (max 8, each max 32 chars)')
     .optional(),
 });
 export type AoANTRecord = z.infer<typeof AntRecordSchema>;
@@ -345,6 +359,8 @@ export interface AoANTWrite extends AoANTRead {
 export type AoANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
+  /** Storage protocol: 0 = Arweave, 1 = IPFS. Defaults to 0 (Arweave). */
+  targetProtocol?: number;
   priority?: number; // TODO: the SDK should always provide a priority, even if the ANT does not have a priority set
   owner?: string;
   displayName?: string;

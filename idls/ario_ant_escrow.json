@@ -1,0 +1,1734 @@
+{
+  "address": "ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "metadata": {
+    "name": "ario_ant_escrow",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "AR.IO Trustless Escrow Program - Multi-protocol (Arweave RSA-PSS-4096 / Ethereum ECDSA secp256k1) on-chain custody for ANT NFTs, ARIO tokens, and time-locked vaults",
+    "repository": "https://github.com/ar-io/solana-ar-io"
+  },
+  "docs": [
+    "AR.IO Trustless ANT Escrow Program",
+    "",
+    "Holds Metaplex Core ANT NFTs in a per-mint PDA and releases them to a",
+    "claimant designated by an Arweave RSA-PSS-4096 or Ethereum ECDSA secp256k1",
+    "signature verified fully on-chain. No off-chain authority, no oracle.",
+    "",
+    "See `docs/ANT_ESCROW_DESIGN.md` for the full technical design and",
+    "`docs/ANT_ESCROW_IMPLEMENTATION_PLAN.md` for the phase-by-phase roadmap."
+  ],
+  "instructions": [
+    {
+      "name": "cancel_deposit",
+      "docs": [
+        "Return the escrowed ANT to the depositor and close the escrow PDA.",
+        "Only callable by `escrow.depositor`."
+      ],
+      "discriminator": [
+        207,
+        37,
+        219,
+        229,
+        183,
+        50,
+        54,
+        245
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow account being closed. `has_one = depositor` rejects calls",
+            "from anyone other than the original depositor; `close = depositor`",
+            "returns rent and zeroes the data on success."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "escrow.ant_mint",
+                "account": "EscrowAnt"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ant_asset",
+          "docs": [
+            "The Metaplex Core asset returning to the depositor.",
+            "`has_one`-style validation: `escrow.ant_mint` must equal this",
+            "account's key. Defends against wallet UIs that mis-route accounts."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor — sole authority for cancel. Must sign so the",
+            "system program will credit them with the closed-account rent."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_token_deposit",
+      "docs": [
+        "Return escrowed ARIO tokens to the depositor and close the",
+        "escrow PDA. Only callable by `escrow.depositor`."
+      ],
+      "discriminator": [
+        253,
+        216,
+        237,
+        100,
+        122,
+        226,
+        103,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA being closed. `has_one = depositor` rejects calls from",
+            "anyone other than the original depositor; `close = depositor`",
+            "returns rent and zeroes the data on success."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (source of return)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor_token_account",
+          "docs": [
+            "Depositor's ARIO token account (destination for returned tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor -- sole authority for cancel."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_vault_deposit",
+      "docs": [
+        "Return escrowed vault tokens to the depositor. Uses ESCROW_VAULT_SEED."
+      ],
+      "discriminator": [
+        58,
+        225,
+        5,
+        220,
+        170,
+        38,
+        88,
+        85
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA being closed. `has_one = depositor` rejects calls from",
+            "anyone other than the original depositor; `close = depositor`",
+            "returns rent and zeroes the data on success."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (source of return)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor_token_account",
+          "docs": [
+            "Depositor's ARIO token account (destination for returned tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor -- sole authority for cancel."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_ant_arweave",
+      "docs": [
+        "Release the ANT to `claimant` after on-chain RSA-PSS-4096",
+        "verification. Anyone can submit; only the named claimant receives",
+        "the asset. See `docs/ANT_ESCROW_DESIGN.md` § Cryptographic",
+        "verification → Arweave RSA-PSS for the algorithm."
+      ],
+      "discriminator": [
+        103,
+        22,
+        240,
+        40,
+        162,
+        212,
+        3,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA. `has_one = depositor` ties the close-rent recipient to",
+            "the original depositor account passed below; `close = depositor`",
+            "returns rent on successful claim. Cached `bump` is re-derived via",
+            "the seeds constraint for defense-in-depth."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "escrow.ant_mint",
+                "account": "EscrowAnt"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ant_asset",
+          "docs": [
+            "The Metaplex Core asset being released. Must match",
+            "`escrow.ant_mint` so a misrouted account can't redirect the",
+            "transfer."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant",
+          "docs": [
+            "Recipient of the ANT — its pubkey is bound into the canonical",
+            "message that the Arweave key signed. Front-runners can resubmit",
+            "the tx but cannot redirect the asset.",
+            "no on-chain ownership check needed (anyone can be a claimant)."
+          ]
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor — receives rent on escrow close. Pinned via",
+            "`has_one = depositor` on the escrow above."
+          ],
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Tx fee payer. Doesn't have to be the claimant — anyone can submit",
+            "a valid claim signature on the recipient's behalf."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              512
+            ]
+          }
+        },
+        {
+          "name": "salt_len",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claim_ant_ethereum",
+      "docs": [
+        "Release the ANT to `claimant` after on-chain ECDSA secp256k1 +",
+        "EIP-191 verification. Same shape as `claim_ant_arweave`, only the",
+        "signature format and verifier differ."
+      ],
+      "discriminator": [
+        52,
+        144,
+        26,
+        77,
+        230,
+        115,
+        163,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA. Same constraints as `ClaimAntArweave`."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "escrow.ant_mint",
+                "account": "EscrowAnt"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ant_asset",
+          "writable": true
+        },
+        {
+          "name": "claimant"
+        },
+        {
+          "name": "depositor",
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              65
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim_tokens_arweave",
+      "docs": [
+        "Release escrowed ARIO tokens to `claimant` after on-chain",
+        "RSA-PSS-4096 verification (Arweave path)."
+      ],
+      "discriminator": [
+        183,
+        114,
+        48,
+        13,
+        195,
+        150,
+        237,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA holding token deposit metadata."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (source of tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant_token_account",
+          "docs": [
+            "Claimant's ARIO token account (destination)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant",
+          "docs": [
+            "Recipient of the tokens -- pubkey bound into the canonical message."
+          ]
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor -- receives rent on escrow close."
+          ],
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Tx fee payer. Anyone can submit a valid claim."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              512
+            ]
+          }
+        },
+        {
+          "name": "salt_len",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claim_tokens_ethereum",
+      "docs": [
+        "Release escrowed ARIO tokens to `claimant` after on-chain",
+        "ECDSA secp256k1 + EIP-191 verification (Ethereum path)."
+      ],
+      "discriminator": [
+        16,
+        54,
+        7,
+        11,
+        185,
+        225,
+        59,
+        117
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA holding token deposit metadata."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (source of tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant_token_account",
+          "docs": [
+            "Claimant's ARIO token account (destination)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant"
+        },
+        {
+          "name": "depositor",
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              65
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim_vault_arweave",
+      "docs": [
+        "Release escrowed vault tokens to `claimant` after on-chain",
+        "RSA-PSS-4096 verification (Arweave path). If the vault is still",
+        "active, CPIs into ario-core to create a time-locked vault; if",
+        "expired, does a liquid SPL transfer."
+      ],
+      "discriminator": [
+        112,
+        137,
+        75,
+        44,
+        191,
+        221,
+        158,
+        176
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "writable": true
+        },
+        {
+          "name": "claimant_token_account",
+          "docs": [
+            "Claimant's ARIO token account (destination for expired-vault path)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer_token_account",
+          "docs": [
+            "Payer's ARIO token account (intermediate for active-vault path)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant"
+        },
+        {
+          "name": "depositor",
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              512
+            ]
+          }
+        },
+        {
+          "name": "salt_len",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claim_vault_ethereum",
+      "docs": [
+        "Release escrowed vault tokens to `claimant` after on-chain",
+        "ECDSA secp256k1 + EIP-191 verification (Ethereum path). Same",
+        "active/expired branching as `claim_vault_arweave`."
+      ],
+      "discriminator": [
+        122,
+        127,
+        116,
+        43,
+        147,
+        127,
+        206,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow PDA holding vault deposit metadata."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (source of tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant_token_account",
+          "docs": [
+            "Claimant's ARIO token account (destination for expired-vault path)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer_token_account",
+          "docs": [
+            "Payer's ARIO token account (intermediate destination for active-vault",
+            "path — payer then sends them to vaulted_transfer in a sibling ix)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "claimant",
+          "docs": [
+            "Recipient of the vault/tokens — pubkey bound into canonical message."
+          ]
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Original depositor — receives rent on escrow close."
+          ],
+          "writable": true,
+          "relations": [
+            "escrow"
+          ]
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Tx fee payer. For active vaults, also holds tokens temporarily",
+            "between the escrow release and the vaulted_transfer sibling ix."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "instructions_sysvar",
+          "docs": [
+            "Instructions sysvar — used to verify that a matching",
+            "vaulted_transfer instruction exists in the same transaction."
+          ],
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message_nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "signature",
+          "type": {
+            "array": [
+              "u8",
+              65
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "deposit_ant",
+      "docs": [
+        "Lock an ANT into escrow targeted at an Arweave or Ethereum identity.",
+        "",
+        "`recipient_protocol`: `0` = Arweave RSA-PSS-4096, `1` = Ethereum ECDSA.",
+        "`recipient_pubkey`: 512-byte RSA modulus (Arweave) or 20-byte address",
+        "(Ethereum); any other (protocol, length) pair is rejected."
+      ],
+      "discriminator": [
+        94,
+        88,
+        51,
+        91,
+        189,
+        165,
+        112,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "New escrow PDA, one per ANT mint. `init` enforces \"no double",
+            "deposit\" — a second `deposit_ant` for the same mint fails because",
+            "the PDA already exists."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "ant_asset"
+              }
+            ]
+          }
+        },
+        {
+          "name": "ant_asset",
+          "docs": [
+            "The Metaplex Core asset (ANT) being escrowed. Constrained to the",
+            "mpl-core program so callers can't pass a system account or a",
+            "different program's NFT. Inner-data discriminator is checked in",
+            "the handler via `read_mpl_core_owner`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Caller — must be the current ANT owner. Pays rent + tx fee + signs",
+            "the mpl-core TransferV1 CPI."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mpl_core_program",
+          "docs": [
+            "Metaplex Core program. Pinned to MPL_CORE_PROGRAM_ID so the CPI",
+            "can't be redirected."
+          ],
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "recipient_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "recipient_pubkey",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "deposit_tokens",
+      "docs": [
+        "Deposit ARIO tokens into escrow for a designated Arweave or",
+        "Ethereum recipient. Tokens transfer from the depositor's ATA to",
+        "the escrow PDA's ATA."
+      ],
+      "discriminator": [
+        176,
+        83,
+        229,
+        18,
+        191,
+        143,
+        176,
+        150
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "New escrow PDA for this token deposit."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "depositor"
+              },
+              {
+                "kind": "arg",
+                "path": "asset_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "depositor_token_account",
+          "docs": [
+            "Depositor's ARIO token account (source of tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (destination). Must be pre-created",
+            "by the client (via createAssociatedTokenAccountIdempotent in the",
+            "same tx). Owner must be the escrow PDA."
+          ],
+          "writable": true
+        },
+        {
+          "name": "ario_mint",
+          "docs": [
+            "The ARIO SPL token mint."
+          ]
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Depositor — pays rent + tx fee + signs SPL transfer."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "asset_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "recipient_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "recipient_pubkey",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "deposit_vault",
+      "docs": [
+        "Deposit ARIO tokens into escrow as a time-locked vault for a",
+        "designated Arweave or Ethereum recipient."
+      ],
+      "discriminator": [
+        126,
+        224,
+        21,
+        255,
+        228,
+        53,
+        117,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "New escrow PDA for this vault deposit."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "depositor"
+              },
+              {
+                "kind": "arg",
+                "path": "asset_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "depositor_token_account",
+          "docs": [
+            "Depositor's ARIO token account (source of tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "Escrow PDA's ARIO token account (destination). Must be pre-created."
+          ],
+          "writable": true
+        },
+        {
+          "name": "ario_mint",
+          "docs": [
+            "The ARIO SPL token mint."
+          ]
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Depositor -- pays rent + tx fee + signs SPL transfer."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "asset_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "lock_duration_seconds",
+          "type": "i64"
+        },
+        {
+          "name": "revocable",
+          "type": "bool"
+        },
+        {
+          "name": "recipient_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "recipient_pubkey",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "update_recipient",
+      "docs": [
+        "Re-target the escrow at a different recipient identity. Rotates the",
+        "nonce so any in-flight claim sigs bound to the prior recipient are",
+        "invalidated. Only callable by `escrow.depositor`."
+      ],
+      "discriminator": [
+        55,
+        190,
+        61,
+        121,
+        131,
+        132,
+        8,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow being re-targeted. `has_one = depositor` enforces the",
+            "authority check and the `seeds`/`bump = escrow.bump` constraint",
+            "re-derives the PDA against the cached bump (cheaper than",
+            "`find_program_address`)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119,
+                  95,
+                  97,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "escrow.ant_mint",
+                "account": "EscrowAnt"
+              }
+            ]
+          }
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Depositor — sole authority for `update_recipient`."
+          ],
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "new_pubkey",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "update_token_recipient",
+      "docs": [
+        "Re-target a token/vault escrow at a different recipient identity.",
+        "Rotates the nonce. Only callable by `escrow.depositor`."
+      ],
+      "discriminator": [
+        108,
+        42,
+        194,
+        136,
+        50,
+        200,
+        111,
+        150
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow being re-targeted. `has_one = depositor` enforces the",
+            "authority check; seeds/bump re-derive the PDA."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Depositor -- sole authority for `update_token_recipient`."
+          ],
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "new_pubkey",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "update_vault_recipient",
+      "docs": [
+        "Re-target a vault escrow at a different recipient identity."
+      ],
+      "discriminator": [
+        176,
+        79,
+        34,
+        155,
+        221,
+        244,
+        77,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "escrow",
+          "docs": [
+            "Escrow being re-targeted. `has_one = depositor` enforces the",
+            "authority check; seeds/bump re-derive the PDA."
+          ],
+          "writable": true
+        },
+        {
+          "name": "depositor",
+          "docs": [
+            "Depositor -- sole authority for `update_vault_recipient`."
+          ],
+          "signer": true,
+          "relations": [
+            "escrow"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_protocol",
+          "type": "u8"
+        },
+        {
+          "name": "new_pubkey",
+          "type": "bytes"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EscrowAnt",
+      "discriminator": [
+        26,
+        144,
+        124,
+        209,
+        185,
+        226,
+        203,
+        216
+      ]
+    },
+    {
+      "name": "EscrowToken",
+      "discriminator": [
+        37,
+        26,
+        45,
+        137,
+        76,
+        143,
+        90,
+        246
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidRecipientProtocol",
+      "msg": "Invalid recipient protocol (must be 0=Arweave or 1=Ethereum)"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidRecipientPubkeyLength",
+      "msg": "Invalid recipient pubkey length for the given protocol"
+    },
+    {
+      "code": 6002,
+      "name": "NotDepositor",
+      "msg": "Unauthorized: only the original depositor can perform this action"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidAsset",
+      "msg": "Invalid Metaplex Core asset (wrong owner program or asset discriminator)"
+    },
+    {
+      "code": 6004,
+      "name": "NotAntOwner",
+      "msg": "Unauthorized: caller is not the current ANT owner"
+    },
+    {
+      "code": 6005,
+      "name": "AntMintMismatch",
+      "msg": "Escrow PDA does not correspond to the supplied ANT mint"
+    },
+    {
+      "code": 6006,
+      "name": "NonceMismatch",
+      "msg": "Claim signature nonce does not match the escrow's current nonce"
+    },
+    {
+      "code": 6007,
+      "name": "ProtocolMismatch",
+      "msg": "Wrong claim path: this escrow targets a different protocol"
+    },
+    {
+      "code": 6008,
+      "name": "SignatureVerificationFailed",
+      "msg": "Signature verification failed"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidSaltLength",
+      "msg": "Invalid PSS salt length (must be ≤ 32 bytes)"
+    },
+    {
+      "code": 6010,
+      "name": "EthereumAddressMismatch",
+      "msg": "Recovered Ethereum address does not match recipient"
+    },
+    {
+      "code": 6011,
+      "name": "EcdsaHighS",
+      "msg": "ECDSA signature is malleable (high-S form rejected per EIP-2)"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidRecoveryId",
+      "msg": "Invalid ECDSA recovery id"
+    },
+    {
+      "code": 6013,
+      "name": "AmountZero",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6014,
+      "name": "VaultDurationTooShort",
+      "msg": "Vault lock duration below minimum"
+    },
+    {
+      "code": 6015,
+      "name": "VaultAmountBelowMinimum",
+      "msg": "Vault amount below minimum (100 ARIO)"
+    },
+    {
+      "code": 6016,
+      "name": "AssetTypeMismatch",
+      "msg": "Asset type mismatch"
+    },
+    {
+      "code": 6017,
+      "name": "MintMismatch",
+      "msg": "ARIO mint mismatch"
+    },
+    {
+      "code": 6018,
+      "name": "TokenAccountOwnerMismatch",
+      "msg": "Token account owner does not match the expected account"
+    },
+    {
+      "code": 6019,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6020,
+      "name": "MissingVaultedTransferInstruction",
+      "msg": "Missing or invalid vaulted_transfer instruction in transaction"
+    }
+  ],
+  "types": [
+    {
+      "name": "EscrowAnt",
+      "docs": [
+        "Per-escrow custody record. One PDA per escrowed ANT, derived from",
+        "`[ESCROW_ANT_SEED, ant_mint]`. Layout matches `docs/ANT_ESCROW_DESIGN.md`",
+        "§ Account model byte-for-byte (653 bytes payload + 8-byte Anchor",
+        "discriminator = 661 bytes on-chain).",
+        "",
+        "The `_reserved` tail and the explicit `version` byte are forward-compat",
+        "hooks so additive field changes can ship without a `realloc` migration."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "docs": [
+              "Schema version. v1 = `ESCROW_VERSION_V1`."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "Cached PDA bump. Faster than `find_program_address` on signer-seed",
+              "reconstruction during transfer CPIs."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "depositor",
+            "docs": [
+              "Wallet that called `deposit_ant`. Sole authority for",
+              "`cancel_deposit` and `update_recipient`; receives rent on close."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "ant_mint",
+            "docs": [
+              "Metaplex Core asset (ANT) mint pubkey held in custody.",
+              "Denormalized from PDA seeds for defense-in-depth account validation."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient_protocol",
+            "docs": [
+              "`0` = Arweave RSA-PSS-4096, `1` = Ethereum ECDSA secp256k1."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "recipient_pubkey_len",
+            "docs": [
+              "Active length (in bytes) of the recipient pubkey blob below.",
+              "Constrained at write time to {512, 20} per protocol."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "recipient_pubkey",
+            "docs": [
+              "Recipient identity bytes, zero-padded to `RECIPIENT_PUBKEY_MAX_LEN`.",
+              "- Arweave: 512-byte big-endian RSA modulus (the JWK `n` field).",
+              "- Ethereum: 20-byte Keccak address followed by 492 zero bytes."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                512
+              ]
+            }
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Anti-replay nonce. Initial value:",
+              "`sha256(deposit_slot_le_bytes || ant_mint || depositor)`",
+              "Rotated by `update_recipient` to invalidate any in-flight claim sigs."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "deposit_slot",
+            "docs": [
+              "Slot at deposit. Informational only — used as a salt for nonce",
+              "derivation but not consulted on claim. Useful for indexers and",
+              "support tooling."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved bytes. Hold zero until repurposed in a future schema bump."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowToken",
+      "docs": [
+        "Escrow account for ARIO tokens (liquid) or vaulted positions (time-locked).",
+        "",
+        "The `asset_type` field discriminates between a liquid token transfer",
+        "(claim sends tokens to claimant's ATA) and a vaulted transfer (claim",
+        "CPIs into `ario-core::vaulted_transfer` to create a time-locked vault",
+        "for the claimant with the remaining lock duration).",
+        "",
+        "PDA seeds:",
+        "Token: [\"escrow_token\", depositor, asset_id]",
+        "Vault: [\"escrow_vault\", depositor, asset_id]",
+        "",
+        "`asset_id` is a client-supplied 32-byte identifier. For the migration",
+        "batch, it's deterministic: `sha256(\"token-escrow:\" + arweave_addr)` or",
+        "`sha256(\"vault-escrow:\" + arweave_addr + \":\" + vault_id)`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "version",
+            "docs": [
+              "Schema version. v1 = 1."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "depositor",
+            "docs": [
+              "Wallet that deposited the tokens."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_type",
+            "docs": [
+              "`ASSET_TYPE_TOKEN` (1) or `ASSET_TYPE_VAULT` (2)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "docs": [
+              "Amount of ARIO (mARIO) held in escrow."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "ario_mint",
+            "docs": [
+              "The ARIO SPL token mint. Validated at deposit time."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_id",
+            "docs": [
+              "Client-supplied unique identifier for this escrow. Part of PDA seeds."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "recipient_protocol",
+            "docs": [
+              "`0` = Arweave RSA-PSS-4096, `1` = Ethereum ECDSA secp256k1."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "recipient_pubkey_len",
+            "docs": [
+              "Active length of the recipient pubkey blob."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "recipient_pubkey",
+            "docs": [
+              "Recipient identity bytes, zero-padded to 512."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                512
+              ]
+            }
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Anti-replay nonce."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "deposit_slot",
+            "docs": [
+              "Slot at deposit."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vault_end_timestamp",
+            "docs": [
+              "For vault escrows: the unix timestamp at which the vault unlocks.",
+              "Zero for liquid token escrows."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "vault_revocable",
+            "docs": [
+              "For vault escrows: whether the vault is revocable.",
+              "False for liquid token escrows."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "_reserved",
+            "docs": [
+              "Reserved for future fields."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

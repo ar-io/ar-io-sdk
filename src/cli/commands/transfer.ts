@@ -43,7 +43,7 @@ import {
 export async function transferCLICommand(options: TransferCLIOptions) {
   const { target, arioQuantity } =
     requiredTargetAndQuantityFromOptions(options);
-  const { ario, signerAddress } = writeARIOFromOptions(options);
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
 
   if (!options.skipConfirmation) {
     await assertEnoughMARIOBalance({
@@ -82,7 +82,7 @@ export async function vaultedTransferCLICommand(
 ): Promise<JsonSerializable> {
   const mARIOQuantity = requiredMARIOFromOptions(o, 'quantity');
   const recipient = requiredStringFromOptions(o, 'recipient');
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const lockLengthMs = requiredPositiveIntegerFromOptions(o, 'lockLengthMs');
   assertLockLengthInRange(lockLengthMs);
 
@@ -123,7 +123,7 @@ export async function vaultedTransferCLICommand(
 export async function revokeVaultCLICommand(
   o: CLIWriteOptionsFromAoParams<AoRevokeVaultParams>,
 ): Promise<JsonSerializable> {
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const vaultId = requiredStringFromOptions(o, 'vaultId');
   const recipient = requiredStringFromOptions(o, 'recipient');
 
@@ -161,7 +161,7 @@ export async function createVaultCLICommand(
   o: CLIWriteOptionsFromAoParams<AoCreateVaultParams>,
 ): Promise<JsonSerializable> {
   const mARIOQuantity = requiredMARIOFromOptions(o, 'quantity');
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const lockLengthMs = requiredPositiveIntegerFromOptions(o, 'lockLengthMs');
   assertLockLengthInRange(lockLengthMs);
 
@@ -200,7 +200,7 @@ export async function createVaultCLICommand(
 export async function extendVaultCLICommand(
   o: CLIWriteOptionsFromAoParams<AoExtendVaultParams>,
 ) {
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const vaultId = requiredStringFromOptions(o, 'vaultId');
   const extendLengthMs = requiredPositiveIntegerFromOptions(
     o,
@@ -242,7 +242,7 @@ export async function increaseVaultCLICommand(
   o: CLIWriteOptionsFromAoParams<AoIncreaseVaultParams>,
 ) {
   const mARIOQuantity = requiredMARIOFromOptions(o, 'quantity');
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const vaultId = requiredStringFromOptions(o, 'vaultId');
 
   if (!o.skipConfirmation) {

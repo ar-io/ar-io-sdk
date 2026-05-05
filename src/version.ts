@@ -15,4 +15,4 @@
  */
 
 // AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '3.24.0-solana.1';
+export const version = '4.0.0-solana.0';

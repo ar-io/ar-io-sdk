@@ -532,6 +532,7 @@ export function initANTStateForAddress({
       ['@']: {
         transactionId: targetId ?? defaultTargetManifestId.toString(),
         ttlSeconds,
+        targetProtocol: 0,
       },
     },
     logo,

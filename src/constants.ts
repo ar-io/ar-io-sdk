@@ -15,6 +15,22 @@
  */
 export const ARWEAVE_TX_REGEX = new RegExp('^[a-zA-Z0-9_-]{43}$');
 
+/** ar:// protocol prefix for location-independent Arweave references */
+export const AR_IO_PROTOCOL = 'ar://';
+
+/** Default AR.IO logo Arweave TX ID (32x32 PNG) */
+export const ARIO_LOGO_TX_ID = 'WMLnh8pQL-UIXZMpdU2NUIriHfcFB5Bc49V8jTHjsZc';
+
+/**
+ * Construct an ar:// URI from an Arweave TX ID or ArNS name.
+ *
+ * - ar://{txId} — raw 43-char TX ID, resolved by wallets via arweave.net gateway
+ * - ar://{arnsName} — ArNS name, resolved by AR.IO gateways and Wayfinder SDK
+ */
+export function arweaveUri(txIdOrName: string): string {
+  return `${AR_IO_PROTOCOL}${txIdOrName}`;
+}
+
 /** FQDN regex that matches the one used in the ArNS contract. */
 export const FQDN_REGEX = new RegExp(
   '^(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{1,63}$',
@@ -49,5 +65,3 @@ export const ANT_LUA_ID = 'sOW9Sdm1yoPRrzerC5iu1nsupp4e6I-HnJyYVHzvzQo';
 export const AO_AUTHORITY = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY';
 export const DEFAULT_SCHEDULER_ID =
   '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';
-
-export const DEFAULT_CU_URL = 'https://cu.ardrive.io';
