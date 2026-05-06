@@ -1,5 +1,5 @@
 {
-  "address": "ARioAntProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "address": "8ZMuXhiK7DorjPUg8RB1rzu7CvsABMk38WDJRbM62y2C",
   "metadata": {
     "name": "ario_ant",
     "version": "0.1.0",
@@ -285,6 +285,74 @@
           "type": "pubkey"
         }
       ]
+    },
+    {
+      "name": "clear_attributes",
+      "docs": [
+        "Clear ArNS-related traits from the asset's Attributes plugin while",
+        "preserving the `ANT Program` routing trait.",
+        "",
+        "The complement of `sync_attributes`: where sync writes",
+        "`ArNS Name`/`Type`/`Undername Limit` from a live ArnsRecord, clear",
+        "removes them — useful when the canonical record is gone (released",
+        "name) or no longer points at this asset (after `reassign_name`).",
+        "Both scenarios produce stale traits in the plugin that the asset",
+        "owner otherwise has no AR.IO-program path to remove (sync would",
+        "fail the post-state `record.ant == asset.key()` check).",
+        "",
+        "Authority must currently hold the asset (matching sync's authority",
+        "rule — Owner-authority Attributes plugin). Strictly additive: no",
+        "existing flow breaks. See ADR-016 / BD-100 for the architectural",
+        "context this closes."
+      ],
+      "discriminator": [
+        151,
+        84,
+        184,
+        99,
+        159,
+        238,
+        245,
+        73
+      ],
+      "accounts": [
+        {
+          "name": "asset",
+          "docs": [
+            "The Metaplex Core asset whose Attributes plugin will be reset."
+          ],
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "docs": [
+            "Pays for any rent the inner CPI may charge. Often the same key as",
+            "`authority` but kept separate so a sponsor can pay."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "authority",
+          "docs": [
+            "Must equal the asset's current MPL Core owner — Owner-authority",
+            "plugin requires the holder to sign UpdatePluginV1."
+          ],
+          "signer": true
+        },
+        {
+          "name": "mpl_core_program",
+          "docs": [
+            "Metaplex Core program — pinned to the canonical ID; required for",
+            "the inner CPI."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "close_acl_config",
@@ -797,38 +865,38 @@
               {
                 "kind": "const",
                 "value": [
-                  140,
-                  14,
+                  112,
+                  76,
+                  8,
+                  81,
+                  247,
+                  181,
+                  203,
+                  106,
+                  37,
+                  57,
+                  249,
+                  0,
+                  181,
                   97,
-                  114,
-                  216,
-                  232,
-                  163,
-                  211,
-                  158,
-                  70,
-                  241,
-                  196,
-                  1,
-                  194,
-                  218,
-                  133,
-                  47,
-                  129,
-                  92,
-                  201,
+                  2,
+                  228,
                   186,
-                  239,
-                  248,
-                  77,
-                  58,
-                  43,
-                  86,
-                  74,
-                  107,
-                  202,
-                  26,
-                  242
+                  15,
+                  32,
+                  187,
+                  89,
+                  118,
+                  47,
+                  184,
+                  171,
+                  183,
+                  153,
+                  139,
+                  254,
+                  223,
+                  145,
+                  157
                 ]
               }
             ],
@@ -3137,6 +3205,203 @@
       ]
     }
   ],
+  "events": [
+    {
+      "name": "AclEntryAddedEvent",
+      "discriminator": [
+        228,
+        106,
+        189,
+        52,
+        242,
+        250,
+        201,
+        207
+      ]
+    },
+    {
+      "name": "AclEntryRemovedEvent",
+      "discriminator": [
+        209,
+        241,
+        89,
+        130,
+        231,
+        176,
+        194,
+        205
+      ]
+    },
+    {
+      "name": "AntMetadataUpdatedEvent",
+      "discriminator": [
+        25,
+        131,
+        15,
+        221,
+        37,
+        69,
+        161,
+        39
+      ]
+    },
+    {
+      "name": "AntReconciledEvent",
+      "discriminator": [
+        110,
+        18,
+        20,
+        124,
+        108,
+        87,
+        45,
+        255
+      ]
+    },
+    {
+      "name": "AntTransferredEvent",
+      "discriminator": [
+        39,
+        121,
+        216,
+        35,
+        28,
+        193,
+        32,
+        0
+      ]
+    },
+    {
+      "name": "AttributesClearedEvent",
+      "discriminator": [
+        142,
+        201,
+        211,
+        18,
+        10,
+        119,
+        231,
+        254
+      ]
+    },
+    {
+      "name": "AttributesSyncedEvent",
+      "discriminator": [
+        202,
+        245,
+        92,
+        186,
+        216,
+        44,
+        252,
+        127
+      ]
+    },
+    {
+      "name": "ControllerAddedEvent",
+      "discriminator": [
+        182,
+        145,
+        162,
+        62,
+        24,
+        44,
+        90,
+        232
+      ]
+    },
+    {
+      "name": "ControllerRemovedEvent",
+      "discriminator": [
+        61,
+        210,
+        53,
+        189,
+        120,
+        139,
+        215,
+        201
+      ]
+    },
+    {
+      "name": "RecordMetadataPrunedEvent",
+      "discriminator": [
+        166,
+        25,
+        253,
+        184,
+        153,
+        144,
+        111,
+        87
+      ]
+    },
+    {
+      "name": "RecordMetadataRemovedEvent",
+      "discriminator": [
+        70,
+        54,
+        101,
+        100,
+        60,
+        248,
+        35,
+        43
+      ]
+    },
+    {
+      "name": "RecordMetadataUpdatedEvent",
+      "discriminator": [
+        68,
+        199,
+        0,
+        3,
+        46,
+        22,
+        209,
+        52
+      ]
+    },
+    {
+      "name": "RecordRemovedEvent",
+      "discriminator": [
+        184,
+        68,
+        235,
+        148,
+        11,
+        106,
+        172,
+        3
+      ]
+    },
+    {
+      "name": "RecordSetEvent",
+      "discriminator": [
+        69,
+        141,
+        234,
+        219,
+        156,
+        207,
+        173,
+        193
+      ]
+    },
+    {
+      "name": "RecordTransferredEvent",
+      "discriminator": [
+        111,
+        199,
+        54,
+        84,
+        95,
+        251,
+        113,
+        251
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -3488,6 +3753,69 @@
       }
     },
     {
+      "name": "AclEntryAddedEvent",
+      "docs": [
+        "Emitted when an ACL entry is added (Owner via `record_acl_owner`,",
+        "Controller via `record_acl_controller`). The `role` discriminator",
+        "(`ACL_ROLE_*`) distinguishes the two entry types."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "address",
+            "type": "pubkey"
+          },
+          {
+            "name": "role",
+            "docs": [
+              "0 = Owner, 1 = Controller"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AclEntryRemovedEvent",
+      "docs": [
+        "Emitted when an ACL entry is removed (Owner via `remove_acl_owner`,",
+        "Controller via `remove_acl_controller`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "address",
+            "type": "pubkey"
+          },
+          {
+            "name": "role",
+            "docs": [
+              "0 = Owner, 1 = Controller"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "AclPage",
       "docs": [
         "One page of ACL entries for a user (ADR-012).",
@@ -3664,6 +3992,44 @@
       }
     },
     {
+      "name": "AntMetadataUpdatedEvent",
+      "docs": [
+        "Emitted by every `set_*` ANT-config metadata setter",
+        "(`set_name`, `set_ticker`, `set_description`, `set_keywords`,",
+        "`set_logo`). The `field` discriminator (see `ANT_METADATA_FIELD_*`)",
+        "tells consumers which field changed without bloating the IDL with a",
+        "String value field. `new_value` carries the new string."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "field",
+            "docs": [
+              "0 = name, 1 = ticker, 2 = description, 3 = keywords, 4 = logo"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "new_value",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "AntMigrationConfig",
       "docs": [
         "Migration configuration for the ANT program.",
@@ -3700,6 +4066,43 @@
               "PDA bump"
             ],
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AntReconciledEvent",
+      "docs": [
+        "Emitted by `reconcile` when ownership has actually changed since the",
+        "last reconcile. No-op reconciles (the asset hasn't moved) do NOT",
+        "emit — keeps the indexer activity feed clean. `controllers_cleared`",
+        "is `true` whenever `reconcile` ran and the controller list was",
+        "cleared (always true on a real ownership change in the current",
+        "implementation; reserved as a discriminator in case future versions",
+        "allow controller retention across transfers)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "controllers_cleared",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -3879,6 +4282,150 @@
       }
     },
     {
+      "name": "AntTransferredEvent",
+      "docs": [
+        "Emitted by the wrapped `transfer` instruction (MPL Core",
+        "`transferV1` CPI + reconcile + ACL swap). This is the asset-side",
+        "transfer event marketplaces / indexers subscribe to for ANT NFT",
+        "movement; it is NOT emitted on direct MPL Core transfers that",
+        "bypass our wrapper (see `reconcile` for the fallback path)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "from",
+            "type": "pubkey"
+          },
+          {
+            "name": "to",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AttributesClearedEvent",
+      "docs": [
+        "Emitted by `clear_attributes` after a successful UpdatePluginV1 CPI",
+        "that resets the asset's ArNS-related traits. The `ANT Program`",
+        "routing trait is preserved across the clear (BD-100); indexers use",
+        "this event to invalidate cached trait state when the on-chain",
+        "ArnsRecord no longer matches the asset (post-release / post-reassign).",
+        "`kept_program` is true if the asset had an `ANT Program` trait that",
+        "survived the clear, false if the post-clear attribute list is empty."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "kept_program",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AttributesSyncedEvent",
+      "docs": [
+        "Emitted by `sync_attributes` after a successful UpdatePluginV1 CPI.",
+        "Permissionless cross-program sync between ario-arns and the MPL",
+        "Core Attributes plugin — indexers use this to know when an ANT's",
+        "on-chain traits have been refreshed without polling the asset."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ControllerAddedEvent",
+      "docs": [
+        "Emitted when a controller is added via `add_controller`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "controller",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ControllerRemovedEvent",
+      "docs": [
+        "Emitted when a controller is removed via `remove_controller`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "controller",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "InitializeAntMigrationParams",
       "type": {
         "kind": "struct",
@@ -3953,6 +4500,207 @@
             "type": {
               "vec": "string"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordMetadataPrunedEvent",
+      "docs": [
+        "Emitted by the permissionless `close_orphaned_record_metadata`",
+        "cleanup. `pruner` is the (possibly third-party) caller that",
+        "reclaimed the rent."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "pruner",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordMetadataRemovedEvent",
+      "docs": [
+        "Emitted by `remove_record_metadata` when the metadata PDA is",
+        "closed and rent flows to the caller."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordMetadataUpdatedEvent",
+      "docs": [
+        "Emitted by `set_record_metadata`. Record metadata is the optional",
+        "per-record sibling PDA (`AntRecordMetadata`) carrying display",
+        "name / logo / description / keywords. `field` is reserved for",
+        "future granular setters; `set_record_metadata` writes every field",
+        "in one ix and emits with `field = RECORD_METADATA_FIELD_ALL`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "field",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordRemovedEvent",
+      "docs": [
+        "Emitted when a record is deleted via `remove_record`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordSetEvent",
+      "docs": [
+        "Emitted when a record is created or updated via `set_record`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "target",
+            "type": "string"
+          },
+          {
+            "name": "target_protocol",
+            "type": "u8"
+          },
+          {
+            "name": "ttl_seconds",
+            "type": "u32"
+          },
+          {
+            "name": "priority",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordTransferredEvent",
+      "docs": [
+        "Emitted when a record's `owner` is rotated via `transfer_record`.",
+        "`previous_owner` is `None` when the record had no prior assigned",
+        "owner (the typical case for first-time owner assignment)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "undername",
+            "type": "string"
+          },
+          {
+            "name": "previous_owner",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "new_owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

@@ -9,6 +9,6 @@
 import { getBytesEncoder, getProgramDerivedAddress, type Address, type ProgramDerivedAddress } from '@solana/kit';
 
 export async function findDemandFactorPda(config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioArnsProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioArnsProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '2HgSCKYjcapJPdHRKqkLrGXm7kvBmCP45ZyhWEm87oM1' as Address<'2HgSCKYjcapJPdHRKqkLrGXm7kvBmCP45ZyhWEm87oM1'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([100, 101, 109, 97, 110, 100, 95, 102, 97, 99, 116, 111, 114]))]});
 }

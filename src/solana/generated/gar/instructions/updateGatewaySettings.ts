@@ -19,16 +19,16 @@ export function getUpdateGatewaySettingsDiscriminatorBytes() { return fixEncoder
 export type UpdateGatewaySettingsInstruction<TProgram extends string = typeof ARIO_GAR_PROGRAM_ADDRESS, TAccountSettings extends string | AccountMeta<string> = string, TAccountGateway extends string | AccountMeta<string> = string, TAccountOperator extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountSettings extends string ? ReadonlyAccount<TAccountSettings> : TAccountSettings, TAccountGateway extends string ? WritableAccount<TAccountGateway> : TAccountGateway, TAccountOperator extends string ? ReadonlySignerAccount<TAccountOperator> & AccountSignerMeta<TAccountOperator> : TAccountOperator, ...TRemainingAccounts]>;
 
-export type UpdateGatewaySettingsInstructionData = { discriminator: ReadonlyUint8Array; label: Option<string>; fqdn: Option<string>; port: Option<number>; protocol: Option<Protocol>; properties: Option<string>; note: Option<string>; autoStake: Option<boolean>; allowDelegatedStaking: Option<boolean>; delegateRewardShareRatio: Option<number>; minDelegateStake: Option<bigint>;  };
+export type UpdateGatewaySettingsInstructionData = { discriminator: ReadonlyUint8Array; label: Option<string>; fqdn: Option<string>; port: Option<number>; protocol: Option<Protocol>; properties: Option<string>; note: Option<string>; allowDelegatedStaking: Option<boolean>; delegateRewardShareRatio: Option<number>; minDelegateStake: Option<bigint>;  };
 
-export type UpdateGatewaySettingsInstructionDataArgs = { label: OptionOrNullable<string>; fqdn: OptionOrNullable<string>; port: OptionOrNullable<number>; protocol: OptionOrNullable<ProtocolArgs>; properties: OptionOrNullable<string>; note: OptionOrNullable<string>; autoStake: OptionOrNullable<boolean>; allowDelegatedStaking: OptionOrNullable<boolean>; delegateRewardShareRatio: OptionOrNullable<number>; minDelegateStake: OptionOrNullable<number | bigint>;  };
+export type UpdateGatewaySettingsInstructionDataArgs = { label: OptionOrNullable<string>; fqdn: OptionOrNullable<string>; port: OptionOrNullable<number>; protocol: OptionOrNullable<ProtocolArgs>; properties: OptionOrNullable<string>; note: OptionOrNullable<string>; allowDelegatedStaking: OptionOrNullable<boolean>; delegateRewardShareRatio: OptionOrNullable<number>; minDelegateStake: OptionOrNullable<number | bigint>;  };
 
 export function getUpdateGatewaySettingsInstructionDataEncoder(): Encoder<UpdateGatewaySettingsInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['label', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['fqdn', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['port', getOptionEncoder(getU16Encoder())], ['protocol', getOptionEncoder(getProtocolEncoder())], ['properties', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['note', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['autoStake', getOptionEncoder(getBooleanEncoder())], ['allowDelegatedStaking', getOptionEncoder(getBooleanEncoder())], ['delegateRewardShareRatio', getOptionEncoder(getU8Encoder())], ['minDelegateStake', getOptionEncoder(getU64Encoder())]]), (value) => ({ ...value, discriminator: UPDATE_GATEWAY_SETTINGS_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['label', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['fqdn', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['port', getOptionEncoder(getU16Encoder())], ['protocol', getOptionEncoder(getProtocolEncoder())], ['properties', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['note', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['allowDelegatedStaking', getOptionEncoder(getBooleanEncoder())], ['delegateRewardShareRatio', getOptionEncoder(getU8Encoder())], ['minDelegateStake', getOptionEncoder(getU64Encoder())]]), (value) => ({ ...value, discriminator: UPDATE_GATEWAY_SETTINGS_DISCRIMINATOR }));
 }
 
 export function getUpdateGatewaySettingsInstructionDataDecoder(): Decoder<UpdateGatewaySettingsInstructionData> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['label', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['fqdn', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['port', getOptionDecoder(getU16Decoder())], ['protocol', getOptionDecoder(getProtocolDecoder())], ['properties', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['note', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['autoStake', getOptionDecoder(getBooleanDecoder())], ['allowDelegatedStaking', getOptionDecoder(getBooleanDecoder())], ['delegateRewardShareRatio', getOptionDecoder(getU8Decoder())], ['minDelegateStake', getOptionDecoder(getU64Decoder())]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['label', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['fqdn', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['port', getOptionDecoder(getU16Decoder())], ['protocol', getOptionDecoder(getProtocolDecoder())], ['properties', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['note', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['allowDelegatedStaking', getOptionDecoder(getBooleanDecoder())], ['delegateRewardShareRatio', getOptionDecoder(getU8Decoder())], ['minDelegateStake', getOptionDecoder(getU64Decoder())]]);
 }
 
 export function getUpdateGatewaySettingsInstructionDataCodec(): Codec<UpdateGatewaySettingsInstructionDataArgs, UpdateGatewaySettingsInstructionData> {
@@ -45,7 +45,6 @@ port: UpdateGatewaySettingsInstructionDataArgs["port"];
 protocol: UpdateGatewaySettingsInstructionDataArgs["protocol"];
 properties: UpdateGatewaySettingsInstructionDataArgs["properties"];
 note: UpdateGatewaySettingsInstructionDataArgs["note"];
-autoStake: UpdateGatewaySettingsInstructionDataArgs["autoStake"];
 allowDelegatedStaking: UpdateGatewaySettingsInstructionDataArgs["allowDelegatedStaking"];
 delegateRewardShareRatio: UpdateGatewaySettingsInstructionDataArgs["delegateRewardShareRatio"];
 minDelegateStake: UpdateGatewaySettingsInstructionDataArgs["minDelegateStake"];
@@ -86,7 +85,6 @@ port: UpdateGatewaySettingsInstructionDataArgs["port"];
 protocol: UpdateGatewaySettingsInstructionDataArgs["protocol"];
 properties: UpdateGatewaySettingsInstructionDataArgs["properties"];
 note: UpdateGatewaySettingsInstructionDataArgs["note"];
-autoStake: UpdateGatewaySettingsInstructionDataArgs["autoStake"];
 allowDelegatedStaking: UpdateGatewaySettingsInstructionDataArgs["allowDelegatedStaking"];
 delegateRewardShareRatio: UpdateGatewaySettingsInstructionDataArgs["delegateRewardShareRatio"];
 minDelegateStake: UpdateGatewaySettingsInstructionDataArgs["minDelegateStake"];

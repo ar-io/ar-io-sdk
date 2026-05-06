@@ -1,5 +1,5 @@
 {
-  "address": "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "address": "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR",
   "metadata": {
     "name": "ario_gar",
     "version": "0.1.0",
@@ -23,6 +23,75 @@
     "- Reward distribution (F27-F29)"
   ],
   "instructions": [
+    {
+      "name": "admin_repair_settings",
+      "docs": [
+        "Admin recovery — repair `GatewaySettings.mint` /",
+        "`.stake_token_account` / `.protocol_token_account` for clusters",
+        "where genesis was partially-initialized. See",
+        "`instructions::initialize::admin_repair_settings` for the",
+        "motivation comment + the matching `ario_core::admin_repair_config`",
+        "for the cross-program companion. Pre-cutover only."
+      ],
+      "discriminator": [
+        127,
+        4,
+        196,
+        80,
+        146,
+        13,
+        173,
+        120
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "settings"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "new_stake_token_account",
+          "type": "pubkey"
+        },
+        {
+          "name": "new_protocol_token_account",
+          "type": "pubkey"
+        }
+      ]
+    },
     {
       "name": "allow_delegate",
       "docs": [
@@ -2639,38 +2708,38 @@
               {
                 "kind": "const",
                 "value": [
-                  2,
-                  106,
-                  45,
-                  211,
-                  160,
-                  219,
-                  51,
-                  227,
-                  115,
-                  29,
-                  120,
-                  221,
-                  28,
-                  147,
-                  66,
-                  196,
-                  169,
-                  36,
-                  252,
-                  189,
-                  89,
-                  4,
-                  140,
-                  48,
-                  224,
-                  220,
-                  136,
-                  246,
-                  107,
-                  202,
+                  137,
+                  87,
+                  174,
+                  25,
+                  112,
+                  79,
                   26,
-                  242
+                  27,
+                  128,
+                  15,
+                  175,
+                  195,
+                  93,
+                  17,
+                  128,
+                  213,
+                  123,
+                  13,
+                  136,
+                  224,
+                  84,
+                  58,
+                  131,
+                  146,
+                  58,
+                  130,
+                  194,
+                  218,
+                  242,
+                  217,
+                  232,
+                  174
                 ]
               }
             ],
@@ -2790,38 +2859,38 @@
               {
                 "kind": "const",
                 "value": [
-                  2,
-                  106,
-                  45,
-                  211,
-                  160,
-                  219,
-                  51,
-                  227,
-                  115,
-                  29,
-                  120,
-                  221,
-                  28,
-                  147,
-                  66,
-                  196,
-                  169,
-                  36,
-                  252,
-                  189,
-                  89,
-                  4,
-                  140,
-                  48,
-                  224,
-                  220,
-                  136,
-                  246,
-                  107,
-                  202,
+                  137,
+                  87,
+                  174,
+                  25,
+                  112,
+                  79,
                   26,
-                  242
+                  27,
+                  128,
+                  15,
+                  175,
+                  195,
+                  93,
+                  17,
+                  128,
+                  213,
+                  123,
+                  13,
+                  136,
+                  224,
+                  84,
+                  58,
+                  131,
+                  146,
+                  58,
+                  130,
+                  194,
+                  218,
+                  242,
+                  217,
+                  232,
+                  174
                 ]
               }
             ],
@@ -4269,6 +4338,84 @@
       ]
     },
     {
+      "name": "release_treasury_authority",
+      "docs": [
+        "Admin one-shot: transfer SPL `Owner` authority of `protocol_token_account`",
+        "from the GatewaySettings PDA to a target authority (typically",
+        "`ario-core`'s ArioConfig PDA, which signs SPL transfers in",
+        "`ario_core::import_balance`'s genesis-distribution branch).",
+        "",
+        "Mainnet creates the treasury under ArioConfig from the start; this",
+        "instruction is the migration path for already-deployed clusters.",
+        "See `instructions::initialize::release_treasury_authority` for the",
+        "motivation comment."
+      ],
+      "discriminator": [
+        31,
+        94,
+        38,
+        123,
+        107,
+        207,
+        248,
+        46
+      ],
+      "accounts": [
+        {
+          "name": "settings",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  114,
+                  95,
+                  115,
+                  101,
+                  116,
+                  116,
+                  105,
+                  110,
+                  103,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "settings"
+          ]
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "Treasury account whose SPL `Owner` authority is being transferred.",
+            "Must currently be owned by the GatewaySettings PDA (i.e. its",
+            "`owner` field equals `settings.key()`); the SetAuthority CPI",
+            "would fail otherwise but we surface the mismatch as a typed",
+            "error first."
+          ],
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_authority",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "save_observations",
       "docs": [
         "Submit observation report (F25)"
@@ -5007,6 +5154,58 @@
   ],
   "events": [
     {
+      "name": "AllowlistToggledEvent",
+      "discriminator": [
+        195,
+        162,
+        180,
+        126,
+        241,
+        12,
+        101,
+        68
+      ]
+    },
+    {
+      "name": "DelegateAllowlistedEvent",
+      "discriminator": [
+        196,
+        145,
+        14,
+        164,
+        216,
+        200,
+        59,
+        140
+      ]
+    },
+    {
+      "name": "DelegationClosedEvent",
+      "discriminator": [
+        135,
+        106,
+        33,
+        122,
+        137,
+        235,
+        202,
+        117
+      ]
+    },
+    {
+      "name": "DelegationDecreasedEvent",
+      "discriminator": [
+        186,
+        223,
+        36,
+        69,
+        170,
+        63,
+        123,
+        91
+      ]
+    },
+    {
       "name": "DelegationEvent",
       "discriminator": [
         218,
@@ -5017,6 +5216,19 @@
         67,
         225,
         105
+      ]
+    },
+    {
+      "name": "EpochClosedEvent",
+      "discriminator": [
+        251,
+        137,
+        115,
+        56,
+        29,
+        45,
+        19,
+        87
       ]
     },
     {
@@ -5059,6 +5271,32 @@
       ]
     },
     {
+      "name": "EpochWeightsTalliedEvent",
+      "discriminator": [
+        122,
+        18,
+        133,
+        134,
+        18,
+        202,
+        209,
+        240
+      ]
+    },
+    {
+      "name": "EpochsToggledEvent",
+      "discriminator": [
+        154,
+        186,
+        122,
+        128,
+        179,
+        122,
+        161,
+        76
+      ]
+    },
+    {
       "name": "FundingPlanAppliedEvent",
       "discriminator": [
         86,
@@ -5069,6 +5307,32 @@
         130,
         119,
         186
+      ]
+    },
+    {
+      "name": "GarMigrationFinalizedEvent",
+      "discriminator": [
+        209,
+        18,
+        165,
+        224,
+        248,
+        7,
+        167,
+        23
+      ]
+    },
+    {
+      "name": "GatewayFinalizedEvent",
+      "discriminator": [
+        148,
+        10,
+        244,
+        127,
+        146,
+        162,
+        210,
+        68
       ]
     },
     {
@@ -5098,6 +5362,32 @@
       ]
     },
     {
+      "name": "GatewayPrunedEvent",
+      "discriminator": [
+        203,
+        40,
+        160,
+        189,
+        86,
+        139,
+        186,
+        96
+      ]
+    },
+    {
+      "name": "GatewaySettingsUpdatedEvent",
+      "discriminator": [
+        171,
+        169,
+        8,
+        225,
+        141,
+        102,
+        51,
+        148
+      ]
+    },
+    {
       "name": "InstantWithdrawalEvent",
       "discriminator": [
         138,
@@ -5124,6 +5414,45 @@
       ]
     },
     {
+      "name": "ObserverAddressUpdatedEvent",
+      "discriminator": [
+        206,
+        127,
+        53,
+        239,
+        166,
+        80,
+        249,
+        202
+      ]
+    },
+    {
+      "name": "OperatorStakeIncreasedEvent",
+      "discriminator": [
+        198,
+        94,
+        192,
+        211,
+        15,
+        92,
+        64,
+        9
+      ]
+    },
+    {
+      "name": "RedelegationEvent",
+      "discriminator": [
+        64,
+        133,
+        89,
+        6,
+        101,
+        5,
+        120,
+        177
+      ]
+    },
+    {
       "name": "ResidueVaultCreatedEvent",
       "discriminator": [
         17,
@@ -5134,6 +5463,19 @@
         105,
         253,
         31
+      ]
+    },
+    {
+      "name": "RewardsCompoundedEvent",
+      "discriminator": [
+        13,
+        249,
+        30,
+        35,
+        73,
+        151,
+        186,
+        66
       ]
     },
     {
@@ -5649,6 +5991,59 @@
       }
     },
     {
+      "name": "AllowlistToggledEvent",
+      "docs": [
+        "Emitted by `set_allowlist_enabled` whenever the per-gateway allowlist",
+        "toggle flips."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DelegateAllowlistedEvent",
+      "docs": [
+        "Emitted by both `allow_delegate` (`allowed: true`) and",
+        "`disallow_delegate` (`allowed: false`) — a single event shape covers",
+        "both directions to keep the indexer schema flat."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "delegate",
+            "type": "pubkey"
+          },
+          {
+            "name": "allowed",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "Delegation",
       "docs": [
         "Stake delegation entry",
@@ -5688,6 +6083,64 @@
       }
     },
     {
+      "name": "DelegationClosedEvent",
+      "docs": [
+        "Emitted by `close_empty_delegation` when the delegation PDA is",
+        "closed and rent reclaimed."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "DelegationDecreasedEvent",
+      "docs": [
+        "Emitted by `decrease_delegate_stake`. Parallel to the existing",
+        "`DelegationEvent` (which fires on increase + claim flows). Indexers",
+        "can pair this with `WithdrawalCreatedEvent` for the post-state of",
+        "the locked tokens."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "decrease",
+            "type": "u64"
+          },
+          {
+            "name": "new_total",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "DelegationEvent",
       "type": {
         "kind": "struct",
@@ -5707,6 +6160,10 @@
           {
             "name": "total",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -5829,10 +6286,14 @@
           },
           {
             "name": "failure_counts",
+            "docs": [
+              "Sized to match `GatewayRegistry::MAX_GATEWAYS`. DEVNET-SHRUNK on the",
+              "`deploy/devnet` branch (30 vs production 3000) — see GatewayRegistry."
+            ],
             "type": {
               "array": [
                 "u16",
-                3000
+                30
               ]
             }
           },
@@ -5902,6 +6363,31 @@
       }
     },
     {
+      "name": "EpochClosedEvent",
+      "docs": [
+        "Emitted by `close_epoch` when the epoch PDA is closed. `rent_recovered`",
+        "is the lamport delta refunded to the caller (captured pre/post account",
+        "close). Marker for retention-window pruning in indexers."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "rent_recovered",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "EpochCreatedEvent",
       "type": {
         "kind": "struct",
@@ -5916,6 +6402,10 @@
           },
           {
             "name": "end_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
             "type": "i64"
           }
         ]
@@ -5937,6 +6427,10 @@
           {
             "name": "total_eligible_rewards",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -5961,6 +6455,10 @@
           {
             "name": "per_observer_reward",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -6128,6 +6626,61 @@
       }
     },
     {
+      "name": "EpochWeightsTalliedEvent",
+      "docs": [
+        "Emitted EXACTLY ONCE per epoch by `tally_weights`, on the final batch",
+        "(the call that transitions `weights_tallied` from 0 to 1). Mid-batch",
+        "calls are silent. Mirrors the `EpochDistributedEvent` summary pattern."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch_index",
+            "type": "u64"
+          },
+          {
+            "name": "gateway_count",
+            "type": "u32"
+          },
+          {
+            "name": "total_weight",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EpochsToggledEvent",
+      "docs": [
+        "Emitted by `set_epochs_enabled`. Note: enabling is instant (also",
+        "cancels any pending disable). Disabling is timelocked — this event",
+        "fires on the *intent* to toggle; the actual disable effect is",
+        "gated on `disable_at` inside `create_epoch`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "FundingPlanAppliedEvent",
       "docs": [
         "Summary marker for a multi-source funding plan. Per-gateway and per-source",
@@ -6153,6 +6706,10 @@
           {
             "name": "created_residue_vault",
             "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -6204,6 +6761,35 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GarMigrationFinalizedEvent",
+      "docs": [
+        "Emitted by `finalize_migration` when the GAR migration window is",
+        "permanently closed. `gateway_count` is the registry count at finalize",
+        "time; `slot` is the runtime slot for downstream timestamping."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway_count",
+            "type": "u32"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -6346,6 +6932,31 @@
       }
     },
     {
+      "name": "GatewayFinalizedEvent",
+      "docs": [
+        "Emitted by `finalize_gone` when a Leaving gateway's PDA + registry",
+        "slot are reclaimed. Pairs with `GatewayPrunedEvent` / `GatewayLeavingEvent`",
+        "to signal \"gateway gone, drop from caches.\""
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "pruner",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "GatewayJoinedEvent",
       "type": {
         "kind": "struct",
@@ -6377,6 +6988,35 @@
           {
             "name": "operator",
             "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewayPrunedEvent",
+      "docs": [
+        "Emitted by `prune_gateway` (permissionless slash for failed gateways).",
+        "`slashed_amount` is the protocol-confiscated portion (0 if the gateway",
+        "had less than `min_operator_stake`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "pruner",
+            "type": "pubkey"
+          },
+          {
+            "name": "slashed_amount",
+            "type": "u64"
           },
           {
             "name": "timestamp",
@@ -6421,6 +7061,16 @@
           },
           {
             "name": "gateways",
+            "docs": [
+              "DEVNET-SIZED on the `deploy/devnet` branch: 30 slots instead of the",
+              "production 3_000. This is a smoke-test devnet — full AO snapshot",
+              "import (664 gateways) is intentionally out-of-scope; that flow is",
+              "exercised on localnet. **Do not merge this change to `main`** —",
+              "mainnet must keep the full 3_000 capacity. Bumped from 10→30 to give",
+              "downstream-app developers headroom to `join-network` (10 imported",
+              "fixtures + 20 dev seats); see `resize_gateway_registry` for the",
+              "admin instruction that grows the existing on-chain account in place."
+            ],
             "type": {
               "array": [
                 {
@@ -6428,7 +7078,7 @@
                     "name": "GatewaySlot"
                   }
                 },
-                3000
+                30
               ]
             }
           }
@@ -6559,10 +7209,6 @@
             "type": "u16"
           },
           {
-            "name": "auto_stake",
-            "type": "bool"
-          },
-          {
             "name": "min_delegation_amount",
             "type": "u64"
           },
@@ -6573,6 +7219,32 @@
               "Matches Lua: allowedDelegatesLookup ~= nil"
             ],
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GatewaySettingsUpdatedEvent",
+      "docs": [
+        "Emitted by `update_gateway_settings` when one or more settings fields",
+        "were mutated. `fields_changed` is a u32 bitmask of `GATEWAY_SETTINGS_FIELD_*`",
+        "constants — kept compact (vs a Vec<String> of names) so events fit",
+        "comfortably under the per-tx log budget."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "fields_changed",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -6838,6 +7510,10 @@
           {
             "name": "payout",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -6882,10 +7558,6 @@
             "type": {
               "option": "string"
             }
-          },
-          {
-            "name": "auto_stake",
-            "type": "bool"
           },
           {
             "name": "allow_delegated_staking",
@@ -6996,6 +7668,34 @@
                 32
               ]
             }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ObserverAddressUpdatedEvent",
+      "docs": [
+        "Emitted by `update_observer_address` when the gateway's observer address",
+        "changes. Indexers can use this to refresh observer-keyed lookups."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_observer",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7022,6 +7722,34 @@
       }
     },
     {
+      "name": "OperatorStakeIncreasedEvent",
+      "docs": [
+        "Emitted by `increase_operator_stake`. Symmetric with",
+        "`WithdrawalCreatedEvent` (decrease side)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "added",
+            "type": "u64"
+          },
+          {
+            "name": "new_total",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "Protocol",
       "type": {
         "kind": "enum",
@@ -7031,6 +7759,43 @@
           },
           {
             "name": "Https"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RedelegationEvent",
+      "docs": [
+        "Emitted by `redelegate_stake`. `amount` is the gross amount moved;",
+        "`fee` is the protocol cut (0% on first redelegation, then 10/20/.../60%",
+        "per redelegation_count, with a 7-day reset)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "from_gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "to_gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7125,6 +7890,38 @@
           {
             "name": "available_at",
             "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardsCompoundedEvent",
+      "docs": [
+        "Emitted by `compound_delegation_rewards`. `compounded` is the pending",
+        "reward newly added to the delegation amount."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "delegator",
+            "type": "pubkey"
+          },
+          {
+            "name": "gateway",
+            "type": "pubkey"
+          },
+          {
+            "name": "compounded",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7149,6 +7946,10 @@
           {
             "name": "is_delegate",
             "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7196,12 +7997,6 @@
             "name": "note",
             "type": {
               "option": "string"
-            }
-          },
-          {
-            "name": "auto_stake",
-            "type": {
-              "option": "bool"
             }
           },
           {
@@ -7318,6 +8113,10 @@
           {
             "name": "is_delegate",
             "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7338,6 +8137,10 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7386,6 +8189,10 @@
           {
             "name": "available_at",
             "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -7410,6 +8217,10 @@
           {
             "name": "residue",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

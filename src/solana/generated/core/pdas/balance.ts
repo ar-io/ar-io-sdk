@@ -13,6 +13,6 @@ owner: Address;
 };
 
 export async function findBalancePda(seeds: BalanceSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig' as Address<'83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([98, 97, 108, 97, 110, 99, 101])), getAddressEncoder().encode(seeds.owner)]});
 }

@@ -15,7 +15,7 @@ export const INCREASE_UNDERNAME_LIMIT_FROM_OPERATOR_STAKE_DISCRIMINATOR = new Ui
 
 export function getIncreaseUndernameLimitFromOperatorStakeDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(INCREASE_UNDERNAME_LIMIT_FROM_OPERATOR_STAKE_DISCRIMINATOR); }
 
-export type IncreaseUndernameLimitFromOperatorStakeInstruction<TProgram extends string = typeof ARIO_ARNS_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountDemandFactor extends string | AccountMeta<string> = string, TAccountArnsRecord extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountGateway extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountCaller extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type IncreaseUndernameLimitFromOperatorStakeInstruction<TProgram extends string = typeof ARIO_ARNS_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountDemandFactor extends string | AccountMeta<string> = string, TAccountArnsRecord extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountGateway extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountCaller extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountConfig extends string ? WritableAccount<TAccountConfig> : TAccountConfig, TAccountDemandFactor extends string ? WritableAccount<TAccountDemandFactor> : TAccountDemandFactor, TAccountArnsRecord extends string ? WritableAccount<TAccountArnsRecord> : TAccountArnsRecord, TAccountGarSettings extends string ? WritableAccount<TAccountGarSettings> : TAccountGarSettings, TAccountGateway extends string ? WritableAccount<TAccountGateway> : TAccountGateway, TAccountStakeTokenAccount extends string ? WritableAccount<TAccountStakeTokenAccount> : TAccountStakeTokenAccount, TAccountProtocolTokenAccount extends string ? WritableAccount<TAccountProtocolTokenAccount> : TAccountProtocolTokenAccount, TAccountCaller extends string ? WritableSignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountGarProgram extends string ? ReadonlyAccount<TAccountGarProgram> : TAccountGarProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type IncreaseUndernameLimitFromOperatorStakeInstructionData = { discriminator: ReadonlyUint8Array; quantity: number;  };
@@ -69,7 +69,7 @@ if (!accounts.demandFactor.value) {
 accounts.demandFactor.value = await findDemandFactorPda();
 }
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -108,7 +108,7 @@ const args = { ...input,  };
 
 // Resolve default values.
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

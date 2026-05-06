@@ -213,6 +213,19 @@ for (const { idl, out, rename } of PROGRAMS) {
   console.log(`[codama] ${idl} ✓`);
 }
 
+// =========================================================================
+// Event decoders — NOT emitted by Codama (renderers-js 2.x has no events
+// pass), so we run a sibling generator that walks each IDL's `events[]`
+// + `types[]` and writes per-event encode/decode/codec helpers under
+// `generated/<program>/events/`. Output style mirrors the
+// accounts/instructions/types files Codama produces above.
+// =========================================================================
+import { execFileSync } from 'node:child_process';
+const eventsScript = resolve(HERE, 'events-codegen.mjs');
+if (existsSync(eventsScript)) {
+  execFileSync(process.execPath, [eventsScript], { stdio: 'inherit' });
+}
+
 /**
  * Recursively rewrites every relative `from '...'` / `from "..."` in `.ts`
  * files under `dir` so the import is resolvable under TypeScript `nodenext`

@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './adminRepairSettings.js';
 export * from './allowDelegate.js';
 export * from './cancelWithdrawal.js';
 export * from './claimDelegateFromLeavingGateway.js';
@@ -41,6 +42,7 @@ export * from './payFromFundingPlan.js';
 export * from './prescribeEpoch.js';
 export * from './pruneGateway.js';
 export * from './redelegateStake.js';
+export * from './releaseTreasuryAuthority.js';
 export * from './saveObservations.js';
 export * from './setAllowlistEnabled.js';
 export * from './setEpochsEnabled.js';

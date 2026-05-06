@@ -1,5 +1,5 @@
 {
-  "address": "ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "address": "83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig",
   "metadata": {
     "name": "ario_core",
     "version": "0.1.0",
@@ -17,6 +17,69 @@
     "- Protocol configuration"
   ],
   "instructions": [
+    {
+      "name": "admin_repair_config",
+      "docs": [
+        "Admin recovery — repair `ArioConfig.mint` / `.treasury` when devnet",
+        "genesis was partially-initialized (e.g., devnet-setup.ts crashed",
+        "between `initializeCore` and `initializeArns` and a re-run created",
+        "a new mint). Pre-cutover only — disabled once `finalize_migration`",
+        "flips `migration_active` to false."
+      ],
+      "discriminator": [
+        161,
+        35,
+        6,
+        182,
+        188,
+        229,
+        179,
+        180
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  114,
+                  105,
+                  111,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "new_treasury",
+          "type": "pubkey"
+        }
+      ]
+    },
     {
       "name": "approve_primary_name",
       "docs": [
@@ -721,6 +784,14 @@
         },
         {
           "name": "balance",
+          "docs": [
+            "`init` (not `init_if_needed`) so a re-import for the same owner is",
+            "rejected with `account already in use`. Solana txs are atomic, so",
+            "there's no partial-success state to recover from — if this PDA",
+            "exists, the import already ran and (for pre-registered owners)",
+            "already moved SPL tokens. Failing loud beats silent double-transfer",
+            "when the orchestrator's progress tracker is wrong."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -742,6 +813,131 @@
               }
             ]
           }
+        },
+        {
+          "name": "protocol_token_account",
+          "docs": [
+            "Treasury source for the SPL transfer. Must be `config.treasury`",
+            "(the protocol_token_account on the ARIO mint). Owned (SPL-level)",
+            "by the ArioConfig PDA — see `release_treasury_authority` for the",
+            "one-shot ownership migration on networks where the treasury was",
+            "originally created under a different authority."
+          ],
+          "writable": true
+        },
+        {
+          "name": "recipient_token_account",
+          "docs": [
+            "Recipient ATA for the owner. `init_if_needed` so callers don't",
+            "have to pre-create — the migration orchestrator can fan out",
+            "imports without a per-holder ATA-creation pre-pass."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient_owner"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "ario_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient_owner",
+          "docs": [
+            "`associated_token::authority` constraint above and by the `owner`",
+            "instruction-arg constraint here (they must match — the import is",
+            "for `owner`'s share, not some third party's)."
+          ]
+        },
+        {
+          "name": "ario_mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "system_program",
@@ -918,38 +1114,38 @@
               {
                 "kind": "const",
                 "value": [
-                  2,
-                  106,
-                  45,
-                  210,
-                  49,
+                  104,
+                  145,
+                  220,
+                  220,
+                  121,
+                  181,
+                  71,
+                  28,
+                  215,
+                  39,
+                  19,
+                  14,
+                  156,
+                  234,
+                  120,
+                  154,
+                  248,
+                  131,
+                  233,
+                  237,
+                  19,
+                  232,
+                  85,
+                  19,
+                  193,
+                  35,
+                  251,
+                  98,
                   191,
-                  230,
-                  222,
-                  105,
-                  79,
-                  88,
-                  241,
-                  204,
-                  163,
-                  219,
-                  218,
-                  13,
-                  45,
-                  239,
-                  29,
-                  216,
-                  44,
-                  187,
-                  42,
-                  27,
-                  103,
-                  51,
-                  59,
-                  107,
-                  202,
-                  26,
-                  242
+                  113,
+                  118,
+                  89
                 ]
               }
             ],
@@ -1653,7 +1849,7 @@
         },
         {
           "name": "gar_program",
-          "address": "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+          "address": "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR"
         },
         {
           "name": "token_program",
@@ -1933,7 +2129,7 @@
         },
         {
           "name": "gar_program",
-          "address": "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+          "address": "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR"
         },
         {
           "name": "token_program",
@@ -2388,6 +2584,71 @@
   ],
   "events": [
     {
+      "name": "ConfigUpdatedEvent",
+      "discriminator": [
+        245,
+        158,
+        129,
+        99,
+        60,
+        100,
+        214,
+        220
+      ]
+    },
+    {
+      "name": "CoreMigrationFinalizedEvent",
+      "discriminator": [
+        236,
+        251,
+        207,
+        206,
+        220,
+        247,
+        122,
+        75
+      ]
+    },
+    {
+      "name": "PrimaryNameRemovedEvent",
+      "discriminator": [
+        97,
+        221,
+        251,
+        3,
+        243,
+        128,
+        218,
+        62
+      ]
+    },
+    {
+      "name": "PrimaryNameRequestExpiredEvent",
+      "discriminator": [
+        10,
+        221,
+        140,
+        144,
+        236,
+        59,
+        109,
+        38
+      ]
+    },
+    {
+      "name": "PrimaryNameRequestedEvent",
+      "discriminator": [
+        196,
+        78,
+        183,
+        83,
+        101,
+        42,
+        21,
+        87
+      ]
+    },
+    {
       "name": "PrimaryNameSetEvent",
       "discriminator": [
         74,
@@ -2398,6 +2659,19 @@
         87,
         132,
         105
+      ]
+    },
+    {
+      "name": "SupplyFinalizedEvent",
+      "discriminator": [
+        169,
+        134,
+        53,
+        210,
+        14,
+        17,
+        212,
+        239
       ]
     },
     {
@@ -2424,6 +2698,32 @@
         54,
         236,
         111
+      ]
+    },
+    {
+      "name": "VaultExtendedEvent",
+      "discriminator": [
+        110,
+        225,
+        73,
+        182,
+        61,
+        157,
+        83,
+        230
+      ]
+    },
+    {
+      "name": "VaultIncreasedEvent",
+      "discriminator": [
+        6,
+        216,
+        168,
+        161,
+        150,
+        38,
+        148,
+        100
       ]
     },
     {
@@ -2821,6 +3121,92 @@
       }
     },
     {
+      "name": "ConfigUpdatedEvent",
+      "docs": [
+        "PR-5: emitted on every `update_config` field mutation. One event per",
+        "mutated field — if a single tx changes both `min_vault_duration` and",
+        "`primary_name_request_expiry`, two events fire.",
+        "",
+        "`field` discriminator matches the `CORE_CONFIG_FIELD_*` constants in",
+        "`crate` (re-exported as `CORE_CONFIG_FIELD_MIN_VAULT_DURATION`,",
+        "`CORE_CONFIG_FIELD_MAX_VAULT_DURATION`,",
+        "`CORE_CONFIG_FIELD_PRIMARY_NAME_REQUEST_EXPIRY`,",
+        "`CORE_CONFIG_FIELD_NEW_AUTHORITY`). Values are stable forever — only",
+        "append new ones.",
+        "",
+        "`u8` discriminator beats `String { field_name }` here: same indexer",
+        "utility, fewer wire bytes."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "field",
+            "docs": [
+              "See `crate::CORE_CONFIG_FIELD_*` constants."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "new_value",
+            "docs": [
+              "New value, encoded based on `field`:",
+              "- `MIN_VAULT_DURATION` (0): little-endian u64 in bytes 0..8, zero-padded",
+              "- `MAX_VAULT_DURATION` (1): little-endian u64, zero-padded",
+              "- `PRIMARY_NAME_REQUEST_EXPIRY` (2): little-endian u64, zero-padded",
+              "- `NEW_AUTHORITY` (3): full 32-byte Pubkey"
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CoreMigrationFinalizedEvent",
+      "docs": [
+        "PR-5: emitted exactly once when migration imports are sealed.",
+        "",
+        "Watershed event — every indexer needs to know \"migration closed at",
+        "slot N.\" `total_supply` is captured at the moment of finalization",
+        "(post `finalize_supply`), and `slot` is the Clock slot at the",
+        "finalize tx."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "FundingSourceKind",
       "docs": [
         "Tagged enum describing one source in a funding plan.",
@@ -2940,6 +3326,39 @@
       }
     },
     {
+      "name": "PrimaryNameRemovedEvent",
+      "docs": [
+        "PR-5: emitted when a primary name is removed.",
+        "",
+        "`caller != owner` is the base-name override path",
+        "(`remove_primary_name_for_base_name`); `caller == owner` is the",
+        "holder's own removal (`remove_primary_name`). One event covers both",
+        "to keep the wire surface compact — consumers branch on the caller",
+        "equality rather than subscribing to two event types."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "caller",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "PrimaryNameRequest",
       "docs": [
         "Primary name request (pending approval)",
@@ -2982,6 +3401,88 @@
               "PDA bump"
             ],
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrimaryNameRequestExpiredEvent",
+      "docs": [
+        "PR-5: emitted when an expired primary-name request is reaped.",
+        "",
+        "`refunded` is the lamports returned to the initiator (rent recovered",
+        "when the PDA is closed). The request fee is paid up front and is NOT",
+        "refunded — only the rent reservation comes back. Indexers consume",
+        "this to drop pending-request UI rows once they expire."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initiator",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "refunded",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PrimaryNameRequestedEvent",
+      "docs": [
+        "PR-5: emitted when a primary name *request* is created.",
+        "",
+        "Distinct from `PrimaryNameSetEvent` — set fires from the",
+        "auto-approve path (`request_and_set_primary_name*`) and from",
+        "`approve_primary_name`, while this event covers the request-only",
+        "path that needs explicit approval (or expiry).",
+        "",
+        "`funding_source` matches the wire encoding used by ario-arns",
+        "(`FUNDING_SOURCE_*` constants in ario-arns and re-exported here as",
+        "`crate::FUNDING_SOURCE_BALANCE` / `crate::FUNDING_SOURCE_FUNDING_PLAN`):",
+        "`0 = Balance` (single-source SPL transfer from the initiator's ATA),",
+        "`4 = FundingPlan` (multi-source CPI through ario-gar",
+        "`pay_from_funding_plan`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "initiator",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "request_pda",
+            "type": "pubkey"
+          },
+          {
+            "name": "funding_source",
+            "docs": [
+              "See `crate::FUNDING_SOURCE_*` (matches ario-arns wire encoding)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -3034,6 +3535,42 @@
           {
             "name": "name",
             "type": "string"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SupplyFinalizedEvent",
+      "docs": [
+        "PR-5: emitted exactly once when supply totals are sealed via",
+        "`finalize_supply`.",
+        "",
+        "Genesis-equivalent: pins the canonical `total_supply` and `decimals`",
+        "for the ARIO mint. Consumed by indexers to seed their supply-tracking",
+        "dashboards from chain state alone."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -3232,6 +3769,71 @@
       }
     },
     {
+      "name": "VaultExtendedEvent",
+      "docs": [
+        "PR-5: emitted when an existing vault's lock duration is extended.",
+        "",
+        "`new_end_timestamp` is the post-extension expiry, so a consumer",
+        "indexing this stream can update vault state without reading the",
+        "account back."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_id",
+            "type": "u64"
+          },
+          {
+            "name": "new_end_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VaultIncreasedEvent",
+      "docs": [
+        "PR-5: emitted when additional tokens are added to an existing vault.",
+        "",
+        "`new_balance` mirrors `Vault.amount` post-increase so consumers don't",
+        "have to fetch the account."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault_id",
+            "type": "u64"
+          },
+          {
+            "name": "added_amount",
+            "type": "u64"
+          },
+          {
+            "name": "new_balance",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "VaultReleasedEvent",
       "docs": [
         "Emitted when a vault is released"
@@ -3250,6 +3852,10 @@
           {
             "name": "amount",
             "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }
@@ -3277,6 +3883,10 @@
           {
             "name": "controller",
             "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

@@ -13,6 +13,6 @@ recipient: Address;
 };
 
 export async function findRecipientVaultCounterPda(seeds: RecipientVaultCounterSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig' as Address<'83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([118, 97, 117, 108, 116, 95, 99, 111, 117, 110, 116, 101, 114])), getAddressEncoder().encode(seeds.recipient)]});
 }

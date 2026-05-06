@@ -14,6 +14,6 @@ delegate: Address;
 };
 
 export async function findAllowlistEntryPda(seeds: AllowlistEntrySeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([97, 108, 108, 111, 119, 108, 105, 115, 116])), getAddressEncoder().encode(seeds.operator), getAddressEncoder().encode(seeds.delegate)]});
 }

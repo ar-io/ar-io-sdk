@@ -8,6 +8,7 @@
 
 export * from './addAclPage.js';
 export * from './addController.js';
+export * from './clearAttributes.js';
 export * from './closeAclConfig.js';
 export * from './closeAclPage.js';
 export * from './closeOrphanedRecordMetadata.js';

@@ -13,6 +13,6 @@ delegator: Address;
 };
 
 export async function findRedelegationRecordPda(seeds: RedelegationRecordSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([114, 101, 100, 101, 108, 101, 103, 97, 116, 105, 111, 110])), getAddressEncoder().encode(seeds.delegator)]});
 }

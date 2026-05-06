@@ -13,6 +13,6 @@ delegator: Address;
 };
 
 export async function findWithdrawalCounterPda(seeds: WithdrawalCounterSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([119, 105, 116, 104, 100, 114, 97, 119, 97, 108, 95, 99, 111, 117, 110, 116, 101, 114])), getAddressEncoder().encode(seeds.delegator)]});
 }

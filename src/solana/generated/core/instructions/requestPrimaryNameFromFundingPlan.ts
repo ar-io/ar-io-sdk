@@ -16,7 +16,7 @@ export const REQUEST_PRIMARY_NAME_FROM_FUNDING_PLAN_DISCRIMINATOR = new Uint8Arr
 
 export function getRequestPrimaryNameFromFundingPlanDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(REQUEST_PRIMARY_NAME_FROM_FUNDING_PLAN_DISCRIMINATOR); }
 
-export type RequestPrimaryNameFromFundingPlanInstruction<TProgram extends string = typeof ARIO_CORE_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountRequest extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountPayerTokenAccount extends string | AccountMeta<string> = string, TAccountInitiator extends string | AccountMeta<string> = string, TAccountWithdrawalCounter extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type RequestPrimaryNameFromFundingPlanInstruction<TProgram extends string = typeof ARIO_CORE_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountRequest extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountPayerTokenAccount extends string | AccountMeta<string> = string, TAccountInitiator extends string | AccountMeta<string> = string, TAccountWithdrawalCounter extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountConfig extends string ? ReadonlyAccount<TAccountConfig> : TAccountConfig, TAccountRequest extends string ? WritableAccount<TAccountRequest> : TAccountRequest, TAccountGarSettings extends string ? WritableAccount<TAccountGarSettings> : TAccountGarSettings, TAccountStakeTokenAccount extends string ? WritableAccount<TAccountStakeTokenAccount> : TAccountStakeTokenAccount, TAccountProtocolTokenAccount extends string ? WritableAccount<TAccountProtocolTokenAccount> : TAccountProtocolTokenAccount, TAccountPayerTokenAccount extends string ? WritableAccount<TAccountPayerTokenAccount> : TAccountPayerTokenAccount, TAccountInitiator extends string ? WritableSignerAccount<TAccountInitiator> & AccountSignerMeta<TAccountInitiator> : TAccountInitiator, TAccountWithdrawalCounter extends string ? WritableAccount<TAccountWithdrawalCounter> : TAccountWithdrawalCounter, TAccountGarProgram extends string ? ReadonlyAccount<TAccountGarProgram> : TAccountGarProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
 export type RequestPrimaryNameFromFundingPlanInstructionData = { discriminator: ReadonlyUint8Array; name: string; sources: Array<FundingSourceSpec>; validationAccountCount: number; residueVaultCount: number;  };
@@ -75,7 +75,7 @@ if (!accounts.request.value) {
 accounts.request.value = await findRequestPda({ initiator: getAddressFromResolvedInstructionAccount("initiator", accounts.initiator.value) }, { programAddress });
 }
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -122,7 +122,7 @@ const args = { ...input,  };
 
 // Resolve default values.
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

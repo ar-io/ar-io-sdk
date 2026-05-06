@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './adminRepairConfig.js';
 export * from './approvePrimaryName.js';
 export * from './closeExpiredRequest.js';
 export * from './createVault.js';

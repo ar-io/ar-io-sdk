@@ -19,20 +19,20 @@ export function getJoinNetworkDiscriminatorBytes() { return fixEncoderSize(getBy
 export type JoinNetworkInstruction<TProgram extends string = typeof ARIO_GAR_PROGRAM_ADDRESS, TAccountRegistry extends string | AccountMeta<string> = string, TAccountSettings extends string | AccountMeta<string> = string, TAccountGateway extends string | AccountMeta<string> = string, TAccountOperatorTokenAccount extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountObserverLookup extends string | AccountMeta<string> = string, TAccountOperator extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRegistry extends string ? WritableAccount<TAccountRegistry> : TAccountRegistry, TAccountSettings extends string ? WritableAccount<TAccountSettings> : TAccountSettings, TAccountGateway extends string ? WritableAccount<TAccountGateway> : TAccountGateway, TAccountOperatorTokenAccount extends string ? WritableAccount<TAccountOperatorTokenAccount> : TAccountOperatorTokenAccount, TAccountStakeTokenAccount extends string ? WritableAccount<TAccountStakeTokenAccount> : TAccountStakeTokenAccount, TAccountObserverLookup extends string ? WritableAccount<TAccountObserverLookup> : TAccountObserverLookup, TAccountOperator extends string ? WritableSignerAccount<TAccountOperator> & AccountSignerMeta<TAccountOperator> : TAccountOperator, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type JoinNetworkInstructionData = { discriminator: ReadonlyUint8Array; operatorStake: bigint; label: string; fqdn: string; port: number; protocol: Protocol; properties: Option<string>; note: Option<string>; autoStake: boolean; allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegateStake: Option<bigint>; 
+export type JoinNetworkInstructionData = { discriminator: ReadonlyUint8Array; operatorStake: bigint; label: string; fqdn: string; port: number; protocol: Protocol; properties: Option<string>; note: Option<string>; allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegateStake: Option<bigint>; 
 /** M3: Separate observer address (client passes operator key for default) */
 observerAddress: Address;  };
 
-export type JoinNetworkInstructionDataArgs = { operatorStake: number | bigint; label: string; fqdn: string; port: number; protocol: ProtocolArgs; properties: OptionOrNullable<string>; note: OptionOrNullable<string>; autoStake: boolean; allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegateStake: OptionOrNullable<number | bigint>; 
+export type JoinNetworkInstructionDataArgs = { operatorStake: number | bigint; label: string; fqdn: string; port: number; protocol: ProtocolArgs; properties: OptionOrNullable<string>; note: OptionOrNullable<string>; allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegateStake: OptionOrNullable<number | bigint>; 
 /** M3: Separate observer address (client passes operator key for default) */
 observerAddress: Address;  };
 
 export function getJoinNetworkInstructionDataEncoder(): Encoder<JoinNetworkInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['operatorStake', getU64Encoder()], ['label', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())], ['fqdn', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())], ['port', getU16Encoder()], ['protocol', getProtocolEncoder()], ['properties', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['note', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['autoStake', getBooleanEncoder()], ['allowDelegatedStaking', getBooleanEncoder()], ['delegateRewardShareRatio', getU8Encoder()], ['minDelegateStake', getOptionEncoder(getU64Encoder())], ['observerAddress', getAddressEncoder()]]), (value) => ({ ...value, discriminator: JOIN_NETWORK_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['operatorStake', getU64Encoder()], ['label', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())], ['fqdn', addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder())], ['port', getU16Encoder()], ['protocol', getProtocolEncoder()], ['properties', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['note', getOptionEncoder(addEncoderSizePrefix(getUtf8Encoder(), getU32Encoder()))], ['allowDelegatedStaking', getBooleanEncoder()], ['delegateRewardShareRatio', getU8Encoder()], ['minDelegateStake', getOptionEncoder(getU64Encoder())], ['observerAddress', getAddressEncoder()]]), (value) => ({ ...value, discriminator: JOIN_NETWORK_DISCRIMINATOR }));
 }
 
 export function getJoinNetworkInstructionDataDecoder(): Decoder<JoinNetworkInstructionData> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['operatorStake', getU64Decoder()], ['label', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())], ['fqdn', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())], ['port', getU16Decoder()], ['protocol', getProtocolDecoder()], ['properties', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['note', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['autoStake', getBooleanDecoder()], ['allowDelegatedStaking', getBooleanDecoder()], ['delegateRewardShareRatio', getU8Decoder()], ['minDelegateStake', getOptionDecoder(getU64Decoder())], ['observerAddress', getAddressDecoder()]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['operatorStake', getU64Decoder()], ['label', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())], ['fqdn', addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder())], ['port', getU16Decoder()], ['protocol', getProtocolDecoder()], ['properties', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['note', getOptionDecoder(addDecoderSizePrefix(getUtf8Decoder(), getU32Decoder()))], ['allowDelegatedStaking', getBooleanDecoder()], ['delegateRewardShareRatio', getU8Decoder()], ['minDelegateStake', getOptionDecoder(getU64Decoder())], ['observerAddress', getAddressDecoder()]]);
 }
 
 export function getJoinNetworkInstructionDataCodec(): Codec<JoinNetworkInstructionDataArgs, JoinNetworkInstructionData> {
@@ -60,7 +60,6 @@ port: JoinNetworkInstructionDataArgs["port"];
 protocol: JoinNetworkInstructionDataArgs["protocol"];
 properties: JoinNetworkInstructionDataArgs["properties"];
 note: JoinNetworkInstructionDataArgs["note"];
-autoStake: JoinNetworkInstructionDataArgs["autoStake"];
 allowDelegatedStaking: JoinNetworkInstructionDataArgs["allowDelegatedStaking"];
 delegateRewardShareRatio: JoinNetworkInstructionDataArgs["delegateRewardShareRatio"];
 minDelegateStake: JoinNetworkInstructionDataArgs["minDelegateStake"];
@@ -122,7 +121,6 @@ port: JoinNetworkInstructionDataArgs["port"];
 protocol: JoinNetworkInstructionDataArgs["protocol"];
 properties: JoinNetworkInstructionDataArgs["properties"];
 note: JoinNetworkInstructionDataArgs["note"];
-autoStake: JoinNetworkInstructionDataArgs["autoStake"];
 allowDelegatedStaking: JoinNetworkInstructionDataArgs["allowDelegatedStaking"];
 delegateRewardShareRatio: JoinNetworkInstructionDataArgs["delegateRewardShareRatio"];
 minDelegateStake: JoinNetworkInstructionDataArgs["minDelegateStake"];

@@ -16,7 +16,7 @@ export const INCREASE_UNDERNAME_LIMIT_FROM_FUNDING_PLAN_DISCRIMINATOR = new Uint
 
 export function getIncreaseUndernameLimitFromFundingPlanDiscriminatorBytes() { return fixEncoderSize(getBytesEncoder(), 8).encode(INCREASE_UNDERNAME_LIMIT_FROM_FUNDING_PLAN_DISCRIMINATOR); }
 
-export type IncreaseUndernameLimitFromFundingPlanInstruction<TProgram extends string = typeof ARIO_ARNS_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountDemandFactor extends string | AccountMeta<string> = string, TAccountArnsRecord extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountPayerTokenAccount extends string | AccountMeta<string> = string, TAccountCaller extends string | AccountMeta<string> = string, TAccountWithdrawalCounter extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type IncreaseUndernameLimitFromFundingPlanInstruction<TProgram extends string = typeof ARIO_ARNS_PROGRAM_ADDRESS, TAccountConfig extends string | AccountMeta<string> = string, TAccountDemandFactor extends string | AccountMeta<string> = string, TAccountArnsRecord extends string | AccountMeta<string> = string, TAccountGarSettings extends string | AccountMeta<string> = string, TAccountStakeTokenAccount extends string | AccountMeta<string> = string, TAccountProtocolTokenAccount extends string | AccountMeta<string> = string, TAccountPayerTokenAccount extends string | AccountMeta<string> = string, TAccountCaller extends string | AccountMeta<string> = string, TAccountWithdrawalCounter extends string | AccountMeta<string> = string, TAccountGarProgram extends string | AccountMeta<string> = "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountConfig extends string ? WritableAccount<TAccountConfig> : TAccountConfig, TAccountDemandFactor extends string ? WritableAccount<TAccountDemandFactor> : TAccountDemandFactor, TAccountArnsRecord extends string ? WritableAccount<TAccountArnsRecord> : TAccountArnsRecord, TAccountGarSettings extends string ? WritableAccount<TAccountGarSettings> : TAccountGarSettings, TAccountStakeTokenAccount extends string ? WritableAccount<TAccountStakeTokenAccount> : TAccountStakeTokenAccount, TAccountProtocolTokenAccount extends string ? WritableAccount<TAccountProtocolTokenAccount> : TAccountProtocolTokenAccount, TAccountPayerTokenAccount extends string ? WritableAccount<TAccountPayerTokenAccount> : TAccountPayerTokenAccount, TAccountCaller extends string ? WritableSignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountWithdrawalCounter extends string ? WritableAccount<TAccountWithdrawalCounter> : TAccountWithdrawalCounter, TAccountGarProgram extends string ? ReadonlyAccount<TAccountGarProgram> : TAccountGarProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
 export type IncreaseUndernameLimitFromFundingPlanInstructionData = { discriminator: ReadonlyUint8Array; quantity: number; sources: Array<FundingSourceSpec>; discountAccountCount: number; residueVaultCount: number;  };
@@ -75,7 +75,7 @@ if (!accounts.demandFactor.value) {
 accounts.demandFactor.value = await findDemandFactorPda();
 }
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
@@ -122,7 +122,7 @@ const args = { ...input,  };
 
 // Resolve default values.
 if (!accounts.garProgram.value) {
-accounts.garProgram.value = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+accounts.garProgram.value = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;
 }
 if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;

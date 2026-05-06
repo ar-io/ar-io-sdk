@@ -24,7 +24,12 @@ totalCompositeWeightLo: bigint; totalCompositeWeightHi: bigint; hashchain: Reado
  * so observation rent isn't orphaned when the parent epoch closes
  * (audit M8). Replaces a former `_padding1` byte — no layout change.
  */
-observationsClosed: number; failureCounts: Array<number>; 
+observationsClosed: number; 
+/**
+ * Sized to match `GatewayRegistry::MAX_GATEWAYS`. DEVNET-SHRUNK on the
+ * `deploy/devnet` branch (30 vs production 3000) — see GatewayRegistry.
+ */
+failureCounts: Array<number>; 
 /** Observer addresses (the observer_address from Gateway, used to verify signer) */
 prescribedObservers: Array<Address>; 
 /** Gateway addresses (the operator pubkey, used for reward distribution) */
@@ -46,7 +51,12 @@ totalCompositeWeightLo: number | bigint; totalCompositeWeightHi: number | bigint
  * so observation rent isn't orphaned when the parent epoch closes
  * (audit M8). Replaces a former `_padding1` byte — no layout change.
  */
-observationsClosed: number; failureCounts: Array<number>; 
+observationsClosed: number; 
+/**
+ * Sized to match `GatewayRegistry::MAX_GATEWAYS`. DEVNET-SHRUNK on the
+ * `deploy/devnet` branch (30 vs production 3000) — see GatewayRegistry.
+ */
+failureCounts: Array<number>; 
 /** Observer addresses (the observer_address from Gateway, used to verify signer) */
 prescribedObservers: Array<Address>; 
 /** Gateway addresses (the operator pubkey, used for reward distribution) */
@@ -58,12 +68,12 @@ hasObserved: ReadonlyUint8Array; padding2: ReadonlyUint8Array;  };
 
 /** Gets the encoder for {@link EpochArgs} account data. */
 export function getEpochEncoder(): FixedSizeEncoder<EpochArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['epochIndex', getU64Encoder()], ['startTimestamp', getI64Encoder()], ['endTimestamp', getI64Encoder()], ['totalEligibleRewards', getU64Encoder()], ['perGatewayReward', getU64Encoder()], ['perObserverReward', getU64Encoder()], ['rewardRate', getU64Encoder()], ['totalCompositeWeightLo', getU64Encoder()], ['totalCompositeWeightHi', getU64Encoder()], ['hashchain', fixEncoderSize(getBytesEncoder(), 32)], ['activeGatewayCount', getU32Encoder()], ['distributionIndex', getU32Encoder()], ['tallyIndex', getU32Encoder()], ['observerCount', getU8Encoder()], ['nameCount', getU8Encoder()], ['observationsSubmitted', getU8Encoder()], ['rewardsDistributed', getU8Encoder()], ['weightsTallied', getU8Encoder()], ['prescriptionsDone', getU8Encoder()], ['bump', getU8Encoder()], ['observationsClosed', getU8Encoder()], ['failureCounts', getArrayEncoder(getU16Encoder(), { size: 3000 })], ['prescribedObservers', getArrayEncoder(getAddressEncoder(), { size: 50 })], ['prescribedObserverGateways', getArrayEncoder(getAddressEncoder(), { size: 50 })], ['prescribedNames', getArrayEncoder(fixEncoderSize(getBytesEncoder(), 32), { size: 2 })], ['hasObserved', fixEncoderSize(getBytesEncoder(), 7)], ['padding2', fixEncoderSize(getBytesEncoder(), 5)]]), (value) => ({ ...value, discriminator: EPOCH_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['epochIndex', getU64Encoder()], ['startTimestamp', getI64Encoder()], ['endTimestamp', getI64Encoder()], ['totalEligibleRewards', getU64Encoder()], ['perGatewayReward', getU64Encoder()], ['perObserverReward', getU64Encoder()], ['rewardRate', getU64Encoder()], ['totalCompositeWeightLo', getU64Encoder()], ['totalCompositeWeightHi', getU64Encoder()], ['hashchain', fixEncoderSize(getBytesEncoder(), 32)], ['activeGatewayCount', getU32Encoder()], ['distributionIndex', getU32Encoder()], ['tallyIndex', getU32Encoder()], ['observerCount', getU8Encoder()], ['nameCount', getU8Encoder()], ['observationsSubmitted', getU8Encoder()], ['rewardsDistributed', getU8Encoder()], ['weightsTallied', getU8Encoder()], ['prescriptionsDone', getU8Encoder()], ['bump', getU8Encoder()], ['observationsClosed', getU8Encoder()], ['failureCounts', getArrayEncoder(getU16Encoder(), { size: 30 })], ['prescribedObservers', getArrayEncoder(getAddressEncoder(), { size: 50 })], ['prescribedObserverGateways', getArrayEncoder(getAddressEncoder(), { size: 50 })], ['prescribedNames', getArrayEncoder(fixEncoderSize(getBytesEncoder(), 32), { size: 2 })], ['hasObserved', fixEncoderSize(getBytesEncoder(), 7)], ['padding2', fixEncoderSize(getBytesEncoder(), 5)]]), (value) => ({ ...value, discriminator: EPOCH_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link Epoch} account data. */
 export function getEpochDecoder(): FixedSizeDecoder<Epoch> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['epochIndex', getU64Decoder()], ['startTimestamp', getI64Decoder()], ['endTimestamp', getI64Decoder()], ['totalEligibleRewards', getU64Decoder()], ['perGatewayReward', getU64Decoder()], ['perObserverReward', getU64Decoder()], ['rewardRate', getU64Decoder()], ['totalCompositeWeightLo', getU64Decoder()], ['totalCompositeWeightHi', getU64Decoder()], ['hashchain', fixDecoderSize(getBytesDecoder(), 32)], ['activeGatewayCount', getU32Decoder()], ['distributionIndex', getU32Decoder()], ['tallyIndex', getU32Decoder()], ['observerCount', getU8Decoder()], ['nameCount', getU8Decoder()], ['observationsSubmitted', getU8Decoder()], ['rewardsDistributed', getU8Decoder()], ['weightsTallied', getU8Decoder()], ['prescriptionsDone', getU8Decoder()], ['bump', getU8Decoder()], ['observationsClosed', getU8Decoder()], ['failureCounts', getArrayDecoder(getU16Decoder(), { size: 3000 })], ['prescribedObservers', getArrayDecoder(getAddressDecoder(), { size: 50 })], ['prescribedObserverGateways', getArrayDecoder(getAddressDecoder(), { size: 50 })], ['prescribedNames', getArrayDecoder(fixDecoderSize(getBytesDecoder(), 32), { size: 2 })], ['hasObserved', fixDecoderSize(getBytesDecoder(), 7)], ['padding2', fixDecoderSize(getBytesDecoder(), 5)]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['epochIndex', getU64Decoder()], ['startTimestamp', getI64Decoder()], ['endTimestamp', getI64Decoder()], ['totalEligibleRewards', getU64Decoder()], ['perGatewayReward', getU64Decoder()], ['perObserverReward', getU64Decoder()], ['rewardRate', getU64Decoder()], ['totalCompositeWeightLo', getU64Decoder()], ['totalCompositeWeightHi', getU64Decoder()], ['hashchain', fixDecoderSize(getBytesDecoder(), 32)], ['activeGatewayCount', getU32Decoder()], ['distributionIndex', getU32Decoder()], ['tallyIndex', getU32Decoder()], ['observerCount', getU8Decoder()], ['nameCount', getU8Decoder()], ['observationsSubmitted', getU8Decoder()], ['rewardsDistributed', getU8Decoder()], ['weightsTallied', getU8Decoder()], ['prescriptionsDone', getU8Decoder()], ['bump', getU8Decoder()], ['observationsClosed', getU8Decoder()], ['failureCounts', getArrayDecoder(getU16Decoder(), { size: 30 })], ['prescribedObservers', getArrayDecoder(getAddressDecoder(), { size: 50 })], ['prescribedObserverGateways', getArrayDecoder(getAddressDecoder(), { size: 50 })], ['prescribedNames', getArrayDecoder(fixDecoderSize(getBytesDecoder(), 32), { size: 2 })], ['hasObserved', fixDecoderSize(getBytesDecoder(), 7)], ['padding2', fixDecoderSize(getBytesDecoder(), 5)]]);
 }
 
 /** Gets the codec for {@link Epoch} account data. */
@@ -116,5 +126,5 @@ export async function fetchAllMaybeEpoch(
 }
 
 export function getEpochSize(): number {
-  return 9408;
+  return 3468;
 }
