@@ -74,7 +74,7 @@ if (!accounts.demandFactor.value) {
 accounts.demandFactor.value = await findDemandFactorPda();
 }
 if (!accounts.programData.value) {
-accounts.programData.value = await getProgramDerivedAddress({ programAddress: 'BPFLoaderUpgradeab1e11111111111111111111111' as Address<'BPFLoaderUpgradeab1e11111111111111111111111'>, seeds: [getBytesEncoder().encode(new Uint8Array([2, 106, 45, 209, 116, 55, 103, 175, 163, 168, 212, 162, 246, 62, 112, 23, 29, 67, 2, 202, 231, 161, 103, 45, 145, 65, 61, 68, 235, 202, 26, 242]))] });
+accounts.programData.value = await getProgramDerivedAddress({ programAddress: 'BPFLoaderUpgradeab1e11111111111111111111111' as Address<'BPFLoaderUpgradeab1e11111111111111111111111'>, seeds: [getBytesEncoder().encode(new Uint8Array([19, 33, 145, 136, 129, 160, 57, 11, 16, 139, 190, 17, 96, 124, 249, 170, 73, 121, 52, 220, 58, 138, 181, 172, 103, 139, 221, 204, 51, 198, 26, 160]))] });
 }
 if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

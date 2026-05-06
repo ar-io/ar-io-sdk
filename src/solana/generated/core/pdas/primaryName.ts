@@ -13,6 +13,6 @@ owner: Address;
 };
 
 export async function findPrimaryNamePda(seeds: PrimaryNameSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig' as Address<'83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([112, 114, 105, 109, 97, 114, 121, 95, 110, 97, 109, 101])), getAddressEncoder().encode(seeds.owner)]});
 }

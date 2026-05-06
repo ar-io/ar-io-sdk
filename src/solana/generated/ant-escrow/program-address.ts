@@ -5,4 +5,4 @@
  */
 import type { Address } from '@solana/kit';
 
-export const ARIO_ANT_ESCROW_PROGRAM_ADDRESS = 'ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+export const ARIO_ANT_ESCROW_PROGRAM_ADDRESS = '8jj9gDRwNK9qLHzyA2V5CmU3EMVhHys13SN9pxbRpGpC' as Address<'8jj9gDRwNK9qLHzyA2V5CmU3EMVhHys13SN9pxbRpGpC'>;

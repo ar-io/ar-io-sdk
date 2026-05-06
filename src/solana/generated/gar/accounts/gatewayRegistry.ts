@@ -15,20 +15,42 @@ export function getGatewayRegistryDiscriminatorBytes() { return fixEncoderSize(g
 
 export type GatewayRegistry = { discriminator: ReadonlyUint8Array; 
 /** L-8: Vestigial field — not checked at runtime. Kept to preserve account layout. */
-authority: Address; count: number; padding: ReadonlyUint8Array; gateways: Array<GatewaySlot>;  };
+authority: Address; count: number; padding: ReadonlyUint8Array; 
+/**
+ * DEVNET-SIZED on the `deploy/devnet` branch: 30 slots instead of the
+ * production 3_000. This is a smoke-test devnet — full AO snapshot
+ * import (664 gateways) is intentionally out-of-scope; that flow is
+ * exercised on localnet. **Do not merge this change to `main`** —
+ * mainnet must keep the full 3_000 capacity. Bumped from 10→30 to give
+ * downstream-app developers headroom to `join-network` (10 imported
+ * fixtures + 20 dev seats); see `resize_gateway_registry` for the
+ * admin instruction that grows the existing on-chain account in place.
+ */
+gateways: Array<GatewaySlot>;  };
 
 export type GatewayRegistryArgs = { 
 /** L-8: Vestigial field — not checked at runtime. Kept to preserve account layout. */
-authority: Address; count: number; padding: ReadonlyUint8Array; gateways: Array<GatewaySlotArgs>;  };
+authority: Address; count: number; padding: ReadonlyUint8Array; 
+/**
+ * DEVNET-SIZED on the `deploy/devnet` branch: 30 slots instead of the
+ * production 3_000. This is a smoke-test devnet — full AO snapshot
+ * import (664 gateways) is intentionally out-of-scope; that flow is
+ * exercised on localnet. **Do not merge this change to `main`** —
+ * mainnet must keep the full 3_000 capacity. Bumped from 10→30 to give
+ * downstream-app developers headroom to `join-network` (10 imported
+ * fixtures + 20 dev seats); see `resize_gateway_registry` for the
+ * admin instruction that grows the existing on-chain account in place.
+ */
+gateways: Array<GatewaySlotArgs>;  };
 
 /** Gets the encoder for {@link GatewayRegistryArgs} account data. */
 export function getGatewayRegistryEncoder(): FixedSizeEncoder<GatewayRegistryArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['authority', getAddressEncoder()], ['count', getU32Encoder()], ['padding', fixEncoderSize(getBytesEncoder(), 4)], ['gateways', getArrayEncoder(getGatewaySlotEncoder(), { size: 3000 })]]), (value) => ({ ...value, discriminator: GATEWAY_REGISTRY_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['authority', getAddressEncoder()], ['count', getU32Encoder()], ['padding', fixEncoderSize(getBytesEncoder(), 4)], ['gateways', getArrayEncoder(getGatewaySlotEncoder(), { size: 30 })]]), (value) => ({ ...value, discriminator: GATEWAY_REGISTRY_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link GatewayRegistry} account data. */
 export function getGatewayRegistryDecoder(): FixedSizeDecoder<GatewayRegistry> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['authority', getAddressDecoder()], ['count', getU32Decoder()], ['padding', fixDecoderSize(getBytesDecoder(), 4)], ['gateways', getArrayDecoder(getGatewaySlotDecoder(), { size: 3000 })]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['authority', getAddressDecoder()], ['count', getU32Decoder()], ['padding', fixDecoderSize(getBytesDecoder(), 4)], ['gateways', getArrayDecoder(getGatewaySlotDecoder(), { size: 30 })]]);
 }
 
 /** Gets the codec for {@link GatewayRegistry} account data. */
@@ -81,5 +103,5 @@ export async function fetchAllMaybeGatewayRegistry(
 }
 
 export function getGatewayRegistrySize(): number {
-  return 168048;
+  return 1728;
 }

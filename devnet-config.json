@@ -1,0 +1,53 @@
+{
+  "_comment": "AR.IO devnet deployment config. Public reference for downstream apps + agents that need to connect to the seeded devnet. Source-of-truth for program IDs and key PDAs. Update whenever programs are redeployed.",
+  "cluster": "devnet",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "rpcUrlNote": "Public devnet rate-limits aggressively (429s after a few requests). For high-volume work or live imports use a premium RPC (QuickNode, Helius, Triton). Override RPC_URL in your local .env.devnet.",
+  "authority": "FkkABY7WLYpET8jKdbknCArYab44M88TkjmJmut8TcRF",
+  "authorityNote": "Read-only for everyone except the deployer. Holds the upgrade authority for all 4 deployed programs.",
+  "programs": {
+    "ario_core": "83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig",
+    "ario_ant": "8ZMuXhiK7DorjPUg8RB1rzu7CvsABMk38WDJRbM62y2C",
+    "ario_gar": "AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR",
+    "ario_arns": "2HgSCKYjcapJPdHRKqkLrGXm7kvBmCP45ZyhWEm87oM1",
+    "ario_ant_escrow": null
+  },
+  "programNotes": {
+    "ario_ant_escrow": "Not deployed on devnet. Blocked by sol_big_mod_exp syscall being inactive on all public clusters (Solana issue #28503). Localnet-only for now."
+  },
+  "mint": "BZ3nczDe8To3c39eN7Beq9FW34BveUcEs9sDNkbGxn4U",
+  "treasuryTokenAccount": "WLh1PNwSg5QstPeATJxD21cb6wvYkj4ibQetkz5RTn3",
+  "stakeTokenAccount": "6vV7qQTf8Bv6SVagLKMSj3dnK7Vv9uaiujpMsHTJ2onF",
+  "pdas": {
+    "arioConfig": "FACag7Mby2sVLAMMpGduXn8KXvAwKB7C4pBhmtLAoPdq",
+    "gatewaySettings": "GfgnzrwL66vMwtseD7fJpfQETDY5B2adkhCuoAeJDL5E",
+    "epochSettings": "9iUPjk2kGWvUfrnPLobYrhH92Kef76L5jC3XHSKYHuaY",
+    "arnsConfig": "4BTTj9jA3kttrLUdrRGWGRd6JuwuN18kGbVwJkTRWuc4",
+    "antMigrationConfig": "HiCHmzrrDTeDf3coaLMwzZBTCfZsbpqogXvVbuUkfc1Z"
+  },
+  "registryCapacity": {
+    "gateways": 30,
+    "names": 200,
+    "note": "Devnet shrink. Mainnet caps are 3000 / 200000. See DEVNET.md for current usage / free slots."
+  },
+  "currentUsage": {
+    "gatewaysSeated": 10,
+    "arnsRecords": 81,
+    "ants": 81,
+    "treasuryBalanceArio": 999695300,
+    "totalSupplyArio": 1000000000,
+    "note": "Snapshot at 2026-05-06 17:43 UTC. ArNS records grow as devs buy names; treasury debits as import_balance distributes credits to pre-registered holders + ArNS fees collect."
+  },
+  "deployedAt": "2026-05-05",
+  "lastUpdated": "2026-05-06",
+  "lastUpgrade": {
+    "date": "2026-05-06",
+    "summary": "PR #105 admin repair instructions (admin_repair_config / admin_repair_settings) + devnet-setup pre-flight. Configs realigned after cross-config mint mismatch from a 2026-05-05 partial-genesis double-run. SPL distribution flow now end-to-end functional.",
+    "slots": {
+      "ario_core": 460532307,
+      "ario_gar": 460532345,
+      "ario_arns": 460399704,
+      "ario_ant": 460399885
+    }
+  }
+}

@@ -174,6 +174,12 @@ export type { DeserializedAclEntry } from './deserialize.js';
 // Constants
 export * from './constants.js';
 
+// Cluster-specific deployment constants (devnet program IDs, RPC URL,
+// mint, treasury / stake token accounts). Source of truth is
+// `/devnet-config.json` — kept in sync via the drift guard test
+// `clusters.test.ts`.
+export * from './clusters.js';
+
 // Types
 export type {
   SolanaConfig,
@@ -185,3 +191,25 @@ export type {
   SolanaTransactionResult,
   AccountData,
 } from './types.js';
+
+// Event decoders
+//
+// `parseTransactionEvents(rpc, signature)` and `parseEventsFromLogs(logs)`
+// give consumers strongly-typed access to every Anchor `#[event]` emit
+// the AR.IO programs produce. Each event variant in `AnyEvent` is
+// tagged by `name` for narrowing; per-program union types
+// (`AnyArio*Event`) are available for filtering.
+export {
+  parseTransactionEvents,
+  parseEventsFromLogs,
+  isEvent,
+} from './events.js';
+export type {
+  AnyEvent,
+  AnyArioCoreEvent,
+  AnyArioGarEvent,
+  AnyArioArnsEvent,
+  AnyArioAntEvent,
+  AnyArioAntEscrowEvent,
+  EventName,
+} from './events.js';

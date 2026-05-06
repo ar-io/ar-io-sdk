@@ -5,4 +5,4 @@
  */
 import type { Address } from '@solana/kit';
 
-export const ARIO_GAR_PROGRAM_ADDRESS = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'>;
+export const ARIO_GAR_PROGRAM_ADDRESS = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'>;

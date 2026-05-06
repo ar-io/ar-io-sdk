@@ -14,6 +14,6 @@ assetId: ReadonlyUint8Array;
 };
 
 export async function findDepositVaultEscrowPda(seeds: DepositVaultEscrowSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '8jj9gDRwNK9qLHzyA2V5CmU3EMVhHys13SN9pxbRpGpC' as Address<'8jj9gDRwNK9qLHzyA2V5CmU3EMVhHys13SN9pxbRpGpC'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([101, 115, 99, 114, 111, 119, 95, 118, 97, 117, 108, 116])), getAddressEncoder().encode(seeds.depositor), fixEncoderSize(getBytesEncoder(), 32).encode(seeds.assetId)]});
 }

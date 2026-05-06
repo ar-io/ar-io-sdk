@@ -13,6 +13,6 @@ newObserver: Address;
 };
 
 export async function findNewObserverLookupPda(seeds: NewObserverLookupSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = 'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR' as Address<'AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([111, 98, 115, 101, 114, 118, 101, 114, 95, 108, 111, 111, 107, 117, 112])), getAddressEncoder().encode(seeds.newObserver)]});
 }

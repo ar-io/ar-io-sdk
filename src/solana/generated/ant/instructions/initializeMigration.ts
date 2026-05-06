@@ -68,7 +68,7 @@ if (!accounts.migrationConfig.value) {
 accounts.migrationConfig.value = await findMigrationConfigPda();
 }
 if (!accounts.programData.value) {
-accounts.programData.value = await getProgramDerivedAddress({ programAddress: 'BPFLoaderUpgradeab1e11111111111111111111111' as Address<'BPFLoaderUpgradeab1e11111111111111111111111'>, seeds: [getBytesEncoder().encode(new Uint8Array([140, 14, 97, 114, 216, 232, 163, 211, 158, 70, 241, 196, 1, 194, 218, 133, 47, 129, 92, 201, 186, 239, 248, 77, 58, 43, 86, 74, 107, 202, 26, 242]))] });
+accounts.programData.value = await getProgramDerivedAddress({ programAddress: 'BPFLoaderUpgradeab1e11111111111111111111111' as Address<'BPFLoaderUpgradeab1e11111111111111111111111'>, seeds: [getBytesEncoder().encode(new Uint8Array([112, 76, 8, 81, 247, 181, 203, 106, 37, 57, 249, 0, 181, 97, 2, 228, 186, 15, 32, 187, 89, 118, 47, 184, 171, 183, 153, 139, 254, 223, 145, 157]))] });
 }
 if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;

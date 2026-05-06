@@ -1,5 +1,5 @@
 {
-  "address": "ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "address": "8jj9gDRwNK9qLHzyA2V5CmU3EMVhHys13SN9pxbRpGpC",
   "metadata": {
     "name": "ario_ant_escrow",
     "version": "0.1.0",
@@ -1359,6 +1359,60 @@
       ]
     }
   ],
+  "events": [
+    {
+      "name": "EscrowCancelledEvent",
+      "discriminator": [
+        185,
+        105,
+        9,
+        145,
+        0,
+        228,
+        166,
+        60
+      ]
+    },
+    {
+      "name": "EscrowClaimedEvent",
+      "discriminator": [
+        102,
+        255,
+        155,
+        116,
+        206,
+        56,
+        249,
+        241
+      ]
+    },
+    {
+      "name": "EscrowDepositedEvent",
+      "discriminator": [
+        12,
+        69,
+        17,
+        182,
+        204,
+        183,
+        134,
+        87
+      ]
+    },
+    {
+      "name": "EscrowRecipientUpdatedEvent",
+      "discriminator": [
+        31,
+        38,
+        4,
+        8,
+        192,
+        192,
+        147,
+        33
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -1575,6 +1629,188 @@
                 32
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowCancelledEvent",
+      "docs": [
+        "Emitted when a depositor cancels an escrow and recovers the asset.",
+        "`asset_id` follows the same conventions as `EscrowDepositedEvent`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "escrow",
+            "type": "pubkey"
+          },
+          {
+            "name": "depositor",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_type",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowClaimedEvent",
+      "docs": [
+        "Emitted on every successful claim (ANT / Tokens / Vault) on either",
+        "the Arweave or Ethereum signing path.",
+        "",
+        "`asset_id` and `amount` follow the same conventions as",
+        "`EscrowDepositedEvent`. `claim_protocol` discriminates between the",
+        "two signing paths (`PROTOCOL_*`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "escrow",
+            "type": "pubkey"
+          },
+          {
+            "name": "claimer",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_type",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "claim_protocol",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowDepositedEvent",
+      "docs": [
+        "Emitted on every successful deposit (ANT / Tokens / Vault).",
+        "",
+        "`asset_id` encoding by `asset_type`:",
+        "- `ASSET_TYPE_ANT`: the Metaplex Core asset (ANT) mint pubkey.",
+        "- `ASSET_TYPE_TOKEN`: the SPL token mint pubkey (ARIO mint).",
+        "- `ASSET_TYPE_VAULT`: the client-supplied 32-byte `asset_id` from",
+        "the deposit, decoded as a `Pubkey`. This uniquely identifies the",
+        "vault escrow (it's part of the escrow PDA seeds), letting",
+        "indexers correlate deposit/claim/cancel/update events for the",
+        "same vault.",
+        "",
+        "`amount`:",
+        "- `ASSET_TYPE_ANT`: always `0` (NFTs aren't fungible).",
+        "- `ASSET_TYPE_TOKEN`: mARIO transferred into escrow.",
+        "- `ASSET_TYPE_VAULT`: mARIO locked into the vault escrow.",
+        "",
+        "`recipient_pubkey` is fixed-size for borsh stability and IDL",
+        "predictability. Active prefix length lives in `recipient_pubkey_len`:",
+        "- Arweave: 64 bytes is too small for a full RSA-4096 modulus (512 B);",
+        "we record the SHA-256 hash of the modulus (32 bytes, len = 32) so",
+        "indexers can correlate to a specific Arweave identity without",
+        "bloating every event by 480 bytes. The full modulus is on-chain in",
+        "the escrow PDA for verifiers that need it.",
+        "- Ethereum: the 20-byte Keccak address (len = 20).",
+        "Unused suffix bytes are zero-padded."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "escrow",
+            "type": "pubkey"
+          },
+          {
+            "name": "depositor",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_type",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "recipient_protocol",
+            "type": "u8"
+          },
+          {
+            "name": "recipient_pubkey",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "recipient_pubkey_len",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowRecipientUpdatedEvent",
+      "docs": [
+        "Emitted when a depositor re-targets an escrow at a new recipient.",
+        "The new recipient pubkey is intentionally NOT included in the event",
+        "— it's already public in the escrow account, and including it would",
+        "inflate every update event by 64 bytes for marginal indexer value."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "escrow",
+            "type": "pubkey"
+          },
+          {
+            "name": "depositor",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_type",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
           }
         ]
       }

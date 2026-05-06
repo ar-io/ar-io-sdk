@@ -17,6 +17,16 @@ export type NameRegistry = { discriminator: ReadonlyUint8Array; authority: Addre
 /**
  * Array of name hashes (SHA256) for registered active names
  * Names are added when purchased and removed when expired/released
+ *
+ * DEVNET-SIZED on the `deploy/devnet` branch: 200 slots instead of
+ * the production 200_000. This is a smoke-test devnet — full AO
+ * snapshot import (3,758 names) is intentionally out-of-scope; that
+ * flow is exercised on localnet. **Do not merge this change to
+ * `main`** — mainnet must keep the full 200_000 capacity. Bumped
+ * from 100→200 to give downstream-app developers headroom to
+ * `buy-record` (80 imported fixtures + 120 dev seats); see
+ * `resize_name_registry` for the admin instruction that grows the
+ * existing on-chain account in place.
  */
 names: Array<NameEntry>;  };
 
@@ -24,17 +34,27 @@ export type NameRegistryArgs = { authority: Address; count: number; padding: Rea
 /**
  * Array of name hashes (SHA256) for registered active names
  * Names are added when purchased and removed when expired/released
+ *
+ * DEVNET-SIZED on the `deploy/devnet` branch: 200 slots instead of
+ * the production 200_000. This is a smoke-test devnet — full AO
+ * snapshot import (3,758 names) is intentionally out-of-scope; that
+ * flow is exercised on localnet. **Do not merge this change to
+ * `main`** — mainnet must keep the full 200_000 capacity. Bumped
+ * from 100→200 to give downstream-app developers headroom to
+ * `buy-record` (80 imported fixtures + 120 dev seats); see
+ * `resize_name_registry` for the admin instruction that grows the
+ * existing on-chain account in place.
  */
 names: Array<NameEntryArgs>;  };
 
 /** Gets the encoder for {@link NameRegistryArgs} account data. */
 export function getNameRegistryEncoder(): FixedSizeEncoder<NameRegistryArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['authority', getAddressEncoder()], ['count', getU32Encoder()], ['padding', fixEncoderSize(getBytesEncoder(), 4)], ['names', getArrayEncoder(getNameEntryEncoder(), { size: 200000 })]]), (value) => ({ ...value, discriminator: NAME_REGISTRY_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['authority', getAddressEncoder()], ['count', getU32Encoder()], ['padding', fixEncoderSize(getBytesEncoder(), 4)], ['names', getArrayEncoder(getNameEntryEncoder(), { size: 200 })]]), (value) => ({ ...value, discriminator: NAME_REGISTRY_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link NameRegistry} account data. */
 export function getNameRegistryDecoder(): FixedSizeDecoder<NameRegistry> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['authority', getAddressDecoder()], ['count', getU32Decoder()], ['padding', fixDecoderSize(getBytesDecoder(), 4)], ['names', getArrayDecoder(getNameEntryDecoder(), { size: 200000 })]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['authority', getAddressDecoder()], ['count', getU32Decoder()], ['padding', fixDecoderSize(getBytesDecoder(), 4)], ['names', getArrayDecoder(getNameEntryDecoder(), { size: 200 })]]);
 }
 
 /** Gets the codec for {@link NameRegistry} account data. */
@@ -87,5 +107,5 @@ export async function fetchAllMaybeNameRegistry(
 }
 
 export function getNameRegistrySize(): number {
-  return 8000048;
+  return 8048;
 }

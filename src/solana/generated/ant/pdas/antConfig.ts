@@ -13,6 +13,6 @@ asset: Address;
 };
 
 export async function findAntConfigPda(seeds: AntConfigSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'ARioAntProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' as Address<'ARioAntProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'> } = config;
+  const { programAddress = '8ZMuXhiK7DorjPUg8RB1rzu7CvsABMk38WDJRbM62y2C' as Address<'8ZMuXhiK7DorjPUg8RB1rzu7CvsABMk38WDJRbM62y2C'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getBytesEncoder().encode(new Uint8Array([97, 110, 116, 95, 99, 111, 110, 102, 105, 103])), getAddressEncoder().encode(seeds.asset)]});
 }

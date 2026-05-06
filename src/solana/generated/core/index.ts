@@ -8,3 +8,4 @@ export * from './instructions/index.js';
 export * from './pdas/index.js';
 export * from './errors/index.js';
 export * from './program-address.js';
+export * from './events/index.js';

@@ -9,14 +9,14 @@
 import { combineCodec, getBooleanDecoder, getBooleanEncoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU64Decoder, getU64Encoder, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder } from '@solana/kit';
 
 /** Gateway-specific settings (named differently to avoid conflict) */
-export type GatewaySettings2 = { allowDelegatedStaking: boolean; delegateRewardShareRatio: number; autoStake: boolean; minDelegationAmount: bigint; 
+export type GatewaySettings2 = { allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegationAmount: bigint; 
 /**
  * When true, only delegates on the allowlist (or existing stakers) can delegate
  * Matches Lua: allowedDelegatesLookup ~= nil
  */
 allowlistEnabled: boolean;  };
 
-export type GatewaySettings2Args = { allowDelegatedStaking: boolean; delegateRewardShareRatio: number; autoStake: boolean; minDelegationAmount: number | bigint; 
+export type GatewaySettings2Args = { allowDelegatedStaking: boolean; delegateRewardShareRatio: number; minDelegationAmount: number | bigint; 
 /**
  * When true, only delegates on the allowlist (or existing stakers) can delegate
  * Matches Lua: allowedDelegatesLookup ~= nil
@@ -24,11 +24,11 @@ export type GatewaySettings2Args = { allowDelegatedStaking: boolean; delegateRew
 allowlistEnabled: boolean;  };
 
 export function getGatewaySettings2Encoder(): FixedSizeEncoder<GatewaySettings2Args> {
-    return getStructEncoder([['allowDelegatedStaking', getBooleanEncoder()], ['delegateRewardShareRatio', getU16Encoder()], ['autoStake', getBooleanEncoder()], ['minDelegationAmount', getU64Encoder()], ['allowlistEnabled', getBooleanEncoder()]]);
+    return getStructEncoder([['allowDelegatedStaking', getBooleanEncoder()], ['delegateRewardShareRatio', getU16Encoder()], ['minDelegationAmount', getU64Encoder()], ['allowlistEnabled', getBooleanEncoder()]]);
 }
 
 export function getGatewaySettings2Decoder(): FixedSizeDecoder<GatewaySettings2> {
-    return getStructDecoder([['allowDelegatedStaking', getBooleanDecoder()], ['delegateRewardShareRatio', getU16Decoder()], ['autoStake', getBooleanDecoder()], ['minDelegationAmount', getU64Decoder()], ['allowlistEnabled', getBooleanDecoder()]]);
+    return getStructDecoder([['allowDelegatedStaking', getBooleanDecoder()], ['delegateRewardShareRatio', getU16Decoder()], ['minDelegationAmount', getU64Decoder()], ['allowlistEnabled', getBooleanDecoder()]]);
 }
 
 export function getGatewaySettings2Codec(): FixedSizeCodec<GatewaySettings2Args, GatewaySettings2> {
