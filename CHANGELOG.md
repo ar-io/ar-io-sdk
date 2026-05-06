@@ -1,3 +1,87 @@
+# [4.0.0-solana.1](https://github.com/ar-io/ar-io-sdk/compare/v3.24.0-solana.1...v4.0.0-solana.1) (2026-05-06)
+
+
+* feat!: port Solana backend from solana-ar-io monorepo ([6613766](https://github.com/ar-io/ar-io-sdk/commit/66137664a5fd136740308a166a293f2e9b499435)), closes [#5](https://github.com/ar-io/ar-io-sdk/issues/5)
+
+
+### Bug Fixes
+
+* **ci:** biome ignore test/fixtures (e2e-test-wallet.json) ([d2a2cd2](https://github.com/ar-io/ar-io-sdk/commit/d2a2cd23613e2481a2efc913f8e72682130f1d0b))
+* **ci:** keep AO defaults; lint/format fixes for CI ([6da8250](https://github.com/ar-io/ar-io-sdk/commit/6da82505268999fdb491d8643b51b8b2b4125bfd))
+* **solana:** sync IDLs (eventing + admin-repair) and add cluster constants ([94eca17](https://github.com/ar-io/ar-io-sdk/commit/94eca17184f681a54100f3f629bb5cd9bb759c6d)), closes [#103](https://github.com/ar-io/ar-io-sdk/issues/103) [#105](https://github.com/ar-io/ar-io-sdk/issues/105)
+
+
+### BREAKING CHANGES
+
+* adds a new `./solana` (and `./solana/generated`)
+subpath export. Default `.`/`./node`/`./web` entries unchanged and
+remain AO-only. Major version bump per the plan: 3.24.0-solana → 4.0.0-solana.
+
+## Code
+
+- src/solana/ — full SDK port: io-readable/io-writeable, ant-readable/
+  ant-writeable, ant-registry-readable/-writeable, escrow, spawn-ant,
+  funding-plan, canonical-message, deserialize, pda, send, ata,
+  metadata, mpl-core helpers, json-rpc shim, plus unit tests.
+- src/solana/generated/ — Codama-emitted typed clients for ario_ant,
+  ario_ant_escrow, ario_arns, ario_core, ario_gar, plus vendored
+  mpl_core. Committed per Solana ecosystem norm (mpl-core, spl-token).
+- src/cli/ — `--ao` switching flag, escrow CLI commands, ANT-program
+  override (--ant-program-id), Solana write paths in arnsPurchase /
+  gateway / transfer / antCommands. CLI is now a unified surface
+  across both AO + Solana backends.
+- src/common/io.ts, src/types/io.ts, src/utils/, src/types/ant*,
+  src/types/ant-registry.ts — Solana-aware factories on `ARIO`/`ANT`/
+  `ANTRegistry`, plus the AoARIO* / AoANT* type extensions
+  (`antProgram` field on records, etc.). Default `node` / `web`
+  entry points re-export Solana classes so `import { ARIO } from
+  '@ar.io/sdk/solana'` resolves to the kit-backed implementation.
+
+## IDLs + codegen
+
+- idls/ario_*.json — checked-in copies of contracts/target/idl/*.json
+  from solana-ar-io. Refresh runbook at docs/IDL_REFRESH.md.
+- idls/mpl_core.json — vendored from metaplex-foundation/mpl-core,
+  pinned to 4f97997fc1f514d51319ee32258902aae32a7ee0
+  (release/core@0.12.0).
+- scripts/codegen.mjs — Codama lowering pipeline. Reads idls/, emits
+  src/solana/generated/<program>/. Patches the
+  `from '../programs'` import on Codama's emitted `instructions/`
+  + `errors/` files to point at a slim `program-address.ts` shim
+  (drops the kit-Client `arioFooProgram()` plugin pattern we don't
+  use; keeps the per-instruction builders + per-error constants).
+- .github/workflows/build.yml — new `codegen-drift` job runs
+  `yarn codegen` on every PR and fails if `src/solana/generated/`
+  would change. Guarantees committed clients are always in sync
+  with `idls/`.
+
+## package.json
+
+- version: 3.24.0-solana.1 → 4.0.0-solana.0
+- keywords += "solana"
+- exports: + "./solana" + "./solana/generated"
+- dependencies: + @ardrive/turbo-sdk, + @solana-program/compute-budget,
+  + @solana/kit (runtime — kit types are in the public API),
+  + bs58
+- devDependencies: + @codama/nodes-from-anchor, + @codama/renderers-js
+  (pinned 2.1.0; 2.2.0 changed DISCRIMINATOR types to ReadonlyUint8Array
+  which breaks downstream typing), + codama
+- scripts: + "codegen": "node ./scripts/codegen.mjs"
+
+## Test fixtures
+
+- test/fixtures/e2e-test-wallet.json + README — localnet-only test
+  wallet copied from the monorepo. Localnet-only, never funded with
+  real assets.
+- test/helpers/{errors,index,time}.ts — `expectAnchorError` helper
+  + Solana error code re-exports from `src/solana/generated/<program>/
+  errors/index.ts`. Tests use the codama-emitted SCREAMING_SNAKE
+  error constants directly.
+
+## What stayed in the monorepo
+
+- *.localnet.test.ts — Surfpool-driven on-chain integration tests.
+
 # [3.24.0-solana.1](https://github.com/ar-io/ar-io-sdk/compare/v3.23.1...v3.24.0-solana.1) (2026-04-30)
 
 
