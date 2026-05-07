@@ -90,22 +90,49 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
-import { ARNS_RECORD_DISCRIMINATOR } from './generated/arns/accounts/arnsRecord.js';
-import { RESERVED_NAME_DISCRIMINATOR } from './generated/arns/accounts/reservedName.js';
-import { RETURNED_NAME_DISCRIMINATOR } from './generated/arns/accounts/returnedName.js';
+import { getArnsConfigDecoder } from './generated/arns/accounts/arnsConfig.js';
+import {
+  ARNS_RECORD_DISCRIMINATOR,
+  getArnsRecordDecoder,
+} from './generated/arns/accounts/arnsRecord.js';
+import {
+  RESERVED_NAME_DISCRIMINATOR,
+  getReservedNameDecoder,
+} from './generated/arns/accounts/reservedName.js';
+import {
+  RETURNED_NAME_DISCRIMINATOR,
+  getReturnedNameDecoder,
+} from './generated/arns/accounts/returnedName.js';
 import { PRIMARY_NAME_DISCRIMINATOR } from './generated/core/accounts/primaryName.js';
-import { PRIMARY_NAME_REQUEST_DISCRIMINATOR } from './generated/core/accounts/primaryNameRequest.js';
-import { VAULT_DISCRIMINATOR } from './generated/core/accounts/vault.js';
+import {
+  PRIMARY_NAME_REQUEST_DISCRIMINATOR,
+  getPrimaryNameRequestDecoder,
+} from './generated/core/accounts/primaryNameRequest.js';
+import {
+  VAULT_DISCRIMINATOR,
+  getVaultDecoder,
+} from './generated/core/accounts/vault.js';
 import { ALLOWLIST_ENTRY_DISCRIMINATOR } from './generated/gar/accounts/allowlistEntry.js';
-import { DELEGATION_DISCRIMINATOR } from './generated/gar/accounts/delegation.js';
-import { GATEWAY_DISCRIMINATOR } from './generated/gar/accounts/gateway.js';
+import {
+  DELEGATION_DISCRIMINATOR,
+  getDelegationDecoder,
+} from './generated/gar/accounts/delegation.js';
+import {
+  GATEWAY_DISCRIMINATOR,
+  getGatewayDecoder,
+} from './generated/gar/accounts/gateway.js';
 import { OBSERVATION_DISCRIMINATOR } from './generated/gar/accounts/observation.js';
-import { WITHDRAWAL_DISCRIMINATOR } from './generated/gar/accounts/withdrawal.js';
+import {
+  WITHDRAWAL_DISCRIMINATOR,
+  getWithdrawalDecoder,
+} from './generated/gar/accounts/withdrawal.js';
+import { GatewayStatus } from './generated/gar/types/index.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getArioConfigPDA,
   getArnsRecordPDA,
   getArnsRecordPDAFromHash,
+  getArnsSettingsPDA,
   getDemandFactorPDA,
   getEpochPDA,
   getEpochSettingsPDA,
@@ -1753,6 +1780,344 @@ export class SolanaARIOReadable {
     }
 
     return paginate(items, params);
+  }
+
+  // =========================================
+  // Prune / cleanup discovery (Solana-only)
+  // =========================================
+  //
+  // These helpers enumerate accounts eligible for the permissionless prune
+  // ix surface (see SolanaARIOWriteable). All read on-chain via
+  // `getProgramAccounts` + the Codama decoders, then post-filter
+  // client-side because most eligibility predicates can't be expressed as
+  // memcmp filters (variable-length names shift offsets; Option<i64>
+  // adds a tag byte). Volume is bounded — the cranker is expected to
+  // call these once per epoch cycle, not per-tx.
+  //
+  // See `docs/CRANKER_PRUNING_PLAN.md` for the design.
+
+  /**
+   * Enumerate ArnsRecord PDAs whose lease has fully expired
+   * (`end_timestamp + grace_period + return_auction_duration <= now`).
+   * Permabuys (no `end_timestamp`) are excluded. Pass a unix-seconds `now`.
+   */
+  async getExpiredArnsRecords(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; name: string; endTimestamp: bigint }>> {
+    const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
+    const cfgAccount = await this.getAccount(arnsConfigPda);
+    if (!cfgAccount.exists) return [];
+    const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
+    const grace = Number(cfg.gracePeriodSeconds);
+    const auction = Number(cfg.returnAuctionDurationSeconds);
+
+    const accounts = await this.getAccountsByDiscriminator(
+      this.arnsProgram,
+      ARNS_RECORD_DISCRIMINATOR,
+    );
+    const decoder = getArnsRecordDecoder();
+    const out: Array<{
+      pubkey: Address;
+      name: string;
+      endTimestamp: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (r.endTimestamp.__option !== 'Some') continue;
+        const end = Number(r.endTimestamp.value);
+        if (end + grace + auction <= now) {
+          out.push({
+            pubkey,
+            name: r.name,
+            endTimestamp: r.endTimestamp.value,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate ReturnedName PDAs whose Dutch auction window has fully
+   * elapsed (`returned_at + return_auction_duration <= now`).
+   */
+  async getExpiredReturnedNames(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; name: string; returnedAt: bigint }>> {
+    const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
+    const cfgAccount = await this.getAccount(arnsConfigPda);
+    if (!cfgAccount.exists) return [];
+    const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
+    const auction = Number(cfg.returnAuctionDurationSeconds);
+
+    const accounts = await this.getAccountsByDiscriminator(
+      this.arnsProgram,
+      RETURNED_NAME_DISCRIMINATOR,
+    );
+    const decoder = getReturnedNameDecoder();
+    const out: Array<{
+      pubkey: Address;
+      name: string;
+      returnedAt: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (Number(r.returnedAt) + auction <= now) {
+          out.push({ pubkey, name: r.name, returnedAt: r.returnedAt });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate ReservedName PDAs whose `expires_at` has passed.
+   * Permanent reservations (`expires_at: None`) are excluded.
+   */
+  async getExpiredReservations(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; name: string }>> {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.arnsProgram,
+      RESERVED_NAME_DISCRIMINATOR,
+    );
+    const decoder = getReservedNameDecoder();
+    const out: Array<{ pubkey: Address; name: string }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (r.expiresAt.__option !== 'Some') continue;
+        if (Number(r.expiresAt.value) <= now) {
+          out.push({ pubkey, name: r.name });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate Gateway PDAs in `Joined` status with
+   * `stats.failed_consecutive >= maxFailures`. These are eligible for
+   * `pruneGateway` (slash + remove from registry).
+   */
+  async getDeficientGateways(
+    maxFailures: number,
+  ): Promise<
+    Array<{ pubkey: Address; operator: Address; failedConsecutive: number }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Array<{
+      pubkey: Address;
+      operator: Address;
+      failedConsecutive: number;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const g = decoder.decode(data);
+        if (g.status !== GatewayStatus.Joined) continue;
+        if (g.stats.failedConsecutive >= maxFailures) {
+          out.push({
+            pubkey,
+            operator: g.operator,
+            failedConsecutive: g.stats.failedConsecutive,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate Gateway PDAs whose `status == Gone` (already left the
+   * network but PDA not yet GC'd). Eligible for `finalizeGone`.
+   */
+  async getGoneGateways(): Promise<
+    Array<{ pubkey: Address; operator: Address }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Array<{ pubkey: Address; operator: Address }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const g = decoder.decode(data);
+        if (g.status === GatewayStatus.Gone) {
+          out.push({ pubkey, operator: g.operator });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate Delegation PDAs with `amount == 0`. Eligible for
+   * `closeEmptyDelegation` (rent refund to the original delegator).
+   */
+  async getEmptyDelegations(): Promise<
+    Array<{ pubkey: Address; gateway: Address; delegator: Address }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      DELEGATION_DISCRIMINATOR,
+    );
+    const decoder = getDelegationDecoder();
+    const out: Array<{
+      pubkey: Address;
+      gateway: Address;
+      delegator: Address;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const d = decoder.decode(data);
+        if (d.amount === 0n) {
+          out.push({ pubkey, gateway: d.gateway, delegator: d.delegator });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate Withdrawal PDAs with `amount == 0` (drained via
+   * fund-from-withdrawal payments). Eligible for `closeDrainedWithdrawal`
+   * (rent refund to owner).
+   */
+  async getDrainedWithdrawals(): Promise<
+    Array<{ pubkey: Address; owner: Address; withdrawalId: bigint }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      WITHDRAWAL_DISCRIMINATOR,
+    );
+    const decoder = getWithdrawalDecoder();
+    const out: Array<{
+      pubkey: Address;
+      owner: Address;
+      withdrawalId: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const w = decoder.decode(data);
+        if (w.amount === 0n) {
+          out.push({ pubkey, owner: w.owner, withdrawalId: w.withdrawalId });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate Vault PDAs whose `end_timestamp` has passed (eligible for
+   * `releaseVault`). Note: `releaseVault` is owner-signed, so the cranker
+   * can only release its own vaults — the helper still surfaces every
+   * expired vault so other consumers (UIs, indexers) can use it too.
+   */
+  async getExpiredVaults(now: number): Promise<
+    Array<{
+      pubkey: Address;
+      owner: Address;
+      vaultId: bigint;
+      endTimestamp: bigint;
+    }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.coreProgram,
+      VAULT_DISCRIMINATOR,
+    );
+    const decoder = getVaultDecoder();
+    const out: Array<{
+      pubkey: Address;
+      owner: Address;
+      vaultId: bigint;
+      endTimestamp: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const v = decoder.decode(data);
+        if (Number(v.endTimestamp) <= now) {
+          out.push({
+            pubkey,
+            owner: v.owner,
+            vaultId: v.vaultId,
+            endTimestamp: v.endTimestamp,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Enumerate PrimaryNameRequest PDAs whose `expires_at` has passed.
+   * Eligible for `closeExpiredRequest` (rent refund to original initiator).
+   */
+  async getExpiredPrimaryNameRequests(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; initiator: Address }>> {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.coreProgram,
+      PRIMARY_NAME_REQUEST_DISCRIMINATOR,
+    );
+    const decoder = getPrimaryNameRequestDecoder();
+    const out: Array<{ pubkey: Address; initiator: Address }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (Number(r.expiresAt) <= now) {
+          out.push({ pubkey, initiator: r.initiator });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Read the live `ArnsConfig` (used by the cranker to gate
+   * `pruneExpiredNames` / `pruneReturnedNames` on the
+   * `next_*_prune_timestamp` hints).
+   */
+  async getArnsConfigRaw(): Promise<{
+    nextRecordsPruneTimestamp: bigint;
+    nextReturnedNamesPruneTimestamp: bigint;
+    gracePeriodSeconds: bigint;
+    returnAuctionDurationSeconds: bigint;
+  } | null> {
+    const [pda] = await getArnsSettingsPDA(this.arnsProgram);
+    const account = await this.getAccount(pda);
+    if (!account.exists) return null;
+    const cfg = getArnsConfigDecoder().decode(account.data);
+    return {
+      nextRecordsPruneTimestamp: cfg.nextRecordsPruneTimestamp,
+      nextReturnedNamesPruneTimestamp: cfg.nextReturnedNamesPruneTimestamp,
+      gracePeriodSeconds: cfg.gracePeriodSeconds,
+      returnAuctionDurationSeconds: cfg.returnAuctionDurationSeconds,
+    };
   }
 
   // =========================================

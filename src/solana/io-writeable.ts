@@ -84,6 +84,10 @@ import {
   getIncreaseUndernameLimitFromOperatorStakeInstructionAsync,
   getIncreaseUndernameLimitFromWithdrawalInstructionAsync,
   getIncreaseUndernameLimitInstructionAsync,
+  getPruneExpiredNamesInstructionAsync,
+  getPruneExpiredReservationInstruction,
+  getPruneNameToReturnedInstructionAsync,
+  getPruneReturnedNamesInstructionAsync,
   getReassignNameInstructionAsync,
   getReleaseNameInstructionAsync,
   getUpgradeNameFromDelegationInstructionAsync,
@@ -137,18 +141,23 @@ import {
   getCancelWithdrawalInstruction,
   getClaimDelegateFromLeavingGatewayInstructionAsync,
   getClaimWithdrawalInstructionAsync,
+  getCloseDrainedWithdrawalInstruction,
+  getCloseEmptyDelegationInstruction,
   getCloseEpochInstructionAsync,
+  getCloseObservationInstructionAsync,
   getCreateEpochInstructionAsync,
   getDecreaseDelegateStakeInstructionAsync,
   getDecreaseOperatorStakeInstructionAsync,
   getDelegateStakeInstructionAsync,
   getDisallowDelegateInstructionAsync,
   getDistributeEpochInstructionAsync,
+  getFinalizeGoneInstructionAsync,
   getIncreaseOperatorStakeInstructionAsync,
   getInstantWithdrawalInstructionAsync,
   getJoinNetworkInstructionAsync,
   getLeaveNetworkInstructionAsync,
   getPrescribeEpochInstructionAsync,
+  getPruneGatewayInstructionAsync,
   getRedelegateStakeInstructionAsync,
   getSaveObservationsInstructionAsync,
   getSetAllowlistEnabledInstructionAsync,
@@ -170,6 +179,7 @@ import {
   getGarSettingsPDA,
   getGatewayPDA,
   getGatewayRegistryPDA,
+  getObservationPDA,
   getObserverLookupPDA,
   getPrimaryNamePDA,
   getPrimaryNameRequestPDA,
@@ -431,6 +441,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const toATA = await getAssociatedTokenAddressKit(mint, recipient);
 
+    // The on-chain `Transfer` ix requires `to_token_account` to exist as a
+    // valid SPL TokenAccount (`AccountNotInitialized` #3012 otherwise).
+    // Bundle an idempotent CreateAssociatedTokenAccount so a fresh recipient
+    // wallet just works — same pattern as `vaultedTransfer` below. Idempotent
+    // means a second transfer to the same recipient is a no-op for this ix.
+    const createToAtaIx = buildCreateAtaIdempotentIx(
+      this.signer.address,
+      toATA,
+      recipient,
+      mint,
+    );
+
     const ix = getTransferInstruction(
       {
         fromTokenAccount: fromATA,
@@ -441,7 +463,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.coreProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([createToAtaIx, ix]);
     return { id: sig };
   }
 
@@ -1522,19 +1544,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       commitment: this.commitment,
     });
     if (!dfAccount.exists) throw new Error('DemandFactor not found');
-    // Layout: disc(8) + current_demand_factor(8) + ... + fees[51](u64×51).
-    // Fees array starts at offset that depends on the struct layout — we
-    // safely read the first 8+51*8 bytes.
     const data = Buffer.from(dfAccount.data);
     const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
     const demandFactor = dv.getBigUint64(8, true);
-    // Fees layout is: disc(8) + current_demand_factor(8) +
-    //                 purchases_this_period(8) + revenue_this_period(8) +
-    //                 period_zero_start_timestamp(8) + ... + fees[51]
-    // To stay decoupled from non-fee fields, we read the whole array
-    // assuming fees starts at a known offset. See ArNS DemandFactor struct.
-    // Pragmatic fallback: use a fixed fees offset of 56 (post-disc + 6 u64s).
-    const FEES_OFFSET = 56;
+    // DemandFactor layout (Borsh, packed; ario-arns/src/state/mod.rs):
+    //   disc(8) + current_demand_factor(u64) + current_period(u64) +
+    //   purchases_this_period(u64) + revenue_this_period(u64) +
+    //   consecutive_periods_with_min_demand_factor(u32) +
+    //   trailing_period_purchases([u64; 7]) +
+    //   trailing_period_revenues([u64; 7]) + fees([u64; 51]) + ...
+    // -> fees starts at 8 + 8 + 8 + 8 + 8 + 4 + 56 + 56 = 156.
+    const FEES_OFFSET = 156;
     if (data.length < FEES_OFFSET + 51 * 8) {
       throw new Error('DemandFactor account data too short for fees array');
     }
@@ -1919,7 +1939,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const data = Buffer.from(dfAccount.data);
     const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
     const demandFactor = dv.getBigUint64(8, true);
-    const FEES_OFFSET = 56;
+    const FEES_OFFSET = 156; // see DemandFactor layout note above
     const idx = Math.min(Math.max(args.name.length, 1), 51) - 1;
     const baseFee = dv.getBigUint64(FEES_OFFSET + idx * 8, true);
     const SCALE = 1_000_000n;
@@ -3047,4 +3067,292 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       endTimestamp,
     };
   }
+
+  // =========================================
+  // Prune / cleanup (permissionless crank)
+  // =========================================
+  //
+  // These mirror `tick()`-driven lazy pruning in the Lua source — on Solana
+  // each is a discrete instruction someone has to call. All are
+  // permissionless except `releaseVault`, which the on-chain handler still
+  // gates on `owner: Signer` (ADR / vault.rs::ReleaseVault). See
+  // docs/CRANKER_PRUNING_PLAN.md for the full design.
+
+  /**
+   * Batch-prune expired ArnsRecord PDAs from the NameRegistry. The caller
+   * supplies the eligible records as `arnsRecords` — they're appended as
+   * `remaining_accounts` and the on-chain handler verifies each is past
+   * `end_timestamp + grace_period + return_auction_duration` before closing.
+   * `maxNames` caps the per-tx work (u8). Submit in batches of ~10-15.
+   */
+  async pruneExpiredNames(
+    params: { maxNames: number; arnsRecords: string[] },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const ix = await getPruneExpiredNamesInstructionAsync(
+      await this.withArnsDefaults({
+        payer: this.signer,
+        maxNames: params.maxNames,
+      }),
+      { programAddress: this.arnsProgram },
+    );
+
+    const remaining: AccountMeta[] = params.arnsRecords.map((a) => ({
+      address: address(a),
+      role: AccountRole.WRITABLE,
+    }));
+
+    const sig = await this.sendTransaction(
+      [withRemainingAccounts(ix, remaining)],
+      1_000_000,
+    );
+    return { id: sig };
+  }
+
+  /**
+   * Convert a single expired-but-not-yet-returned lease into a `ReturnedName`
+   * (kicks off the Dutch auction). Permissionless.
+   */
+  async pruneNameToReturned(
+    params: { name: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
+    const [returnedName] = await getReturnedNamePDA(
+      params.name,
+      this.arnsProgram,
+    );
+
+    const ix = await getPruneNameToReturnedInstructionAsync(
+      await this.withArnsDefaults({
+        arnsRecord,
+        returnedName,
+        payer: this.signer,
+      }),
+      { programAddress: this.arnsProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Batch-prune expired ReturnedName PDAs (auction window elapsed). Caller
+   * supplies the eligible PDAs as `returnedNames`; they're appended as
+   * `remaining_accounts`. `maxNames` caps per-tx work (u8).
+   */
+  async pruneReturnedNames(
+    params: { maxNames: number; returnedNames: string[] },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const ix = await getPruneReturnedNamesInstructionAsync(
+      await this.withArnsDefaults({
+        payer: this.signer,
+        maxNames: params.maxNames,
+      }),
+      { programAddress: this.arnsProgram },
+    );
+
+    const remaining: AccountMeta[] = params.returnedNames.map((a) => ({
+      address: address(a),
+      role: AccountRole.WRITABLE,
+    }));
+
+    const sig = await this.sendTransaction([
+      withRemainingAccounts(ix, remaining),
+    ]);
+    return { id: sig };
+  }
+
+  /**
+   * Close a single expired ReservedName PDA. Permissionless after
+   * `expires_at`.
+   */
+  async pruneExpiredReservation(
+    params: { name: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const [reservedName] = await getReservedNamePDA(
+      params.name,
+      this.arnsProgram,
+    );
+
+    const ix = getPruneExpiredReservationInstruction(
+      {
+        reservedName,
+        payer: this.signer,
+      },
+      { programAddress: this.arnsProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Slash and remove a deficient gateway (`stats.failed_consecutive >=
+   * max_consecutive_failures`). Builds the protected exit vault for the
+   * post-slash min portion plus the optional excess vault for any surplus.
+   * The contract's `excess_withdrawal: Option<UncheckedAccount>` slot is
+   * always passed (PDA derived from `next_id + 1`); the handler consumes
+   * it only when the post-slash stake exceeds `min_operator_stake`.
+   * Permissionless.
+   */
+  async pruneGateway(
+    params: { gateway: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const gatewayAddr = address(params.gateway);
+    const garConfig = await this.getGarConfig();
+
+    const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
+    const [withdrawalCounterPda] = await getWithdrawalCounterPDA(
+      gatewayAddr,
+      this.garProgram,
+    );
+    const nextId = await this.getNextWithdrawalId(gatewayAddr);
+    const [withdrawalPda] = await getWithdrawalPDA(
+      gatewayAddr,
+      nextId,
+      this.garProgram,
+    );
+    const [excessWithdrawalPda] = await getWithdrawalPDA(
+      gatewayAddr,
+      nextId + 1n,
+      this.garProgram,
+    );
+
+    const ix = await getPruneGatewayInstructionAsync(
+      await this.withGarDefaults({
+        gateway: gatewayPda,
+        withdrawalCounter: withdrawalCounterPda,
+        withdrawal: withdrawalPda,
+        excessWithdrawal: excessWithdrawalPda,
+        stakeTokenAccount: garConfig.stakeTokenAccount,
+        protocolTokenAccount: garConfig.protocolTokenAccount,
+        payer: this.signer,
+      }),
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix], 1_000_000);
+    return { id: sig };
+  }
+
+  /**
+   * GC a `Leaving`/`Gone` gateway whose leave window has fully elapsed.
+   * Closes the Gateway PDA and refunds rent to the caller. Permissionless.
+   */
+  async finalizeGone(
+    params: { gateway: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const gatewayAddr = address(params.gateway);
+    const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
+
+    const ix = await getFinalizeGoneInstructionAsync(
+      await this.withGarDefaults({
+        gateway: gatewayPda,
+        caller: this.signer,
+      }),
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Reclaim rent from an Observation PDA whose epoch has been distributed.
+   * Permissionless. Pass `epochIndex` and the `observer` address used as
+   * the Observation seed.
+   */
+  async closeObservation(
+    params: { epochIndex: number; observer: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const observerAddr = address(params.observer);
+    const [observationPda] = await getObservationPDA(
+      params.epochIndex,
+      observerAddr,
+      this.garProgram,
+    );
+
+    const ix = await getCloseObservationInstructionAsync(
+      {
+        observation: observationPda,
+        payer: this.signer,
+        epochIndex: BigInt(params.epochIndex),
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Close an empty Delegation PDA (`amount == 0`) and refund rent to the
+   * original delegator (NOT the caller — see GAR-016, prevents griefing).
+   * Permissionless.
+   */
+  async closeEmptyDelegation(
+    params: { gateway: string; delegator: string },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const gatewayAddr = address(params.gateway);
+    const delegatorAddr = address(params.delegator);
+    const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
+    const [delegationPda] = await getDelegationPDA(
+      gatewayAddr,
+      delegatorAddr,
+      this.garProgram,
+    );
+
+    const ix = getCloseEmptyDelegationInstruction(
+      {
+        gateway: gatewayPda,
+        delegation: delegationPda,
+        delegator: delegatorAddr,
+        payer: this.signer,
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Close a drained Withdrawal PDA (`amount == 0`) and refund rent to the
+   * original owner (NOT the caller). Permissionless.
+   */
+  async closeDrainedWithdrawal(
+    params: { owner: string; withdrawalId: number | bigint },
+    _options?: WriteOptions,
+  ): Promise<AoMessageResult> {
+    const ownerAddr = address(params.owner);
+    const [withdrawalPda] = await getWithdrawalPDA(
+      ownerAddr,
+      BigInt(params.withdrawalId),
+      this.garProgram,
+    );
+
+    const ix = getCloseDrainedWithdrawalInstruction(
+      {
+        withdrawal: withdrawalPda,
+        owner: ownerAddr,
+        closer: this.signer,
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  // NOTE: `releaseVault` and `closeExpiredRequest` already exist higher in
+  // this class (under `Vault release` / `Close expired primary name request`
+  // sections). Both fit the cranker's permissionless cleanup surface, so the
+  // cranker uses them in `runCleanup()` directly.
 }

@@ -445,6 +445,38 @@ export const optionMap = {
     description: 'Reassign all affiliated names to the new process',
     type: 'boolean',
   },
+  // -----------------------------------------------------------------
+  // Prune / cleanup flags (Solana-only — see pruneCommands.ts)
+  // -----------------------------------------------------------------
+  gateway: {
+    alias: '--gateway <gateway>',
+    description: 'The gateway operator address (prune / finalize commands)',
+  },
+  delegator: {
+    alias: '--delegator <delegator>',
+    description: 'The delegator address (close-empty-delegation)',
+  },
+  observer: {
+    alias: '--observer <observer>',
+    description: 'The observer address (close-observation)',
+  },
+  max: {
+    alias: '--max <max>',
+    description:
+      'Per-tx batch size (1-255, u8) for prune-expired-names / prune-returned-names',
+  },
+  arnsRecords: {
+    alias: '--arns-records <arnsRecords...>',
+    description:
+      'Explicit ArnsRecord PDAs to prune. Default: discover via getExpiredArnsRecords.',
+    type: 'array',
+  },
+  returnedNames: {
+    alias: '--returned-names <returnedNames...>',
+    description:
+      'Explicit ReturnedName PDAs to prune. Default: discover via getExpiredReturnedNames.',
+    type: 'array',
+  },
 };
 
 export const walletOptions = [

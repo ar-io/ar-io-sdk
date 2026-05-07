@@ -762,8 +762,16 @@ export class TokenEscrow {
       saltLen: args.saltLen ?? 32,
       messageNonce: escrow.nonce,
     });
+    // The on-chain claim handler delivers liquid tokens to
+    // `claimantTokenAccount`; for fresh-wallet claimants the canonical ATA
+    // doesn't exist yet (#3012). Idempotent-create when canonical.
+    const createAtaIx = await this._createClaimantAtaIfCanonical(
+      args.claimant,
+      args.claimantTokenAccount,
+      escrow.arioMint,
+    );
     // RSA-PSS-4096 verification is CU-intensive; use 400K.
-    return this.send([ix], 400_000);
+    return this.send(createAtaIx ? [createAtaIx, ix] : [ix], 400_000);
   }
 
   async claimTokensArweaveIx(args: {
@@ -826,7 +834,14 @@ export class TokenEscrow {
       ...args,
       messageNonce: escrow.nonce,
     });
-    return this.send([ix]);
+    // Same fresh-wallet #3012 vector as claimTokensArweave — bundle a
+    // canonical-ATA idempotent-create when applicable.
+    const createAtaIx = await this._createClaimantAtaIfCanonical(
+      args.claimant,
+      args.claimantTokenAccount,
+      escrow.arioMint,
+    );
+    return this.send(createAtaIx ? [createAtaIx, ix] : [ix]);
   }
 
   async claimTokensEthereumIx(args: {
@@ -984,15 +999,59 @@ export class TokenEscrow {
    * (see the introspection function's tolerance), so any modest clock skew
    * between client and chain is absorbed.
    */
+  /**
+   * Idempotent-create the claimant's canonical ATA when needed.
+   *
+   * The on-chain claim handler delivers liquid tokens directly to
+   * `claimantTokenAccount` for expired vaults AND for token escrows.
+   * For active vaults, the `claim_vault_*` Anchor Accounts struct still
+   * declares `claimant_token_account: Account<TokenAccount>`, which forces
+   * Anchor's account-load-time validation to require the account exist
+   * even though the active path doesn't write to it. Either way: if the
+   * claimant is a fresh wallet that has never held this mint, the ATA
+   * doesn't exist and the tx fails with `AccountNotInitialized` (#3012).
+   *
+   * Returns `null` when the caller passed a non-canonical
+   * `claimantTokenAccount` (manually-created non-ATA token account,
+   * presumably already exists — caller's responsibility).
+   */
+  private async _createClaimantAtaIfCanonical(
+    claimant: Address,
+    claimantTokenAccount: Address,
+    mint: Address,
+  ): Promise<Instruction | null> {
+    const canonical = await getAssociatedTokenAddressKit(mint, claimant);
+    if (claimantTokenAccount !== canonical) return null;
+    const signer = this.requireSigner('createClaimantAtaIfCanonical');
+    return buildCreateAtaIdempotentIx(
+      signer.address,
+      canonical,
+      claimant,
+      mint,
+    );
+  }
+
   private async maybeBundleVaultedTransfer(
     escrow: EscrowTokenState,
-    args: { claimant: Address; payerTokenAccount: Address },
+    args: {
+      claimant: Address;
+      claimantTokenAccount: Address;
+      payerTokenAccount: Address;
+    },
     claimIx: Instruction,
   ): Promise<Instruction[]> {
     const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
     const remaining = escrow.vaultEndTimestamp - nowSeconds;
     if (remaining <= 0n) {
-      return [claimIx];
+      // Expired vault → claim handler delivers liquid to claimantTokenAccount.
+      // Idempotent-create that ATA if it's the canonical derivation so a
+      // first-time recipient just works.
+      const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
+        args.claimant,
+        args.claimantTokenAccount,
+        escrow.arioMint,
+      );
+      return createClaimantAtaIx ? [createClaimantAtaIx, claimIx] : [claimIx];
     }
     const signer = this.requireSigner('maybeBundleVaultedTransfer');
     const nextId = await this.getNextVaultId(args.claimant);
@@ -1005,6 +1064,25 @@ export class TokenEscrow {
       escrow.arioMint,
       vaultPda,
       true,
+    );
+    // Active-vault path: `claim_vault_*` still validates the claimant ATA
+    // at account-load-time (Anchor `Account<TokenAccount>` constraint),
+    // even though no liquid is written to it. Idempotent-create so a fresh
+    // claimant doesn't fail the ix with AccountNotInitialized (#3012).
+    const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
+      args.claimant,
+      args.claimantTokenAccount,
+      escrow.arioMint,
+    );
+    // The new vault PDA's ATA must exist before `vaulted_transfer` reads it
+    // (else `AccountNotInitialized` #3012). Idempotent so a retry after a
+    // partial-failure tx is safe. Placed after the claim ix to preserve
+    // the "claim first" tx ordering invariant.
+    const createVaultAtaIx = buildCreateAtaIdempotentIx(
+      signer.address,
+      vaultATA,
+      vaultPda,
+      escrow.arioMint,
     );
     const vaultedIx = await getVaultedTransferInstructionAsync(
       {
@@ -1019,7 +1097,8 @@ export class TokenEscrow {
       },
       { programAddress: this.coreProgram },
     );
-    return [claimIx, vaultedIx];
+    const head = createClaimantAtaIx ? [createClaimantAtaIx] : [];
+    return [...head, claimIx, createVaultAtaIx, vaultedIx];
   }
 
   /** Read the recipient's `VaultCounter.nextId`, defaulting to 0n if the
