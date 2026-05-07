@@ -357,6 +357,9 @@ export function deserializeGateway(
   const statusIdx = r.readU8(); // 0=Joined, 1=Leaving
   const startTimestamp = r.readI64AsNumber();
   const leaveTimestamp = r.readOptionI64();
+  // leave_epoch_duration: i64 — snapshot of epoch_settings.epoch_duration captured
+  // at leave_network/prune_gateway. Not surfaced on AoGateway; consume to stay aligned.
+  r.skip(8);
 
   // GatewayStats
   const passedEpochCount = r.readU32();
@@ -367,18 +370,18 @@ export function deserializeGateway(
   const failedConsecutiveEpochs = r.readU8();
   const passedConsecutiveEpochs = r.readU8();
 
-  // GatewayWeights (6 x u64)
+  // GatewayWeights (7 x u64 — 7th is weights_epoch, set by tally_weights)
   const stakeWeight = r.readU64AsNumber();
   const tenureWeight = r.readU64AsNumber();
   const gatewayPerformanceRatio = r.readU64AsNumber();
   const observerPerformanceRatio = r.readU64AsNumber();
   const compositeWeight = r.readU64AsNumber();
   const normalizedCompositeWeight = r.readU64AsNumber();
+  r.skip(8); // weights_epoch — not surfaced on AoGatewayWeights
 
-  // GatewaySettings2
+  // GatewaySettings2 (auto_stake removed in cfc7a8b2 — never existed on Solana)
   const allowDelegatedStaking = r.readBool();
   const delegateRewardShareRatio = r.readU16();
-  const autoStake = r.readBool();
   const minDelegatedStake = r.readU64AsNumber();
   const allowlistEnabled = r.readBool();
 
@@ -423,7 +426,7 @@ export function deserializeGateway(
     delegateRewardShareRatio,
     allowedDelegates: [], // populated separately from allowlist PDAs
     minDelegatedStake,
-    autoStake,
+    autoStake: false, // not an on-chain field on Solana; preserved on AoGatewaySettings for AO parity
     label,
     note,
     properties,

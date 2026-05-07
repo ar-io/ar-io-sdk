@@ -59,6 +59,19 @@ import {
   updateGatewaySettings,
 } from './commands/gatewayWriteCommands.js';
 import {
+  closeDrainedWithdrawalCLICommand,
+  closeEmptyDelegationCLICommand,
+  closeExpiredRequestCLICommand,
+  closeObservationCLICommand,
+  finalizeGoneCLICommand,
+  pruneExpiredNamesCLICommand,
+  pruneExpiredReservationCLICommand,
+  pruneGatewayCLICommand,
+  pruneNameToReturnedCLICommand,
+  pruneReturnedNamesCLICommand,
+  releaseVaultCLICommand,
+} from './commands/pruneCommands.js';
+import {
   getAllGatewayVaults,
   getAllowedDelegates,
   getArNSRecord,
@@ -680,6 +693,97 @@ makeCommand<AddressAndNameCLIOptions>({
   description: 'Set an ArNS name you own as your primary name',
   options: arnsPurchaseOptions,
   action: setPrimaryNameCLICommand,
+});
+
+// # Prune / cleanup (Solana-only — permissionless crank surface)
+makeCommand({
+  name: 'prune-expired-names',
+  description:
+    'Batch-prune expired ArnsRecord PDAs (Solana-only). Discovers eligible records ' +
+    'via getExpiredArnsRecords if --arns-records is omitted.',
+  options: [...writeActionOptions, optionMap.max, optionMap.arnsRecords],
+  action: pruneExpiredNamesCLICommand,
+});
+
+makeCommand({
+  name: 'prune-name-to-returned',
+  description:
+    'Convert a single expired-but-not-yet-returned lease into a ReturnedName ' +
+    '(starts the Dutch auction). Solana-only.',
+  options: [...writeActionOptions, optionMap.name],
+  action: pruneNameToReturnedCLICommand,
+});
+
+makeCommand({
+  name: 'prune-returned-names',
+  description:
+    'Batch-prune expired ReturnedName PDAs (Solana-only). Discovers via ' +
+    'getExpiredReturnedNames if --returned-names is omitted.',
+  options: [...writeActionOptions, optionMap.max, optionMap.returnedNames],
+  action: pruneReturnedNamesCLICommand,
+});
+
+makeCommand({
+  name: 'prune-expired-reservation',
+  description: 'Close an expired ReservedName PDA (Solana-only).',
+  options: [...writeActionOptions, optionMap.name],
+  action: pruneExpiredReservationCLICommand,
+});
+
+makeCommand({
+  name: 'prune-gateway',
+  description:
+    'Slash + remove a deficient gateway (≥30 consecutive failures). Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway],
+  action: pruneGatewayCLICommand,
+});
+
+makeCommand({
+  name: 'finalize-gone',
+  description:
+    'GC a Leaving/Gone gateway whose leave window has fully elapsed. Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway],
+  action: finalizeGoneCLICommand,
+});
+
+makeCommand({
+  name: 'close-observation',
+  description:
+    'Reclaim rent from an Observation PDA whose epoch has been distributed. Solana-only.',
+  options: [...writeActionOptions, optionMap.epochIndex, optionMap.observer],
+  action: closeObservationCLICommand,
+});
+
+makeCommand({
+  name: 'close-empty-delegation',
+  description:
+    'Close an empty Delegation PDA (amount == 0). Rent refunds to the original delegator. Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway, optionMap.delegator],
+  action: closeEmptyDelegationCLICommand,
+});
+
+makeCommand({
+  name: 'close-drained-withdrawal',
+  description:
+    'Close a drained Withdrawal PDA (amount == 0). Rent refunds to the original owner. Solana-only.',
+  options: [...writeActionOptions, optionMap.owner, optionMap.withdrawalId],
+  action: closeDrainedWithdrawalCLICommand,
+});
+
+makeCommand({
+  name: 'release-vault',
+  description:
+    'Release tokens from an expired vault back to the owner (Solana-only). ' +
+    'NOT permissionless — must be called from the vault owner wallet.',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.owner],
+  action: releaseVaultCLICommand,
+});
+
+makeCommand({
+  name: 'close-expired-request',
+  description: 'Close an expired PrimaryNameRequest PDA. Solana-only.',
+  options: [...writeActionOptions, optionMap.initiator],
+  action: closeExpiredRequestCLICommand,
 });
 
 // # ANT Registry

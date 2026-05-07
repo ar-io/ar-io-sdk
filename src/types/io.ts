@@ -833,6 +833,16 @@ export interface AoARIOWrite extends AoARIORead {
    * Solana-only: throws on the AO backend (AO ANTs have no NFT trait surface).
    */
   syncAttributes: AoWriteAction<{ name: string }, AoMessageResult>;
+
+  // NOTE: prune / cleanup methods (`pruneExpiredNames`, `pruneNameToReturned`,
+  // `pruneReturnedNames`, `pruneExpiredReservation`, `pruneGateway`,
+  // `finalizeGone`, `closeObservation`, `closeEmptyDelegation`,
+  // `closeDrainedWithdrawal`, `releaseVault`, `closeExpiredRequest`) are
+  // Solana-only and intentionally NOT on this interface — they have no AO
+  // analogue (Lua's `tick()` did this lazily). Consumers needing them
+  // should type the client as `SolanaARIOWriteable` directly. Keeps the
+  // cross-backend interface minimal and avoids stubs that throw on AO.
+  // See docs/CRANKER_PRUNING_PLAN.md.
 }
 
 // Type-guard functions
