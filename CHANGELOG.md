@@ -1,3 +1,10 @@
+# [4.0.0-solana.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.2...v4.0.0-solana.3) (2026-05-07)
+
+
+### Bug Fixes
+
+* **version:** set version to 2 on solana tag ([29fee17](https://github.com/ar-io/ar-io-sdk/commit/29fee1741f162c43b6e268d562534ee71688ed11))
+
 # [4.0.0-solana.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.1...v4.0.0-solana.2) (2026-05-07)
 
 
