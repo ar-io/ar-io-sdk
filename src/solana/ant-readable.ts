@@ -317,9 +317,7 @@ export class SolanaANTReadable {
       try {
         const buf = Buffer.from(account.data[0], 'base64');
         const record = deserializeAntRecord(buf);
-        // Look up metadata by computing the undername hash
-        const { createHash } = await import('crypto');
-        const hash = createHash('sha256')
+        const hash = __createHash('sha256')
           .update(record.undername.toLowerCase())
           .digest('hex');
         const meta: Partial<ReturnType<typeof deserializeAntRecordMetadata>> =
