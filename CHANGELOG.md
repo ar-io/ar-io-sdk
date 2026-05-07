@@ -1,3 +1,10 @@
+# [4.0.0-solana.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.1...v4.0.0-solana.2) (2026-05-07)
+
+
+### Bug Fixes
+
+* **ant-readable:** use static crypto import for undername hash in getRecords ([5885903](https://github.com/ar-io/ar-io-sdk/commit/58859034bf63a7ab2b1c30963b8ed21bc1ae3c99))
+
 # [4.0.0-solana.1](https://github.com/ar-io/ar-io-sdk/compare/v3.24.0-solana.1...v4.0.0-solana.1) (2026-05-06)
 
 
