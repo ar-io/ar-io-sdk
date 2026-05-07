@@ -693,7 +693,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         protocol: Protocol.Https,
         properties: params.properties ?? null,
         note: params.note ?? null,
-        autoStake: params.autoStake ?? false,
         allowDelegatedStaking:
           params.allowDelegatedStaking === true ||
           params.allowDelegatedStaking === 'allowlist',
@@ -760,7 +759,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         protocol: null,
         properties: params.properties ?? null,
         note: params.note ?? null,
-        autoStake: params.autoStake ?? null,
         allowDelegatedStaking:
           typeof params.allowDelegatedStaking === 'boolean'
             ? params.allowDelegatedStaking
