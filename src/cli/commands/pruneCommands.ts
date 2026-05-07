@@ -217,6 +217,15 @@ export async function closeDrainedWithdrawalCLICommand(o: PruneOptions) {
   rejectAoBackend(o, 'close-drained-withdrawal');
   const owner = requiredStringFromOptions(o, 'owner');
   const withdrawalIdStr = requiredStringFromOptions(o, 'withdrawalId');
+  // Validate before BigInt() — `BigInt('0xff')` and `BigInt('  1  ')` succeed
+  // and `BigInt('abc')` throws an opaque SyntaxError. Restrict to the u64
+  // decimal form the on-chain seed encoder expects so the CLI fails with a
+  // clear message instead of a downstream parser error.
+  if (!/^\d+$/.test(withdrawalIdStr)) {
+    throw new Error(
+      `--withdrawal-id must be a non-negative decimal integer (got "${withdrawalIdStr}")`,
+    );
+  }
   const withdrawalId = BigInt(withdrawalIdStr);
   const ario = await getSolanaWriter(o);
 

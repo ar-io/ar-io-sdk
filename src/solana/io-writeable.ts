@@ -3158,9 +3158,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       role: AccountRole.WRITABLE,
     }));
 
-    const sig = await this.sendTransaction([
-      withRemainingAccounts(ix, remaining),
-    ]);
+    // Match `pruneExpiredNames` (1M CU) — both dispatch the same batched
+    // shape over `remaining_accounts`, and the default 400K is too tight
+    // when the cranker batches near `maxNames` (≈15) on a busy registry.
+    const sig = await this.sendTransaction(
+      [withRemainingAccounts(ix, remaining)],
+      1_000_000,
+    );
     return { id: sig };
   }
 
