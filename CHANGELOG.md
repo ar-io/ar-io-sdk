@@ -1,3 +1,12 @@
+# [4.0.0-solana.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.3...v4.0.0-solana.4) (2026-05-08)
+
+
+### Bug Fixes
+
+* **solana:** address CodeRabbit nits on prune surface ([99cf7f7](https://github.com/ar-io/ar-io-sdk/commit/99cf7f73492bbb60556e0ba6effa3a7350770cfc)), closes [#621](https://github.com/ar-io/ar-io-sdk/issues/621)
+* **solana:** bundle CreateATA on every fresh-wallet path; add prune surface ([9b84c33](https://github.com/ar-io/ar-io-sdk/commit/9b84c33656cc229ecfc513f7dff3697fe9f83560)), closes [#3012](https://github.com/ar-io/ar-io-sdk/issues/3012) [#112](https://github.com/ar-io/ar-io-sdk/issues/112)
+* **solana:** gateway deser drift + auto_stake cleanup ([28772ee](https://github.com/ar-io/ar-io-sdk/commit/28772ee50179eb53a61dcdfbe03b460152c39b7b))
+
 # [4.0.0-solana.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.2...v4.0.0-solana.3) (2026-05-07)
 
 
