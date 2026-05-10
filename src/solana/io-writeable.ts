@@ -119,6 +119,7 @@ function toGeneratedFundingSourceSpec(
   };
   return { kind: kindMap[s.kind], amount: s.amount };
 }
+import { getTransferCheckedInstruction } from '@solana-program/token';
 import { getSyncAttributesInstruction } from './generated/ant/instructions/syncAttributes.js';
 import {
   getApprovePrimaryNameInstructionAsync,
@@ -133,7 +134,6 @@ import {
   getRevokeVaultInstructionAsync,
   getVaultedTransferInstructionAsync,
 } from './generated/core/instructions/index.js';
-import { getTransferCheckedInstruction } from '@solana-program/token';
 import { getDelegationDecoder } from './generated/gar/accounts/delegation.js';
 import { getGatewayDecoder } from './generated/gar/accounts/gateway.js';
 import {
