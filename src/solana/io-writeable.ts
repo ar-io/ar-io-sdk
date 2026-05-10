@@ -131,9 +131,9 @@ import {
   getRequestPrimaryNameFromFundingPlanInstructionAsync,
   getRequestPrimaryNameInstructionAsync,
   getRevokeVaultInstructionAsync,
-  getTransferInstruction,
   getVaultedTransferInstructionAsync,
 } from './generated/core/instructions/index.js';
+import { getTransferCheckedInstruction } from '@solana-program/token';
 import { getDelegationDecoder } from './generated/gar/accounts/delegation.js';
 import { getGatewayDecoder } from './generated/gar/accounts/gateway.js';
 import {
@@ -441,11 +441,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const toATA = await getAssociatedTokenAddressKit(mint, recipient);
 
-    // The on-chain `Transfer` ix requires `to_token_account` to exist as a
-    // valid SPL TokenAccount (`AccountNotInitialized` #3012 otherwise).
-    // Bundle an idempotent CreateAssociatedTokenAccount so a fresh recipient
-    // wallet just works — same pattern as `vaultedTransfer` below. Idempotent
-    // means a second transfer to the same recipient is a no-op for this ix.
+    // SPL `transferChecked` requires the recipient ATA to exist; bundle
+    // an idempotent ATA-create so fresh recipients just work. Same
+    // pattern as `vaultedTransfer` below.
     const createToAtaIx = buildCreateAtaIdempotentIx(
       this.signer.address,
       toATA,
@@ -453,15 +451,21 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       mint,
     );
 
-    const ix = getTransferInstruction(
-      {
-        fromTokenAccount: fromATA,
-        toTokenAccount: toATA,
-        authority: this.signer,
-        amount,
-      },
-      { programAddress: this.coreProgram },
-    );
+    // Standard SPL Token `transferChecked`. The custom `ario-core::transfer`
+    // ix is deprecated — it added no protocol-level accounting, just wrapped
+    // this same CPI plus a `TransferEvent` emission that no major Solana
+    // indexer needs (Helius, Solscan, etc. all track SPL transfers natively).
+    // See `docs/REMOVE_CUSTOM_TRANSFER_PLAN.md` in `ar-io/solana-ar-io`.
+    // `transferChecked` (vs `transfer`) validates the mint + decimals
+    // on-chain, preventing cross-mint mistakes.
+    const ix = getTransferCheckedInstruction({
+      source: fromATA,
+      mint,
+      destination: toATA,
+      authority: this.signer,
+      amount,
+      decimals: 6, // ARIO mint decimals (ONE_TOKEN = 1_000_000)
+    });
 
     const sig = await this.sendTransaction([createToAtaIx, ix]);
     return { id: sig };
