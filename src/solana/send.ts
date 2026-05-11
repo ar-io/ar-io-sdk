@@ -1,13 +1,21 @@
 /**
  * Shared helpers for building, signing, and sending Solana transactions
  * with @solana/kit. Used by SolanaARIOWriteable and SolanaANTWriteable.
+ *
+ * Compute budget instruction builders come from `@solana-program/compute-budget`
+ * (kit-flavored Codama client); the previous hand-rolled
+ * `setComputeUnitLimitIx` / `setComputeUnitPriceIx` helpers were removed in
+ * favor of the official package. See `sendAndConfirm` below for why we always
+ * pin BOTH instructions (even with a 0 priority fee).
  */
 import {
-  type Address,
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
+import {
   type Commitment,
   type Instruction,
   type TransactionSigner,
-  address,
   appendTransactionMessageInstructions,
   compileTransaction,
   createTransactionMessage,
@@ -21,68 +29,6 @@ import {
 } from '@solana/kit';
 
 import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
-
-const COMPUTE_BUDGET_PROGRAM: Address = address(
-  'ComputeBudget111111111111111111111111111111',
-);
-
-/**
- * Build a `SetComputeUnitLimit` instruction.
- *
- * Layout (per solana-program/compute-budget):
- *   [0]     u8 = 2  (discriminator for SetComputeUnitLimit)
- *   [1..5]  u32 LE = units
- */
-export function setComputeUnitLimitIx(units: number): Instruction {
-  const data = new Uint8Array(5);
-  data[0] = 2;
-  // u32 little-endian
-  data[1] = units & 0xff;
-  data[2] = (units >>> 8) & 0xff;
-  data[3] = (units >>> 16) & 0xff;
-  data[4] = (units >>> 24) & 0xff;
-  return {
-    programAddress: COMPUTE_BUDGET_PROGRAM,
-    accounts: [],
-    data,
-  };
-}
-
-/**
- * Build a `SetComputeUnitPrice` instruction.
- *
- * Layout (per solana-program/compute-budget):
- *   [0]     u8 = 3  (discriminator for SetComputeUnitPrice)
- *   [1..9]  u64 LE = micro-lamports per compute unit
- *
- * We always prepend this (alongside `SetComputeUnitLimit`) before sending,
- * even with a 0 priority fee. Wallets like Phantom will silently *append*
- * their own compute-budget instructions when the transaction is missing
- * either, and that mutation invalidates any signatures already attached by
- * paired keypair signers (e.g. the ANT mint signer in `spawnSolanaANT`),
- * producing `Transaction did not pass signature verification` on the
- * validator. Pre-supplying both keeps the wallet from rewriting the
- * message, so signatures over the original bytes still verify.
- */
-export function setComputeUnitPriceIx(
-  microLamports: bigint | number,
-): Instruction {
-  const lamports =
-    typeof microLamports === 'bigint' ? microLamports : BigInt(microLamports);
-  const data = new Uint8Array(9);
-  data[0] = 3;
-  // u64 little-endian
-  let v = lamports;
-  for (let i = 0; i < 8; i++) {
-    data[1 + i] = Number(v & 0xffn);
-    v >>= 8n;
-  }
-  return {
-    programAddress: COMPUTE_BUDGET_PROGRAM,
-    accounts: [],
-    data,
-  };
-}
 
 /**
  * Build, sign, send, and confirm a transaction in one call.
@@ -114,12 +60,17 @@ export async function sendAndConfirm({
     (tx) =>
       appendTransactionMessageInstructions(
         [
-          setComputeUnitLimitIx(computeUnitLimit),
+          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
           // Always pin the priority fee (even at 0) so wallets like Phantom
-          // don't silently append their own compute-budget instructions and
-          // invalidate paired keypair-signer signatures. See
-          // `setComputeUnitPriceIx` doc comment for the full story.
-          setComputeUnitPriceIx(0n),
+          // don't silently *append* their own compute-budget instructions
+          // when the transaction is missing either limit or price. That
+          // mutation invalidates signatures already attached by paired
+          // keypair signers (e.g. the ANT mint signer in `spawnSolanaANT`),
+          // producing `Transaction did not pass signature verification` on
+          // the validator. Pre-supplying both keeps the wallet from
+          // rewriting the message, so signatures over the original bytes
+          // still verify.
+          getSetComputeUnitPriceInstruction({ microLamports: 0n }),
           ...instructions,
         ],
         tx,
