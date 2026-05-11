@@ -120,6 +120,7 @@ function toGeneratedFundingSourceSpec(
   return { kind: kindMap[s.kind], amount: s.amount };
 }
 import { getTransferCheckedInstruction } from '@solana-program/token';
+import { TOKEN_DECIMALS } from './constants.js';
 import { getSyncAttributesInstruction } from './generated/ant/instructions/syncAttributes.js';
 import {
   getApprovePrimaryNameInstructionAsync,
@@ -464,7 +465,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       destination: toATA,
       authority: this.signer,
       amount,
-      decimals: 6, // ARIO mint decimals (ONE_TOKEN = 1_000_000)
+      decimals: TOKEN_DECIMALS,
     });
 
     const sig = await this.sendTransaction([createToAtaIx, ix]);
