@@ -9,6 +9,7 @@
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
   "type": "module",
+  "packageManager": "yarn@1.22.22",
   "engines": {
     "node": ">=18"
   },
@@ -133,6 +134,7 @@
     "@dha-team/arbundles": "^1.0.1",
     "@permaweb/aoconnect": "0.0.68",
     "@solana-program/compute-budget": "^0.15.0",
+    "@solana-program/token": "^0.13.0",
     "@solana/kit": "^6.8.0",
     "arweave": "1.15.5",
     "axios": "^1.13.2",
