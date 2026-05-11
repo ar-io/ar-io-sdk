@@ -1,3 +1,29 @@
+# [4.0.0-solana.5](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.4...v4.0.0-solana.5) (2026-05-11)
+
+
+### Features
+
+* **solana:** switch SDK transfer() to standard SPL transferChecked ([74a2fe5](https://github.com/ar-io/ar-io-sdk/commit/74a2fe5dac0f25af410c7ad8ba8d17259a719d72))
+
+
+### BREAKING CHANGES
+
+* **solana:** for SDK consumers; wire-level routing changes only
+
+The on-chain `ario-core::transfer` ix is being marked deprecated in
+`ar-io/ar-io-solana-contracts` (separate PR). Coordinated with
+`ar-io/solana-ar-io` PR for test cleanup + docs.
+
+Note for reviewers: the existing `@solana-program/compute-budget` dep
+in package.json is currently unused in source (`send.ts` hand-rolls
+compute budget IXs). This PR sets the precedent of actually consuming
+a `@solana-program/*` package — worth a follow-up to either consolidate
+on `@solana-program/*` or drop the unused dep.
+
+Plan: `docs/REMOVE_CUSTOM_TRANSFER_PLAN.md` in `ar-io/solana-ar-io`.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+
 # [4.0.0-solana.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.3...v4.0.0-solana.4) (2026-05-08)
 
 
