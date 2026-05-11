@@ -32,13 +32,16 @@ import {
   signTransactionMessageWithSigners,
 } from '@solana/kit';
 
+import {
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from '@solana-program/compute-budget';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
 import { getInitializeInstructionAsync } from './generated/ant/instructions/index.js';
 import { getCreateV1Instruction } from './generated/mpl-core/instructions/index.js';
 import { DataState } from './generated/mpl-core/types/index.js';
 import { getAntRecordPDA } from './pda.js';
-import { setComputeUnitLimitIx, setComputeUnitPriceIx } from './send.js';
 import type {
   SolanaRpc,
   SolanaRpcSubscriptions,
@@ -336,12 +339,12 @@ export async function spawnSolanaANT(
     (tx) =>
       appendTransactionMessageInstructions(
         [
-          setComputeUnitLimitIx(computeUnitLimit),
+          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
           // Pin the priority fee (at 0) so wallets like Phantom don't
           // silently append their own compute-budget instructions and
           // invalidate the paired mint keypair signer's signature. See
-          // `setComputeUnitPriceIx` for the full story.
-          setComputeUnitPriceIx(0n),
+          // `sendAndConfirm` in `./send.js` for the full rationale.
+          getSetComputeUnitPriceInstruction({ microLamports: 0n }),
           createIx,
           initIx,
           ...aclIxs,
