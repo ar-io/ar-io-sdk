@@ -1107,7 +1107,16 @@ export class SolanaARIOReadable {
     const settings = deserializeEpochSettingsFull(Buffer.from(account.data));
 
     if (!epoch) {
-      return settings.currentEpochIndex;
+      // On-chain `current_epoch_index` is "NEXT epoch to be created"
+      // (incremented inside `create_epoch` AFTER the PDA is initialized
+      // — see programs/ario-gar/src/instructions/epoch.rs:161). The
+      // currently-active epoch is therefore one back. Floor at 0 for
+      // the pre-bootstrap edge case where no epochs have been created
+      // yet. Without this adjustment, every call to getEpoch(undefined)
+      // sits in the cranker's close_epoch ↔ create_epoch gap and throws
+      // "Epoch N not found" — which broke ContractEpochSource on a
+      // live cluster (May 2026 devnet).
+      return Math.max(0, settings.currentEpochIndex - 1);
     }
 
     // { timestamp } — compute epoch index. The public API takes `timestamp`

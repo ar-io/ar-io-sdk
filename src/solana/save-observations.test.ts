@@ -22,6 +22,7 @@ import {
 } from '@solana/kit';
 import bs58 from 'bs58';
 
+import { getEpochEncoder } from './generated/gar/accounts/epoch.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import { buildObservationBitmap, encodeReportTxId } from './io-writeable.js';
 
@@ -237,8 +238,10 @@ function buildObserverLookupBuffer(gateway: Address, bump = 254): Uint8Array {
   return buf;
 }
 
-/** Build a synthetic Epoch account buffer matching the layout that
- *  `deserializeEpoch` consumes. Total size = 8 disc + 9395 = 9403 bytes. */
+/** Build a synthetic Epoch account buffer using the codama-generated
+ *  encoder so it stays in lockstep with the IDL (including the
+ *  devnet-shrunk variant). Beats hand-rolled offset arithmetic that
+ *  silently breaks when the on-chain layout changes. */
 function buildEpochBuffer(opts: {
   epochIndex: bigint;
   startTimestamp: bigint;
@@ -248,28 +251,45 @@ function buildEpochBuffer(opts: {
   prescribedObservers: Address[]; // up to 50 entries
   hasObservedBits?: number[]; // bit indices (0..49) that are set
 }): Uint8Array {
-  const buf = new Uint8Array(8 + 9395); // 8 disc + 9395 payload
-  const base = 8;
-  const dv = new DataView(buf.buffer);
-  dv.setBigUint64(base + 0, opts.epochIndex, true);
-  dv.setBigInt64(base + 8, opts.startTimestamp, true);
-  dv.setBigInt64(base + 16, opts.endTimestamp, true);
-  dv.setUint32(base + 104, opts.activeGatewayCount, true);
-  buf[base + 116] = opts.observerCount;
-  // prescribed_observers at offset 6124, 50 × 32 bytes
-  for (let i = 0; i < opts.prescribedObservers.length; i++) {
-    buf.set(
-      addressEncoder.encode(opts.prescribedObservers[i]),
-      base + 6124 + i * 32,
-    );
+  const PLACEHOLDER_PUBKEY = '11111111111111111111111111111111' as Address;
+  const observers: Address[] = [];
+  for (let i = 0; i < 50; i++) {
+    observers.push(opts.prescribedObservers[i] ?? PLACEHOLDER_PUBKEY);
   }
-  // has_observed at offset 9388, 7 bytes (50 bits)
+  const observerGateways: Address[] = new Array(50).fill(PLACEHOLDER_PUBKEY);
+  const hasObserved = new Uint8Array(7);
   for (const bitIdx of opts.hasObservedBits ?? []) {
-    const byteIdx = Math.floor(bitIdx / 8);
-    const bitOff = bitIdx % 8;
-    buf[base + 9388 + byteIdx] |= 1 << bitOff;
+    hasObserved[Math.floor(bitIdx / 8)] |= 1 << (bitIdx % 8);
   }
-  return buf;
+  return getEpochEncoder().encode({
+    epochIndex: opts.epochIndex,
+    startTimestamp: opts.startTimestamp,
+    endTimestamp: opts.endTimestamp,
+    totalEligibleRewards: 0n,
+    perGatewayReward: 0n,
+    perObserverReward: 0n,
+    rewardRate: 0n,
+    totalCompositeWeightLo: 0n,
+    totalCompositeWeightHi: 0n,
+    hashchain: new Uint8Array(32),
+    activeGatewayCount: opts.activeGatewayCount,
+    distributionIndex: 0,
+    tallyIndex: 0,
+    observerCount: opts.observerCount,
+    nameCount: 0,
+    observationsSubmitted: 0,
+    rewardsDistributed: 0,
+    weightsTallied: 0,
+    prescriptionsDone: 0,
+    bump: 0,
+    observationsClosed: 0,
+    failureCounts: new Array(30).fill(0),
+    prescribedObservers: observers,
+    prescribedObserverGateways: observerGateways,
+    prescribedNames: [new Uint8Array(32), new Uint8Array(32)],
+    hasObserved,
+    padding2: new Uint8Array(1),
+  });
 }
 
 describe('SolanaARIOReadable.getObserverLookup', () => {
@@ -469,6 +489,126 @@ describe('SolanaARIOReadable.getEpochObservationStatus', () => {
       () => readable.getEpochObservationStatus(99, PUBKEY_OBSERVER_A),
       /Epoch 99 not found/,
     );
+  });
+});
+
+// =========================================================================
+// Regression: resolveEpochIndex(undefined) returns currentEpochIndex - 1
+// =========================================================================
+//
+// On-chain `epoch_settings.current_epoch_index` is "NEXT epoch to be
+// created" (incremented inside `create_epoch` AFTER the PDA is created).
+// Returning it unchanged from `getEpoch(undefined)` was a bug that broke
+// observer startup on a live cluster — the cranker sits between
+// close_epoch(N-1) and create_epoch(N), `current_epoch_index = N`, but
+// Epoch[N] doesn't exist yet. Fix: floor-1 with min 0.
+
+describe('SolanaARIOReadable.getEpoch(undefined) — current_epoch_index off-by-one', () => {
+  /** Build a synthetic EpochSettings account: 8 disc + 32 authority +
+   *  the leading numeric fields (we only need current_epoch_index). */
+  function buildEpochSettingsBuffer(opts: {
+    currentEpochIndex: bigint;
+    genesisTimestamp?: bigint;
+  }): Uint8Array {
+    // Layout per deserializeEpochSettingsFull. Header offsets:
+    //   8 disc + 32 authority + 8 epoch_duration + 1 prescribed_observer_count
+    //   + 1 prescribed_name_count + 8 min_observer_stake + 2 slash_rate
+    //   + 1 enabled + 8 current_epoch_index + 8 genesis_timestamp
+    const buf = new Uint8Array(256); // generous over-alloc; only the prefix matters
+    const dv = new DataView(buf.buffer);
+    const base = 8 + 32; // disc + authority
+    dv.setBigInt64(base + 0, 3600n, true); // epoch_duration
+    buf[base + 8] = 5; // prescribed_observer_count
+    buf[base + 9] = 10; // prescribed_name_count
+    dv.setBigUint64(base + 10, 0n, true); // min_observer_stake
+    dv.setUint16(base + 18, 0, true); // slash_rate
+    buf[base + 20] = 1; // enabled
+    dv.setBigUint64(base + 21, opts.currentEpochIndex, true);
+    dv.setBigInt64(base + 29, opts.genesisTimestamp ?? 1_700_000_000n, true);
+    return buf;
+  }
+
+  function buildEpochBufferMinimal(epochIndex: bigint): Uint8Array {
+    // Use codama encoder for layout parity (devnet-shrunk size = 3468).
+    return buildEpochBuffer({
+      epochIndex,
+      startTimestamp: 0n,
+      endTimestamp: 0n,
+      activeGatewayCount: 0,
+      observerCount: 0,
+      prescribedObservers: [],
+    });
+  }
+
+  it('returns currentEpochIndex - 1 when called with undefined (active epoch, not next-to-create)', async () => {
+    // EpochSettings says current_epoch_index = 17 (next to create) and
+    // Epoch[16] is the active one. Calling getEpoch(undefined) MUST
+    // return Epoch[16] data, not throw "Epoch 17 not found".
+    const settingsBuf = buildEpochSettingsBuffer({ currentEpochIndex: 17n });
+    const epoch16Buf = buildEpochBufferMinimal(16n);
+
+    let getAccountCallCount = 0;
+    const rpc = {
+      getAccountInfo: (_pubkey: Address) => ({
+        send: async () => {
+          getAccountCallCount += 1;
+          // First call: EpochSettings (during resolveEpochIndex).
+          // Second call: Epoch[16] (during fetchEpoch).
+          const data = getAccountCallCount === 1 ? settingsBuf : epoch16Buf;
+          return {
+            value: {
+              data: [
+                Buffer.from(data).toString('base64'),
+                'base64',
+              ] as readonly [string, string],
+              lamports: 1,
+              owner: '11111111111111111111111111111111',
+              executable: false,
+              rentEpoch: 0,
+            },
+          };
+        },
+      }),
+      // getEpoch() also calls getObservations() which iterates program
+      // accounts. Stub it to return empty.
+      getProgramAccounts: () => ({ send: async () => [] }),
+    };
+    const readable = buildReadable(rpc);
+    const epoch = await readable.getEpoch();
+    // Confirm we fetched epoch 16 (currentEpochIndex - 1), not epoch 17.
+    assert.equal(epoch.epochIndex, 16);
+  });
+
+  it('floors at 0 when currentEpochIndex is 0 (pre-bootstrap edge case)', async () => {
+    const settingsBuf = buildEpochSettingsBuffer({ currentEpochIndex: 0n });
+    const epoch0Buf = buildEpochBufferMinimal(0n);
+    let getAccountCallCount = 0;
+    const rpc = {
+      getAccountInfo: () => ({
+        send: async () => {
+          getAccountCallCount += 1;
+          const data = getAccountCallCount === 1 ? settingsBuf : epoch0Buf;
+          return {
+            value: {
+              data: [
+                Buffer.from(data).toString('base64'),
+                'base64',
+              ] as readonly [string, string],
+              lamports: 1,
+              owner: '11111111111111111111111111111111',
+              executable: false,
+              rentEpoch: 0,
+            },
+          };
+        },
+      }),
+      getProgramAccounts: () => ({ send: async () => [] }),
+    };
+    const readable = buildReadable(rpc);
+    const epoch = await readable.getEpoch();
+    // currentEpochIndex = 0 → floors at 0, fetches Epoch[0] (which may
+    // or may not exist; for this test we mock its presence).
+    assert.equal(epoch.epochIndex, 0);
   });
 });
 
