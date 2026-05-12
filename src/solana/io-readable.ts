@@ -97,6 +97,7 @@ import {
   ARNS_RECORD_ANT_OFFSET,
   RATE_SCALE,
 } from './constants.js';
+import { computeLiveDelegationBalance } from './delegation-math.js';
 import {
   deserializeAllowlist,
   deserializeArioConfig,
@@ -109,6 +110,7 @@ import {
   deserializeGarSettings,
   deserializeGarSupplyCounters,
   deserializeGateway,
+  deserializeGatewayWithAccumulator,
   deserializeObservation,
   deserializePrimaryName,
   deserializePrimaryNameRequest,
@@ -335,6 +337,46 @@ export class SolanaARIOReadable {
       pubkey: entry.pubkey,
       data: Buffer.from(entry.account.data[0], 'base64'),
     }));
+  }
+
+  /**
+   * Batch-fetch the `cumulative_reward_per_token` accumulator for every gateway
+   * in `operatorAddresses`. Returns a Map keyed by base58 operator address.
+   * Used by the delegate readers below to compute the live delegation balance
+   * without an on-chain settlement call (see {@link computeLiveDelegationBalance}
+   * and `INVARIANTS.md` in the contracts repo). Missing gateways are silently
+   * skipped — callers fall back to the stale `Delegation.amount` for those
+   * (the accumulator delta is 0 and live == stored anyway when the gateway
+   * has no rewards to distribute).
+   */
+  protected async getGatewayAccumulators(
+    operatorAddresses: string[],
+  ): Promise<Map<string, bigint>> {
+    const unique = Array.from(new Set(operatorAddresses));
+    if (unique.length === 0) return new Map();
+    const pdas = await Promise.all(
+      unique.map(
+        async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
+      ),
+    );
+    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
+      commitment: this.commitment,
+    });
+    const out = new Map<string, bigint>();
+    for (let i = 0; i < accounts.length; i++) {
+      const acct = accounts[i];
+      if (!acct.exists) continue;
+      try {
+        // Internal variant: surfaces the u128 accumulator that the public
+        // `deserializeGateway` deliberately drops (BigInt is not
+        // JSON-serializable and would leak through getGateway).
+        const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
+        out.set(unique[i], gw.cumulativeRewardPerToken);
+      } catch {
+        // Skip malformed; the caller will fall back to the raw delegation amount.
+      }
+    }
+    return out;
   }
 
   /** Read the gateway registry and return addresses in registry index order */
@@ -705,13 +747,23 @@ export class SolanaARIOReadable {
       ],
     );
 
+    // Fetch this gateway's current reward accumulator so we can return live
+    // balances (raw `Delegation.amount` is stale between settlements — see
+    // INVARIANTS.md and `computeLiveDelegationBalance`).
+    const accumulators = await this.getGatewayAccumulators([gateway as string]);
+    const cumulative = accumulators.get(gateway as string) ?? 0n;
+
     const items: AoGatewayDelegateWithAddress[] = [];
     for (const { data } of accounts) {
       try {
         const del = deserializeDelegation(data);
         items.push({
           address: del.delegator,
-          delegatedStake: del.delegatedStake,
+          delegatedStake: computeLiveDelegationBalance({
+            delegatedStake: del.delegatedStake,
+            rewardDebt: del.rewardDebt,
+            cumulativeRewardPerToken: cumulative,
+          }),
           startTimestamp: secToMs(del.startTimestamp),
         });
       } catch {
@@ -769,21 +821,38 @@ export class SolanaARIOReadable {
       ],
     );
 
-    const items: AoDelegation[] = [];
+    const decoded: Array<{
+      pubkey: string;
+      del: ReturnType<typeof deserializeDelegation>;
+    }> = [];
     for (const { pubkey, data } of accounts) {
       try {
-        const del = deserializeDelegation(data);
-        items.push({
-          type: 'stake' as const,
-          gatewayAddress: del.gateway,
-          delegationId: pubkey as string,
-          startTimestamp: secToMs(del.startTimestamp),
-          balance: del.delegatedStake,
+        decoded.push({
+          pubkey: pubkey as string,
+          del: deserializeDelegation(data),
         });
       } catch {
         // Skip malformed
       }
     }
+
+    // Batch-fetch each referenced gateway's reward accumulator so we can
+    // return live balances. See INVARIANTS.md and `computeLiveDelegationBalance`.
+    const accumulators = await this.getGatewayAccumulators(
+      decoded.map(({ del }) => del.gateway),
+    );
+
+    const items: AoDelegation[] = decoded.map(({ pubkey, del }) => ({
+      type: 'stake' as const,
+      gatewayAddress: del.gateway,
+      delegationId: pubkey,
+      startTimestamp: secToMs(del.startTimestamp),
+      balance: computeLiveDelegationBalance({
+        delegatedStake: del.delegatedStake,
+        rewardDebt: del.rewardDebt,
+        cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+      }),
+    }));
 
     return paginate(items, params);
   }
@@ -1735,22 +1804,39 @@ export class SolanaARIOReadable {
       DELEGATION_DISCRIMINATOR,
     );
 
-    const items: AoAllDelegates[] = [];
+    const decoded: Array<{
+      pubkey: string;
+      del: ReturnType<typeof deserializeDelegation>;
+    }> = [];
     for (const { pubkey, data } of accounts) {
       try {
-        const del = deserializeDelegation(data);
-        items.push({
-          address: del.delegator,
-          gatewayAddress: del.gateway,
-          delegatedStake: del.delegatedStake,
-          startTimestamp: secToMs(del.startTimestamp),
-          vaultedStake: 0,
-          cursorId: pubkey as string,
+        decoded.push({
+          pubkey: pubkey as string,
+          del: deserializeDelegation(data),
         });
       } catch {
         // Skip malformed
       }
     }
+
+    // Batch-fetch each referenced gateway's reward accumulator so we can
+    // return live balances. See INVARIANTS.md and `computeLiveDelegationBalance`.
+    const accumulators = await this.getGatewayAccumulators(
+      decoded.map(({ del }) => del.gateway),
+    );
+
+    const items: AoAllDelegates[] = decoded.map(({ pubkey, del }) => ({
+      address: del.delegator,
+      gatewayAddress: del.gateway,
+      delegatedStake: computeLiveDelegationBalance({
+        delegatedStake: del.delegatedStake,
+        rewardDebt: del.rewardDebt,
+        cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+      }),
+      startTimestamp: secToMs(del.startTimestamp),
+      vaultedStake: 0,
+      cursorId: pubkey,
+    }));
 
     return paginate(items, params);
   }
