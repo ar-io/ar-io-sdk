@@ -1,3 +1,15 @@
+# [4.0.0-solana.6](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.5...v4.0.0-solana.6) (2026-05-12)
+
+
+### Bug Fixes
+
+* **solana:** off-by-one in getCurrentEpoch + use codama decoder for Epoch ([a3b356b](https://github.com/ar-io/ar-io-sdk/commit/a3b356b4712acb7dede3f1fa6e0c81fe13d81121))
+
+
+### Features
+
+* **solana:** expose save_observations + observer-side pre-flight helpers ([c84a7d3](https://github.com/ar-io/ar-io-sdk/commit/c84a7d306c04cb73762866e8a47b6e67822d7cdf))
+
 # [4.0.0-solana.5](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.4...v4.0.0-solana.5) (2026-05-11)
 
 
