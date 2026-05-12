@@ -95,13 +95,13 @@ import {
   getUpgradeNameFromOperatorStakeInstructionAsync,
   getUpgradeNameFromWithdrawalInstructionAsync,
   getUpgradeNameInstructionAsync,
-} from './generated/arns/instructions/index.js';
-import { PurchaseType } from './generated/arns/types/index.js';
+  PurchaseType,
+} from '@ar.io/solana-contracts/arns';
 import {
   type FundingSourceKind as GeneratedFundingSourceKind,
   type FundingSourceSpec as GeneratedFundingSourceSpec,
-} from './generated/gar/types/index.js';
-import { FundingSourceKind as GeneratedFundingSourceKindEnum } from './generated/gar/types/index.js';
+} from '@ar.io/solana-contracts/gar';
+import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 
 /** Maps the SDK's user-facing FundingSourceKind string union to the
  *  Codama-generated enum used by the on-chain ix payload. */
@@ -121,7 +121,7 @@ function toGeneratedFundingSourceSpec(
 }
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { TOKEN_DECIMALS } from './constants.js';
-import { getSyncAttributesInstruction } from './generated/ant/instructions/syncAttributes.js';
+import { getSyncAttributesInstruction } from '@ar.io/solana-contracts/ant';
 import {
   getApprovePrimaryNameInstructionAsync,
   getCloseExpiredRequestInstruction,
@@ -134,9 +134,11 @@ import {
   getRequestPrimaryNameInstructionAsync,
   getRevokeVaultInstructionAsync,
   getVaultedTransferInstructionAsync,
-} from './generated/core/instructions/index.js';
-import { getDelegationDecoder } from './generated/gar/accounts/delegation.js';
-import { getGatewayDecoder } from './generated/gar/accounts/gateway.js';
+} from '@ar.io/solana-contracts/core';
+import {
+  getDelegationDecoder,
+  getGatewayDecoder,
+} from '@ar.io/solana-contracts/gar';
 import {
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
@@ -164,8 +166,8 @@ import {
   getSetAllowlistEnabledInstructionAsync,
   getTallyWeightsInstructionAsync,
   getUpdateGatewaySettingsInstructionAsync,
-} from './generated/gar/instructions/index.js';
-import { Protocol } from './generated/gar/types/index.js';
+  Protocol,
+} from '@ar.io/solana-contracts/gar';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   getAntRecordPDA,

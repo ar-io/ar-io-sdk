@@ -54,14 +54,16 @@ const OUT_DIR = resolve(HERE, '../src/solana/generated');
  *             `name` already ends in `_program`.
  */
 const PROGRAMS = [
-  { idl: 'ario_ant', out: 'ant' },
-  { idl: 'ario_core', out: 'core' },
-  { idl: 'ario_gar', out: 'gar' },
-  { idl: 'ario_arns', out: 'arns' },
-  { idl: 'ario_ant_escrow', out: 'ant-escrow' },
-  // External: Metaplex Core. IDL vendored from the upstream repo so we can
-  // pin a known program version. Update by overwriting `idls/mpl_core.json`
-  // with a fresh snapshot from the desired MPL Core release.
+  // The 5 AR.IO programs (`ario_*`) now come from the
+  // `@ar.io/solana-contracts` npm package — see CLAUDE.md "Codegen
+  // sources". We only regenerate the vendored Metaplex Core client
+  // here, and the SDK's own event decoders via `events-codegen.mjs`
+  // (which still reads from `idls/ario_*.json`).
+  //
+  // External: Metaplex Core. IDL vendored from the upstream repo so we
+  // can pin a known program version. Update by overwriting
+  // `idls/mpl_core.json` with a fresh snapshot from the desired MPL
+  // Core release.
   { idl: 'mpl_core', out: 'mpl-core', rename: 'mpl_core' },
 ];
 

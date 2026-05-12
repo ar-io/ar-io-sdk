@@ -45,8 +45,8 @@ import type {
   AoVaultData,
 } from '../types/io.js';
 import { RATE_SCALE } from './constants.js';
-import { getBalanceDecoder } from './generated/core/accounts/balance.js';
-import { getEpochDecoder } from './generated/gar/accounts/epoch.js';
+import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
+import { getEpochDecoder } from '@ar.io/solana-contracts/gar';
 
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();

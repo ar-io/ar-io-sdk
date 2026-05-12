@@ -23,12 +23,17 @@ import { describe, it } from 'node:test';
 import { type Address, address, createSolanaRpc } from '@solana/kit';
 
 import { ARIO_GAR_PROGRAM_ID } from './constants.js';
-import { getPrimaryNameRequestEncoder } from './generated/core/accounts/primaryNameRequest.js';
-import { getVaultEncoder } from './generated/core/accounts/vault.js';
-import { getDelegationEncoder } from './generated/gar/accounts/delegation.js';
-import { getGatewayEncoder } from './generated/gar/accounts/gateway.js';
-import { getWithdrawalEncoder } from './generated/gar/accounts/withdrawal.js';
-import { GatewayStatus, Protocol } from './generated/gar/types/index.js';
+import {
+  getPrimaryNameRequestEncoder,
+  getVaultEncoder,
+} from '@ar.io/solana-contracts/core';
+import {
+  GatewayStatus,
+  Protocol,
+  getDelegationEncoder,
+  getGatewayEncoder,
+  getWithdrawalEncoder,
+} from '@ar.io/solana-contracts/gar';
 import { SolanaARIOReadable } from './io-readable.js';
 
 // ---------------------------------------------------------------

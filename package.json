@@ -130,6 +130,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@ar.io/solana-contracts": "0.1.0-devnet.0",
     "@ardrive/turbo-sdk": "^1.19.0",
     "@dha-team/arbundles": "^1.0.1",
     "@permaweb/aoconnect": "0.0.68",

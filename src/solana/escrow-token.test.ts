@@ -8,7 +8,7 @@ import { describe, it } from 'node:test';
 
 import { type Address, address, createNoopSigner } from '@solana/kit';
 
-import { getVaultedTransferInstructionAsync } from './generated/core/instructions/vaultedTransfer.js';
+import { getVaultedTransferInstructionAsync } from '@ar.io/solana-contracts/core';
 
 describe('EscrowToken account layout', () => {
   it('total size is 711 bytes (must match Rust EscrowToken::SIZE)', () => {

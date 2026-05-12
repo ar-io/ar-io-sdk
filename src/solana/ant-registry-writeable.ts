@@ -69,7 +69,7 @@ import {
   getRegisterAclConfigInstruction,
   getRemoveAclControllerInstructionAsync,
   getRemoveAclOwnerInstruction,
-} from './generated/ant/instructions/index.js';
+} from '@ar.io/solana-contracts/ant';
 import {
   getAccountInfoLegacy,
   getMultipleAccountsInfoLegacy,

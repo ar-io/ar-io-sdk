@@ -40,6 +40,11 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.11.1.tgz#6c2d657d4b2dfb37f8ea811dcb3e60843d4ac24a"
   integrity sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==
 
+"@ar.io/solana-contracts@0.1.0-devnet.0":
+  version "0.1.0-devnet.0"
+  resolved "https://registry.yarnpkg.com/@ar.io/solana-contracts/-/solana-contracts-0.1.0-devnet.0.tgz#b03d1fd243b80665bd289232b335a25a22e3795a"
+  integrity sha512-MzdoB2lBHWNqGRi5Ki7a8legTv8YuoymwuahPSQr6lk75UMr7dMz5VWF2ypXLv2GJZODz69ChNSd/eTP7X4n8g==
+
 "@ardrive/turbo-sdk@^1.19.0":
   version "1.41.2"
   resolved "https://registry.yarnpkg.com/@ardrive/turbo-sdk/-/turbo-sdk-1.41.2.tgz#83637bae16214fa305f7d5e67d9ef95e327d5af5"

@@ -36,7 +36,7 @@ import {
   deserializeAntRecord,
   deserializeAntRecordMetadata,
 } from './deserialize.js';
-import { ANT_RECORD_DISCRIMINATOR } from './generated/ant/accounts/antRecord.js';
+import { ANT_RECORD_DISCRIMINATOR } from '@ar.io/solana-contracts/ant';
 const ANT_RECORD_METADATA_DISCRIMINATOR = new Uint8Array(
   __createHash('sha256')
     .update('account:AntRecordMetadata')
@@ -283,7 +283,9 @@ export class SolanaANTReadable {
         .getProgramAccounts(this.antProgram, {
           commitment: this.commitment,
           encoding: 'base64',
-          filters: gpaFilter(bs58.encode(ANT_RECORD_DISCRIMINATOR)),
+          filters: gpaFilter(
+            bs58.encode(ANT_RECORD_DISCRIMINATOR as Uint8Array),
+          ),
         })
         .send(),
       (this.rpc as any)
