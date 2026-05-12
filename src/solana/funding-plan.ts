@@ -46,8 +46,8 @@ import {
  */
 export type FundingPlanRpc = Rpc<SolanaRpcApi> | Rpc<SolanaRpcApiMainnet>;
 
-import { type FundingSourceKind, type FundingSourceSpec } from '../types/io.js';
 import { ARIO_GAR_PROGRAM_ADDRESS as ARIO_GAR_PROGRAM_ID } from '@ar.io/solana-contracts/gar';
+import { type FundingSourceKind, type FundingSourceSpec } from '../types/io.js';
 import {
   getDelegationPDA,
   getGatewayPDA,

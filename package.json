@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
   },
-  "main": "./lib/cjs/node/index.js",
+  "main": "./lib/esm/node/index.js",
   "module": "./lib/esm/node/index.js",
   "types": "./lib/types/node/index.d.ts",
   "type": "module",
@@ -27,28 +27,23 @@
   "exports": {
     ".": {
       "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js"
+      "import": "./lib/esm/node/index.js"
     },
     "./node": {
       "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js"
+      "import": "./lib/esm/node/index.js"
     },
     "./web": {
       "types": "./lib/types/web/index.d.ts",
-      "import": "./lib/esm/web/index.js",
-      "require": "./lib/cjs/web/index.js"
+      "import": "./lib/esm/web/index.js"
     },
     "./solana": {
       "types": "./lib/types/solana/index.d.ts",
-      "import": "./lib/esm/solana/index.js",
-      "require": "./lib/cjs/solana/index.js"
+      "import": "./lib/esm/solana/index.js"
     },
     "./solana/generated": {
       "types": "./lib/types/solana/generated/index.d.ts",
-      "import": "./lib/esm/solana/generated/index.js",
-      "require": "./lib/cjs/solana/generated/index.js"
+      "import": "./lib/esm/solana/generated/index.js"
     }
   },
   "bin": {
@@ -57,25 +52,22 @@
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
-    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo \"{\\\"type\\\": \\\"commonjs\\\"}\" > lib/cjs/package.json",
-    "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs",
+    "build": "yarn clean && yarn build:web && yarn build:esm",
     "clean": "rimraf [ lib bundles coverage tests/contracts tests/wallets ]",
     "lint:fix": "biome check --write --unsafe",
     "lint:check": "biome check --unsafe",
     "format:fix": "biome format --write",
     "format:check": "biome format",
     "test": "yarn test:unit && yarn test:e2e",
-    "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
     "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
     "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
     "test:unit": "c8 tsx --test --test-reporter=spec --enable-source-maps --trace-warnings $(find src -type f -name '*.test.ts')",
     "test:link": "yarn build && yarn link",
-    "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
+    "test:e2e": "yarn test:esm && yarn test:web",
     "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
     "prepare": "husky install",
     "docs:update": "markdown-toc-gen insert README.md --max-depth 2",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
-    "example:cjs": "yarn build:cjs && yarn link && cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
     "cli:local": "node lib/esm/cli/cli.js",

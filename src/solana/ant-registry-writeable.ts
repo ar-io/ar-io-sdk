@@ -44,6 +44,16 @@ import {
   address,
 } from '@solana/kit';
 
+import {
+  getAddAclPageInstruction,
+  getCloseAclConfigInstruction,
+  getCloseAclPageInstruction,
+  getRecordAclControllerInstructionAsync,
+  getRecordAclOwnerInstruction,
+  getRegisterAclConfigInstruction,
+  getRemoveAclControllerInstructionAsync,
+  getRemoveAclOwnerInstruction,
+} from '@ar.io/solana-contracts/ant';
 import type {
   AclMaintenanceOp,
   AclMaintenanceRole,
@@ -60,16 +70,6 @@ import {
   MAX_ACL_PAGE_ENTRIES,
 } from './constants.js';
 import { deserializeAclConfig, deserializeAclPage } from './deserialize.js';
-import {
-  getAddAclPageInstruction,
-  getCloseAclConfigInstruction,
-  getCloseAclPageInstruction,
-  getRecordAclControllerInstructionAsync,
-  getRecordAclOwnerInstruction,
-  getRegisterAclConfigInstruction,
-  getRemoveAclControllerInstructionAsync,
-  getRemoveAclOwnerInstruction,
-} from '@ar.io/solana-contracts/ant';
 import {
   getAccountInfoLegacy,
   getMultipleAccountsInfoLegacy,

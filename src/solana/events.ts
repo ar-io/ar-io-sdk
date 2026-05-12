@@ -36,8 +36,8 @@ import {
   getBase64Encoder,
 } from '@solana/kit';
 
-import { ARIO_ANT_ESCROW_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/ant-escrow';
 import { ARIO_ANT_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/ant';
+import { ARIO_ANT_ESCROW_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/ant-escrow';
 import { ARIO_ARNS_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/arns';
 import { ARIO_CORE_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/core';
 import { ARIO_GAR_PROGRAM_ADDRESS } from '@ar.io/solana-contracts/gar';

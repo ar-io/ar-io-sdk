@@ -33,6 +33,8 @@ import {
   getAddressEncoder,
 } from '@solana/kit';
 
+import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
+import { getEpochDecoder } from '@ar.io/solana-contracts/gar';
 import type {
   AoArNSLeaseData,
   AoArNSNameData,
@@ -45,8 +47,6 @@ import type {
   AoVaultData,
 } from '../types/io.js';
 import { RATE_SCALE } from './constants.js';
-import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
-import { getEpochDecoder } from '@ar.io/solana-contracts/gar';
 
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();

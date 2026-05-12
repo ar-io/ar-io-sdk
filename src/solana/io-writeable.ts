@@ -28,6 +28,45 @@ import {
   getAddressDecoder,
 } from '@solana/kit';
 
+import {
+  PurchaseType,
+  getBuyNameFromDelegationInstructionAsync,
+  getBuyNameFromFundingPlanInstructionAsync,
+  getBuyNameFromOperatorStakeInstructionAsync,
+  getBuyNameFromWithdrawalInstructionAsync,
+  getBuyNameInstructionAsync,
+  getBuyReturnedNameFromDelegationInstructionAsync,
+  getBuyReturnedNameFromFundingPlanInstructionAsync,
+  getBuyReturnedNameFromOperatorStakeInstructionAsync,
+  getBuyReturnedNameFromWithdrawalInstructionAsync,
+  getBuyReturnedNameInstructionAsync,
+  getExtendLeaseFromDelegationInstructionAsync,
+  getExtendLeaseFromFundingPlanInstructionAsync,
+  getExtendLeaseFromOperatorStakeInstructionAsync,
+  getExtendLeaseFromWithdrawalInstructionAsync,
+  getExtendLeaseInstructionAsync,
+  getIncreaseUndernameLimitFromDelegationInstructionAsync,
+  getIncreaseUndernameLimitFromFundingPlanInstructionAsync,
+  getIncreaseUndernameLimitFromOperatorStakeInstructionAsync,
+  getIncreaseUndernameLimitFromWithdrawalInstructionAsync,
+  getIncreaseUndernameLimitInstructionAsync,
+  getPruneExpiredNamesInstructionAsync,
+  getPruneExpiredReservationInstruction,
+  getPruneNameToReturnedInstructionAsync,
+  getPruneReturnedNamesInstructionAsync,
+  getReassignNameInstructionAsync,
+  getReleaseNameInstructionAsync,
+  getUpgradeNameFromDelegationInstructionAsync,
+  getUpgradeNameFromFundingPlanInstructionAsync,
+  getUpgradeNameFromOperatorStakeInstructionAsync,
+  getUpgradeNameFromWithdrawalInstructionAsync,
+  getUpgradeNameInstructionAsync,
+} from '@ar.io/solana-contracts/arns';
+import {
+  type FundingSourceKind as GeneratedFundingSourceKind,
+  type FundingSourceSpec as GeneratedFundingSourceSpec,
+} from '@ar.io/solana-contracts/gar';
+import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 import type { ILogger } from '../common/logger.js';
 import type { AoMessageResult, WriteOptions } from '../types/common.js';
 import type {
@@ -63,45 +102,6 @@ import {
   computeResidueIndexes,
   predictResidueVaults,
 } from './funding-plan.js';
-import {
-  getBuyNameFromDelegationInstructionAsync,
-  getBuyNameFromFundingPlanInstructionAsync,
-  getBuyNameFromOperatorStakeInstructionAsync,
-  getBuyNameFromWithdrawalInstructionAsync,
-  getBuyNameInstructionAsync,
-  getBuyReturnedNameFromDelegationInstructionAsync,
-  getBuyReturnedNameFromFundingPlanInstructionAsync,
-  getBuyReturnedNameFromOperatorStakeInstructionAsync,
-  getBuyReturnedNameFromWithdrawalInstructionAsync,
-  getBuyReturnedNameInstructionAsync,
-  getExtendLeaseFromDelegationInstructionAsync,
-  getExtendLeaseFromFundingPlanInstructionAsync,
-  getExtendLeaseFromOperatorStakeInstructionAsync,
-  getExtendLeaseFromWithdrawalInstructionAsync,
-  getExtendLeaseInstructionAsync,
-  getIncreaseUndernameLimitFromDelegationInstructionAsync,
-  getIncreaseUndernameLimitFromFundingPlanInstructionAsync,
-  getIncreaseUndernameLimitFromOperatorStakeInstructionAsync,
-  getIncreaseUndernameLimitFromWithdrawalInstructionAsync,
-  getIncreaseUndernameLimitInstructionAsync,
-  getPruneExpiredNamesInstructionAsync,
-  getPruneExpiredReservationInstruction,
-  getPruneNameToReturnedInstructionAsync,
-  getPruneReturnedNamesInstructionAsync,
-  getReassignNameInstructionAsync,
-  getReleaseNameInstructionAsync,
-  getUpgradeNameFromDelegationInstructionAsync,
-  getUpgradeNameFromFundingPlanInstructionAsync,
-  getUpgradeNameFromOperatorStakeInstructionAsync,
-  getUpgradeNameFromWithdrawalInstructionAsync,
-  getUpgradeNameInstructionAsync,
-  PurchaseType,
-} from '@ar.io/solana-contracts/arns';
-import {
-  type FundingSourceKind as GeneratedFundingSourceKind,
-  type FundingSourceSpec as GeneratedFundingSourceSpec,
-} from '@ar.io/solana-contracts/gar';
-import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 
 /** Maps the SDK's user-facing FundingSourceKind string union to the
  *  Codama-generated enum used by the on-chain ix payload. */
@@ -119,8 +119,6 @@ function toGeneratedFundingSourceSpec(
   };
   return { kind: kindMap[s.kind], amount: s.amount };
 }
-import { getTransferCheckedInstruction } from '@solana-program/token';
-import { TOKEN_DECIMALS } from './constants.js';
 import { getSyncAttributesInstruction } from '@ar.io/solana-contracts/ant';
 import {
   getApprovePrimaryNameInstructionAsync,
@@ -140,6 +138,7 @@ import {
   getGatewayDecoder,
 } from '@ar.io/solana-contracts/gar';
 import {
+  Protocol,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
   getClaimDelegateFromLeavingGatewayInstructionAsync,
@@ -166,8 +165,9 @@ import {
   getSetAllowlistEnabledInstructionAsync,
   getTallyWeightsInstructionAsync,
   getUpdateGatewaySettingsInstructionAsync,
-  Protocol,
 } from '@ar.io/solana-contracts/gar';
+import { getTransferCheckedInstruction } from '@solana-program/token';
+import { TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   getAntRecordPDA,

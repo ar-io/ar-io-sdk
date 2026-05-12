@@ -11,14 +11,6 @@ This is the home of the ar.io SDK. This SDK provides functionality for interacti
 - [Table of Contents](#table-of-contents)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Usage](#usage)
-- [ARIO Contract](#ario-contract)
-- [ANT Contracts](#ant-contracts)
-- [Token Conversion](#token-conversion)
-- [Logging](#logging)
-- [Pagination](#pagination)
-- [Resources](#resources)
-- [Developers](#developers)
 
 <!-- tocstop -->
 
@@ -114,7 +106,7 @@ const gateways = await ario.getGateways();
 
 ## Usage
 
-The SDK is provided in both CommonJS and ESM formats and is compatible with bundlers such as Webpack, Rollup, and ESbuild. Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
+The SDK is published as an ES module (`"type": "module"`) and is compatible with modern bundlers such as Webpack, Rollup, ESbuild, and Vite. CommonJS consumers should migrate to ESM (Node 18+ supports ESM natively, and modern bundlers handle ESM packages out of the box). Utilize the appropriately named exports provided by this SDK's [package.json] based on your project's configuration. Refer to the [examples] directory to see how to use the SDK in various environments.
 
 ### Web
 
@@ -148,21 +140,8 @@ const gateways = await ario.getGateways();
 
 ### Node
 
-#### ESM (NodeNext)
-
 ```javascript
 import { ARIO } from "@ar.io/sdk/node";
-
-// set up client
-const ario = ARIO.mainnet();
-// fetch gateways
-const gateways = await ario.getGateways();
-```
-
-#### CJS
-
-```javascript
-import { ARIO } from "@ar.io/sdk";
 
 // set up client
 const ario = ARIO.mainnet();
@@ -3355,7 +3334,6 @@ For more information on how to use AO and AO Connect within this library, please
 - `yarn test:e2e` - runs e2e tests
 - `yarn test:unit` - runs unit tests
 - `yarn example:web` - opens up the example web page
-- `yarn example:cjs` - runs example CJS node script
 - `yarn example:esm` - runs example ESM node script
 - `yarn example:vite` - runs example Vite web page
 

@@ -18,6 +18,7 @@ import bs58 from 'bs58';
 // AntRecordMetadata discriminator — regenerate via `yarn codegen` after IDL rebase
 // to expose ANT_RECORD_METADATA_DISCRIMINATOR. Until then, compute inline.
 import { createHash as __createHash } from 'crypto';
+import { ANT_RECORD_DISCRIMINATOR } from '@ar.io/solana-contracts/ant';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   AntReadOptions,
@@ -36,7 +37,6 @@ import {
   deserializeAntRecord,
   deserializeAntRecordMetadata,
 } from './deserialize.js';
-import { ANT_RECORD_DISCRIMINATOR } from '@ar.io/solana-contracts/ant';
 const ANT_RECORD_METADATA_DISCRIMINATOR = new Uint8Array(
   __createHash('sha256')
     .update('account:AntRecordMetadata')

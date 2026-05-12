@@ -22,7 +22,6 @@ import { describe, it } from 'node:test';
 
 import { type Address, address, createSolanaRpc } from '@solana/kit';
 
-import { ARIO_GAR_PROGRAM_ID } from './constants.js';
 import {
   getPrimaryNameRequestEncoder,
   getVaultEncoder,
@@ -34,6 +33,7 @@ import {
   getGatewayEncoder,
   getWithdrawalEncoder,
 } from '@ar.io/solana-contracts/gar';
+import { ARIO_GAR_PROGRAM_ID } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 
 // ---------------------------------------------------------------

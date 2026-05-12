@@ -16,6 +16,33 @@ import {
 } from '@solana/kit';
 import bs58 from 'bs58';
 
+import {
+  ARNS_RECORD_DISCRIMINATOR,
+  RESERVED_NAME_DISCRIMINATOR,
+  RETURNED_NAME_DISCRIMINATOR,
+  getArnsConfigDecoder,
+  getArnsRecordDecoder,
+  getReservedNameDecoder,
+  getReturnedNameDecoder,
+} from '@ar.io/solana-contracts/arns';
+import {
+  PRIMARY_NAME_DISCRIMINATOR,
+  PRIMARY_NAME_REQUEST_DISCRIMINATOR,
+  VAULT_DISCRIMINATOR,
+  getPrimaryNameRequestDecoder,
+  getVaultDecoder,
+} from '@ar.io/solana-contracts/core';
+import {
+  ALLOWLIST_ENTRY_DISCRIMINATOR,
+  DELEGATION_DISCRIMINATOR,
+  GATEWAY_DISCRIMINATOR,
+  GatewayStatus,
+  OBSERVATION_DISCRIMINATOR,
+  WITHDRAWAL_DISCRIMINATOR,
+  getDelegationDecoder,
+  getGatewayDecoder,
+  getWithdrawalDecoder,
+} from '@ar.io/solana-contracts/gar';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   AoPrimaryName,
@@ -91,33 +118,6 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
-import {
-  ARNS_RECORD_DISCRIMINATOR,
-  RESERVED_NAME_DISCRIMINATOR,
-  RETURNED_NAME_DISCRIMINATOR,
-  getArnsConfigDecoder,
-  getArnsRecordDecoder,
-  getReservedNameDecoder,
-  getReturnedNameDecoder,
-} from '@ar.io/solana-contracts/arns';
-import {
-  PRIMARY_NAME_DISCRIMINATOR,
-  PRIMARY_NAME_REQUEST_DISCRIMINATOR,
-  VAULT_DISCRIMINATOR,
-  getPrimaryNameRequestDecoder,
-  getVaultDecoder,
-} from '@ar.io/solana-contracts/core';
-import {
-  ALLOWLIST_ENTRY_DISCRIMINATOR,
-  DELEGATION_DISCRIMINATOR,
-  GATEWAY_DISCRIMINATOR,
-  GatewayStatus,
-  OBSERVATION_DISCRIMINATOR,
-  WITHDRAWAL_DISCRIMINATOR,
-  getDelegationDecoder,
-  getGatewayDecoder,
-  getWithdrawalDecoder,
-} from '@ar.io/solana-contracts/gar';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getArioConfigPDA,

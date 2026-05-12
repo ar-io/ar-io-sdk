@@ -23,18 +23,6 @@ import {
   type TransactionSigner,
 } from '@solana/kit';
 
-import type { ILogger } from '../common/logger.js';
-import { Logger } from '../common/logger.js';
-import { getAssociatedTokenAddressKit } from './ata.js';
-import {
-  ARIO_ANT_ESCROW_PROGRAM_ID,
-  ARIO_CORE_PROGRAM_ID,
-  ESCROW_ARWEAVE_PUBKEY_LEN,
-  ESCROW_ASSET_TYPE_VAULT,
-  ESCROW_ETHEREUM_PUBKEY_LEN,
-  ESCROW_PROTOCOL_ARWEAVE,
-  ESCROW_PROTOCOL_ETHEREUM,
-} from './constants.js';
 import {
   type EscrowAnt,
   type EscrowToken,
@@ -60,6 +48,18 @@ import {
   fetchMaybeVaultCounter,
   getVaultedTransferInstructionAsync,
 } from '@ar.io/solana-contracts/core';
+import type { ILogger } from '../common/logger.js';
+import { Logger } from '../common/logger.js';
+import { getAssociatedTokenAddressKit } from './ata.js';
+import {
+  ARIO_ANT_ESCROW_PROGRAM_ID,
+  ARIO_CORE_PROGRAM_ID,
+  ESCROW_ARWEAVE_PUBKEY_LEN,
+  ESCROW_ASSET_TYPE_VAULT,
+  ESCROW_ETHEREUM_PUBKEY_LEN,
+  ESCROW_PROTOCOL_ARWEAVE,
+  ESCROW_PROTOCOL_ETHEREUM,
+} from './constants.js';
 import {
   getEscrowAntPDA,
   getEscrowTokenPDA,

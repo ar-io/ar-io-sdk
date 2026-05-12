@@ -34,16 +34,6 @@ import {
   address,
 } from '@solana/kit';
 
-import type { ILogger } from '../common/logger.js';
-import type { AoANTRegistryRead } from '../types/ant-registry.js';
-import type {
-  AoANTSetBaseNameRecordParams,
-  AoANTSetUndernameRecordParams,
-} from '../types/ant.js';
-import type { AoMessageResult, WriteOptions } from '../types/common.js';
-import { SolanaANTReadable } from './ant-readable.js';
-import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
-import { deserializeAntControllers } from './deserialize.js';
 import {
   getAddControllerInstructionAsync,
   getMigrateAntInstructionAsync,
@@ -60,6 +50,16 @@ import {
   getTransferInstructionAsync,
   getTransferRecordInstructionAsync,
 } from '@ar.io/solana-contracts/ant';
+import type { ILogger } from '../common/logger.js';
+import type { AoANTRegistryRead } from '../types/ant-registry.js';
+import type {
+  AoANTSetBaseNameRecordParams,
+  AoANTSetUndernameRecordParams,
+} from '../types/ant.js';
+import type { AoMessageResult, WriteOptions } from '../types/common.js';
+import { SolanaANTReadable } from './ant-readable.js';
+import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
+import { deserializeAntControllers } from './deserialize.js';
 import { getAccountInfoLegacy } from './json-rpc.js';
 import {
   getAntControllersPDA,
