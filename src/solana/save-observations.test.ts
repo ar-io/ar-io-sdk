@@ -22,7 +22,7 @@ import {
 } from '@solana/kit';
 import bs58 from 'bs58';
 
-import { getEpochEncoder } from './generated/gar/accounts/epoch.js';
+import { getEpochEncoder } from '@ar.io/solana-contracts/gar';
 import { SolanaARIOReadable } from './io-readable.js';
 import { buildObservationBitmap, encodeReportTxId } from './io-writeable.js';
 

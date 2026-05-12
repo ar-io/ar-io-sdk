@@ -43,11 +43,11 @@ import {
   getCancelDepositInstruction,
   getCancelTokenDepositInstruction,
   getCancelVaultDepositInstruction,
-  getClaimAntArweaveInstruction,
+  getClaimAntArweaveAttestedInstruction,
   getClaimAntEthereumInstruction,
-  getClaimTokensArweaveInstruction,
+  getClaimTokensArweaveAttestedInstruction,
   getClaimTokensEthereumInstruction,
-  getClaimVaultArweaveInstruction,
+  getClaimVaultArweaveAttestedInstruction,
   getClaimVaultEthereumInstruction,
   getDepositAntInstruction,
   getDepositTokensInstruction,
@@ -55,9 +55,11 @@ import {
   getUpdateRecipientInstruction,
   getUpdateTokenRecipientInstruction,
   getUpdateVaultRecipientInstruction,
-} from './generated/ant-escrow/index.js';
-import { fetchMaybeVaultCounter } from './generated/core/accounts/vaultCounter.js';
-import { getVaultedTransferInstructionAsync } from './generated/core/instructions/vaultedTransfer.js';
+} from '@ar.io/solana-contracts/ant-escrow';
+import {
+  fetchMaybeVaultCounter,
+  getVaultedTransferInstructionAsync,
+} from '@ar.io/solana-contracts/core';
 import {
   getEscrowAntPDA,
   getEscrowTokenPDA,
@@ -303,23 +305,42 @@ export class ANTEscrow {
     return this.send([ix], 400_000);
   }
 
+  /**
+   * Build the ANT-claim-via-Arweave-attested instruction.
+   *
+   * **API note**: this method previously took user-side RSA-PSS params
+   * (`signature`, `saltLen`, `messageNonce`). The on-chain ix was
+   * renamed to `claim_ant_arweave_attested` (canonical contracts
+   * `ar-io-solana-contracts` PR-19+): verification is now via
+   * instruction-introspection of a preceding Ed25519 sigverify ix
+   * issued by the off-chain attestor (see
+   * `migration/attestor/`). Those data args are no longer fed to the
+   * builder. Callers MUST prepend the attestor's sigverify ix to the
+   * transaction or it will fail on-chain. A higher-level helper that
+   * fetches the attestor's signature and assembles the full tx is
+   * tracked as a follow-up.
+   *
+   * @deprecated Args `signature`, `saltLen`, `messageNonce` are
+   * ignored. Use the new attested flow.
+   */
   async claimArweaveIx(args: {
     antMint: Address;
     claimant: Address;
-    signature: Uint8Array;
-    saltLen: number;
+    /** @deprecated unused — superseded by attestor sigverify ix */
+    signature?: Uint8Array;
+    /** @deprecated unused — superseded by attestor sigverify ix */
+    saltLen?: number;
     depositor: Address;
+    /** 32-byte nonce from the on-chain Escrow PDA; still part of the
+     *  canonical claim payload that the attestor signs. */
     messageNonce: Uint8Array;
   }): Promise<Instruction> {
-    if (args.signature.length !== 512) {
-      throw new Error('arweave signature must be 512 bytes');
-    }
     if (args.messageNonce.length !== 32) {
       throw new Error('messageNonce must be 32 bytes');
     }
     const signer = this.requireSigner('claimArweave');
     const [escrow] = await getEscrowAntPDA(args.antMint, this.programId);
-    return getClaimAntArweaveInstruction(
+    return getClaimAntArweaveAttestedInstruction(
       {
         escrow,
         antAsset: args.antMint,
@@ -327,8 +348,6 @@ export class ANTEscrow {
         depositor: args.depositor,
         payer: signer,
         messageNonce: args.messageNonce,
-        signature: args.signature,
-        saltLen: args.saltLen,
       },
       { programAddress: this.programId },
     );
@@ -774,19 +793,23 @@ export class TokenEscrow {
     return this.send(createAtaIx ? [createAtaIx, ix] : [ix], 400_000);
   }
 
+  /**
+   * @deprecated Args `signature`, `saltLen`, `messageNonce` are ignored.
+   * Use the new attested flow — see `claimArweaveIx` doc.
+   */
   async claimTokensArweaveIx(args: {
     depositor: Address;
     assetId: Uint8Array;
     claimant: Address;
     claimantTokenAccount: Address;
     escrowTokenAccount: Address;
-    signature: Uint8Array;
-    saltLen: number;
+    /** @deprecated unused — superseded by attestor sigverify ix */
+    signature?: Uint8Array;
+    /** @deprecated unused — superseded by attestor sigverify ix */
+    saltLen?: number;
+    /** 32-byte nonce from the on-chain Escrow PDA. */
     messageNonce: Uint8Array;
   }): Promise<Instruction> {
-    if (args.signature.length !== 512) {
-      throw new Error('arweave signature must be 512 bytes');
-    }
     if (args.messageNonce.length !== 32) {
       throw new Error('messageNonce must be 32 bytes');
     }
@@ -796,7 +819,7 @@ export class TokenEscrow {
       args.assetId,
       this.programId,
     );
-    return getClaimTokensArweaveInstruction(
+    return getClaimTokensArweaveAttestedInstruction(
       {
         escrow,
         escrowTokenAccount: args.escrowTokenAccount,
@@ -805,8 +828,6 @@ export class TokenEscrow {
         depositor: args.depositor,
         payer: signer,
         messageNonce: args.messageNonce,
-        signature: args.signature,
-        saltLen: args.saltLen,
       },
       { programAddress: this.programId },
     );
@@ -915,7 +936,11 @@ export class TokenEscrow {
       args.assetId,
       this.programId,
     );
-    const claimIx = getClaimVaultArweaveInstruction(
+    // `args.signature` and `args.saltLen` are no longer fed to the
+    // builder — the on-chain `claim_vault_arweave_attested` ix verifies
+    // the attestor's Ed25519 signature via instruction-introspection
+    // of a preceding sigverify ix. See doc on `claimArweaveIx`.
+    const claimIx = getClaimVaultArweaveAttestedInstruction(
       {
         escrow: escrowPda,
         escrowTokenAccount: args.escrowTokenAccount,
@@ -925,8 +950,6 @@ export class TokenEscrow {
         depositor: args.depositor,
         payer: signer,
         messageNonce: escrow.nonce,
-        signature: args.signature,
-        saltLen: args.saltLen ?? 32,
       },
       { programAddress: this.programId },
     );

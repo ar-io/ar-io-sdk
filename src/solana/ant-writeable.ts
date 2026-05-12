@@ -59,7 +59,7 @@ import {
   getSetTickerInstructionAsync,
   getTransferInstructionAsync,
   getTransferRecordInstructionAsync,
-} from './generated/ant/instructions/index.js';
+} from '@ar.io/solana-contracts/ant';
 import { getAccountInfoLegacy } from './json-rpc.js';
 import {
   getAntControllersPDA,

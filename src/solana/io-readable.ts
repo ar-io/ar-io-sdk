@@ -8,6 +8,7 @@
 import {
   type Address,
   type Commitment,
+  type ReadonlyUint8Array,
   address,
   fetchEncodedAccount,
   fetchEncodedAccounts,
@@ -90,43 +91,33 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
-import { getArnsConfigDecoder } from './generated/arns/accounts/arnsConfig.js';
 import {
   ARNS_RECORD_DISCRIMINATOR,
-  getArnsRecordDecoder,
-} from './generated/arns/accounts/arnsRecord.js';
-import {
   RESERVED_NAME_DISCRIMINATOR,
-  getReservedNameDecoder,
-} from './generated/arns/accounts/reservedName.js';
-import {
   RETURNED_NAME_DISCRIMINATOR,
+  getArnsConfigDecoder,
+  getArnsRecordDecoder,
+  getReservedNameDecoder,
   getReturnedNameDecoder,
-} from './generated/arns/accounts/returnedName.js';
-import { PRIMARY_NAME_DISCRIMINATOR } from './generated/core/accounts/primaryName.js';
+} from '@ar.io/solana-contracts/arns';
 import {
+  PRIMARY_NAME_DISCRIMINATOR,
   PRIMARY_NAME_REQUEST_DISCRIMINATOR,
-  getPrimaryNameRequestDecoder,
-} from './generated/core/accounts/primaryNameRequest.js';
-import {
   VAULT_DISCRIMINATOR,
+  getPrimaryNameRequestDecoder,
   getVaultDecoder,
-} from './generated/core/accounts/vault.js';
-import { ALLOWLIST_ENTRY_DISCRIMINATOR } from './generated/gar/accounts/allowlistEntry.js';
+} from '@ar.io/solana-contracts/core';
 import {
+  ALLOWLIST_ENTRY_DISCRIMINATOR,
   DELEGATION_DISCRIMINATOR,
-  getDelegationDecoder,
-} from './generated/gar/accounts/delegation.js';
-import {
   GATEWAY_DISCRIMINATOR,
-  getGatewayDecoder,
-} from './generated/gar/accounts/gateway.js';
-import { OBSERVATION_DISCRIMINATOR } from './generated/gar/accounts/observation.js';
-import {
+  GatewayStatus,
+  OBSERVATION_DISCRIMINATOR,
   WITHDRAWAL_DISCRIMINATOR,
+  getDelegationDecoder,
+  getGatewayDecoder,
   getWithdrawalDecoder,
-} from './generated/gar/accounts/withdrawal.js';
-import { GatewayStatus } from './generated/gar/types/index.js';
+} from '@ar.io/solana-contracts/gar';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getArioConfigPDA,
@@ -312,14 +303,14 @@ export class SolanaARIOReadable {
    */
   private async getAccountsByDiscriminator(
     programId: Address,
-    discriminator: Uint8Array,
+    discriminator: Uint8Array | ReadonlyUint8Array,
     extraFilters: MemcmpFilter[] = [],
   ): Promise<Array<{ pubkey: Address; data: Buffer }>> {
     const filters: MemcmpFilter[] = [
       {
         memcmp: {
           offset: 0n,
-          bytes: bs58.encode(discriminator),
+          bytes: bs58.encode(discriminator as Uint8Array),
           encoding: 'base58',
         },
       },
