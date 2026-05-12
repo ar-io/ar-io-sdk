@@ -30,6 +30,12 @@ export const MPL_CORE_PROGRAM_ID: Address = address(
 export const TOKEN_DECIMALS = 6;
 export const ONE_TOKEN = 1_000_000; // 1 ARIO = 1,000,000 mARIO
 export const RATE_SCALE = 1_000_000;
+/**
+ * Scaling factor for the per-share reward accumulator
+ * `Gateway.cumulative_reward_per_token` in `ario-gar`. Must match the
+ * `REWARD_PRECISION` constant in `programs/ario-gar/src/state/mod.rs`.
+ */
+export const REWARD_PRECISION = 1_000_000_000_000_000_000n; // 1e18
 
 // =========================================
 // PDA Seeds — ario-core

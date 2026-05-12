@@ -342,7 +342,7 @@ function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
  */
 export function deserializeGateway(
   data: Buffer,
-): AoGateway & { operator: string } {
+): AoGateway & { operator: string; cumulativeRewardPerToken: bigint } {
   const r = new BorshReader(data, 8); // skip 8-byte discriminator
 
   const operator = r.readPubkey();
@@ -392,8 +392,12 @@ export function deserializeGateway(
   // observer_address
   const observerAddress = r.readPubkey();
 
-  // cumulative_reward_per_token (u128, not exposed in SDK type)
-  r.skip(16);
+  // cumulative_reward_per_token: u128 — per-share accumulator advanced by
+  // distribute_epoch. Combined with each Delegation.reward_debt, this lets
+  // off-chain readers compute the live delegate balance without an on-chain
+  // settlement call. Not part of the public AoGateway type but surfaced as
+  // an extra field on this function's return so internal readers can use it.
+  const cumulativeRewardPerToken = r.readU128();
 
   // bump
   r.skip(1);
@@ -446,6 +450,7 @@ export function deserializeGateway(
     operatorStake,
     status: statusIdx === 0 ? 'joined' : 'leaving',
     weights,
+    cumulativeRewardPerToken,
   };
 }
 
@@ -559,8 +564,19 @@ export function deserializeVault(
 export type DeserializedDelegation = {
   gateway: string;
   delegator: string;
+  /**
+   * Last-settled principal (raw `Delegation.amount` from on-chain state).
+   * This value is stale between epochs — see `INVARIANTS.md` in the contracts
+   * repo. Use `computeLiveDelegationBalance` (with the gateway's current
+   * `cumulativeRewardPerToken`) to get the actual current balance.
+   */
   delegatedStake: number;
   startTimestamp: number;
+  /**
+   * Snapshot of `gateway.cumulative_reward_per_token` at the last settlement.
+   * Required input to `computeLiveDelegationBalance`.
+   */
+  rewardDebt: bigint;
 };
 
 /**
@@ -574,14 +590,18 @@ export function deserializeDelegation(data: Buffer): DeserializedDelegation {
   const delegator = r.readPubkey();
   const amount = r.readU64AsNumber();
   const startTimestamp = r.readI64AsNumber();
-  // reward_debt: u128, bump: u8 — skip
-  r.skip(16 + 1);
+  // reward_debt: u128 — snapshot of gateway.cumulative_reward_per_token at last
+  // settlement. Needed (together with the gateway's current accumulator) to
+  // compute the live delegate balance via computeLiveDelegationBalance().
+  const rewardDebt = r.readU128();
+  r.skip(1); // bump
 
   return {
     gateway: gateway,
     delegator: delegator,
     delegatedStake: amount,
     startTimestamp,
+    rewardDebt,
   };
 }
 
