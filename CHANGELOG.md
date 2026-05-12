@@ -1,3 +1,10 @@
+# [4.0.0-solana.7](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.6...v4.0.0-solana.7) (2026-05-12)
+
+
+### Features
+
+* **solana:** switch ario_* codegen to [@ar](https://github.com/ar).io/solana-contracts@0.1.0-devnet.0 ([f8a0970](https://github.com/ar-io/ar-io-sdk/commit/f8a09702ccf6671cbd32f2fa938c90da39153b8f)), closes [#19](https://github.com/ar-io/ar-io-sdk/issues/19)
+
 # [4.0.0-solana.6](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.5...v4.0.0-solana.6) (2026-05-12)
 
 
