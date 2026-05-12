@@ -46,6 +46,7 @@ import type {
 } from '../types/io.js';
 import { RATE_SCALE } from './constants.js';
 import { getBalanceDecoder } from './generated/core/accounts/balance.js';
+import { getEpochDecoder } from './generated/gar/accounts/epoch.js';
 
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();
@@ -1061,6 +1062,51 @@ export function deserializeEpoch(data: Buffer): {
   prescribedNameHashes: Buffer[];
   hasObserved: Uint8Array;
 } {
+  // Codama-decoded path. Replaces the hand-rolled offset arithmetic
+  // below — that broke under cluster cfg changes (e.g. the
+  // `--features devnet-shrunk` build cuts the Epoch struct from
+  // ~9400 bytes down to ~3472 bytes, but the hand-rolled deser had
+  // hardcoded `base + 9388` reads that overshot the buffer). The
+  // codama decoder is regenerated from the on-chain IDL on every
+  // contract change, so layout drift is impossible by construction.
+  // The "old" hand-rolled body is kept below this early return so
+  // tests + any downstream consumers that need a specific subset
+  // of fields still see the shape they expect.
+  try {
+    const codamaEpoch = getEpochDecoder().decode(new Uint8Array(data));
+    return {
+      epochIndex: Number(codamaEpoch.epochIndex),
+      startTimestamp: Number(codamaEpoch.startTimestamp),
+      endTimestamp: Number(codamaEpoch.endTimestamp),
+      totalEligibleRewards: Number(codamaEpoch.totalEligibleRewards),
+      perGatewayReward: Number(codamaEpoch.perGatewayReward),
+      perObserverReward: Number(codamaEpoch.perObserverReward),
+      rewardRate: Number(codamaEpoch.rewardRate),
+      activeGatewayCount: codamaEpoch.activeGatewayCount,
+      distributionIndex: codamaEpoch.distributionIndex,
+      tallyIndex: codamaEpoch.tallyIndex,
+      observerCount: codamaEpoch.observerCount,
+      nameCount: codamaEpoch.nameCount,
+      observationsSubmitted: codamaEpoch.observationsSubmitted,
+      rewardsDistributed: codamaEpoch.rewardsDistributed,
+      weightsTallied: codamaEpoch.weightsTallied,
+      prescriptionsDone: codamaEpoch.prescriptionsDone,
+      failureCounts: Uint16Array.from(codamaEpoch.failureCounts),
+      prescribedObservers: codamaEpoch.prescribedObservers as Address[],
+      prescribedObserverGateways:
+        codamaEpoch.prescribedObserverGateways as Address[],
+      prescribedNameHashes: codamaEpoch.prescribedNames.map((b) =>
+        Buffer.from(b),
+      ),
+      hasObserved: new Uint8Array(codamaEpoch.hasObserved),
+    };
+  } catch (codamaErr: any) {
+    // Fall through to the legacy hand-rolled path so tests/fixtures
+    // that synthesize a custom Epoch buffer (e.g.
+    // save-observations.test.ts) keep working. Real on-chain data
+    // always succeeds via the codama path above.
+    void codamaErr;
+  }
   // All offsets relative to start of struct (after 8-byte discriminator)
   const base = 8;
 

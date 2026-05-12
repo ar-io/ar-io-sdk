@@ -273,6 +273,89 @@ export function splitPrimaryName(name: string): {
  * await ario.transfer({ target: 'RecipientPubkey...', qty: 100_000_000 });
  * ```
  */
+// =========================================================================
+// save_observations encoding helpers
+// =========================================================================
+// Extracted as pure functions so the bitmap-pack + base64url-decode logic
+// can be unit-tested without standing up the rpc/signer plumbing of the
+// SolanaARIOWriteable class. The on-chain ABI:
+//   - gateway_results: [u8; 375]   bit i = 1 (pass) / 0 (fail) for the
+//                                  gateway at registry index i.
+//   - gateway_count:   u16         must equal epoch.active_gateway_count.
+//   - report_tx_id:    [u8; 32]    raw 32-byte Arweave hash (base64url
+//                                  decoded from its 43-char string form).
+
+/** Build the gateway_results bitmap for save_observations.
+ *  All bits start as 1 (pass) for the first `registryAddresses.length`
+ *  positions; positions named in `failedGateways` get cleared to 0; all
+ *  positions beyond `registryAddresses.length` are 0. */
+export function buildObservationBitmap(
+  registryAddresses: string[],
+  failedGateways: string[],
+): Buffer {
+  const buf = Buffer.alloc(375, 0xff);
+  const failedSet = new Set(failedGateways);
+  for (let i = 0; i < registryAddresses.length; i++) {
+    if (failedSet.has(registryAddresses[i])) {
+      buf[Math.floor(i / 8)] &= ~(1 << (i % 8));
+    }
+  }
+  // Clear bits beyond the active gateway count so the bitmap is exactly
+  // the prescribed shape (1s only at indices < gatewayCount that passed).
+  for (let i = registryAddresses.length; i < 3000; i++) {
+    buf[Math.floor(i / 8)] &= ~(1 << (i % 8));
+  }
+  return buf;
+}
+
+/** Encode an Arweave TX ID into the on-chain `[u8; 32]` slot.
+ *
+ *  An Arweave TX ID **is** a 32-byte SHA-256 hash; the 43-char base64url
+ *  string is just its presentation encoding. We decode here so the
+ *  on-chain bytes are the raw hash — lossless and trivially reversible
+ *  via base64url-encode on the consumer side. Without this, on-chain
+ *  bytes alone couldn't be used to look up the original report bundle
+ *  on permaweb (the whole point of recording the txid for auditability).
+ *
+ *  Empty / undefined input → 32 zero bytes ("no permaweb archive
+ *  configured for this submission" — the report still lives off-chain
+ *  in the observer's local sinks but isn't anchored on Arweave).
+ *
+ *  Throws on malformed input: the base64url string must be exactly 43
+ *  chars and decode to 32 bytes. Strict validation here is desirable —
+ *  silently truncating or accepting bad input would erode the
+ *  auditability that the field exists for.
+ */
+export function encodeReportTxId(reportTxId: string | undefined): Buffer {
+  const out = Buffer.alloc(32);
+  if (reportTxId === undefined || reportTxId === '') {
+    return out;
+  }
+  // base64url → base64. The 43-char Arweave form has no padding; add it
+  // back so Node's `Buffer.from(_, 'base64')` accepts the input.
+  const padded = reportTxId
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(reportTxId.length / 4) * 4, '=');
+  // Reject non-base64url chars up front — `Buffer.from` silently
+  // tolerates them, which would mask typos.
+  if (!/^[A-Za-z0-9+/=]+$/.test(padded)) {
+    throw new Error(
+      `reportTxId contains non-base64url characters: "${reportTxId}". ` +
+        `Expected a 43-char Arweave TX ID using A-Z, a-z, 0-9, -, _.`,
+    );
+  }
+  const decoded = Buffer.from(padded, 'base64');
+  if (decoded.length !== 32) {
+    throw new Error(
+      `reportTxId must be a 43-char base64url Arweave TX ID decoding to 32 bytes; ` +
+        `got ${reportTxId.length} chars decoding to ${decoded.length} bytes.`,
+    );
+  }
+  decoded.copy(out);
+  return out;
+}
+
 export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected readonly signer: SolanaSigner;
   protected readonly rpcSubscriptions: SolanaRpcSubscriptions;
@@ -1008,28 +1091,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     } else {
       const registryAddresses = await this.getRegistryGatewayAddresses();
       gatewayCount = registryAddresses.length;
-      resultsBuf = Buffer.alloc(375, 0xff); // start all-passed
-      const failedSet = new Set(params.failedGateways);
-      for (let i = 0; i < gatewayCount; i++) {
-        if (failedSet.has(registryAddresses[i])) {
-          resultsBuf[Math.floor(i / 8)] &= ~(1 << (i % 8));
-        }
-      }
-      // Clear bits beyond the active gateway count.
-      for (let i = gatewayCount; i < 3000; i++) {
-        resultsBuf[Math.floor(i / 8)] &= ~(1 << (i % 8));
-      }
+      resultsBuf = buildObservationBitmap(
+        registryAddresses,
+        params.failedGateways,
+      );
     }
 
-    // report_tx_id is a fixed [u8; 32] (Arweave TX ID). The legacy SDK
-    // truncates the raw string bytes; mirror that for compatibility.
-    const reportTxId = Buffer.alloc(32);
-    Buffer.from(params.reportTxId).copy(
-      reportTxId,
-      0,
-      0,
-      Math.min(32, params.reportTxId.length),
-    );
+    const reportTxId = encodeReportTxId(params.reportTxId);
 
     const ix = await getSaveObservationsInstructionAsync(
       {
@@ -2892,10 +2960,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   ): Promise<AoMessageResult> {
     const garConfig = await this.getGarConfig();
 
+    // ario_gar::distribute_epoch CPIs into ario_core::release_treasury_to_recipient
+    // (signed by the ArioConfig PDA — the canonical treasury authority). The
+    // generated builder expects `arioConfig` + `arioCoreProgram` accounts at
+    // positions 6+7 (post-PR-19 in ar-io-solana-contracts). Pin both to the
+    // configured core program so devnet/testnet deployments don't fall back
+    // to the bundled mainnet default.
+    const [arioConfig] = await getArioConfigPDA(this.coreProgram);
     const ix = await getDistributeEpochInstructionAsync(
       await this.withGarDefaults({
         protocolTokenAccount: garConfig.protocolTokenAccount,
         stakeTokenAccount: garConfig.stakeTokenAccount,
+        arioConfig,
+        arioCoreProgram: this.coreProgram,
         payer: this.signer,
         epochIndex: BigInt(params.epochIndex),
       }),

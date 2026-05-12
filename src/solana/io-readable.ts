@@ -139,6 +139,7 @@ import {
   getGarSettingsPDA,
   getGatewayPDA,
   getGatewayRegistryPDA,
+  getObserverLookupPDA,
   getPrimaryNamePDA,
   getPrimaryNameRequestPDA,
   getReservedNamePDA,
@@ -1106,7 +1107,16 @@ export class SolanaARIOReadable {
     const settings = deserializeEpochSettingsFull(Buffer.from(account.data));
 
     if (!epoch) {
-      return settings.currentEpochIndex;
+      // On-chain `current_epoch_index` is "NEXT epoch to be created"
+      // (incremented inside `create_epoch` AFTER the PDA is initialized
+      // — see programs/ario-gar/src/instructions/epoch.rs:161). The
+      // currently-active epoch is therefore one back. Floor at 0 for
+      // the pre-bootstrap edge case where no epochs have been created
+      // yet. Without this adjustment, every call to getEpoch(undefined)
+      // sits in the cranker's close_epoch ↔ create_epoch gap and throws
+      // "Epoch N not found" — which broke ContractEpochSource on a
+      // live cluster (May 2026 devnet).
+      return Math.max(0, settings.currentEpochIndex - 1);
     }
 
     // { timestamp } — compute epoch index. The public API takes `timestamp`
@@ -2138,6 +2148,76 @@ export class SolanaARIOReadable {
       processId: record.processId,
       ttlSeconds: 3600,
       undernameLimit: record.undernameLimit,
+    };
+  }
+
+  // =========================================================================
+  // Observer helpers (Solana-only; used by gateway-side report submission)
+  // =========================================================================
+
+  /**
+   * Resolve the gateway operator pubkey backing a given observer pubkey.
+   * The `ObserverLookup` PDA is written at `join_network` (and rotated by
+   * `update_observer_address`); when present its `gateway` field is the
+   * operator pubkey. Returns `undefined` when the observer isn't
+   * registered on any gateway.
+   */
+  async getObserverLookup(
+    observer: Address,
+  ): Promise<{ gateway: Address; bump: number } | undefined> {
+    const [pda] = await getObserverLookupPDA(observer, this.garProgram);
+    const account = await this.getAccount(pda);
+    if (!account.exists) return undefined;
+    const data = Buffer.from(account.data);
+    // Layout: 8 disc + 32 gateway + 1 bump.
+    const gateway = addressDecoder.decode(data.subarray(8, 40));
+    const bump = data.readUInt8(40);
+    return { gateway, bump };
+  }
+
+  /**
+   * Pre-flight gate for `save_observations` submission. Reads the Epoch
+   * account once and reports whether the given observer pubkey is:
+   *   - `prescribed`: in `epoch.prescribed_observers[..observer_count]`
+   *   - `observerIdx`: position in the array (matches the `has_observed`
+   *     bit index when prescribed)
+   *   - `alreadyObserved`: whether the bit at `observerIdx` is set
+   *   - `windowOpen`: whether `now < epoch.end_timestamp`
+   *
+   * Use this from a sink/wrapper to skip cheap-to-skip cases before
+   * paying for a transaction simulation that would just bounce.
+   */
+  async getEpochObservationStatus(
+    epochIndex: number,
+    observer: Address,
+  ): Promise<{
+    prescribed: boolean;
+    observerIdx: number; // -1 when not prescribed
+    alreadyObserved: boolean;
+    windowOpen: boolean;
+    endTimestampSec: number;
+  }> {
+    const epoch = await this.fetchEpoch(epochIndex);
+    let observerIdx = -1;
+    for (let i = 0; i < epoch.observerCount; i++) {
+      if (epoch.prescribedObservers[i] === (observer as string)) {
+        observerIdx = i;
+        break;
+      }
+    }
+    const prescribed = observerIdx !== -1;
+    const alreadyObserved =
+      prescribed &&
+      ((epoch.hasObserved[Math.floor(observerIdx / 8)] >> (observerIdx % 8)) &
+        1) ===
+        1;
+    const nowSec = Math.floor(Date.now() / 1000);
+    return {
+      prescribed,
+      observerIdx,
+      alreadyObserved,
+      windowOpen: nowSec < epoch.endTimestamp,
+      endTimestampSec: epoch.endTimestamp,
     };
   }
 }
