@@ -82,6 +82,7 @@ import {
   deserializeGarSettings,
   deserializeGarSupplyCounters,
   deserializeGateway,
+  deserializeGatewayWithAccumulator,
   deserializeObservation,
   deserializePrimaryName,
   deserializePrimaryNameRequest,
@@ -374,7 +375,10 @@ export class SolanaARIOReadable {
       const acct = accounts[i];
       if (!acct.exists) continue;
       try {
-        const gw = deserializeGateway(Buffer.from(acct.data));
+        // Internal variant: surfaces the u128 accumulator that the public
+        // `deserializeGateway` deliberately drops (BigInt is not
+        // JSON-serializable and would leak through getGateway).
+        const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
         out.set(unique[i], gw.cumulativeRewardPerToken);
       } catch {
         // Skip malformed; the caller will fall back to the raw delegation amount.

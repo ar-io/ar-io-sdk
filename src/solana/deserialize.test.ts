@@ -3,7 +3,11 @@ import { describe, it } from 'node:test';
 
 import { REWARD_PRECISION } from './constants.js';
 import { computeLiveDelegationBalance } from './delegation-math.js';
-import { deserializeDelegation, deserializeGateway } from './deserialize.js';
+import {
+  deserializeDelegation,
+  deserializeGateway,
+  deserializeGatewayWithAccumulator,
+} from './deserialize.js';
 
 /**
  * Synthetic-byte round-trip tests for the two accumulator-related deserializers
@@ -213,7 +217,7 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
       totalDelegatedStake: 5_000_000_000n,
       cumulativeRewardPerToken: 750_000_000_000_000_000n, // 0.75 * REWARD_PRECISION
     });
-    const gw = deserializeGateway(buf);
+    const gw = deserializeGatewayWithAccumulator(buf);
 
     assert.equal(gw.operatorStake, 30_000_000_000);
     assert.equal(gw.totalDelegatedStake, 5_000_000_000);
@@ -226,7 +230,7 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
       totalDelegatedStake: 0n,
       cumulativeRewardPerToken: 0n,
     });
-    const gw = deserializeGateway(buf);
+    const gw = deserializeGatewayWithAccumulator(buf);
     assert.equal(gw.cumulativeRewardPerToken, 0n);
   });
 
@@ -239,7 +243,26 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
       totalDelegatedStake: 0n,
       cumulativeRewardPerToken: big,
     });
-    const gw = deserializeGateway(buf);
+    const gw = deserializeGatewayWithAccumulator(buf);
     assert.equal(gw.cumulativeRewardPerToken, big);
+  });
+
+  it('public deserializeGateway does NOT expose cumulativeRewardPerToken', () => {
+    // Regression guard for CodeRabbit finding: bigint must not leak through
+    // the public AoGateway shape (it's not JSON-serializable, would crash
+    // `JSON.stringify` on getGateway() results).
+    const buf = buildGatewayBuffer({
+      operatorStake: 1_000n,
+      totalDelegatedStake: 0n,
+      cumulativeRewardPerToken: 999n,
+    });
+    const gw = deserializeGateway(buf);
+    assert.equal(
+      (gw as Record<string, unknown>).cumulativeRewardPerToken,
+      undefined,
+      'public deserializeGateway must not include the u128 accumulator',
+    );
+    // And JSON.stringify must succeed (would throw on a bigint field).
+    assert.doesNotThrow(() => JSON.stringify(gw));
   });
 });

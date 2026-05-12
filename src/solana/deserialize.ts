@@ -335,12 +335,18 @@ function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
 // =========================================
 
 /**
- * Deserialize a Gateway account from raw bytes.
- * PDA: ["gateway", operator_pubkey] in ario-gar program.
+ * Internal variant of {@link deserializeGateway} that additionally surfaces
+ * the on-chain `cumulative_reward_per_token` u128 accumulator. Used by the
+ * live delegation balance pipeline ({@link computeLiveDelegationBalance} via
+ * `getGatewayAccumulators` in `io-readable.ts`).
  *
- * Returns the SDK-compatible AoGateway type.
+ * Not part of the public AoGateway shape — `bigint` is not JSON-serializable
+ * and would leak through `getGateway` / `getGateways`. Prefer
+ * {@link deserializeGateway} everywhere except inside live-balance plumbing.
+ *
+ * PDA: ["gateway", operator_pubkey] in ario-gar program.
  */
-export function deserializeGateway(
+export function deserializeGatewayWithAccumulator(
   data: Buffer,
 ): AoGateway & { operator: string; cumulativeRewardPerToken: bigint } {
   const r = new BorshReader(data, 8); // skip 8-byte discriminator
@@ -452,6 +458,25 @@ export function deserializeGateway(
     weights,
     cumulativeRewardPerToken,
   };
+}
+
+/**
+ * Deserialize a Gateway account from raw bytes.
+ *
+ * Returns the SDK-compatible AoGateway type (plus `operator: string`).
+ * The on-chain `cumulative_reward_per_token` u128 is intentionally NOT
+ * surfaced on the returned object — `bigint` is not JSON-serializable,
+ * and leaking it through `getGateway` / `getGateways` would break
+ * downstream consumers that call `JSON.stringify` on results. Use
+ * {@link deserializeGatewayWithAccumulator} from within the live-balance
+ * pipeline when the accumulator value is actually needed.
+ */
+export function deserializeGateway(
+  data: Buffer,
+): AoGateway & { operator: string } {
+  const { cumulativeRewardPerToken: _unused, ...publicShape } =
+    deserializeGatewayWithAccumulator(data);
+  return publicShape;
 }
 
 // =========================================
