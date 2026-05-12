@@ -1,3 +1,15 @@
+# [4.0.0-solana.8](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.7...v4.0.0-solana.8) (2026-05-12)
+
+
+### Bug Fixes
+
+* **solana:** keep cumulativeRewardPerToken out of the public AoGateway shape ([82dbfc4](https://github.com/ar-io/ar-io-sdk/commit/82dbfc4db057d8b0c2e3ca4576d6108608709eef))
+
+
+### Features
+
+* **solana:** return live delegation balances from read methods ([d2d53a7](https://github.com/ar-io/ar-io-sdk/commit/d2d53a75398275e2a2c953b8ebb45b8413f7c149))
+
 # [4.0.0-solana.7](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.6...v4.0.0-solana.7) (2026-05-12)
 
 
