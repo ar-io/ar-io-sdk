@@ -234,6 +234,22 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
   );
 }
 
+export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
+  const vaultId = requiredStringFromOptions(o, 'vaultId');
+
+  await assertConfirmationPrompt(
+    `You are about to claim matured withdrawal vault ${vaultId}. Tokens will be transferred to your wallet.\nAre you sure?`,
+    o,
+  );
+
+  return (await writeARIOFromOptions(o)).ario.claimWithdrawal(
+    {
+      withdrawalId: vaultId,
+    },
+    customTagsFromOptions(o),
+  );
+}
+
 export async function instantWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
   const vaultId = requiredStringFromOptions(o, 'vaultId');
   const gatewayAddress = requiredAddressFromOptions(o);

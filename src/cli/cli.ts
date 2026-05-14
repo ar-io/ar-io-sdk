@@ -47,6 +47,7 @@ import {
 } from './commands/escrowCommands.js';
 import {
   cancelWithdrawal,
+  claimWithdrawal,
   decreaseDelegateStake,
   decreaseOperatorStake,
   delegateStake,
@@ -613,6 +614,14 @@ makeCommand({
   description: 'Cancel a pending gateway withdrawal vault',
   options: addressAndVaultIdOptions,
   action: cancelWithdrawal,
+});
+
+makeCommand({
+  name: 'claim-withdrawal',
+  description:
+    'Claim tokens from a matured withdrawal vault (after the lock period has elapsed)',
+  options: [...writeActionOptions, optionMap.vaultId],
+  action: claimWithdrawal,
 });
 
 makeCommand({
