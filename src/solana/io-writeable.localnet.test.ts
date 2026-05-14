@@ -55,13 +55,21 @@ const GAR_ID = process.env.ARIO_GAR_PROGRAM_ID;
 const ARNS_ID = process.env.ARIO_ARNS_PROGRAM_ID;
 const ANT_ID = process.env.ARIO_ANT_PROGRAM_ID;
 const ARIO_MINT = process.env.ARIO_MINT;
-// localnet.env stores AUTHORITY_KEYPAIR_PATH as a repo-root-relative path;
-// resolve it so the smoke works regardless of which dir the test runs from.
-const AUTHORITY_KP = process.env.AUTHORITY_KEYPAIR_PATH
-  ? isAbsolute(process.env.AUTHORITY_KEYPAIR_PATH)
-    ? process.env.AUTHORITY_KEYPAIR_PATH
-    : resolve(process.cwd(), '..', process.env.AUTHORITY_KEYPAIR_PATH)
-  : undefined;
+// localnet.env stores AUTHORITY_KEYPAIR_PATH as a path RELATIVE to the
+// solana-ar-io repo root (not cwd). Resolve it against SOLANA_AR_IO_ROOT
+// (set by the e2e bootstrap script) or the sibling-clone convention.
+// `resolve(cwd, '..', path)` was wrong: from inside ar-io-sdk's tree, `..`
+// is the user's home dir, not the solana-ar-io repo.
+function resolveAuthorityKp(): string | undefined {
+  const raw = process.env.AUTHORITY_KEYPAIR_PATH;
+  if (!raw) return undefined;
+  if (isAbsolute(raw)) return raw;
+  const root =
+    process.env.SOLANA_AR_IO_ROOT ??
+    resolve(process.cwd(), '..', 'solana-ar-io');
+  return resolve(root, raw);
+}
+const AUTHORITY_KP = resolveAuthorityKp();
 
 const SHOULD_RUN = Boolean(
   RPC_URL &&

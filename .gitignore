@@ -26,3 +26,4 @@ aos-ant-*.wasm
 
 # Generated locally by sdk-e2e bootstrap (never commit secrets / RPC endpoints).
 test/.env.e2e
+test/e2e-wallet.json
