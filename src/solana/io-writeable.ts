@@ -128,6 +128,7 @@ import {
   getIncreaseVaultInstructionAsync,
   getReleaseVaultInstructionAsync,
   getRequestAndSetPrimaryNameFromFundingPlanInstructionAsync,
+  getRequestAndSetPrimaryNameInstructionAsync,
   getRequestPrimaryNameFromFundingPlanInstructionAsync,
   getRequestPrimaryNameInstructionAsync,
   getRevokeVaultInstructionAsync,
@@ -2192,25 +2193,35 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         'requestAndSet',
       );
 
+    let ix;
     if (
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
       params.fundFrom === 'turbo'
     ) {
-      // Direct-transfer path: delegate to requestPrimaryName for now (this
-      // matches the pre-Phase-4 placeholder; the on-chain
-      // request_and_set_primary_name ix uses the same fee charge so the
-      // routing is functionally identical).
-      void signerATA;
-      return this.requestPrimaryName(params, _options);
+      ix = withRemainingAccounts(
+        await getRequestAndSetPrimaryNameInstructionAsync(
+          await this.withCoreDefaults({
+            initiatorTokenAccount: signerATA,
+            protocolTokenAccount: coreConfig.treasury,
+            initiator: this.signer,
+            name: params.name,
+            reverseLookupHash: hashName(params.name),
+            antProgramId: antProgram,
+          }),
+          { programAddress: this.coreProgram },
+        ),
+        remaining,
+      );
+    } else {
+      ix = await this._buildPrimaryNameFromFundingPlanIx({
+        params,
+        coreConfig,
+        validationAccounts: remaining,
+        operation: 'requestAndSet',
+        antProgramId: antProgram,
+      });
     }
-    const ix = await this._buildPrimaryNameFromFundingPlanIx({
-      params,
-      coreConfig,
-      validationAccounts: remaining,
-      operation: 'requestAndSet',
-      antProgramId: antProgram,
-    });
     const sig = await this.sendTransaction([ix]);
     return { id: sig };
   }
