@@ -1,3 +1,10 @@
+# [4.0.0-solana.9](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.8...v4.0.0-solana.9) (2026-05-14)
+
+
+### Bug Fixes
+
+* **localnet-e2e:** make sdk-e2e bootstrap work after monorepo split ([4bdc89d](https://github.com/ar-io/ar-io-sdk/commit/4bdc89de307f67a648d81fa3ca19dff597b4de0c)), closes [#6037](https://github.com/ar-io/ar-io-sdk/issues/6037)
+
 # [4.0.0-solana.8](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.7...v4.0.0-solana.8) (2026-05-12)
 
 
