@@ -1043,6 +1043,57 @@ const vaults = await ario.getAllGatewayVaults({
 
 </details>
 
+#### `getWithdrawals({ address, cursor, limit, sortBy, sortOrder })`
+
+**Solana-only.** Returns every pending stake withdrawal owned by `address` — covering both operator-stake decreases (`isDelegate: false`) and delegate-stake decreases (`isDelegate: true`). A withdrawal is claimable when `Date.now() >= endTimestamp`; call `claimWithdrawal({ withdrawalId: item.vaultId })` to release the tokens.
+
+This is the per-owner read needed to drive "you have X claimable withdrawals" UIs without fanning out across every gateway the wallet has interacted with. Throws on the AO backend.
+
+```typescript
+const ario = ARIO.init({ backend: "solana", rpc, rpcSubscriptions, signer });
+
+const withdrawals = await ario.getWithdrawals({
+  address: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+});
+
+const claimable = withdrawals.items.filter(
+  (w) => Date.now() >= w.endTimestamp,
+);
+```
+
+<details>
+  <summary>Output</summary>
+
+```json
+{
+  "hasMore": false,
+  "totalItems": 2,
+  "limit": 100,
+  "items": [
+    {
+      "cursorId": "8CSdSjf7gXqQ5p1U2qfdwHzVw9sZRYHJpDpV87dnvb4d",
+      "vaultId": "0",
+      "gatewayAddress": "Bxz7Q2tWfqr9Q5T6cZjUnVxRk9CnHwShfgUaW5fY1Mvr",
+      "balance": 50000000000,
+      "startTimestamp": 1735843635857,
+      "endTimestamp": 1738435635857,
+      "isDelegate": true
+    },
+    {
+      "cursorId": "FmWUz4w7vSdLcz1nN8H1n2KkjJgrQQXR1n4kV3WqJ7Hf",
+      "vaultId": "1",
+      "gatewayAddress": "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+      "balance": 10000000000,
+      "startTimestamp": 1735843835857,
+      "endTimestamp": 1738435835857,
+      "isDelegate": false
+    }
+  ]
+}
+```
+
+</details>
+
 #### `increaseOperatorStake({ qty })`
 
 Increases the callers operator stake. Must be executed with a wallet registered as a gateway operator.

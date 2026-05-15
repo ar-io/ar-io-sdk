@@ -19,6 +19,7 @@ import {
   AoGatewayDelegateWithAddress,
   AoGatewayVault,
   AoGetCostDetailsParams,
+  AoUserWithdrawal,
 } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
@@ -283,6 +284,23 @@ export async function getAllGatewayVaults(o: PaginationCLIOptions) {
     ? result
     : {
         message: `No vaults found`,
+      };
+}
+
+export async function getWithdrawals(o: PaginationAddressCLIOptions) {
+  const address = requiredAddressFromOptions(o);
+  const result = await readARIOFromOptions(o).getWithdrawals({
+    address,
+    ...paginationParamsFromOptions<
+      PaginationAddressCLIOptions,
+      AoUserWithdrawal
+    >(o),
+  });
+
+  return result.items?.length
+    ? result
+    : {
+        message: `No pending withdrawals found for address ${address}`,
       };
 }
 

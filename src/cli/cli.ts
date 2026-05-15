@@ -89,6 +89,7 @@ import {
   getPrimaryName,
   getTokenCost,
   getVault,
+  getWithdrawals,
   listAllDelegatesCLICommand,
   listAntsForAddress,
   listArNSRecords,
@@ -511,6 +512,14 @@ makeCommand({
   description: 'List vaults from all gateways',
   options: paginationAddressOptions,
   action: getAllGatewayVaults,
+});
+
+makeCommand({
+  name: 'get-withdrawals',
+  description:
+    'Get all pending stake withdrawals (operator + delegate) owned by an address (Solana-only)',
+  options: paginationAddressOptions,
+  action: getWithdrawals,
 });
 
 // # Actions
