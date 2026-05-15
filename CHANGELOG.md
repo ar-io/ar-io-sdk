@@ -1,3 +1,15 @@
+# [4.0.0-solana.11](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.10...v4.0.0-solana.11) (2026-05-15)
+
+
+### Bug Fixes
+
+* **cli:** make claim-withdrawal Solana-only ([24e3820](https://github.com/ar-io/ar-io-sdk/commit/24e382029a6031a2609e4f2d8fc9af994bd847d1))
+
+
+### Features
+
+* **cli:** add claim-withdrawal command ([d449db0](https://github.com/ar-io/ar-io-sdk/commit/d449db0f0e2678c4dce8f5f8886c8daad7744d77))
+
 # [4.0.0-solana.10](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.9...v4.0.0-solana.10) (2026-05-15)
 
 
