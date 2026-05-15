@@ -78,6 +78,7 @@ import type {
   AoReturnedName,
   AoTokenCostParams,
   AoTokenSupplyData,
+  AoUserWithdrawal,
   AoVaultData,
   AoWalletVault,
   AoWeightedObserver,
@@ -891,6 +892,54 @@ export class SolanaARIOReadable {
             endTimestamp: secToMs(w.endTimestamp),
           });
         }
+      } catch {
+        // Skip malformed
+      }
+    }
+
+    return paginate(items, params);
+  }
+
+  /**
+   * Return every pending stake withdrawal owned by `address` — operator-stake
+   * decreases (`isDelegate: false`) and delegate-stake decreases
+   * (`isDelegate: true`) in one paginated result. A withdrawal is claimable
+   * when `Date.now() >= endTimestamp`; release the funds via
+   * `claimWithdrawal({ withdrawalId: item.vaultId })`.
+   *
+   * Solana-only: AO releases withdrawals automatically at maturity and has no
+   * equivalent per-owner read; the AO backend throws.
+   */
+  async getWithdrawals(
+    params: PaginationParams<AoUserWithdrawal> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoUserWithdrawal>> {
+    const owner = address(params.address);
+    // Withdrawal layout: disc(8) + owner(32) + withdrawal_id(8) + gateway(32).
+    // Filter by owner at offset 8 — returns both operator-stake (isDelegate=false)
+    // and delegate-stake (isDelegate=true) withdrawals for this wallet.
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      WITHDRAWAL_DISCRIMINATOR,
+      [
+        {
+          memcmp: { offset: 8n, bytes: owner as string, encoding: 'base58' },
+        },
+      ],
+    );
+
+    const items: AoUserWithdrawal[] = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const w = deserializeWithdrawal(data);
+        items.push({
+          cursorId: pubkey as string,
+          vaultId: w.vaultId,
+          balance: w.balance,
+          startTimestamp: secToMs(w.startTimestamp),
+          endTimestamp: secToMs(w.endTimestamp),
+          gatewayAddress: w.gateway,
+          isDelegate: w.isDelegate,
+        });
       } catch {
         // Skip malformed
       }

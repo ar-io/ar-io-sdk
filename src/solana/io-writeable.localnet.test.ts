@@ -511,6 +511,89 @@ describe(
       );
     });
 
+    it('getWithdrawals({ address }) returns per-wallet operator + delegate withdrawals', async () => {
+      // Fresh operator + fresh delegator so the assertion counts are exact
+      // and the shared `operator` state isn't perturbed.
+      const wdOp = await freshSigner(scratch, 'wd-list-operator');
+      await airdrop(wdOp.keypairPath, 5);
+      mintArio(wdOp.signer.address, OPERATOR_STAKE * 2n);
+      const wdOpArio = buildArio(wdOp.signer, RPC_URL!, WS_URL!);
+
+      await wdOpArio.joinNetwork({
+        operatorStake: Number(OPERATOR_STAKE),
+        label: 'wd-list-gw',
+        fqdn: 'wd-list.example.com',
+        port: 443,
+        protocol: 'https',
+        autoStake: false,
+        allowDelegatedStaking: true,
+        delegateRewardShareRatio: 10,
+        observerAddress: wdOp.signer.address as string,
+      });
+
+      // Operator-stake withdrawal. OPERATOR_STAKE (50k) - 10k = 40k, still
+      // above the 10k floor, so the decrease is accepted.
+      await wdOpArio.decreaseOperatorStake({
+        decreaseQty: 10_000_000_000,
+      });
+
+      // Delegate-stake withdrawal from a fresh delegator targeting wdOp.
+      const wdDel = await freshSigner(scratch, 'wd-list-delegator');
+      await airdrop(wdDel.keypairPath, 5);
+      mintArio(wdDel.signer.address, 100_000_000_000n);
+      const wdDelArio = buildArio(wdDel.signer, RPC_URL!, WS_URL!);
+
+      const delegateAmount = 50_000_000_000n;
+      await wdDelArio.delegateStake({
+        target: wdOp.signer.address as string,
+        stakeQty: Number(delegateAmount),
+      });
+      await wdDelArio.decreaseDelegateStake({
+        target: wdOp.signer.address as string,
+        decreaseQty: Number(delegateAmount),
+      });
+
+      const opResult = await wdOpArio.getWithdrawals({
+        address: wdOp.signer.address as string,
+      });
+      assert.equal(
+        opResult.items.length,
+        1,
+        'operator must surface exactly one withdrawal (its own decrease)',
+      );
+      assert.equal(opResult.items[0].isDelegate, false);
+      assert.equal(
+        opResult.items[0].gatewayAddress,
+        wdOp.signer.address as string,
+      );
+      assert.ok(
+        opResult.items[0].endTimestamp > opResult.items[0].startTimestamp,
+        'endTimestamp must be after startTimestamp',
+      );
+
+      const delResult = await wdDelArio.getWithdrawals({
+        address: wdDel.signer.address as string,
+      });
+      assert.equal(
+        delResult.items.length,
+        1,
+        'delegator must surface exactly one withdrawal (its delegate decrease)',
+      );
+      assert.equal(delResult.items[0].isDelegate, true);
+      assert.equal(
+        delResult.items[0].gatewayAddress,
+        wdOp.signer.address as string,
+      );
+
+      // Cross-check: operator's getWithdrawals does NOT include the delegate
+      // withdrawal that landed on its gateway (delegate withdrawal is owned
+      // by the delegator, not by the gateway).
+      assert.ok(
+        opResult.items.every((w) => !w.isDelegate),
+        'operator getWithdrawals must not surface delegate-owned withdrawals',
+      );
+    });
+
     it('buyRecord({ fundFrom: "plan", sources: [...] }) draws from a caller-supplied balance + delegation plan', async () => {
       // Fresh delegator → mint balance → delegate so the plan has both a
       // wallet ATA source and a delegation source. Pre-compute cost via

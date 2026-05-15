@@ -69,6 +69,7 @@ import {
   AoTokenCostParams,
   AoTokenSupplyData,
   AoUpdateGatewaySettingsParams,
+  AoUserWithdrawal,
   AoVaultData,
   AoVaultedTransferParams,
   AoWalletVault,
@@ -1146,6 +1147,21 @@ export class ARIOReadable implements AoARIORead, ArNSNameResolver {
         ...paginationParamsToTags<AoAllGatewayVaults>(params),
       ],
     });
+  }
+
+  /**
+   * AO backend stub — `getWithdrawals` is a Solana-only per-owner read that
+   * aggregates operator-stake and delegate-stake withdrawals for a wallet.
+   * On AO, withdrawals auto-distribute at maturity; use `getDelegations`
+   * (vault-typed entries) and `getGatewayVaults` instead.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getWithdrawals(
+    _params: PaginationParams<AoUserWithdrawal> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoUserWithdrawal>> {
+    throw new Error(
+      'getWithdrawals is only supported on the Solana backend (use ARIO.init({ backend: "solana", ... })).',
+    );
   }
 
   async resolveArNSName({

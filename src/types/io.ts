@@ -373,6 +373,18 @@ export type AoAllGatewayVaults = AoGatewayVault & {
   gatewayAddress: WalletAddress;
 };
 
+/**
+ * A pending or matured stake withdrawal owned by a wallet. Covers both
+ * operator-stake decreases and delegate-stake decreases — discriminate with
+ * `isDelegate`. A withdrawal is claimable when `Date.now() >= endTimestamp`.
+ *
+ * Solana-only: AO releases withdrawals automatically at maturity and has no
+ * equivalent per-owner read.
+ */
+export type AoUserWithdrawal = AoAllGatewayVaults & {
+  isDelegate: boolean;
+};
+
 // Input types
 export type AoJoinNetworkParams = Pick<AoGateway, 'operatorStake'> &
   Partial<AoGatewaySettings> & {
@@ -762,6 +774,9 @@ export interface AoARIORead extends ArNSNameResolver {
   getAllGatewayVaults(
     params?: PaginationParams<AoAllGatewayVaults>,
   ): Promise<PaginationResult<AoAllGatewayVaults>>;
+  getWithdrawals(
+    params: PaginationParams<AoUserWithdrawal> & { address: WalletAddress },
+  ): Promise<PaginationResult<AoUserWithdrawal>>;
 }
 
 export interface AoARIOWrite extends AoARIORead {
