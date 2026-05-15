@@ -1,3 +1,10 @@
+# [4.0.0-solana.10](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.9...v4.0.0-solana.10) (2026-05-15)
+
+
+### Bug Fixes
+
+* **solana:** primary-name deserializer + approvePrimaryName config + test 9 hermeticity ([86edc61](https://github.com/ar-io/ar-io-sdk/commit/86edc612bf048aaa01ceb0ae802db89af5f97017))
+
 # [4.0.0-solana.9](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.8...v4.0.0-solana.9) (2026-05-14)
 
 
