@@ -16,6 +16,7 @@
 import prompts from 'prompts';
 
 import { mARIOToken } from '../../node/index.js';
+import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
 import type { AoStakeDelegation } from '../../types/io.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
@@ -230,6 +231,29 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
     {
       decreaseQty,
     },
+    customTagsFromOptions(o),
+  );
+}
+
+export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
+  if (o.ao) {
+    throw new Error(
+      'claim-withdrawal is only supported on the Solana backend (drop --ao).',
+    );
+  }
+  const vaultId = requiredStringFromOptions(o, 'vaultId');
+
+  await assertConfirmationPrompt(
+    `You are about to claim matured withdrawal vault ${vaultId}. Tokens will be transferred to your wallet.\nAre you sure?`,
+    o,
+  );
+
+  // claimWithdrawal is Solana-only — no AO equivalent exists (see the comment
+  // block in src/types/io.ts above syncAttributes). The `--ao` guard above
+  // narrows us to the Solana path, so the cast is safe at runtime.
+  const { ario } = await writeARIOFromOptions(o);
+  return (ario as unknown as SolanaARIOWriteable).claimWithdrawal(
+    { withdrawalId: vaultId },
     customTagsFromOptions(o),
   );
 }
