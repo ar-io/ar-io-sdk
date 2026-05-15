@@ -1661,6 +1661,23 @@ export class SolanaARIOReadable {
   async getPrimaryName(
     params: { address: WalletAddress } | { name: string },
   ): Promise<AoPrimaryName> {
+    // On-chain `PrimaryName` stores only {owner, name, set_at}. The ANT mint
+    // that AoPrimaryName.processId expects lives on the matching ArnsRecord
+    // (looked up by the base name). Both lookup paths below deserialize the
+    // on-chain account and then enrich with the ArnsRecord lookup.
+    const baseNameOf = (n: string): string => {
+      const parts = n.toLowerCase().split('_');
+      return parts.length === 2 ? parts[1] : parts[0];
+    };
+    const enrich = async (pn: {
+      owner: string;
+      name: string;
+      startTimestamp: number;
+    }): Promise<AoPrimaryName> => {
+      const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
+      return { ...pn, processId: rec.processId };
+    };
+
     if ('address' in params) {
       const [pda] = await getPrimaryNamePDA(
         address(params.address),
@@ -1670,7 +1687,7 @@ export class SolanaARIOReadable {
       if (!account.exists) {
         throw new Error(`Primary name not found for address ${params.address}`);
       }
-      return deserializePrimaryName(Buffer.from(account.data));
+      return enrich(deserializePrimaryName(Buffer.from(account.data)));
     }
 
     // Lookup by name — scan all primary name accounts
@@ -1683,7 +1700,7 @@ export class SolanaARIOReadable {
       try {
         const pn = deserializePrimaryName(data);
         if (pn.name === params.name) {
-          return pn;
+          return enrich(pn);
         }
       } catch {
         // Skip malformed
@@ -1735,12 +1752,22 @@ export class SolanaARIOReadable {
       PRIMARY_NAME_DISCRIMINATOR,
     );
 
+    // Enrich each on-chain PrimaryName with its ArnsRecord.processId (the
+    // on-chain account doesn't store it; see deserializePrimaryName).
+    // Records that no longer have a matching ArnsRecord are silently
+    // skipped — same forgiveness the per-name lookup already applies.
+    const baseNameOf = (n: string): string => {
+      const parts = n.toLowerCase().split('_');
+      return parts.length === 2 ? parts[1] : parts[0];
+    };
     const items: AoPrimaryName[] = [];
     for (const { data } of accounts) {
       try {
-        items.push(deserializePrimaryName(data));
+        const pn = deserializePrimaryName(data);
+        const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
+        items.push({ ...pn, processId: rec.processId });
       } catch {
-        // Skip malformed
+        // Skip malformed or orphaned (ArnsRecord missing).
       }
     }
 
