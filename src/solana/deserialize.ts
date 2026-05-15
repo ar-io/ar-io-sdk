@@ -388,7 +388,7 @@ export function deserializeGatewayWithAccumulator(
 
   // GatewaySettings2 (auto_stake removed in cfc7a8b2 — never existed on Solana)
   const allowDelegatedStaking = r.readBool();
-  const delegateRewardShareRatio = r.readU16();
+  const delegateRewardShareRatio = r.readU16() / 100;
   const minDelegatedStake = r.readU64AsNumber();
   const allowlistEnabled = r.readBool();
 

@@ -221,6 +221,7 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
 
     assert.equal(gw.operatorStake, 30_000_000_000);
     assert.equal(gw.totalDelegatedStake, 5_000_000_000);
+    assert.equal(gw.settings.delegateRewardShareRatio, 10);
     assert.equal(gw.cumulativeRewardPerToken, 750_000_000_000_000_000n);
   });
 
