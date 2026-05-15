@@ -104,6 +104,7 @@ Commands:
   get-gateway [options]                   Get the gateway of an address
   get-gateway-delegates [options]         Get the delegates of a gateway
   get-gateway-vaults [options]            Get the vaults of a gateway
+  get-withdrawals [options]               Get all pending stake withdrawals (operator + delegate) owned by an address (Solana-only)
   get-delegations [options]               Get all stake delegated to gateways from this address
   get-allowed-delegates [options]         Get the allow list of a gateway delegate
   get-arns-record [options]               Get an ArNS record by name
@@ -153,6 +154,7 @@ Commands:
   decrease-operator-stake [options]       Decrease operator stake
   instant-withdrawal [options]            Instantly withdraw stake from an existing gateway withdrawal vault
   cancel-withdrawal [options]             Cancel a pending gateway withdrawal vault
+  claim-withdrawal [options]              Claim a matured stake withdrawal vault (Solana-only)
   delegate-stake [options]                Delegate stake to a gateway
   decrease-delegate-stake [options]       Decrease delegated stake
   redelegate-stake [options]              Redelegate stake to another gateway

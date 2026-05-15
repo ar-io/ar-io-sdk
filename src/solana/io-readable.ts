@@ -900,6 +900,16 @@ export class SolanaARIOReadable {
     return paginate(items, params);
   }
 
+  /**
+   * Return every pending stake withdrawal owned by `address` — operator-stake
+   * decreases (`isDelegate: false`) and delegate-stake decreases
+   * (`isDelegate: true`) in one paginated result. A withdrawal is claimable
+   * when `Date.now() >= endTimestamp`; release the funds via
+   * `claimWithdrawal({ withdrawalId: item.vaultId })`.
+   *
+   * Solana-only: AO releases withdrawals automatically at maturity and has no
+   * equivalent per-owner read; the AO backend throws.
+   */
   async getWithdrawals(
     params: PaginationParams<AoUserWithdrawal> & { address: WalletAddress },
   ): Promise<PaginationResult<AoUserWithdrawal>> {
