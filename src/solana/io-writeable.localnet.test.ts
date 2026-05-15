@@ -741,11 +741,22 @@ describe(
     });
 
     it('requestPrimaryName + approvePrimaryName two-step flow sets primary name', async () => {
+      // Hermeticity: use a fresh signer rather than the shared `operator`.
+      // The prior test (`setPrimaryName calls request_and_set ...`) sets a
+      // primary name on `operator`, so reusing it here trips
+      // `MustRemoveExistingPrimaryName` on the approve step. ARIO-core's
+      // `approve_primary_name` enforces a "remove first" rule when the
+      // signer already has a primary name pointing at a different name.
+      const fresh = await freshSigner(scratch, 'pn2-signer');
+      await airdrop(fresh.keypairPath, 5);
+      mintArio(fresh.signer.address, 100_000_000_000n); // 100k ARIO
+
+      const freshArio = buildArio(fresh.signer, RPC_URL!, WS_URL!);
       const rpc = createSolanaRpc(RPC_URL!);
       const antResult = await spawnSolanaANT({
         rpc,
         rpcSubscriptions: createSolanaRpcSubscriptions(WS_URL!),
-        signer: operator.signer,
+        signer: fresh.signer,
         antProgramId: address(ANT_ID!),
         state: {
           name: 'Primary approve smoke ANT',
@@ -755,7 +766,7 @@ describe(
         },
       });
       const name = `prreq${Date.now().toString(36).slice(-8)}`;
-      const buy = await ario.buyRecord({
+      const buy = await freshArio.buyRecord({
         name,
         type: 'lease',
         years: 1,
@@ -763,22 +774,22 @@ describe(
       });
       assert.ok(buy.id, 'buyRecord must succeed before primary name request');
 
-      const reqRes = await ario.requestPrimaryName({ name });
+      const reqRes = await freshArio.requestPrimaryName({ name });
       assert.ok(reqRes.id, 'requestPrimaryName must return a tx id');
 
-      const pending = await ario.getPrimaryNameRequest({
-        initiator: operator.signer.address as string,
+      const pending = await freshArio.getPrimaryNameRequest({
+        initiator: fresh.signer.address as string,
       });
       assert.equal(pending.name.toLowerCase(), name.toLowerCase());
 
-      const appRes = await ario.approvePrimaryName({
-        initiator: operator.signer.address as string,
+      const appRes = await freshArio.approvePrimaryName({
+        initiator: fresh.signer.address as string,
         name,
       });
       assert.ok(appRes.id, 'approvePrimaryName must return a tx id');
 
-      const pn = await ario.getPrimaryName({
-        address: operator.signer.address as string,
+      const pn = await freshArio.getPrimaryName({
+        address: fresh.signer.address as string,
       });
       assert.equal(pn.name.toLowerCase(), name.toLowerCase());
       assert.equal(pn.processId, antResult.processId);

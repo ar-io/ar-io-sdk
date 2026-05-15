@@ -1483,25 +1483,31 @@ export function deserializeAclPage(data: Buffer): {
 /**
  * Deserialize a PrimaryName account from raw bytes.
  * PDA: ["primary_name", owner] in ario-core program.
+ *
+ * The on-chain `PrimaryName` (programs/ario-core/src/state/mod.rs) has
+ * **no** `processId` field — only `{owner, name, set_at, bump}`. The ANT
+ * mint that a primary name resolves to lives on the matching `ArnsRecord`
+ * (looked up by `name`), and callers wanting an `AoPrimaryName`-shaped
+ * result MUST enrich this output with that lookup. The previous
+ * implementation read 32 bytes from where `set_at` (i64) + part of `bump`
+ * actually sit and returned a fake `processId` pubkey, which broke every
+ * `assert.equal(pn.processId, antMint)` check downstream.
  */
 export function deserializePrimaryName(data: Buffer): {
   owner: string;
   name: string;
-  processId: string;
   startTimestamp: number;
 } {
   const r = new BorshReader(data, 8); // skip discriminator
 
   const owner = r.readPubkey();
   const name = r.readString();
-  const processId = r.readPubkey();
   const startTimestamp = r.readI64AsNumber();
   // bump: u8 — skip
 
   return {
-    owner: owner,
+    owner,
     name,
-    processId: processId,
     startTimestamp,
   };
 }

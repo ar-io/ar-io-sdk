@@ -2369,9 +2369,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const { remaining, antProgram } =
       await this._buildPrimaryNameValidationAccounts(params.name, 'approve');
 
+    // withCoreDefaults injects `config` as the ArioConfig PDA derived against
+    // *this.coreProgram*. Without it, Codama's `findConfigPda()` fallback
+    // resolves to the source-pinned `ARioCoreProgramXXXX...` placeholder
+    // program id (declare_id! literal pre-anchor-keys-sync), which on any
+    // non-mainnet deployment produces an unallocated PDA → Anchor #3012
+    // AccountNotInitialized on `config`. requestPrimaryName /
+    // requestAndSetPrimaryName already use withCoreDefaults; this was the
+    // last setPrimaryName-family entrypoint missing it.
     const ix = withRemainingAccounts(
       await getApprovePrimaryNameInstructionAsync(
-        {
+        await this.withCoreDefaults({
           request: requestPda,
           initiator: params.initiator,
           primaryName: primaryNamePda,
@@ -2379,7 +2387,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           nameOwner: this.signer,
           reverseLookupHash: hashName(params.name),
           antProgramId: antProgram,
-        },
+        }),
         { programAddress: this.coreProgram },
       ),
       remaining,
