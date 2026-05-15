@@ -1,3 +1,15 @@
+# [4.0.0-solana.12](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.11...v4.0.0-solana.12) (2026-05-15)
+
+
+### Bug Fixes
+
+* convert Solana delegate reward share from basis points to percent ([7b14292](https://github.com/ar-io/ar-io-sdk/commit/7b14292d8fbbc152398f80702b348d19d1926947))
+
+
+### Features
+
+* **solana:** add getWithdrawals per-owner read ([14b918b](https://github.com/ar-io/ar-io-sdk/commit/14b918b62c8325c37ceb8d16c1a545f7be1c1bc5))
+
 # [4.0.0-solana.11](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.10...v4.0.0-solana.11) (2026-05-15)
 
 
