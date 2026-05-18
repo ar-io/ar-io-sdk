@@ -28,22 +28,22 @@ import prompts from 'prompts';
 
 import {
   ANT,
+  ANTRead,
   ANTRegistry,
+  ANTRegistryRead,
+  ANTWrite,
   ARIO,
+  ARIORead,
   ARIOToken,
-  AoANTRead,
-  AoANTRegistryRead,
-  AoANTWrite,
-  AoARIORead,
-  AoARIOWrite,
-  AoGetCostDetailsParams,
-  AoRedelegateStakeParams,
-  AoUpdateGatewaySettingsParams,
+  ARIOWrite,
   EpochInput,
   FundFrom,
+  GetCostDetailsParams,
   Logger,
   PaginationParams,
+  RedelegateStakeParams,
   SortBy,
+  UpdateGatewaySettingsParams,
   WriteOptions,
   fundFromOptions,
   isValidFundFrom,
@@ -155,7 +155,7 @@ export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
   return Logger.default;
 }
 
-export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
+export function readARIOFromOptions(options: GlobalCLIOptions): ARIORead {
   setLoggerIfDebug(options);
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ARIO.init({
@@ -174,7 +174,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
 
 export async function readANTRegistryFromOptions(
   options: ProcessIdCLIOptions,
-): Promise<AoANTRegistryRead> {
+): Promise<ANTRegistryRead> {
   setLoggerIfDebug(options);
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTRegistry.init({
@@ -234,7 +234,7 @@ async function loadSolanaSignerFromOptions(options: {
 }
 
 export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
-  ario: AoARIOWrite;
+  ario: ARIOWrite;
   signerAddress: string;
 }> {
   setLoggerIfDebug(options);
@@ -466,7 +466,7 @@ export function servicesFromOptions(services?: string) {
 
 export function gatewaySettingsFromOptions(
   options: UpdateGatewaySettingsCLIOptions,
-): AoUpdateGatewaySettingsParams {
+): UpdateGatewaySettingsParams {
   const {
     allowDelegatedStaking,
     autoStake,
@@ -518,7 +518,7 @@ export function requiredTargetAndQuantityFromOptions(
 
 export function redelegateParamsFromOptions(
   options: RedelegateStakeCLIOptions,
-): AoRedelegateStakeParams & { stakeQty: mARIOToken } {
+): RedelegateStakeParams & { stakeQty: mARIOToken } {
   const { target, arioQuantity: aRIOQuantity } =
     requiredTargetAndQuantityFromOptions(options);
   const source = options.source;
@@ -559,9 +559,9 @@ export async function assertEnoughBalanceForArNSPurchase({
   address,
   costDetailsParams,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   address: string;
-  costDetailsParams: AoGetCostDetailsParams;
+  costDetailsParams: GetCostDetailsParams;
 }) {
   if (costDetailsParams.fundFrom === 'turbo') {
     // TODO: Get turbo balance and assert it is enough -- retain paid-by from balance result and pass to CLI logic
@@ -591,7 +591,7 @@ export async function assertEnoughMARIOBalance({
   ario,
   mARIOQuantity,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   address: string;
   mARIOQuantity: mARIOToken | number;
 }) {
@@ -638,7 +638,7 @@ export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
 
 export async function readANTFromOptions(
   options: ProcessIdCLIOptions,
-): Promise<AoANTRead> {
+): Promise<ANTRead> {
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANT.init({
     processId: requiredProcessIdFromOptions(options),
@@ -651,7 +651,7 @@ export async function readANTFromOptions(
 
 export async function writeANTFromOptions(
   options: ProcessIdCLIOptions,
-): Promise<AoANTWrite> {
+): Promise<ANTWrite> {
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   const kitSigner = await loadSolanaSignerFromOptions(options);
 

@@ -20,7 +20,7 @@ import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
 } from '../solana/types.js';
-import type { AoANTRead, AoANTWrite } from '../types/ant.js';
+import type { ANTRead, ANTWrite } from '../types/ant.js';
 
 /**
  * Configuration for `ANT.init` (Solana-only).
@@ -51,10 +51,10 @@ export class ANT {
       signer: SolanaSigner;
       rpcSubscriptions: SolanaRpcSubscriptions;
     },
-  ): Promise<AoANTWrite>;
+  ): Promise<ANTWrite>;
   // Overload: without signer -> readable
-  static init(config: ANTConfig): Promise<AoANTRead>;
-  static init(config: ANTConfig): Promise<AoANTRead | AoANTWrite> {
+  static init(config: ANTConfig): Promise<ANTRead>;
+  static init(config: ANTConfig): Promise<ANTRead | ANTWrite> {
     return (async () => {
       const { SolanaANTReadable } = await import('../solana/ant-readable.js');
       const { SolanaANTWriteable } = await import('../solana/ant-writeable.js');
@@ -89,14 +89,14 @@ export class ANT {
           signer: config.signer,
           commitment: config.commitment,
           antProgramId,
-        }) as unknown as AoANTWrite;
+        }) as unknown as ANTWrite;
       }
       return new SolanaANTReadable({
         rpc: config.rpc,
         processId: config.processId,
         commitment: config.commitment,
         antProgramId,
-      }) as unknown as AoANTRead;
+      }) as unknown as ANTRead;
     })();
   }
 

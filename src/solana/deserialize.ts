@@ -36,15 +36,15 @@ import {
 import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
 import { getEpochDecoder } from '@ar.io/solana-contracts/gar';
 import type {
-  AoArNSLeaseData,
-  AoArNSNameData,
-  AoArNSPermabuyData,
-  AoGateway,
-  AoGatewayRegistrySettings,
-  AoGatewaySettings,
-  AoGatewayStats,
-  AoGatewayWeights,
-  AoVaultData,
+  ArNSLeaseData,
+  ArNSNameData,
+  ArNSPermabuyData,
+  Gateway,
+  GatewayRegistrySettings,
+  GatewaySettings,
+  GatewayStats,
+  GatewayWeights,
+  VaultData,
 } from '../types/io.js';
 import { RATE_SCALE } from './constants.js';
 
@@ -341,7 +341,7 @@ function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
  * live delegation balance pipeline ({@link computeLiveDelegationBalance} via
  * `getGatewayAccumulators` in `io-readable.ts`).
  *
- * Not part of the public AoGateway shape — `bigint` is not JSON-serializable
+ * Not part of the public Gateway shape — `bigint` is not JSON-serializable
  * and would leak through `getGateway` / `getGateways`. Prefer
  * {@link deserializeGateway} everywhere except inside live-balance plumbing.
  *
@@ -349,7 +349,7 @@ function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
  */
 export function deserializeGatewayWithAccumulator(
   data: Buffer,
-): AoGateway & { operator: string; cumulativeRewardPerToken: bigint } {
+): Gateway & { operator: string; cumulativeRewardPerToken: bigint } {
   const r = new BorshReader(data, 8); // skip 8-byte discriminator
 
   const operator = r.readPubkey();
@@ -365,7 +365,7 @@ export function deserializeGatewayWithAccumulator(
   const startTimestamp = r.readI64AsNumber();
   const leaveTimestamp = r.readOptionI64();
   // leave_epoch_duration: i64 — snapshot of epoch_settings.epoch_duration captured
-  // at leave_network/prune_gateway. Not surfaced on AoGateway; consume to stay aligned.
+  // at leave_network/prune_gateway. Not surfaced on Gateway; consume to stay aligned.
   r.skip(8);
 
   // GatewayStats
@@ -384,7 +384,7 @@ export function deserializeGatewayWithAccumulator(
   const observerPerformanceRatio = r.readU64AsNumber();
   const compositeWeight = r.readU64AsNumber();
   const normalizedCompositeWeight = r.readU64AsNumber();
-  r.skip(8); // weights_epoch — not surfaced on AoGatewayWeights
+  r.skip(8); // weights_epoch — not surfaced on GatewayWeights
 
   // GatewaySettings2 (auto_stake removed in cfc7a8b2 — never existed on Solana)
   const allowDelegatedStaking = r.readBool();
@@ -402,14 +402,14 @@ export function deserializeGatewayWithAccumulator(
   // cumulative_reward_per_token: u128 — per-share accumulator advanced by
   // distribute_epoch. Combined with each Delegation.reward_debt, this lets
   // off-chain readers compute the live delegate balance without an on-chain
-  // settlement call. Not part of the public AoGateway type but surfaced as
+  // settlement call. Not part of the public Gateway type but surfaced as
   // an extra field on this function's return so internal readers can use it.
   const cumulativeRewardPerToken = r.readU128();
 
   // bump
   r.skip(1);
 
-  const stats: AoGatewayStats = {
+  const stats: GatewayStats = {
     passedEpochCount,
     failedEpochCount,
     totalEpochCount,
@@ -419,7 +419,7 @@ export function deserializeGatewayWithAccumulator(
     failedConsecutiveEpochs,
   };
 
-  const weights: AoGatewayWeights = {
+  const weights: GatewayWeights = {
     stakeWeight: scaleToFloat(stakeWeight),
     tenureWeight: scaleToFloat(tenureWeight),
     gatewayPerformanceRatio: scaleToFloat(gatewayPerformanceRatio),
@@ -430,14 +430,14 @@ export function deserializeGatewayWithAccumulator(
     normalizedCompositeWeight: scaleToFloat(normalizedCompositeWeight),
   };
 
-  const settings: AoGatewaySettings = {
+  const settings: GatewaySettings = {
     allowDelegatedStaking: allowlistEnabled
       ? 'allowlist'
       : allowDelegatedStaking,
     delegateRewardShareRatio,
     allowedDelegates: [], // populated separately from allowlist PDAs
     minDelegatedStake,
-    autoStake: false, // not an on-chain field on Solana; preserved on AoGatewaySettings for AO parity
+    autoStake: false, // not an on-chain field on Solana; preserved on GatewaySettings for AO parity
     label,
     note,
     properties,
@@ -464,7 +464,7 @@ export function deserializeGatewayWithAccumulator(
 /**
  * Deserialize a Gateway account from raw bytes.
  *
- * Returns the SDK-compatible AoGateway type (plus `operator: string`).
+ * Returns the SDK-compatible Gateway type (plus `operator: string`).
  * The on-chain `cumulative_reward_per_token` u128 is intentionally NOT
  * surfaced on the returned object — `bigint` is not JSON-serializable,
  * and leaking it through `getGateway` / `getGateways` would break
@@ -474,7 +474,7 @@ export function deserializeGatewayWithAccumulator(
  */
 export function deserializeGateway(
   data: Buffer,
-): AoGateway & { operator: string } {
+): Gateway & { operator: string } {
   const { cumulativeRewardPerToken: _unused, ...publicShape } =
     deserializeGatewayWithAccumulator(data);
   return publicShape;
@@ -497,7 +497,7 @@ export function deserializeGateway(
  */
 export function deserializeArnsRecord(
   data: Buffer,
-): AoArNSNameData & { name: string; owner: string } {
+): ArNSNameData & { name: string; owner: string } {
   const r = new BorshReader(data, 8); // skip discriminator
 
   r.readPubkey(); // 32-byte name hash (used as PDA seed)
@@ -528,13 +528,13 @@ export function deserializeArnsRecord(
       ...baseData,
       type: 'lease' as const,
       endTimestamp,
-    } as AoArNSLeaseData & { name: string; owner: string };
+    } as ArNSLeaseData & { name: string; owner: string };
   }
 
   return {
     ...baseData,
     type: 'permabuy' as const,
-  } as AoArNSPermabuyData & { name: string; owner: string };
+  } as ArNSPermabuyData & { name: string; owner: string };
 }
 
 // =========================================
@@ -550,9 +550,7 @@ export function deserializeArnsRecord(
  *   + start_timestamp(i64=8) + end_timestamp(i64=8)
  *   + controller(Option<Pubkey>=33) + revocable(bool=1) + bump(u8=1)
  */
-export function deserializeVault(
-  data: Buffer,
-): AoVaultData & { owner: string } {
+export function deserializeVault(data: Buffer): VaultData & { owner: string } {
   const r = new BorshReader(data, 8); // skip discriminator
 
   const owner = r.readPubkey();
@@ -928,14 +926,12 @@ export function deserializePrimaryNameRequest(data: Buffer): {
 
 /**
  * Deserialize a GarSettings account from raw bytes and return
- * the full AoGatewayRegistrySettings type.
+ * the full GatewayRegistrySettings type.
  * PDA: ["gar_settings"] in ario-gar program.
  *
  * Fields not stored in GarSettings are filled with protocol defaults.
  */
-export function deserializeGarSettings(
-  data: Buffer,
-): AoGatewayRegistrySettings {
+export function deserializeGarSettings(data: Buffer): GatewayRegistrySettings {
   const r = new BorshReader(data, 8); // skip discriminator
 
   r.skip(32); // authority
@@ -1487,7 +1483,7 @@ export function deserializeAclPage(data: Buffer): {
  * The on-chain `PrimaryName` (programs/ario-core/src/state/mod.rs) has
  * **no** `processId` field — only `{owner, name, set_at, bump}`. The ANT
  * mint that a primary name resolves to lives on the matching `ArnsRecord`
- * (looked up by `name`), and callers wanting an `AoPrimaryName`-shaped
+ * (looked up by `name`), and callers wanting an `PrimaryName`-shaped
  * result MUST enrich this output with that lookup. The previous
  * implementation read 32 bytes from where `set_at` (i64) + part of `bump`
  * actually sit and returned a fake `processId` pubkey, which broke every

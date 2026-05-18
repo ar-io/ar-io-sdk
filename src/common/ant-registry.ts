@@ -17,8 +17,8 @@ import type { Address, Commitment, TransactionSigner } from '@solana/kit';
 
 import type { SolanaRpc } from '../solana/types.js';
 import type {
-  AoANTRegistryRead,
-  AoANTRegistryWrite,
+  ANTRegistryRead,
+  ANTRegistryWrite,
 } from '../types/ant-registry.js';
 import type { ILogger } from './logger.js';
 
@@ -56,12 +56,12 @@ export type ANTRegistryWriteConfig = ANTRegistryReadConfig & {
 
 export class ANTRegistry {
   // Writeable — async to avoid `import.meta.url` in CJS output.
-  static init(config: ANTRegistryWriteConfig): Promise<AoANTRegistryWrite>;
+  static init(config: ANTRegistryWriteConfig): Promise<ANTRegistryWrite>;
   // Read-only
-  static init(config: ANTRegistryReadConfig): Promise<AoANTRegistryRead>;
+  static init(config: ANTRegistryReadConfig): Promise<ANTRegistryRead>;
   static init(
     config: ANTRegistryReadConfig | ANTRegistryWriteConfig,
-  ): Promise<AoANTRegistryRead | AoANTRegistryWrite> {
+  ): Promise<ANTRegistryRead | ANTRegistryWrite> {
     return (async () => {
       if ('signer' in config) {
         const { SolanaANTRegistryWriteable } = await import(
@@ -73,7 +73,7 @@ export class ANTRegistry {
           commitment: config.commitment,
           logger: config.logger,
           antProgramId: config.antProgramId,
-        }) as AoANTRegistryWrite;
+        }) as ANTRegistryWrite;
       }
       const { SolanaANTRegistryReadable } = await import(
         '../solana/ant-registry-readable.js'
@@ -83,7 +83,7 @@ export class ANTRegistry {
         commitment: config.commitment,
         logger: config.logger,
         antProgramId: config.antProgramId,
-      }) as AoANTRegistryRead;
+      }) as ANTRegistryRead;
     })();
   }
 }

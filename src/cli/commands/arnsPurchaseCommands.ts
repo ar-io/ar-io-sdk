@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 import {
-  AoArNSPurchaseParams,
-  AoBuyRecordParams,
-  AoExtendLeaseParams,
-  AoIncreaseUndernameLimitParams,
+  ArNSPurchaseParams,
+  BuyRecordParams,
+  ExtendLeaseParams,
+  IncreaseUndernameLimitParams,
 } from '../../types/io.js';
 import { CLIWriteOptionsFromAoParams } from '../types.js';
 import {
@@ -51,7 +51,7 @@ function coerceFundingPlanSources(
 }
 
 export async function buyRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoBuyRecordParams>,
+  o: CLIWriteOptionsFromAoParams<BuyRecordParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
@@ -113,7 +113,7 @@ export async function buyRecordCLICommand(
 }
 
 export async function upgradeRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const { ario, signerAddress } = await writeARIOFromOptions(o);
@@ -157,7 +157,7 @@ export async function upgradeRecordCLICommand(
 }
 
 export async function extendLeaseCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoExtendLeaseParams>,
+  o: CLIWriteOptionsFromAoParams<ExtendLeaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const years = requiredPositiveIntegerFromOptions(o, 'years');
@@ -209,7 +209,7 @@ export async function extendLeaseCLICommand(
 }
 
 export async function increaseUndernameLimitCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoIncreaseUndernameLimitParams>,
+  o: CLIWriteOptionsFromAoParams<IncreaseUndernameLimitParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const increaseCount = requiredPositiveIntegerFromOptions(o, 'increaseCount');
@@ -258,7 +258,7 @@ export async function increaseUndernameLimitCLICommand(
 }
 
 export async function requestPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
@@ -301,7 +301,7 @@ export async function requestPrimaryNameCLICommand(
 }
 
 export async function setPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');

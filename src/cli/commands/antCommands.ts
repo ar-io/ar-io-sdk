@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 import {
-  AoANTSetBaseNameRecordParams,
-  AoANTSetUndernameRecordParams,
+  ANTSetBaseNameRecordParams,
+  ANTSetUndernameRecordParams,
 } from '../../types/ant.js';
 import { CLIWriteOptionsFromAoAntParams } from '../types.js';
 import {
@@ -38,7 +38,7 @@ function targetProtocolFromOptions(o: Record<string, unknown>): number {
 
 /** @deprecated -- use set-ant-base-name and set-ant-undername */
 export async function setAntRecordCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetUndernameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetUndernameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const undername = requiredStringFromOptions(o, 'undername');
@@ -72,7 +72,7 @@ export async function setAntRecordCLICommand(
 }
 
 export async function setAntBaseNameCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetBaseNameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetBaseNameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const transactionId = requiredStringFromOptions(o, 'transactionId');
@@ -105,7 +105,7 @@ export async function setAntBaseNameCLICommand(
 }
 
 export async function setAntUndernameCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetUndernameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetUndernameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const undername = requiredStringFromOptions(o, 'undername');

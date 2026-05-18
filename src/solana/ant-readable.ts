@@ -21,11 +21,11 @@ import { createHash as __createHash } from 'crypto';
 import { ANT_RECORD_DISCRIMINATOR } from '@ar.io/solana-contracts/ant';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
+  ANTHandler,
+  ANTInfo,
+  ANTRecord,
+  ANTState,
   AntReadOptions,
-  AoANTHandler,
-  AoANTInfo,
-  AoANTRecord,
-  AoANTState,
   SortedANTRecords,
 } from '../types/ant.js';
 import type { WalletAddress } from '../types/common.js';
@@ -222,7 +222,7 @@ export class SolanaANTReadable {
   async getRecord(
     { undername }: { undername: string },
     _opts?: AntReadOptions,
-  ): Promise<AoANTRecord | undefined> {
+  ): Promise<ANTRecord | undefined> {
     const [[recordPda], [metaPda]] = await Promise.all([
       getAntRecordPDA(this.mint, undername, this.antProgram),
       getAntRecordMetadataPDA(this.mint, undername, this.antProgram),
@@ -367,7 +367,7 @@ export class SolanaANTReadable {
   // State / Info composites
   // =========================================
 
-  async getState(_opts?: AntReadOptions): Promise<AoANTState> {
+  async getState(_opts?: AntReadOptions): Promise<ANTState> {
     const [config, controllersData, records] = await Promise.all([
       this.fetchConfig(),
       this.fetchControllers(),
@@ -375,7 +375,7 @@ export class SolanaANTReadable {
     ]);
 
     // Convert SortedANTRecords to ANTRecords (strip index)
-    const plainRecords: Record<string, AoANTRecord> = {};
+    const plainRecords: Record<string, ANTRecord> = {};
     for (const [key, val] of Object.entries(records)) {
       const { index: _, ...record } = val;
       plainRecords[key] = record;
@@ -397,7 +397,7 @@ export class SolanaANTReadable {
     };
   }
 
-  async getInfo(_opts?: AntReadOptions): Promise<AoANTInfo> {
+  async getInfo(_opts?: AntReadOptions): Promise<ANTInfo> {
     const config = await this.fetchConfig();
 
     return {
@@ -437,10 +437,10 @@ export class SolanaANTReadable {
         '_eval',
         '_default',
       ],
-    } as AoANTInfo;
+    } as ANTInfo;
   }
 
-  async getHandlers(): Promise<AoANTHandler[]> {
+  async getHandlers(): Promise<ANTHandler[]> {
     // Solana ANT supports all standard handlers
     return [
       'balance',
@@ -469,7 +469,7 @@ export class SolanaANTReadable {
       'transferRecordOwnership',
       '_eval',
       '_default',
-    ] as AoANTHandler[];
+    ] as ANTHandler[];
   }
 
   async getModuleId(_opts?: {

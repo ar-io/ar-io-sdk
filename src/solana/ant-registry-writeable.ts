@@ -55,11 +55,11 @@ import {
   getRemoveAclOwnerInstruction,
 } from '@ar.io/solana-contracts/ant';
 import type {
+  ANTRegistryWrite,
   AclMaintenanceOp,
   AclMaintenanceRole,
-  AoANTRegistryWrite,
 } from '../types/ant-registry.js';
-import type { AoMessageResult } from '../types/common.js';
+import type { MessageResult } from '../types/common.js';
 import {
   type SolanaANTRegistryConfig,
   SolanaANTRegistryReadable,
@@ -104,7 +104,7 @@ type AclState = {
 
 export class SolanaANTRegistryWriteable
   extends SolanaANTRegistryReadable
-  implements AoANTRegistryWrite
+  implements ANTRegistryWrite
 {
   protected readonly signer: TransactionSigner;
 
@@ -122,9 +122,9 @@ export class SolanaANTRegistryWriteable
    * `AclConfig` is created lazily the first time a user becomes an owner
    * or controller (via `register_acl_config`, which `planAclMaintenance`
    * emits automatically). This method exists only to satisfy the
-   * cross-backend `AoANTRegistryWrite` interface.
+   * cross-backend `ANTRegistryWrite` interface.
    */
-  async register(_params: { processId: string }): Promise<AoMessageResult> {
+  async register(_params: { processId: string }): Promise<MessageResult> {
     return { id: '' };
   }
 

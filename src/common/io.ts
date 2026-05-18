@@ -22,7 +22,7 @@ import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
 } from '../solana/types.js';
-import type { AoARIORead, AoARIOWrite } from '../types/index.js';
+import type { ARIORead, ARIOWrite } from '../types/index.js';
 
 /**
  * Configuration for ARIO.init().
@@ -60,10 +60,10 @@ export class ARIO {
       signer: SolanaSigner;
       rpcSubscriptions: SolanaRpcSubscriptions;
     },
-  ): AoARIOWrite;
+  ): ARIOWrite;
   // Overload: without signer -> readable
-  static init(config: ARIOConfig): AoARIORead;
-  static init(config: ARIOConfig): AoARIORead | AoARIOWrite {
+  static init(config: ARIOConfig): ARIORead;
+  static init(config: ARIOConfig): ARIORead | ARIOWrite {
     if (config.signer) {
       if (!config.rpcSubscriptions) {
         throw new Error(
@@ -79,7 +79,7 @@ export class ARIO {
         garProgramId: config.garProgramId,
         arnsProgramId: config.arnsProgramId,
         antProgramId: config.antProgramId,
-      }) as unknown as AoARIOWrite;
+      }) as unknown as ARIOWrite;
     }
     return new SolanaARIOReadable({
       rpc: config.rpc,
@@ -88,6 +88,6 @@ export class ARIO {
       garProgramId: config.garProgramId,
       arnsProgramId: config.arnsProgramId,
       antProgramId: config.antProgramId,
-    }) as unknown as AoARIORead;
+    }) as unknown as ARIORead;
   }
 }

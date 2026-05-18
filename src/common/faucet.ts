@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { ARIOWithFaucet, TokenFaucet } from '../types/faucet.js';
-import { AoARIORead, AoARIOWrite } from '../types/index.js';
+import { ARIORead, ARIOWrite } from '../types/index.js';
 
 const DEFAULT_FAUCET_API_URL = 'https://faucet.ario.permaweb.services';
 
@@ -34,7 +34,7 @@ export function createFaucet({
   faucetApiUrl = DEFAULT_FAUCET_API_URL,
   processId,
 }: {
-  arioInstance: AoARIORead | AoARIOWrite;
+  arioInstance: ARIORead | ARIOWrite;
   faucetApiUrl?: string;
   /**
    * Identifier the faucet backend uses to scope claim requests. Required —
@@ -43,7 +43,7 @@ export function createFaucet({
    * the faucet backend gains Solana support.
    */
   processId: string;
-}): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
+}): ARIOWithFaucet<ARIORead | ARIOWrite> {
   const faucet = new ARIOTokenFaucet({
     faucetUrl: faucetApiUrl,
     processId,
@@ -64,7 +64,7 @@ export function createFaucet({
       return undefined;
     },
   });
-  return proxy as ARIOWithFaucet<AoARIORead | AoARIOWrite>;
+  return proxy as ARIOWithFaucet<ARIORead | ARIOWrite>;
 }
 
 export class ARIOTokenFaucet implements TokenFaucet {

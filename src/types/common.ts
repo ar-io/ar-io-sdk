@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
+import { ArNSPurchaseParams, BuyRecordParams } from './io.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -38,32 +38,32 @@ export type WriteOptions<K extends string = string, T = unknown> = {
  * transactions surface their signature via `id` and may include a typed
  * `result` payload for handlers that return structured data.
  */
-export type AoMessageResult<
+export type MessageResult<
   T = Record<string, string | number | boolean | null>,
 > = {
   id: string;
   result?: T;
 };
 
-export type AoPrimaryNameRequest = {
+export type PrimaryNameRequest = {
   name: string;
   initiator: WalletAddress;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
 };
 
-export type AoCreatePrimaryNameRequest = {
-  request: Omit<AoPrimaryNameRequest, 'initiator'> & {
+export type CreatePrimaryNameRequest = {
+  request: Omit<PrimaryNameRequest, 'initiator'> & {
     initiator: WalletAddress;
   };
-  newPrimaryName: AoPrimaryName;
+  newPrimaryName: PrimaryName;
   baseNameOwner: WalletAddress;
   fundingPlan: Record<string, unknown>;
   fundingResult: Record<string, unknown>;
   demandFactor: Record<string, unknown>;
 };
 
-export type AoPrimaryName = {
+export type PrimaryName = {
   owner: WalletAddress;
   processId: ProcessId;
   name: string;
@@ -74,7 +74,7 @@ export type AoPrimaryName = {
  * Users are allowed one free redelegation every seven epochs. Each additional
  * redelegation increases the fee by 10%, capping at a 60% redelegation fee
  */
-export type AoRedelegationFeeInfo = {
+export type RedelegationFeeInfo = {
   /** Percentage of redelegated stake that will be returned to the protocol on redelegation */
   redelegationFeeRate: number;
   /** Timestamp when the redelegation fee will reset to zero */
@@ -155,26 +155,26 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
 };
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
-  'buying-name': AoBuyRecordParams;
+  'buying-name': BuyRecordParams;
 };
 
 export type SetPrimaryNameProgressEvents = {
-  'requesting-primary-name': AoArNSPurchaseParams;
+  'requesting-primary-name': ArNSPurchaseParams;
   'request-already-exists': {
     name: string;
     initiator: WalletAddress;
   };
   'approving-request': {
-    request: AoPrimaryNameRequest;
+    request: PrimaryNameRequest;
     name: string;
     processId: ProcessId;
   };
 };
 
 /** utility type to ensure WriteOptions are appended to each parameter set */
-export type AoWriteAction<
+export type WriteAction<
   P,
-  R = AoMessageResult,
+  R = MessageResult,
   K extends string = string,
   L = unknown,
 > = (params: P, options?: WriteOptions<K, L>) => Promise<R>;

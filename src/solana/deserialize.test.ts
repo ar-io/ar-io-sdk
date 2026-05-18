@@ -250,7 +250,7 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
 
   it('public deserializeGateway does NOT expose cumulativeRewardPerToken', () => {
     // Regression guard for CodeRabbit finding: bigint must not leak through
-    // the public AoGateway shape (it's not JSON-serializable, would crash
+    // the public Gateway shape (it's not JSON-serializable, would crash
     // `JSON.stringify` on getGateway() results).
     const buf = buildGatewayBuffer({
       operatorStake: 1_000n,

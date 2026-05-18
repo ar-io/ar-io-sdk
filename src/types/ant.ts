@@ -17,10 +17,10 @@ import { z } from 'zod';
 
 import { ARWEAVE_TX_REGEX } from '../constants.js';
 import {
-  AoMessageResult,
-  AoWriteAction,
+  MessageResult,
   UpgradeAntProgressEvent,
   WalletAddress,
+  WriteAction,
 } from './common.js';
 
 /**
@@ -99,9 +99,9 @@ export const AntRecordSchema = z.object({
     .describe('Keywords array (max 8, each max 32 chars)')
     .optional(),
 });
-export type AoANTRecord = z.infer<typeof AntRecordSchema>;
-export type ANTRecords = Record<string, AoANTRecord>;
-export type SortedANTRecord = AoANTRecord & { index: number };
+export type ANTRecord = z.infer<typeof AntRecordSchema>;
+export type ANTRecords = Record<string, ANTRecord>;
+export type SortedANTRecord = ANTRecord & { index: number };
 export type SortedANTRecords = Record<string, SortedANTRecord>;
 
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
@@ -142,7 +142,7 @@ export const AntStateSchema = z.object({
     .describe('Flag indicating whether the ANT has been initialized.'),
 });
 
-export type AoANTState = z.infer<typeof AntStateSchema>;
+export type ANTState = z.infer<typeof AntStateSchema>;
 
 export const SpawnANTStateSchema = z.object({
   name: z.string().describe('The name of the ANT.'),
@@ -173,7 +173,7 @@ export const AntReadHandlers = [
   'state',
 ] as const;
 
-export type AoANTReadHandler = (typeof AntReadHandlers)[number];
+export type ANTReadHandler = (typeof AntReadHandlers)[number];
 
 export const AntWriteHandlers = [
   '_eval',
@@ -196,10 +196,10 @@ export const AntWriteHandlers = [
   'transferRecordOwnership',
 ] as const;
 
-export type AoANTWriteHandler = (typeof AntWriteHandlers)[number];
+export type ANTWriteHandler = (typeof AntWriteHandlers)[number];
 
 export const AntHandlerNames = [...AntReadHandlers, ...AntWriteHandlers];
-export type AoANTHandler = AoANTWriteHandler | AoANTReadHandler;
+export type ANTHandler = ANTWriteHandler | ANTReadHandler;
 export const AntHandlersSchema = z
   .array(z.string({ description: 'Handler Name' }))
   .refine(
@@ -234,26 +234,26 @@ export const AntInfoSchema = z.object({
   ),
 });
 
-export type AoANTInfo = z.infer<typeof AntInfoSchema>;
+export type ANTInfo = z.infer<typeof AntInfoSchema>;
 
 /**
  * @param state {object}
  * @returns {boolean}
  */
-export function isAoANTState(state: object): state is AoANTState {
+export function isAoANTState(state: object): state is ANTState {
   return AntStateSchema.safeParse(state).success;
 }
 
 export type AntReadOptions = { strict?: boolean };
 
-export interface AoANTRead {
+export interface ANTRead {
   processId: string;
-  getState(opts?: AntReadOptions): Promise<AoANTState>;
-  getInfo(opts?: AntReadOptions): Promise<AoANTInfo>;
+  getState(opts?: AntReadOptions): Promise<ANTState>;
+  getInfo(opts?: AntReadOptions): Promise<ANTInfo>;
   getRecord(
     { undername }: { undername: string },
     opts?: AntReadOptions,
-  ): Promise<AoANTRecord | undefined>;
+  ): Promise<ANTRecord | undefined>;
   getRecords(opts?: AntReadOptions): Promise<SortedANTRecords>;
   getOwner(opts?: AntReadOptions): Promise<WalletAddress>;
   getControllers(): Promise<WalletAddress[]>;
@@ -265,7 +265,7 @@ export interface AoANTRead {
     opts?: AntReadOptions,
   ): Promise<number>;
   getBalances(opts?: AntReadOptions): Promise<Record<WalletAddress, number>>;
-  getHandlers(): Promise<AoANTHandler[]>;
+  getHandlers(): Promise<ANTHandler[]>;
   getModuleId(opts?: {
     graphqlUrl?: string;
     retries?: number;
@@ -282,37 +282,37 @@ export interface AoANTRead {
   }): Promise<boolean>;
 }
 
-export interface AoANTWrite extends AoANTRead {
-  transfer: AoWriteAction<{
+export interface ANTWrite extends ANTRead {
+  transfer: WriteAction<{
     target: WalletAddress;
     removeControllers?: boolean;
   }>;
-  addController: AoWriteAction<{ controller: WalletAddress }>;
-  removeController: AoWriteAction<{ controller: WalletAddress }>;
+  addController: WriteAction<{ controller: WalletAddress }>;
+  removeController: WriteAction<{ controller: WalletAddress }>;
   /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
-  setRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
+  setRecord: WriteAction<ANTSetUndernameRecordParams>;
   /** @deprecated Use removeUndernameRecord instead for undernames */
-  removeRecord: AoWriteAction<{ undername: string }>;
-  setBaseNameRecord: AoWriteAction<AoANTSetBaseNameRecordParams>;
-  setUndernameRecord: AoWriteAction<AoANTSetUndernameRecordParams>;
-  removeUndernameRecord: AoWriteAction<{ undername: string }>;
-  setTicker: AoWriteAction<{ ticker: string }>;
-  setDescription: AoWriteAction<{ description: string }>;
-  setKeywords: AoWriteAction<{ keywords: string[] }>;
-  setName: AoWriteAction<{ name: string }>;
-  setLogo: AoWriteAction<{ txId: string }>;
-  releaseName: AoWriteAction<{ name: string; arioProcessId: string }>;
-  reassignName: AoWriteAction<{
+  removeRecord: WriteAction<{ undername: string }>;
+  setBaseNameRecord: WriteAction<ANTSetBaseNameRecordParams>;
+  setUndernameRecord: WriteAction<ANTSetUndernameRecordParams>;
+  removeUndernameRecord: WriteAction<{ undername: string }>;
+  setTicker: WriteAction<{ ticker: string }>;
+  setDescription: WriteAction<{ description: string }>;
+  setKeywords: WriteAction<{ keywords: string[] }>;
+  setName: WriteAction<{ name: string }>;
+  setLogo: WriteAction<{ txId: string }>;
+  releaseName: WriteAction<{ name: string; arioProcessId: string }>;
+  reassignName: WriteAction<{
     name: string;
     arioProcessId: string;
     antProcessId: string;
   }>;
-  approvePrimaryNameRequest: AoWriteAction<{
+  approvePrimaryNameRequest: WriteAction<{
     name: string;
     address: string;
     arioProcessId: string;
   }>;
-  removePrimaryNames: AoWriteAction<{
+  removePrimaryNames: WriteAction<{
     names: string[];
     arioProcessId: string;
     notifyOwners?: boolean;
@@ -332,16 +332,16 @@ export interface AoANTWrite extends AoANTRead {
     ),
   ): Promise<{
     forkedProcessId: string;
-    reassignedNames: Record<string, AoMessageResult>;
+    reassignedNames: Record<string, MessageResult>;
     failedReassignedNames: Record<string, { id?: string; error: Error }>;
   }>;
-  transferRecord: AoWriteAction<{
+  transferRecord: WriteAction<{
     undername: string;
     recipient: string;
   }>;
 }
 
-export type AoANTSetBaseNameRecordParams = {
+export type ANTSetBaseNameRecordParams = {
   transactionId: string;
   ttlSeconds: number;
   /** Storage protocol: 0 = Arweave, 1 = IPFS. Defaults to 0 (Arweave). */
@@ -354,6 +354,6 @@ export type AoANTSetBaseNameRecordParams = {
   keywords?: string[];
 };
 
-export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
+export type ANTSetUndernameRecordParams = ANTSetBaseNameRecordParams & {
   undername: string;
 };

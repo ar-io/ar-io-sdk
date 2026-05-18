@@ -1,5 +1,5 @@
 /**
- * Solana implementation of AoARIOWrite interface.
+ * Solana implementation of ARIOWrite interface.
  *
  * Extends SolanaARIOReadable with write operations that build and send
  * Solana transactions via Codama-generated instruction builders.
@@ -68,21 +68,21 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 import type { ILogger } from '../common/logger.js';
-import type { AoMessageResult, WriteOptions } from '../types/common.js';
+import type { MessageResult, WriteOptions } from '../types/common.js';
 import type {
-  AoArNSPurchaseParams,
-  AoBuyRecordParams,
-  AoCreateVaultParams,
-  AoDelegateStakeParams,
-  AoExtendLeaseParams,
-  AoExtendVaultParams,
-  AoIncreaseUndernameLimitParams,
-  AoIncreaseVaultParams,
-  AoJoinNetworkParams,
-  AoRedelegateStakeParams,
-  AoRevokeVaultParams,
-  AoUpdateGatewaySettingsParams,
-  AoVaultedTransferParams,
+  ArNSPurchaseParams,
+  BuyRecordParams,
+  CreateVaultParams,
+  DelegateStakeParams,
+  ExtendLeaseParams,
+  ExtendVaultParams,
+  IncreaseUndernameLimitParams,
+  IncreaseVaultParams,
+  JoinNetworkParams,
+  RedelegateStakeParams,
+  RevokeVaultParams,
+  UpdateGatewaySettingsParams,
+  VaultedTransferParams,
 } from '../types/io.js';
 import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 import type { mARIOToken } from '../types/token.js';
@@ -518,7 +518,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async transfer(
     params: { target: string; qty: number | mARIOToken },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.qty);
     const recipient = address(params.target);
     const mint = await this.getMint();
@@ -559,9 +559,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async vaultedTransfer(
-    params: AoVaultedTransferParams,
+    params: VaultedTransferParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.quantity);
     const lockSeconds = Math.floor(params.lockLengthMs / 1000);
     const recipient = address(params.recipient);
@@ -607,9 +607,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async createVault(
-    params: AoCreateVaultParams,
+    params: CreateVaultParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.quantity);
     const lockSeconds = Math.floor(params.lockLengthMs / 1000);
     const mint = await this.getMint();
@@ -664,9 +664,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async extendVault(
-    params: AoExtendVaultParams,
+    params: ExtendVaultParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const additionalSeconds = Math.floor(params.extendLengthMs / 1000);
     const [vaultPda] = await getVaultPDA(
       this.signer.address,
@@ -688,9 +688,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async increaseVault(
-    params: AoIncreaseVaultParams,
+    params: IncreaseVaultParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.quantity);
     const mint = await this.getMint();
     const [vaultPda] = await getVaultPDA(
@@ -720,9 +720,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async revokeVault(
-    params: AoRevokeVaultParams,
+    params: RevokeVaultParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const recipient = address(params.recipient);
     const mint = await this.getMint();
     const [vaultPda] = await getVaultPDA(
@@ -755,9 +755,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // =========================================
 
   async joinNetwork(
-    params: AoJoinNetworkParams,
+    params: JoinNetworkParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const garConfig = await this.getGarConfig();
     const operatorATA = await getAssociatedTokenAddressKit(
       garConfig.mint,
@@ -801,7 +801,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     return { id: sig };
   }
 
-  async leaveNetwork(_options?: WriteOptions): Promise<AoMessageResult> {
+  async leaveNetwork(_options?: WriteOptions): Promise<MessageResult> {
     // BD-102: leave_network may produce 1 or 2 Withdrawal PDAs. The
     // protected exit vault uses `next_id`; the optional excess vault
     // uses `next_id + 1`. The SDK always derives both PDAs and passes
@@ -836,9 +836,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async updateGatewaySettings(
-    params: AoUpdateGatewaySettingsParams,
+    params: UpdateGatewaySettingsParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getUpdateGatewaySettingsInstructionAsync(
       await this.withGarDefaults({
         operator: this.signer,
@@ -870,7 +870,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async increaseOperatorStake(
     params: { increaseQty: number | mARIOToken },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.increaseQty);
     const garConfig = await this.getGarConfig();
     const operatorATA = await getAssociatedTokenAddressKit(
@@ -895,7 +895,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async decreaseOperatorStake(
     params: { decreaseQty: number | mARIOToken; instant?: boolean },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.decreaseQty);
     const nextId = await this.getNextWithdrawalId(this.signer.address);
     const [withdrawalPda] = await getWithdrawalPDA(
@@ -918,9 +918,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async delegateStake(
-    params: AoDelegateStakeParams,
+    params: DelegateStakeParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.stakeQty);
     const target = address(params.target);
     const garConfig = await this.getGarConfig();
@@ -959,7 +959,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       instant?: boolean;
     },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.decreaseQty);
     const target = address(params.target);
 
@@ -994,7 +994,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async instantWithdrawal(
     params: { gatewayAddress?: string; vaultId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const garConfig = await this.getGarConfig();
     const [withdrawalPda] = await getWithdrawalPDA(
       this.signer.address,
@@ -1024,7 +1024,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async cancelWithdrawal(
     params: { gatewayAddress?: string; vaultId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const gateway = params.gatewayAddress
       ? address(params.gatewayAddress)
       : this.signer.address;
@@ -1067,7 +1067,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       gatewayCount?: number;
     },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     let epochIndex: number;
     if (params.epochIndex !== undefined) {
       epochIndex = params.epochIndex;
@@ -1118,9 +1118,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async redelegateStake(
-    params: AoRedelegateStakeParams,
+    params: RedelegateStakeParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const amount = toAmount(params.stakeQty);
     const source = address(params.source);
     const target = address(params.target);
@@ -1167,9 +1167,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // =========================================
 
   async buyRecord(
-    params: AoBuyRecordParams,
+    params: BuyRecordParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const arnsConfig = await this.getArnsConfig();
     const buyerATA = await getAssociatedTokenAddressKit(
       arnsConfig.mint,
@@ -1313,7 +1313,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * payload as `cause`) when no plan covers `amountNeeded`.
    */
   private async _resolveFundingPlan(
-    params: AoArNSPurchaseParams,
+    params: ArNSPurchaseParams,
     amountNeeded: bigint,
   ): Promise<InternalFundingPlan> {
     // `'plan'` is the explicit "I'll supply my own sources, skip discovery"
@@ -1412,7 +1412,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * PDA prediction in one shot.
    */
   private async _buildBuyNameFromFundingPlanIx(args: {
-    params: AoBuyRecordParams;
+    params: BuyRecordParams;
     antPubkey: Address;
     arnsRecord: Address;
     reservedNameCheck: Address;
@@ -1667,9 +1667,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async upgradeRecord(
-    params: AoArNSPurchaseParams,
+    params: ArNSPurchaseParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'upgrade',
@@ -1682,7 +1682,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async syncAttributes(
     params: { name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     // Public method — caller is asking explicitly to sync. Build the ix
     // unconditionally; if they don't actually own the ANT, the on-chain
     // handler returns NotNftHolder. (The bundle path uses
@@ -1774,9 +1774,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async extendLease(
-    params: AoExtendLeaseParams,
+    params: ExtendLeaseParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'extend',
@@ -1789,9 +1789,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async increaseUndernameLimit(
-    params: AoIncreaseUndernameLimitParams,
+    params: IncreaseUndernameLimitParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'increaseUndername',
@@ -1811,7 +1811,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * quantity for increaseUndername).
    */
   private async _buildManageStakeIx(args: {
-    params: AoArNSPurchaseParams & {
+    params: ArNSPurchaseParams & {
       years?: number;
       increaseCount?: number;
     };
@@ -2126,9 +2126,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async requestPrimaryName(
-    params: AoArNSPurchaseParams,
+    params: ArNSPurchaseParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const coreConfig = await this.getCoreConfig();
     const signerATA = await getAssociatedTokenAddressKit(
       coreConfig.mint,
@@ -2175,9 +2175,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   async setPrimaryName(
-    params: AoArNSPurchaseParams,
+    params: ArNSPurchaseParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     // setPrimaryName routes to the on-chain `request_and_set_primary_name`
     // path — the auto-approve flow when the caller owns the AntRecord
     // for the matching name (undername part, or "@" for base names).
@@ -2240,7 +2240,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * funding-source slice to ario-gar's pay_from_funding_plan via CPI.
    */
   private async _buildPrimaryNameFromFundingPlanIx(args: {
-    params: AoArNSPurchaseParams;
+    params: ArNSPurchaseParams;
     coreConfig: { mint: Address; treasury: Address };
     validationAccounts: AccountMeta[];
     operation: 'request' | 'requestAndSet';
@@ -2352,7 +2352,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async approvePrimaryName(
     params: { initiator: Address; name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [requestPda] = await getPrimaryNameRequestPDA(
       params.initiator,
       this.coreProgram,
@@ -2405,7 +2405,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async releaseVault(
     params: { vaultId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const mint = await this.getMint();
     const [vaultPda] = await getVaultPDA(
       this.signer.address,
@@ -2440,7 +2440,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async closeExpiredRequest(
     params: { initiator: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const initiatorPubkey = address(params.initiator);
     const [requestPda] = await getPrimaryNameRequestPDA(
       initiatorPubkey,
@@ -2468,7 +2468,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async claimWithdrawal(
     params: { withdrawalId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const garConfig = await this.getGarConfig();
     const [withdrawalPda] = await getWithdrawalPDA(
       this.signer.address,
@@ -2502,7 +2502,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async claimDelegateFromLeavingGateway(
     params: { gatewayAddress: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const gateway = address(params.gatewayAddress);
     const [gatewayPda] = await getGatewayPDA(gateway, this.garProgram);
     const [delegationPda] = await getDelegationPDA(
@@ -2549,7 +2549,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async allowDelegate(
     params: { delegate: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getAllowDelegateInstructionAsync(
       {
         delegate: address(params.delegate),
@@ -2566,7 +2566,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async disallowDelegate(
     params: { delegate: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getDisallowDelegateInstructionAsync(
       {
         delegate: address(params.delegate),
@@ -2583,7 +2583,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async setAllowlistEnabled(
     params: { enabled: boolean },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetAllowlistEnabledInstructionAsync(
       await this.withGarDefaults({
         operator: this.signer,
@@ -2614,9 +2614,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       type: 'lease' | 'permabuy';
       years?: number;
       processId: string;
-    } & Partial<AoArNSPurchaseParams>,
+    } & Partial<ArNSPurchaseParams>,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const arnsConfig = await this.getArnsConfig();
     const buyerATA = await getAssociatedTokenAddressKit(
       arnsConfig.mint,
@@ -2741,12 +2741,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           years: buyParams.years,
         });
         const plan = await this._resolveFundingPlan(
-          params as AoArNSPurchaseParams,
+          params as ArNSPurchaseParams,
           cost,
         );
         const { remainingAccounts, withdrawalCounter, residueVaultCount } =
           await this._materializeFundingPlan(
-            params as AoArNSPurchaseParams,
+            params as ArNSPurchaseParams,
             plan,
           );
         ix = await getBuyReturnedNameFromFundingPlanInstructionAsync(
@@ -2789,7 +2789,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async reassignName(
     params: { name: string; processId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const newAnt = address(params.processId);
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
 
@@ -2833,7 +2833,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async releaseName(
     params: { name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [returnedNamePda] = await getReturnedNamePDA(
       params.name,
       this.arnsProgram,
@@ -2866,7 +2866,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Create a new epoch. Permissionless — anyone can call when the next
    * epoch's start time has arrived.
    */
-  async createEpoch(_options?: WriteOptions): Promise<AoMessageResult> {
+  async createEpoch(_options?: WriteOptions): Promise<MessageResult> {
     const garConfig = await this.getGarConfig();
 
     const [epochSettingsPda] = await getEpochSettingsPDA(this.garProgram);
@@ -2906,7 +2906,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       gatewayAccounts: Address[];
     },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getTallyWeightsInstructionAsync(
       await this.withGarDefaults({
         payer: this.signer,
@@ -2941,7 +2941,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       nameRegistryAccount?: Address;
     },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getPrescribeEpochInstructionAsync(
       await this.withGarDefaults({
         payer: this.signer,
@@ -2978,7 +2978,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       gatewayAccounts: Address[];
     },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const garConfig = await this.getGarConfig();
 
     // ario_gar::distribute_epoch CPIs into ario_core::release_treasury_to_recipient
@@ -3019,7 +3019,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async closeEpoch(
     params: { epochIndex: number },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getCloseEpochInstructionAsync(
       await this.withGarDefaults({
         payer: this.signer,
@@ -3189,7 +3189,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async pruneExpiredNames(
     params: { maxNames: number; arnsRecords: string[] },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getPruneExpiredNamesInstructionAsync(
       await this.withArnsDefaults({
         payer: this.signer,
@@ -3217,7 +3217,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async pruneNameToReturned(
     params: { name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
     const [returnedName] = await getReturnedNamePDA(
       params.name,
@@ -3245,7 +3245,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async pruneReturnedNames(
     params: { maxNames: number; returnedNames: string[] },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getPruneReturnedNamesInstructionAsync(
       await this.withArnsDefaults({
         payer: this.signer,
@@ -3276,7 +3276,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async pruneExpiredReservation(
     params: { name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [reservedName] = await getReservedNamePDA(
       params.name,
       this.arnsProgram,
@@ -3306,7 +3306,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async pruneGateway(
     params: { gateway: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const gatewayAddr = address(params.gateway);
     const garConfig = await this.getGarConfig();
 
@@ -3351,7 +3351,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async finalizeGone(
     params: { gateway: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const gatewayAddr = address(params.gateway);
     const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
 
@@ -3375,7 +3375,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async closeObservation(
     params: { epochIndex: number; observer: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const observerAddr = address(params.observer);
     const [observationPda] = await getObservationPDA(
       params.epochIndex,
@@ -3404,7 +3404,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async closeEmptyDelegation(
     params: { gateway: string; delegator: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const gatewayAddr = address(params.gateway);
     const delegatorAddr = address(params.delegator);
     const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
@@ -3435,7 +3435,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async closeDrainedWithdrawal(
     params: { owner: string; withdrawalId: number | bigint },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ownerAddr = address(params.owner);
     const [withdrawalPda] = await getWithdrawalPDA(
       ownerAddr,
