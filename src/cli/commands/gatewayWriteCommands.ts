@@ -15,9 +15,9 @@
  */
 import prompts from 'prompts';
 
-import { mARIOToken } from '../../node/index.js';
 import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
 import type { StakeDelegation } from '../../types/io.js';
+import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
   DecreaseDelegateStakeCLIOptions,

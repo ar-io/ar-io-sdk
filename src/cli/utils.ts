@@ -26,31 +26,31 @@ import bs58 from 'bs58';
 import { Command, OptionValues, program } from 'commander';
 import prompts from 'prompts';
 
-import {
-  ANT,
-  ANTRead,
-  ANTRegistry,
-  ANTRegistryRead,
-  ANTWrite,
-  ARIO,
+import { ANTRegistry } from '../common/ant-registry.js';
+import { ANT } from '../common/ant.js';
+import { ARIO } from '../common/io.js';
+import { Logger } from '../common/logger.js';
+import type { ANTRegistryRead } from '../types/ant-registry.js';
+import type { ANTRead, ANTWrite } from '../types/ant.js';
+import type { WriteOptions } from '../types/common.js';
+import type {
   ARIORead,
-  ARIOToken,
   ARIOWrite,
   EpochInput,
   FundFrom,
   GetCostDetailsParams,
-  Logger,
   PaginationParams,
   RedelegateStakeParams,
   SortBy,
   UpdateGatewaySettingsParams,
-  WriteOptions,
+} from '../types/io.js';
+import {
   fundFromOptions,
   isValidFundFrom,
   isValidIntent,
-  mARIOToken,
   validIntents,
-} from '../node/index.js';
+} from '../types/io.js';
+import { ARIOToken, mARIOToken } from '../types/token.js';
 import { globalOptions } from './options.js';
 import {
   ANTStateCLIOptions,

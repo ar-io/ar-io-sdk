@@ -5,9 +5,9 @@
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
   },
-  "main": "./lib/esm/node/index.js",
-  "module": "./lib/esm/node/index.js",
-  "types": "./lib/types/node/index.d.ts",
+  "main": "./lib/esm/solana/index.js",
+  "module": "./lib/esm/solana/index.js",
+  "types": "./lib/types/solana/index.d.ts",
   "type": "module",
   "packageManager": "yarn@1.22.22",
   "engines": {
@@ -23,22 +23,12 @@
     "email": "info@ar.io",
     "website": "https://ar.io"
   },
-  "keywords": ["arweave", "ar", "blockchain", "ar.io", "ao", "solana"],
+  "keywords": ["arweave", "ar", "blockchain", "ar.io", "solana"],
   "exports": {
     ".": {
-      "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "default": "./lib/esm/node/index.js"
-    },
-    "./node": {
-      "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "default": "./lib/esm/node/index.js"
-    },
-    "./web": {
-      "types": "./lib/types/web/index.d.ts",
-      "import": "./lib/esm/web/index.js",
-      "default": "./lib/esm/web/index.js"
+      "types": "./lib/types/solana/index.d.ts",
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
     },
     "./solana": {
       "types": "./lib/types/solana/index.d.ts",
