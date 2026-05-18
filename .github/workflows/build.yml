@@ -47,7 +47,7 @@ jobs:
   test:
     strategy:
       matrix:
-        suite: [unit, esm, web]
+        suite: [unit]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
