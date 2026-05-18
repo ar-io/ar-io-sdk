@@ -15,8 +15,6 @@
  */
 import { readFileSync } from 'fs';
 
-import { EthereumSigner } from '@dha-team/arbundles';
-import { connect } from '@permaweb/aoconnect';
 import {
   type KeyPairSigner,
   address,
@@ -24,7 +22,6 @@ import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from '@solana/kit';
-import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import bs58 from 'bs58';
 import { Command, OptionValues, program } from 'commander';
 import prompts from 'prompts';
@@ -32,14 +29,8 @@ import prompts from 'prompts';
 import {
   ANT,
   ANTRegistry,
-  ANT_REGISTRY_ID,
-  ANT_REGISTRY_TESTNET_ID,
-  AOProcess,
   ARIO,
   ARIOToken,
-  ARIO_DEVNET_PROCESS_ID,
-  ARIO_MAINNET_PROCESS_ID,
-  ARIO_TESTNET_PROCESS_ID,
   AoANTRead,
   AoANTRegistryRead,
   AoANTWrite,
@@ -47,25 +38,17 @@ import {
   AoARIOWrite,
   AoGetCostDetailsParams,
   AoRedelegateStakeParams,
-  AoSigner,
   AoUpdateGatewaySettingsParams,
-  ArweaveSigner,
-  ContractSigner,
   EpochInput,
   FundFrom,
   Logger,
   PaginationParams,
   SortBy,
-  SpawnANTState,
   WriteOptions,
-  createAoSigner,
-  fromB64Url,
   fundFromOptions,
-  initANTStateForAddress,
   isValidFundFrom,
   isValidIntent,
   mARIOToken,
-  sha256B64Url,
   validIntents,
 } from '../node/index.js';
 import { globalOptions } from './options.js';
@@ -162,66 +145,6 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   return appliedCommand;
 }
 
-export function arioProcessIdFromOptions({
-  arioProcessId,
-  devnet,
-  testnet,
-}: GlobalCLIOptions): string {
-  if (arioProcessId !== undefined) {
-    return arioProcessId;
-  }
-  if (devnet) {
-    return ARIO_DEVNET_PROCESS_ID;
-  }
-  if (testnet) {
-    return ARIO_TESTNET_PROCESS_ID;
-  }
-
-  return ARIO_MAINNET_PROCESS_ID;
-}
-
-export function antRegistryIdFromOptions({
-  antRegistryProcessId,
-  testnet,
-}: GlobalCLIOptions): string {
-  if (antRegistryProcessId !== undefined) {
-    return antRegistryProcessId;
-  }
-  if (testnet) {
-    return ANT_REGISTRY_TESTNET_ID;
-  }
-  return ANT_REGISTRY_ID;
-}
-
-function walletFromOptions({
-  privateKey,
-  walletFile,
-}: WalletCLIOptions): JWKInterface | undefined {
-  if (privateKey !== undefined) {
-    return JSON.parse(privateKey);
-  }
-  if (walletFile !== undefined) {
-    return JSON.parse(readFileSync(walletFile, 'utf-8'));
-  }
-  return undefined;
-}
-
-export function requiredJwkFromOptions(
-  options: WalletCLIOptions,
-): JWKInterface {
-  const jwk = walletFromOptions(options);
-  if (jwk === undefined) {
-    throw new Error(
-      'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
-    );
-  }
-  return jwk;
-}
-
-export function jwkToAddress(jwk: JWKInterface): string {
-  return sha256B64Url(fromB64Url(jwk.n));
-}
-
 function setLoggerIfDebug(options: GlobalCLIOptions) {
   if (options.debug) {
     Logger.default.setLogLevel('debug');
@@ -233,33 +156,10 @@ export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
   return Logger.default;
 }
 
-function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
-  return new AOProcess({
-    processId: arioProcessIdFromOptions(options),
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: options.cuUrl,
-    }),
-  });
-}
-
 export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    return ARIO.init({
-      hyperbeamUrl: options.hyperbeamUrl,
-      process: aoProcessFromOptions({
-        cuUrl: 'http://localhost:6363',
-        ...options,
-      }),
-      paymentUrl: options.paymentUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ARIO.init({
-    backend: 'solana',
     rpc: createSolanaRpc(rpcUrl),
     ...(options.coreProgramId
       ? { coreProgramId: address(options.coreProgramId) }
@@ -277,62 +177,13 @@ export async function readANTRegistryFromOptions(
   options: ProcessIdCLIOptions,
 ): Promise<AoANTRegistryRead> {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    return ANTRegistry.init({
-      process: aoProcessFromOptions(options),
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTRegistry.init({
-    backend: 'solana',
     rpc: createSolanaRpc(rpcUrl),
     ...(options.antProgramId
       ? { antProgramId: address(options.antProgramId) }
       : {}),
   });
-}
-
-export function contractSignerFromOptions(
-  options: WalletCLIOptions,
-): { signer: ContractSigner; signerAddress: string } | undefined {
-  const wallet = walletFromOptions(options);
-
-  if (wallet === undefined) {
-    return undefined;
-  }
-  const token = options.token ?? 'arweave';
-
-  if (token === 'ethereum') {
-    const signer = new EthereumSigner(wallet as unknown as string);
-    // For EthereumSigner, we need to convert the JWK to a string
-    return { signer, signerAddress: signer.publicKey.toString('hex') };
-  }
-
-  // TODO: Support other wallet types
-  const signer = new ArweaveSigner(wallet);
-  return { signer, signerAddress: jwkToAddress(wallet) };
-}
-
-export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
-  signer: ContractSigner;
-  signerAddress: string;
-} {
-  const contractSigner = contractSignerFromOptions(options);
-  if (contractSigner === undefined) {
-    throw new Error(
-      'No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`',
-    );
-  }
-  return contractSigner;
-}
-
-export function requiredAoSignerFromOptions(
-  options: WalletCLIOptions,
-): AoSigner {
-  return createAoSigner(requiredContractSignerFromOptions(options).signer);
 }
 
 /** Derive a WS URL from an HTTP/HTTPS RPC URL by swapping the scheme. */
@@ -388,33 +239,16 @@ export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
   signerAddress: string;
 }> {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    const { signer, signerAddress } =
-      requiredContractSignerFromOptions(options);
-    return {
-      ario: ARIO.init({
-        process: aoProcessFromOptions(options),
-        signer,
-        paymentUrl: options.paymentUrl,
-        hyperbeamUrl: options.hyperbeamUrl,
-      }),
-      signerAddress,
-    };
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   const signer = await loadSolanaSignerFromOptions(options);
 
   return {
     ario: ARIO.init({
-      backend: 'solana',
       rpc: createSolanaRpc(rpcUrl),
       rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
       signer,
-      // Forward program-id overrides to mirror `readARIOFromOptions` so
-      // localnet / devnet writes target the deployed program IDs instead of
-      // silently falling back to the SDK's mainnet defaults.
+      // Forward program-id overrides so localnet / devnet writes target the
+      // deployed program IDs instead of falling back to mainnet defaults.
       ...(options.coreProgramId
         ? { coreProgramId: address(options.coreProgramId) }
         : {}),
@@ -781,29 +615,11 @@ export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
   return o.processId;
 }
 
-function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
-  return new AOProcess({
-    processId: requiredProcessIdFromOptions(options),
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: options.cuUrl,
-    }),
-  });
-}
-
 export async function readANTFromOptions(
   options: ProcessIdCLIOptions,
 ): Promise<AoANTRead> {
-  if (options.ao) {
-    return ANT.init({
-      process: ANTProcessFromOptions(options),
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANT.init({
-    backend: 'solana',
     processId: requiredProcessIdFromOptions(options),
     rpc: createSolanaRpc(rpcUrl),
     ...(options.antProgramId
@@ -814,22 +630,11 @@ export async function readANTFromOptions(
 
 export async function writeANTFromOptions(
   options: ProcessIdCLIOptions,
-  signer?: ContractSigner,
 ): Promise<AoANTWrite> {
-  if (options.ao) {
-    signer ??= requiredContractSignerFromOptions(options).signer;
-    return ANT.init({
-      process: ANTProcessFromOptions(options),
-      signer,
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   const kitSigner = await loadSolanaSignerFromOptions(options);
 
   return ANT.init({
-    backend: 'solana',
     processId: requiredProcessIdFromOptions(options),
     rpc: createSolanaRpc(rpcUrl),
     rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
