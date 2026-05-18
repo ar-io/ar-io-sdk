@@ -99,10 +99,6 @@ export const optionMap = {
     alias: '--claimant <pubkey>',
     description: 'Solana pubkey that will receive the ANT on claim.',
   },
-  paymentUrl: {
-    alias: '--payment-url <paymentUrl>',
-    description: 'The URL for a custom turbo payment service',
-  },
   processId: {
     alias: '--process-id <processId>',
     description: 'The process ID to interact with',
@@ -468,7 +464,6 @@ export const arnsPurchaseOptions = [
   optionMap.withdrawalId,
   optionMap.fundingPlanJson,
   optionMap.paidBy,
-  optionMap.paymentUrl,
   optionMap.referrer,
 ];
 
@@ -501,7 +496,6 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
-  optionMap.paymentUrl,
 ];
 
 export const transferOptions = [

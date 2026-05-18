@@ -39,7 +39,6 @@ export type GlobalCLIOptions = WalletCLIOptions & {
   coreProgramId?: string;
   garProgramId?: string;
   arnsProgramId?: string;
-  paymentUrl?: string;
 };
 
 export type WriteActionCLIOptions = GlobalCLIOptions & {

@@ -10,10 +10,8 @@
 /**
  * CLI commands for the permissionless prune / cleanup surface.
  *
- * These mirror the Solana-only methods on `SolanaARIOWriteable` —
+ * These mirror the prune methods on `SolanaARIOWriteable` —
  * see `sdk/src/solana/io-writeable.ts` and `docs/CRANKER_PRUNING_PLAN.md`.
- * They have no AO analogue (Lua's `tick()` did this lazily), so each
- * command rejects `--ao`.
  */
 import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
 import type { WriteActionCLIOptions } from '../types.js';
