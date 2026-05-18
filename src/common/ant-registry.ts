@@ -56,9 +56,7 @@ export type ANTRegistryWriteConfig = ANTRegistryReadConfig & {
 
 export class ANTRegistry {
   // Writeable — async to avoid `import.meta.url` in CJS output.
-  static init(
-    config: ANTRegistryWriteConfig,
-  ): Promise<AoANTRegistryWrite>;
+  static init(config: ANTRegistryWriteConfig): Promise<AoANTRegistryWrite>;
   // Read-only
   static init(config: ANTRegistryReadConfig): Promise<AoANTRegistryRead>;
   static init(

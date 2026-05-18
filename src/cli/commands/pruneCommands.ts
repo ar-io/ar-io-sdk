@@ -38,14 +38,6 @@ type PruneOptions = WriteActionCLIOptions & {
   returnedNames?: string[];
 };
 
-function rejectAoBackend(o: PruneOptions, command: string): void {
-  if (o.ao) {
-    throw new Error(
-      `${command} is Solana-only — Lua's tick() handles the equivalent on AO. Drop --ao.`,
-    );
-  }
-}
-
 async function getSolanaWriter(o: PruneOptions): Promise<SolanaARIOWriteable> {
   const { ario } = await writeARIOFromOptions(o);
   return ario as unknown as SolanaARIOWriteable;
@@ -68,7 +60,6 @@ function parseMaxNames(o: PruneOptions): number {
 // =========================================
 
 export async function pruneExpiredNamesCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'prune-expired-names');
   const max = parseMaxNames(o);
   const ario = await getSolanaWriter(o);
 
@@ -95,7 +86,6 @@ export async function pruneExpiredNamesCLICommand(o: PruneOptions) {
 }
 
 export async function pruneNameToReturnedCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'prune-name-to-returned');
   const name = requiredStringFromOptions(o, 'name');
   const ario = await getSolanaWriter(o);
 
@@ -108,7 +98,6 @@ export async function pruneNameToReturnedCLICommand(o: PruneOptions) {
 }
 
 export async function pruneReturnedNamesCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'prune-returned-names');
   const max = parseMaxNames(o);
   const ario = await getSolanaWriter(o);
 
@@ -136,7 +125,6 @@ export async function pruneReturnedNamesCLICommand(o: PruneOptions) {
 }
 
 export async function pruneExpiredReservationCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'prune-expired-reservation');
   const name = requiredStringFromOptions(o, 'name');
   const ario = await getSolanaWriter(o);
 
@@ -150,7 +138,6 @@ export async function pruneExpiredReservationCLICommand(o: PruneOptions) {
 // =========================================
 
 export async function pruneGatewayCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'prune-gateway');
   const gateway = requiredStringFromOptions(o, 'gateway');
   const ario = await getSolanaWriter(o);
 
@@ -163,7 +150,6 @@ export async function pruneGatewayCLICommand(o: PruneOptions) {
 }
 
 export async function finalizeGoneCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'finalize-gone');
   const gateway = requiredStringFromOptions(o, 'gateway');
   const ario = await getSolanaWriter(o);
 
@@ -180,7 +166,6 @@ export async function finalizeGoneCLICommand(o: PruneOptions) {
 // =========================================
 
 export async function closeObservationCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'close-observation');
   const epochIndexStr = requiredStringFromOptions(o, 'epochIndex');
   const observer = requiredStringFromOptions(o, 'observer');
   const epochIndex = Number(epochIndexStr);
@@ -200,7 +185,6 @@ export async function closeObservationCLICommand(o: PruneOptions) {
 }
 
 export async function closeEmptyDelegationCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'close-empty-delegation');
   const gateway = requiredStringFromOptions(o, 'gateway');
   const delegator = requiredStringFromOptions(o, 'delegator');
   const ario = await getSolanaWriter(o);
@@ -214,7 +198,6 @@ export async function closeEmptyDelegationCLICommand(o: PruneOptions) {
 }
 
 export async function closeDrainedWithdrawalCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'close-drained-withdrawal');
   const owner = requiredStringFromOptions(o, 'owner');
   const withdrawalIdStr = requiredStringFromOptions(o, 'withdrawalId');
   // Validate before BigInt() — `BigInt('0xff')` and `BigInt('  1  ')` succeed
@@ -242,7 +225,6 @@ export async function closeDrainedWithdrawalCLICommand(o: PruneOptions) {
 // =========================================
 
 export async function releaseVaultCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'release-vault');
   // The on-chain handler requires `owner: Signer` — the SDK uses the
   // configured signer as the owner. The `--owner` flag is accepted as
   // documentation but ignored unless it matches the signer; fail loud if
@@ -269,7 +251,6 @@ export async function releaseVaultCLICommand(o: PruneOptions) {
 }
 
 export async function closeExpiredRequestCLICommand(o: PruneOptions) {
-  rejectAoBackend(o, 'close-expired-request');
   const initiator = requiredStringFromOptions(o, 'initiator');
   const ario = await getSolanaWriter(o);
 

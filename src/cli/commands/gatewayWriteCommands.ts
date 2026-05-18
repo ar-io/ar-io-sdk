@@ -236,11 +236,6 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
 }
 
 export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
-  if (o.ao) {
-    throw new Error(
-      'claim-withdrawal is only supported on the Solana backend (drop --ao).',
-    );
-  }
   const vaultId = requiredStringFromOptions(o, 'vaultId');
 
   await assertConfirmationPrompt(
@@ -248,9 +243,9 @@ export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  // claimWithdrawal is Solana-only — no AO equivalent exists (see the comment
-  // block in src/types/io.ts above syncAttributes). The `--ao` guard above
-  // narrows us to the Solana path, so the cast is safe at runtime.
+  // claimWithdrawal is Solana-only — surface it through the SolanaARIOWriteable
+  // class rather than the shared AoARIOWrite interface (see the comment in
+  // src/types/io.ts above syncAttributes).
   const { ario } = await writeARIOFromOptions(o);
   return (ario as unknown as SolanaARIOWriteable).claimWithdrawal(
     { withdrawalId: vaultId },

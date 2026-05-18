@@ -144,21 +144,6 @@ export const AntStateSchema = z.object({
 
 export type AoANTState = z.infer<typeof AntStateSchema>;
 
-export type HyperBeamANTState = {
-  name: string;
-  ticker: string;
-  description: string;
-  keywords: string[];
-  denomination: string;
-  owner: string;
-  controllers: string[];
-  records: Record<string, { transactionid: string; ttlseconds: number }>;
-  balances: Record<string, number>;
-  logo: string;
-  totalsupply: number;
-  initialized: boolean;
-};
-
 export const SpawnANTStateSchema = z.object({
   name: z.string().describe('The name of the ANT.'),
   ticker: z.string().describe('The ticker symbol for the ANT.'),
@@ -372,33 +357,3 @@ export type AoANTSetBaseNameRecordParams = {
 export type AoANTSetUndernameRecordParams = AoANTSetBaseNameRecordParams & {
   undername: string;
 };
-
-export interface AoANTVersionsRead {
-  getANTVersions(): Promise<
-    Record<
-      string,
-      {
-        moduleId: string;
-        luaSourceId?: string;
-        notes?: string;
-        releaseTimestamp: number;
-      }
-    >
-  >;
-  getLatestANTVersion(): Promise<{
-    version: string;
-    moduleId: string;
-    luaSourceId?: string;
-    notes?: string;
-    releaseTimestamp: number;
-  }>;
-}
-
-export interface AoANTVersionsWrite extends AoANTVersionsRead {
-  addVersion: AoWriteAction<{
-    version: string;
-    moduleId: string;
-    luaSourceId?: string;
-    notes?: string;
-  }>;
-}

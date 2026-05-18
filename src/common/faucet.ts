@@ -14,26 +14,39 @@
  * limitations under the License.
  */
 import { ARIOWithFaucet, TokenFaucet } from '../types/faucet.js';
-import { ARIOReadable, ARIOWriteable } from './io.js';
+import { AoARIORead, AoARIOWrite } from '../types/index.js';
 
 const DEFAULT_FAUCET_API_URL = 'https://faucet.ario.permaweb.services';
 
 /**
- * Creates a proxy object that implements the TokenFaucet interface. It wraps the ARIOReadable instance and adds methods for claiming tokens from the faucet API.
- * @param arioInstance - The ARIOReadable instance
- * @param faucetApiUrl - The URL of the faucet API
- * @returns A proxy object that implements the TokenFaucet interface
+ * Wrap an ARIO instance with a `.faucet` namespace bound to the HTTP faucet
+ * backend. The faucet itself talks to a hosted HTTP service that issues
+ * test-ARIO transfers — it is not tied to any specific on-chain backend.
+ *
+ * NOTE: the AR.IO faucet backend has not yet been ported to issue Solana-
+ * mint transfers. The SDK surface is kept stable so consumers can wire up
+ * the new backend without code changes once it ships. The `processId`
+ * parameter identifies the faucet on the server side (legacy AO process
+ * id today; will likely become a Solana mint pubkey).
  */
 export function createFaucet({
   arioInstance,
   faucetApiUrl = DEFAULT_FAUCET_API_URL,
+  processId,
 }: {
-  arioInstance: ARIOReadable | ARIOWriteable;
+  arioInstance: AoARIORead | AoARIOWrite;
   faucetApiUrl?: string;
-}): ARIOWithFaucet<ARIOReadable | ARIOWriteable> {
+  /**
+   * Identifier the faucet backend uses to scope claim requests. Required —
+   * the backend has no implicit default. Today this is the AO process id
+   * for ARIO; on Solana this will be replaced by the ARIO mint pubkey when
+   * the faucet backend gains Solana support.
+   */
+  processId: string;
+}): ARIOWithFaucet<AoARIORead | AoARIOWrite> {
   const faucet = new ARIOTokenFaucet({
     faucetUrl: faucetApiUrl,
-    processId: arioInstance.process.processId,
+    processId,
   });
 
   const proxy = new Proxy(arioInstance, {
@@ -51,7 +64,7 @@ export function createFaucet({
       return undefined;
     },
   });
-  return proxy as ARIOWithFaucet<ARIOReadable | ARIOWriteable>;
+  return proxy as ARIOWithFaucet<AoARIORead | AoARIOWrite>;
 }
 
 export class ARIOTokenFaucet implements TokenFaucet {

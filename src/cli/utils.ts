@@ -65,7 +65,6 @@ import {
   RedelegateStakeCLIOptions,
   TransferCLIOptions,
   UpdateGatewaySettingsCLIOptions,
-  WalletCLIOptions,
   WriteActionCLIOptions,
 } from './types.js';
 
@@ -276,18 +275,40 @@ export function formatMARIOToARIOWithCommas(value: mARIOToken): string {
   return formatARIOWithCommas(value.toARIO());
 }
 
-/** helper to get address from --address option first, then check wallet options  */
+/**
+ * Resolve the wallet address from CLI options. Priority order:
+ *   1. `--address <addr>` — used verbatim.
+ *   2. `--wallet-file <path-to-keypair.json>` — derive the Solana pubkey
+ *      from the keypair file (last 32 bytes of the 64-byte secret-key array
+ *      are the public key; base58-encode them).
+ *
+ * Returns `undefined` when neither is set. Use
+ * `requiredAddressFromOptions` for callers that must have an address.
+ */
 export function addressFromOptions<O extends AddressCLIOptions>(
   options: O,
 ): string | undefined {
   if (options.address !== undefined) {
     return options.address;
   }
-  const signer = contractSignerFromOptions(options);
-  if (signer !== undefined) {
-    return signer.signerAddress;
+  if (options.walletFile !== undefined) {
+    try {
+      const raw = readFileSync(options.walletFile, 'utf-8');
+      const bytes = new Uint8Array(JSON.parse(raw));
+      // Solana keypair JSON files are a 64-byte Uint8Array: first 32 bytes
+      // are the seed/secret, last 32 bytes are the Ed25519 public key.
+      if (bytes.length !== 64) {
+        throw new Error(
+          `Wallet file is ${bytes.length} bytes — expected 64-byte Solana keypair JSON`,
+        );
+      }
+      return bs58.encode(bytes.slice(32));
+    } catch (err) {
+      throw new Error(
+        `Failed to read Solana pubkey from --wallet-file '${options.walletFile}': ${(err as Error).message}`,
+      );
+    }
   }
-
   return undefined;
 }
 
@@ -714,25 +735,6 @@ export function requiredPositiveIntegerFromOptions<O extends GlobalCLIOptions>(
   return value;
 }
 
-export function getANTStateFromOptions(
-  options: ANTStateCLIOptions,
-): SpawnANTState {
-  return initANTStateForAddress({
-    owner: requiredAddressFromOptions(options),
-    targetId: options.target,
-    controllers: options.controllers,
-    description: options.description,
-    ticker: options.ticker,
-    name: options.name,
-    keywords: options.keywords,
-    logo: options.logo,
-    ttlSeconds:
-      options.ttlSeconds !== undefined
-        ? +options.ttlSeconds
-        : defaultTtlSecondsCLI,
-  });
-}
-
 /**
  * Spawn a fresh ANT on Solana from CLI options.
  *
@@ -741,10 +743,9 @@ export function getANTStateFromOptions(
  * `ario_ant::initialize` into a single transaction. The signer's address
  * becomes the ANT owner on chain — no separate `--address` is required.
  *
- * Maps the CLI's AO-shaped options (`--name`, `--ticker`, `--description`,
+ * Maps the user-facing options (`--name`, `--ticker`, `--description`,
  * `--keywords`, `--logo`, `--target` for the @ record tx id) onto the Solana
- * `InitializeAntParams` payload. AO-only state fields like `controllers` and
- * `balances` are intentionally dropped — they don't exist on Solana.
+ * `InitializeAntParams` payload.
  */
 export async function spawnSolanaANTFromOptions(
   options: ANTStateCLIOptions,
@@ -789,9 +790,7 @@ export async function spawnSolanaANTFromOptions(
       description: options.description,
       keywords: options.keywords,
       logo: options.logo,
-      // `--target` is the AO convention for the @ record's tx id (see
-      // initANTStateForAddress). Reuse it on Solana so the CLI surface stays
-      // identical between backends.
+      // `--target` carries the @ record's tx id for the initial record.
       transactionId: (options as any).target,
     },
     ...((options as any).antProgramId

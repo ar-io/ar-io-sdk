@@ -13,27 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ArconnectSigner,
-  ArweaveSigner,
-  EthereumSigner,
-  InjectedEthereumSigner,
-  Signer,
-} from '@dha-team/arbundles';
-import {
-  dryrun,
-  message,
-  monitor,
-  result,
-  results,
-  spawn,
-  unmonitor,
-} from '@permaweb/aoconnect';
-import Arweave from 'arweave';
-
-import { SpawnANTState } from './ant.js';
 import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
-import { AoSigner } from './token.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -41,26 +21,6 @@ export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
 export type ProcessId = string;
-export type OptionalArweave<T = NonNullable<unknown>> = {
-  arweave?: Arweave;
-} & T;
-export type OptionalPaymentUrl<T = NonNullable<unknown>> = {
-  paymentUrl?: string;
-} & T;
-// TODO: TurboArNSSigner could be simply `Signer` but we need to implement each message signing method for signing headers.
-export type TurboArNSSigner =
-  | EthereumSigner
-  | InjectedEthereumSigner
-  | ArweaveSigner
-  | ArconnectSigner
-  | Window['arweaveWallet'];
-export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
-export type WithSigner<T = NonNullable<unknown>> = {
-  signer: ContractSigner;
-} & T; // TODO: optionally allow JWK in place of signer
-export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner | undefined;
-} & T;
 
 export type ReadParameters<Input> = {
   functionName: string;
@@ -73,10 +33,11 @@ export type WriteOptions<K extends string = string, T = unknown> = {
   onSigningProgress?: (name: K, payload: T) => void;
 };
 
-export type WriteParameters<Input> = WithSigner<
-  Required<ReadParameters<Input>>
->;
-
+/**
+ * Result envelope shared with the legacy AO message-pump shape. Solana
+ * transactions surface their signature via `id` and may include a typed
+ * `result` payload for handlers that return structured data.
+ */
 export type AoMessageResult<
   T = Record<string, string | number | boolean | null>,
 > = {
@@ -142,22 +103,12 @@ export interface HTTPClient {
   }): Promise<K>;
 }
 
-export interface AoClient {
-  result: typeof result;
-  results: typeof results;
-  message: typeof message;
-  spawn: typeof spawn;
-  monitor: typeof monitor;
-  unmonitor: typeof unmonitor;
-  dryrun: typeof dryrun;
-}
-
 export type SpawnAntProgressEvent = {
   'spawning-ant': {
     moduleId: string;
     antRegistryId: string;
     version: string | undefined;
-    state: SpawnANTState | undefined;
+    state: unknown;
   };
   'verifying-state': {
     processId: ProcessId;
@@ -220,25 +171,6 @@ export type SetPrimaryNameProgressEvents = {
   };
 };
 
-export interface AOContract {
-  read<K>({
-    tags,
-    retries,
-  }: {
-    tags?: { name: string; value: string }[];
-    retries?: number;
-  }): Promise<K>;
-  send<K>({
-    tags,
-    data,
-    signer,
-  }: {
-    tags: { name: string; value: string }[];
-    data: string | undefined;
-    signer: AoSigner;
-  }): Promise<{ id: string; result?: K }>;
-}
-
 /** utility type to ensure WriteOptions are appended to each parameter set */
 export type AoWriteAction<
   P,
@@ -246,20 +178,6 @@ export type AoWriteAction<
   K extends string = string,
   L = unknown,
 > = (params: P, options?: WriteOptions<K, L>) => Promise<R>;
-
-// the following are from @permaweb/aoconnect which does not export these types directly
-export type DryRunResult = {
-  Output: any;
-  Messages: any[];
-  Spawns: any[];
-  Error?: any;
-};
-export type MessageResult = {
-  Output: any;
-  Messages: any[];
-  Spawns: any[];
-  Error?: any;
-};
 
 export type JSONValue =
   | string

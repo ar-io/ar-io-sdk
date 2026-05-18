@@ -143,7 +143,6 @@ export async function listArNSRecordsForAddress(o: PaginationCLIOptions) {
   const names = await readARIOFromOptions(o).getArNSRecordsForAddress({
     ...paginationParams,
     address,
-    antRegistryProcessId: o.antRegistryProcessId,
   });
   return names.items.length ? names : { message: 'No names found' };
 }

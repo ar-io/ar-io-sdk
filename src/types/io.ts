@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AOProcess } from '../common/index.js';
-import { validateArweaveId } from '../utils/arweave.js';
 import {
   AoCreatePrimaryNameRequest,
   AoMessageResult,
@@ -74,12 +72,6 @@ export type PaginationResult<T> = {
 export type ProcessIdConfig = {
   processId?: string;
 };
-
-export type ProcessConfig = {
-  process?: AOProcess;
-};
-
-export type ProcessConfiguration = ProcessConfig | ProcessIdConfig;
 
 export type EpochTimestampInput = {
   timestamp: Timestamp;
@@ -660,7 +652,6 @@ export interface ArNSNameResolver {
 }
 
 export interface AoARIORead extends ArNSNameResolver {
-  process: AOProcess;
   getInfo(): Promise<{
     Ticker: string;
     Name: string;
@@ -861,23 +852,6 @@ export interface AoARIOWrite extends AoARIORead {
 }
 
 // Type-guard functions
-export function isProcessConfiguration(
-  config: object | undefined,
-): config is Required<ProcessConfiguration> & Record<string, never> {
-  return config !== undefined && 'process' in config;
-}
-
-export function isProcessIdConfiguration(
-  config: object | undefined,
-): config is Required<ProcessIdConfig> & Record<string, never> {
-  return (
-    config !== undefined &&
-    'processId' in config &&
-    typeof config.processId === 'string' &&
-    validateArweaveId(config.processId) === true
-  );
-}
-
 export function isLeasedArNSRecord(
   record: AoArNSNameData,
 ): record is AoArNSLeaseData {

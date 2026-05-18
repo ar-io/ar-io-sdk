@@ -13,13 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-export {
-  ArweaveSigner,
-  ArconnectSigner,
-  InjectedEthereumSigner,
-  EthereumSigner,
-} from '@dha-team/arbundles';
-
 export * from '../types/index.js';
 export * from '../common/index.js';
 export * from '../constants.js';

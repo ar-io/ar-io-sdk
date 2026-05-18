@@ -57,9 +57,7 @@ export class ANT {
   static init(config: ANTConfig): Promise<AoANTRead | AoANTWrite> {
     return (async () => {
       const { SolanaANTReadable } = await import('../solana/ant-readable.js');
-      const { SolanaANTWriteable } = await import(
-        '../solana/ant-writeable.js'
-      );
+      const { SolanaANTWriteable } = await import('../solana/ant-writeable.js');
       // ADR-016 / BD-100: when no explicit `antProgramId` is passed,
       // resolve it from the asset's `ANT Program` Attributes-plugin entry.
       // Without this auto-detection, third-party (BYO-ANT) assets would
@@ -69,9 +67,7 @@ export class ANT {
         const { fetchAntProgramFromAsset } = await import(
           '../solana/mpl-core.js'
         );
-        const { ARIO_ANT_PROGRAM_ID } = await import(
-          '../solana/constants.js'
-        );
+        const { ARIO_ANT_PROGRAM_ID } = await import('../solana/constants.js');
         const { address } = await import('@solana/kit');
         const detected = await fetchAntProgramFromAsset(
           config.rpc,
