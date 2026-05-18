@@ -1,4 +1,5 @@
-import { ARIO, ARIOToken, mARIOToken } from "@ar.io/sdk/web";
+import { ARIO, ARIOToken, mARIOToken } from "@ar.io/sdk";
+import { createSolanaRpc } from "@solana/kit";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,7 +11,9 @@ import "./App.css";
 import { useArNSRecords } from "./hooks/useArNS";
 import { useGatewayDelegations, useGateways } from "./hooks/useGatewayRegistry";
 
-const ario = ARIO.testnet();
+const ario = ARIO.init({
+  rpc: createSolanaRpc("https://api.mainnet-beta.solana.com"),
+});
 
 function App() {
   const [balance, setBalance] = useState<number | null>(null);
