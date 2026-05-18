@@ -43,8 +43,8 @@ export const ArweaveTxIdSchema = z
     message: 'Must be an Arweave Transaction ID',
   });
 
-export const AOAddressSchema = z.string({
-  description: 'AO Address',
+export const WalletAddressSchema = z.string({
+  description: 'Wallet address (Solana base58 pubkey)',
 });
 
 export const IntegerStringSchema = z
@@ -79,7 +79,9 @@ export const AntRecordSchema = z.object({
     .describe('Storage protocol: 0 = Arweave, 1 = IPFS')
     .default(0),
   priority: z.number().optional(),
-  owner: AOAddressSchema.describe('The owner address of the record').optional(),
+  owner: WalletAddressSchema.describe(
+    'The owner address of the record',
+  ).optional(),
   displayName: z
     .string()
     .max(61)
@@ -106,10 +108,10 @@ export type SortedANTRecords = Record<string, SortedANTRecord>;
 
 export const AntRecordsSchema = z.record(z.string(), AntRecordSchema);
 export const AntControllersSchema = z.array(
-  AOAddressSchema.describe('Controller address'),
+  WalletAddressSchema.describe('Controller address'),
 );
 export const AntBalancesSchema = z.record(
-  AOAddressSchema.describe('Holder address'),
+  WalletAddressSchema.describe('Holder address'),
   z.number(),
 );
 
@@ -124,7 +126,7 @@ export const AntStateSchema = z.object({
       'The number of decimal places to use for the ANT. Defaults to 0 if not set representing whole numbers.',
     )
     .min(0, { message: 'Denomination must be a non-negative number' }),
-  Owner: AOAddressSchema.describe('The Owners address.'),
+  Owner: WalletAddressSchema.describe('The Owners address.'),
   Controllers: AntControllersSchema.describe(
     'Controllers of the ANT who have administrative privileges.',
   ),
@@ -149,7 +151,7 @@ export const SpawnANTStateSchema = z.object({
   ticker: z.string().describe('The ticker symbol for the ANT.'),
   description: z.string().describe('The description for the ANT.'),
   keywords: AntKeywordsSchema.describe('The keywords for the ANT.'),
-  owner: AOAddressSchema.describe('The Owners address.'),
+  owner: WalletAddressSchema.describe('The Owners address.'),
   controllers: AntControllersSchema.describe(
     'Controllers of the ANT who have administrative privileges.',
   ),
