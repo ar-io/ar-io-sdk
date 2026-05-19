@@ -1,3 +1,10 @@
+# [4.0.0-solana.13](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.12...v4.0.0-solana.13) (2026-05-19)
+
+
+### Bug Fixes
+
+* **package:** add default export conditions for sdk entrypoints ([980cbcf](https://github.com/ar-io/ar-io-sdk/commit/980cbcfc7c476a1d3c8764aedc1acbfa6019b28b))
+
 # [4.0.0-solana.12](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.11...v4.0.0-solana.12) (2026-05-15)
 
 
