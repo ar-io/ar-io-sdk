@@ -90,7 +90,13 @@ await ario.buyRecord({
       "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
       "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
       "operatorStake": 250000000000,
+      "totalDelegatedStake": 0,
       "settings": {
+        "allowDelegatedStaking": true,
+        "allowedDelegates": [],
+        "autoStake": false,
+        "delegateRewardShareRatio": 10,
+        "minDelegatedStake": 100000000,
         "fqdn": "ar-io.dev",
         "label": "ar.io Test",
         "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
@@ -99,28 +105,33 @@ await ario.buyRecord({
         "protocol": "https"
       },
       "startTimestamp": 1720720621424,
+      "endTimestamp": 0,
       "stats": {
+        "passedConsecutiveEpochs": 30,
         "failedConsecutiveEpochs": 0,
-        "passedEpochCount": 30,
-        "submittedEpochCount": 30,
         "totalEpochCount": 31,
-        "totalEpochsPrescribedCount": 31
+        "passedEpochCount": 30,
+        "failedEpochCount": 1,
+        "observedEpochCount": 30,
+        "prescribedEpochCount": 31
       },
       "status": "joined",
-      "vaults": {},
       "weights": {
-        "compositeWeight": 0.97688888893556,
-        "gatewayPerformanceRatio": 1,
+        "stakeWeight": 5.02400000024,
         "tenureWeight": 0.19444444444444,
+        "gatewayPerformanceRatio": 1,
+        "observerPerformanceRatio": 1,
+        "gatewayRewardRatioWeight": 1,
         "observerRewardRatioWeight": 1,
-        "normalizedCompositeWeight": 0.19247316211083,
-        "stakeWeight": 5.02400000024
+        "compositeWeight": 0.97688888893556,
+        "normalizedCompositeWeight": 0.19247316211083
       }
     }
   ],
   "hasMore": true,
   "nextCursor": "-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA",
   "totalItems": 316,
+  "limit": 100,
   "sortBy": "startTimestamp",
   "sortOrder": "desc"
 }
@@ -633,7 +644,13 @@ const gateway = await ario.getGateway({
 {
   "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
   "operatorStake": 250000000000,
+  "totalDelegatedStake": 0,
   "settings": {
+    "allowDelegatedStaking": true,
+    "allowedDelegates": [],
+    "autoStake": false,
+    "delegateRewardShareRatio": 10,
+    "minDelegatedStake": 100000000,
     "fqdn": "ar-io.dev",
     "label": "ar.io Test",
     "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
@@ -642,22 +659,26 @@ const gateway = await ario.getGateway({
     "protocol": "https"
   },
   "startTimestamp": 1720720620813,
+  "endTimestamp": 0,
   "stats": {
+    "passedConsecutiveEpochs": 30,
     "failedConsecutiveEpochs": 0,
-    "passedEpochCount": 30,
-    "submittedEpochCount": 30,
     "totalEpochCount": 31,
-    "totalEpochsPrescribedCount": 31
+    "passedEpochCount": 30,
+    "failedEpochCount": 1,
+    "observedEpochCount": 30,
+    "prescribedEpochCount": 31
   },
   "status": "joined",
-  "vaults": {},
   "weights": {
-    "compositeWeight": 0.97688888893556,
-    "gatewayPerformanceRatio": 1,
+    "stakeWeight": 5.02400000024,
     "tenureWeight": 0.19444444444444,
+    "gatewayPerformanceRatio": 1,
+    "observerPerformanceRatio": 1,
+    "gatewayRewardRatioWeight": 1,
     "observerRewardRatioWeight": 1,
-    "normalizedCompositeWeight": 0.19247316211083,
-    "stakeWeight": 5.02400000024
+    "compositeWeight": 0.97688888893556,
+    "normalizedCompositeWeight": 0.19247316211083
   }
 }
 ```
@@ -689,7 +710,13 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
       "gatewayAddress": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
       "observerAddress": "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs",
       "operatorStake": 250000000000,
+      "totalDelegatedStake": 0,
       "settings": {
+        "allowDelegatedStaking": true,
+        "allowedDelegates": [],
+        "autoStake": false,
+        "delegateRewardShareRatio": 10,
+        "minDelegatedStake": 100000000,
         "fqdn": "ar-io.dev",
         "label": "ar.io Test",
         "note": "Test Gateway operated by PDS for the ar.io ecosystem.",
@@ -698,28 +725,33 @@ Available `sortBy` options are any of the keys on the gateway object, e.g. `oper
         "protocol": "https"
       },
       "startTimestamp": 1720720620813,
+      "endTimestamp": 0,
       "stats": {
+        "passedConsecutiveEpochs": 30,
         "failedConsecutiveEpochs": 0,
-        "passedEpochCount": 30,
-        "submittedEpochCount": 30,
         "totalEpochCount": 31,
-        "totalEpochsPrescribedCount": 31
+        "passedEpochCount": 30,
+        "failedEpochCount": 1,
+        "observedEpochCount": 30,
+        "prescribedEpochCount": 31
       },
       "status": "joined",
-      "vaults": {},
       "weights": {
-        "compositeWeight": 0.97688888893556,
-        "gatewayPerformanceRatio": 1,
+        "stakeWeight": 5.02400000024,
         "tenureWeight": 0.19444444444444,
+        "gatewayPerformanceRatio": 1,
+        "observerPerformanceRatio": 1,
+        "gatewayRewardRatioWeight": 1,
         "observerRewardRatioWeight": 1,
-        "normalizedCompositeWeight": 0.19247316211083,
-        "stakeWeight": 5.02400000024
+        "compositeWeight": 0.97688888893556,
+        "normalizedCompositeWeight": 0.19247316211083
       }
     }
   ],
   "hasMore": true,
   "nextCursor": "-4xgjroXENKYhTWqrBo57HQwvDL51mMdfsdsxJy6Y2Z_sA",
   "totalItems": 316,
+  "limit": 100,
   "sortBy": "operatorStake",
   "sortOrder": "desc"
 }
@@ -1283,13 +1315,12 @@ const record = await ario.resolveArNSName({ name: "ardrive" });
 
 ```json
 {
+  "name": "ardrive",
   "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
   "txId": "kvhEUsIY5bXe0Wu2-YUFz20O078uYFzmQIO-7brv8qw",
   "type": "lease",
-  "recordIndex": 0,
-  "undernameLimit": 100,
-  "owner": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
-  "name": "ardrive"
+  "ttlSeconds": 3600,
+  "undernameLimit": 100
 }
 ```
 
@@ -1307,13 +1338,12 @@ const record = await ario.resolveArNSName({ name: "logo_ardrive" });
 
 ```json
 {
+  "name": "ardrive",
   "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
   "txId": "kvhEUsIY5bXe0Wu2-YUFz20O078uYFzmQIO-7brv8qw",
   "type": "lease",
-  "recordIndex": 1,
-  "undernameLimit": 100,
-  "owner": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
-  "name": "ardrive"
+  "ttlSeconds": 3600,
+  "undernameLimit": 100
 }
 ```
 
@@ -1400,10 +1430,11 @@ const record = await ario.getArNSRecord({ name: "ardrive" });
 ```json
 {
   "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
-  "endTimestamp": 1752256702026,
   "startTimestamp": 1720720819969,
+  "endTimestamp": 1752256702026,
   "type": "lease",
-  "undernameLimit": 100
+  "undernameLimit": 100,
+  "purchasePrice": 75541282285
 }
 ```
 
@@ -1609,19 +1640,14 @@ const costDetails = await ario.getCostDetails({
 
 ```json
 {
-  "tokenCost": 2384252273,
-  "fundingPlan": {
-    "address": "t4Xr0_J4Iurt7caNST02cMotaz2FIbWQ4Kbj616RHl3",
-    "balance": 0,
-    "stakes": {
-      "Rc80LG6h27Y3p9TN6J5hwDeG5M51cu671YwZpU9uAVE": {
-        "vaults": [],
-        "delegatedStake": 2384252273
-      }
-    },
-    "shortfall": 0
-  },
-  "discounts": []
+  "tokenCost": 1907401818,
+  "discounts": [
+    {
+      "name": "Gateway Operator",
+      "discountTotal": 476850455,
+      "multiplier": 0.8
+    }
+  ]
 }
 ```
 
@@ -1666,21 +1692,15 @@ const returnedNames = await ario.getArNSReturnedNames({
   "items": [
     {
       "name": "permalink",
-      "endTimestamp": 1730985241349,
       "startTimestamp": 1729775641349,
-      "baseFee": 250000000,
-      "demandFactor": 1.05256,
+      "endTimestamp": 1730985241349,
       "initiator": "GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc",
-      "settings": {
-        "durationMs": 1209600000,
-        "decayRate": 0.000000000016847809193121693,
-        "scalingExponent": 190,
-        "startPriceMultiplier": 50
-      }
+      "premiumMultiplier": 50
     }
   ],
   "hasMore": false,
   "totalItems": 1,
+  "limit": 100,
   "sortBy": "endTimestamp",
   "sortOrder": "asc"
 }
@@ -1703,17 +1723,10 @@ const returnedName = await ario.getArNSReturnedName({ name: "permalink" });
 ```json
 {
   "name": "permalink",
-  "endTimestamp": 1730985241349,
   "startTimestamp": 1729775641349,
-  "baseFee": 250000000,
-  "demandFactor": 1.05256,
+  "endTimestamp": 1730985241349,
   "initiator": "GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc",
-  "settings": {
-    "durationMs": 1209600000,
-    "decayRate": 0.000000000016847809193121693,
-    "scalingExponent": 190,
-    "startPriceMultiplier": 50
-  }
+  "premiumMultiplier": 50
 }
 ```
 
@@ -1736,10 +1749,10 @@ const epoch = await ario.getCurrentEpoch();
 ```json
 {
   "epochIndex": 0,
+  "startHeight": 0,
   "startTimestamp": 1720720621424,
   "endTimestamp": 1752256702026,
-  "startHeight": 1350700,
-  "distributionTimestamp": 1711122739,
+  "distributionTimestamp": 1752256702026,
   "observations": {
     "failureSummaries": {
       "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
@@ -1756,21 +1769,28 @@ const epoch = await ario.getCurrentEpoch();
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "stake": 10000000000,
-      "start": 1292450,
+      "startTimestamp": 1720720621424,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
       "gatewayPerformanceRatio": 1,
+      "observerPerformanceRatio": 1,
+      "gatewayRewardRatioWeight": 1,
       "observerRewardRatioWeight": 1,
       "compositeWeight": 0.4494598765432099,
       "normalizedCompositeWeight": 0.002057032496835938
     }
   ],
   "distributions": {
-    "distributedTimestamp": 1711122739,
+    "totalEligibleGateways": 1,
     "totalEligibleRewards": 100000000,
-    "rewards": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
-    }
+    "totalEligibleObserverReward": 100000000,
+    "totalEligibleGatewayReward": 100000000
+  },
+  "arnsStats": {
+    "totalReturnedNames": 0,
+    "totalActiveNames": 0,
+    "totalGracePeriodNames": 0,
+    "totalReservedNames": 0
   }
 }
 ```
@@ -1792,9 +1812,9 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
 ```json
 {
   "epochIndex": 0,
+  "startHeight": 0,
   "startTimestamp": 1720720620813,
   "endTimestamp": 1752256702026,
-  "startHeight": 1350700,
   "distributionTimestamp": 1752256702026,
   "observations": {
     "failureSummaries": {
@@ -1811,11 +1831,13 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
     {
       "gatewayAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
       "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-      "stake": 10000000000, // value in mARIO
+      "stake": 10000000000,
       "startTimestamp": 1720720620813,
       "stakeWeight": 1,
       "tenureWeight": 0.4494598765432099,
       "gatewayPerformanceRatio": 1,
+      "observerPerformanceRatio": 1,
+      "gatewayRewardRatioWeight": 1,
       "observerRewardRatioWeight": 1,
       "compositeWeight": 0.4494598765432099,
       "normalizedCompositeWeight": 0.002057032496835938
@@ -1825,14 +1847,13 @@ const epoch = await ario.getEpoch({ epochIndex: 0 });
     "totalEligibleGateways": 1,
     "totalEligibleRewards": 100000000,
     "totalEligibleObserverReward": 100000000,
-    "totalEligibleGatewayReward": 100000000,
-    "totalDistributedRewards": 100000000,
-    "distributedTimestamp": 1720720621424,
-    "rewards": {
-      "distributed": {
-        "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
-      }
-    }
+    "totalEligibleGatewayReward": 100000000
+  },
+  "arnsStats": {
+    "totalReturnedNames": 0,
+    "totalActiveNames": 0,
+    "totalGracePeriodNames": 0,
+    "totalReservedNames": 0
   }
 }
 ```
@@ -1886,19 +1907,16 @@ const observations = await ario.getObservations();
 
 ```json
 {
-  "0": {
-    "failureSummaries": {
-      "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
-        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA",
-        "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
-      ]
-    },
-    "reports": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
-      "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
-      "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
-      "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
-    }
+  "failureSummaries": {
+    "-Tk2DDk8k4zkwtppp_XFKKI5oUgh6IEHygAoN7mD-w8": [
+      "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA"
+    ]
+  },
+  "reports": {
+    "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": "B6UUjKWjjEWDBvDSMXWNmymfwvgR9EN27z5FTkEVlX4",
+    "Ie2wEEUDKoU26c7IuckHNn3vMFdNQnMvfPBrFzAb3NA": "7tKsiQ2fxv0D8ZVN_QEv29fZ8hwFIgHoEDrpeEG0DIs",
+    "osZP4D9cqeDvbVFBaEfjIxwc1QLIvRxUBRAxDIX9je8": "aatgznEvC_UPcxp1v0uw_RqydhIfKm4wtt1KCpONBB0",
+    "qZ90I67XG68BYIAFVNfm9PUdM7v1XtFTn7u-EOZFAtk": "Bd8SmFK9-ktJRmwIungS8ur6JM-JtpxrvMtjt5JkB1M"
   }
 }
 ```
@@ -1922,20 +1940,7 @@ const distributions = await ario.getDistributions({ epochIndex: 0 });
   "totalEligibleGateways": 1,
   "totalEligibleRewards": 100000000,
   "totalEligibleObserverReward": 100000000,
-  "totalEligibleGatewayReward": 100000000,
-  "totalDistributedRewards": 100000000,
-  "distributedTimestamp": 1720720621424,
-  "rewards": {
-    "eligible": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": {
-        "operatorReward": 100000000,
-        "delegateRewards": {}
-      }
-    },
-    "distributed": {
-      "IPdwa3Mb_9pDD8c2IaJx6aad51Ss-_TfStVwBuhtXMs": 100000000
-    }
-  }
+  "totalEligibleGatewayReward": 100000000
 }
 ```
 
@@ -1977,11 +1982,13 @@ const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
   {
     "gatewayAddress": "BpQlyhREz4lNGS-y3rSS1WxADfxPpAuing9Lgfdrj2U",
     "observerAddress": "2Fk8lCmDegPg6jjprl57-UCpKmNgYiKwyhkU4vMNDnE",
-    "stake": 10000000000, // value in mARIO
-    "start": 1296976,
+    "stake": 10000000000,
+    "startTimestamp": 1720720620813,
     "stakeWeight": 1,
     "tenureWeight": 0.41453703703703704,
     "gatewayPerformanceRatio": 1,
+    "observerPerformanceRatio": 1,
+    "gatewayRewardRatioWeight": 1,
     "observerRewardRatioWeight": 1,
     "compositeWeight": 0.41453703703703704,
     "normalizedCompositeWeight": 0.0018972019546783507
@@ -2017,12 +2024,13 @@ const names = await ario.getPrimaryNames({
   "totalItems": 100,
   "limit": 1,
   "sortBy": "startTimestamp",
-  "cursor": "arns",
+  "nextCursor": "arns",
   "items": [
     {
+      "name": "arns",
       "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
-      "startTimestamp": 1719356032297,
-      "name": "arns"
+      "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+      "startTimestamp": 1719356032297
     }
   ]
 }
@@ -2050,9 +2058,10 @@ const name = await ario.getPrimaryName({
 
 ```json
 {
+  "name": "arns",
   "owner": "HwFceQaMQnOBgKDpnFqCqgwKwEU5LBme1oXRuQOWSRA",
-  "startTimestamp": 1719356032297,
-  "name": "arns"
+  "processId": "bh9l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
+  "startTimestamp": 1719356032297
 }
 ```
 
@@ -2294,11 +2303,42 @@ const info = await ant.getInfo();
 
 ```json
 {
-  "name": "ArDrive",
-  "ticker": "ANT-ARDRIVE",
-  "description": "This is the ANT for the ArDrive decentralized web app.",
-  "keywords": ["File-sharing", "Publishing", "dApp"],
-  "owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ"
+  "Name": "ArDrive",
+  "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "Ticker": "ANT-ARDRIVE",
+  "Total-Supply": "1",
+  "Description": "This is the ANT for the ArDrive decentralized web app.",
+  "Keywords": ["File-sharing", "Publishing", "dApp"],
+  "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
+  "Denomination": "0",
+  "Handlers": [
+    "balance",
+    "balances",
+    "totalSupply",
+    "info",
+    "controllers",
+    "record",
+    "records",
+    "state",
+    "transfer",
+    "addController",
+    "removeController",
+    "setRecord",
+    "removeRecord",
+    "setName",
+    "setTicker",
+    "setDescription",
+    "setKeywords",
+    "setLogo",
+    "initializeState",
+    "releaseName",
+    "reassignName",
+    "approvePrimaryName",
+    "removePrimaryNames",
+    "transferRecordOwnership",
+    "_eval",
+    "_default"
+  ]
 }
 ```
 
@@ -2317,24 +2357,32 @@ const handlers = await ant.getHandlers();
 
 ```json
 [
-  "_eval",
-  "_default",
-  "transfer",
   "balance",
   "balances",
   "totalSupply",
   "info",
-  "addController",
-  "removeController",
   "controllers",
-  "setRecord",
-  "removeRecord",
   "record",
   "records",
+  "state",
+  "transfer",
+  "addController",
+  "removeController",
+  "setRecord",
+  "removeRecord",
   "setName",
   "setTicker",
+  "setDescription",
+  "setKeywords",
+  "setLogo",
   "initializeState",
-  "state"
+  "releaseName",
+  "reassignName",
+  "approvePrimaryName",
+  "removePrimaryNames",
+  "transferRecordOwnership",
+  "_eval",
+  "_default"
 ]
 ```
 
@@ -2353,23 +2401,28 @@ const state = await ant.getState();
 
 ```json
 {
-  "TotalSupply": 1,
-  "Balances": {
-    "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY": 1
-  },
+  "Name": "ar.io Foundation",
+  "Ticker": "ANT-AR-IO",
+  "Description": "A friendly description for this ANT.",
+  "Keywords": ["keyword1", "keyword2", "keyword3"],
+  "Denomination": 0,
+  "Owner": "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY",
   "Controllers": [],
   "Records": {
     "v1-0-0_whitepaper": {
       "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
-      "ttlSeconds": 900
+      "ttlSeconds": 900,
+      "targetProtocol": 0
     },
     "@": {
       "transactionId": "2rMLb2uHAyEt7jSu6bXtKx8e-jOfIf7E-DOgQnm8EtU",
-      "ttlSeconds": 3600
+      "ttlSeconds": 3600,
+      "targetProtocol": 0
     },
     "alice": {
       "transactionId": "kMk95k_3R8x_7d3wB9tEOiL5v6n8QhR_VnFCh3aeE3f",
       "ttlSeconds": 900,
+      "targetProtocol": 0,
       "owner": "alice-wallet-address-123...",
       "displayName": "Alice's Portfolio",
       "logo": "avatar-tx-id-456...",
@@ -2378,17 +2431,16 @@ const state = await ant.getState();
     },
     "whitepaper": {
       "transactionId": "lNjWn3LpyhKC95Kqe-x8X2qgju0j98MhucdDKK85vc4",
-      "ttlSeconds": 900
+      "ttlSeconds": 900,
+      "targetProtocol": 0
     }
   },
-  "Initialized": true,
-  "Ticker": "ANT-AR-IO",
-  "Description": "A friendly description for this ANT.",
-  "Keywords": ["keyword1", "keyword2", "keyword3"],
+  "Balances": {
+    "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY": 1
+  },
   "Logo": "Sie_26dvgyok0PZD_-iQAFOhOd5YxDTkczOLoqTTL_A",
-  "Denomination": 0,
-  "Name": "ar.io Foundation",
-  "Owner": "98O1_xqDLrBKRfQPWjF5p7xZ4Jx6GM8P5PeJn26xwUY"
+  "TotalSupply": 1,
+  "Initialized": true
 }
 ```
 
@@ -2477,24 +2529,32 @@ const records = await ant.getRecords();
 {
   "@": {
     "transactionId": "UyC5P5qKPZaltMmmZAWdakhlDXsBF6qmyrbWYFchRTk",
-    "ttlSeconds": 3600
+    "ttlSeconds": 3600,
+    "targetProtocol": 0,
+    "index": 0
   },
   "alice": {
     "transactionId": "kMk95k_3R8x_7d3wB9tEOiL5v6n8QhR_VnFCh3aeE3f",
     "ttlSeconds": 900,
+    "targetProtocol": 0,
     "owner": "alice-wallet-address-123...",
     "displayName": "Alice's Portfolio",
     "logo": "avatar-tx-id-456...",
     "description": "Personal portfolio and blog",
-    "keywords": ["portfolio", "personal", "blog"]
+    "keywords": ["portfolio", "personal", "blog"],
+    "index": 1
   },
   "zed": {
     "transactionId": "-k7t8xMoB8hW482609Z9F4bTFMC3MnuW8bTvTyT8pFI",
-    "ttlSeconds": 900
+    "ttlSeconds": 900,
+    "targetProtocol": 0,
+    "index": 2
   },
   "ardrive": {
     "transactionId": "-cucucachoodwedwedoiwepodiwpodiwpoidpwoiedp",
-    "ttlSeconds": 900
+    "ttlSeconds": 900,
+    "targetProtocol": 0,
+    "index": 3
   }
 }
 ```
@@ -2516,6 +2576,7 @@ const record = await ant.getRecord({ undername: "dapp" });
 {
   "transactionId": "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM",
   "ttlSeconds": 900,
+  "targetProtocol": 0,
   "owner": "alice-wallet-address-123...",
   "displayName": "Alice's Site",
   "logo": "avatar-tx-id-456...",
