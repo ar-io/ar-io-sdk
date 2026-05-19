@@ -27,23 +27,28 @@
   "exports": {
     ".": {
       "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js"
+      "import": "./lib/esm/node/index.js",
+      "default": "./lib/esm/node/index.js"
     },
     "./node": {
       "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js"
+      "import": "./lib/esm/node/index.js",
+      "default": "./lib/esm/node/index.js"
     },
     "./web": {
       "types": "./lib/types/web/index.d.ts",
-      "import": "./lib/esm/web/index.js"
+      "import": "./lib/esm/web/index.js",
+      "default": "./lib/esm/web/index.js"
     },
     "./solana": {
       "types": "./lib/types/solana/index.d.ts",
-      "import": "./lib/esm/solana/index.js"
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
     },
     "./solana/generated": {
       "types": "./lib/types/solana/generated/index.d.ts",
-      "import": "./lib/esm/solana/generated/index.js"
+      "import": "./lib/esm/solana/generated/index.js",
+      "default": "./lib/esm/solana/generated/index.js"
     }
   },
   "bin": {
