@@ -235,15 +235,28 @@ const info = await ario.getInfo();
 
 ```json
 {
-  "Name": "ARIO",
+  "Name": "AR.IO",
   "Ticker": "ARIO",
-  "Owner": "QGWqtJdLLgm2ehFWiiPzMaoFLD50CnGuzZIPEdoDRGQ",
+  "Logo": "",
   "Denomination": 6,
-  "Handlers": ["_eval", "_default_"], // full list of handlers, useful for debugging
-  "LastCreatedEpochIndex": 31, // epoch index of the last tick
-  "LastDistributedEpochIndex": 31 // epoch index of the last distribution
+  "Handlers": [],
+  "LastCreatedEpochIndex": 0,
+  "LastDistributedEpochIndex": 0,
+  "totalSupply": 1000000000000000,
+  "protocolBalance": 0,
+  "epochSettings": {
+    "durationMs": 86400000,
+    "prescribedNameCount": 25,
+    "maxObservers": 50
+  }
 }
 ```
+
+> **Note**: `Handlers`, `LastCreatedEpochIndex`, and `LastDistributedEpochIndex`
+> are placeholders on Solana (returned for backwards-compatible field shape
+> with consumer code). `totalSupply` / `protocolBalance` are live reads from
+> the `ArioConfig` PDA; `epochSettings` is live from the `EpochSettings`
+> PDA. See `src/solana/io-readable.ts` for the exact projection.
 
 </details>
 
