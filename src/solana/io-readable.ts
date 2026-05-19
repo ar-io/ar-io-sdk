@@ -68,6 +68,8 @@ import type {
   EpochInput,
   EpochObservationData,
   EpochSettings,
+  FundFrom,
+  FundingPlan,
   Gateway,
   GatewayDelegateWithAddress,
   GatewayRegistrySettings,
@@ -803,32 +805,58 @@ export class SolanaARIOReadable {
     return paginate(items, params);
   }
 
+  /**
+   * Returns every delegation a wallet currently has, covering both halves
+   * of the `Delegation` union:
+   *
+   * - `type: 'stake'` — active `Delegation` PDAs (filtered by delegator at
+   *   memcmp offset 40 = 8 disc + 32 gateway).
+   * - `type: 'vault'` — pending delegate-stake withdrawals: `Withdrawal`
+   *   PDAs filtered by owner at memcmp offset 8 (= 8 disc), then narrowed
+   *   client-side to `isDelegate: true`. Operator-stake withdrawals are
+   *   excluded — those are surfaced via `getWithdrawals` /
+   *   `getGatewayVaults`.
+   *
+   * Both queries run in parallel; consumers see a single merged result
+   * matching the cross-backend interface contract.
+   */
   async getDelegations(
     params: PaginationParams<Delegation> & { address: WalletAddress },
   ): Promise<PaginationResult<Delegation>> {
-    const delegator = address(params.address);
-    // Filter delegations by delegator pubkey at offset 40 (8 disc + 32 gateway)
-    const accounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      DELEGATION_DISCRIMINATOR,
-      [
-        {
-          memcmp: {
-            offset: 40n,
-            bytes: delegator as string,
-            encoding: 'base58',
-          },
-        },
-      ],
-    );
+    const owner = address(params.address);
 
-    const decoded: Array<{
+    const [delegationAccounts, withdrawalAccounts] = await Promise.all([
+      // Active delegations — `Delegation` PDA layout:
+      // disc(8) + gateway(32) + delegator(32) + ... — delegator at offset 40.
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        DELEGATION_DISCRIMINATOR,
+        [
+          {
+            memcmp: { offset: 40n, bytes: owner as string, encoding: 'base58' },
+          },
+        ],
+      ),
+      // Pending vault delegations — `Withdrawal` PDA layout:
+      // disc(8) + owner(32) + withdrawal_id(8) + gateway(32) + ... — owner at offset 8.
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        WITHDRAWAL_DISCRIMINATOR,
+        [
+          {
+            memcmp: { offset: 8n, bytes: owner as string, encoding: 'base58' },
+          },
+        ],
+      ),
+    ]);
+
+    const decodedDelegations: Array<{
       pubkey: string;
       del: ReturnType<typeof deserializeDelegation>;
     }> = [];
-    for (const { pubkey, data } of accounts) {
+    for (const { pubkey, data } of delegationAccounts) {
       try {
-        decoded.push({
+        decodedDelegations.push({
           pubkey: pubkey as string,
           del: deserializeDelegation(data),
         });
@@ -840,22 +868,46 @@ export class SolanaARIOReadable {
     // Batch-fetch each referenced gateway's reward accumulator so we can
     // return live balances. See INVARIANTS.md and `computeLiveDelegationBalance`.
     const accumulators = await this.getGatewayAccumulators(
-      decoded.map(({ del }) => del.gateway),
+      decodedDelegations.map(({ del }) => del.gateway),
     );
 
-    const items: Delegation[] = decoded.map(({ pubkey, del }) => ({
-      type: 'stake' as const,
-      gatewayAddress: del.gateway,
-      delegationId: pubkey,
-      startTimestamp: secToMs(del.startTimestamp),
-      balance: computeLiveDelegationBalance({
-        delegatedStake: del.delegatedStake,
-        rewardDebt: del.rewardDebt,
-        cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+    const stakeItems: Delegation[] = decodedDelegations.map(
+      ({ pubkey, del }) => ({
+        type: 'stake' as const,
+        gatewayAddress: del.gateway,
+        delegationId: pubkey,
+        startTimestamp: secToMs(del.startTimestamp),
+        balance: computeLiveDelegationBalance({
+          delegatedStake: del.delegatedStake,
+          rewardDebt: del.rewardDebt,
+          cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+        }),
       }),
-    }));
+    );
 
-    return paginate(items, params);
+    const vaultItems: Delegation[] = [];
+    for (const { pubkey, data } of withdrawalAccounts) {
+      try {
+        const w = deserializeWithdrawal(data);
+        // Delegate-stake decreases only. Operator-stake withdrawals (the
+        // operator's own decreaseOperatorStake calls) belong on
+        // `getWithdrawals` / `getGatewayVaults`, not `getDelegations`.
+        if (!w.isDelegate) continue;
+        vaultItems.push({
+          type: 'vault' as const,
+          gatewayAddress: w.gateway,
+          delegationId: pubkey as string,
+          vaultId: w.vaultId,
+          balance: w.balance,
+          startTimestamp: secToMs(w.startTimestamp),
+          endTimestamp: secToMs(w.endTimestamp),
+        });
+      } catch {
+        // Skip malformed
+      }
+    }
+
+    return paginate([...stakeItems, ...vaultItems], params);
   }
 
   async getAllowedDelegates(
@@ -1639,10 +1691,132 @@ export class SolanaARIOReadable {
       (sum, d) => sum + d.discountTotal,
       0,
     );
+    const finalCost = tokenCost - totalDiscount;
+
+    // Project Solana state into the public-facing `FundingPlan` shape when
+    // the caller asks about a specific funding source for a specific wallet.
+    // (`fromAddress` is required — we can't enumerate funding sources for
+    // an unknown wallet; without `fundFrom` we don't know what to budget
+    // against.) The internal `funding-plan.ts` `FundingPlan` is a
+    // separate, instruction-building plan — keep them distinct.
+    let fundingPlan: FundingPlan | undefined;
+    if (params.fromAddress && params.fundFrom !== undefined) {
+      fundingPlan = await this.buildPublicFundingPlan({
+        fromAddress: params.fromAddress,
+        fundFrom: params.fundFrom,
+        cost: finalCost,
+      });
+    }
 
     return {
-      tokenCost: tokenCost - totalDiscount,
+      tokenCost: finalCost,
       discounts,
+      ...(fundingPlan ? { fundingPlan } : {}),
+    };
+  }
+
+  /**
+   * Project Solana on-chain state into the cross-backend `FundingPlan`
+   * shape consumed by UI flows like "how short are you on this purchase,
+   * and from which sources?". Always returns the wallet's `balance` and
+   * full per-gateway `stakes` breakdown (active delegations + pending
+   * delegate-stake withdrawals); `shortfall` is computed against the
+   * specific `fundFrom` semantics.
+   *
+   * Note: the internal `src/solana/funding-plan.ts` `FundingPlan` is a
+   * different type — that's the multi-source instruction-building plan
+   * used by `buyRecord({ fundFrom: 'any' })`. The two share a concept but
+   * not a shape; the public type here is what consumer UIs see.
+   */
+  private async buildPublicFundingPlan({
+    fromAddress,
+    fundFrom,
+    cost,
+  }: {
+    fromAddress: WalletAddress;
+    fundFrom: FundFrom;
+    cost: number;
+  }): Promise<FundingPlan> {
+    // Pull balance + full delegation list (stake + vault) in parallel.
+    // Limit is intentionally large — the public FundingPlan reports the
+    // *entire* per-gateway breakdown, not a pagination window.
+    const [balance, delegations] = await Promise.all([
+      this.getBalance({ address: fromAddress }),
+      this.getDelegations({ address: fromAddress, limit: 10_000 }),
+    ]);
+
+    const stakes: Record<
+      WalletAddress,
+      {
+        vaults: Record<string, number>[];
+        delegatedStake: number;
+      }
+    > = {};
+    for (const d of delegations.items) {
+      const gateway = d.gatewayAddress;
+      if (!stakes[gateway]) {
+        stakes[gateway] = { vaults: [], delegatedStake: 0 };
+      }
+      if (d.type === 'stake') {
+        stakes[gateway].delegatedStake = d.balance;
+      } else {
+        // `Record<string, number>[]` per-vault entries — AO-era shape we
+        // keep for cross-backend compatibility.
+        stakes[gateway].vaults.push({ [d.vaultId]: d.balance });
+      }
+    }
+
+    const sumDelegated = Object.values(stakes).reduce(
+      (sum, g) => sum + g.delegatedStake,
+      0,
+    );
+    const sumVaulted = Object.values(stakes).reduce(
+      (sum, g) =>
+        sum +
+        g.vaults.reduce(
+          (vsum, v) =>
+            vsum + Object.values(v).reduce((a: number, b) => a + b, 0),
+          0,
+        ),
+      0,
+    );
+
+    // Compute shortfall against the *eligible* pool for the chosen
+    // `fundFrom`. `turbo` and `plan` are special: turbo is paid in
+    // off-chain credits (no mARIO shortfall meaningful here), and plan
+    // is caller-supplied (caller did their own arithmetic).
+    let eligible: number;
+    switch (fundFrom) {
+      case 'balance':
+        eligible = balance;
+        break;
+      case 'stakes':
+        eligible = sumDelegated;
+        break;
+      case 'withdrawal':
+        eligible = sumVaulted;
+        break;
+      case 'any':
+        eligible = balance + sumDelegated + sumVaulted;
+        break;
+      case 'turbo':
+      case 'plan':
+        eligible = Number.MAX_SAFE_INTEGER;
+        break;
+      default: {
+        // Exhaustiveness check — surface a missed FundFrom variant at
+        // type-check time, not at runtime.
+        const _exhaustive: never = fundFrom;
+        eligible = 0;
+        void _exhaustive;
+      }
+    }
+
+    return {
+      address: fromAddress,
+      balance,
+      stakes,
+      shortfall: Math.max(0, cost - eligible),
     };
   }
 

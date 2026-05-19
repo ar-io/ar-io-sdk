@@ -939,32 +939,20 @@ makeCommand<ProcessIdCLIOptions>({
 makeCommand<
   ProcessIdWriteActionCLIOptions & {
     target?: string;
-    removeControllers?: boolean;
   }
 >({
   name: 'transfer-ant-ownership',
-  description: 'Transfer ownership of an ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.target,
-    optionMap.removeControllers,
-    ...writeActionOptions,
-  ],
+  description:
+    'Transfer ownership of an ANT process. Ex-controllers are always cleared (Solana ACL semantics — see ANTWrite.transfer JSDoc).',
+  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
   action: async (options) => {
     const target = requiredStringFromOptions(options, 'target');
-    const removeControllers =
-      options.removeControllers !== undefined
-        ? options.removeControllers
-        : true;
     await assertConfirmationPrompt(
-      `Are you sure you want to transfer ANT ownership to ${target}${removeControllers ? ' (controllers will be removed)' : ' (controllers will be retained)'}?`,
+      `Are you sure you want to transfer ANT ownership to ${target}? Existing controllers will be removed.`,
       options,
     );
     return (await writeANTFromOptions(options)).transfer(
-      {
-        target,
-        removeControllers,
-      },
+      { target },
       customTagsFromOptions(options),
     );
   },

@@ -285,9 +285,18 @@ export interface ANTRead {
 }
 
 export interface ANTWrite extends ANTRead {
+  /**
+   * Transfer ANT ownership to `target`.
+   *
+   * Note: ex-controllers are always cleared as part of the transfer. The
+   * Solana `ario-ant` contract clears `AntControllers` via inline reconcile,
+   * and the wrapped CPI also clears each ex-controller's paginated ACL
+   * entry in the same tx. Skipping cleanup would leave stale "I control
+   * this ANT" entries visible to frontends. This was an opt-in flag in
+   * the AO era; on Solana it is intrinsic to the transfer flow.
+   */
   transfer: WriteAction<{
     target: WalletAddress;
-    removeControllers?: boolean;
   }>;
   addController: WriteAction<{ controller: WalletAddress }>;
   removeController: WriteAction<{ controller: WalletAddress }>;
