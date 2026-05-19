@@ -242,7 +242,7 @@ export type ANTInfo = z.infer<typeof AntInfoSchema>;
  * @param state {object}
  * @returns {boolean}
  */
-export function isAoANTState(state: object): state is ANTState {
+export function isANTState(state: object): state is ANTState {
   return AntStateSchema.safeParse(state).success;
 }
 
@@ -300,8 +300,14 @@ export interface ANTWrite extends ANTRead {
   }>;
   addController: WriteAction<{ controller: WalletAddress }>;
   removeController: WriteAction<{ controller: WalletAddress }>;
-  /** @deprecated Use setUndernameRecord instead for undernames, and setBaseNameRecord instead for the top level name (e.g. "@") */
-  setRecord: WriteAction<ANTSetUndernameRecordParams>;
+  /**
+   * @deprecated Use `setUndernameRecord` for undernames and
+   * `setBaseNameRecord` for the top-level name (`"@"`). This bridge
+   * accepts either shape so existing callers continue to type-check.
+   */
+  setRecord: WriteAction<
+    ANTSetBaseNameRecordParams | ANTSetUndernameRecordParams
+  >;
   /** @deprecated Use removeUndernameRecord instead for undernames */
   removeRecord: WriteAction<{ undername: string }>;
   setBaseNameRecord: WriteAction<ANTSetBaseNameRecordParams>;

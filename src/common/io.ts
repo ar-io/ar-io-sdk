@@ -54,15 +54,18 @@ export type ARIOConfig = {
 export const DEFAULT_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
 export class ARIO {
-  // Overload: with signer -> writeable
+  // Overload: with signer -> writeable. `rpcSubscriptions` is required so
+  // kit's `sendAndConfirmTransaction` can subscribe to the confirmation.
   static init(
     config: ARIOConfig & {
       signer: SolanaSigner;
       rpcSubscriptions: SolanaRpcSubscriptions;
     },
   ): ARIOWrite;
-  // Overload: without signer -> readable
-  static init(config: ARIOConfig): ARIORead;
+  // Overload: read-only — explicitly excludes `signer` so callers can't
+  // pass a write-shaped config and only fail at runtime when
+  // `rpcSubscriptions` is also missing.
+  static init(config: ARIOConfig & { signer?: never }): ARIORead;
   static init(config: ARIOConfig): ARIORead | ARIOWrite {
     if (config.signer) {
       if (!config.rpcSubscriptions) {

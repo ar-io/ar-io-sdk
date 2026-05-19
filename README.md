@@ -425,7 +425,7 @@ documented here for forward-compatibility once it lands:
 ```typescript
 import { ARIO } from "@ar.io/sdk";
 
-const testnet = ARIO.init({ rpc });
+const ario = ARIO.init({ rpc });
 const captchaUrl = await ario.faucet.captchaUrl();
 
 // open the captcha URL in the browser, and listen for the auth token event
@@ -1364,7 +1364,7 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 - `referrer` - _optional_: track purchase referrals for analytics (e.g. `my-app.com`)
 
 ```typescript
-const ario = ARIO.init({ signer });
+const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
 const record = await ario.buyRecord(
   {
     name: "ardrive",
@@ -1402,7 +1402,7 @@ Upgrades an existing leased ArNS record to a permanent ownership. The record mus
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
 ```typescript
-const ario = ARIO.init({ signer });
+const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
 const record = await ario.upgradeRecord(
   {
     name: "ardrive",
@@ -3080,10 +3080,9 @@ const customLogger: ILogger = {
   },
 };
 
-// Use custom logger with any class
-const ario = ARIO.init({ logger: customLogger });
-
-// or set it as the default logger in the entire SDK
+// Set it as the default logger across the entire SDK — every class
+// (ARIO, ANT, ANTRegistry, etc.) will route logs through it. `ARIO.init`
+// does not accept a per-instance logger.
 Logger.default = customLogger;
 ```
 

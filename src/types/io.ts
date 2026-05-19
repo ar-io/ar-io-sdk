@@ -378,10 +378,15 @@ export type UserWithdrawal = AllGatewayVaults & {
 };
 
 // Input types
+//
+// NOTE: `services` is intentionally NOT exposed here even though it lives
+// on the read-side `GatewaySettings`. `SolanaARIOWriteable.joinNetwork`
+// (and `updateGatewaySettings`) do not forward gateway services to the
+// `ario-gar` contract yet — advertising it here would be a silent no-op.
+// Wire it through end-to-end before adding it back.
 export type JoinNetworkParams = Pick<Gateway, 'operatorStake'> &
   Partial<GatewaySettings> & {
     observerAddress?: WalletAddress;
-    services?: GatewayServices;
   };
 
 export type UpdateGatewaySettingsParams = AtLeastOne<
