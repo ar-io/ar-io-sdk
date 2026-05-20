@@ -1,3 +1,18 @@
+# [4.0.0-solana.14](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.13...v4.0.0-solana.14) (2026-05-20)
+
+
+### Bug Fixes
+
+* **coderabbit:** address all 11 review findings ([74c06ca](https://github.com/ar-io/ar-io-sdk/commit/74c06ca46b99c3f546d93b5be760861b36931902))
+* **package:** update package.json types ([2d50249](https://github.com/ar-io/ar-io-sdk/commit/2d502496e4f9f8c6211966792a39370751e34fee))
+* **pkg:** re-export ARIO/ANT/ANTRegistry/types from solana barrel ([a801c86](https://github.com/ar-io/ar-io-sdk/commit/a801c862a016872e332ecbc3baa2ca4c76a26d53))
+* **solana:** honor interface contracts in getDelegations, getCostDetails, transfer ([e0bda92](https://github.com/ar-io/ar-io-sdk/commit/e0bda92af12b67570d7a65d013fe00fd176fba54)), closes [#1](https://github.com/ar-io/ar-io-sdk/issues/1)
+
+
+### Features
+
+* **solana:** finish AO rip — CLI cleanup, types prune, drop aoconnect dep ([488811f](https://github.com/ar-io/ar-io-sdk/commit/488811f9db8de209567dbe5ce407bd926ca70840))
+
 # [4.0.0-solana.13](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.12...v4.0.0-solana.13) (2026-05-19)
 
 
