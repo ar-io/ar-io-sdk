@@ -30,6 +30,11 @@
       "import": "./lib/esm/solana/index.js",
       "default": "./lib/esm/solana/index.js"
     },
+    "./web": {
+      "types": "./lib/types/solana/index.d.ts",
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
+    },
     "./solana": {
       "types": "./lib/types/solana/index.d.ts",
       "import": "./lib/esm/solana/index.js",
