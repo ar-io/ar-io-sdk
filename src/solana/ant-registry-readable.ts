@@ -42,7 +42,7 @@
 import { type Address, type Commitment, address } from '@solana/kit';
 
 import { type ILogger, Logger } from '../common/logger.js';
-import type { AoANTRegistryRead } from '../types/ant-registry.js';
+import type { ANTRegistryRead } from '../types/ant-registry.js';
 import {
   ACL_ROLE_CONTROLLER,
   ACL_ROLE_OWNER,
@@ -68,7 +68,7 @@ export type SolanaANTRegistryConfig = {
   antProgramId?: Address;
 };
 
-export class SolanaANTRegistryReadable implements AoANTRegistryRead {
+export class SolanaANTRegistryReadable implements ANTRegistryRead {
   protected readonly rpc: SolanaRpc;
   protected readonly commitment: Commitment;
   /** Deployed `ario-ant` program id this registry talks to. */

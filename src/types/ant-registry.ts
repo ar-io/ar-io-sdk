@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoMessageResult } from './common.js';
+import { MessageResult } from './common.js';
 
-export interface AoANTRegistryRead {
+export interface ANTRegistryRead {
   accessControlList(params: {
     address: string;
   }): Promise<{ Owned: string[]; Controlled: string[] }>;
@@ -59,6 +59,6 @@ export type AclMaintenanceOp = {
   asset: string;
 };
 
-export interface AoANTRegistryWrite extends AoANTRegistryRead {
-  register(params: { processId: string }): Promise<AoMessageResult>;
+export interface ANTRegistryWrite extends ANTRegistryRead {
+  register(params: { processId: string }): Promise<MessageResult>;
 }

@@ -15,8 +15,6 @@
  */
 import { readFileSync } from 'fs';
 
-import { EthereumSigner } from '@dha-team/arbundles';
-import { connect } from '@permaweb/aoconnect';
 import {
   type KeyPairSigner,
   address,
@@ -24,50 +22,35 @@ import {
   createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from '@solana/kit';
-import { JWKInterface } from 'arweave/node/lib/wallet.js';
 import bs58 from 'bs58';
 import { Command, OptionValues, program } from 'commander';
 import prompts from 'prompts';
 
-import {
-  ANT,
-  ANTRegistry,
-  ANT_REGISTRY_ID,
-  ANT_REGISTRY_TESTNET_ID,
-  AOProcess,
-  ARIO,
-  ARIOToken,
-  ARIO_DEVNET_PROCESS_ID,
-  ARIO_MAINNET_PROCESS_ID,
-  ARIO_TESTNET_PROCESS_ID,
-  AoANTRead,
-  AoANTRegistryRead,
-  AoANTWrite,
-  AoARIORead,
-  AoARIOWrite,
-  AoGetCostDetailsParams,
-  AoRedelegateStakeParams,
-  AoSigner,
-  AoUpdateGatewaySettingsParams,
-  ArweaveSigner,
-  ContractSigner,
+import { ANTRegistry } from '../common/ant-registry.js';
+import { ANT } from '../common/ant.js';
+import { ARIO } from '../common/io.js';
+import { Logger } from '../common/logger.js';
+import type { ANTRegistryRead } from '../types/ant-registry.js';
+import type { ANTRead, ANTWrite } from '../types/ant.js';
+import type { WriteOptions } from '../types/common.js';
+import type {
+  ARIORead,
+  ARIOWrite,
   EpochInput,
   FundFrom,
-  Logger,
+  GetCostDetailsParams,
   PaginationParams,
+  RedelegateStakeParams,
   SortBy,
-  SpawnANTState,
-  WriteOptions,
-  createAoSigner,
-  fromB64Url,
+  UpdateGatewaySettingsParams,
+} from '../types/io.js';
+import {
   fundFromOptions,
-  initANTStateForAddress,
   isValidFundFrom,
   isValidIntent,
-  mARIOToken,
-  sha256B64Url,
   validIntents,
-} from '../node/index.js';
+} from '../types/io.js';
+import { ARIOToken, mARIOToken } from '../types/token.js';
 import { globalOptions } from './options.js';
 import {
   ANTStateCLIOptions,
@@ -82,7 +65,6 @@ import {
   RedelegateStakeCLIOptions,
   TransferCLIOptions,
   UpdateGatewaySettingsCLIOptions,
-  WalletCLIOptions,
   WriteActionCLIOptions,
 } from './types.js';
 
@@ -162,66 +144,6 @@ export function makeCommand<O extends OptionValues = GlobalCLIOptions>({
   return appliedCommand;
 }
 
-export function arioProcessIdFromOptions({
-  arioProcessId,
-  devnet,
-  testnet,
-}: GlobalCLIOptions): string {
-  if (arioProcessId !== undefined) {
-    return arioProcessId;
-  }
-  if (devnet) {
-    return ARIO_DEVNET_PROCESS_ID;
-  }
-  if (testnet) {
-    return ARIO_TESTNET_PROCESS_ID;
-  }
-
-  return ARIO_MAINNET_PROCESS_ID;
-}
-
-export function antRegistryIdFromOptions({
-  antRegistryProcessId,
-  testnet,
-}: GlobalCLIOptions): string {
-  if (antRegistryProcessId !== undefined) {
-    return antRegistryProcessId;
-  }
-  if (testnet) {
-    return ANT_REGISTRY_TESTNET_ID;
-  }
-  return ANT_REGISTRY_ID;
-}
-
-function walletFromOptions({
-  privateKey,
-  walletFile,
-}: WalletCLIOptions): JWKInterface | undefined {
-  if (privateKey !== undefined) {
-    return JSON.parse(privateKey);
-  }
-  if (walletFile !== undefined) {
-    return JSON.parse(readFileSync(walletFile, 'utf-8'));
-  }
-  return undefined;
-}
-
-export function requiredJwkFromOptions(
-  options: WalletCLIOptions,
-): JWKInterface {
-  const jwk = walletFromOptions(options);
-  if (jwk === undefined) {
-    throw new Error(
-      'No JWK provided for signing!\nPlease provide a stringified JWK with `--private-key` or the file path of a jwk.json file with `--wallet-file`',
-    );
-  }
-  return jwk;
-}
-
-export function jwkToAddress(jwk: JWKInterface): string {
-  return sha256B64Url(fromB64Url(jwk.n));
-}
-
 function setLoggerIfDebug(options: GlobalCLIOptions) {
   if (options.debug) {
     Logger.default.setLogLevel('debug');
@@ -233,33 +155,10 @@ export function getLoggerFromOptions(options: GlobalCLIOptions): Logger {
   return Logger.default;
 }
 
-function aoProcessFromOptions(options: GlobalCLIOptions): AOProcess {
-  return new AOProcess({
-    processId: arioProcessIdFromOptions(options),
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: options.cuUrl,
-    }),
-  });
-}
-
-export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
+export function readARIOFromOptions(options: GlobalCLIOptions): ARIORead {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    return ARIO.init({
-      hyperbeamUrl: options.hyperbeamUrl,
-      process: aoProcessFromOptions({
-        cuUrl: 'http://localhost:6363',
-        ...options,
-      }),
-      paymentUrl: options.paymentUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ARIO.init({
-    backend: 'solana',
     rpc: createSolanaRpc(rpcUrl),
     ...(options.coreProgramId
       ? { coreProgramId: address(options.coreProgramId) }
@@ -275,64 +174,15 @@ export function readARIOFromOptions(options: GlobalCLIOptions): AoARIORead {
 
 export async function readANTRegistryFromOptions(
   options: ProcessIdCLIOptions,
-): Promise<AoANTRegistryRead> {
+): Promise<ANTRegistryRead> {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    return ANTRegistry.init({
-      process: aoProcessFromOptions(options),
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTRegistry.init({
-    backend: 'solana',
     rpc: createSolanaRpc(rpcUrl),
     ...(options.antProgramId
       ? { antProgramId: address(options.antProgramId) }
       : {}),
   });
-}
-
-export function contractSignerFromOptions(
-  options: WalletCLIOptions,
-): { signer: ContractSigner; signerAddress: string } | undefined {
-  const wallet = walletFromOptions(options);
-
-  if (wallet === undefined) {
-    return undefined;
-  }
-  const token = options.token ?? 'arweave';
-
-  if (token === 'ethereum') {
-    const signer = new EthereumSigner(wallet as unknown as string);
-    // For EthereumSigner, we need to convert the JWK to a string
-    return { signer, signerAddress: signer.publicKey.toString('hex') };
-  }
-
-  // TODO: Support other wallet types
-  const signer = new ArweaveSigner(wallet);
-  return { signer, signerAddress: jwkToAddress(wallet) };
-}
-
-export function requiredContractSignerFromOptions(options: WalletCLIOptions): {
-  signer: ContractSigner;
-  signerAddress: string;
-} {
-  const contractSigner = contractSignerFromOptions(options);
-  if (contractSigner === undefined) {
-    throw new Error(
-      'No signer provided for signing!\nPlease provide a stringified JWK or Ethereum private key with `--private-key` or the file path of an arweave.jwk.json or eth.private.key.txt file with `--wallet-file`',
-    );
-  }
-  return contractSigner;
-}
-
-export function requiredAoSignerFromOptions(
-  options: WalletCLIOptions,
-): AoSigner {
-  return createAoSigner(requiredContractSignerFromOptions(options).signer);
 }
 
 /** Derive a WS URL from an HTTP/HTTPS RPC URL by swapping the scheme. */
@@ -384,37 +234,20 @@ async function loadSolanaSignerFromOptions(options: {
 }
 
 export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
-  ario: AoARIOWrite;
+  ario: ARIOWrite;
   signerAddress: string;
 }> {
   setLoggerIfDebug(options);
-
-  if (options.ao) {
-    const { signer, signerAddress } =
-      requiredContractSignerFromOptions(options);
-    return {
-      ario: ARIO.init({
-        process: aoProcessFromOptions(options),
-        signer,
-        paymentUrl: options.paymentUrl,
-        hyperbeamUrl: options.hyperbeamUrl,
-      }),
-      signerAddress,
-    };
-  }
-
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   const signer = await loadSolanaSignerFromOptions(options);
 
   return {
     ario: ARIO.init({
-      backend: 'solana',
       rpc: createSolanaRpc(rpcUrl),
       rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
       signer,
-      // Forward program-id overrides to mirror `readARIOFromOptions` so
-      // localnet / devnet writes target the deployed program IDs instead of
-      // silently falling back to the SDK's mainnet defaults.
+      // Forward program-id overrides so localnet / devnet writes target the
+      // deployed program IDs instead of falling back to mainnet defaults.
       ...(options.coreProgramId
         ? { coreProgramId: address(options.coreProgramId) }
         : {}),
@@ -442,18 +275,60 @@ export function formatMARIOToARIOWithCommas(value: mARIOToken): string {
   return formatARIOWithCommas(value.toARIO());
 }
 
-/** helper to get address from --address option first, then check wallet options  */
+/**
+ * Resolve the wallet address from CLI options. Priority order:
+ *   1. `--address <addr>` — used verbatim.
+ *   2. `--wallet-file <path-to-keypair.json>` — derive the Solana pubkey
+ *      from the keypair file (last 32 bytes of the 64-byte secret-key
+ *      array are the public key; base58-encode them).
+ *   3. `--private-key <base58-secret>` — base58-decode the secret, take
+ *      the trailing 32 bytes as the pubkey. Matches the keypair-file
+ *      path; kept aligned with `loadSolanaSignerFromOptions` so cost
+ *      / funding lookups work even when the user authenticates with
+ *      only a private key.
+ *
+ * Returns `undefined` when none of those is set. Use
+ * `requiredAddressFromOptions` for callers that must have an address.
+ */
 export function addressFromOptions<O extends AddressCLIOptions>(
   options: O,
 ): string | undefined {
   if (options.address !== undefined) {
     return options.address;
   }
-  const signer = contractSignerFromOptions(options);
-  if (signer !== undefined) {
-    return signer.signerAddress;
+  if (options.walletFile !== undefined) {
+    try {
+      const raw = readFileSync(options.walletFile, 'utf-8');
+      const bytes = new Uint8Array(JSON.parse(raw));
+      // Solana keypair JSON files are a 64-byte Uint8Array: first 32 bytes
+      // are the seed/secret, last 32 bytes are the Ed25519 public key.
+      if (bytes.length !== 64) {
+        throw new Error(
+          `Wallet file is ${bytes.length} bytes — expected 64-byte Solana keypair JSON`,
+        );
+      }
+      return bs58.encode(bytes.slice(32));
+    } catch (err) {
+      throw new Error(
+        `Failed to read Solana pubkey from --wallet-file '${options.walletFile}': ${(err as Error).message}`,
+      );
+    }
   }
-
+  if (options.privateKey !== undefined) {
+    try {
+      const bytes = bs58.decode(options.privateKey);
+      if (bytes.length !== 64) {
+        throw new Error(
+          `Decoded private key is ${bytes.length} bytes — expected 64 (32-byte secret + 32-byte pubkey)`,
+        );
+      }
+      return bs58.encode(bytes.slice(32));
+    } catch (err) {
+      throw new Error(
+        `Failed to derive Solana pubkey from --private-key: ${(err as Error).message}`,
+      );
+    }
+  }
   return undefined;
 }
 
@@ -564,54 +439,9 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
   };
 }
 
-export function servicesFromOptions(services?: string) {
-  if (services === undefined || services === null || services === '') {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(services);
-
-    // Validate structure
-    if (!parsed.bundlers || !Array.isArray(parsed.bundlers)) {
-      throw new Error('Services must have a "bundlers" array');
-    }
-
-    if (parsed.bundlers.length > 20) {
-      throw new Error('Maximum 20 bundlers allowed');
-    }
-
-    // Validate each bundler
-    for (const bundler of parsed.bundlers) {
-      if (!bundler.fqdn || typeof bundler.fqdn !== 'string') {
-        throw new Error('Each bundler must have a valid "fqdn" string');
-      }
-      if (
-        typeof bundler.port !== 'number' ||
-        bundler.port < 0 ||
-        bundler.port > 65535
-      ) {
-        throw new Error('Each bundler must have a valid "port" (0-65535)');
-      }
-      if (bundler.protocol !== 'https') {
-        throw new Error('Each bundler protocol must be "https"');
-      }
-      if (!bundler.path || typeof bundler.path !== 'string') {
-        throw new Error('Each bundler must have a valid "path" string');
-      }
-    }
-
-    return parsed;
-  } catch (error) {
-    throw new Error(
-      `Invalid services JSON: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-}
-
 export function gatewaySettingsFromOptions(
   options: UpdateGatewaySettingsCLIOptions,
-): AoUpdateGatewaySettingsParams {
+): UpdateGatewaySettingsParams {
   const {
     allowDelegatedStaking,
     autoStake,
@@ -624,7 +454,6 @@ export function gatewaySettingsFromOptions(
     port,
     properties,
     allowedDelegates,
-    services,
   } = options;
   return {
     observerAddress,
@@ -642,7 +471,6 @@ export function gatewaySettingsFromOptions(
     note,
     port: port !== undefined ? +port : undefined,
     properties,
-    services: servicesFromOptions(services as string | undefined),
   };
 }
 
@@ -663,7 +491,7 @@ export function requiredTargetAndQuantityFromOptions(
 
 export function redelegateParamsFromOptions(
   options: RedelegateStakeCLIOptions,
-): AoRedelegateStakeParams & { stakeQty: mARIOToken } {
+): RedelegateStakeParams & { stakeQty: mARIOToken } {
   const { target, arioQuantity: aRIOQuantity } =
     requiredTargetAndQuantityFromOptions(options);
   const source = options.source;
@@ -704,9 +532,9 @@ export async function assertEnoughBalanceForArNSPurchase({
   address,
   costDetailsParams,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   address: string;
-  costDetailsParams: AoGetCostDetailsParams;
+  costDetailsParams: GetCostDetailsParams;
 }) {
   if (costDetailsParams.fundFrom === 'turbo') {
     // TODO: Get turbo balance and assert it is enough -- retain paid-by from balance result and pass to CLI logic
@@ -736,7 +564,7 @@ export async function assertEnoughMARIOBalance({
   ario,
   mARIOQuantity,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   address: string;
   mARIOQuantity: mARIOToken | number;
 }) {
@@ -781,29 +609,11 @@ export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
   return o.processId;
 }
 
-function ANTProcessFromOptions(options: ProcessIdCLIOptions): AOProcess {
-  return new AOProcess({
-    processId: requiredProcessIdFromOptions(options),
-    ao: connect({
-      MODE: 'legacy',
-      CU_URL: options.cuUrl,
-    }),
-  });
-}
-
 export async function readANTFromOptions(
   options: ProcessIdCLIOptions,
-): Promise<AoANTRead> {
-  if (options.ao) {
-    return ANT.init({
-      process: ANTProcessFromOptions(options),
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
+): Promise<ANTRead> {
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANT.init({
-    backend: 'solana',
     processId: requiredProcessIdFromOptions(options),
     rpc: createSolanaRpc(rpcUrl),
     ...(options.antProgramId
@@ -814,22 +624,11 @@ export async function readANTFromOptions(
 
 export async function writeANTFromOptions(
   options: ProcessIdCLIOptions,
-  signer?: ContractSigner,
-): Promise<AoANTWrite> {
-  if (options.ao) {
-    signer ??= requiredContractSignerFromOptions(options).signer;
-    return ANT.init({
-      process: ANTProcessFromOptions(options),
-      signer,
-      hyperbeamUrl: options.hyperbeamUrl,
-    });
-  }
-
+): Promise<ANTWrite> {
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   const kitSigner = await loadSolanaSignerFromOptions(options);
 
   return ANT.init({
-    backend: 'solana',
     processId: requiredProcessIdFromOptions(options),
     rpc: createSolanaRpc(rpcUrl),
     rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
@@ -909,25 +708,6 @@ export function requiredPositiveIntegerFromOptions<O extends GlobalCLIOptions>(
   return value;
 }
 
-export function getANTStateFromOptions(
-  options: ANTStateCLIOptions,
-): SpawnANTState {
-  return initANTStateForAddress({
-    owner: requiredAddressFromOptions(options),
-    targetId: options.target,
-    controllers: options.controllers,
-    description: options.description,
-    ticker: options.ticker,
-    name: options.name,
-    keywords: options.keywords,
-    logo: options.logo,
-    ttlSeconds:
-      options.ttlSeconds !== undefined
-        ? +options.ttlSeconds
-        : defaultTtlSecondsCLI,
-  });
-}
-
 /**
  * Spawn a fresh ANT on Solana from CLI options.
  *
@@ -936,10 +716,9 @@ export function getANTStateFromOptions(
  * `ario_ant::initialize` into a single transaction. The signer's address
  * becomes the ANT owner on chain — no separate `--address` is required.
  *
- * Maps the CLI's AO-shaped options (`--name`, `--ticker`, `--description`,
+ * Maps the user-facing options (`--name`, `--ticker`, `--description`,
  * `--keywords`, `--logo`, `--target` for the @ record tx id) onto the Solana
- * `InitializeAntParams` payload. AO-only state fields like `controllers` and
- * `balances` are intentionally dropped — they don't exist on Solana.
+ * `InitializeAntParams` payload.
  */
 export async function spawnSolanaANTFromOptions(
   options: ANTStateCLIOptions,
@@ -984,9 +763,7 @@ export async function spawnSolanaANTFromOptions(
       description: options.description,
       keywords: options.keywords,
       logo: options.logo,
-      // `--target` is the AO convention for the @ record's tx id (see
-      // initANTStateForAddress). Reuse it on Solana so the CLI surface stays
-      // identical between backends.
+      // `--target` carries the @ record's tx id for the initial record.
       transactionId: (options as any).target,
     },
     ...((options as any).antProgramId

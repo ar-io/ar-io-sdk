@@ -29,34 +29,7 @@ export const optionMap = {
   },
   mainnet: {
     alias: '--mainnet',
-    description: 'Run against the AR.IO mainnet process',
-    type: 'boolean',
-  },
-  testnet: {
-    alias: '--testnet',
-    description: 'Run against the AR.IO testnet process',
-    type: 'boolean',
-  },
-  devnet: {
-    alias: '--dev, --devnet',
-    description: 'Run against the AR.IO devnet process',
-    type: 'boolean',
-  },
-  arioProcessId: {
-    alias: '--ario-process-id <arioProcessId>',
-    description: 'Run against a custom AR.IO process id',
-  },
-  antRegistryProcessId: {
-    alias: '--ant-registry-process-id <antRegistryProcessId>',
-    description: 'Run against a custom ANT registry process id',
-  },
-  hyperbeamUrl: {
-    alias: '--hyperbeam-url <hyperbeamUrl>',
-    description: 'The URL for a custom hyperbeam node',
-  },
-  ao: {
-    alias: '--ao',
-    description: 'Use the legacy AO backend instead of Solana',
+    description: 'Run against AR.IO mainnet (Solana)',
     type: 'boolean',
   },
   rpcUrl: {
@@ -125,14 +98,6 @@ export const optionMap = {
   claimant: {
     alias: '--claimant <pubkey>',
     description: 'Solana pubkey that will receive the ANT on claim.',
-  },
-  cuUrl: {
-    alias: '--cu-url <cuUrl>',
-    description: 'The URL for a custom compute unit',
-  },
-  paymentUrl: {
-    alias: '--payment-url <paymentUrl>',
-    description: 'The URL for a custom turbo payment service',
   },
   processId: {
     alias: '--process-id <processId>',
@@ -210,11 +175,6 @@ export const optionMap = {
     description:
       'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake unless delegating is explicitly disallowed by the gateway',
     type: 'array',
-  },
-  services: {
-    alias: '--services <services>',
-    description:
-      'JSON string of gateway services configuration (e.g., \'{"bundlers":[{"fqdn":"bundler.example.com","port":443,"protocol":"https","path":"/bundler"}]}\')',
   },
   skipConfirmation: {
     alias: '--skip-confirmation',
@@ -395,12 +355,6 @@ export const optionMap = {
       'Whether the vaulted transfer is revokable by the sender. Defaults to false',
     type: 'boolean',
   },
-  removeControllers: {
-    alias: '--remove-controllers',
-    description:
-      'Whether to remove controllers when transferring ANT ownership. Defaults to true',
-    type: 'boolean',
-  },
   lockLengthMs: {
     alias: '--lock-length-ms <lockLengthMs>',
     description: 'The length of time in milliseconds to lock the vault for',
@@ -417,14 +371,10 @@ export const optionMap = {
     alias: '--logo <logo>',
     description: 'The ANT logo',
   },
-  module: {
-    alias: '--module <module>',
-    description: 'The module ID to use for spawning the ANT process',
-  },
   metadataUri: {
     alias: '--metadata-uri <metadataUri>',
     description:
-      'Solana spawn-ant only: URI baked into the Metaplex Core asset (e.g. "ar://<txid>" or "https://<gateway>/raw/<txid>"). Build the JSON with `buildAntMetadata` from `@ar.io/sdk/solana` and upload via Turbo. See sdk/scripts/devnet-validation/populate-ant.ts.',
+      'spawn-ant only: URI baked into the Metaplex Core asset (e.g. "ar://<txid>" or "https://<gateway>/raw/<txid>"). Build the JSON with `buildAntMetadata` from `@ar.io/sdk` and upload via Turbo. See sdk/scripts/devnet-validation/populate-ant.ts.',
   },
   token: {
     alias: '-t, --token <type>',
@@ -439,11 +389,6 @@ export const optionMap = {
   referrer: {
     alias: '--referrer <referrer>',
     description: 'The referrer for ArNS purchase tracking',
-  },
-  reassignAffiliatedNames: {
-    alias: '--reassign-affiliated-names',
-    description: 'Reassign all affiliated names to the new process',
-    type: 'boolean',
   },
   // -----------------------------------------------------------------
   // Prune / cleanup flags (Solana-only — see pruneCommands.ts)
@@ -488,14 +433,8 @@ export const walletOptions = [
 
 export const globalOptions = [
   ...walletOptions,
-  optionMap.devnet,
-  optionMap.testnet,
   optionMap.mainnet,
   optionMap.debug,
-  optionMap.arioProcessId,
-  optionMap.cuUrl,
-  optionMap.hyperbeamUrl,
-  optionMap.ao,
   optionMap.rpcUrl,
   optionMap.antProgramId,
   optionMap.coreProgramId,
@@ -514,7 +453,6 @@ export const arnsPurchaseOptions = [
   optionMap.withdrawalId,
   optionMap.fundingPlanJson,
   optionMap.paidBy,
-  optionMap.paymentUrl,
   optionMap.referrer,
 ];
 
@@ -547,7 +485,6 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
-  optionMap.paymentUrl,
 ];
 
 export const transferOptions = [
@@ -592,7 +529,6 @@ export const updateGatewaySettingsOptions = [
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
-  optionMap.services,
 ];
 
 export const joinNetworkOptions = [
@@ -615,13 +551,8 @@ export const antStateOptions = [
   optionMap.ticker,
   optionMap.name,
   optionMap.description,
-  optionMap.controllers,
   optionMap.ttlSeconds,
   optionMap.logo,
-  optionMap.module,
-  // Required for Solana spawn-ant; ignored by AO. Without this entry,
-  // Commander rejects --metadata-uri as an unknown option even though
-  // spawnSolanaANTFromOptions in utils.ts reads it as `(options as any).metadataUri`.
   optionMap.metadataUri,
 ];
 
@@ -641,13 +572,6 @@ export const setAntBaseNameOptions = [
 export const setAntUndernameOptions = [
   ...setAntBaseNameOptions,
   optionMap.undername,
-];
-
-export const upgradeAntOptions = [
-  optionMap.processId,
-  optionMap.names,
-  optionMap.reassignAffiliatedNames,
-  ...writeActionOptions,
 ];
 
 export const transferRecordOwnershipOptions = [

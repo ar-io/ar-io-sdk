@@ -15,9 +15,9 @@
  */
 import prompts from 'prompts';
 
-import { mARIOToken } from '../../node/index.js';
 import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
-import type { AoStakeDelegation } from '../../types/io.js';
+import type { StakeDelegation } from '../../types/io.js';
+import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
   DecreaseDelegateStakeCLIOptions,
@@ -236,11 +236,6 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
 }
 
 export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
-  if (o.ao) {
-    throw new Error(
-      'claim-withdrawal is only supported on the Solana backend (drop --ao).',
-    );
-  }
   const vaultId = requiredStringFromOptions(o, 'vaultId');
 
   await assertConfirmationPrompt(
@@ -248,9 +243,9 @@ export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  // claimWithdrawal is Solana-only — no AO equivalent exists (see the comment
-  // block in src/types/io.ts above syncAttributes). The `--ao` guard above
-  // narrows us to the Solana path, so the cast is safe at runtime.
+  // claimWithdrawal is Solana-only — surface it through the SolanaARIOWriteable
+  // class rather than the shared ARIOWrite interface (see the comment in
+  // src/types/io.ts above syncAttributes).
   const { ario } = await writeARIOFromOptions(o);
   return (ario as unknown as SolanaARIOWriteable).claimWithdrawal(
     { withdrawalId: vaultId },
@@ -428,7 +423,7 @@ export async function decreaseDelegateStake(
     const delegations = await ario.getDelegations({ address: signerAddr });
     const delegation = delegations.items.find(
       (d) => d.gatewayAddress === target && d.type === 'stake',
-    ) as AoStakeDelegation | undefined;
+    ) as StakeDelegation | undefined;
     if (!delegation) {
       throw new Error(
         `No active delegation found for you on gateway ${target}.`,
@@ -505,7 +500,7 @@ export async function redelegateStake(options: RedelegateStakeCLIOptions) {
     const delegations = await ario.getDelegations({ address: signerAddr });
     const delegation = delegations.items.find(
       (d) => d.gatewayAddress === params.source && d.type === 'stake',
-    ) as AoStakeDelegation | undefined;
+    ) as StakeDelegation | undefined;
     if (!delegation || delegation.balance < params.stakeQty.valueOf()) {
       const available = delegation?.balance ?? 0;
       throw new Error(

@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANT } from '../../common/ant.js';
 import {
-  AoArNSPurchaseParams,
-  AoBuyRecordParams,
-  AoExtendLeaseParams,
-  AoIncreaseUndernameLimitParams,
+  ArNSPurchaseParams,
+  BuyRecordParams,
+  ExtendLeaseParams,
+  IncreaseUndernameLimitParams,
 } from '../../types/io.js';
 import { CLIWriteOptionsFromAoParams } from '../types.js';
 import {
@@ -52,7 +51,7 @@ function coerceFundingPlanSources(
 }
 
 export async function buyRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoBuyRecordParams>,
+  o: CLIWriteOptionsFromAoParams<BuyRecordParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
@@ -83,15 +82,12 @@ export async function buyRecordCLICommand(
       },
     });
 
-    // assert spawn new ant with module id
-    let antSpawnConfirmation = '';
-    if (processId === undefined) {
-      const { moduleId, version } = await ANT.versions.getLatestANTVersion();
-      antSpawnConfirmation = `Note: A new ANT process will be spawned with module ${moduleId} (v${version}) and assigned to this name.`;
-    }
-
     await assertConfirmationPrompt(
-      `Are you sure you want to ${type} the record ${name}? ${antSpawnConfirmation}`,
+      `Are you sure you want to ${type} the record ${name}?${
+        processId === undefined
+          ? ' Note: A new ANT (MPL Core asset) will be spawned and assigned to this name.'
+          : ''
+      }`,
       o,
     );
   }
@@ -117,7 +113,7 @@ export async function buyRecordCLICommand(
 }
 
 export async function upgradeRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const { ario, signerAddress } = await writeARIOFromOptions(o);
@@ -161,7 +157,7 @@ export async function upgradeRecordCLICommand(
 }
 
 export async function extendLeaseCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoExtendLeaseParams>,
+  o: CLIWriteOptionsFromAoParams<ExtendLeaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const years = requiredPositiveIntegerFromOptions(o, 'years');
@@ -213,7 +209,7 @@ export async function extendLeaseCLICommand(
 }
 
 export async function increaseUndernameLimitCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoIncreaseUndernameLimitParams>,
+  o: CLIWriteOptionsFromAoParams<IncreaseUndernameLimitParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const increaseCount = requiredPositiveIntegerFromOptions(o, 'increaseCount');
@@ -262,7 +258,7 @@ export async function increaseUndernameLimitCLICommand(
 }
 
 export async function requestPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
@@ -305,7 +301,7 @@ export async function requestPrimaryNameCLICommand(
 }
 
 export async function setPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
@@ -324,12 +320,11 @@ export async function setPrimaryNameCLICommand(
 
 /**
  * Reconcile the on-chain ANT Attributes plugin (`ArNS Name`, `Type`,
- * `Undername Limit`) with the current `ArnsRecord` state. Permissionless,
- * Solana-only; AO backend will throw with a clear error.
+ * `Undername Limit`) with the current `ArnsRecord` state. Permissionless.
  *
- * Use after a `buy-record` / `reassign-name` where the buyer/recipient was
- * not the ANT NFT holder (the ANT-side trait CPI gets skipped at runtime
- * in that case so the plugin stays empty until the actual holder reconciles).
+ * Use after a `buy-record` where the buyer was not the ANT NFT holder
+ * (the ANT-side trait CPI gets skipped at runtime in that case so the
+ * plugin stays empty until the actual holder reconciles).
  */
 export async function syncAttributesCLICommand(
   o: CLIWriteOptionsFromAoParams<{ name: string }>,

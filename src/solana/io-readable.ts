@@ -1,5 +1,5 @@
 /**
- * Solana implementation of the AoARIORead interface.
+ * Solana implementation of the ARIORead interface.
  *
  * Reads AR.IO protocol state directly from Solana PDAs using RPC,
  * returning the same types that the AO implementation returns.
@@ -45,48 +45,50 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
-  AoPrimaryName,
-  AoPrimaryNameRequest,
-  AoRedelegationFeeInfo,
+  PrimaryName,
+  PrimaryNameRequest,
+  RedelegationFeeInfo,
   WalletAddress,
 } from '../types/common.js';
 import type {
-  AoAddressParams,
-  AoAllDelegates,
-  AoAllGatewayVaults,
-  AoArNSNameData,
-  AoArNSNameDataWithName,
-  AoArNSReservedNameData,
-  AoArNSReservedNameDataWithName,
-  AoBalanceWithAddress,
-  AoDelegation,
-  AoEligibleDistribution,
-  AoEpochData,
-  AoEpochDistributionData,
-  AoEpochObservationData,
-  AoEpochSettings,
-  AoGateway,
-  AoGatewayDelegateWithAddress,
-  AoGatewayRegistrySettings,
-  AoGatewayVault,
-  AoGatewayWeights,
-  AoGatewayWithAddress,
-  AoGetArNSRecordsParams,
-  AoGetCostDetailsParams,
-  AoPaginatedAddressParams,
-  AoRegistrationFees,
-  AoReturnedName,
-  AoTokenCostParams,
-  AoTokenSupplyData,
-  AoUserWithdrawal,
-  AoVaultData,
-  AoWalletVault,
-  AoWeightedObserver,
+  AddressParams,
+  AllDelegates,
+  AllGatewayVaults,
+  ArNSNameData,
+  ArNSNameDataWithName,
+  ArNSReservedNameData,
+  ArNSReservedNameDataWithName,
+  BalanceWithAddress,
   CostDetailsResult,
+  Delegation,
   DemandFactorSettings,
+  EligibleDistribution,
+  EpochData,
+  EpochDistributionData,
   EpochInput,
+  EpochObservationData,
+  EpochSettings,
+  FundFrom,
+  FundingPlan,
+  Gateway,
+  GatewayDelegateWithAddress,
+  GatewayRegistrySettings,
+  GatewayVault,
+  GatewayWeights,
+  GatewayWithAddress,
+  GetArNSRecordsParams,
+  GetCostDetailsParams,
+  PaginatedAddressParams,
   PaginationParams,
   PaginationResult,
+  RegistrationFees,
+  ReturnedName,
+  TokenCostParams,
+  TokenSupplyData,
+  UserWithdrawal,
+  VaultData,
+  WalletVault,
+  WeightedObserver,
 } from '../types/io.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
@@ -201,14 +203,14 @@ function toMsTimestamps<T extends Record<string, unknown>>(obj: T): T {
 /**
  * Drop the SDK-internal extras (`name`, `owner`) and the `processId` re-key
  * that `deserializeArnsRecord` adds, projecting back to the cross-backend
- * `AoArNSNameDataWithName` shape consumers expect.
+ * `ArNSNameDataWithName` shape consumers expect.
  *
  * Timestamps are converted from on-chain seconds to JS milliseconds here
  * (see `toMsTimestamps` above for rationale).
  */
 function arnsRecordToWithName(
   record: ReturnType<typeof deserializeArnsRecord>,
-): AoArNSNameDataWithName {
+): ArNSNameDataWithName {
   return {
     name: record.name,
     processId: record.processId,
@@ -219,7 +221,7 @@ function arnsRecordToWithName(
     ...('endTimestamp' in record
       ? { endTimestamp: secToMs(record.endTimestamp) }
       : {}),
-  } as AoArNSNameDataWithName;
+  } as ArNSNameDataWithName;
 }
 
 function paginate<T>(
@@ -444,7 +446,7 @@ export class SolanaARIOReadable {
     };
   }
 
-  async getTokenSupply(): Promise<AoTokenSupplyData> {
+  async getTokenSupply(): Promise<TokenSupplyData> {
     const [configPda] = await getArioConfigPDA(this.coreProgram);
     const [garSettingsPda] = await getGarSettingsPDA(this.garProgram);
 
@@ -560,8 +562,8 @@ export class SolanaARIOReadable {
    * `owner` (offset 32) and `amount` (offset 64) from each.
    */
   async getBalances(
-    params?: PaginationParams<AoBalanceWithAddress>,
-  ): Promise<PaginationResult<AoBalanceWithAddress>> {
+    params?: PaginationParams<BalanceWithAddress>,
+  ): Promise<PaginationResult<BalanceWithAddress>> {
     const mint = await this.getArioMint();
 
     const filters = [
@@ -585,7 +587,7 @@ export class SolanaARIOReadable {
       pubkey: Address;
     }>;
 
-    const items: AoBalanceWithAddress[] = [];
+    const items: BalanceWithAddress[] = [];
     for (const entry of result) {
       try {
         const data = Buffer.from(entry.account.data[0], 'base64');
@@ -613,7 +615,7 @@ export class SolanaARIOReadable {
   }: {
     address: WalletAddress;
     vaultId: string;
-  }): Promise<AoVaultData> {
+  }): Promise<VaultData> {
     const [pda] = await getVaultPDA(
       address(owner),
       BigInt(vaultId),
@@ -633,14 +635,14 @@ export class SolanaARIOReadable {
   }
 
   async getVaults(
-    params?: PaginationParams<AoWalletVault>,
-  ): Promise<PaginationResult<AoWalletVault>> {
+    params?: PaginationParams<WalletVault>,
+  ): Promise<PaginationResult<WalletVault>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.coreProgram,
       VAULT_DISCRIMINATOR,
     );
 
-    const items: AoWalletVault[] = [];
+    const items: WalletVault[] = [];
     for (const { pubkey, data } of accounts) {
       try {
         const vault = deserializeVault(data);
@@ -664,7 +666,7 @@ export class SolanaARIOReadable {
   // Gateway read methods
   // =========================================
 
-  async getGateway({ address: addr }: AoAddressParams): Promise<AoGateway> {
+  async getGateway({ address: addr }: AddressParams): Promise<Gateway> {
     const [pda] = await getGatewayPDA(address(addr), this.garProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -676,12 +678,12 @@ export class SolanaARIOReadable {
   }
 
   async getGateways(
-    params?: PaginationParams<AoGatewayWithAddress>,
-  ): Promise<PaginationResult<AoGatewayWithAddress>> {
+    params?: PaginationParams<GatewayWithAddress>,
+  ): Promise<PaginationResult<GatewayWithAddress>> {
     const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
     const registryAccount = await this.getAccount(registryPda);
     if (!registryAccount.exists) {
-      return paginate<AoGatewayWithAddress>([], params);
+      return paginate<GatewayWithAddress>([], params);
     }
 
     const registryData = Buffer.from(registryAccount.data);
@@ -707,7 +709,7 @@ export class SolanaARIOReadable {
 
     // Batch fetch gateway PDAs (kit has no hard limit but keep 100-at-a-time
     // for sensible RPC request sizes).
-    const allItems: AoGatewayWithAddress[] = [];
+    const allItems: GatewayWithAddress[] = [];
     for (let i = 0; i < gatewayAddresses.length; i += 100) {
       const batch = gatewayAddresses.slice(i, i + 100);
       const pdas = await Promise.all(
@@ -734,8 +736,8 @@ export class SolanaARIOReadable {
   }
 
   async getGatewayDelegates(
-    params: AoAddressParams & PaginationParams<AoGatewayDelegateWithAddress>,
-  ): Promise<PaginationResult<AoGatewayDelegateWithAddress>> {
+    params: AddressParams & PaginationParams<GatewayDelegateWithAddress>,
+  ): Promise<PaginationResult<GatewayDelegateWithAddress>> {
     const gateway = address(params.address);
     // Filter delegations by gateway pubkey at offset 8 (after discriminator)
     const accounts = await this.getAccountsByDiscriminator(
@@ -754,7 +756,7 @@ export class SolanaARIOReadable {
     const accumulators = await this.getGatewayAccumulators([gateway as string]);
     const cumulative = accumulators.get(gateway as string) ?? 0n;
 
-    const items: AoGatewayDelegateWithAddress[] = [];
+    const items: GatewayDelegateWithAddress[] = [];
     for (const { data } of accounts) {
       try {
         const del = deserializeDelegation(data);
@@ -776,7 +778,7 @@ export class SolanaARIOReadable {
   }
 
   async getGatewayDelegateAllowList(
-    params: AoPaginatedAddressParams,
+    params: PaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>> {
     const gateway = address(params.address);
     // Filter allowlist entries by gateway pubkey at offset 8
@@ -803,32 +805,58 @@ export class SolanaARIOReadable {
     return paginate(items, params);
   }
 
+  /**
+   * Returns every delegation a wallet currently has, covering both halves
+   * of the `Delegation` union:
+   *
+   * - `type: 'stake'` — active `Delegation` PDAs (filtered by delegator at
+   *   memcmp offset 40 = 8 disc + 32 gateway).
+   * - `type: 'vault'` — pending delegate-stake withdrawals: `Withdrawal`
+   *   PDAs filtered by owner at memcmp offset 8 (= 8 disc), then narrowed
+   *   client-side to `isDelegate: true`. Operator-stake withdrawals are
+   *   excluded — those are surfaced via `getWithdrawals` /
+   *   `getGatewayVaults`.
+   *
+   * Both queries run in parallel; consumers see a single merged result
+   * matching the cross-backend interface contract.
+   */
   async getDelegations(
-    params: PaginationParams<AoDelegation> & { address: WalletAddress },
-  ): Promise<PaginationResult<AoDelegation>> {
-    const delegator = address(params.address);
-    // Filter delegations by delegator pubkey at offset 40 (8 disc + 32 gateway)
-    const accounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      DELEGATION_DISCRIMINATOR,
-      [
-        {
-          memcmp: {
-            offset: 40n,
-            bytes: delegator as string,
-            encoding: 'base58',
-          },
-        },
-      ],
-    );
+    params: PaginationParams<Delegation> & { address: WalletAddress },
+  ): Promise<PaginationResult<Delegation>> {
+    const owner = address(params.address);
 
-    const decoded: Array<{
+    const [delegationAccounts, withdrawalAccounts] = await Promise.all([
+      // Active delegations — `Delegation` PDA layout:
+      // disc(8) + gateway(32) + delegator(32) + ... — delegator at offset 40.
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        DELEGATION_DISCRIMINATOR,
+        [
+          {
+            memcmp: { offset: 40n, bytes: owner as string, encoding: 'base58' },
+          },
+        ],
+      ),
+      // Pending vault delegations — `Withdrawal` PDA layout:
+      // disc(8) + owner(32) + withdrawal_id(8) + gateway(32) + ... — owner at offset 8.
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        WITHDRAWAL_DISCRIMINATOR,
+        [
+          {
+            memcmp: { offset: 8n, bytes: owner as string, encoding: 'base58' },
+          },
+        ],
+      ),
+    ]);
+
+    const decodedDelegations: Array<{
       pubkey: string;
       del: ReturnType<typeof deserializeDelegation>;
     }> = [];
-    for (const { pubkey, data } of accounts) {
+    for (const { pubkey, data } of delegationAccounts) {
       try {
-        decoded.push({
+        decodedDelegations.push({
           pubkey: pubkey as string,
           del: deserializeDelegation(data),
         });
@@ -840,33 +868,57 @@ export class SolanaARIOReadable {
     // Batch-fetch each referenced gateway's reward accumulator so we can
     // return live balances. See INVARIANTS.md and `computeLiveDelegationBalance`.
     const accumulators = await this.getGatewayAccumulators(
-      decoded.map(({ del }) => del.gateway),
+      decodedDelegations.map(({ del }) => del.gateway),
     );
 
-    const items: AoDelegation[] = decoded.map(({ pubkey, del }) => ({
-      type: 'stake' as const,
-      gatewayAddress: del.gateway,
-      delegationId: pubkey,
-      startTimestamp: secToMs(del.startTimestamp),
-      balance: computeLiveDelegationBalance({
-        delegatedStake: del.delegatedStake,
-        rewardDebt: del.rewardDebt,
-        cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+    const stakeItems: Delegation[] = decodedDelegations.map(
+      ({ pubkey, del }) => ({
+        type: 'stake' as const,
+        gatewayAddress: del.gateway,
+        delegationId: pubkey,
+        startTimestamp: secToMs(del.startTimestamp),
+        balance: computeLiveDelegationBalance({
+          delegatedStake: del.delegatedStake,
+          rewardDebt: del.rewardDebt,
+          cumulativeRewardPerToken: accumulators.get(del.gateway) ?? 0n,
+        }),
       }),
-    }));
+    );
 
-    return paginate(items, params);
+    const vaultItems: Delegation[] = [];
+    for (const { pubkey, data } of withdrawalAccounts) {
+      try {
+        const w = deserializeWithdrawal(data);
+        // Delegate-stake decreases only. Operator-stake withdrawals (the
+        // operator's own decreaseOperatorStake calls) belong on
+        // `getWithdrawals` / `getGatewayVaults`, not `getDelegations`.
+        if (!w.isDelegate) continue;
+        vaultItems.push({
+          type: 'vault' as const,
+          gatewayAddress: w.gateway,
+          delegationId: pubkey as string,
+          vaultId: w.vaultId,
+          balance: w.balance,
+          startTimestamp: secToMs(w.startTimestamp),
+          endTimestamp: secToMs(w.endTimestamp),
+        });
+      } catch {
+        // Skip malformed
+      }
+    }
+
+    return paginate([...stakeItems, ...vaultItems], params);
   }
 
   async getAllowedDelegates(
-    params: AoPaginatedAddressParams,
+    params: PaginatedAddressParams,
   ): Promise<PaginationResult<WalletAddress>> {
     return this.getGatewayDelegateAllowList(params);
   }
 
   async getGatewayVaults(
-    params: PaginationParams<AoGatewayVault> & { address: WalletAddress },
-  ): Promise<PaginationResult<AoGatewayVault>> {
+    params: PaginationParams<GatewayVault> & { address: WalletAddress },
+  ): Promise<PaginationResult<GatewayVault>> {
     const gateway = address(params.address);
     // Withdrawal: disc(8) + owner(32) + withdrawal_id(8) + gateway(32)
     const accounts = await this.getAccountsByDiscriminator(
@@ -879,7 +931,7 @@ export class SolanaARIOReadable {
       ],
     );
 
-    const items: AoGatewayVault[] = [];
+    const items: GatewayVault[] = [];
     for (const { pubkey, data } of accounts) {
       try {
         const w = deserializeWithdrawal(data);
@@ -911,8 +963,8 @@ export class SolanaARIOReadable {
    * equivalent per-owner read; the AO backend throws.
    */
   async getWithdrawals(
-    params: PaginationParams<AoUserWithdrawal> & { address: WalletAddress },
-  ): Promise<PaginationResult<AoUserWithdrawal>> {
+    params: PaginationParams<UserWithdrawal> & { address: WalletAddress },
+  ): Promise<PaginationResult<UserWithdrawal>> {
     const owner = address(params.address);
     // Withdrawal layout: disc(8) + owner(32) + withdrawal_id(8) + gateway(32).
     // Filter by owner at offset 8 — returns both operator-stake (isDelegate=false)
@@ -927,7 +979,7 @@ export class SolanaARIOReadable {
       ],
     );
 
-    const items: AoUserWithdrawal[] = [];
+    const items: UserWithdrawal[] = [];
     for (const { pubkey, data } of accounts) {
       try {
         const w = deserializeWithdrawal(data);
@@ -952,7 +1004,7 @@ export class SolanaARIOReadable {
   // ArNS read methods
   // =========================================
 
-  async getArNSRecord({ name }: { name: string }): Promise<AoArNSNameData> {
+  async getArNSRecord({ name }: { name: string }): Promise<ArNSNameData> {
     const [pda] = await getArnsRecordPDA(name, this.arnsProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -964,8 +1016,8 @@ export class SolanaARIOReadable {
   }
 
   async getArNSRecords(
-    params?: AoGetArNSRecordsParams,
-  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
+    params?: GetArNSRecordsParams,
+  ): Promise<PaginationResult<ArNSNameDataWithName>> {
     // `processId` is the only filter the AO backend supports today and the
     // only one that maps to a fixed-offset memcmp on `ArnsRecord` (the
     // `ant` field, see `ARNS_RECORD_ANT_OFFSET`). When supplied we
@@ -982,7 +1034,7 @@ export class SolanaARIOReadable {
       ARNS_RECORD_DISCRIMINATOR,
     );
 
-    const items: AoArNSNameDataWithName[] = [];
+    const items: ArNSNameDataWithName[] = [];
     for (const { data } of accounts) {
       try {
         items.push(arnsRecordToWithName(deserializeArnsRecord(data)));
@@ -1004,7 +1056,7 @@ export class SolanaARIOReadable {
    * mints against ≈ 4k records, and rises as the registry grows).
    *
    * The shape mirrors `getArNSRecord` / `getArNSRecords` — same
-   * `AoArNSNameDataWithName` items, no pagination wrapper. Callers
+   * `ArNSNameDataWithName` items, no pagination wrapper. Callers
    * that want pagination should drive it via `getArNSRecords({
    * filters: { processId: mints } })` instead.
    */
@@ -1012,13 +1064,13 @@ export class SolanaARIOReadable {
     mints,
   }: {
     mints: ReadonlyArray<string>;
-  }): Promise<AoArNSNameDataWithName[]> {
+  }): Promise<ArNSNameDataWithName[]> {
     return this.fetchArnsRecordsByAntMints(mints);
   }
 
   private async fetchArnsRecordsByAntMints(
     mints: ReadonlyArray<string>,
-  ): Promise<AoArNSNameDataWithName[]> {
+  ): Promise<ArNSNameDataWithName[]> {
     const unique = Array.from(new Set(mints));
     if (unique.length === 0) return [];
 
@@ -1045,7 +1097,7 @@ export class SolanaARIOReadable {
       ),
     );
 
-    const items: AoArNSNameDataWithName[] = [];
+    const items: ArNSNameDataWithName[] = [];
     const seen = new Set<string>();
     for (const accounts of perMint) {
       for (const { pubkey, data } of accounts) {
@@ -1075,11 +1127,11 @@ export class SolanaARIOReadable {
    * indexes.
    */
   async getArNSRecordsForAddress(
-    params: PaginationParams<AoArNSNameDataWithName> & {
+    params: PaginationParams<ArNSNameDataWithName> & {
       address: WalletAddress;
       antRegistryProcessId?: string;
     },
-  ): Promise<PaginationResult<AoArNSNameDataWithName>> {
+  ): Promise<PaginationResult<ArNSNameDataWithName>> {
     const registry = new SolanaANTRegistryReadable({
       rpc: this.rpc,
       commitment: this.commitment,
@@ -1106,14 +1158,14 @@ export class SolanaARIOReadable {
   }
 
   async getArNSReservedNames(
-    params?: PaginationParams<AoArNSReservedNameDataWithName>,
-  ): Promise<PaginationResult<AoArNSReservedNameDataWithName>> {
+    params?: PaginationParams<ArNSReservedNameDataWithName>,
+  ): Promise<PaginationResult<ArNSReservedNameDataWithName>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.arnsProgram,
       RESERVED_NAME_DISCRIMINATOR,
     );
 
-    const items: AoArNSReservedNameDataWithName[] = [];
+    const items: ArNSReservedNameDataWithName[] = [];
     for (const { data } of accounts) {
       try {
         const reserved = deserializeReservedName(data);
@@ -1137,7 +1189,7 @@ export class SolanaARIOReadable {
     name,
   }: {
     name: string;
-  }): Promise<AoArNSReservedNameData> {
+  }): Promise<ArNSReservedNameData> {
     const [pda] = await getReservedNamePDA(name, this.arnsProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -1154,14 +1206,14 @@ export class SolanaARIOReadable {
   }
 
   async getArNSReturnedNames(
-    params?: PaginationParams<AoReturnedName>,
-  ): Promise<PaginationResult<AoReturnedName>> {
+    params?: PaginationParams<ReturnedName>,
+  ): Promise<PaginationResult<ReturnedName>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.arnsProgram,
       RETURNED_NAME_DISCRIMINATOR,
     );
 
-    const items: AoReturnedName[] = [];
+    const items: ReturnedName[] = [];
     for (const { data } of accounts) {
       try {
         items.push(toMsTimestamps(deserializeReturnedName(data)));
@@ -1177,7 +1229,7 @@ export class SolanaARIOReadable {
     name,
   }: {
     name: string;
-  }): Promise<AoReturnedName> {
+  }): Promise<ReturnedName> {
     const [pda] = await getReturnedNamePDA(name, this.arnsProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -1190,7 +1242,7 @@ export class SolanaARIOReadable {
   // Epoch read methods
   // =========================================
 
-  async getEpochSettings(): Promise<AoEpochSettings> {
+  async getEpochSettings(): Promise<EpochSettings> {
     const [pda] = await getEpochSettingsPDA(this.garProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -1247,19 +1299,19 @@ export class SolanaARIOReadable {
     return deserializeEpoch(Buffer.from(account.data));
   }
 
-  async getEpoch(epoch?: EpochInput): Promise<AoEpochData> {
+  async getEpoch(epoch?: EpochInput): Promise<EpochData> {
     const epochIndex = await this.resolveEpochIndex(epoch);
     const epochData = await this.fetchEpoch(epochIndex);
 
     // Build prescribed observers list (only up to observerCount)
-    const prescribedObservers: AoWeightedObserver[] = [];
+    const prescribedObservers: WeightedObserver[] = [];
     for (let i = 0; i < epochData.observerCount; i++) {
       const observerAddress = epochData.prescribedObservers[i];
       const gatewayAddress = epochData.prescribedObserverGateways[i];
       if (observerAddress === DEFAULT_ADDRESS) continue;
 
       // Try to fetch gateway data for weights
-      let weights: AoGatewayWeights = {
+      let weights: GatewayWeights = {
         stakeWeight: 0,
         tenureWeight: 0,
         gatewayRewardRatioWeight: 0,
@@ -1316,7 +1368,7 @@ export class SolanaARIOReadable {
     const observations = await this.getObservations({ epochIndex });
 
     // Build distribution totals
-    const distributions: AoEpochDistributionData = {
+    const distributions: EpochDistributionData = {
       totalEligibleGateways: epochData.activeGatewayCount,
       totalEligibleRewards: epochData.totalEligibleRewards,
       totalEligibleObserverReward:
@@ -1344,13 +1396,13 @@ export class SolanaARIOReadable {
     };
   }
 
-  async getCurrentEpoch(): Promise<AoEpochData> {
+  async getCurrentEpoch(): Promise<EpochData> {
     return this.getEpoch(undefined);
   }
 
   async getPrescribedObservers(
     epoch?: EpochInput,
-  ): Promise<AoWeightedObserver[]> {
+  ): Promise<WeightedObserver[]> {
     const epochData = await this.getEpoch(epoch);
     return epochData.prescribedObservers;
   }
@@ -1381,7 +1433,7 @@ export class SolanaARIOReadable {
     return names;
   }
 
-  async getObservations(epoch?: EpochInput): Promise<AoEpochObservationData> {
+  async getObservations(epoch?: EpochInput): Promise<EpochObservationData> {
     const epochIndex = await this.resolveEpochIndex(epoch);
 
     // Fetch all Observation accounts for this epoch
@@ -1438,7 +1490,7 @@ export class SolanaARIOReadable {
     return { failureSummaries, reports };
   }
 
-  async getDistributions(epoch?: EpochInput): Promise<AoEpochDistributionData> {
+  async getDistributions(epoch?: EpochInput): Promise<EpochDistributionData> {
     const epochIndex = await this.resolveEpochIndex(epoch);
     const epochData = await this.fetchEpoch(epochIndex);
 
@@ -1454,12 +1506,12 @@ export class SolanaARIOReadable {
 
   async getEligibleEpochRewards(
     epoch?: EpochInput,
-    params?: PaginationParams<AoEligibleDistribution>,
-  ): Promise<PaginationResult<AoEligibleDistribution>> {
+    params?: PaginationParams<EligibleDistribution>,
+  ): Promise<PaginationResult<EligibleDistribution>> {
     const epochIndex = await this.resolveEpochIndex(epoch);
     const epochData = await this.fetchEpoch(epochIndex);
 
-    const items: AoEligibleDistribution[] = [];
+    const items: EligibleDistribution[] = [];
 
     // Each gateway operator gets a gateway reward
     const gatewayAccounts = await this.getAccountsByDiscriminator(
@@ -1512,7 +1564,7 @@ export class SolanaARIOReadable {
    * Mirrors the Rust pricing functions in ario-arns/src/pricing.rs.
    * Uses BigInt for u128-equivalent overflow-safe arithmetic.
    */
-  async getTokenCost(params: AoTokenCostParams): Promise<number> {
+  async getTokenCost(params: TokenCostParams): Promise<number> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
     const dfAccount = await this.getAccount(dfPda);
     if (!dfAccount.exists) throw new Error('DemandFactor account not found');
@@ -1609,7 +1661,7 @@ export class SolanaARIOReadable {
   }
 
   async getCostDetails(
-    params: AoGetCostDetailsParams,
+    params: GetCostDetailsParams,
   ): Promise<CostDetailsResult> {
     const tokenCost = await this.getTokenCost(params);
 
@@ -1639,14 +1691,136 @@ export class SolanaARIOReadable {
       (sum, d) => sum + d.discountTotal,
       0,
     );
+    const finalCost = tokenCost - totalDiscount;
+
+    // Project Solana state into the public-facing `FundingPlan` shape when
+    // the caller asks about a specific funding source for a specific wallet.
+    // (`fromAddress` is required — we can't enumerate funding sources for
+    // an unknown wallet; without `fundFrom` we don't know what to budget
+    // against.) The internal `funding-plan.ts` `FundingPlan` is a
+    // separate, instruction-building plan — keep them distinct.
+    let fundingPlan: FundingPlan | undefined;
+    if (params.fromAddress && params.fundFrom !== undefined) {
+      fundingPlan = await this.buildPublicFundingPlan({
+        fromAddress: params.fromAddress,
+        fundFrom: params.fundFrom,
+        cost: finalCost,
+      });
+    }
 
     return {
-      tokenCost: tokenCost - totalDiscount,
+      tokenCost: finalCost,
       discounts,
+      ...(fundingPlan ? { fundingPlan } : {}),
     };
   }
 
-  async getRegistrationFees(): Promise<AoRegistrationFees> {
+  /**
+   * Project Solana on-chain state into the cross-backend `FundingPlan`
+   * shape consumed by UI flows like "how short are you on this purchase,
+   * and from which sources?". Always returns the wallet's `balance` and
+   * full per-gateway `stakes` breakdown (active delegations + pending
+   * delegate-stake withdrawals); `shortfall` is computed against the
+   * specific `fundFrom` semantics.
+   *
+   * Note: the internal `src/solana/funding-plan.ts` `FundingPlan` is a
+   * different type — that's the multi-source instruction-building plan
+   * used by `buyRecord({ fundFrom: 'any' })`. The two share a concept but
+   * not a shape; the public type here is what consumer UIs see.
+   */
+  private async buildPublicFundingPlan({
+    fromAddress,
+    fundFrom,
+    cost,
+  }: {
+    fromAddress: WalletAddress;
+    fundFrom: FundFrom;
+    cost: number;
+  }): Promise<FundingPlan> {
+    // Pull balance + full delegation list (stake + vault) in parallel.
+    // Limit is intentionally large — the public FundingPlan reports the
+    // *entire* per-gateway breakdown, not a pagination window.
+    const [balance, delegations] = await Promise.all([
+      this.getBalance({ address: fromAddress }),
+      this.getDelegations({ address: fromAddress, limit: 10_000 }),
+    ]);
+
+    const stakes: Record<
+      WalletAddress,
+      {
+        vaults: Record<string, number>[];
+        delegatedStake: number;
+      }
+    > = {};
+    for (const d of delegations.items) {
+      const gateway = d.gatewayAddress;
+      if (!stakes[gateway]) {
+        stakes[gateway] = { vaults: [], delegatedStake: 0 };
+      }
+      if (d.type === 'stake') {
+        stakes[gateway].delegatedStake = d.balance;
+      } else {
+        // `Record<string, number>[]` per-vault entries — AO-era shape we
+        // keep for cross-backend compatibility.
+        stakes[gateway].vaults.push({ [d.vaultId]: d.balance });
+      }
+    }
+
+    const sumDelegated = Object.values(stakes).reduce(
+      (sum, g) => sum + g.delegatedStake,
+      0,
+    );
+    const sumVaulted = Object.values(stakes).reduce(
+      (sum, g) =>
+        sum +
+        g.vaults.reduce(
+          (vsum, v) =>
+            vsum + Object.values(v).reduce((a: number, b) => a + b, 0),
+          0,
+        ),
+      0,
+    );
+
+    // Compute shortfall against the *eligible* pool for the chosen
+    // `fundFrom`. `turbo` and `plan` are special: turbo is paid in
+    // off-chain credits (no mARIO shortfall meaningful here), and plan
+    // is caller-supplied (caller did their own arithmetic).
+    let eligible: number;
+    switch (fundFrom) {
+      case 'balance':
+        eligible = balance;
+        break;
+      case 'stakes':
+        eligible = sumDelegated;
+        break;
+      case 'withdrawal':
+        eligible = sumVaulted;
+        break;
+      case 'any':
+        eligible = balance + sumDelegated + sumVaulted;
+        break;
+      case 'turbo':
+      case 'plan':
+        eligible = Number.MAX_SAFE_INTEGER;
+        break;
+      default: {
+        // Exhaustiveness check — surface a missed FundFrom variant at
+        // type-check time, not at runtime.
+        const _exhaustive: never = fundFrom;
+        eligible = 0;
+        void _exhaustive;
+      }
+    }
+
+    return {
+      address: fromAddress,
+      balance,
+      stakes,
+      shortfall: Math.max(0, cost - eligible),
+    };
+  }
+
+  async getRegistrationFees(): Promise<RegistrationFees> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
     const account = await this.getAccount(dfPda);
     if (!account.exists) {
@@ -1654,7 +1828,7 @@ export class SolanaARIOReadable {
     }
     const df = deserializeDemandFactor(Buffer.from(account.data));
 
-    const result: AoRegistrationFees = {};
+    const result: RegistrationFees = {};
     for (let len = 1; len <= 51; len++) {
       const baseFee = df.fees[len - 1] ?? 0;
       result[len] = {
@@ -1709,9 +1883,9 @@ export class SolanaARIOReadable {
 
   async getPrimaryName(
     params: { address: WalletAddress } | { name: string },
-  ): Promise<AoPrimaryName> {
+  ): Promise<PrimaryName> {
     // On-chain `PrimaryName` stores only {owner, name, set_at}. The ANT mint
-    // that AoPrimaryName.processId expects lives on the matching ArnsRecord
+    // that PrimaryName.processId expects lives on the matching ArnsRecord
     // (looked up by the base name). Both lookup paths below deserialize the
     // on-chain account and then enrich with the ArnsRecord lookup.
     const baseNameOf = (n: string): string => {
@@ -1722,7 +1896,7 @@ export class SolanaARIOReadable {
       owner: string;
       name: string;
       startTimestamp: number;
-    }): Promise<AoPrimaryName> => {
+    }): Promise<PrimaryName> => {
       const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
       return { ...pn, processId: rec.processId };
     };
@@ -1761,7 +1935,7 @@ export class SolanaARIOReadable {
 
   async getPrimaryNameRequest(params: {
     initiator: WalletAddress;
-  }): Promise<AoPrimaryNameRequest> {
+  }): Promise<PrimaryNameRequest> {
     const [pda] = await getPrimaryNameRequestPDA(
       address(params.initiator),
       this.coreProgram,
@@ -1774,14 +1948,14 @@ export class SolanaARIOReadable {
   }
 
   async getPrimaryNameRequests(
-    params?: PaginationParams<AoPrimaryNameRequest>,
-  ): Promise<PaginationResult<AoPrimaryNameRequest>> {
+    params?: PaginationParams<PrimaryNameRequest>,
+  ): Promise<PaginationResult<PrimaryNameRequest>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.coreProgram,
       PRIMARY_NAME_REQUEST_DISCRIMINATOR,
     );
 
-    const items: AoPrimaryNameRequest[] = [];
+    const items: PrimaryNameRequest[] = [];
     for (const { data } of accounts) {
       try {
         items.push(deserializePrimaryNameRequest(data));
@@ -1794,8 +1968,8 @@ export class SolanaARIOReadable {
   }
 
   async getPrimaryNames(
-    params?: PaginationParams<AoPrimaryName>,
-  ): Promise<PaginationResult<AoPrimaryName>> {
+    params?: PaginationParams<PrimaryName>,
+  ): Promise<PaginationResult<PrimaryName>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.coreProgram,
       PRIMARY_NAME_DISCRIMINATOR,
@@ -1809,7 +1983,7 @@ export class SolanaARIOReadable {
       const parts = n.toLowerCase().split('_');
       return parts.length === 2 ? parts[1] : parts[0];
     };
-    const items: AoPrimaryName[] = [];
+    const items: PrimaryName[] = [];
     for (const { data } of accounts) {
       try {
         const pn = deserializePrimaryName(data);
@@ -1829,7 +2003,7 @@ export class SolanaARIOReadable {
 
   async getRedelegationFee(params: {
     address: WalletAddress;
-  }): Promise<AoRedelegationFeeInfo> {
+  }): Promise<RedelegationFeeInfo> {
     const { getRedelegationRecordPDA } = await import('./pda.js');
     const [pda] = await getRedelegationRecordPDA(
       address(params.address),
@@ -1859,7 +2033,7 @@ export class SolanaARIOReadable {
   // Gateway registry settings
   // =========================================
 
-  async getGatewayRegistrySettings(): Promise<AoGatewayRegistrySettings> {
+  async getGatewayRegistrySettings(): Promise<GatewayRegistrySettings> {
     const [pda] = await getGarSettingsPDA(this.garProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
@@ -1873,8 +2047,8 @@ export class SolanaARIOReadable {
   // =========================================
 
   async getAllDelegates(
-    params?: PaginationParams<AoAllDelegates>,
-  ): Promise<PaginationResult<AoAllDelegates>> {
+    params?: PaginationParams<AllDelegates>,
+  ): Promise<PaginationResult<AllDelegates>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.garProgram,
       DELEGATION_DISCRIMINATOR,
@@ -1901,7 +2075,7 @@ export class SolanaARIOReadable {
       decoded.map(({ del }) => del.gateway),
     );
 
-    const items: AoAllDelegates[] = decoded.map(({ pubkey, del }) => ({
+    const items: AllDelegates[] = decoded.map(({ pubkey, del }) => ({
       address: del.delegator,
       gatewayAddress: del.gateway,
       delegatedStake: computeLiveDelegationBalance({
@@ -1918,14 +2092,14 @@ export class SolanaARIOReadable {
   }
 
   async getAllGatewayVaults(
-    params?: PaginationParams<AoAllGatewayVaults>,
-  ): Promise<PaginationResult<AoAllGatewayVaults>> {
+    params?: PaginationParams<AllGatewayVaults>,
+  ): Promise<PaginationResult<AllGatewayVaults>> {
     const accounts = await this.getAccountsByDiscriminator(
       this.garProgram,
       WITHDRAWAL_DISCRIMINATOR,
     );
 
-    const items: AoAllGatewayVaults[] = [];
+    const items: AllGatewayVaults[] = [];
     for (const { pubkey, data } of accounts) {
       try {
         const w = deserializeWithdrawal(data);

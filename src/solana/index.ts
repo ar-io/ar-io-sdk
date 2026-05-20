@@ -39,7 +39,31 @@
  * ```
  */
 
-// ARIO protocol classes
+// Public factory classes — `ARIO.init({ rpc })` / `ANT.init({ ... })` /
+// `ANTRegistry.init({ ... })` are the primary entry points for consumers.
+// `createFaucet` wraps an ARIO instance with the HTTP faucet client.
+export * from '../common/index.js';
+
+// Public types (interfaces, params, pagination, etc.) shared by the SDK
+// surface and the Solana implementation.
+export * from '../types/index.js';
+
+// Public utility helpers (base64, json, schema validators, ANT helpers).
+export * from '../utils/index.js';
+
+// Top-level protocol constants. Explicit named exports to avoid colliding
+// with `./spawn-ant.js`'s `ARIO_LOGO_TX_ID` (different value used by the
+// Solana metadata builder — kept distinct on purpose).
+export {
+  ARWEAVE_TX_REGEX,
+  AR_IO_PROTOCOL,
+  arweaveUri,
+  FQDN_REGEX,
+  MARIO_PER_ARIO,
+} from '../constants.js';
+
+// Solana implementation classes (still exported for advanced/direct usage —
+// the `ARIO` / `ANT` factories above wrap these).
 export { SolanaARIOReadable } from './io-readable.js';
 export { SolanaARIOWriteable } from './io-writeable.js';
 

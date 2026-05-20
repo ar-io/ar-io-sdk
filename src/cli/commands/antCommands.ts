@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 import {
-  AoANTSetBaseNameRecordParams,
-  AoANTSetUndernameRecordParams,
+  ANTSetBaseNameRecordParams,
+  ANTSetUndernameRecordParams,
 } from '../../types/ant.js';
-import { CLIWriteOptionsFromAoAntParams, JsonSerializable } from '../types.js';
+import { CLIWriteOptionsFromAoAntParams } from '../types.js';
 import {
   antRecordMetadataFromOptions,
-  arioProcessIdFromOptions,
   assertConfirmationPrompt,
-  booleanFromOptions,
   customTagsFromOptions,
   defaultTtlSecondsCLI,
-  readARIOFromOptions,
   requiredStringFromOptions,
-  stringArrayFromOptions,
   writeANTFromOptions,
 } from '../utils.js';
 
@@ -42,7 +38,7 @@ function targetProtocolFromOptions(o: Record<string, unknown>): number {
 
 /** @deprecated -- use set-ant-base-name and set-ant-undername */
 export async function setAntRecordCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetUndernameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetUndernameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const undername = requiredStringFromOptions(o, 'undername');
@@ -76,7 +72,7 @@ export async function setAntRecordCLICommand(
 }
 
 export async function setAntBaseNameCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetBaseNameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetBaseNameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const transactionId = requiredStringFromOptions(o, 'transactionId');
@@ -109,7 +105,7 @@ export async function setAntBaseNameCLICommand(
 }
 
 export async function setAntUndernameCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<AoANTSetUndernameRecordParams>,
+  o: CLIWriteOptionsFromAoAntParams<ANTSetUndernameRecordParams>,
 ) {
   const ttlSeconds = +(o.ttlSeconds ?? defaultTtlSecondsCLI);
   const undername = requiredStringFromOptions(o, 'undername');
@@ -166,91 +162,4 @@ export async function transferRecordOwnershipCLICommand(
     { undername, recipient },
     customTagsFromOptions(o),
   );
-}
-
-export async function upgradeAntCLICommand(
-  o: CLIWriteOptionsFromAoAntParams<Record<string, unknown>>,
-): Promise<{ [key: string]: JsonSerializable }> {
-  // Solana: simple per-ANT schema migration (no forking, no name reassignment)
-  if (!o.ao) {
-    const writeAnt = await writeANTFromOptions(o);
-
-    if (!o.skipConfirmation) {
-      await assertConfirmationPrompt(
-        `Migrate ANT to latest schema version?\n` +
-          `ANT: ${writeAnt.processId}`,
-        o,
-      );
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await writeAnt.upgrade();
-    if (!result.needsMigration) {
-      return { message: 'ANT is already at the latest version' };
-    }
-    return { message: 'ANT migrated successfully', txId: String(result.id) };
-  }
-
-  // AO: fork process and reassign names
-  const writeAnt = await writeANTFromOptions(o);
-  const arioProcessId = arioProcessIdFromOptions(o);
-  const ario = readARIOFromOptions(o);
-  const reassignAffiliatedNames = booleanFromOptions(
-    o,
-    'reassignAffiliatedNames',
-  );
-
-  const names = stringArrayFromOptions(o, 'names') || [];
-
-  if (reassignAffiliatedNames) {
-    const allRecords = await ario.getArNSRecords({
-      filters: {
-        processId: writeAnt.processId,
-      },
-    });
-
-    const affiliatedNames = allRecords.items.map((record) => record.name);
-    names.push(...affiliatedNames);
-  }
-
-  if (names.length === 0) {
-    throw new Error('No names to reassign');
-  }
-
-  if (!o.skipConfirmation) {
-    await assertConfirmationPrompt(
-      `Upgrade all names affiliated with this ANT on ARIO process?\n` +
-        `ARIO Process ID: ${arioProcessId}\n` +
-        `ANT Process ID: ${writeAnt.processId}\n` +
-        `Names that will be reassigned (${names.length}): ${names.join(', ')}`,
-      o,
-    );
-  }
-
-  const result = reassignAffiliatedNames
-    ? await (await writeANTFromOptions(o)).upgrade({
-        reassignAffiliatedNames,
-        arioProcessId,
-      })
-    : await (await writeANTFromOptions(o)).upgrade({
-        names,
-        arioProcessId,
-      });
-
-  const serializedFailedReassignedNames: Record<
-    string,
-    { id?: string; error: string }
-  > = {};
-  for (const [name, failure] of Object.entries(result.failedReassignedNames)) {
-    serializedFailedReassignedNames[name] = {
-      id: failure.id,
-      error: failure.error.message,
-    };
-  }
-
-  return {
-    forkedProcessId: result.forkedProcessId,
-    reassignedNames: result.reassignedNames,
-    failedReassignedNames: serializedFailedReassignedNames,
-  };
 }

@@ -18,7 +18,6 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
@@ -26,7 +25,6 @@ import {
   setAntRecordCLICommand,
   setAntUndernameCLICommand,
   transferRecordOwnershipCLICommand,
-  upgradeAntCLICommand,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -129,7 +127,6 @@ import {
   transferOptions,
   transferRecordOwnershipOptions,
   updateGatewaySettingsOptions,
-  upgradeAntOptions,
   vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
@@ -145,20 +142,15 @@ import {
 } from './types.js';
 import {
   applyOptions,
-  arioProcessIdFromOptions,
   assertConfirmationPrompt,
   customTagsFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
-  getANTStateFromOptions,
-  getLoggerFromOptions,
   makeCommand,
   paginationParamsFromOptions,
   readANTFromOptions,
   readARIOFromOptions,
   requiredAddressFromOptions,
-  requiredAoSignerFromOptions,
-  requiredProcessIdFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
@@ -437,11 +429,7 @@ makeCommand({
 makeCommand({
   name: 'list-arns-names-for-address',
   description: 'List all ArNS names for an address',
-  options: [
-    ...paginationOptions,
-    optionMap.address,
-    optionMap.antRegistryProcessId,
-  ],
+  options: [...paginationOptions, optionMap.address],
   action: listArNSRecordsForAddress,
 });
 
@@ -809,7 +797,7 @@ makeCommand({
   name: 'get-ants-for-address',
   description:
     'Get the list of ANTs owned by an address according to the ANT registry',
-  options: [optionMap.address, optionMap.antRegistryProcessId],
+  options: [optionMap.address],
   action: listAntsForAddress,
 });
 
@@ -903,36 +891,18 @@ makeCommand<ProcessIdCLIOptions & { address?: string }>({
 // # Spawn
 makeCommand<ANTStateCLIOptions>({
   name: 'spawn-ant',
-  description: 'Spawn an ANT process',
+  description: 'Spawn an ANT (mints a new MPL Core asset + ario-ant PDAs)',
   options: antStateOptions,
   action: async (options) => {
-    if (options.ao) {
-      const state = getANTStateFromOptions(options);
-      const antProcessId = await spawnANT({
-        state,
-        signer: requiredAoSignerFromOptions(options),
-        logger: getLoggerFromOptions(options),
-        ...(options.module !== undefined ? { module: options.module } : {}),
-      });
-      return {
-        processId: antProcessId,
-        signature: null,
-        state,
-        message: `Spawned ANT process with process ID ${antProcessId}`,
-      };
-    }
-
-    // Solana branch: the signer's pubkey IS the owner — no separate
-    // `--address` is needed (or possible, since the address would be the
-    // signer's pubkey anyway). We pass the raw CLI options through and let
-    // `spawnSolanaANTFromOptions` build the InitializeAntParams payload.
+    // The signer's pubkey IS the ANT owner on Solana — no separate
+    // `--address` flag is needed. Build the InitializeAntParams payload
+    // from CLI flags.
     const { spawnSolanaANTFromOptions } = await import('./utils.js');
     const result = await spawnSolanaANTFromOptions(options);
     return {
       processId: result.processId,
       signature: result.signature,
-      state: null,
-      message: `Spawned Solana ANT (mint=${result.processId})`,
+      message: `Spawned ANT (mint=${result.processId})`,
     };
   },
 });
@@ -969,32 +939,20 @@ makeCommand<ProcessIdCLIOptions>({
 makeCommand<
   ProcessIdWriteActionCLIOptions & {
     target?: string;
-    removeControllers?: boolean;
   }
 >({
   name: 'transfer-ant-ownership',
-  description: 'Transfer ownership of an ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.target,
-    optionMap.removeControllers,
-    ...writeActionOptions,
-  ],
+  description:
+    'Transfer ownership of an ANT process. Ex-controllers are always cleared (Solana ACL semantics — see ANTWrite.transfer JSDoc).',
+  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
   action: async (options) => {
     const target = requiredStringFromOptions(options, 'target');
-    const removeControllers =
-      options.removeControllers !== undefined
-        ? options.removeControllers
-        : true;
     await assertConfirmationPrompt(
-      `Are you sure you want to transfer ANT ownership to ${target}${removeControllers ? ' (controllers will be removed)' : ' (controllers will be retained)'}?`,
+      `Are you sure you want to transfer ANT ownership to ${target}? Existing controllers will be removed.`,
       options,
     );
     return (await writeANTFromOptions(options)).transfer(
-      {
-        target,
-        removeControllers,
-      },
+      { target },
       customTagsFromOptions(options),
     );
   },
@@ -1082,14 +1040,6 @@ makeCommand({
     'Transfer ownership of a specific record (undername) to another address',
   options: transferRecordOwnershipOptions,
   action: transferRecordOwnershipCLICommand,
-});
-
-makeCommand({
-  name: 'upgrade-ant',
-  description:
-    'Upgrade an ANT by forking it to the latest version and reassigning names',
-  options: upgradeAntOptions,
-  action: upgradeAntCLICommand,
 });
 
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
@@ -1199,158 +1149,6 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
       },
       customTagsFromOptions(options),
     );
-  },
-});
-
-// # ARIO Actions
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-  }
->({
-  name: 'release-name',
-  description: 'Release the name of an ANT process',
-  options: [optionMap.processId, optionMap.name, ...writeActionOptions],
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to release the name ${name} back to the protocol?`,
-      options,
-    );
-
-    return (await writeANTFromOptions(options)).releaseName(
-      {
-        name,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-    target?: string;
-  }
->({
-  name: 'reassign-name',
-  description: 'Reassign the name of an ANT process to another ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.name,
-    optionMap.target,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const targetProcess = requiredStringFromOptions(options, 'target');
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to reassign the name ${name} to ANT process ${targetProcess}?`,
-      options,
-    );
-
-    return (await writeANTFromOptions(options)).reassignName(
-      {
-        name,
-        arioProcessId: arioProcessIdFromOptions(options),
-        antProcessId: targetProcess,
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-    target?: string;
-  }
->({
-  name: 'approve-primary-name-request',
-  description: 'Approve a primary name request',
-  options: [
-    optionMap.processId,
-    optionMap.name,
-    optionMap.address,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to approve the primary name request ${name} to ${address}?`,
-      options,
-    );
-
-    return (await writeANTFromOptions(options)).approvePrimaryNameRequest(
-      {
-        name,
-        address,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    names?: string[];
-  }
->({
-  name: 'remove-primary-names',
-  description: 'Remove primary names',
-  options: [optionMap.processId, optionMap.names, ...writeActionOptions],
-  action: async (options) => {
-    const names = requiredStringArrayFromOptions(options, 'names');
-    await assertConfirmationPrompt(
-      `Are you sure you want to remove the primary names ${names}?`,
-      options,
-    );
-
-    return (await writeANTFromOptions(options)).removePrimaryNames(
-      {
-        names,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-// # Utilities
-makeCommand({
-  name: 'write-action',
-  description: 'Send a write action to an AO Process',
-  options: [...writeActionOptions, optionMap.processId],
-  action: async (options) => {
-    const process = new AOProcess({
-      processId: requiredProcessIdFromOptions(options),
-      logger: getLoggerFromOptions(options),
-    });
-    return process.send<AoMessageResult>({
-      tags: customTagsFromOptions(options).tags ?? [],
-      signer: requiredAoSignerFromOptions(options),
-    });
-  },
-});
-
-makeCommand({
-  name: 'read-action',
-  description: 'Send a dry-run read action to an AO Process',
-  options: [optionMap.processId, optionMap.tags],
-  action: async (options) => {
-    const process = new AOProcess({
-      processId: requiredProcessIdFromOptions(options),
-      logger: getLoggerFromOptions(options),
-    });
-    return process.read<AoMessageResult>({
-      tags: customTagsFromOptions(options).tags ?? [],
-    });
   },
 });
 

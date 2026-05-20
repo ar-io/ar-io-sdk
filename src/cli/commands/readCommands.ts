@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import {
-  AoArNSNameDataWithName,
-  AoDelegation,
-  AoGatewayDelegateWithAddress,
-  AoGatewayVault,
-  AoGetCostDetailsParams,
-  AoUserWithdrawal,
+  ArNSNameDataWithName,
+  Delegation,
+  GatewayDelegateWithAddress,
+  GatewayVault,
+  GetCostDetailsParams,
+  UserWithdrawal,
 } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
@@ -75,7 +75,7 @@ export async function getGatewayDelegates(o: AddressCLIOptions) {
     address,
     ...paginationParamsFromOptions<
       AddressCLIOptions,
-      AoGatewayDelegateWithAddress
+      GatewayDelegateWithAddress
     >(o),
   });
 
@@ -90,9 +90,7 @@ export async function getDelegations(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getDelegations({
     address,
-    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoDelegation>(
-      o,
-    ),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, Delegation>(o),
   });
 
   return result.items?.length
@@ -127,9 +125,7 @@ export async function getArNSRecord(o: NameCLIOptions) {
 
 export async function listArNSRecords(o: PaginationCLIOptions) {
   const records = await readARIOFromOptions(o).getArNSRecords(
-    paginationParamsFromOptions<PaginationCLIOptions, AoArNSNameDataWithName>(
-      o,
-    ),
+    paginationParamsFromOptions<PaginationCLIOptions, ArNSNameDataWithName>(o),
   );
   return records.items.length ? records : { message: 'No records found' };
 }
@@ -137,13 +133,12 @@ export async function listArNSRecords(o: PaginationCLIOptions) {
 export async function listArNSRecordsForAddress(o: PaginationCLIOptions) {
   const paginationParams = paginationParamsFromOptions<
     PaginationCLIOptions,
-    AoArNSNameDataWithName
+    ArNSNameDataWithName
   >(o);
   const address = requiredAddressFromOptions(o);
   const names = await readARIOFromOptions(o).getArNSRecordsForAddress({
     ...paginationParams,
     address,
-    antRegistryProcessId: o.antRegistryProcessId,
   });
   return names.items.length ? names : { message: 'No names found' };
 }
@@ -217,7 +212,7 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
 }
 
 export async function getCostDetails(
-  o: GlobalCLIOptions & CLIOptionsFromAoParams<AoGetCostDetailsParams>,
+  o: GlobalCLIOptions & CLIOptionsFromAoParams<GetCostDetailsParams>,
 ) {
   const costDetails = await readARIOFromOptions(o).getCostDetails({
     ...getTokenCostParamsFromOptions(o),
@@ -263,7 +258,7 @@ export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getGatewayVaults({
     address,
-    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoGatewayVault>(
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, GatewayVault>(
       o,
     ),
   });
@@ -291,10 +286,9 @@ export async function getWithdrawals(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getWithdrawals({
     address,
-    ...paginationParamsFromOptions<
-      PaginationAddressCLIOptions,
-      AoUserWithdrawal
-    >(o),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, UserWithdrawal>(
+      o,
+    ),
   });
 
   return result.items?.length

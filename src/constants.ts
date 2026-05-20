@@ -36,32 +36,4 @@ export const FQDN_REGEX = new RegExp(
   '^(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\\.)+[A-Za-z]{1,63}$',
 );
 
-export const ARIO_DEVNET_PROCESS_ID =
-  'GaQrvEMKBpkjofgnBi_B3IgIDmY_XYelVLB6GcRGrHc';
-// backwards compatibility - TODO: remove in v2.0.0
-export const arioDevnetProcessId = ARIO_DEVNET_PROCESS_ID;
-export const ARIO_TESTNET_PROCESS_ID =
-  'agYcCFJtrMG6cqMuZfskIkFTGvUPddICmtQSBIoPdiA';
-
-export const ARIO_MAINNET_PROCESS_ID =
-  'qNvAoz0TgcH7DMg8BCVn8jF32QH5L6T29VjHxhHqqGE';
-
-export const ANT_REGISTRY_TESTNET_ID =
-  'RR0vheYqtsKuJCWh6xj0beE35tjaEug5cejMw9n2aa8';
-export const ANT_REGISTRY_ID = 'i_le_yKKPVstLTDSmkHRqf-wYphMnwB9OhleiTgMkWc';
-
-export const MARKETPLACE_CONTRACT_ID =
-  'wPh88ziUF4meLpHfffmgdA6IFtzmXHgdeg-epzBjkao';
 export const MARIO_PER_ARIO = 1_000_000;
-
-/**
- * @deprecated - use ANT.versions.getLatestANTVersion() to get latest ANT module
- **/
-export const AOS_MODULE_ID = 'nEjlSFA_8narJlVHApbczDPkMc9znSqYtqtf1iOdoxM';
-/**
- * @deprecated - use ANT.versions.getLatestANTVersion() to get latest ANT module
- **/
-export const ANT_LUA_ID = 'sOW9Sdm1yoPRrzerC5iu1nsupp4e6I-HnJyYVHzvzQo';
-export const AO_AUTHORITY = 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY';
-export const DEFAULT_SCHEDULER_ID =
-  '_GQ33BkPtZrqxA84vM8Zk-N2aO0toNNu_C-l-rawrBA';

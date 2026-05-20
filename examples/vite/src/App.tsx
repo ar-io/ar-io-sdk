@@ -1,4 +1,5 @@
-import { ARIO, ARIOToken, mARIOToken } from "@ar.io/sdk/web";
+import { ARIO, ARIOToken, mARIOToken } from "@ar.io/sdk";
+import { createSolanaRpc } from "@solana/kit";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,7 +11,17 @@ import "./App.css";
 import { useArNSRecords } from "./hooks/useArNS";
 import { useGatewayDelegations, useGateways } from "./hooks/useGatewayRegistry";
 
-const ario = ARIO.testnet();
+// Devnet RPC — matches the faucet flow further down in this file, which
+// is intended to claim test tokens (tARIO). Switch to
+// `https://api.mainnet-beta.solana.com` when running against the live
+// AR.IO deployment.
+//
+// TODO(faucet): the `ario.faucet.*` calls below depend on the AR.IO faucet
+// backend being ported to Solana. Until that ships, the "Request 100
+// tARIO" button will fail at runtime even on devnet.
+const ario = ARIO.init({
+  rpc: createSolanaRpc("https://api.devnet.solana.com"),
+});
 
 function App() {
   const [balance, setBalance] = useState<number | null>(null);

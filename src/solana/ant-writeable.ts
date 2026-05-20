@@ -51,12 +51,12 @@ import {
   getTransferRecordInstructionAsync,
 } from '@ar.io/solana-contracts/ant';
 import type { ILogger } from '../common/logger.js';
-import type { AoANTRegistryRead } from '../types/ant-registry.js';
+import type { ANTRegistryRead } from '../types/ant-registry.js';
 import type {
-  AoANTSetBaseNameRecordParams,
-  AoANTSetUndernameRecordParams,
+  ANTSetBaseNameRecordParams,
+  ANTSetUndernameRecordParams,
 } from '../types/ant.js';
-import type { AoMessageResult, WriteOptions } from '../types/common.js';
+import type { MessageResult, WriteOptions } from '../types/common.js';
 import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { deserializeAntControllers } from './deserialize.js';
@@ -101,9 +101,9 @@ export class SolanaANTWriteable extends SolanaANTReadable {
    * Override the readable's registry with the writeable variant — gives
    * us the preflight resolvers + the spawn / ex-controller workflow
    * helpers, while preserving `accessControlList` reads from the
-   * parent's `AoANTRegistryRead` surface.
+   * parent's `ANTRegistryRead` surface.
    */
-  declare readonly registry: SolanaANTRegistryWriteable & AoANTRegistryRead;
+  declare readonly registry: SolanaANTRegistryWriteable & ANTRegistryRead;
 
   constructor(config: {
     rpc: SolanaRpc;
@@ -163,9 +163,9 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   // =========================================
 
   async setRecord(
-    params: AoANTSetUndernameRecordParams,
+    params: ANTSetUndernameRecordParams,
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [recordPda] = await getAntRecordPDA(
       this.mint,
       params.undername,
@@ -175,7 +175,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
     // Per-record metadata (display name / logo / description / keywords)
     // moved out of `set_record` into a dedicated `set_record_metadata`
     // instruction when `AntRecord` was split (ARNS-712). These fields are
-    // not part of `AoANTSetUndernameRecordParams` today, but we keep the
+    // not part of `ANTSetUndernameRecordParams` today, but we keep the
     // forward path here so callers can pass them on the params object and
     // we'll bundle a `set_record_metadata` ix into the same tx.
     const extra = params as unknown as {
@@ -238,23 +238,23 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   }
 
   async setBaseNameRecord(
-    params: AoANTSetBaseNameRecordParams,
+    params: ANTSetBaseNameRecordParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     return this.setRecord({ ...params, undername: '@' }, options);
   }
 
   async setUndernameRecord(
-    params: AoANTSetUndernameRecordParams,
+    params: ANTSetUndernameRecordParams,
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     return this.setRecord(params, options);
   }
 
   async removeRecord(
     params: { undername: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [recordPda] = await getAntRecordPDA(
       this.mint,
       params.undername,
@@ -276,14 +276,14 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async removeUndernameRecord(
     params: { undername: string },
     options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     return this.removeRecord(params, options);
   }
 
   async transferRecord(
     params: { undername: string; recipient: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const [recordPda] = await getAntRecordPDA(
       this.mint,
       params.undername,
@@ -310,7 +310,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async addController(
     params: { controller: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const controller = address(params.controller);
 
     // ADR-012 (ACL): contract `add_controller` requires the controller's
@@ -339,7 +339,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async removeController(
     params: { controller: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const controller = address(params.controller);
 
     // ADR-012 (ACL): contract `remove_controller` requires the page
@@ -381,7 +381,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async setName(
     params: { name: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetNameInstructionAsync(
       { asset: this.mint, caller: this.signer, name: params.name },
       { programAddress: this.antProgram },
@@ -393,7 +393,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async setTicker(
     params: { ticker: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetTickerInstructionAsync(
       { asset: this.mint, caller: this.signer, ticker: params.ticker },
       { programAddress: this.antProgram },
@@ -405,7 +405,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async setDescription(
     params: { description: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetDescriptionInstructionAsync(
       {
         asset: this.mint,
@@ -421,7 +421,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async setKeywords(
     params: { keywords: string[] },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetKeywordsInstructionAsync(
       { asset: this.mint, caller: this.signer, keywords: params.keywords },
       { programAddress: this.antProgram },
@@ -433,7 +433,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async setLogo(
     params: { txId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const ix = await getSetLogoInstructionAsync(
       { asset: this.mint, caller: this.signer, logo: params.txId },
       { programAddress: this.antProgram },
@@ -450,7 +450,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async transfer(
     params: { target: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     const newOwner = address(params.target);
     const oldOwner = this.signer.address;
 
@@ -532,7 +532,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   // Reconcile (Solana-specific)
   // =========================================
 
-  async reconcile(_options?: WriteOptions): Promise<AoMessageResult> {
+  async reconcile(_options?: WriteOptions): Promise<MessageResult> {
     const ix = await getReconcileInstructionAsync(
       { asset: this.mint, caller: this.signer },
       { programAddress: this.antProgram },
@@ -548,7 +548,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async releaseName(
     _params: { name: string; arioProcessId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     throw new Error(
       'releaseName not applicable on Solana — use ario-arns program directly',
     );
@@ -557,7 +557,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async reassignName(
     _params: { name: string; arioProcessId: string; antProcessId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     throw new Error(
       'reassignName not applicable on Solana — use ario-arns program directly',
     );
@@ -566,7 +566,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async approvePrimaryNameRequest(
     _params: { name: string; address: string; arioProcessId: string },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     throw new Error(
       'approvePrimaryNameRequest not applicable on Solana — use ario-core program directly',
     );
@@ -575,7 +575,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
   async removePrimaryNames(
     _params: { names: string[]; arioProcessId: string; notifyOwners?: boolean },
     _options?: WriteOptions,
-  ): Promise<AoMessageResult> {
+  ): Promise<MessageResult> {
     throw new Error(
       'removePrimaryNames not applicable on Solana — use ario-core program directly',
     );

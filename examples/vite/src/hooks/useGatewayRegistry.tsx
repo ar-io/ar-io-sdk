@@ -1,4 +1,4 @@
-import { AoARIORead } from "@ar.io/sdk";
+import { ARIORead } from "@ar.io/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 export const useGateways = ({
@@ -8,7 +8,7 @@ export const useGateways = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy: "startTimestamp" | "operatorStake" | "totalDelegatedStake";
@@ -28,7 +28,7 @@ export const useGatewayDelegations = ({
   limit,
   cursor,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   gatewayAddress: string;
   limit: number;
   cursor: string | undefined;
