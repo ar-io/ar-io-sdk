@@ -65,10 +65,10 @@ const SHOULD_RUN = Boolean(
   RPC_URL && WS_URL && ESCROW_ID && CORE_ID && AUTHORITY_KP_PATH,
 );
 
-const CLOCK_SYSVAR = address('SysvarC1ock11111111111111111111111111111111');
+const _CLOCK_SYSVAR = address('SysvarC1ock11111111111111111111111111111111');
 
 // Anchor ix discriminator = sha256("global:admin_purge_unclaimed_ant")[0..8]
-const DISC_ADMIN_PURGE = new Uint8Array([
+const _DISC_ADMIN_PURGE = new Uint8Array([
   0x4f, 0x22, 0x4f, 0x81, 0x9f, 0xdf, 0x99, 0xaf,
 ]);
 
@@ -111,15 +111,15 @@ function loadAuthority(): Promise<KeyPairSigner> {
 
 describe('admin_purge_unclaimed_ant (localnet)', { skip: !SHOULD_RUN }, () => {
   let rpc: ReturnType<typeof createSolanaRpc>;
-  let rpcSubs: ReturnType<typeof createSolanaRpcSubscriptions>;
-  let escrowProgramId: Address;
-  let authority: KeyPairSigner;
+  let _rpcSubs: ReturnType<typeof createSolanaRpcSubscriptions>;
+  let _escrowProgramId: Address;
+  let _authority: KeyPairSigner;
 
   before(async () => {
     rpc = createSolanaRpc(RPC_URL!);
-    rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
-    escrowProgramId = address(ESCROW_ID!);
-    authority = await loadAuthority();
+    _rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
+    _escrowProgramId = address(ESCROW_ID!);
+    _authority = await loadAuthority();
   });
 
   it('surfnet_timeTravel cheatcode warps the slot forward', async () => {

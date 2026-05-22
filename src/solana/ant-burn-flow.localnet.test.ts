@@ -81,19 +81,19 @@ const SHOULD_RUN = Boolean(
     AUTHORITY_KP_PATH,
 );
 
-const SYSTEM_PROGRAM = address('11111111111111111111111111111111');
+const _SYSTEM_PROGRAM = address('11111111111111111111111111111111');
 
 // Anchor discriminators = sha256("global:<snake_case>")[0..8]
-const DISC_CLOSE_ANT_RECORD = new Uint8Array([
+const _DISC_CLOSE_ANT_RECORD = new Uint8Array([
   0x27, 0x23, 0xda, 0x01, 0x93, 0x56, 0x24, 0xc7,
 ]);
-const DISC_CLOSE_ANT_RECORD_METADATA = new Uint8Array([
+const _DISC_CLOSE_ANT_RECORD_METADATA = new Uint8Array([
   0x53, 0x44, 0x8a, 0xf8, 0x7d, 0x37, 0x96, 0xb2,
 ]);
-const DISC_CLOSE_ANT_CONTROLLERS = new Uint8Array([
+const _DISC_CLOSE_ANT_CONTROLLERS = new Uint8Array([
   0x60, 0x6f, 0x74, 0xbd, 0x77, 0xcd, 0xcc, 0xed,
 ]);
-const DISC_CLOSE_ANT_CONFIG = new Uint8Array([
+const _DISC_CLOSE_ANT_CONFIG = new Uint8Array([
   0xfd, 0x89, 0xb1, 0xab, 0xfa, 0xaa, 0x79, 0x85,
 ]);
 
@@ -108,7 +108,7 @@ async function derivePda(
   return pda;
 }
 
-async function antConfigPda(
+async function _antConfigPda(
   antProgramId: Address,
   asset: Address,
 ): Promise<Address> {
@@ -129,7 +129,7 @@ function loadAuthority(): Promise<KeyPairSigner> {
   return createKeyPairSignerFromBytes(bytes);
 }
 
-function buildVariantWithUndername(
+function _buildVariantWithUndername(
   disc: Uint8Array,
   undername: string,
 ): Uint8Array {
@@ -168,7 +168,7 @@ describe('ant burn flow (localnet)', { skip: !SHOULD_RUN }, () => {
     assert.ok(asset, 'asset minted');
 
     // 2. Verify AntConfig + AntControllers exist (post-mint state)
-    const configPda = await derivePda(antProgramId, [
+    const _configPda = await derivePda(antProgramId, [
       new TextEncoder().encode('ant_config'),
       new Uint8Array(32), // placeholder — proper derivation needs asset bytes
     ]);
