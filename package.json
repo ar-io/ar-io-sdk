@@ -71,7 +71,9 @@
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
     "cli:local": "node lib/esm/cli/cli.js",
-    "codegen": "node ./scripts/codegen.mjs"
+    "codegen": "node ./scripts/codegen.mjs",
+    "test:localnet:rent-reclaim": "tsx --test --test-reporter=spec src/solana/admin-expand-name-registry.localnet.test.ts src/solana/ant-burn-flow.localnet.test.ts src/solana/admin-purge-escrow.localnet.test.ts",
+    "test:localnet:all": "yarn test:localnet:io-write && yarn test:localnet:rent-reclaim"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
