@@ -49,6 +49,8 @@ const PUBKEY_1 = 'GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address;
 const PUBKEY_2 = 'GatewayBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' as Address;
 const PUBKEY_3 = 'GatewayCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC' as Address;
 
+const VERSION = { major: 0, minor: 0, patch: 0 };
+
 /**
  * Build a minimal stub rpc that returns canned `getProgramAccounts`
  * results. The helpers under test are agnostic to which programId they
@@ -96,6 +98,7 @@ describe('SolanaARIOReadable.getEmptyDelegations', () => {
       startTimestamp: 1_000n,
       rewardDebt: 0n,
       bump: 254,
+      version: VERSION,
     });
     const nonEmpty = enc.encode({
       gateway: PUBKEY_1,
@@ -104,6 +107,7 @@ describe('SolanaARIOReadable.getEmptyDelegations', () => {
       startTimestamp: 1_000n,
       rewardDebt: 0n,
       bump: 254,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([
       { pubkey: ADDR_A, bytes: empty },
@@ -127,6 +131,7 @@ describe('SolanaARIOReadable.getEmptyDelegations', () => {
       startTimestamp: 1_000n,
       rewardDebt: 0n,
       bump: 254,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([{ pubkey: ADDR_A, bytes: nonEmpty }]);
     const r = buildReadable(rpc);
@@ -154,6 +159,7 @@ describe('SolanaARIOReadable.getDrainedWithdrawals', () => {
       isExitVault: false,
       isProtected: false,
       bump: 253,
+      version: VERSION,
     });
     const live = enc.encode({
       owner: PUBKEY_1,
@@ -166,6 +172,7 @@ describe('SolanaARIOReadable.getDrainedWithdrawals', () => {
       isExitVault: false,
       isProtected: false,
       bump: 253,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([
       { pubkey: ADDR_A, bytes: drained },
@@ -197,6 +204,7 @@ describe('SolanaARIOReadable.getExpiredVaults', () => {
       controller: null,
       revocable: false,
       bump: 252,
+      version: VERSION,
     });
     const future = enc.encode({
       owner: PUBKEY_1,
@@ -207,6 +215,7 @@ describe('SolanaARIOReadable.getExpiredVaults', () => {
       controller: null,
       revocable: false,
       bump: 252,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([
       { pubkey: ADDR_A, bytes: expired },
@@ -232,6 +241,7 @@ describe('SolanaARIOReadable.getExpiredVaults', () => {
       controller: null,
       revocable: false,
       bump: 252,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([{ pubkey: ADDR_A, bytes: exact }]);
     const r = buildReadable(rpc);
@@ -254,6 +264,7 @@ describe('SolanaARIOReadable.getExpiredPrimaryNameRequests', () => {
       createdAt: 0n,
       expiresAt: 100n,
       bump: 251,
+      version: VERSION,
     });
     const future = enc.encode({
       initiator: PUBKEY_2,
@@ -261,6 +272,7 @@ describe('SolanaARIOReadable.getExpiredPrimaryNameRequests', () => {
       createdAt: 0n,
       expiresAt: 9_999_999n,
       bump: 251,
+      version: VERSION,
     });
     const rpc = stubRpcReturning([
       { pubkey: ADDR_A, bytes: expired },
@@ -327,6 +339,7 @@ function makeGatewayBytes(
     observerAddress: operator,
     cumulativeRewardPerToken: 0n,
     bump: 250,
+    version: VERSION,
   });
 }
 
@@ -405,6 +418,7 @@ describe('Discovery helpers gracefully skip undecodable rows', () => {
       startTimestamp: 1_000n,
       rewardDebt: 0n,
       bump: 254,
+      version: VERSION,
     });
     const truncated = valid.subarray(0, 16); // half a Delegation
     const rpc = stubRpcReturning([

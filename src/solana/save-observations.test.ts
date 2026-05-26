@@ -288,6 +288,7 @@ function buildEpochBuffer(opts: {
     prescribedObserverGateways: observerGateways,
     prescribedNames: [new Uint8Array(32), new Uint8Array(32)],
     hasObserved,
+    versionBytes: new Uint8Array(3),
     padding2: new Uint8Array(1),
   });
 }

@@ -77,7 +77,7 @@ import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
 export type EscrowProtocol = 'arweave' | 'ethereum';
 
 export interface EscrowAntState {
-  version: number;
+  version: { major: number; minor: number; patch: number };
   bump: number;
   depositor: Address;
   antMint: Address;
@@ -468,7 +468,7 @@ export class ANTEscrow {
 export type EscrowAssetType = 'token' | 'vault';
 
 export interface EscrowTokenState {
-  version: number;
+  version: { major: number; minor: number; patch: number };
   bump: number;
   depositor: Address;
   assetType: EscrowAssetType;
