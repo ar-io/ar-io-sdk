@@ -121,7 +121,9 @@ class BorshReader {
 
   readString(): string {
     const len = this.readU32();
-    const str = this.data.toString('utf8', this.offset, this.offset + len);
+    const str = this.data
+      .toString('utf8', this.offset, this.offset + len)
+      .replace(/\0/g, '');
     this.offset += len;
     return str;
   }

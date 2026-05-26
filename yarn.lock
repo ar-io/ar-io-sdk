@@ -30,10 +30,13 @@
   resolved "https://registry.yarnpkg.com/@actions/io/-/io-3.0.2.tgz#6f89b27a159d109836d983efa283997c23b92284"
   integrity sha512-nRBchcMM+QK1pdjO7/idu86rbJI5YHUKCvKs0KxnSYbVe3F51UfGxuZX4Qy/fWlp6l7gWFwIkrOzN+oUK03kfw==
 
-"@ar.io/solana-contracts@0.1.0-devnet.0":
-  version "0.1.0-devnet.0"
-  resolved "https://registry.yarnpkg.com/@ar.io/solana-contracts/-/solana-contracts-0.1.0-devnet.0.tgz#b03d1fd243b80665bd289232b335a25a22e3795a"
-  integrity sha512-MzdoB2lBHWNqGRi5Ki7a8legTv8YuoymwuahPSQr6lk75UMr7dMz5VWF2ypXLv2GJZODz69ChNSd/eTP7X4n8g==
+"@ar.io/solana-contracts@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.npmjs.org/@ar.io/solana-contracts/-/solana-contracts-0.3.0.tgz#27853df9f16b39422e2b01c67ae167493cb7bb38"
+  integrity sha512-mqJOmGf9LNDXi/uDNV1fjEOmPFQr4RhxpO5qlKOSou9DKaI35p8b4XuoWcncj0sU+qqVKn4CQUe3eYf/GjLWrg==
+  dependencies:
+    "@noble/hashes" "^1.5.0"
+    bs58 "^6.0.0"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.22.13", "@babel/code-frame@^7.26.2", "@babel/code-frame@^7.28.6":
   version "7.29.0"
@@ -788,6 +791,11 @@
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@jspm/core/-/core-2.1.0.tgz#ee21ff64591d68de98b79ca8e4bd6c5249fded53"
   integrity sha512-3sRl+pkyFY/kLmHl0cgHiFp2xEqErA8N3ECjMs7serSUBmoJ70lBa0PG5t0IM6WJgdZNyyI0R8YFfi5wM8+mzg==
+
+"@noble/hashes@^1.5.0":
+  version "1.8.0"
+  resolved "https://registry.npmjs.org/@noble/hashes/-/hashes-1.8.0.tgz#cee43d801fcef9644b11b8194857695acd5f815a"
+  integrity sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==
 
 "@noble/hashes@^2.0.1":
   version "2.2.0"
