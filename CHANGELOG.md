@@ -1,3 +1,11 @@
+# [4.0.0-solana.16](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.15...v4.0.0-solana.16) (2026-05-26)
+
+
+### Bug Fixes
+
+* **idls:** update idl package version ([c1a4f22](https://github.com/ar-io/ar-io-sdk/commit/c1a4f226bbf9589e9cbdf42319572c392b59504d))
+* **tests:** update tests ([752b4f6](https://github.com/ar-io/ar-io-sdk/commit/752b4f69636ff4cce34eb2a700e8afb1a3e73d4a))
+
 # [4.0.0-solana.15](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.14...v4.0.0-solana.15) (2026-05-26)
 
 
