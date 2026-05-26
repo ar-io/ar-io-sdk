@@ -40,21 +40,17 @@ import { type Address, address } from '@solana/kit';
 export const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
 
 /**
- * AR.IO program IDs deployed on Solana devnet.
+ * AR.IO program IDs deployed on Solana devnet (staging).
  *
  * Shape matches the `programIds` argument of
  * `ARIO.init({ backend: 'solana', programIds, ... })`.
- *
- * `antEscrow` is `null` because `ario-ant-escrow` is not deployed on
- * devnet — the `sol_big_mod_exp` syscall it depends on is inactive on
- * all public clusters today.
  */
 export const DEVNET_PROGRAM_IDS = {
-  core: address('83CQLP848zzCgnZ4LTq87g6hvxTooNLX7YXXkUUGv5ig'),
-  gar: address('AF8QAEaR4hzsqeUDwEdeTXMYtdyFegTENBdnJro6WVLR'),
-  arns: address('2HgSCKYjcapJPdHRKqkLrGXm7kvBmCP45ZyhWEm87oM1'),
-  ant: address('8ZMuXhiK7DorjPUg8RB1rzu7CvsABMk38WDJRbM62y2C'),
-  antEscrow: null as Address | null,
+  core: address('5iU1xZ4ocy7e96kcoEipvnxs8anSoq6JGznq6iS4svKn'),
+  gar: address('KpZMWCMeTiyH3dW3ZH9go4TwAg5vxgUXHuFVY8JbLFS'),
+  arns: address('2YjqZEYTTKLD3qg4NvYwpo2wVcDQCj2p4iD2WTYymfEC'),
+  ant: address('9SuQQKKW1mEvdRhXrdpHR5PqBMurY3wh7vbEkxzEsngu'),
+  antEscrow: address('GP5A7idQQmbGeuUcihAsgkV2Kc4LSpqoKyLMWBK46sCg'),
 } as const;
 
 /** ARIO SPL Token mint on devnet. */
