@@ -168,7 +168,7 @@ import {
   getUpdateGatewaySettingsInstructionAsync,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
-import { TOKEN_DECIMALS } from './constants.js';
+import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   getAntRecordPDA,
@@ -2064,10 +2064,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *
    * `antProgram` honors ADR-016 / BD-100 pluggability: the asset's
    * `ANT Program` Attributes-plugin trait selects which program owns the
-   * AntRecord PDA. Absent / unparseable → canonical fallback. Both the
-   * PDA derivation here and the `ant_program_id` arg the caller passes
-   * to the on-chain ix MUST agree (the handler re-derives and rejects
-   * mismatches).
+   * AntRecord PDA. Absent / unparseable → canonical fallback. The detected
+   * trait is untrusted asset/RPC data, so it is honored only when it matches
+   * the canonical program or this client's explicitly-configured
+   * `this.antProgram`; any other value falls back to the configured program
+   * (see the SECURITY note in the body). Both the PDA derivation here and the
+   * `ant_program_id` arg the caller passes to the on-chain ix MUST agree (the
+   * handler re-derives and rejects mismatches).
    */
   private async _buildPrimaryNameValidationAccounts(
     name: string,
@@ -2102,10 +2105,26 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       const antMint = address(arnsRecord.processId);
 
       const { fetchAntProgramFromAsset } = await import('./mpl-core.js');
+      const detected = await fetchAntProgramFromAsset(this.rpc, antMint, {
+        commitment: this.commitment,
+      });
+      // SECURITY (BD-100 / SDK ANT-program auth finding): the asset's
+      // `ANT Program` trait is untrusted asset/RPC data. Only honor a detected
+      // value when it matches the canonical program or the program this client
+      // was explicitly configured with (`this.antProgram`); otherwise fall back
+      // to the configured program so a spoofed trait can't redirect the
+      // AntRecord PDA derivation. This path only derives a READONLY validation
+      // account (the instruction itself targets the canonical core program), so
+      // the fallback is silent rather than a throw — but the gate keeps an
+      // attacker from steering PDA derivation. Heterogeneous BYO-ANT primary
+      // names (an asset on a non-configured program) await the contract-side
+      // resolution of the `ant_program == ario_ant::ID` pin; see the
+      // accompanying security note.
       antProgram =
-        (await fetchAntProgramFromAsset(this.rpc, antMint, {
-          commitment: this.commitment,
-        })) ?? this.antProgram;
+        detected !== null &&
+        (detected === ARIO_ANT_PROGRAM_ID || detected === this.antProgram)
+          ? detected
+          : this.antProgram;
 
       // removeForBaseName always uses the "@" undername (the base-name
       // owner's record). The other ANT-auth variants use the undername

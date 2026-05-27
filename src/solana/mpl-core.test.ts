@@ -1,10 +1,15 @@
 import assert from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { type Address, address } from '@solana/kit';
+
+import { ANT } from '../common/ant.js';
+import { ARIO_ANT_PROGRAM_ID, ARIO_CORE_PROGRAM_ID } from './constants.js';
 import {
   TRAIT_KEY_ANT_PROGRAM,
   TRAIT_KEY_ARNS_NAME,
   readAttribute,
+  resolveWriteAntProgram,
 } from './mpl-core.js';
 
 const ATTRIBUTES_PLUGIN_TYPE = 6;
@@ -133,5 +138,125 @@ describe('readAttribute', () => {
     const buf = new Uint8Array(8);
     buf[0] = 1;
     assert.equal(readAttribute(buf, TRAIT_KEY_ANT_PROGRAM), null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveWriteAntProgram — the trust gate for the SIGNING (write) path.
+// The `ANT Program` trait is untrusted asset/RPC data; a non-canonical
+// detected value must not be signed against without explicit opt-in, or a
+// spoofed trait could route a victim's signature to an attacker program.
+// ---------------------------------------------------------------------------
+
+describe('resolveWriteAntProgram', () => {
+  // A valid-but-non-canonical program id stands in for an attacker's program.
+  const NON_CANONICAL = ARIO_CORE_PROGRAM_ID;
+
+  it('falls back to canonical when no trait is detected', () => {
+    assert.equal(
+      resolveWriteAntProgram({ detected: null }),
+      ARIO_ANT_PROGRAM_ID,
+    );
+  });
+
+  it('accepts a detected value that equals the canonical program', () => {
+    assert.equal(
+      resolveWriteAntProgram({ detected: ARIO_ANT_PROGRAM_ID }),
+      ARIO_ANT_PROGRAM_ID,
+    );
+  });
+
+  it('THROWS on an auto-detected non-canonical program (no opt-in)', () => {
+    assert.throws(
+      () => resolveWriteAntProgram({ detected: NON_CANONICAL }),
+      /non-canonical ANT program/,
+    );
+  });
+
+  it('honors an explicit non-canonical program (BYO-ANT opt-in)', () => {
+    assert.equal(
+      resolveWriteAntProgram({ explicit: NON_CANONICAL, detected: null }),
+      NON_CANONICAL,
+    );
+  });
+
+  it('explicit opt-in wins even if a different value was detected', () => {
+    assert.equal(
+      resolveWriteAntProgram({
+        explicit: ARIO_ANT_PROGRAM_ID,
+        detected: NON_CANONICAL,
+      }),
+      ARIO_ANT_PROGRAM_ID,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ANT.init end-to-end: a spoofed `ANT Program` trait must NOT become the
+// signed-write program, but the read-only client may still auto-detect it.
+// Mirrors the security finding's PoC step.
+// ---------------------------------------------------------------------------
+
+/** A valid asset address to stand in as the ANT `processId`. */
+const ASSET_ADDRESS = address('So11111111111111111111111111111111111111112');
+
+/** Stub rpc whose getAccountInfo returns `bytes` for any pubkey. */
+function stubRpcReturningAsset(bytes: Uint8Array): unknown {
+  return {
+    getAccountInfo: () => ({
+      send: async () => ({
+        value: {
+          data: [Buffer.from(bytes).toString('base64'), 'base64'] as readonly [
+            string,
+            string,
+          ],
+          lamports: 1,
+          owner: '11111111111111111111111111111111',
+          executable: false,
+          rentEpoch: 0,
+        },
+      }),
+    }),
+  };
+}
+
+describe('ANT.init ANT-program trust', () => {
+  // Asset advertising an attacker-controlled `ANT Program` trait.
+  const spoofedAsset = makeAssetWithAttributes([
+    ['ANT Program', ARIO_CORE_PROGRAM_ID as string],
+  ]);
+
+  it('refuses to build a writeable client against a spoofed program', async () => {
+    const rpc = stubRpcReturningAsset(spoofedAsset);
+    await assert.rejects(
+      ANT.init({
+        processId: ASSET_ADDRESS,
+        rpc: rpc as never,
+        signer: {} as never,
+        rpcSubscriptions: {} as never,
+      }),
+      /non-canonical ANT program/,
+    );
+  });
+
+  it('allows a readable client to auto-detect (no signature at risk)', async () => {
+    const rpc = stubRpcReturningAsset(spoofedAsset);
+    const ant = await ANT.init({
+      processId: ASSET_ADDRESS,
+      rpc: rpc as never,
+    });
+    assert.ok(ant, 'read-only ANT.init should resolve without throwing');
+  });
+
+  it('builds a writeable client when the spoofed program is explicitly opted into', async () => {
+    const rpc = stubRpcReturningAsset(spoofedAsset);
+    const ant = await ANT.init({
+      processId: ASSET_ADDRESS,
+      rpc: rpc as never,
+      signer: {} as never,
+      rpcSubscriptions: {} as never,
+      antProgramId: ARIO_CORE_PROGRAM_ID as Address,
+    });
+    assert.ok(ant, 'explicit opt-in should bypass the auto-detect guard');
   });
 });
