@@ -1,3 +1,10 @@
+# [4.0.0-solana.18](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.17...v4.0.0-solana.18) (2026-05-28)
+
+
+### Bug Fixes
+
+* **solana:** correct EscrowAntState/EscrowTokenState version field type ([7f210f3](https://github.com/ar-io/ar-io-sdk/commit/7f210f3b2a1d877cfbbc5baa58e277c11ae67826)), closes [#639](https://github.com/ar-io/ar-io-sdk/issues/639)
+
 # [4.0.0-solana.17](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.16...v4.0.0-solana.17) (2026-05-28)
 
 
