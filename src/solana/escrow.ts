@@ -481,6 +481,33 @@ export interface EscrowTokenState {
   vaultRevocable: boolean;
 }
 
+/**
+ * Pre-flight the on-chain `VaultStillLocked` gate (ADR-022): refuse to build
+ * a claim tx while the vault is still locked. Surfaces the unlock timestamp
+ * so callers / UIs can show "claimable after <date>" instead of a doomed tx.
+ *
+ * Exported for unit-testability; not part of the public SDK surface — call the
+ * high-level `claimVaultArweave` / `claimVaultEthereum` instead, which invoke
+ * this guard internally.
+ *
+ * @internal
+ */
+export function assertVaultClaimable(escrow: EscrowTokenState): void {
+  const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
+  if (escrow.vaultEndTimestamp > nowSeconds) {
+    const unlockIso = new Date(
+      Number(escrow.vaultEndTimestamp) * 1000,
+    ).toISOString();
+    throw new Error(
+      `Vault escrow is still locked until ${unlockIso} ` +
+        `(vault_end_timestamp=${escrow.vaultEndTimestamp}). ` +
+        `Active (still-locked) vault claims are not supported (ADR-022 / ` +
+        `VaultStillLocked) — wait until after the unlock timestamp, then ` +
+        `claim again to receive the tokens liquid.`,
+    );
+  }
+}
+
 /** Map the Codama-generated `EscrowToken` raw decoded type to our public
  *  `EscrowTokenState` with protocol enum + active-prefix pubkey slice. */
 function toEscrowTokenState(raw: EscrowToken): EscrowTokenState {
@@ -930,7 +957,7 @@ export class TokenEscrow {
       );
     }
     // ADR-022 / VaultStillLocked: pre-flight the on-chain lock gate.
-    this.assertVaultClaimable(escrow);
+    assertVaultClaimable(escrow);
     const signer = this.requireSigner('claimVaultArweave');
     const [escrowPda] = await getEscrowVaultPDA(
       args.depositor,
@@ -984,7 +1011,7 @@ export class TokenEscrow {
         `escrow recipient is ${escrow.recipientProtocol}, not ethereum`,
       );
     }
-    this.assertVaultClaimable(escrow);
+    assertVaultClaimable(escrow);
     const signer = this.requireSigner('claimVaultEthereum');
     const [escrowPda] = await getEscrowVaultPDA(
       args.depositor,
@@ -1016,26 +1043,6 @@ export class TokenEscrow {
   }
 
   /**
-   * Pre-flight the on-chain `VaultStillLocked` gate (ADR-022): refuse to build
-   * a claim tx while the vault is still locked. Surfaces the unlock timestamp
-   * so callers / UIs can show "claimable after <date>" instead of a doomed tx.
-   */
-  private assertVaultClaimable(escrow: EscrowTokenState): void {
-    const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
-    if (escrow.vaultEndTimestamp > nowSeconds) {
-      const unlockIso = new Date(
-        Number(escrow.vaultEndTimestamp) * 1000,
-      ).toISOString();
-      throw new Error(
-        `Vault escrow is still locked until ${unlockIso} ` +
-          `(vault_end_timestamp=${escrow.vaultEndTimestamp}). ` +
-          `Active (still-locked) vault claims are not supported (ADR-022 / ` +
-          `VaultStillLocked) — wait until after the unlock timestamp, then ` +
-          `claim again to receive the tokens liquid.`,
-      );
-    }
-  }
-
   /**
    * Idempotent-create the claimant's canonical ATA when needed.
    *
