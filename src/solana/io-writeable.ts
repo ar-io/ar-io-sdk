@@ -2793,39 +2793,38 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const newAnt = address(params.processId);
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
 
+    // The on-chain `reassign_name` (PR #73 / BD-106 / BD-095) now authorizes
+    // against the CURRENT Metaplex Core holder of `record.ant` via a named
+    // `ant_asset` account constrained to `arns_record.ant`. We must read the
+    // current record to know which asset to pass — that's the OLD ant (the
+    // one we're reassigning AWAY FROM), not `newAnt`.
+    const currentRecord = await this.getArNSRecord({ name: params.name });
+    const currentAnt = address(currentRecord.processId);
+
     const ix = await getReassignNameInstructionAsync(
       await this.withArnsDefaults({
         arnsRecord,
+        antAsset: currentAnt,
         caller: this.signer,
         newAnt,
       }),
       { programAddress: this.arnsProgram },
     );
 
-    // The on-chain handler validates the new ANT via `remaining_accounts[0]`
-    // (must be MPL-Core-owned + key matches `newAnt`). The codama builder
-    // for reassign_name only encodes the typed accounts above, so we tag
-    // the new ANT asset on as a readonly remaining account.
-    //
-    // Sprint 4 / ADR-016: post-reassign the record points at `newAnt`. The
-    // bundled `sync_attributes` MUST target `newAnt` — without the
-    // override, the helper would read the on-chain record at SDK build
-    // time (still pointing at the OLD asset), build a sync ix for the
-    // OLD asset, and fail the post-reassign `record.ant == asset.key()`
-    // check. The owner-check inside _buildSyncAttributesIxIfOwner runs
-    // against `newAnt`, so the bundle fires only when the reassign
-    // caller is also the new ANT's holder; otherwise the ix is sent
-    // alone and the new owner runs `syncAttributes()` later (BD-095/096).
+    // Post-reassign the record points at `newAnt`. The bundled
+    // `sync_attributes` MUST target `newAnt` — without the override, the
+    // helper would read the on-chain record at SDK build time (still
+    // pointing at the OLD asset), build a sync ix for the OLD asset, and
+    // fail the post-reassign `record.ant == asset.key()` check. The
+    // owner-check inside _buildSyncAttributesIxIfOwner runs against
+    // `newAnt`, so the bundle fires only when the reassign caller is also
+    // the new ANT's holder; otherwise the ix is sent alone and the new
+    // owner runs `syncAttributes()` later (BD-095/096).
     const syncIx = await this._buildSyncAttributesIxIfOwner(
       params.name,
       newAnt,
     );
-    const reassignWithMetas = withRemainingAccounts(ix, [
-      { address: newAnt, role: AccountRole.READONLY },
-    ]);
-    const sig = await this.sendTransaction(
-      syncIx ? [reassignWithMetas, syncIx] : [reassignWithMetas],
-    );
+    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
     return { id: sig };
   }
 
@@ -2840,10 +2839,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
 
+    // PR #73 / BD-106: `release_name` now authorizes against the current
+    // Metaplex Core holder of `record.ant` via a named `ant_asset` account
+    // constrained to `arns_record.ant`. Fetch the record to know which.
+    const currentRecord = await this.getArNSRecord({ name: params.name });
+
     const ix = await getReleaseNameInstructionAsync(
       await this.withArnsDefaults({
         arnsRecord,
         returnedName: returnedNamePda,
+        antAsset: address(currentRecord.processId),
         caller: this.signer,
       }),
       { programAddress: this.arnsProgram },
