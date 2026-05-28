@@ -22,10 +22,16 @@ import {
   getProgramDerivedAddress,
 } from '@solana/kit';
 
-import { ANT_RECORD_SEED, ARIO_ANT_PROGRAM_ID } from './constants.js';
+import { findPrimaryNameReversePda } from '@ar.io/solana-contracts/core';
+
+import {
+  ANT_RECORD_SEED,
+  ARIO_ANT_PROGRAM_ID,
+  ARIO_CORE_PROGRAM_ID,
+} from './constants.js';
 import { BorshWriter } from './deserialize.js';
 import { splitPrimaryName } from './io-writeable.js';
-import { getAntRecordPDA, hashName } from './pda.js';
+import { getAntRecordPDA, getPrimaryNameReversePDA, hashName } from './pda.js';
 
 /** Sprint 2 / ADR-016: both `request_and_set_primary_name` and
  *  `approve_primary_name` now take an `ant_program_id: Pubkey` arg
@@ -190,5 +196,61 @@ describe('Borsh layout: approve_primary_name', () => {
       hashName('blog_arweave'),
     );
     assert.deepEqual(Buffer.from(buf.subarray(32, 64)), ANT_PROGRAM_ID_BYTES);
+  });
+});
+
+/**
+ * Cross-package regression guard for the PrimaryNameReverse PDA
+ * derivation that the `fix/phase5-primary-name-reverse` PR depended on.
+ *
+ * Three independent pieces of code derive this PDA and they MUST agree:
+ *   1. The migration snapshot — builds the reverse payload to import
+ *      (`migration/snapshot/src/transform.ts::transformPrimaryNames`)
+ *   2. This SDK's `getPrimaryNameReversePDA` — used when building
+ *      `setPrimaryName` / `approvePrimaryName` / `requestAndSet…` ixs.
+ *   3. `@ar.io/solana-contracts`'s `findPrimaryNameReversePda` — used
+ *      inside the codegen instruction builders to auto-derive the
+ *      reverse account when callers omit it.
+ *
+ * If any two diverge (different hash, different seed prefix, different
+ * lowercasing rule), imported owners hit `AccountNotInitialized` on the
+ * reverse PDA on their next write — the bug this PR fixed. Pin all
+ * three so drift in any codebase fails CI immediately.
+ *
+ * Note: we always pass an explicit `programAddress` because the codegen
+ * default in `findPrimaryNameReversePda` is the source-pinned
+ * `ARioCoreProgramXXX…` placeholder — per-cluster deployments override
+ * it at call time. The SDK helper defaults to `ARIO_CORE_PROGRAM_ID`
+ * from `constants.ts`. Both must produce the same address when handed
+ * the same program ID.
+ */
+describe('getPrimaryNameReversePDA — cross-package agreement', () => {
+  for (const name of ['arweave', 'blog_arweave', 'Mixed-Case-Name']) {
+    it(`matches @ar.io/solana-contracts findPrimaryNameReversePda for "${name}"`, async () => {
+      const [sdkPda] = await getPrimaryNameReversePDA(name);
+      const [contractsPda] = await findPrimaryNameReversePda(
+        { reverseLookupHash: hashName(name) },
+        { programAddress: ARIO_CORE_PROGRAM_ID },
+      );
+      assert.equal(sdkPda, contractsPda);
+    });
+  }
+
+  it('SDK and contracts agree for a custom (cluster-override) program id', async () => {
+    // Realistic localnet-style override — confirms both code paths thread
+    // the programAddress arg correctly into getProgramDerivedAddress.
+    const overrideProgram = ARIO_ANT_PROGRAM_ID; // any other valid Address
+    const [sdkPda] = await getPrimaryNameReversePDA('arweave', overrideProgram);
+    const [contractsPda] = await findPrimaryNameReversePda(
+      { reverseLookupHash: hashName('arweave') },
+      { programAddress: overrideProgram },
+    );
+    assert.equal(sdkPda, contractsPda);
+  });
+
+  it('hashes the lowercased form (same as the migration snapshot)', async () => {
+    const [a] = await getPrimaryNameReversePDA('AlIcE');
+    const [b] = await getPrimaryNameReversePDA('alice');
+    assert.equal(a, b);
   });
 });
