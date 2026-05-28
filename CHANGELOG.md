@@ -1,3 +1,11 @@
+# [4.0.0-solana.17](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.16...v4.0.0-solana.17) (2026-05-28)
+
+
+### Bug Fixes
+
+* **solana:** bump [@ar](https://github.com/ar).io/solana-contracts to 0.4.0; wire ant_asset for reassign/release ([50c92b2](https://github.com/ar-io/ar-io-sdk/commit/50c92b294a9b2fca134961540a0bad7eb4f29675)), closes [#74](https://github.com/ar-io/ar-io-sdk/issues/74) [#73](https://github.com/ar-io/ar-io-sdk/issues/73) [pre-PR-#73](https://github.com/pre-PR-/issues/73)
+* **solana:** disable active vault-claim path; require post-unlock liquid claim ([4a8087d](https://github.com/ar-io/ar-io-sdk/commit/4a8087d30e6c9516aa1dd74190fc9b5e4eaf72ad)), closes [#74](https://github.com/ar-io/ar-io-sdk/issues/74)
+
 # [4.0.0-solana.16](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.15...v4.0.0-solana.16) (2026-05-26)
 
 
