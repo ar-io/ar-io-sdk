@@ -44,10 +44,6 @@ import {
   getUpdateTokenRecipientInstruction,
   getUpdateVaultRecipientInstruction,
 } from '@ar.io/solana-contracts/ant-escrow';
-import {
-  fetchMaybeVaultCounter,
-  getVaultedTransferInstructionAsync,
-} from '@ar.io/solana-contracts/core';
 import type { ILogger } from '../common/logger.js';
 import { Logger } from '../common/logger.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
@@ -64,8 +60,6 @@ import {
   getEscrowAntPDA,
   getEscrowTokenPDA,
   getEscrowVaultPDA,
-  getVaultCounterPDA,
-  getVaultPDA,
 } from './pda.js';
 import { sendAndConfirm } from './send.js';
 import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
@@ -132,9 +126,13 @@ export interface ANTEscrowConfig {
   signer?: TransactionSigner;
   programId?: Address;
   /**
-   * ario-core program id, used by `TokenEscrow` to build the sibling
-   * `vaulted_transfer` instruction when claiming an active (still-locked)
-   * vault escrow. Defaults to {@link ARIO_CORE_PROGRAM_ID}.
+   * ario-core program id. Currently unused (post-ADR-022 the SDK no longer
+   * builds a sibling `vaulted_transfer`; active vault claims are rejected
+   * with `VaultStillLocked`). Retained for forward-compat — if the active
+   * re-lock path is ever revived via the direct-CPI restoration playbook
+   * (contracts `docs/RESTORE_ACTIVE_VAULT_RELOCK.md`), this is the program
+   * the new claim ABI would need to reference. Defaults to
+   * {@link ARIO_CORE_PROGRAM_ID}.
    */
   coreProgram?: Address;
   commitment?: Commitment;
@@ -902,17 +900,19 @@ export class TokenEscrow {
   }
 
   /**
-   * Submit an Arweave RSA-PSS-4096 signature to release escrowed vault tokens.
+   * Submit an Arweave attestor's Ed25519 signature to release escrowed vault
+   * tokens. The on-chain handler delivers liquid tokens directly to
+   * `claimantTokenAccount`.
    *
-   * The on-chain handler routes by vault state via instructions-sysvar
-   * introspection: an expired vault sends tokens straight to
-   * `claimantTokenAccount`; an active (still-locked) vault routes them to
-   * `payerTokenAccount` and requires a matching `ario_core::vaulted_transfer`
-   * sibling instruction in the same transaction.
-   *
-   * This method auto-detects the path from `vaultEndTimestamp` and bundles
-   * the sibling `vaulted_transfer` ix automatically when the vault is still
-   * active — callers do not need to construct it themselves.
+   * **Vaults are only claimable after `vault_end_timestamp`.** Active
+   * (still-locked) vault claims are rejected on-chain with `VaultStillLocked`
+   * (ADR-022 / BD-107: the former active re-lock path was removed because its
+   * sibling-`vaulted_transfer` introspection had no 1:1 claim↔re-lock binding
+   * → reuse / relayer skim). This method pre-flights the same gate and throws
+   * a clear `vault still locked until <ISO>` error rather than building a tx
+   * that will fail on-chain. To revive "claim early, stay locked" see the
+   * restoration playbook in the contracts repo
+   * (`docs/RESTORE_ACTIVE_VAULT_RELOCK.md`).
    */
   async claimVaultArweave(args: {
     depositor: Address;
@@ -920,7 +920,6 @@ export class TokenEscrow {
     claimant: Address;
     claimantTokenAccount: Address;
     escrowTokenAccount: Address;
-    payerTokenAccount: Address;
     signature: Uint8Array; // 512 bytes
     saltLen?: number;
   }): Promise<string> {
@@ -930,6 +929,8 @@ export class TokenEscrow {
         `escrow recipient is ${escrow.recipientProtocol}, not arweave`,
       );
     }
+    // ADR-022 / VaultStillLocked: pre-flight the on-chain lock gate.
+    this.assertVaultClaimable(escrow);
     const signer = this.requireSigner('claimVaultArweave');
     const [escrowPda] = await getEscrowVaultPDA(
       args.depositor,
@@ -945,7 +946,6 @@ export class TokenEscrow {
         escrow: escrowPda,
         escrowTokenAccount: args.escrowTokenAccount,
         claimantTokenAccount: args.claimantTokenAccount,
-        payerTokenAccount: args.payerTokenAccount,
         claimant: args.claimant,
         depositor: args.depositor,
         payer: signer,
@@ -953,14 +953,22 @@ export class TokenEscrow {
       },
       { programAddress: this.programId },
     );
-    const ixs = await this.maybeBundleVaultedTransfer(escrow, args, claimIx);
+    const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
+      args.claimant,
+      args.claimantTokenAccount,
+      escrow.arioMint,
+    );
+    const ixs = createClaimantAtaIx
+      ? [createClaimantAtaIx, claimIx]
+      : [claimIx];
     return this.send(ixs, 400_000);
   }
 
   /**
    * Submit an Ethereum ECDSA signature to release escrowed vault tokens. See
-   * {@link claimVaultArweave} for the expired/active vault routing semantics.
-   * Auto-bundles the sibling `vaulted_transfer` ix for active vaults.
+   * {@link claimVaultArweave} — same lock semantics: vaults are only claimable
+   * after `vault_end_timestamp`; active (still-locked) claims throw pre-flight
+   * and are rejected on-chain with `VaultStillLocked` (ADR-022 / BD-107).
    */
   async claimVaultEthereum(args: {
     depositor: Address;
@@ -968,7 +976,6 @@ export class TokenEscrow {
     claimant: Address;
     claimantTokenAccount: Address;
     escrowTokenAccount: Address;
-    payerTokenAccount: Address;
     signature: Uint8Array; // 65 bytes (r||s||v)
   }): Promise<string> {
     const escrow = await this.requireVaultEscrow(args.depositor, args.assetId);
@@ -977,6 +984,7 @@ export class TokenEscrow {
         `escrow recipient is ${escrow.recipientProtocol}, not ethereum`,
       );
     }
+    this.assertVaultClaimable(escrow);
     const signer = this.requireSigner('claimVaultEthereum');
     const [escrowPda] = await getEscrowVaultPDA(
       args.depositor,
@@ -988,7 +996,6 @@ export class TokenEscrow {
         escrow: escrowPda,
         escrowTokenAccount: args.escrowTokenAccount,
         claimantTokenAccount: args.claimantTokenAccount,
-        payerTokenAccount: args.payerTokenAccount,
         claimant: args.claimant,
         depositor: args.depositor,
         payer: signer,
@@ -997,42 +1004,46 @@ export class TokenEscrow {
       },
       { programAddress: this.programId },
     );
-    const ixs = await this.maybeBundleVaultedTransfer(escrow, args, claimIx);
+    const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
+      args.claimant,
+      args.claimantTokenAccount,
+      escrow.arioMint,
+    );
+    const ixs = createClaimantAtaIx
+      ? [createClaimantAtaIx, claimIx]
+      : [claimIx];
     return this.send(ixs);
   }
 
   /**
-   * If the vault escrow is still locked (`vaultEndTimestamp` in the future),
-   * return `[claimIx, vaultedTransferIx]` so the on-chain claim handler can
-   * see the sibling (via `instructions_sysvar`) and re-vault tokens for the
-   * claimant. If the vault has expired, just `[claimIx]` — the on-chain
-   * handler delivers tokens directly to `claimantTokenAccount`.
-   *
-   * **Ordering matters at runtime**: `claim` must execute first so it can
-   * move tokens `escrow → payerTokenAccount`. `vaulted_transfer` then pulls
-   * from `payerTokenAccount` into the new vault. Reversing the order makes
-   * `vaulted_transfer` fail with `insufficient funds` because nothing has
-   * funded `payerTokenAccount` yet. The introspection check in
-   * `vault_introspect::verify_vaulted_transfer_in_tx` is presence-based
-   * (reads `instructions_sysvar`) so the *sibling* ordering doesn't matter
-   * for the check itself — only for atomic execution.
-   *
-   * `lockDurationSeconds` is set to the SDK-local `remaining` value. The
-   * on-chain handler accepts `lock_duration >= remaining_at_execution - 60s`
-   * (see the introspection function's tolerance), so any modest clock skew
-   * between client and chain is absorbed.
+   * Pre-flight the on-chain `VaultStillLocked` gate (ADR-022): refuse to build
+   * a claim tx while the vault is still locked. Surfaces the unlock timestamp
+   * so callers / UIs can show "claimable after <date>" instead of a doomed tx.
    */
+  private assertVaultClaimable(escrow: EscrowTokenState): void {
+    const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
+    if (escrow.vaultEndTimestamp > nowSeconds) {
+      const unlockIso = new Date(
+        Number(escrow.vaultEndTimestamp) * 1000,
+      ).toISOString();
+      throw new Error(
+        `Vault escrow is still locked until ${unlockIso} ` +
+          `(vault_end_timestamp=${escrow.vaultEndTimestamp}). ` +
+          `Active (still-locked) vault claims are not supported (ADR-022 / ` +
+          `VaultStillLocked) — wait until after the unlock timestamp, then ` +
+          `claim again to receive the tokens liquid.`,
+      );
+    }
+  }
+
   /**
    * Idempotent-create the claimant's canonical ATA when needed.
    *
-   * The on-chain claim handler delivers liquid tokens directly to
-   * `claimantTokenAccount` for expired vaults AND for token escrows.
-   * For active vaults, the `claim_vault_*` Anchor Accounts struct still
-   * declares `claimant_token_account: Account<TokenAccount>`, which forces
-   * Anchor's account-load-time validation to require the account exist
-   * even though the active path doesn't write to it. Either way: if the
-   * claimant is a fresh wallet that has never held this mint, the ATA
-   * doesn't exist and the tx fails with `AccountNotInitialized` (#3012).
+   * The claim handler delivers liquid tokens directly to
+   * `claimantTokenAccount` (post-ADR-022 there's only the liquid path for
+   * vaults). If the claimant is a fresh wallet that has never held this
+   * mint, the ATA doesn't exist and the tx fails with `AccountNotInitialized`
+   * (#3012).
    *
    * Returns `null` when the caller passed a non-canonical
    * `claimantTokenAccount` (manually-created non-ATA token account,
@@ -1052,86 +1063,6 @@ export class TokenEscrow {
       claimant,
       mint,
     );
-  }
-
-  private async maybeBundleVaultedTransfer(
-    escrow: EscrowTokenState,
-    args: {
-      claimant: Address;
-      claimantTokenAccount: Address;
-      payerTokenAccount: Address;
-    },
-    claimIx: Instruction,
-  ): Promise<Instruction[]> {
-    const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
-    const remaining = escrow.vaultEndTimestamp - nowSeconds;
-    if (remaining <= 0n) {
-      // Expired vault → claim handler delivers liquid to claimantTokenAccount.
-      // Idempotent-create that ATA if it's the canonical derivation so a
-      // first-time recipient just works.
-      const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
-        args.claimant,
-        args.claimantTokenAccount,
-        escrow.arioMint,
-      );
-      return createClaimantAtaIx ? [createClaimantAtaIx, claimIx] : [claimIx];
-    }
-    const signer = this.requireSigner('maybeBundleVaultedTransfer');
-    const nextId = await this.getNextVaultId(args.claimant);
-    const [vaultPda] = await getVaultPDA(
-      args.claimant,
-      nextId,
-      this.coreProgram,
-    );
-    const vaultATA = await getAssociatedTokenAddressKit(
-      escrow.arioMint,
-      vaultPda,
-      true,
-    );
-    // Active-vault path: `claim_vault_*` still validates the claimant ATA
-    // at account-load-time (Anchor `Account<TokenAccount>` constraint),
-    // even though no liquid is written to it. Idempotent-create so a fresh
-    // claimant doesn't fail the ix with AccountNotInitialized (#3012).
-    const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
-      args.claimant,
-      args.claimantTokenAccount,
-      escrow.arioMint,
-    );
-    // The new vault PDA's ATA must exist before `vaulted_transfer` reads it
-    // (else `AccountNotInitialized` #3012). Idempotent so a retry after a
-    // partial-failure tx is safe. Placed after the claim ix to preserve
-    // the "claim first" tx ordering invariant.
-    const createVaultAtaIx = buildCreateAtaIdempotentIx(
-      signer.address,
-      vaultATA,
-      vaultPda,
-      escrow.arioMint,
-    );
-    const vaultedIx = await getVaultedTransferInstructionAsync(
-      {
-        vault: vaultPda,
-        senderTokenAccount: args.payerTokenAccount,
-        vaultTokenAccount: vaultATA,
-        recipient: args.claimant,
-        sender: signer,
-        amount: escrow.amount,
-        lockDurationSeconds: remaining,
-        revocable: escrow.vaultRevocable,
-      },
-      { programAddress: this.coreProgram },
-    );
-    const head = createClaimantAtaIx ? [createClaimantAtaIx] : [];
-    return [...head, claimIx, createVaultAtaIx, vaultedIx];
-  }
-
-  /** Read the recipient's `VaultCounter.nextId`, defaulting to 0n if the
-   *  counter PDA hasn't been initialised yet (first vault for that owner). */
-  private async getNextVaultId(owner: Address): Promise<bigint> {
-    const [counterPda] = await getVaultCounterPDA(owner, this.coreProgram);
-    const account = await fetchMaybeVaultCounter(this.rpc, counterPda, {
-      commitment: this.commitment,
-    });
-    return account.exists ? account.data.nextId : 0n;
   }
 
   // -------------------------------------------------------------------
