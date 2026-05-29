@@ -383,3 +383,109 @@ describe('isVaultClaimable (non-throwing UI predicate)', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// claimVaultArweaveIx — low-level builder for the Arweave attested
+// vault-claim path. Integrators (e.g. the escrow-app frontend) compose:
+//   [createClaimantAtaIx?, ed25519SigverifyIx, claimVaultArweaveIx]
+// and submit. The high-level `claimVaultArweave` cannot work alone because
+// the SDK has no attestor URL; calling it must throw a clear migration error.
+// ---------------------------------------------------------------------------
+
+import { TokenEscrow } from './escrow.js';
+
+const FAKE_ADDR = '11111111111111111111111111111112' as unknown as Address;
+
+function makeTokenEscrow(): TokenEscrow {
+  return new TokenEscrow({
+    rpc: {} as never,
+    signer: createNoopSigner(address(FAKE_ADDR)),
+    programId: address(FAKE_ADDR),
+  });
+}
+
+describe('claimVaultArweaveIx', () => {
+  it('returns an Instruction whose accounts list matches the ADR-022 ABI', async () => {
+    const te = makeTokenEscrow();
+    const ix = await te.claimVaultArweaveIx({
+      depositor: address(FAKE_ADDR),
+      assetId: new Uint8Array(32),
+      claimant: address(FAKE_ADDR),
+      claimantTokenAccount: address(FAKE_ADDR),
+      escrowTokenAccount: address(FAKE_ADDR),
+      messageNonce: new Uint8Array(32),
+    });
+    // Post-ADR-022: payer_token_account dropped; ix has 9 accounts
+    // (escrow, escrow_token_account, claimant_token_account, claimant,
+    // depositor, payer, instructions_sysvar, token_program, system_program).
+    assert.equal(ix.accounts?.length, 9, 'expected 9 accounts post-ADR-022');
+    assert.equal(ix.programAddress, address(FAKE_ADDR));
+    // data = 8-byte disc + 32-byte messageNonce.
+    assert.equal(
+      ix.data?.length,
+      40,
+      'expected disc(8) + nonce(32) = 40 bytes',
+    );
+  });
+
+  it('rejects a non-32-byte messageNonce', async () => {
+    const te = makeTokenEscrow();
+    await assert.rejects(
+      () =>
+        te.claimVaultArweaveIx({
+          depositor: address(FAKE_ADDR),
+          assetId: new Uint8Array(32),
+          claimant: address(FAKE_ADDR),
+          claimantTokenAccount: address(FAKE_ADDR),
+          escrowTokenAccount: address(FAKE_ADDR),
+          messageNonce: new Uint8Array(31),
+        }),
+      /messageNonce must be 32 bytes/,
+    );
+  });
+
+  it('rejects when no signer is configured', async () => {
+    const te = new TokenEscrow({
+      rpc: {} as never,
+      programId: address(FAKE_ADDR),
+      // no signer
+    });
+    await assert.rejects(
+      () =>
+        te.claimVaultArweaveIx({
+          depositor: address(FAKE_ADDR),
+          assetId: new Uint8Array(32),
+          claimant: address(FAKE_ADDR),
+          claimantTokenAccount: address(FAKE_ADDR),
+          escrowTokenAccount: address(FAKE_ADDR),
+          messageNonce: new Uint8Array(32),
+        }),
+      /signer/i,
+    );
+  });
+});
+
+describe('claimVaultArweave (deprecated single-call wrapper)', () => {
+  it('throws with a clear migration message pointing at claimVaultArweaveIx', async () => {
+    const te = makeTokenEscrow();
+    await assert.rejects(
+      () =>
+        te.claimVaultArweave({
+          depositor: address(FAKE_ADDR),
+          assetId: new Uint8Array(32),
+          claimant: address(FAKE_ADDR),
+          claimantTokenAccount: address(FAKE_ADDR),
+          escrowTokenAccount: address(FAKE_ADDR),
+          signature: new Uint8Array(512),
+        }),
+      (err: unknown) => {
+        const msg = (err as Error).message;
+        return (
+          /claimVaultArweaveIx/.test(msg) &&
+          /Ed25519Program/.test(msg) &&
+          /ADR-017/.test(msg)
+        );
+      },
+    );
+  });
+});
