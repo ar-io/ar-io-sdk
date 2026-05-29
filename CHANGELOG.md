@@ -1,3 +1,10 @@
+# [4.0.0-solana.21](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.20...v4.0.0-solana.21) (2026-05-29)
+
+
+### Bug Fixes
+
+* **solana:** don't sign ANT writes against an untrusted auto-detected program ([6767501](https://github.com/ar-io/ar-io-sdk/commit/67675015db2e5169fed9664aa09806e3a8b61890))
+
 # [4.0.0-solana.20](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.19...v4.0.0-solana.20) (2026-05-29)
 
 
