@@ -120,11 +120,9 @@ describe('Token instruction data encoding', () => {
 });
 
 /**
- * The on-chain `vault_introspect::verify_vaulted_transfer_in_tx` (in
- * `programs/ario-ant-escrow/src/vault_introspect.rs`) parses the sibling
- * `vaulted_transfer` instruction by FIXED OFFSETS in the instruction data
- * and FIXED INDICES in the accounts vector. Any drift between the SDK's
- * emitted ix and these constants would silently break active-vault claims:
+ * These tests pin the on-chain `ario_core::vaulted_transfer` instruction's
+ * wire format (data layout + account-meta indices) so a Codama regen or IDL
+ * edit that shuffles either layout fails CI rather than prod.
  *
  *   data[0..8]   = discriminator (sha256("global:vaulted_transfer")[..8])
  *   data[8..16]  = amount (u64 LE)
@@ -132,10 +130,15 @@ describe('Token instruction data encoding', () => {
  *   data[24]     = revocable (bool)
  *   accounts[5]  = recipient
  *
- * These tests pin both invariants so a Codama regen or IDL edit that
- * shuffles either layout fails CI rather than prod.
+ * Historical context: pre-ADR-022 the escrow program had a
+ * `vault_introspect::verify_vaulted_transfer_in_tx` helper that read this
+ * exact layout as a sibling-ix introspection for active vault claims. The
+ * escrow active re-lock path (and the introspection) was removed in #74;
+ * `vaulted_transfer` itself is still a public ario-core instruction (used
+ * by genesis live-delivery and any direct vault flow), so the wire-format
+ * invariants below remain load-bearing for those callers.
  */
-describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
+describe('vaulted_transfer wire format', () => {
   // Fixed inputs so byte assertions are stable.
   const PAYER: Address = address('11111111111111111111111111111112');
   const VAULT: Address = address('11111111111111111111111111111113');
@@ -148,8 +151,9 @@ describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
   const LOCK_DURATION = 86_400n; // 1 day
   const REVOCABLE = true;
 
-  // Discriminator from vault_introspect.rs — locks the on-chain constant
-  // into the unit test so a rename of the on-chain handler is caught.
+  // Anchor discriminator for `ario_core::vaulted_transfer` — locks the
+  // on-chain constant into the unit test so a rename of the on-chain
+  // handler is caught.
   const VAULTED_TRANSFER_DISC = Buffer.from([
     0x09, 0xc0, 0x19, 0x26, 0x6d, 0xea, 0xbf, 0x93,
   ]);
@@ -172,22 +176,20 @@ describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
     assert.equal(ix.data.length, 25, 'ix data must be exactly 25 bytes');
     const data = Buffer.from(ix.data);
 
-    // Discriminator — must match the on-chain VAULTED_TRANSFER_DISC.
+    // Discriminator — must match the on-chain handler's Anchor disc.
     assert.deepEqual(
       data.subarray(0, 8),
       VAULTED_TRANSFER_DISC,
-      'discriminator mismatch — vault_introspect.rs check would fail',
+      'discriminator mismatch — ario_core::vaulted_transfer rename?',
     );
 
-    // Amount (u64 LE at offset 8) — verify_vaulted_transfer_in_tx checks
-    // `amount == expected_amount`.
+    // Amount (u64 LE at offset 8).
     assert.equal(data.readBigUInt64LE(8), AMOUNT);
 
-    // Lock duration (i64 LE at offset 16) — checked against
-    // `min_lock_duration - tolerance_seconds`.
+    // Lock duration (i64 LE at offset 16).
     assert.equal(data.readBigInt64LE(16), LOCK_DURATION);
 
-    // Revocable (bool at offset 24) — checked against expected_revocable.
+    // Revocable (bool at offset 24).
     assert.equal(data[24], 1);
   });
 
@@ -208,7 +210,7 @@ describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
     assert.equal(Buffer.from(ix.data)[24], 0);
   });
 
-  it('places recipient at account index 5 (vault_introspect reads accounts[5])', async () => {
+  it('places recipient at account index 5', async () => {
     const ix = await getVaultedTransferInstructionAsync(
       {
         vault: VAULT,
@@ -235,12 +237,19 @@ describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// assertVaultClaimable — ADR-022 pre-flight guard for the on-chain
-// `VaultStillLocked` rejection. Mirror of the on-chain
-// `require!(clock >= vault_end_timestamp, VaultStillLocked)`.
+// assertVaultClaimable + isVaultClaimable — ADR-022 pre-flight guard for the
+// on-chain `VaultStillLocked` rejection, with a forward
+// CLOCK_SKEW_TOLERANCE_SECONDS buffer so wall/cluster clock skew biases all
+// races into the friendly direction (SDK rejects when chain would accept,
+// never the reverse).
 // ---------------------------------------------------------------------------
 
-import { type EscrowTokenState, assertVaultClaimable } from './escrow.js';
+import {
+  CLOCK_SKEW_TOLERANCE_SECONDS,
+  type EscrowTokenState,
+  assertVaultClaimable,
+  isVaultClaimable,
+} from './escrow.js';
 
 const DUMMY_ADDR = '11111111111111111111111111111111' as unknown as Address;
 
@@ -264,7 +273,7 @@ function makeVaultEscrow(vaultEndTimestamp: bigint): EscrowTokenState {
   };
 }
 
-describe('assertVaultClaimable (ADR-022)', () => {
+describe('assertVaultClaimable (ADR-022) — clock-skew buffer', () => {
   it('throws when the vault is still locked (vaultEndTimestamp in the future)', () => {
     // Far enough in the future to be unambiguous across CI scheduling skew.
     const future = BigInt(Math.floor(Date.now() / 1000)) + 3600n; // +1 hour
@@ -277,14 +286,42 @@ describe('assertVaultClaimable (ADR-022)', () => {
           /Vault escrow is still locked until/.test(msg) &&
           /VaultStillLocked/.test(msg) &&
           msg.includes(String(future)) &&
-          /\d{4}-\d{2}-\d{2}T/.test(msg) // ISO timestamp surfaced
+          /\d{4}-\d{2}-\d{2}T/.test(msg) && // ISO timestamp surfaced
+          msg.includes(`${CLOCK_SKEW_TOLERANCE_SECONDS}s clock-skew buffer`)
         );
       },
     );
   });
 
-  it('does not throw when the vault has unlocked (vaultEndTimestamp in the past)', () => {
-    const past = BigInt(Math.floor(Date.now() / 1000)) - 1n;
+  it('throws at exactly the unlock instant (within the clock-skew buffer)', () => {
+    // The on-chain gate accepts at `clock == vault_end_timestamp`, but the
+    // SDK adds CLOCK_SKEW_TOLERANCE_SECONDS forward buffer — so at the
+    // exact unlock instant the SDK still says "locked" (it would submit a
+    // doomed tx if the cluster clock is even 1s behind wall clock).
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const escrow = makeVaultEscrow(now);
+    assert.throws(() => assertVaultClaimable(escrow));
+  });
+
+  it('throws just inside the buffer (vaultEnd + tolerance - 5s > now)', () => {
+    // Pick an end-timestamp such that buffer end is 5s in the future →
+    // SDK should still reject.
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const end = now - CLOCK_SKEW_TOLERANCE_SECONDS + 5n;
+    const escrow = makeVaultEscrow(end);
+    assert.throws(() => assertVaultClaimable(escrow));
+  });
+
+  it('does NOT throw once the buffer has elapsed (vaultEnd + tolerance < now)', () => {
+    // 5s past the buffer end → claimable.
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const end = now - CLOCK_SKEW_TOLERANCE_SECONDS - 5n;
+    const escrow = makeVaultEscrow(end);
+    assert.doesNotThrow(() => assertVaultClaimable(escrow));
+  });
+
+  it('does not throw when the vault unlocked well in the past', () => {
+    const past = BigInt(Math.floor(Date.now() / 1000)) - 3600n; // 1h ago
     const escrow = makeVaultEscrow(past);
     assert.doesNotThrow(() => assertVaultClaimable(escrow));
   });
@@ -296,12 +333,53 @@ describe('assertVaultClaimable (ADR-022)', () => {
     const escrow = makeVaultEscrow(0n);
     assert.doesNotThrow(() => assertVaultClaimable(escrow));
   });
+});
 
-  it('does not throw at exactly the unlock instant (clock == vaultEndTimestamp)', () => {
+describe('isVaultClaimable (non-throwing UI predicate)', () => {
+  it('is false while still locked', () => {
+    const future = BigInt(Math.floor(Date.now() / 1000)) + 3600n;
+    assert.equal(isVaultClaimable(makeVaultEscrow(future)), false);
+  });
+
+  it('is false at the exact unlock instant (within buffer)', () => {
     const now = BigInt(Math.floor(Date.now() / 1000));
-    const escrow = makeVaultEscrow(now);
-    // Guard is `vaultEndTimestamp > now`, mirroring the on-chain
-    // `require!(clock >= vault_end_timestamp)`. At equality, claimable.
-    assert.doesNotThrow(() => assertVaultClaimable(escrow));
+    assert.equal(isVaultClaimable(makeVaultEscrow(now)), false);
+  });
+
+  it('is true once the buffer has elapsed', () => {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const end = now - CLOCK_SKEW_TOLERANCE_SECONDS - 5n;
+    assert.equal(isVaultClaimable(makeVaultEscrow(end)), true);
+  });
+
+  it('is true for a token escrow (vaultEndTimestamp == 0)', () => {
+    assert.equal(isVaultClaimable(makeVaultEscrow(0n)), true);
+  });
+
+  it('agrees with assertVaultClaimable at every boundary tested above', () => {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const cases: bigint[] = [
+      now + 3600n,
+      now,
+      now - CLOCK_SKEW_TOLERANCE_SECONDS + 5n,
+      now - CLOCK_SKEW_TOLERANCE_SECONDS - 5n,
+      now - 3600n,
+      0n,
+    ];
+    for (const end of cases) {
+      const escrow = makeVaultEscrow(end);
+      const predicateOk = isVaultClaimable(escrow);
+      let assertThrew = false;
+      try {
+        assertVaultClaimable(escrow);
+      } catch {
+        assertThrew = true;
+      }
+      assert.equal(
+        predicateOk,
+        !assertThrew,
+        `disagreement at vault_end=${end}: isVaultClaimable=${predicateOk}, assertVaultClaimable threw=${assertThrew}`,
+      );
+    }
   });
 });
