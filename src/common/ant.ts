@@ -33,6 +33,13 @@ import type { ANTRead, ANTWrite } from '../types/ant.js';
  * (BYO-ANT) and falls back to the canonical default. Callers who already know
  * the program (e.g. immediately after `ANT.spawn`) can pass it explicitly to
  * skip the lookup.
+ *
+ * SECURITY: the `ANT Program` trait is untrusted asset/RPC data. For a
+ * read-only client it's used as-is, but a writeable client (signer present)
+ * will NOT sign against an auto-detected *non-canonical* program — it throws
+ * unless you opted in by passing `antProgramId` explicitly. This prevents a
+ * malicious asset or spoofed RPC response from redirecting your signed
+ * transaction to an attacker-controlled program.
  */
 export type ANTConfig = {
   processId: string;
@@ -58,24 +65,30 @@ export class ANT {
     return (async () => {
       const { SolanaANTReadable } = await import('../solana/ant-readable.js');
       const { SolanaANTWriteable } = await import('../solana/ant-writeable.js');
-      // ADR-016 / BD-100: when no explicit `antProgramId` is passed,
-      // resolve it from the asset's `ANT Program` Attributes-plugin entry.
-      // Without this auto-detection, third-party (BYO-ANT) assets would
-      // silently mis-derive PDAs through the canonical default.
-      let antProgramId = config.antProgramId;
-      if (!antProgramId) {
-        const { fetchAntProgramFromAsset } = await import(
-          '../solana/mpl-core.js'
-        );
-        const { ARIO_ANT_PROGRAM_ID } = await import('../solana/constants.js');
-        const { address } = await import('@solana/kit');
-        const detected = await fetchAntProgramFromAsset(
-          config.rpc,
-          address(config.processId),
-          { commitment: config.commitment ?? 'confirmed' },
-        );
-        antProgramId = detected ?? ARIO_ANT_PROGRAM_ID;
-      }
+      // ADR-016 / BD-100: when no explicit `antProgramId` is passed, resolve
+      // it from the asset's `ANT Program` Attributes-plugin entry so that
+      // third-party (BYO-ANT) assets derive PDAs through the right program.
+      //
+      // SECURITY: that trait is untrusted asset/RPC data. The *read* path may
+      // use it freely (it never signs). The *write* path runs it through
+      // `resolveWriteAntProgram`, which refuses to sign against a non-canonical
+      // detected value unless the caller opted in by passing `antProgramId`
+      // explicitly — otherwise a spoofed trait could route a signed tx to an
+      // attacker-controlled program.
+      const explicit = config.antProgramId;
+      const { fetchAntProgramFromAsset, resolveWriteAntProgram } = await import(
+        '../solana/mpl-core.js'
+      );
+      const { ARIO_ANT_PROGRAM_ID } = await import('../solana/constants.js');
+      const { address } = await import('@solana/kit');
+      const detected =
+        explicit !== undefined
+          ? null
+          : await fetchAntProgramFromAsset(
+              config.rpc,
+              address(config.processId),
+              { commitment: config.commitment ?? 'confirmed' },
+            );
       if (config.signer) {
         if (!config.rpcSubscriptions) {
           throw new Error(
@@ -88,14 +101,14 @@ export class ANT {
           processId: config.processId,
           signer: config.signer,
           commitment: config.commitment,
-          antProgramId,
+          antProgramId: resolveWriteAntProgram({ explicit, detected }),
         }) as unknown as ANTWrite;
       }
       return new SolanaANTReadable({
         rpc: config.rpc,
         processId: config.processId,
         commitment: config.commitment,
-        antProgramId,
+        antProgramId: explicit ?? detected ?? ARIO_ANT_PROGRAM_ID,
       }) as unknown as ANTRead;
     })();
   }
