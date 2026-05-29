@@ -233,3 +233,75 @@ describe('vaulted_transfer wire format (active-vault claim sibling ix)', () => {
     assert.equal(ix.accounts[4].address, VAULT_ATA);
   });
 });
+
+// ---------------------------------------------------------------------------
+// assertVaultClaimable — ADR-022 pre-flight guard for the on-chain
+// `VaultStillLocked` rejection. Mirror of the on-chain
+// `require!(clock >= vault_end_timestamp, VaultStillLocked)`.
+// ---------------------------------------------------------------------------
+
+import { type EscrowTokenState, assertVaultClaimable } from './escrow.js';
+
+const DUMMY_ADDR = '11111111111111111111111111111111' as unknown as Address;
+
+/** Minimal EscrowTokenState for the guard test — only vaultEndTimestamp
+ *  matters; everything else is dummy. */
+function makeVaultEscrow(vaultEndTimestamp: bigint): EscrowTokenState {
+  return {
+    version: { major: 1, minor: 0, patch: 0 },
+    bump: 0,
+    depositor: DUMMY_ADDR,
+    assetType: 'vault',
+    amount: 1n,
+    arioMint: DUMMY_ADDR,
+    assetId: new Uint8Array(32),
+    recipientProtocol: 'ethereum',
+    recipientPubkey: new Uint8Array(20),
+    nonce: new Uint8Array(32),
+    depositSlot: 0n,
+    vaultEndTimestamp,
+    vaultRevocable: false,
+  };
+}
+
+describe('assertVaultClaimable (ADR-022)', () => {
+  it('throws when the vault is still locked (vaultEndTimestamp in the future)', () => {
+    // Far enough in the future to be unambiguous across CI scheduling skew.
+    const future = BigInt(Math.floor(Date.now() / 1000)) + 3600n; // +1 hour
+    const escrow = makeVaultEscrow(future);
+    assert.throws(
+      () => assertVaultClaimable(escrow),
+      (err: unknown) => {
+        const msg = (err as Error).message;
+        return (
+          /Vault escrow is still locked until/.test(msg) &&
+          /VaultStillLocked/.test(msg) &&
+          msg.includes(String(future)) &&
+          /\d{4}-\d{2}-\d{2}T/.test(msg) // ISO timestamp surfaced
+        );
+      },
+    );
+  });
+
+  it('does not throw when the vault has unlocked (vaultEndTimestamp in the past)', () => {
+    const past = BigInt(Math.floor(Date.now() / 1000)) - 1n;
+    const escrow = makeVaultEscrow(past);
+    assert.doesNotThrow(() => assertVaultClaimable(escrow));
+  });
+
+  it('does not throw for a token escrow (vaultEndTimestamp == 0)', () => {
+    // Token (non-vault) escrows leave vault_end_timestamp = 0; the guard
+    // must not block them. (Token claims don't call this guard today, but
+    // the function should still behave correctly if invoked.)
+    const escrow = makeVaultEscrow(0n);
+    assert.doesNotThrow(() => assertVaultClaimable(escrow));
+  });
+
+  it('does not throw at exactly the unlock instant (clock == vaultEndTimestamp)', () => {
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const escrow = makeVaultEscrow(now);
+    // Guard is `vaultEndTimestamp > now`, mirroring the on-chain
+    // `require!(clock >= vault_end_timestamp)`. At equality, claimable.
+    assert.doesNotThrow(() => assertVaultClaimable(escrow));
+  });
+});
