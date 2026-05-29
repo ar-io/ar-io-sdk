@@ -1,3 +1,10 @@
+# [4.0.0-solana.20](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.19...v4.0.0-solana.20) (2026-05-29)
+
+
+### Features
+
+* **solana/escrow:** expose claimVaultArweaveIx for attested-claim composition ([5e0baed](https://github.com/ar-io/ar-io-sdk/commit/5e0baed03e87c08e60dc64c7d143d4e29f3cf243))
+
 # [4.0.0-solana.19](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.18...v4.0.0-solana.19) (2026-05-29)
 
 
