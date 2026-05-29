@@ -1146,7 +1146,7 @@ describe(
       // or a fixture from a pre-ACL deployment). Treat this test as a
       // regression guard that the PR's refactor of the resolution logic
       // didn't break the happy path.
-      // TODO: add a heal-path test once an unseeded-ACL fixture exists.
+      // TODO(#646): add a heal-path test once an unseeded-ACL fixture exists.
       const sender = await freshSigner(scratch, 'antx-sender');
       const recipient = await freshSigner(scratch, 'antx-recipient');
       await airdrop(sender.keypairPath, 5);
