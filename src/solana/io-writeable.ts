@@ -2103,13 +2103,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * needed to remove it so they can be prepended to a request/set tx —
    * enabling single-tx "change primary name" flows.
    *
-   * For legacy primary names whose `PrimaryNameReverse` PDA was never
-   * created (set before the reverse-lookup feature), the remove is
-   * skipped — `request_and_set` will attempt to overwrite the existing
-   * `PrimaryName` directly without a preceding remove.
+   * Returns an empty array when the signer has no existing primary name.
    *
-   * Returns an empty array when no existing primary name is found or
-   * when removal is not possible due to missing reverse state.
+   * Throws when the signer has a legacy primary-name state (forward
+   * `PrimaryName` PDA exists but its paired `PrimaryNameReverse` PDA does
+   * NOT). Both `remove_primary_name` AND `request_and_set_primary_name`
+   * require the reverse PDA on-chain — the latter rejects with
+   * `MustRemoveExistingPrimaryName` (0x1786, code 6022) any time a
+   * forward record already exists for the signer, regardless of reverse
+   * state. Silently skipping the remove would queue a tx guaranteed to
+   * fail with that opaque error. Surfacing it at the client with a clear
+   * remediation pointer is the only safe behavior.
+   *
+   * The legacy state should not exist on any cluster post-snapshot/import
+   * PR #159 (which emits PrimaryNameReverse in lockstep with PrimaryName)
+   * — it's a relic of pre-#159 imports. Operators on affected clusters
+   * must run `yarn workspace @ar-io/migration-import backfill:primary-name-reverse`
+   * (in the solana-ar-io repo) before this method can succeed.
    */
   private async _buildRemoveExistingPrimaryNameIxs(): Promise<Instruction[]> {
     const [primaryNamePda] = await getPrimaryNamePDA(
@@ -2133,11 +2143,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { commitment: this.commitment },
     );
     if (!reverseAccount.exists) {
-      // Legacy state: PrimaryNameReverse was never created. The
-      // on-chain `remove_primary_name` requires it, so we can't
-      // remove. Return empty and let request_and_set handle the
-      // existing PrimaryName directly.
-      return [];
+      // Fail fast with an actionable message. See method docstring for
+      // why request_and_set would reject this regardless.
+      throw new Error(
+        `Cannot change primary name: signer "${this.signer.address}" has a ` +
+          `legacy PrimaryName ("${oldName}") with no paired PrimaryNameReverse PDA ` +
+          `(${primaryNameReversePda}). The on-chain remove_primary_name and ` +
+          `request_and_set_primary_name ixs both require the reverse PDA — ` +
+          `request_and_set will reject with MustRemoveExistingPrimaryName (code 6022). ` +
+          `Run \`yarn workspace @ar-io/migration-import backfill:primary-name-reverse\` ` +
+          `against this cluster's ario-core program to materialize the missing reverse ` +
+          `PDA, then retry.`,
+      );
     }
 
     return [
