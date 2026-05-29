@@ -1,3 +1,10 @@
+# [4.0.0-solana.19](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.18...v4.0.0-solana.19) (2026-05-29)
+
+
+### Bug Fixes
+
+* **solana/escrow:** add clock-skew tolerance + isVaultClaimable helper ([6e690a0](https://github.com/ar-io/ar-io-sdk/commit/6e690a0035bd22c6c9d94a61bfb9fefd019bc256))
+
 # [4.0.0-solana.18](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.17...v4.0.0-solana.18) (2026-05-28)
 
 
