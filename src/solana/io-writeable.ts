@@ -50,6 +50,7 @@ import {
   getIncreaseUndernameLimitFromOperatorStakeInstructionAsync,
   getIncreaseUndernameLimitFromWithdrawalInstructionAsync,
   getIncreaseUndernameLimitInstructionAsync,
+  getMigrateArnsRecordInstruction,
   getPruneExpiredNamesInstructionAsync,
   getPruneExpiredReservationInstruction,
   getPruneNameToReturnedInstructionAsync,
@@ -93,6 +94,7 @@ import {
 import {
   deserializeArnsRecord,
   deserializeEpochSettingsFull,
+  deserializePrimaryName,
 } from './deserialize.js';
 import {
   type FundingPlan as InternalFundingPlan,
@@ -127,6 +129,7 @@ import {
   getExtendVaultInstructionAsync,
   getIncreaseVaultInstructionAsync,
   getReleaseVaultInstructionAsync,
+  getRemovePrimaryNameInstructionAsync,
   getRequestAndSetPrimaryNameFromFundingPlanInstructionAsync,
   getRequestAndSetPrimaryNameInstructionAsync,
   getRequestPrimaryNameFromFundingPlanInstructionAsync,
@@ -484,6 +487,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const [demandFactor] = await getDemandFactorPDA(this.arnsProgram);
     const [nameRegistry] = await getArnsRegistryPDA(this.arnsProgram);
     return { config, demandFactor, nameRegistry, ...input } as T;
+  }
+
+  /**
+   * If the on-chain ArnsRecord for `name` hasn't been migrated to the
+   * current schema (name_hash at offset 8 doesn't match the expected
+   * hash), return a `migrate_arns_record` instruction that must be
+   * prepended to any operation referencing the record with PDA seed
+   * verification.
+   *
+   * Returns an empty array when the record is already up-to-date or
+   * doesn't exist.
+   */
+  private async _buildMigrateArnsRecordIxIfNeeded(
+    name: string,
+  ): Promise<Instruction[]> {
+    const [arnsRecordPda] = await getArnsRecordPDA(name, this.arnsProgram);
+    const account = await fetchEncodedAccount(this.rpc, arnsRecordPda, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) return [];
+
+    const data = Buffer.from(account.data);
+    const expectedHash = hashName(name);
+    const storedHash = data.subarray(8, 40);
+
+    if (storedHash.equals(expectedHash)) return [];
+
+    return [
+      getMigrateArnsRecordInstruction(
+        {
+          record: arnsRecordPda,
+          payer: this.signer,
+        },
+        { programAddress: this.arnsProgram },
+      ),
+    ];
   }
 
   /** Inject ARIO core default PDAs (config). */
@@ -1670,12 +1709,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: ArNSPurchaseParams,
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'upgrade',
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    const sig = await this.sendTransaction(
+      syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+    );
     return { id: sig };
   }
 
@@ -1689,8 +1733,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // `_buildSyncAttributesIxIfOwner`, which skips when not the owner so
     // the wrapping arns ix can still succeed for non-holder management
     // — see BD-095.)
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
     const ix = await this._buildSyncAttributesIxUnconditional(params.name);
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -1777,6 +1824,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: ExtendLeaseParams,
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'extend',
@@ -1784,7 +1834,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
     // BD-095: extend_lease changes only `end_timestamp`, which isn't
     // mirrored in any Metaplex Attributes plugin trait. No bundle.
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -1792,13 +1842,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: IncreaseUndernameLimitParams,
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
     const ix = await this._buildManageStakeIx({
       params,
       operation: 'increaseUndername',
       quantity: params.increaseCount,
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    const sig = await this.sendTransaction(
+      syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+    );
     return { id: sig };
   }
 
@@ -2044,6 +2099,78 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // =========================================
 
   /**
+   * If the signer already has a primary name set, build the instruction(s)
+   * needed to remove it so they can be prepended to a request/set tx —
+   * enabling single-tx "change primary name" flows.
+   *
+   * Returns an empty array when the signer has no existing primary name.
+   *
+   * Throws when the signer has a legacy primary-name state (forward
+   * `PrimaryName` PDA exists but its paired `PrimaryNameReverse` PDA does
+   * NOT). Both `remove_primary_name` AND `request_and_set_primary_name`
+   * require the reverse PDA on-chain — the latter rejects with
+   * `MustRemoveExistingPrimaryName` (0x1786, code 6022) any time a
+   * forward record already exists for the signer, regardless of reverse
+   * state. Silently skipping the remove would queue a tx guaranteed to
+   * fail with that opaque error. Surfacing it at the client with a clear
+   * remediation pointer is the only safe behavior.
+   *
+   * The legacy state should not exist on any cluster post-snapshot/import
+   * PR #159 (which emits PrimaryNameReverse in lockstep with PrimaryName)
+   * — it's a relic of pre-#159 imports. Operators on affected clusters
+   * must run `yarn workspace @ar-io/migration-import backfill:primary-name-reverse`
+   * (in the solana-ar-io repo) before this method can succeed.
+   */
+  private async _buildRemoveExistingPrimaryNameIxs(): Promise<Instruction[]> {
+    const [primaryNamePda] = await getPrimaryNamePDA(
+      this.signer.address,
+      this.coreProgram,
+    );
+    const account = await fetchEncodedAccount(this.rpc, primaryNamePda, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) return [];
+
+    const { name: oldName } = deserializePrimaryName(Buffer.from(account.data));
+    const [primaryNameReversePda] = await getPrimaryNameReversePDA(
+      oldName,
+      this.coreProgram,
+    );
+
+    const reverseAccount = await fetchEncodedAccount(
+      this.rpc,
+      primaryNameReversePda,
+      { commitment: this.commitment },
+    );
+    if (!reverseAccount.exists) {
+      // Fail fast with an actionable message. See method docstring for
+      // why request_and_set would reject this regardless.
+      throw new Error(
+        `Cannot change primary name: signer "${this.signer.address}" has a ` +
+          `legacy PrimaryName ("${oldName}") with no paired PrimaryNameReverse PDA ` +
+          `(${primaryNameReversePda}). The on-chain remove_primary_name and ` +
+          `request_and_set_primary_name ixs both require the reverse PDA — ` +
+          `request_and_set will reject with MustRemoveExistingPrimaryName (code 6022). ` +
+          `Run \`yarn workspace @ar-io/migration-import backfill:primary-name-reverse\` ` +
+          `against this cluster's ario-core program to materialize the missing reverse ` +
+          `PDA, then retry.`,
+      );
+    }
+
+    return [
+      await getRemovePrimaryNameInstructionAsync(
+        {
+          primaryName: primaryNamePda,
+          primaryNameReverse: primaryNameReversePda,
+          owner: this.signer,
+          reverseLookupHash: hashName(oldName),
+        },
+        { programAddress: this.coreProgram },
+      ),
+    ];
+  }
+
+  /**
    * Build the `remaining_accounts` slice + the `antProgramId` arg the
    * four ario-core primary-name instructions consume. Sprint 2/5
    * reshape (ADR-016): ario-core no longer reads MPL Core asset bytes.
@@ -2148,6 +2275,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: ArNSPurchaseParams,
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    // If the caller already has a primary name, prepend remove ixs so
+    // the on-chain handler doesn't reject with MustRemoveExistingPrimaryName.
+    const removeIxs = await this._buildRemoveExistingPrimaryNameIxs();
+
+    const { baseName } = splitPrimaryName(params.name);
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(baseName);
+
     const coreConfig = await this.getCoreConfig();
     const signerATA = await getAssociatedTokenAddressKit(
       coreConfig.mint,
@@ -2189,7 +2323,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       });
     }
 
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...removeIxs, ...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -2200,6 +2334,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // setPrimaryName routes to the on-chain `request_and_set_primary_name`
     // path — the auto-approve flow when the caller owns the AntRecord
     // for the matching name (undername part, or "@" for base names).
+    // If the caller already has a primary name, prepend remove ixs so
+    // the "change" is atomic in a single transaction.
+    const removeIxs = await this._buildRemoveExistingPrimaryNameIxs();
+
+    const { baseName } = splitPrimaryName(params.name);
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(baseName);
+
     const coreConfig = await this.getCoreConfig();
     const signerATA = await getAssociatedTokenAddressKit(
       coreConfig.mint,
@@ -2241,7 +2382,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         antProgramId: antProgram,
       });
     }
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...removeIxs, ...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -2372,6 +2513,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: { initiator: Address; name: string },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const { baseName } = splitPrimaryName(params.name);
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(baseName);
+
     const [requestPda] = await getPrimaryNameRequestPDA(
       params.initiator,
       this.coreProgram,
@@ -2412,7 +2556,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       remaining,
     );
 
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -2809,21 +2953,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: { name: string; processId: string },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
+
     const newAnt = address(params.processId);
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
-
-    // The on-chain `reassign_name` (PR #73 / BD-106 / BD-095) now authorizes
-    // against the CURRENT Metaplex Core holder of `record.ant` via a named
-    // `ant_asset` account constrained to `arns_record.ant`. We must read the
-    // current record to know which asset to pass — that's the OLD ant (the
-    // one we're reassigning AWAY FROM), not `newAnt`.
-    const currentRecord = await this.getArNSRecord({ name: params.name });
-    const currentAnt = address(currentRecord.processId);
+    const record = await this.getArNSRecord({ name: params.name });
+    const antAsset = address(record.processId);
 
     const ix = await getReassignNameInstructionAsync(
       await this.withArnsDefaults({
         arnsRecord,
-        antAsset: currentAnt,
+        antAsset,
         caller: this.signer,
         newAnt,
       }),
@@ -2843,7 +2985,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       newAnt,
     );
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    const reassignWithMetas = withRemainingAccounts(ix, [
+      { address: newAnt, role: AccountRole.READONLY },
+    ]);
+    const sig = await this.sendTransaction(
+      syncIx
+        ? [...migrateIxs, reassignWithMetas, syncIx]
+        : [...migrateIxs, reassignWithMetas],
+    );
     return { id: sig };
   }
 
@@ -2852,22 +3001,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: { name: string },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
+
     const [returnedNamePda] = await getReturnedNamePDA(
       params.name,
       this.arnsProgram,
     );
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
-
-    // PR #73 / BD-106: `release_name` now authorizes against the current
-    // Metaplex Core holder of `record.ant` via a named `ant_asset` account
-    // constrained to `arns_record.ant`. Fetch the record to know which.
-    const currentRecord = await this.getArNSRecord({ name: params.name });
+    const record = await this.getArNSRecord({ name: params.name });
+    const antAsset = address(record.processId);
 
     const ix = await getReleaseNameInstructionAsync(
       await this.withArnsDefaults({
         arnsRecord,
         returnedName: returnedNamePda,
-        antAsset: address(currentRecord.processId),
+        antAsset,
         caller: this.signer,
       }),
       { programAddress: this.arnsProgram },
@@ -2878,7 +3028,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // asset's stale traits remain pointing at the released name; off-chain
     // resolvers should treat ArnsRecord as the source of truth and ignore
     // a "ArNS Name" trait that no longer resolves.
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...migrateIxs, ix]);
     return { id: sig };
   }
 
@@ -3242,6 +3392,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: { name: string },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
+    const migrateIxs = await this._buildMigrateArnsRecordIxIfNeeded(
+      params.name,
+    );
+
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
     const [returnedName] = await getReturnedNamePDA(
       params.name,
@@ -3257,7 +3411,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.arnsProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    const sig = await this.sendTransaction([...migrateIxs, ix]);
     return { id: sig };
   }
 

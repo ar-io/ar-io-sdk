@@ -462,12 +462,11 @@ export class SolanaANTWriteable extends SolanaANTReadable {
       user: newOwner,
     });
 
-    // Resolve the old owner's source ACL accounts. The current owner
-    // *must* have a live `(asset, Owner)` entry — every spawn /
-    // import path seeds it, so a missing entry indicates state
-    // corruption. We surface that as `AclEntryNotFound` from the
-    // contract by passing the derived PDAs as a fallback rather than
-    // failing client-side here.
+    // Resolve the old owner's source ACL accounts. If the entry is
+    // missing (e.g. the ANT was acquired via a marketplace transfer or
+    // before the ACL system existed), heal it by bootstrapping the
+    // config/page and recording the owner entry so the on-chain
+    // transfer handler can successfully remove it.
     const oldOwnerSource = await this.registry.resolveSourceAclAccountsForEntry(
       {
         user: oldOwner,
@@ -475,12 +474,30 @@ export class SolanaANTWriteable extends SolanaANTReadable {
         role: 'owner',
       },
     );
-    const oldOwnerAclConfigPda =
-      oldOwnerSource?.aclConfigPda ??
-      (await this.registry.deriveAclConfigPda(oldOwner));
-    const oldOwnerAclPagePda =
-      oldOwnerSource?.aclPagePda ??
-      (await this.registry.deriveAclPagePda(oldOwner, 0n));
+
+    let oldOwnerAclConfigPda: Address;
+    let oldOwnerAclPagePda: Address;
+    const oldOwnerHealIxs: Instruction[] = [];
+
+    if (oldOwnerSource) {
+      oldOwnerAclConfigPda = oldOwnerSource.aclConfigPda;
+      oldOwnerAclPagePda = oldOwnerSource.aclPagePda;
+    } else {
+      const dest = await this.registry.resolveDestinationAclAccounts({
+        user: oldOwner,
+      });
+      oldOwnerAclConfigPda = dest.aclConfigPda;
+      oldOwnerAclPagePda = dest.aclPagePda;
+      oldOwnerHealIxs.push(...dest.prepIxs);
+      oldOwnerHealIxs.push(
+        await this.registry.buildRecordIx({
+          user: oldOwner,
+          asset: this.mint,
+          role: 'owner',
+          pageIdx: dest.pageIdx,
+        }),
+      );
+    }
 
     const transferIx = await getTransferInstructionAsync(
       {
@@ -521,6 +538,7 @@ export class SolanaANTWriteable extends SolanaANTReadable {
     });
 
     const sig = await this.sendTransaction([
+      ...oldOwnerHealIxs,
       ...newOwnerDest.prepIxs,
       transferIx,
       ...cleanupIxs,

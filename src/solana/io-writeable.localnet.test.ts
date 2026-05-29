@@ -26,19 +26,31 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { before, describe, it } from 'node:test';
 
 import {
+  getImportAccountInstructionAsync,
+  getPrimaryNameEncoder,
+} from '@ar.io/solana-contracts/core';
+import {
   type KeyPairSigner,
   address,
   createKeyPairSignerFromBytes,
   createSolanaRpc,
   createSolanaRpcSubscriptions,
   fetchEncodedAccount,
+  getAddressEncoder,
 } from '@solana/kit';
 
+import { ANT } from '../common/ant.js';
 import { ARIO } from '../common/io.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import { deserializeWithdrawal } from './deserialize.js';
 import { SolanaARIOWriteable } from './io-writeable.js';
-import { getWithdrawalPDA } from './pda.js';
+import {
+  getArioConfigPDA,
+  getPrimaryNamePDA,
+  getPrimaryNameReversePDA,
+  getWithdrawalPDA,
+} from './pda.js';
+import { sendAndConfirm } from './send.js';
 import { spawnSolanaANT } from './spawn-ant.js';
 
 const RPC_URL =
@@ -876,6 +888,310 @@ describe(
       });
       assert.equal(pn.name.toLowerCase(), name.toLowerCase());
       assert.equal(pn.processId, antResult.processId);
+    });
+
+    // ============================================================
+    // PR #643: auto-remove existing primary name in tx
+    // ============================================================
+
+    it('setPrimaryName atomically replaces an existing primary name (forward + reverse both present)', async () => {
+      // Headline behavior added by `_buildRemoveExistingPrimaryNameIxs`:
+      // when the signer already has a PrimaryName + its paired reverse,
+      // setPrimaryName prepends remove ixs so the on-chain request_and_set
+      // doesn't reject with MustRemoveExistingPrimaryName. Single-tx
+      // change-primary-name flow.
+      const u = await freshSigner(scratch, 'pn-replace');
+      await airdrop(u.keypairPath, 5);
+      mintArio(u.signer.address, 200_000_000_000n);
+      const uArio = buildArio(u.signer, RPC_URL!, WS_URL!);
+      const rpc = createSolanaRpc(RPC_URL!);
+      const rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
+
+      // Buy + set primary name A
+      const antA = await spawnSolanaANT({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: u.signer,
+        antProgramId: address(ANT_ID!),
+        state: {
+          name: 'PN replace A',
+          ticker: 'PRA',
+          description: 'a',
+          uri: 'ar://a',
+        },
+      });
+      const nameA = `pra${Date.now().toString(36).slice(-6)}`;
+      await uArio.buyRecord({
+        name: nameA,
+        type: 'lease',
+        years: 1,
+        processId: antA.processId,
+      });
+      await uArio.setPrimaryName({ name: nameA });
+
+      // Reverse for A must exist before we test replacement.
+      const [oldReversePda] = await getPrimaryNameReversePDA(
+        nameA,
+        address(CORE_ID!),
+      );
+      const oldReverseBefore = await fetchEncodedAccount(rpc, oldReversePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        oldReverseBefore.exists,
+        true,
+        'reverse for A must exist after initial setPrimaryName',
+      );
+
+      // Replace with B in a single tx. Before this PR, calling
+      // setPrimaryName here would have thrown MustRemoveExistingPrimaryName.
+      const antB = await spawnSolanaANT({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: u.signer,
+        antProgramId: address(ANT_ID!),
+        state: {
+          name: 'PN replace B',
+          ticker: 'PRB',
+          description: 'b',
+          uri: 'ar://b',
+        },
+      });
+      const nameB = `prb${Date.now().toString(36).slice(-6)}`;
+      await uArio.buyRecord({
+        name: nameB,
+        type: 'lease',
+        years: 1,
+        processId: antB.processId,
+      });
+      const replaceRes = await uArio.setPrimaryName({ name: nameB });
+      assert.ok(replaceRes.id, 'atomic replace must return a tx id');
+
+      // Primary name is now B.
+      const pnB = await uArio.getPrimaryName({
+        address: u.signer.address as string,
+      });
+      assert.equal(pnB.name.toLowerCase(), nameB.toLowerCase());
+      assert.equal(pnB.processId, antB.processId);
+
+      // Old reverse for A is cleaned up.
+      const oldReverseAfter = await fetchEncodedAccount(rpc, oldReversePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        oldReverseAfter.exists,
+        false,
+        'old reverse for A must be cleaned up by the prepended remove ix',
+      );
+
+      // New reverse for B exists.
+      const [newReversePda] = await getPrimaryNameReversePDA(
+        nameB,
+        address(CORE_ID!),
+      );
+      const newReverseAfter = await fetchEncodedAccount(rpc, newReversePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        newReverseAfter.exists,
+        true,
+        'reverse for B must exist after replacement',
+      );
+    });
+
+    it('setPrimaryName throws actionable error when legacy PrimaryName has no paired reverse', async () => {
+      // Construct legacy state: a PrimaryName forward record WITHOUT a
+      // PrimaryNameReverse — the exact pre-#159 import state that
+      // motivated this client-side guard. We forge it with the migration
+      // authority via `import_account`, writing only the forward record.
+      //
+      // The guard MUST fail fast with the actionable error rather than
+      // silently queue a tx that the on-chain handler will reject with
+      // MustRemoveExistingPrimaryName (0x1786 / 6022). Anything else
+      // surfaces an opaque on-chain error to the caller and leaves no
+      // breadcrumb pointing at the backfill remediation.
+      const u = await freshSigner(scratch, 'pn-legacy');
+      await airdrop(u.keypairPath, 5);
+      mintArio(u.signer.address, 200_000_000_000n);
+      const uArio = buildArio(u.signer, RPC_URL!, WS_URL!);
+      const rpc = createSolanaRpc(RPC_URL!);
+      const rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
+
+      // Load the migration authority keypair (already exported by the
+      // sdk-e2e bootstrap; this is the deployer that owns the
+      // ario_core::import_account ix).
+      const authBytes = new Uint8Array(
+        JSON.parse(readFileSync(AUTHORITY_KP!, 'utf8')),
+      );
+      const authoritySigner = await createKeyPairSignerFromBytes(authBytes);
+
+      // Forge the forward record.
+      const legacyName = `lgc${Date.now().toString(36).slice(-6)}`;
+      const ownerAddr = u.signer.address;
+      const [primaryNamePda, bump] = await getPrimaryNamePDA(
+        ownerAddr,
+        address(CORE_ID!),
+      );
+      const [arioConfigPda] = await getArioConfigPDA(address(CORE_ID!));
+      const addrEncoder = getAddressEncoder();
+      const data = getPrimaryNameEncoder().encode({
+        owner: ownerAddr,
+        name: legacyName,
+        setAt: BigInt(Math.floor(Date.now() / 1000)),
+        bump,
+        version: { major: 1, minor: 0, patch: 0 },
+      });
+
+      const importIx = await getImportAccountInstructionAsync(
+        {
+          config: arioConfigPda,
+          authority: authoritySigner,
+          payer: authoritySigner,
+          account: primaryNamePda,
+          seeds: [
+            new TextEncoder().encode('primary_name'),
+            addrEncoder.encode(ownerAddr),
+          ],
+          data: new Uint8Array(data),
+        },
+        { programAddress: address(CORE_ID!) },
+      );
+
+      await sendAndConfirm({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: authoritySigner,
+        instructions: [importIx],
+      });
+
+      // Confirm legacy state: forward exists, reverse does NOT.
+      const fwdAcct = await fetchEncodedAccount(rpc, primaryNamePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(fwdAcct.exists, true, 'forged forward must exist');
+      const [reversePda] = await getPrimaryNameReversePDA(
+        legacyName,
+        address(CORE_ID!),
+      );
+      const revAcct = await fetchEncodedAccount(rpc, reversePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        revAcct.exists,
+        false,
+        'forged state must NOT have a paired reverse',
+      );
+
+      // Buy a record for a different name so the would-be replace would
+      // otherwise be legitimate end-to-end.
+      const ant = await spawnSolanaANT({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: u.signer,
+        antProgramId: address(ANT_ID!),
+        state: {
+          name: 'Legacy guard ANT',
+          ticker: 'LGC',
+          description: 'legacy state',
+          uri: 'ar://legacy',
+        },
+      });
+      const newName = `nw${Date.now().toString(36).slice(-6)}`;
+      await uArio.buyRecord({
+        name: newName,
+        type: 'lease',
+        years: 1,
+        processId: ant.processId,
+      });
+
+      // setPrimaryName must throw with the actionable message — NOT
+      // submit a tx and let the on-chain MustRemoveExistingPrimaryName
+      // bubble up opaquely.
+      await assert.rejects(
+        uArio.setPrimaryName({ name: newName }),
+        (err: Error) => {
+          assert.match(err.message, /legacy PrimaryName/i);
+          assert.match(err.message, /backfill:primary-name-reverse/);
+          assert.match(err.message, /6022/);
+          return true;
+        },
+        'setPrimaryName must throw the actionable legacy-state error',
+      );
+
+      // Sanity: the forged forward record is still in place; the throw
+      // happened client-side, not after a partial on-chain mutation.
+      const fwdAcctAfter = await fetchEncodedAccount(rpc, primaryNamePda, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        fwdAcctAfter.exists,
+        true,
+        'forward record must be untouched (no tx was submitted)',
+      );
+    });
+
+    // ============================================================
+    // PR #643: ANT.transfer regression guard
+    // ============================================================
+
+    it('ANT.transfer succeeds for a freshly-spawned ANT (normal path regression guard)', async () => {
+      // The PR's ACL self-heal branch on `transfer` is intended for
+      // legacy/pre-ACL-era ANTs whose owner ACL entry was never seeded.
+      // Freshly-spawned ANTs always have it, so this test exercises the
+      // normal path — `oldOwnerSource` is non-null, `oldOwnerHealIxs`
+      // stays empty, transfer proceeds as before.
+      //
+      // The heal-path proper isn't testable on a fresh localnet without
+      // a way to construct an ANT with no ACL entry (contract surgery
+      // or a fixture from a pre-ACL deployment). Treat this test as a
+      // regression guard that the PR's refactor of the resolution logic
+      // didn't break the happy path.
+      // TODO(#646): add a heal-path test once an unseeded-ACL fixture exists.
+      const sender = await freshSigner(scratch, 'antx-sender');
+      const recipient = await freshSigner(scratch, 'antx-recipient');
+      await airdrop(sender.keypairPath, 5);
+
+      const rpc = createSolanaRpc(RPC_URL!);
+      const rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
+
+      const ant = await spawnSolanaANT({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: sender.signer,
+        antProgramId: address(ANT_ID!),
+        state: {
+          name: 'Transfer regression',
+          ticker: 'XFR',
+          description: 'transfer',
+          uri: 'ar://xfr',
+        },
+      });
+
+      const antClient = await ANT.init({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        processId: ant.processId,
+        signer: sender.signer,
+        antProgramId: address(ANT_ID!),
+      });
+
+      const xfer = await antClient.transfer({
+        target: recipient.signer.address as string,
+      });
+      assert.ok(xfer.id, 'transfer must return a tx id');
+
+      // Confirm the on-chain ANT owner is now the recipient.
+      const antReader = await ANT.init({
+        rpc,
+        processId: ant.processId,
+        antProgramId: address(ANT_ID!),
+      });
+      const info = await antReader.getInfo();
+      assert.equal(
+        info.Owner.toLowerCase(),
+        (recipient.signer.address as string).toLowerCase(),
+        'post-transfer Owner must be the recipient',
+      );
     });
   },
 );
