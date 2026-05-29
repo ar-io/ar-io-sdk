@@ -88,7 +88,18 @@ export type {
 } from '../types/ant-registry.js';
 
 // ANT-escrow client (trustless multi-protocol custody — Arweave RSA-PSS / Ethereum ECDSA)
-export { ANTEscrow, TokenEscrow } from './escrow.js';
+export {
+  ANTEscrow,
+  TokenEscrow,
+  // Vault-claim pre-flight helpers (ADR-022 / VaultStillLocked).
+  // Exported so downstream UIs can gate their Submit buttons using the
+  // SAME forward CLOCK_SKEW_TOLERANCE_SECONDS buffer the SDK's
+  // assertVaultClaimable throws use — keeping pre-flight and UI gates
+  // in lock-step so users never see a raw on-chain error.
+  assertVaultClaimable,
+  isVaultClaimable,
+  CLOCK_SKEW_TOLERANCE_SECONDS,
+} from './escrow.js';
 export type {
   ANTEscrowConfig,
   EscrowAntState,
