@@ -484,9 +484,37 @@ export interface EscrowTokenState {
 }
 
 /**
+ * Forward clock-skew buffer (seconds) added to `vault_end_timestamp` before
+ * the SDK considers a vault claimable. The SDK reads wall-clock time
+ * (`Date.now()`) while the on-chain gate reads Solana cluster time, and
+ * the two can disagree by several seconds. The buffer biases every skew
+ * race into the *friendly* direction: the SDK rejects when the chain
+ * would actually accept (user retries 30s later, succeeds), never the
+ * reverse (user submits a doomed tx and sees the raw on-chain error).
+ *
+ * 30s is conservative — Solana cluster clock typically drifts <2s vs
+ * wall clock — but matches the order of magnitude of the previously-used
+ * `60s` introspection tolerance in the removed `vault_introspect` module.
+ */
+export const CLOCK_SKEW_TOLERANCE_SECONDS = 30n;
+
+/**
+ * Returns `true` when a vault escrow is past its unlock timestamp by at
+ * least {@link CLOCK_SKEW_TOLERANCE_SECONDS}. Non-throwing companion to
+ * {@link assertVaultClaimable} for UI gating (e.g. enabling/disabling a
+ * Submit button without showing an error).
+ */
+export function isVaultClaimable(escrow: EscrowTokenState): boolean {
+  const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
+  return nowSeconds >= escrow.vaultEndTimestamp + CLOCK_SKEW_TOLERANCE_SECONDS;
+}
+
+/**
  * Pre-flight the on-chain `VaultStillLocked` gate (ADR-022): refuse to build
- * a claim tx while the vault is still locked. Surfaces the unlock timestamp
- * so callers / UIs can show "claimable after <date>" instead of a doomed tx.
+ * a claim tx while the vault is still locked, with a small forward
+ * {@link CLOCK_SKEW_TOLERANCE_SECONDS} buffer so wall/cluster clock skew
+ * biases into the friendly direction. Surfaces the unlock timestamp so
+ * callers / UIs can show "claimable after <date>" instead of a doomed tx.
  *
  * Exported for unit-testability; not part of the public SDK surface — call the
  * high-level `claimVaultArweave` / `claimVaultEthereum` instead, which invoke
@@ -495,17 +523,18 @@ export interface EscrowTokenState {
  * @internal
  */
 export function assertVaultClaimable(escrow: EscrowTokenState): void {
-  const nowSeconds = BigInt(Math.floor(Date.now() / 1000));
-  if (escrow.vaultEndTimestamp > nowSeconds) {
+  if (!isVaultClaimable(escrow)) {
     const unlockIso = new Date(
       Number(escrow.vaultEndTimestamp) * 1000,
     ).toISOString();
     throw new Error(
       `Vault escrow is still locked until ${unlockIso} ` +
-        `(vault_end_timestamp=${escrow.vaultEndTimestamp}). ` +
-        `Active (still-locked) vault claims are not supported (ADR-022 / ` +
-        `VaultStillLocked) — wait until after the unlock timestamp, then ` +
-        `claim again to receive the tokens liquid.`,
+        `(vault_end_timestamp=${escrow.vaultEndTimestamp}; ` +
+        `the SDK adds a ${CLOCK_SKEW_TOLERANCE_SECONDS}s clock-skew buffer ` +
+        `before allowing a claim). Active (still-locked) vault claims are ` +
+        `rejected on-chain with VaultStillLocked (ADR-022) — wait until ` +
+        `after the unlock timestamp + buffer, then claim again to receive ` +
+        `the tokens liquid.`,
     );
   }
 }
