@@ -1,3 +1,12 @@
+# [4.0.0-solana.22](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.21...v4.0.0-solana.22) (2026-05-29)
+
+
+### Bug Fixes
+
+* **codama:** update codama generated clients ([889fedb](https://github.com/ar-io/ar-io-sdk/commit/889fedb876ae0778682c535e051f6ebd68dfe8e2))
+* **errors:** fix lint errors ([a34bc64](https://github.com/ar-io/ar-io-sdk/commit/a34bc64bc670a72b7f03dd9b73c9031fed883b53))
+* **solana:** fail-fast on legacy primary-name state + add localnet coverage ([174ccef](https://github.com/ar-io/ar-io-sdk/commit/174ccef6b3dfa8e07248a955ad333ea48c0707a7)), closes [#643](https://github.com/ar-io/ar-io-sdk/issues/643) [pre-#159](https://github.com/pre-/issues/159) [post-#159](https://github.com/post-/issues/159)
+
 # [4.0.0-solana.21](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.20...v4.0.0-solana.21) (2026-05-29)
 
 
