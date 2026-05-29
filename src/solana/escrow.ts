@@ -958,48 +958,100 @@ export class TokenEscrow {
   }
 
   /**
-   * Submit an Arweave attestor's Ed25519 signature to release escrowed vault
-   * tokens. The on-chain handler delivers liquid tokens directly to
-   * `claimantTokenAccount`.
+   * **Use {@link claimVaultArweaveIx} instead** — this single-send wrapper
+   * cannot work end-to-end for the Arweave attested vault-claim path,
+   * because the on-chain `claim_vault_arweave_attested` handler requires
+   * an Ed25519Program native sigverify ix at idx-1 of the claim ix
+   * (introspected via `instructions_sysvar`). That sigverify ix carries
+   * the attestor's Ed25519 signature over the canonical claim message
+   * and is built by the *integrator* (who calls the off-chain attestor
+   * service for the signature, per ADR-017) — the SDK has no attestor
+   * URL or client to do this for the caller.
    *
-   * **Vaults are only claimable after `vault_end_timestamp`.** Active
-   * (still-locked) vault claims are rejected on-chain with `VaultStillLocked`
-   * (ADR-022 / BD-107: the former active re-lock path was removed because its
-   * sibling-`vaulted_transfer` introspection had no 1:1 claim↔re-lock binding
-   * → reuse / relayer skim). This method pre-flights the same gate and throws
-   * a clear `vault still locked until <ISO>` error rather than building a tx
-   * that will fail on-chain. To revive "claim early, stay locked" see the
-   * restoration playbook in the contracts repo
-   * (`docs/RESTORE_ACTIVE_VAULT_RELOCK.md`).
+   * Calling this method instead of composing via
+   * {@link claimVaultArweaveIx} will hit `MissingAttestation` on-chain.
+   * It is kept only for ABI continuity; new code must use
+   * {@link claimVaultArweaveIx} and prepend the attestor sigverify ix.
+   *
+   * @deprecated cannot succeed alone — see {@link claimVaultArweaveIx}.
    */
-  async claimVaultArweave(args: {
+  async claimVaultArweave(_args: {
     depositor: Address;
     assetId: Uint8Array;
     claimant: Address;
     claimantTokenAccount: Address;
     escrowTokenAccount: Address;
-    signature: Uint8Array; // 512 bytes
+    signature: Uint8Array;
     saltLen?: number;
   }): Promise<string> {
-    const escrow = await this.requireVaultEscrow(args.depositor, args.assetId);
-    if (escrow.recipientProtocol !== 'arweave') {
-      throw new Error(
-        `escrow recipient is ${escrow.recipientProtocol}, not arweave`,
-      );
+    throw new Error(
+      'claimVaultArweave cannot complete the Arweave attested vault-claim ' +
+        'in a single SDK call: the on-chain handler requires an ' +
+        'Ed25519Program sigverify ix at idx-1 of the claim ix, which ' +
+        'must carry the attestor service’s signature over the canonical ' +
+        'claim message (ADR-017). The SDK does not know your attestor URL. ' +
+        'Use claimVaultArweaveIx() instead and bundle the sigverify ix ' +
+        'yourself: ' +
+        '[createAtaIx?, ed25519SigverifyIx, claimVaultArweaveIx, ...]. ' +
+        'See ar-io-solana-escrow-app/src/pages/ClaimPage.tsx for the ' +
+        'reference composition, and ADR-022 / VaultStillLocked for the ' +
+        'still-locked rejection (use isVaultClaimable() to pre-flight).',
+    );
+  }
+
+  /**
+   * Build a `claim_vault_arweave_attested` instruction (without sending).
+   * Mirror of {@link claimTokensArweaveIx} for the vault-claim path:
+   * returns the bare claim ix so the caller can prepend the attestor's
+   * Ed25519Program sigverify ix and submit the bundle in one tx.
+   *
+   * The on-chain handler:
+   * - Reads the preceding Ed25519Program native sigverify ix from
+   *   `instructions_sysvar` to confirm the attestor signed the canonical
+   *   claim message.
+   * - Rejects with `VaultStillLocked` if `clock < vault_end_timestamp`
+   *   (ADR-022). Callers should pre-flight with {@link isVaultClaimable}
+   *   (non-throwing) or {@link assertVaultClaimable} (throws with the
+   *   unlock timestamp) before composing the tx.
+   * - On the expired path, transfers the escrowed amount liquid to
+   *   `claimantTokenAccount` and closes the escrow PDA.
+   *
+   * Composition (frontend pattern):
+   *   ```ts
+   *   const escrow = await tokenEscrow.requireVaultEscrow(depositor, assetId);
+   *   assertVaultClaimable(escrow);                       // pre-flight
+   *   const canonical = canonicalMessage({ ... });        // build message
+   *   const attestation = await attestor.attest({ ... }); // attestor service
+   *   const ed25519Ix = buildEd25519SigverifyIx(
+   *     attestation.attestorPubkey, attestation.signature, canonical,
+   *   );
+   *   const claimIx = await tokenEscrow.claimVaultArweaveIx({
+   *     depositor, assetId, claimant, claimantTokenAccount,
+   *     escrowTokenAccount, messageNonce: escrow.nonce,
+   *   });
+   *   // Idempotent-create the claimant ATA if it's the canonical derivation.
+   *   await sendTx([createAtaIx?, ed25519Ix, claimIx]);
+   *   ```
+   */
+  async claimVaultArweaveIx(args: {
+    depositor: Address;
+    assetId: Uint8Array;
+    claimant: Address;
+    claimantTokenAccount: Address;
+    escrowTokenAccount: Address;
+    /** 32-byte nonce from the on-chain EscrowToken PDA (`escrow.nonce`). */
+    messageNonce: Uint8Array;
+  }): Promise<Instruction> {
+    if (args.messageNonce.length !== 32) {
+      throw new Error('messageNonce must be 32 bytes');
     }
-    // ADR-022 / VaultStillLocked: pre-flight the on-chain lock gate.
-    assertVaultClaimable(escrow);
-    const signer = this.requireSigner('claimVaultArweave');
+    const signer = this.requireSigner('claimVaultArweaveIx');
     const [escrowPda] = await getEscrowVaultPDA(
       args.depositor,
       args.assetId,
       this.programId,
     );
-    // `args.signature` and `args.saltLen` are no longer fed to the
-    // builder — the on-chain `claim_vault_arweave_attested` ix verifies
-    // the attestor's Ed25519 signature via instruction-introspection
-    // of a preceding sigverify ix. See doc on `claimArweaveIx`.
-    const claimIx = getClaimVaultArweaveAttestedInstruction(
+    return getClaimVaultArweaveAttestedInstruction(
       {
         escrow: escrowPda,
         escrowTokenAccount: args.escrowTokenAccount,
@@ -1007,19 +1059,10 @@ export class TokenEscrow {
         claimant: args.claimant,
         depositor: args.depositor,
         payer: signer,
-        messageNonce: escrow.nonce,
+        messageNonce: args.messageNonce,
       },
       { programAddress: this.programId },
     );
-    const createClaimantAtaIx = await this._createClaimantAtaIfCanonical(
-      args.claimant,
-      args.claimantTokenAccount,
-      escrow.arioMint,
-    );
-    const ixs = createClaimantAtaIx
-      ? [createClaimantAtaIx, claimIx]
-      : [claimIx];
-    return this.send(ixs, 400_000);
   }
 
   /**
