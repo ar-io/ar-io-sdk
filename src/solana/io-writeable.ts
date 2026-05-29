@@ -2926,14 +2926,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const record = await this.getArNSRecord({ name: params.name });
     const antAsset = address(record.processId);
 
-    // The on-chain `reassign_name` (PR #73 / BD-106 / BD-095) now authorizes
-    // against the CURRENT Metaplex Core holder of `record.ant` via a named
-    // `ant_asset` account constrained to `arns_record.ant`. We must read the
-    // current record to know which asset to pass — that's the OLD ant (the
-    // one we're reassigning AWAY FROM), not `newAnt`.
-    const currentRecord = await this.getArNSRecord({ name: params.name });
-    const currentAnt = address(currentRecord.processId);
-
     const ix = await getReassignNameInstructionAsync(
       await this.withArnsDefaults({
         arnsRecord,
@@ -2984,11 +2976,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
     const record = await this.getArNSRecord({ name: params.name });
     const antAsset = address(record.processId);
-
-    // PR #73 / BD-106: `release_name` now authorizes against the current
-    // Metaplex Core holder of `record.ant` via a named `ant_asset` account
-    // constrained to `arns_record.ant`. Fetch the record to know which.
-    const currentRecord = await this.getArNSRecord({ name: params.name });
 
     const ix = await getReleaseNameInstructionAsync(
       await this.withArnsDefaults({
