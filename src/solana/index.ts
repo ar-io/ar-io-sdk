@@ -206,6 +206,12 @@ export {
 } from './deserialize.js';
 export type { DeserializedAclEntry } from './deserialize.js';
 
+// Off-chain prediction of prescribe_epoch's observer selection (cranker helper)
+export {
+  predictPrescribedObservers,
+  type RegistrySlotWeight,
+} from './predict-prescribed-observers.js';
+
 // Constants
 export * from './constants.js';
 

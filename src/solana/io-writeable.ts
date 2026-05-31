@@ -198,6 +198,10 @@ import {
   getWithdrawalPDA,
   hashName,
 } from './pda.js';
+import {
+  type RegistrySlotWeight,
+  predictPrescribedObservers,
+} from './predict-prescribed-observers.js';
 import { sendAndConfirm } from './send.js';
 import type {
   SolanaRpcSubscriptions,
@@ -3103,9 +3107,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
   /**
    * Prescribe observers and names for an epoch. Permissionless — call after
-   * weights are tallied. Gateway PDAs are appended as `remaining_accounts`,
-   * and the optional `nameRegistryAccount` (must be last) enables the name
+   * weights are tallied.
+   *
+   * `gatewayAccounts` MUST be the Gateway PDAs of the SELECTED observers only
+   * — at most `epoch_settings.prescribed_observer_count` (≤50), NOT the whole
+   * registry. The selection is computed on-chain; mirror it off-chain with
+   * {@link predictPrescribedObservers} / {@link getPredictedObserverPDAs} to
+   * learn the set. Passing every registry gateway (e.g. via
+   * {@link getAllRegistryGatewayPDAs}) hits Solana's `MAX_TX_ACCOUNT_LOCKS = 64`
+   * on large registries and the tx fails at pre-flight.
+   *
+   * The selected PDAs are appended as `remaining_accounts`, followed by the
+   * optional `nameRegistryAccount` (must be LAST) which enables the name
    * prescription leg.
+   *
+   * If a selected gateway leaves between prediction and tx landing, the tx
+   * fails with `InvalidGatewayAccount` — retry once with a fresh prediction.
    */
   async prescribeEpoch(
     params: {
@@ -3269,6 +3286,88 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
       if (addr === zero) continue;
       const [gatewayPda] = await getGatewayPDA(addr, this.garProgram);
+      pdas.push(gatewayPda);
+    }
+    return pdas;
+  }
+
+  /**
+   * Predict the Gateway PDAs that `prescribe_epoch` will select as observers
+   * for `epochIndex`, mirroring the on-chain weighted-roulette selection.
+   *
+   * Returns at most `epoch_settings.prescribed_observer_count` (≤50) PDAs
+   * regardless of registry size — the set to pass as `gatewayAccounts` to
+   * {@link prescribeEpoch}. This is the size-safe replacement for
+   * {@link getAllRegistryGatewayPDAs} on the prescribe path (which oversupplies
+   * and trips `MAX_TX_ACCOUNT_LOCKS = 64` on large registries).
+   *
+   * Reads three accounts (epoch, registry, epoch settings) at the configured
+   * commitment so the prediction reflects live registry weights. If a selected
+   * gateway races out before the tx lands, `prescribeEpoch` throws
+   * `InvalidGatewayAccount` — re-call this and retry once.
+   */
+  async getPredictedObserverPDAs(epochIndex: number): Promise<Address[]> {
+    // --- Epoch: hashchain (frozen entropy) + active_gateway_count (walk bound) ---
+    const [epochPda] = await getEpochPDA(epochIndex, this.garProgram);
+    const epochAccount = await fetchEncodedAccount(this.rpc, epochPda, {
+      commitment: this.commitment,
+    });
+    if (!epochAccount.exists) throw new Error(`Epoch ${epochIndex} not found`);
+    const epochData = Buffer.from(epochAccount.data);
+    // After the 8-byte discriminator (see fetchEpochRawFields): 9×u64 = 72
+    // bytes, then hashchain[32], then active_gateway_count(u32).
+    const EPOCH_BASE = 8;
+    const hashchain = epochData.subarray(EPOCH_BASE + 72, EPOCH_BASE + 72 + 32);
+    const activeGatewayCount = epochData.readUInt32LE(EPOCH_BASE + 104);
+
+    // --- Registry: slots[0..activeGatewayCount] (address + composite_weight) ---
+    const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
+    const registryAccount = await fetchEncodedAccount(this.rpc, registryPda, {
+      commitment: this.commitment,
+    });
+    if (!registryAccount.exists) throw new Error('GatewayRegistry not found');
+    const registryData = Buffer.from(registryAccount.data);
+    const registryCount = registryData.readUInt32LE(40); // 8 disc + 32 authority
+    const SLOTS_OFFSET = 48; // 8 + 32 + 4 count + 4 pad
+    const SLOT_STRIDE = 56; // address(32)+weight(8)+start_ts(8)+status(1)+pad(7)
+    // Walk exactly the on-chain prefix. The roulette uses
+    // registry.gateways[0..epoch.active_gateway_count]; include zero-weight
+    // slots so the cumulative walk and weight sum match byte-for-byte.
+    const walkCount = Math.min(activeGatewayCount, registryCount, 3000);
+    const slots: RegistrySlotWeight[] = [];
+    for (let i = 0; i < walkCount; i++) {
+      const slotOffset = SLOTS_OFFSET + i * SLOT_STRIDE;
+      slots.push({
+        address: addressDecoder.decode(
+          registryData.subarray(slotOffset, slotOffset + 32),
+        ),
+        compositeWeight: registryData.readBigUInt64LE(slotOffset + 32),
+      });
+    }
+
+    // --- Epoch settings: prescribed_observer_count ---
+    const [epochSettingsPda] = await getEpochSettingsPDA(this.garProgram);
+    const settingsAccount = await fetchEncodedAccount(
+      this.rpc,
+      epochSettingsPda,
+      {
+        commitment: this.commitment,
+      },
+    );
+    if (!settingsAccount.exists) throw new Error('EpochSettings not found');
+    const settings = deserializeEpochSettingsFull(
+      Buffer.from(settingsAccount.data),
+    );
+
+    // --- Predict selected operators, then derive their Gateway PDAs ---
+    const operators = predictPrescribedObservers(
+      hashchain,
+      slots,
+      settings.prescribedObserverCount,
+    );
+    const pdas: Address[] = [];
+    for (const operator of operators) {
+      const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
       pdas.push(gatewayPda);
     }
     return pdas;
