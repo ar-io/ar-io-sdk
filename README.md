@@ -3140,6 +3140,110 @@ In the example above, the query will return ArNS records where:
 
 ## Advanced
 
+### RPC Configuration
+
+The SDK accepts any `@solana/kit` RPC client. For read-only usage, only
+`rpc` is required. Write operations additionally need `rpcSubscriptions`
+(WebSocket) for transaction confirmation and a `signer`.
+
+#### Basic (read-only)
+
+```ts
+import { ARIO } from '@ar.io/sdk';
+import { createSolanaRpc } from '@solana/kit';
+
+const rpc = createSolanaRpc('https://api.mainnet-beta.solana.com');
+const ario = ARIO.init({ rpc });
+```
+
+#### With writes (signer + WebSocket subscriptions)
+
+```ts
+import { ARIO } from '@ar.io/sdk';
+import {
+  createSolanaRpc,
+  createSolanaRpcSubscriptions,
+  createKeyPairSignerFromBytes,
+} from '@solana/kit';
+
+const rpc = createSolanaRpc('https://api.mainnet-beta.solana.com');
+const rpcSubscriptions = createSolanaRpcSubscriptions(
+  'wss://api.mainnet-beta.solana.com',
+);
+const signer = await createKeyPairSignerFromBytes(/* ... */);
+
+const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
+```
+
+> **Note:** `rpcSubscriptions` opens a WebSocket connection and is only
+> needed for writes. If your RPC provider doesn't expose a WebSocket
+> endpoint, omit it and use the SDK in read-only mode.
+
+### Circuit Breaker
+
+The SDK ships an [opossum]-backed circuit breaker that wraps the RPC
+transport. When the primary endpoint starts failing (429 rate-limits,
+5xx errors, network timeouts) the circuit opens and subsequent calls
+route transparently to a fallback RPC until the primary recovers.
+
+```ts
+import { ARIO, createCircuitBreakerRpc } from '@ar.io/sdk';
+
+const rpc = createCircuitBreakerRpc({
+  primaryUrl: 'https://my-premium-rpc.example.com',
+  fallbackUrl: 'https://api.mainnet-beta.solana.com',
+});
+
+const ario = ARIO.init({ rpc });
+```
+
+Use `defaultFallbackUrl()` to auto-pick mainnet or devnet based on the
+primary URL:
+
+```ts
+import {
+  createCircuitBreakerRpc,
+  defaultFallbackUrl,
+} from '@ar.io/sdk';
+
+const primaryUrl = 'https://my-premium-rpc.example.com';
+const rpc = createCircuitBreakerRpc({
+  primaryUrl,
+  fallbackUrl: defaultFallbackUrl(primaryUrl), // → mainnet public RPC
+});
+```
+
+Tuning knobs (all optional):
+
+| Option | Default | Description |
+|---|---|---|
+| `timeout` | `10000` | ms before a single request is timed out (`false` to disable) |
+| `errorThresholdPercentage` | `50` | error % at which to open the circuit |
+| `resetTimeout` | `30000` | ms to wait before probing the primary again (half-open) |
+| `volumeThreshold` | `5` | minimum requests in the rolling window before the circuit can trip |
+
+### Automatic Retries
+
+All RPC **read** calls (account fetches, `getProgramAccounts`, etc.)
+automatically retry on transient transport errors with exponential
+back-off. Writes are **not** retried (to avoid double-sends).
+
+Retried errors: HTTP 429/5xx, `fetch failed`, `ECONNRESET`,
+`ETIMEDOUT`, `AbortError` / timeouts. Non-retryable errors (account
+not found, invalid params, deserialization) throw immediately.
+
+Defaults: **6 attempts**, 500 ms base delay, 5 s max delay. Override
+per-call with the exported `withRetry` helper:
+
+```ts
+import { withRetry } from '@ar.io/sdk';
+
+const result = await withRetry(() => rpc.getAccountInfo(addr).send(), {
+  maxAttempts: 3,
+  baseDelayMs: 1000,
+});
+```
+
 ### Generated instruction builders
 
 For custom transaction building, import Codama-emitted typed clients
@@ -3230,6 +3334,7 @@ For more information on how to contribute, please see [CONTRIBUTING.md].
 [ar-io-node repository]: https://github.com/ar-io/ar-io-node
 [ar.io Gateway Documentation]: https://docs.ar.io/gateways/ar-io-node/overview/
 [ANS-104]: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-104.md
+[opossum]: https://nodeshift.dev/opossum/
 
 ```
 

@@ -134,7 +134,7 @@
     "zod": "^3.25.76"
   },
   "lint-staged": {
-    "**/*.{ts,js,mjs,cjs,md,json}": ["biome format --write"],
+    "**/*.{ts,js,mjs,cjs,json}": ["biome format --write"],
     "**/README.md": ["markdown-toc-gen insert --max-depth 2"]
   }
 }
