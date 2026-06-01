@@ -6,6 +6,7 @@
  */
 import { type Address, type Commitment, address } from '@solana/kit';
 
+import { withRetry } from './retry.js';
 import type { SolanaRpc } from './types.js';
 
 /** Raw account layout used by SDK readers (matches legacy web3 `AccountInfo` fields). */
@@ -43,12 +44,14 @@ export async function getAccountInfoLegacy(
   pda: Address,
   commitment: string | undefined,
 ): Promise<SolanaAccountInfo | null> {
-  const res = await rpc
-    .getAccountInfo(pda, {
-      encoding: 'base64',
-      commitment: toKitCommitment(commitment),
-    })
-    .send();
+  const res = await withRetry(() =>
+    rpc
+      .getAccountInfo(pda, {
+        encoding: 'base64',
+        commitment: toKitCommitment(commitment),
+      })
+      .send(),
+  );
   if (!res.value) return null;
   const [dataB64] = res.value.data;
   return {
@@ -75,12 +78,14 @@ export async function getMultipleAccountsInfoLegacy(
   commitment: string | undefined,
 ): Promise<(SolanaAccountInfo | null)[]> {
   if (pdas.length === 0) return [];
-  const res = await rpc
-    .getMultipleAccounts(pdas, {
-      encoding: 'base64',
-      commitment: toKitCommitment(commitment),
-    })
-    .send();
+  const res = await withRetry(() =>
+    rpc
+      .getMultipleAccounts(pdas, {
+        encoding: 'base64',
+        commitment: toKitCommitment(commitment),
+      })
+      .send(),
+  );
   return res.value.map((acct) => {
     if (!acct) return null;
     const [dataB64] = acct.data;

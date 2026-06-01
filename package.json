@@ -87,6 +87,7 @@
     "@swc/core": "^1.11.22",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/node": "^22.14.1",
+    "@types/opossum": "^8.1.9",
     "@types/prompts": "^2.4.9",
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -128,11 +129,12 @@
     "@solana/kit": "^6.8.0",
     "bs58": "^6.0.0",
     "commander": "^12.1.0",
+    "opossum": "^9.0.0",
     "prompts": "^2.4.2",
     "zod": "^3.25.76"
   },
   "lint-staged": {
-    "**/*.{ts,js,mjs,cjs,md,json}": ["biome format --write"],
+    "**/*.{ts,js,mjs,cjs,json}": ["biome format --write"],
     "**/README.md": ["markdown-toc-gen insert --max-depth 2"]
   }
 }

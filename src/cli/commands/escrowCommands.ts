@@ -27,13 +27,16 @@ import {
   type Address,
   address,
   createKeyPairSignerFromBytes,
-  createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from '@solana/kit';
 import bs58 from 'bs58';
 
 import { ARIO_ANT_ESCROW_PROGRAM_ID } from '../../solana/constants.js';
 import { ANTEscrow, type EscrowProtocol } from '../../solana/escrow.js';
+import {
+  createCircuitBreakerRpc,
+  defaultFallbackUrl,
+} from '../../solana/rpc-circuit-breaker.js';
 import type { JsonSerializable } from '../types.js';
 
 // =========================================
@@ -91,7 +94,10 @@ async function readEscrowReader(
 ): Promise<ANTEscrow> {
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTEscrow.init({
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCircuitBreakerRpc({
+      primaryUrl: rpcUrl,
+      fallbackUrl: defaultFallbackUrl(rpcUrl),
+    }),
     programId: escrowProgramIdFrom(options),
   });
 }
@@ -113,7 +119,10 @@ async function writeEscrowFromOptions(
   const signer = await createKeyPairSignerFromBytes(secretKey);
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTEscrow.init({
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCircuitBreakerRpc({
+      primaryUrl: rpcUrl,
+      fallbackUrl: defaultFallbackUrl(rpcUrl),
+    }),
     rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
     signer,
     programId: escrowProgramIdFrom(options),

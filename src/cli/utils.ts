@@ -19,7 +19,6 @@ import {
   type KeyPairSigner,
   address,
   createKeyPairSignerFromBytes,
-  createSolanaRpc,
   createSolanaRpcSubscriptions,
 } from '@solana/kit';
 import bs58 from 'bs58';
@@ -30,6 +29,10 @@ import { ANTRegistry } from '../common/ant-registry.js';
 import { ANT } from '../common/ant.js';
 import { ARIO } from '../common/io.js';
 import { Logger } from '../common/logger.js';
+import {
+  createCircuitBreakerRpc,
+  defaultFallbackUrl,
+} from '../solana/rpc-circuit-breaker.js';
 import type { ANTRegistryRead } from '../types/ant-registry.js';
 import type { ANTRead, ANTWrite } from '../types/ant.js';
 import type { WriteOptions } from '../types/common.js';
@@ -159,7 +162,7 @@ export function readARIOFromOptions(options: GlobalCLIOptions): ARIORead {
   setLoggerIfDebug(options);
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ARIO.init({
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCliRpc(rpcUrl),
     ...(options.coreProgramId
       ? { coreProgramId: address(options.coreProgramId) }
       : {}),
@@ -178,7 +181,7 @@ export async function readANTRegistryFromOptions(
   setLoggerIfDebug(options);
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANTRegistry.init({
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCliRpc(rpcUrl),
     ...(options.antProgramId
       ? { antProgramId: address(options.antProgramId) }
       : {}),
@@ -207,6 +210,17 @@ function wsUrlFromRpcUrl(rpcUrl: string): string {
   }
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   return url.toString().replace(/\/$/, '');
+}
+
+/**
+ * Create a {@link SolanaRpc} wrapped with a circuit-breaker that falls back to
+ * the cluster's public RPC when the primary endpoint becomes unhealthy.
+ */
+function createCliRpc(rpcUrl: string) {
+  return createCircuitBreakerRpc({
+    primaryUrl: rpcUrl,
+    fallbackUrl: defaultFallbackUrl(rpcUrl),
+  });
 }
 
 /**
@@ -243,7 +257,7 @@ export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
 
   return {
     ario: ARIO.init({
-      rpc: createSolanaRpc(rpcUrl),
+      rpc: createCliRpc(rpcUrl),
       rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
       signer,
       // Forward program-id overrides so localnet / devnet writes target the
@@ -615,7 +629,7 @@ export async function readANTFromOptions(
   const rpcUrl = options.rpcUrl ?? 'https://api.mainnet-beta.solana.com';
   return ANT.init({
     processId: requiredProcessIdFromOptions(options),
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCliRpc(rpcUrl),
     ...(options.antProgramId
       ? { antProgramId: address(options.antProgramId) }
       : {}),
@@ -630,7 +644,7 @@ export async function writeANTFromOptions(
 
   return ANT.init({
     processId: requiredProcessIdFromOptions(options),
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCliRpc(rpcUrl),
     rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
     signer: kitSigner,
     ...(options.antProgramId
@@ -753,7 +767,7 @@ export async function spawnSolanaANTFromOptions(
   }
 
   return spawnSolanaANT({
-    rpc: createSolanaRpc(rpcUrl),
+    rpc: createCliRpc(rpcUrl),
     rpcSubscriptions: createSolanaRpcSubscriptions(wsUrlFromRpcUrl(rpcUrl)),
     signer: kitSigner,
     state: {
