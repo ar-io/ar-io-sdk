@@ -1,3 +1,13 @@
+# [4.0.0-solana.24](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.23...v4.0.0-solana.24) (2026-06-01)
+
+
+### Features
+
+* **solana:** add crankEpochStep() — generalized one-action epoch crank primitive ([ad4eb3e](https://github.com/ar-io/ar-io-sdk/commit/ad4eb3eab5f29b0875b9e76cb21166b0bcf26690))
+* **solana:** predict prescribe_epoch observer selection off-chain (size-safe cranker path) ([ebe3be3](https://github.com/ar-io/ar-io-sdk/commit/ebe3be3bfcd4fe23e2ce2c380c847ababb5a22b5))
+* **solana:** reclaim leaked prescribe Address Lookup Tables ([d0fbb43](https://github.com/ar-io/ar-io-sdk/commit/d0fbb433518e4cab3c612d6603f2c49e64d43ff0))
+* **solana:** submit prescribe via ephemeral Address Lookup Table; cap lifecycle batch ([a39ee6f](https://github.com/ar-io/ar-io-sdk/commit/a39ee6f066eb94f6461472f5cfe12dbd63a18465)), closes [#87](https://github.com/ar-io/ar-io-sdk/issues/87)
+
 # [4.0.0-solana.23](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.22...v4.0.0-solana.23) (2026-06-01)
 
 
