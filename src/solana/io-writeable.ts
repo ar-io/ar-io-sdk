@@ -202,7 +202,11 @@ import {
   type RegistrySlotWeight,
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
-import { sendAndConfirm, sendWithEphemeralLookupTable } from './send.js';
+import {
+  reclaimLookupTablesForSigner,
+  sendAndConfirm,
+  sendWithEphemeralLookupTable,
+} from './send.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -3464,6 +3468,41 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       pdas.push(gatewayPda);
     }
     return pdas;
+  }
+
+  /**
+   * Reclaim rent from the ephemeral Address Lookup Tables this signer created
+   * for `prescribe_epoch` (see {@link sendWithEphemeralLookupTable}). Each
+   * prescribe leaves a single-use table allocated (~0.0126 SOL); reclaiming
+   * needs a deactivate → ~513-slot cooldown → close sequence, so it can't run
+   * inline. Call this from a throttled/permissionless cleanup pass (cranker /
+   * observer) to deactivate active tables and close cooled-down ones, refunding
+   * the rent to the signer.
+   *
+   * Discovery reads the signer's transaction history (RPC-portable; the ALT
+   * program can't be enumerated via `getProgramAccounts`). The GAR + ArNS
+   * program IDs are passed as the entry-ownership fingerprint so only genuine
+   * prescribe tables are touched. Best-effort: at most `maxTables` submissions
+   * per call, scanning at most `scanLimit` recent signatures.
+   */
+  async reclaimLookupTableRent(opts?: {
+    maxTables?: number;
+    scanLimit?: number;
+  }): Promise<{
+    deactivated: number;
+    closed: number;
+    candidates: number;
+    scannedSignatures: number;
+  }> {
+    return reclaimLookupTablesForSigner({
+      rpc: this.rpc,
+      rpcSubscriptions: this.rpcSubscriptions,
+      signer: this.signer,
+      allowedEntryOwners: [this.garProgram, this.arnsProgram],
+      commitment: this.commitment,
+      maxTables: opts?.maxTables,
+      scanLimit: opts?.scanLimit,
+    });
   }
 
   /** Read and deserialize the full EpochSettings account. */
