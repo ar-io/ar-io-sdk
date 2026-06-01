@@ -142,6 +142,7 @@ import {
   getReturnedNamePDA,
   getVaultPDA,
 } from './pda.js';
+import { withRetry } from './retry.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
 const addressDecoder = getAddressDecoder();
@@ -293,9 +294,11 @@ export class SolanaARIOReadable {
 
   /** Helper to fetch an encoded account (kit's replacement for Connection.getAccountInfo). */
   private async getAccount(pda: Address) {
-    return fetchEncodedAccount(this.rpc, pda, {
-      commitment: this.commitment,
-    });
+    return withRetry(() =>
+      fetchEncodedAccount(this.rpc, pda, {
+        commitment: this.commitment,
+      }),
+    );
   }
 
   /**
@@ -325,16 +328,21 @@ export class SolanaARIOReadable {
     // when called without `withContext: true`. With `encoding: 'base64'`, each
     // account's `data` is a `[base64, 'base64']` tuple. We bypass kit's strict
     // generic overload typing here with a cast — the runtime shape is stable.
-    const result = (await (this.rpc as any)
-      .getProgramAccounts(programId, {
-        commitment: this.commitment,
-        encoding: 'base64',
-        filters,
-      })
-      .send()) as ReadonlyArray<{
-      account: { data: readonly [string, string] };
-      pubkey: Address;
-    }>;
+    const result = await withRetry(
+      () =>
+        (this.rpc as any)
+          .getProgramAccounts(programId, {
+            commitment: this.commitment,
+            encoding: 'base64',
+            filters,
+          })
+          .send() as Promise<
+          ReadonlyArray<{
+            account: { data: readonly [string, string] };
+            pubkey: Address;
+          }>
+        >,
+    );
 
     return result.map((entry) => ({
       pubkey: entry.pubkey,
@@ -362,9 +370,11 @@ export class SolanaARIOReadable {
         async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
       ),
     );
-    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
-      commitment: this.commitment,
-    });
+    const accounts = await withRetry(() =>
+      fetchEncodedAccounts(this.rpc, pdas, {
+        commitment: this.commitment,
+      }),
+    );
     const out = new Map<string, bigint>();
     for (let i = 0; i < accounts.length; i++) {
       const acct = accounts[i];
@@ -576,16 +586,21 @@ export class SolanaARIOReadable {
         },
       },
     ];
-    const result = (await (this.rpc as any)
-      .getProgramAccounts(TOKEN_PROGRAM_ADDRESS, {
-        commitment: this.commitment,
-        encoding: 'base64',
-        filters,
-      })
-      .send()) as ReadonlyArray<{
-      account: { data: readonly [string, string] };
-      pubkey: Address;
-    }>;
+    const result = await withRetry(
+      () =>
+        (this.rpc as any)
+          .getProgramAccounts(TOKEN_PROGRAM_ADDRESS, {
+            commitment: this.commitment,
+            encoding: 'base64',
+            filters,
+          })
+          .send() as Promise<
+          ReadonlyArray<{
+            account: { data: readonly [string, string] };
+            pubkey: Address;
+          }>
+        >,
+    );
 
     const items: BalanceWithAddress[] = [];
     for (const entry of result) {

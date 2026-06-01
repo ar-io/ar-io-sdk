@@ -14,6 +14,7 @@ import {
   fetchEncodedAccount,
 } from '@solana/kit';
 import bs58 from 'bs58';
+import { withRetry } from './retry.js';
 
 // AntRecordMetadata discriminator — regenerate via `yarn codegen` after IDL rebase
 // to expose ANT_RECORD_METADATA_DISCRIMINATOR. Until then, compute inline.
@@ -151,9 +152,11 @@ export class SolanaANTReadable {
   }
 
   private async getAccount(pda: Address) {
-    return fetchEncodedAccount(this.rpc, pda, {
-      commitment: this.commitment,
-    });
+    return withRetry(() =>
+      fetchEncodedAccount(this.rpc, pda, {
+        commitment: this.commitment,
+      }),
+    );
   }
 
   // =========================================
@@ -279,22 +282,26 @@ export class SolanaANTReadable {
     }>;
 
     const [recordAccounts, metaAccounts] = (await Promise.all([
-      (this.rpc as any)
-        .getProgramAccounts(this.antProgram, {
-          commitment: this.commitment,
-          encoding: 'base64',
-          filters: gpaFilter(
-            bs58.encode(ANT_RECORD_DISCRIMINATOR as Uint8Array),
-          ),
-        })
-        .send(),
-      (this.rpc as any)
-        .getProgramAccounts(this.antProgram, {
-          commitment: this.commitment,
-          encoding: 'base64',
-          filters: gpaFilter(bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR)),
-        })
-        .send(),
+      withRetry(() =>
+        (this.rpc as any)
+          .getProgramAccounts(this.antProgram, {
+            commitment: this.commitment,
+            encoding: 'base64',
+            filters: gpaFilter(
+              bs58.encode(ANT_RECORD_DISCRIMINATOR as Uint8Array),
+            ),
+          })
+          .send(),
+      ),
+      withRetry(() =>
+        (this.rpc as any)
+          .getProgramAccounts(this.antProgram, {
+            commitment: this.commitment,
+            encoding: 'base64',
+            filters: gpaFilter(bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR)),
+          })
+          .send(),
+      ),
     ])) as [GpaResult, GpaResult];
 
     // Index metadata by undername hash for O(1) lookup.

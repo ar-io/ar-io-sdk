@@ -215,6 +215,20 @@ export * from './constants.js';
 // `clusters.test.ts`.
 export * from './clusters.js';
 
+// RPC circuit breaker (opossum-backed transparent fallback)
+export {
+  createCircuitBreakerRpc,
+  defaultFallbackUrl,
+} from './rpc-circuit-breaker.js';
+export type {
+  CircuitBreakerRpcConfig,
+  CircuitBreakerRpcOptions,
+} from './rpc-circuit-breaker.js';
+
+// Retry utility (exponential back-off for transient RPC errors)
+export { withRetry, isRetryableError } from './retry.js';
+export type { RetryOptions } from './retry.js';
+
 // Types
 export type {
   SolanaConfig,
