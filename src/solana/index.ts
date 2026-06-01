@@ -65,7 +65,13 @@ export {
 // Solana implementation classes (still exported for advanced/direct usage —
 // the `ARIO` / `ANT` factories above wrap these).
 export { SolanaARIOReadable } from './io-readable.js';
-export { SolanaARIOWriteable } from './io-writeable.js';
+export {
+  type CrankAction,
+  type CrankEpochStepOptions,
+  type CrankEpochStepResult,
+  isInvalidGatewayAccountError,
+  SolanaARIOWriteable,
+} from './io-writeable.js';
 
 // ANT classes
 export { SolanaANTReadable } from './ant-readable.js';
@@ -205,6 +211,12 @@ export {
   deserializeAclPage,
 } from './deserialize.js';
 export type { DeserializedAclEntry } from './deserialize.js';
+
+// Off-chain prediction of prescribe_epoch's observer selection (cranker helper)
+export {
+  predictPrescribedObservers,
+  type RegistrySlotWeight,
+} from './predict-prescribed-observers.js';
 
 // Constants
 export * from './constants.js';

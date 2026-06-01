@@ -198,7 +198,15 @@ import {
   getWithdrawalPDA,
   hashName,
 } from './pda.js';
-import { sendAndConfirm } from './send.js';
+import {
+  type RegistrySlotWeight,
+  predictPrescribedObservers,
+} from './predict-prescribed-observers.js';
+import {
+  reclaimLookupTablesForSigner,
+  sendAndConfirm,
+  sendWithEphemeralLookupTable,
+} from './send.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -360,6 +368,80 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
   }
   decoded.copy(out);
   return out;
+}
+
+/** The single on-chain action a {@link SolanaARIOWriteable.crankEpochStep} call performed. */
+export type CrankAction =
+  | 'create'
+  | 'tally'
+  | 'prescribe'
+  | 'distribute'
+  | 'close'
+  | 'idle';
+
+/** Options for {@link SolanaARIOWriteable.crankEpochStep}. */
+export interface CrankEpochStepOptions {
+  /** Gateways per tally/distribute batch. Default 30. */
+  batchSize?: number;
+  /**
+   * NameRegistry account for the name-prescription leg. Defaults to the
+   * registry derived from the configured ArNS program. Pass `null` to disable
+   * name prescription entirely.
+   */
+  nameRegistryAccount?: Address | null;
+  /** Close fully-distributed epochs older than `epochRetention`. Default true. */
+  enableClose?: boolean;
+  /** Epochs of retention before an epoch may be closed (GAR-006). Default 7. */
+  epochRetention?: number;
+  /** Unix seconds; defaults to the wall clock. Injectable for testing. */
+  now?: number;
+}
+
+/** Result of a single {@link SolanaARIOWriteable.crankEpochStep} call. */
+export interface CrankEpochStepResult {
+  /** The action performed (or `'idle'` when nothing was due). */
+  action: CrankAction;
+  /** The epoch the action targeted (absent for `'idle'`). */
+  epochIndex?: number;
+  /** Confirmed transaction signature, when an action was submitted. */
+  txId?: string;
+  /** Batch progress for `'tally'` / `'distribute'`. */
+  progress?: { index: number; total: number };
+  /** For `action: 'idle'`, why nothing was done. */
+  reason?:
+    | 'epochs_disabled'
+    | 'waiting_for_genesis'
+    | 'waiting_for_epoch'
+    | 'waiting_for_observations'
+    | 'epoch_complete';
+}
+
+/**
+ * Detect the GAR `InvalidGatewayAccount` error by Anchor error name/message
+ * (walking the cause chain + `context.logs`), NOT by numeric code — codes are
+ * `6000 + enum-index` and shift across program versions, but the name and
+ * message are stable. `prescribe_epoch` raises this when a supplied observer
+ * Gateway PDA is missing/spoofed (e.g. a predicted observer left the registry
+ * between prediction and tx landing).
+ */
+export function isInvalidGatewayAccountError(error: unknown): boolean {
+  const parts: string[] = [];
+  let cur: unknown = error;
+  for (let i = 0; cur != null && i < 8; i++) {
+    const e = cur as {
+      message?: string;
+      context?: { logs?: string[] };
+      cause?: unknown;
+    };
+    if (e.message) parts.push(e.message);
+    if (Array.isArray(e.context?.logs)) parts.push(e.context.logs.join('\n'));
+    cur = e.cause;
+  }
+  const text = parts.join('\n');
+  return (
+    text.includes('InvalidGatewayAccount') ||
+    text.includes('Invalid gateway account')
+  );
 }
 
 export class SolanaARIOWriteable extends SolanaARIOReadable {
@@ -3103,9 +3185,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
   /**
    * Prescribe observers and names for an epoch. Permissionless — call after
-   * weights are tallied. Gateway PDAs are appended as `remaining_accounts`,
-   * and the optional `nameRegistryAccount` (must be last) enables the name
+   * weights are tallied.
+   *
+   * `gatewayAccounts` MUST be the Gateway PDAs of the SELECTED observers only
+   * — at most `epoch_settings.prescribed_observer_count` (≤50), NOT the whole
+   * registry. The selection is computed on-chain; mirror it off-chain with
+   * {@link predictPrescribedObservers} / {@link getPredictedObserverPDAs} to
+   * learn the set. Passing every registry gateway (e.g. via
+   * {@link getAllRegistryGatewayPDAs}) hits Solana's `MAX_TX_ACCOUNT_LOCKS = 64`
+   * on large registries and the tx fails at pre-flight.
+   *
+   * The selected PDAs are appended as `remaining_accounts`, followed by the
+   * optional `nameRegistryAccount` (must be LAST) which enables the name
    * prescription leg.
+   *
+   * If a selected gateway leaves between prediction and tx landing, the tx
+   * fails with `InvalidGatewayAccount` — retry once with a fresh prediction.
    */
   async prescribeEpoch(
     params: {
@@ -3134,11 +3229,30 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         role: AccountRole.READONLY,
       });
     }
+    const fullIx = withRemainingAccounts(ix, remaining);
 
-    const sig = await this.sendTransaction(
-      [withRemainingAccounts(ix, remaining)],
-      1_000_000,
-    );
+    // A prescribe tx with the selected observer set (~50 PDAs) exceeds Solana's
+    // 1232-byte limit once there are more than ~24 remaining accounts, so route
+    // those through an ephemeral Address Lookup Table (create → extend →
+    // compressed v0 tx). Small sets (sparse testnets) take the cheaper inline
+    // path. `prescribe_epoch` searches `remaining_accounts` by PDA, so serving
+    // them via the ALT (which preserves instruction account order) is
+    // transparent — incl. NameRegistry staying last. Validated on staging
+    // (667 gateways, 50 observers): 428k CU, name prescription intact.
+    if (remaining.length > 24) {
+      const id = await sendWithEphemeralLookupTable({
+        rpc: this.rpc,
+        rpcSubscriptions: this.rpcSubscriptions,
+        signer: this.signer,
+        instruction: fullIx,
+        lookupAddresses: remaining.map((a) => a.address),
+        commitment: this.commitment,
+        computeUnitLimit: 1_000_000,
+      });
+      return { id };
+    }
+
+    const sig = await this.sendTransaction([fullIx], 1_000_000);
     return { id: sig };
   }
 
@@ -3272,6 +3386,296 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       pdas.push(gatewayPda);
     }
     return pdas;
+  }
+
+  /**
+   * Predict the Gateway PDAs that `prescribe_epoch` will select as observers
+   * for `epochIndex`, mirroring the on-chain weighted-roulette selection.
+   *
+   * Returns at most `epoch_settings.prescribed_observer_count` (≤50) PDAs
+   * regardless of registry size — the set to pass as `gatewayAccounts` to
+   * {@link prescribeEpoch}. This is the size-safe replacement for
+   * {@link getAllRegistryGatewayPDAs} on the prescribe path (which oversupplies
+   * and trips `MAX_TX_ACCOUNT_LOCKS = 64` on large registries).
+   *
+   * Reads three accounts (epoch, registry, epoch settings) at the configured
+   * commitment so the prediction reflects live registry weights. If a selected
+   * gateway races out before the tx lands, `prescribeEpoch` throws
+   * `InvalidGatewayAccount` — re-call this and retry once.
+   */
+  async getPredictedObserverPDAs(epochIndex: number): Promise<Address[]> {
+    // --- Epoch: hashchain (frozen entropy) + active_gateway_count (walk bound) ---
+    const [epochPda] = await getEpochPDA(epochIndex, this.garProgram);
+    const epochAccount = await fetchEncodedAccount(this.rpc, epochPda, {
+      commitment: this.commitment,
+    });
+    if (!epochAccount.exists) throw new Error(`Epoch ${epochIndex} not found`);
+    const epochData = Buffer.from(epochAccount.data);
+    // After the 8-byte discriminator (see fetchEpochRawFields): 9×u64 = 72
+    // bytes, then hashchain[32], then active_gateway_count(u32).
+    const EPOCH_BASE = 8;
+    const hashchain = epochData.subarray(EPOCH_BASE + 72, EPOCH_BASE + 72 + 32);
+    const activeGatewayCount = epochData.readUInt32LE(EPOCH_BASE + 104);
+
+    // --- Registry: slots[0..activeGatewayCount] (address + composite_weight) ---
+    const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
+    const registryAccount = await fetchEncodedAccount(this.rpc, registryPda, {
+      commitment: this.commitment,
+    });
+    if (!registryAccount.exists) throw new Error('GatewayRegistry not found');
+    const registryData = Buffer.from(registryAccount.data);
+    const registryCount = registryData.readUInt32LE(40); // 8 disc + 32 authority
+    const SLOTS_OFFSET = 48; // 8 + 32 + 4 count + 4 pad
+    const SLOT_STRIDE = 56; // address(32)+weight(8)+start_ts(8)+status(1)+pad(7)
+    // Walk exactly the on-chain prefix. The roulette uses
+    // registry.gateways[0..epoch.active_gateway_count]; include zero-weight
+    // slots so the cumulative walk and weight sum match byte-for-byte.
+    const walkCount = Math.min(activeGatewayCount, registryCount, 3000);
+    const slots: RegistrySlotWeight[] = [];
+    for (let i = 0; i < walkCount; i++) {
+      const slotOffset = SLOTS_OFFSET + i * SLOT_STRIDE;
+      slots.push({
+        address: addressDecoder.decode(
+          registryData.subarray(slotOffset, slotOffset + 32),
+        ),
+        compositeWeight: registryData.readBigUInt64LE(slotOffset + 32),
+      });
+    }
+
+    // --- Epoch settings: prescribed_observer_count ---
+    const [epochSettingsPda] = await getEpochSettingsPDA(this.garProgram);
+    const settingsAccount = await fetchEncodedAccount(
+      this.rpc,
+      epochSettingsPda,
+      {
+        commitment: this.commitment,
+      },
+    );
+    if (!settingsAccount.exists) throw new Error('EpochSettings not found');
+    const settings = deserializeEpochSettingsFull(
+      Buffer.from(settingsAccount.data),
+    );
+
+    // --- Predict selected operators, then derive their Gateway PDAs ---
+    const operators = predictPrescribedObservers(
+      hashchain,
+      slots,
+      settings.prescribedObserverCount,
+    );
+    const pdas: Address[] = [];
+    for (const operator of operators) {
+      const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+      pdas.push(gatewayPda);
+    }
+    return pdas;
+  }
+
+  /**
+   * Reclaim rent from the ephemeral Address Lookup Tables this signer created
+   * for `prescribe_epoch` (see {@link sendWithEphemeralLookupTable}). Each
+   * prescribe leaves a single-use table allocated (~0.0126 SOL); reclaiming
+   * needs a deactivate → ~513-slot cooldown → close sequence, so it can't run
+   * inline. Call this from a throttled/permissionless cleanup pass (cranker /
+   * observer) to deactivate active tables and close cooled-down ones, refunding
+   * the rent to the signer.
+   *
+   * Discovery reads the signer's transaction history (RPC-portable; the ALT
+   * program can't be enumerated via `getProgramAccounts`). The GAR + ArNS
+   * program IDs are passed as the entry-ownership fingerprint so only genuine
+   * prescribe tables are touched. Best-effort: at most `maxTables` submissions
+   * per call, scanning at most `scanLimit` recent signatures.
+   */
+  async reclaimLookupTableRent(opts?: {
+    maxTables?: number;
+    scanLimit?: number;
+  }): Promise<{
+    deactivated: number;
+    closed: number;
+    candidates: number;
+    scannedSignatures: number;
+  }> {
+    return reclaimLookupTablesForSigner({
+      rpc: this.rpc,
+      rpcSubscriptions: this.rpcSubscriptions,
+      signer: this.signer,
+      allowedEntryOwners: [this.garProgram, this.arnsProgram],
+      commitment: this.commitment,
+      maxTables: opts?.maxTables,
+      scanLimit: opts?.scanLimit,
+    });
+  }
+
+  /** Read and deserialize the full EpochSettings account. */
+  async getEpochSettingsFull(): Promise<
+    ReturnType<typeof deserializeEpochSettingsFull>
+  > {
+    const [esPda] = await getEpochSettingsPDA(this.garProgram);
+    const account = await fetchEncodedAccount(this.rpc, esPda, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) throw new Error('EpochSettings not found');
+    return deserializeEpochSettingsFull(Buffer.from(account.data));
+  }
+
+  /**
+   * Submit `prescribe_epoch` using the off-chain-predicted observer set, with a
+   * single re-predict-and-retry on `InvalidGatewayAccount` (covers a gateway
+   * leaving the registry between the prediction read and the tx landing).
+   */
+  protected async prescribeWithPrediction(
+    epochIndex: number,
+    nameRegistryAccount?: Address,
+  ): Promise<MessageResult> {
+    const submit = async () =>
+      this.prescribeEpoch({
+        epochIndex,
+        gatewayAccounts: await this.getPredictedObserverPDAs(epochIndex),
+        nameRegistryAccount,
+      });
+    try {
+      return await submit();
+    } catch (err) {
+      if (!isInvalidGatewayAccountError(err)) throw err;
+      return submit();
+    }
+  }
+
+  /**
+   * Advance the epoch lifecycle by ONE on-chain action and return what it did.
+   *
+   * Stateless and idempotent: it reads `EpochSettings` + the current `Epoch`,
+   * determines the single next required step
+   * (`create` → `tally` → `prescribe` → `distribute` → `close`), submits it,
+   * and returns a {@link CrankEpochStepResult}. Call it repeatedly on your own
+   * schedule — it owns *which* on-chain action is correct and *which accounts*
+   * it needs; you own scheduling, logging, error classification, and any
+   * permissionless cleanup.
+   *
+   * Crucially, the `prescribe` leg uses {@link getPredictedObserverPDAs} (only
+   * the ~`prescribed_observer_count` selected Gateway PDAs), so it never trips
+   * `MAX_TX_ACCOUNT_LOCKS = 64` on large registries — and it re-predicts and
+   * retries once on `InvalidGatewayAccount`.
+   *
+   * Errors propagate to the caller (classify/retry as you see fit); the only
+   * internally-handled error is the prescribe `InvalidGatewayAccount` retry.
+   */
+  async crankEpochStep(
+    opts: CrankEpochStepOptions = {},
+  ): Promise<CrankEpochStepResult> {
+    // tally_weights / distribute_epoch append the batch's Gateway PDAs as
+    // remaining_accounts. distribute also CPIs into ario-core (treasury
+    // release) so it carries 10 named accounts; with ~18+ gateway PDAs on top
+    // the tx exceeds Solana's 1232-byte limit. Cap the lifecycle batch at 18 so
+    // an oversized caller `batchSize` can't produce an unsendable tx (verified:
+    // 30 gateways → 1527B; 18 → ~1050B). prescribe is the exception — it needs
+    // ALL selected observers in one tx, so it uses an ALT instead (see
+    // prescribeEpoch).
+    const MAX_LIFECYCLE_BATCH = 18;
+    const batchSize = Math.min(
+      opts.batchSize ?? MAX_LIFECYCLE_BATCH,
+      MAX_LIFECYCLE_BATCH,
+    );
+    const enableClose = opts.enableClose ?? true;
+    const retention = opts.epochRetention ?? 7;
+    const now = opts.now ?? Math.floor(Date.now() / 1000);
+
+    const settings = await this.getEpochSettingsFull();
+    if (!settings.enabled) return { action: 'idle', reason: 'epochs_disabled' };
+
+    const currentIndex = settings.currentEpochIndex;
+    // currentIndex is the NEXT epoch to create; the live one is currentIndex-1.
+    const targetEpochIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    const nextEpochStart =
+      settings.genesisTimestamp + currentIndex * settings.epochDuration;
+
+    // Bootstrap: no epochs yet.
+    if (currentIndex === 0) {
+      if (now < nextEpochStart)
+        return { action: 'idle', reason: 'waiting_for_genesis' };
+      const { id } = await this.createEpoch();
+      return { action: 'create', epochIndex: 0, txId: id };
+    }
+
+    const epoch = await this.getEpochRaw(targetEpochIndex);
+    if (!epoch) return { action: 'idle', reason: 'waiting_for_epoch' };
+
+    // Tally (batched). activeGatewayCount===0 still needs one tx to flip the flag.
+    if (epoch.weightsTallied === 0) {
+      const gatewayAccounts =
+        epoch.activeGatewayCount > 0
+          ? await this.getRegistryGatewayPDAs(epoch.tallyIndex, batchSize)
+          : [];
+      const { id } = await this.tallyWeights({
+        epochIndex: targetEpochIndex,
+        gatewayAccounts,
+      });
+      return {
+        action: 'tally',
+        epochIndex: targetEpochIndex,
+        txId: id,
+        progress: { index: epoch.tallyIndex, total: epoch.activeGatewayCount },
+      };
+    }
+
+    // Prescribe (predicted observers only — the size-safe path).
+    if (epoch.prescriptionsDone === 0) {
+      const nameRegistryAccount =
+        opts.nameRegistryAccount === null
+          ? undefined
+          : (opts.nameRegistryAccount ??
+            (await getArnsRegistryPDA(this.arnsProgram))[0]);
+      const { id } = await this.prescribeWithPrediction(
+        targetEpochIndex,
+        nameRegistryAccount,
+      );
+      return { action: 'prescribe', epochIndex: targetEpochIndex, txId: id };
+    }
+
+    // Observations happen while the epoch is live.
+    if (now < epoch.endTimestamp)
+      return { action: 'idle', reason: 'waiting_for_observations' };
+
+    // Distribute (batched).
+    if (epoch.rewardsDistributed === 0) {
+      const gatewayAccounts =
+        epoch.activeGatewayCount > 0
+          ? await this.getRegistryGatewayPDAs(
+              epoch.distributionIndex,
+              batchSize,
+            )
+          : [];
+      const { id } = await this.distributeEpoch({
+        epochIndex: targetEpochIndex,
+        gatewayAccounts,
+      });
+      return {
+        action: 'distribute',
+        epochIndex: targetEpochIndex,
+        txId: id,
+        progress: {
+          index: epoch.distributionIndex,
+          total: epoch.activeGatewayCount,
+        },
+      };
+    }
+
+    // Close a fully-distributed epoch past retention (GAR-006).
+    if (enableClose && targetEpochIndex >= retention) {
+      const closeTarget = targetEpochIndex - retention;
+      const old = await this.getEpochRaw(closeTarget);
+      if (old && old.rewardsDistributed === 1) {
+        const { id } = await this.closeEpoch({ epochIndex: closeTarget });
+        return { action: 'close', epochIndex: closeTarget, txId: id };
+      }
+    }
+
+    // Current epoch fully processed — create the next once its start arrives.
+    if (now >= nextEpochStart) {
+      const { id } = await this.createEpoch();
+      return { action: 'create', epochIndex: currentIndex, txId: id };
+    }
+
+    return { action: 'idle', reason: 'epoch_complete' };
   }
 
   /**

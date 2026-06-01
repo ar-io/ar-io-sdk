@@ -1400,6 +1400,11 @@
   resolved "https://registry.yarnpkg.com/@sinonjs/text-encoding/-/text-encoding-0.7.3.tgz#282046f03e886e352b2d5f5da5eb755e01457f3f"
   integrity sha512-DE427ROAphMQzU4ENbliGYrBSYPXF+TtLg9S8vzeA+OF4ZKzoDdzfL8sxuMUGS/lgRhM6j1URSk9ghf7Xo1tyA==
 
+"@solana-program/address-lookup-table@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@solana-program/address-lookup-table/-/address-lookup-table-0.11.0.tgz#90f9c290b13c51be98b39597e0e502f31415fbf0"
+  integrity sha512-loC6VTEhmhYSq2ElZrv+V9uHp/Te6A7rllLIArk9c3A5+5V7sRhVsxZvsPGcv/WMXLgqmXR+Vl7WF7QSV3tXNQ==
+
 "@solana-program/compute-budget@^0.15.0":
   version "0.15.0"
   resolved "https://registry.yarnpkg.com/@solana-program/compute-budget/-/compute-budget-0.15.0.tgz#b6e2d1d1314afe6b4af116c0e54eddfd9f5bd54b"

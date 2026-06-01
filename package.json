@@ -124,6 +124,7 @@
   },
   "dependencies": {
     "@ar.io/solana-contracts": "0.4.0",
+    "@solana-program/address-lookup-table": "^0.11.0",
     "@solana-program/compute-budget": "^0.15.0",
     "@solana-program/token": "^0.13.0",
     "@solana/kit": "^6.8.0",
