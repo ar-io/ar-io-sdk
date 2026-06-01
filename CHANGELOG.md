@@ -1,3 +1,10 @@
+# [4.0.0-solana.23](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.22...v4.0.0-solana.23) (2026-06-01)
+
+
+### Features
+
+* **circuit breaker:** add circuit breaker fallback on 429 to base public rpc ([1377b32](https://github.com/ar-io/ar-io-sdk/commit/1377b32ea72bbf176a5469884c172a6d384df909))
+
 # [4.0.0-solana.22](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.21...v4.0.0-solana.22) (2026-05-29)
 
 
