@@ -9,15 +9,21 @@
  * pin BOTH instructions (even with a 0 priority fee).
  */
 import {
+  getCreateLookupTableInstructionAsync,
+  getExtendLookupTableInstruction,
+} from '@solana-program/address-lookup-table';
+import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
 import {
+  type Address,
   type Commitment,
   type Instruction,
   type TransactionSigner,
   appendTransactionMessageInstructions,
   compileTransaction,
+  compressTransactionMessageUsingAddressLookupTables,
   createTransactionMessage,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
@@ -43,6 +49,7 @@ export async function sendAndConfirm({
   instructions,
   commitment = 'confirmed',
   computeUnitLimit = 400_000,
+  addressLookupTables,
 }: {
   rpc: SolanaRpc;
   rpcSubscriptions: SolanaRpcSubscriptions;
@@ -50,10 +57,19 @@ export async function sendAndConfirm({
   instructions: Instruction[];
   commitment?: Commitment;
   computeUnitLimit?: number;
+  /**
+   * Address Lookup Tables to compress the (v0) message against, as
+   * `{ [tableAddress]: addresses }`. Accounts present in a table are referenced
+   * by 1-byte index instead of their 32-byte key, shrinking the transaction —
+   * required when an instruction touches more accounts than fit inline (e.g.
+   * `prescribe_epoch` with ~50 observer PDAs). The tables MUST already be
+   * on-chain and active. See {@link sendWithEphemeralLookupTable}.
+   */
+  addressLookupTables?: Record<string, Address[]>;
 }): Promise<string> {
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-  const message = pipe(
+  const baseMessage = pipe(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageFeePayerSigner(signer, tx),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
@@ -76,6 +92,14 @@ export async function sendAndConfirm({
         tx,
       ),
   );
+
+  // Compress against any supplied lookup tables (v0). No-op when none given.
+  const message = addressLookupTables
+    ? compressTransactionMessageUsingAddressLookupTables(
+        baseMessage,
+        addressLookupTables as never,
+      )
+    : baseMessage;
 
   const signedTx = await signTransactionMessageWithSigners(message);
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({
@@ -178,4 +202,130 @@ async function logSimulationDiagnostics(
     // eslint-disable-next-line no-console
     console.warn('[solana-send] failed to collect diagnostics', diagErr);
   }
+}
+
+/**
+ * Submit `instruction` in a v0 transaction whose `lookupAddresses` (read-only
+ * accounts) are served from a freshly-created, ephemeral Address Lookup Table,
+ * so an instruction touching far more accounts than fit inline (e.g.
+ * `prescribe_epoch` with ≤50 observer PDAs + NameRegistry, ~2 KB of keys) still
+ * fits Solana's 1232-byte transaction-size limit.
+ *
+ * Three confirmed steps: create the table, extend it with the addresses (in
+ * ≤20-address batches to stay within the extend tx size), then send
+ * `instruction` compressed against the table. The sequential confirmations
+ * satisfy the rule that appended addresses are only usable the slot AFTER they
+ * are added. `signer` is the table's authority + payer; the table's (tiny) rent
+ * is left allocated — a future cleanup pass can deactivate + close it.
+ */
+export async function sendWithEphemeralLookupTable({
+  rpc,
+  rpcSubscriptions,
+  signer,
+  instruction,
+  lookupAddresses,
+  commitment = 'confirmed',
+  computeUnitLimit = 1_000_000,
+}: {
+  rpc: SolanaRpc;
+  rpcSubscriptions: SolanaRpcSubscriptions;
+  signer: TransactionSigner;
+  instruction: Instruction;
+  lookupAddresses: Address[];
+  commitment?: Commitment;
+  computeUnitLimit?: number;
+}): Promise<string> {
+  const recentSlot = await rpc.getSlot({ commitment: 'finalized' }).send();
+  const createIx = await getCreateLookupTableInstructionAsync({
+    authority: signer.address,
+    payer: signer,
+    recentSlot,
+  });
+  const tableAddress = (
+    createIx as unknown as { accounts: { address: Address }[] }
+  ).accounts[0].address;
+
+  // Create the (empty) table.
+  await sendAndConfirm({
+    rpc,
+    rpcSubscriptions,
+    signer,
+    instructions: [createIx],
+    commitment,
+    computeUnitLimit: 60_000,
+  });
+
+  // Fill it, ≤20 addresses per extend tx.
+  const BATCH = 20;
+  for (let i = 0; i < lookupAddresses.length; i += BATCH) {
+    const extendIx = getExtendLookupTableInstruction({
+      address: tableAddress,
+      authority: signer,
+      payer: signer,
+      addresses: lookupAddresses.slice(i, i + BATCH),
+    });
+    await sendAndConfirm({
+      rpc,
+      rpcSubscriptions,
+      signer,
+      instructions: [extendIx],
+      commitment,
+      computeUnitLimit: 60_000,
+    });
+  }
+
+  // Wait until the table holds every address AND one slot has elapsed since —
+  // addresses appended to a lookup table are only usable the slot AFTER they're
+  // added, and the validator that processes the prescribe must already see
+  // them. Skipping this yields "address table lookup uses an invalid index".
+  await waitForLookupTableActive(rpc, tableAddress, lookupAddresses.length);
+
+  // Send the real instruction, compressed against the now-active table.
+  return sendAndConfirm({
+    rpc,
+    rpcSubscriptions,
+    signer,
+    instructions: [instruction],
+    commitment,
+    computeUnitLimit,
+    addressLookupTables: { [tableAddress]: lookupAddresses },
+  });
+}
+
+/**
+ * Poll until an Address Lookup Table holds at least `expectedCount` addresses
+ * AND at least one slot has elapsed since they all landed. Lookup-table entries
+ * are only usable the slot AFTER they are appended, and the leader processing
+ * the consuming tx must already see them — otherwise the runtime rejects the tx
+ * with "address table lookup uses an invalid index". ALT account layout is a
+ * 56-byte metadata header followed by 32-byte addresses.
+ */
+async function waitForLookupTableActive(
+  rpc: SolanaRpc,
+  table: Address,
+  expectedCount: number,
+  maxWaitMs = 30_000,
+): Promise<void> {
+  const META = 56;
+  const start = Date.now();
+  let slotAllPresent: bigint | null = null;
+  while (Date.now() - start < maxWaitMs) {
+    const acc = await rpc.getAccountInfo(table, { encoding: 'base64' }).send();
+    const slot = acc.context.slot;
+    if (acc.value) {
+      const len = Buffer.from(acc.value.data[0], 'base64').length;
+      const count = len >= META ? Math.floor((len - META) / 32) : 0;
+      if (count >= expectedCount) {
+        if (slotAllPresent === null) {
+          slotAllPresent = slot;
+        } else if (slot > slotAllPresent) {
+          return; // all addresses present + a slot has elapsed → warm
+        }
+      }
+    }
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  throw new Error(
+    `lookup table ${table} not active (≥${expectedCount} addresses + 1 slot) within ${maxWaitMs}ms`,
+  );
 }

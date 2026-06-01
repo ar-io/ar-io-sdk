@@ -171,11 +171,32 @@ describe('crankEpochStep', () => {
       tallyIndex: 0,
       activeGatewayCount: 10,
     };
+    // batchSize 30 is capped to the tx-size-safe 18 for lifecycle batches.
     const r = await c.crankEpochStep({ now: 1500, batchSize: 30 });
     assert.equal(r.action, 'tally');
     assert.deepEqual(r.progress, { index: 0, total: 10 });
-    assert.ok(c.calls.includes('batch:0:30'));
+    assert.ok(
+      c.calls.includes('batch:0:18'),
+      'oversized batchSize must be capped to 18',
+    );
     assert.ok(c.calls.some((x) => x.startsWith('tally:')));
+  });
+
+  it('caps the lifecycle batch at 18 (distribute too) regardless of opts', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = {
+      ...liveEpoch,
+      rewardsDistributed: 0,
+      distributionIndex: 40,
+      activeGatewayCount: 667,
+      endTimestamp: 1000,
+    };
+    await c.crankEpochStep({ now: 5000, batchSize: 100 });
+    assert.ok(
+      c.calls.includes('batch:40:18'),
+      'distribute batch must be capped to 18',
+    );
   });
 
   it('tallies with an empty batch when activeGatewayCount is 0', async () => {

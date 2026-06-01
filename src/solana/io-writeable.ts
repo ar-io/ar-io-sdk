@@ -202,7 +202,7 @@ import {
   type RegistrySlotWeight,
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
-import { sendAndConfirm } from './send.js';
+import { sendAndConfirm, sendWithEphemeralLookupTable } from './send.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -3225,11 +3225,30 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         role: AccountRole.READONLY,
       });
     }
+    const fullIx = withRemainingAccounts(ix, remaining);
 
-    const sig = await this.sendTransaction(
-      [withRemainingAccounts(ix, remaining)],
-      1_000_000,
-    );
+    // A prescribe tx with the selected observer set (~50 PDAs) exceeds Solana's
+    // 1232-byte limit once there are more than ~24 remaining accounts, so route
+    // those through an ephemeral Address Lookup Table (create → extend →
+    // compressed v0 tx). Small sets (sparse testnets) take the cheaper inline
+    // path. `prescribe_epoch` searches `remaining_accounts` by PDA, so serving
+    // them via the ALT (which preserves instruction account order) is
+    // transparent — incl. NameRegistry staying last. Validated on staging
+    // (667 gateways, 50 observers): 428k CU, name prescription intact.
+    if (remaining.length > 24) {
+      const id = await sendWithEphemeralLookupTable({
+        rpc: this.rpc,
+        rpcSubscriptions: this.rpcSubscriptions,
+        signer: this.signer,
+        instruction: fullIx,
+        lookupAddresses: remaining.map((a) => a.address),
+        commitment: this.commitment,
+        computeUnitLimit: 1_000_000,
+      });
+      return { id };
+    }
+
+    const sig = await this.sendTransaction([fullIx], 1_000_000);
     return { id: sig };
   }
 
@@ -3504,7 +3523,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   async crankEpochStep(
     opts: CrankEpochStepOptions = {},
   ): Promise<CrankEpochStepResult> {
-    const batchSize = opts.batchSize ?? 30;
+    // tally_weights / distribute_epoch append the batch's Gateway PDAs as
+    // remaining_accounts. distribute also CPIs into ario-core (treasury
+    // release) so it carries 10 named accounts; with ~18+ gateway PDAs on top
+    // the tx exceeds Solana's 1232-byte limit. Cap the lifecycle batch at 18 so
+    // an oversized caller `batchSize` can't produce an unsendable tx (verified:
+    // 30 gateways → 1527B; 18 → ~1050B). prescribe is the exception — it needs
+    // ALL selected observers in one tx, so it uses an ALT instead (see
+    // prescribeEpoch).
+    const MAX_LIFECYCLE_BATCH = 18;
+    const batchSize = Math.min(
+      opts.batchSize ?? MAX_LIFECYCLE_BATCH,
+      MAX_LIFECYCLE_BATCH,
+    );
     const enableClose = opts.enableClose ?? true;
     const retention = opts.epochRetention ?? 7;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
