@@ -65,7 +65,13 @@ export {
 // Solana implementation classes (still exported for advanced/direct usage —
 // the `ARIO` / `ANT` factories above wrap these).
 export { SolanaARIOReadable } from './io-readable.js';
-export { SolanaARIOWriteable } from './io-writeable.js';
+export {
+  type CrankAction,
+  type CrankEpochStepOptions,
+  type CrankEpochStepResult,
+  isInvalidGatewayAccountError,
+  SolanaARIOWriteable,
+} from './io-writeable.js';
 
 // ANT classes
 export { SolanaANTReadable } from './ant-readable.js';

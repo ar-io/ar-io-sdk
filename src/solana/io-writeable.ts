@@ -366,6 +366,80 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
   return out;
 }
 
+/** The single on-chain action a {@link SolanaARIOWriteable.crankEpochStep} call performed. */
+export type CrankAction =
+  | 'create'
+  | 'tally'
+  | 'prescribe'
+  | 'distribute'
+  | 'close'
+  | 'idle';
+
+/** Options for {@link SolanaARIOWriteable.crankEpochStep}. */
+export interface CrankEpochStepOptions {
+  /** Gateways per tally/distribute batch. Default 30. */
+  batchSize?: number;
+  /**
+   * NameRegistry account for the name-prescription leg. Defaults to the
+   * registry derived from the configured ArNS program. Pass `null` to disable
+   * name prescription entirely.
+   */
+  nameRegistryAccount?: Address | null;
+  /** Close fully-distributed epochs older than `epochRetention`. Default true. */
+  enableClose?: boolean;
+  /** Epochs of retention before an epoch may be closed (GAR-006). Default 7. */
+  epochRetention?: number;
+  /** Unix seconds; defaults to the wall clock. Injectable for testing. */
+  now?: number;
+}
+
+/** Result of a single {@link SolanaARIOWriteable.crankEpochStep} call. */
+export interface CrankEpochStepResult {
+  /** The action performed (or `'idle'` when nothing was due). */
+  action: CrankAction;
+  /** The epoch the action targeted (absent for `'idle'`). */
+  epochIndex?: number;
+  /** Confirmed transaction signature, when an action was submitted. */
+  txId?: string;
+  /** Batch progress for `'tally'` / `'distribute'`. */
+  progress?: { index: number; total: number };
+  /** For `action: 'idle'`, why nothing was done. */
+  reason?:
+    | 'epochs_disabled'
+    | 'waiting_for_genesis'
+    | 'waiting_for_epoch'
+    | 'waiting_for_observations'
+    | 'epoch_complete';
+}
+
+/**
+ * Detect the GAR `InvalidGatewayAccount` error by Anchor error name/message
+ * (walking the cause chain + `context.logs`), NOT by numeric code — codes are
+ * `6000 + enum-index` and shift across program versions, but the name and
+ * message are stable. `prescribe_epoch` raises this when a supplied observer
+ * Gateway PDA is missing/spoofed (e.g. a predicted observer left the registry
+ * between prediction and tx landing).
+ */
+export function isInvalidGatewayAccountError(error: unknown): boolean {
+  const parts: string[] = [];
+  let cur: unknown = error;
+  for (let i = 0; cur != null && i < 8; i++) {
+    const e = cur as {
+      message?: string;
+      context?: { logs?: string[] };
+      cause?: unknown;
+    };
+    if (e.message) parts.push(e.message);
+    if (Array.isArray(e.context?.logs)) parts.push(e.context.logs.join('\n'));
+    cur = e.cause;
+  }
+  const text = parts.join('\n');
+  return (
+    text.includes('InvalidGatewayAccount') ||
+    text.includes('Invalid gateway account')
+  );
+}
+
 export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected readonly signer: SolanaSigner;
   protected readonly rpcSubscriptions: SolanaRpcSubscriptions;
@@ -3371,6 +3445,167 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       pdas.push(gatewayPda);
     }
     return pdas;
+  }
+
+  /** Read and deserialize the full EpochSettings account. */
+  async getEpochSettingsFull(): Promise<
+    ReturnType<typeof deserializeEpochSettingsFull>
+  > {
+    const [esPda] = await getEpochSettingsPDA(this.garProgram);
+    const account = await fetchEncodedAccount(this.rpc, esPda, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) throw new Error('EpochSettings not found');
+    return deserializeEpochSettingsFull(Buffer.from(account.data));
+  }
+
+  /**
+   * Submit `prescribe_epoch` using the off-chain-predicted observer set, with a
+   * single re-predict-and-retry on `InvalidGatewayAccount` (covers a gateway
+   * leaving the registry between the prediction read and the tx landing).
+   */
+  protected async prescribeWithPrediction(
+    epochIndex: number,
+    nameRegistryAccount?: Address,
+  ): Promise<MessageResult> {
+    const submit = async () =>
+      this.prescribeEpoch({
+        epochIndex,
+        gatewayAccounts: await this.getPredictedObserverPDAs(epochIndex),
+        nameRegistryAccount,
+      });
+    try {
+      return await submit();
+    } catch (err) {
+      if (!isInvalidGatewayAccountError(err)) throw err;
+      return submit();
+    }
+  }
+
+  /**
+   * Advance the epoch lifecycle by ONE on-chain action and return what it did.
+   *
+   * Stateless and idempotent: it reads `EpochSettings` + the current `Epoch`,
+   * determines the single next required step
+   * (`create` → `tally` → `prescribe` → `distribute` → `close`), submits it,
+   * and returns a {@link CrankEpochStepResult}. Call it repeatedly on your own
+   * schedule — it owns *which* on-chain action is correct and *which accounts*
+   * it needs; you own scheduling, logging, error classification, and any
+   * permissionless cleanup.
+   *
+   * Crucially, the `prescribe` leg uses {@link getPredictedObserverPDAs} (only
+   * the ~`prescribed_observer_count` selected Gateway PDAs), so it never trips
+   * `MAX_TX_ACCOUNT_LOCKS = 64` on large registries — and it re-predicts and
+   * retries once on `InvalidGatewayAccount`.
+   *
+   * Errors propagate to the caller (classify/retry as you see fit); the only
+   * internally-handled error is the prescribe `InvalidGatewayAccount` retry.
+   */
+  async crankEpochStep(
+    opts: CrankEpochStepOptions = {},
+  ): Promise<CrankEpochStepResult> {
+    const batchSize = opts.batchSize ?? 30;
+    const enableClose = opts.enableClose ?? true;
+    const retention = opts.epochRetention ?? 7;
+    const now = opts.now ?? Math.floor(Date.now() / 1000);
+
+    const settings = await this.getEpochSettingsFull();
+    if (!settings.enabled) return { action: 'idle', reason: 'epochs_disabled' };
+
+    const currentIndex = settings.currentEpochIndex;
+    // currentIndex is the NEXT epoch to create; the live one is currentIndex-1.
+    const targetEpochIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+    const nextEpochStart =
+      settings.genesisTimestamp + currentIndex * settings.epochDuration;
+
+    // Bootstrap: no epochs yet.
+    if (currentIndex === 0) {
+      if (now < nextEpochStart)
+        return { action: 'idle', reason: 'waiting_for_genesis' };
+      const { id } = await this.createEpoch();
+      return { action: 'create', epochIndex: 0, txId: id };
+    }
+
+    const epoch = await this.getEpochRaw(targetEpochIndex);
+    if (!epoch) return { action: 'idle', reason: 'waiting_for_epoch' };
+
+    // Tally (batched). activeGatewayCount===0 still needs one tx to flip the flag.
+    if (epoch.weightsTallied === 0) {
+      const gatewayAccounts =
+        epoch.activeGatewayCount > 0
+          ? await this.getRegistryGatewayPDAs(epoch.tallyIndex, batchSize)
+          : [];
+      const { id } = await this.tallyWeights({
+        epochIndex: targetEpochIndex,
+        gatewayAccounts,
+      });
+      return {
+        action: 'tally',
+        epochIndex: targetEpochIndex,
+        txId: id,
+        progress: { index: epoch.tallyIndex, total: epoch.activeGatewayCount },
+      };
+    }
+
+    // Prescribe (predicted observers only — the size-safe path).
+    if (epoch.prescriptionsDone === 0) {
+      const nameRegistryAccount =
+        opts.nameRegistryAccount === null
+          ? undefined
+          : (opts.nameRegistryAccount ??
+            (await getArnsRegistryPDA(this.arnsProgram))[0]);
+      const { id } = await this.prescribeWithPrediction(
+        targetEpochIndex,
+        nameRegistryAccount,
+      );
+      return { action: 'prescribe', epochIndex: targetEpochIndex, txId: id };
+    }
+
+    // Observations happen while the epoch is live.
+    if (now < epoch.endTimestamp)
+      return { action: 'idle', reason: 'waiting_for_observations' };
+
+    // Distribute (batched).
+    if (epoch.rewardsDistributed === 0) {
+      const gatewayAccounts =
+        epoch.activeGatewayCount > 0
+          ? await this.getRegistryGatewayPDAs(
+              epoch.distributionIndex,
+              batchSize,
+            )
+          : [];
+      const { id } = await this.distributeEpoch({
+        epochIndex: targetEpochIndex,
+        gatewayAccounts,
+      });
+      return {
+        action: 'distribute',
+        epochIndex: targetEpochIndex,
+        txId: id,
+        progress: {
+          index: epoch.distributionIndex,
+          total: epoch.activeGatewayCount,
+        },
+      };
+    }
+
+    // Close a fully-distributed epoch past retention (GAR-006).
+    if (enableClose && targetEpochIndex >= retention) {
+      const closeTarget = targetEpochIndex - retention;
+      const old = await this.getEpochRaw(closeTarget);
+      if (old && old.rewardsDistributed === 1) {
+        const { id } = await this.closeEpoch({ epochIndex: closeTarget });
+        return { action: 'close', epochIndex: closeTarget, txId: id };
+      }
+    }
+
+    // Current epoch fully processed — create the next once its start arrives.
+    if (now >= nextEpochStart) {
+      const { id } = await this.createEpoch();
+      return { action: 'create', epochIndex: currentIndex, txId: id };
+    }
+
+    return { action: 'idle', reason: 'epoch_complete' };
   }
 
   /**
