@@ -2,12 +2,16 @@
  * Unit tests for the primary-name client helpers added alongside the
  * undername-record-owner authorization fallback.
  *
- * These are pure unit tests — no RPC, no validator. They cover:
+ * These are fast unit tests — no validator (the one RPC-touching case uses a
+ * stub). They cover:
  *   - `splitPrimaryName` (mirrors the contract's `splitn(2, '_')` rule)
- *   - `getAntRecordPDA` derivation against a golden vector
+ *   - `getAntRecordPDA` / `getAntConfigPDA` derivation + cross-package parity
+ *     with `@ar.io/solana-contracts`
  *   - Borsh layout for `request_and_set_primary_name` and
  *     `approve_primary_name` instruction args (must match the Rust handlers
  *     in `programs/ario-core/src/instructions/primary_name.rs`)
+ *   - `_buildPrimaryNameValidationAccounts` remaining-account ordering,
+ *     incl. the trailing `AntConfig` PDA (ario-core PR #91 ABI)
  *
  * See `PLAN_undername_primary_name.md` for the design rationale.
  */
@@ -16,22 +20,33 @@ import { createHash } from 'node:crypto';
 import { describe, it } from 'node:test';
 
 import {
+  AccountRole,
   type Address,
   address,
   getAddressEncoder,
   getProgramDerivedAddress,
 } from '@solana/kit';
 
+import { findAntConfigPda } from '@ar.io/solana-contracts/ant';
 import { findPrimaryNameReversePda } from '@ar.io/solana-contracts/core';
 
 import {
+  ANT_CONFIG_SEED,
   ANT_RECORD_SEED,
   ARIO_ANT_PROGRAM_ID,
+  ARIO_ARNS_PROGRAM_ID,
   ARIO_CORE_PROGRAM_ID,
 } from './constants.js';
 import { BorshWriter } from './deserialize.js';
-import { splitPrimaryName } from './io-writeable.js';
-import { getAntRecordPDA, getPrimaryNameReversePDA, hashName } from './pda.js';
+import { SolanaARIOWriteable, splitPrimaryName } from './io-writeable.js';
+import {
+  getAntConfigPDA,
+  getAntRecordPDA,
+  getArnsRecordPDA,
+  getDemandFactorPDA,
+  getPrimaryNameReversePDA,
+  hashName,
+} from './pda.js';
 
 /** Sprint 2 / ADR-016: both `request_and_set_primary_name` and
  *  `approve_primary_name` now take an `ant_program_id: Pubkey` arg
@@ -252,5 +267,229 @@ describe('getPrimaryNameReversePDA — cross-package agreement', () => {
     const [a] = await getPrimaryNameReversePDA('AlIcE');
     const [b] = await getPrimaryNameReversePDA('alice');
     assert.equal(a, b);
+  });
+});
+
+/**
+ * AntConfig PDA — pinned alongside the AntRecord for primary-name
+ * authorization (ario-core PR #91 / BD-097 / BD-109). ario-core reads
+ * `AntConfig.last_known_owner` as the implicit-owner source and to
+ * freshness-gate the per-record `AntRecord.owner` delegate, so the SDK must
+ * derive this PDA against the same `["ant_config", asset]` seeds the
+ * on-chain `read_ant_config_last_known_owner` walks.
+ */
+describe('getAntConfigPDA derivation', () => {
+  it('uses the AntConfig seed pattern: ["ant_config", asset]', async () => {
+    const mint: Address = address('11111111111111111111111111111112');
+
+    const addressEncoder = getAddressEncoder();
+    const [expected] = await getProgramDerivedAddress({
+      programAddress: ARIO_ANT_PROGRAM_ID,
+      seeds: [ANT_CONFIG_SEED, addressEncoder.encode(mint)],
+    });
+
+    const [actual] = await getAntConfigPDA(mint);
+    assert.equal(actual, expected);
+  });
+
+  it('produces different addresses for different ANT assets', async () => {
+    const [a] = await getAntConfigPDA(
+      address('11111111111111111111111111111112'),
+    );
+    const [b] = await getAntConfigPDA(
+      address('11111111111111111111111111111113'),
+    );
+    assert.notEqual(a, b);
+  });
+
+  it('threads a custom (cluster-override) program id into the derivation', async () => {
+    const mint: Address = address('11111111111111111111111111111112');
+    const [canonical] = await getAntConfigPDA(mint);
+    const [overridden] = await getAntConfigPDA(mint, ARIO_CORE_PROGRAM_ID);
+    assert.notEqual(canonical, overridden);
+  });
+});
+
+describe('getAntConfigPDA — cross-package agreement', () => {
+  it('matches @ar.io/solana-contracts findAntConfigPda (canonical program)', async () => {
+    const mint: Address = address('11111111111111111111111111111112');
+    const [sdkPda] = await getAntConfigPDA(mint);
+    const [contractsPda] = await findAntConfigPda(
+      { asset: mint },
+      { programAddress: ARIO_ANT_PROGRAM_ID },
+    );
+    assert.equal(sdkPda, contractsPda);
+  });
+
+  it('SDK and contracts agree for a custom (cluster-override) program id', async () => {
+    const mint: Address = address('11111111111111111111111111111112');
+    const overrideProgram = ARIO_CORE_PROGRAM_ID; // any other valid Address
+    const [sdkPda] = await getAntConfigPDA(mint, overrideProgram);
+    const [contractsPda] = await findAntConfigPda(
+      { asset: mint },
+      { programAddress: overrideProgram },
+    );
+    assert.equal(sdkPda, contractsPda);
+  });
+});
+
+/**
+ * Layout test for `_buildPrimaryNameValidationAccounts` — the single builder
+ * that assembles the `remaining_accounts` slice for every ANT-auth
+ * primary-name instruction (and the funding-plan variant, whose
+ * `validation_account_count` is derived from this array's length). This
+ * exercises the one RPC-touching path with a stub so it stays a fast unit
+ * test: the stub returns a serialized `ArnsRecord` for the ArNS PDA and a
+ * non-existent account for everything else (so `fetchAntProgramFromAsset`
+ * returns null → the builder falls back to the configured canonical program).
+ *
+ * Pins the ABI ordering against ario-core PR #91: the `AntConfig` PDA must be
+ * the trailing account for `requestAndSet`/`approve`, derived under the same
+ * program as the `AntRecord`.
+ */
+const FIXTURE_ANT_MINT = address('So11111111111111111111111111111111111111112');
+const FILLER_PUBKEY = address('11111111111111111111111111111112');
+
+/** Minimal `ArnsRecord` blob matching `deserializeArnsRecord` (only `ant` /
+ *  processId is asserted downstream). */
+function buildArnsRecordFixture(antMint: Address): Uint8Array {
+  const w = new BorshWriter(256);
+  w.writeFixedBytes(Buffer.alloc(8)); // discriminator (skipped by reader)
+  w.writePubkey(FILLER_PUBKEY); // name hash
+  w.writePubkey(FILLER_PUBKEY); // owner
+  w.writePubkey(antMint); // ant (a.k.a. processId)
+  w.writeU8(1); // type = Permabuy
+  w.writeI64(0); // startTimestamp
+  w.writeOptionI64(undefined); // endTimestamp = None
+  w.writeU16(10); // undernameLimit
+  w.writeU64(0); // purchasePrice
+  w.writeU8(255); // bump
+  w.writeString('arweave'); // name
+  return w.toBuffer();
+}
+
+/** rpc stub: ArnsRecord bytes for `arnsRecordPda`, non-existent otherwise. */
+function stubRpcForArnsRecord(
+  arnsRecordPda: Address,
+  arnsRecordBytes: Uint8Array,
+): unknown {
+  const b64 = Buffer.from(arnsRecordBytes).toString('base64');
+  return {
+    getAccountInfo: (addr: Address) => ({
+      send: async () =>
+        addr === arnsRecordPda
+          ? {
+              value: {
+                data: [b64, 'base64'] as readonly [string, string],
+                lamports: 1,
+                owner: ARIO_ARNS_PROGRAM_ID as string,
+                executable: false,
+                rentEpoch: 0,
+              },
+            }
+          : { value: null },
+    }),
+  };
+}
+
+async function buildValidationAccounts(
+  name: string,
+  variant: 'request' | 'requestAndSet' | 'approve',
+) {
+  const { baseName } = splitPrimaryName(name);
+  const [arnsRecordPda] = await getArnsRecordPDA(
+    baseName,
+    ARIO_ARNS_PROGRAM_ID,
+  );
+  const rpc = stubRpcForArnsRecord(
+    arnsRecordPda,
+    buildArnsRecordFixture(FIXTURE_ANT_MINT),
+  );
+  const ario = new SolanaARIOWriteable({
+    rpc: rpc as never,
+    rpcSubscriptions: {} as never,
+    signer: {} as never,
+  });
+  // Private builder — reach it via index access (no public wrapper exposes
+  // the raw remaining-accounts slice).
+  return (
+    ario as unknown as {
+      _buildPrimaryNameValidationAccounts: (
+        n: string,
+        v: string,
+      ) => Promise<{ remaining: { address: Address; role: AccountRole }[] }>;
+    }
+  )._buildPrimaryNameValidationAccounts(name, variant);
+}
+
+describe('_buildPrimaryNameValidationAccounts — AntConfig in remaining_accounts (PR #91 ABI)', () => {
+  it('request: [arnsRecord, demandFactor] — no AntRecord/AntConfig', async () => {
+    const { remaining } = await buildValidationAccounts('arweave', 'request');
+    const [arns] = await getArnsRecordPDA('arweave', ARIO_ARNS_PROGRAM_ID);
+    const [df] = await getDemandFactorPDA(ARIO_ARNS_PROGRAM_ID);
+    assert.equal(remaining.length, 2);
+    assert.equal(remaining[0].address, arns);
+    assert.equal(remaining[1].address, df);
+  });
+
+  it('requestAndSet (undername): [arnsRecord, demandFactor, antRecord, antConfig]', async () => {
+    const { remaining } = await buildValidationAccounts(
+      'blog_arweave',
+      'requestAndSet',
+    );
+    const [df] = await getDemandFactorPDA(ARIO_ARNS_PROGRAM_ID);
+    const [antRecord] = await getAntRecordPDA(
+      FIXTURE_ANT_MINT,
+      'blog',
+      ARIO_ANT_PROGRAM_ID,
+    );
+    const [antConfig] = await getAntConfigPDA(
+      FIXTURE_ANT_MINT,
+      ARIO_ANT_PROGRAM_ID,
+    );
+    assert.equal(remaining.length, 4);
+    assert.equal(remaining[1].address, df);
+    assert.equal(remaining[2].address, antRecord);
+    assert.equal(remaining[3].address, antConfig, 'AntConfig must be last');
+    assert.equal(remaining[3].role, AccountRole.READONLY);
+  });
+
+  it('approve (undername): [arnsRecord, antRecord, antConfig]', async () => {
+    const { remaining } = await buildValidationAccounts(
+      'blog_arweave',
+      'approve',
+    );
+    const [antRecord] = await getAntRecordPDA(
+      FIXTURE_ANT_MINT,
+      'blog',
+      ARIO_ANT_PROGRAM_ID,
+    );
+    const [antConfig] = await getAntConfigPDA(
+      FIXTURE_ANT_MINT,
+      ARIO_ANT_PROGRAM_ID,
+    );
+    assert.equal(remaining.length, 3);
+    assert.equal(remaining[1].address, antRecord);
+    assert.equal(remaining[2].address, antConfig, 'AntConfig must be last');
+    assert.equal(remaining[2].role, AccountRole.READONLY);
+  });
+
+  it('base name requestAndSet uses the "@" AntRecord + same-mint AntConfig', async () => {
+    const { remaining } = await buildValidationAccounts(
+      'arweave',
+      'requestAndSet',
+    );
+    const [antRecordAt] = await getAntRecordPDA(
+      FIXTURE_ANT_MINT,
+      '@',
+      ARIO_ANT_PROGRAM_ID,
+    );
+    const [antConfig] = await getAntConfigPDA(
+      FIXTURE_ANT_MINT,
+      ARIO_ANT_PROGRAM_ID,
+    );
+    assert.equal(remaining.length, 4);
+    assert.equal(remaining[2].address, antRecordAt);
+    assert.equal(remaining[3].address, antConfig);
   });
 });
