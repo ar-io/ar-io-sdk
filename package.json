@@ -122,7 +122,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@ar.io/solana-contracts": "0.4.0",
+    "@ar.io/solana-contracts": "0.5.0-staging.15",
     "@solana-program/address-lookup-table": "^0.11.0",
     "@solana-program/compute-budget": "^0.15.0",
     "@solana-program/token": "^0.13.0",
