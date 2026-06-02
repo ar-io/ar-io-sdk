@@ -606,6 +606,137 @@ describe(
       );
     });
 
+    it('Fix #7: updateGatewaySettings defers delegate_reward_share_ratio to pending (active unchanged)', async () => {
+      // Fresh operator so we don't perturb shared `operator` state.
+      const op = await freshSigner(scratch, 'defer-ratio-operator');
+      await airdrop(op.keypairPath, 5);
+      mintArio(op.signer.address, OPERATOR_STAKE * 2n);
+      const opArio = buildArio(op.signer, RPC_URL!, WS_URL!);
+
+      await opArio.joinNetwork({
+        operatorStake: Number(OPERATOR_STAKE),
+        label: 'defer-ratio-gw',
+        fqdn: 'defer-ratio.example.com',
+        port: 443,
+        protocol: 'https',
+        autoStake: false,
+        allowDelegatedStaking: true,
+        delegateRewardShareRatio: 10, // active = 10%
+        observerAddress: op.signer.address as string,
+      });
+
+      // Request a change to 50%. Per WP §6.3 / Fix #7 this is DEFERRED: the
+      // active value stays 10% and the request is staged in `pending`.
+      await opArio.updateGatewaySettings({ delegateRewardShareRatio: 50 });
+
+      const gw = await opArio.getGateway({
+        address: op.signer.address as string,
+      });
+      assert.equal(
+        gw.settings.delegateRewardShareRatio,
+        10,
+        'active delegate_reward_share_ratio must be unchanged until next epoch tally',
+      );
+      assert.equal(
+        gw.settings.pendingDelegateRewardShareRatio,
+        50,
+        'the requested ratio must be staged in pendingDelegateRewardShareRatio',
+      );
+    });
+
+    it('Fix #6: disable delegation → cranker claims delegate → re-enable blocked by cooldown', async () => {
+      // Fresh operator with delegation enabled.
+      const op = await freshSigner(scratch, 'disable-deleg-operator');
+      await airdrop(op.keypairPath, 5);
+      mintArio(op.signer.address, OPERATOR_STAKE * 2n);
+      const opArio = buildArio(op.signer, RPC_URL!, WS_URL!);
+      await opArio.joinNetwork({
+        operatorStake: Number(OPERATOR_STAKE),
+        label: 'disable-deleg-gw',
+        fqdn: 'disable-deleg.example.com',
+        port: 443,
+        protocol: 'https',
+        autoStake: false,
+        allowDelegatedStaking: true,
+        delegateRewardShareRatio: 10,
+        observerAddress: op.signer.address as string,
+      });
+
+      // Fresh delegator delegates 50k ARIO.
+      const del = await freshSigner(scratch, 'disable-deleg-delegator');
+      await airdrop(del.keypairPath, 5);
+      mintArio(del.signer.address, 100_000_000_000n);
+      const delArio = buildArio(del.signer, RPC_URL!, WS_URL!);
+      const delegateAmount = 50_000_000_000n;
+      await delArio.delegateStake({
+        target: op.signer.address as string,
+        stakeQty: Number(delegateAmount),
+      });
+
+      // Operator DISABLES delegation. Records delegation_disabled_at; existing
+      // delegates are NOT auto-withdrawn (must be cranked out).
+      await opArio.updateGatewaySettings({ allowDelegatedStaking: false });
+      const gwDisabled = await opArio.getGateway({
+        address: op.signer.address as string,
+      });
+      assert.equal(
+        gwDisabled.settings.allowDelegatedStaking,
+        false,
+        'allowDelegatedStaking must be false after disable',
+      );
+      assert.ok(
+        typeof gwDisabled.settings.delegationDisabledAt === 'number' &&
+          gwDisabled.settings.delegationDisabledAt > 0,
+        'delegationDisabledAt must be recorded on disable',
+      );
+
+      // A THIRD-PARTY CRANKER (not the operator, not the delegate) cranks the
+      // delegate out — the permissionless Fix #6 sweep primitive. Stake routes
+      // to the delegate's own withdrawal vault regardless of who pays.
+      const cranker = await freshSigner(scratch, 'disable-deleg-cranker');
+      await airdrop(cranker.keypairPath, 5);
+      const crankerArio = buildArio(cranker.signer, RPC_URL!, WS_URL!);
+      const claim = await crankerArio.claimDelegateFromDisabledGateway({
+        gatewayAddress: op.signer.address as string,
+        delegatorAddress: del.signer.address as string,
+      });
+      assert.ok(
+        claim.id,
+        'claimDelegateFromDisabledGateway must return a tx id',
+      );
+
+      // The delegate now has a delegate-owned withdrawal vault (30-day lock),
+      // and the gateway's total delegated stake is zero.
+      const delWithdrawals = await delArio.getWithdrawals({
+        address: del.signer.address as string,
+      });
+      assert.equal(
+        delWithdrawals.items.length,
+        1,
+        'delegate must have exactly one withdrawal after the cranked claim',
+      );
+      assert.equal(delWithdrawals.items[0].isDelegate, true);
+      assert.equal(
+        delWithdrawals.items[0].gatewayAddress,
+        op.signer.address as string,
+      );
+      const gwAfterClaim = await opArio.getGateway({
+        address: op.signer.address as string,
+      });
+      assert.equal(
+        gwAfterClaim.totalDelegatedStake,
+        0,
+        'gateway total delegated stake must be 0 after the delegate is cranked out',
+      );
+
+      // Re-enabling is still blocked by the withdrawal-period cooldown even
+      // though stake is now zero (WP §6.3: no toggle-churn).
+      await assert.rejects(
+        opArio.updateGatewaySettings({ allowDelegatedStaking: true }),
+        're-enabling delegation before the cooldown elapses must be rejected',
+      );
+    });
+
     it('buyRecord({ fundFrom: "plan", sources: [...] }) draws from a caller-supplied balance + delegation plan', async () => {
       // Fresh delegator → mint balance → delegate so the plan has both a
       // wallet ATA source and a delegation source. Pre-compute cost via

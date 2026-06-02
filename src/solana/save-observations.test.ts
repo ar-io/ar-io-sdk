@@ -23,6 +23,7 @@ import {
 import bs58 from 'bs58';
 
 import { getEpochEncoder } from '@ar.io/solana-contracts/gar';
+import { MAX_GATEWAYS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import { buildObservationBitmap, encodeReportTxId } from './io-writeable.js';
 
@@ -283,7 +284,10 @@ function buildEpochBuffer(opts: {
     prescriptionsDone: 0,
     bump: 0,
     observationsClosed: 0,
-    failureCounts: new Array(30).fill(0),
+    // Epoch.failure_counts is a fixed [u16; MAX_GATEWAYS] array — the
+    // encoder rejects any other length. Full-size on every cluster since
+    // devnet-shrunk was retired (contracts ADR-024).
+    failureCounts: new Array(MAX_GATEWAYS).fill(0),
     prescribedObservers: observers,
     prescribedObserverGateways: observerGateways,
     prescribedNames: [new Uint8Array(32), new Uint8Array(32)],

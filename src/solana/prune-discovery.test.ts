@@ -295,6 +295,7 @@ function makeGatewayBytes(
   operator: Address,
   status: GatewayStatus,
   failedConsecutive: number,
+  opts: { allowDelegatedStaking?: boolean; totalDelegatedStake?: bigint } = {},
 ): Uint8Array {
   const enc = getGatewayEncoder();
   return enc.encode({
@@ -306,7 +307,7 @@ function makeGatewayBytes(
     properties: '',
     note: '',
     operatorStake: 1_000n,
-    totalDelegatedStake: 0n,
+    totalDelegatedStake: opts.totalDelegatedStake ?? 0n,
     status,
     startTimestamp: 0n,
     leaveTimestamp: null,
@@ -330,10 +331,13 @@ function makeGatewayBytes(
       weightsEpoch: 0n,
     },
     settings: {
-      allowDelegatedStaking: false,
+      allowDelegatedStaking: opts.allowDelegatedStaking ?? false,
       delegateRewardShareRatio: 0,
       minDelegationAmount: 0n,
       allowlistEnabled: false,
+      // GATEWAY_VERSION 1.1.0 GatewaySettings2 additions (Fix #6/#7); None.
+      pendingDelegateRewardShareRatio: null,
+      delegationDisabledAt: null,
     },
     registryIndex: { index: 0, _reserved: 0 },
     observerAddress: operator,
@@ -401,6 +405,68 @@ describe('SolanaARIOReadable.getGoneGateways', () => {
     );
     assert.equal(out[0].pubkey, ADDR_C);
     assert.equal(out[0].operator, PUBKEY_3);
+  });
+});
+
+describe('SolanaARIOReadable.getDisabledGatewaysWithDelegatedStake', () => {
+  it('returns only Joined gateways with delegation disabled AND stake > 0', async () => {
+    // Disabled + has stake → eligible for the cranker sweep.
+    const disabledWithStake = makeGatewayBytes(
+      PUBKEY_1,
+      GatewayStatus.Joined,
+      0,
+      {
+        allowDelegatedStaking: false,
+        totalDelegatedStake: 5_000_000_000n,
+      },
+    );
+    // Disabled but already drained → nothing to crank.
+    const disabledNoStake = makeGatewayBytes(
+      PUBKEY_2,
+      GatewayStatus.Joined,
+      0,
+      {
+        allowDelegatedStaking: false,
+        totalDelegatedStake: 0n,
+      },
+    );
+    // Enabled with stake → not a target (delegation still allowed).
+    const enabledWithStake = makeGatewayBytes(
+      PUBKEY_3,
+      GatewayStatus.Joined,
+      0,
+      {
+        allowDelegatedStaking: true,
+        totalDelegatedStake: 9_000_000_000n,
+      },
+    );
+    // Leaving with disabled+stake → handled by the leaving-gateway sweep, not here.
+    const leavingDisabled = makeGatewayBytes(
+      PUBKEY_1,
+      GatewayStatus.Leaving,
+      0,
+      {
+        allowDelegatedStaking: false,
+        totalDelegatedStake: 1_000_000_000n,
+      },
+    );
+    const rpc = stubRpcReturning([
+      { pubkey: ADDR_A, bytes: disabledWithStake },
+      { pubkey: ADDR_B, bytes: disabledNoStake },
+      { pubkey: ADDR_C, bytes: enabledWithStake },
+      { pubkey: ADDR_A, bytes: leavingDisabled },
+    ]);
+    const r = buildReadable(rpc);
+
+    const out = await r.getDisabledGatewaysWithDelegatedStake();
+    assert.equal(
+      out.length,
+      1,
+      'only Joined + delegation-disabled + stake>0 gateways need the disabled sweep',
+    );
+    assert.equal(out[0].pubkey, ADDR_A);
+    assert.equal(out[0].operator, PUBKEY_1);
+    assert.equal(out[0].totalDelegatedStake, 5_000_000_000n);
   });
 });
 

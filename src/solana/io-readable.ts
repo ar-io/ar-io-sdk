@@ -2320,6 +2320,47 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Enumerate Joined Gateway PDAs whose delegation has been DISABLED
+   * (`allow_delegated_staking == false`) yet still hold delegated stake
+   * (`total_delegated_stake > 0`) — i.e. delegates that an operator's disable
+   * left stranded (WP §6.3 / Fix #6). Each such gateway's delegates must be
+   * cranked out via
+   * {@link SolanaARIOWriteable.claimDelegateFromDisabledGateway} (enumerate
+   * them with {@link getGatewayDelegates}) before the operator can re-enable
+   * delegation. This is the discovery primitive a cranker uses to sweep them.
+   */
+  async getDisabledGatewaysWithDelegatedStake(): Promise<
+    Array<{ pubkey: Address; operator: Address; totalDelegatedStake: bigint }>
+  > {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Array<{
+      pubkey: Address;
+      operator: Address;
+      totalDelegatedStake: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const g = decoder.decode(data);
+        if (g.status !== GatewayStatus.Joined) continue;
+        if (!g.settings.allowDelegatedStaking && g.totalDelegatedStake > 0n) {
+          out.push({
+            pubkey,
+            operator: g.operator,
+            totalDelegatedStake: g.totalDelegatedStake,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
    * Enumerate Delegation PDAs with `amount == 0`. Eligible for
    * `closeEmptyDelegation` (rent refund to the original delegator).
    */

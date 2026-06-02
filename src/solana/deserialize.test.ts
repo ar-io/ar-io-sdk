@@ -98,7 +98,14 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     operatorStake: bigint;
     totalDelegatedStake: bigint;
     cumulativeRewardPerToken: bigint;
+    // GATEWAY_VERSION 1.1.0 GatewaySettings2 additions (Fix #6/#7). Omitted = None.
+    pendingDelegateRewardShareRatio?: number; // raw u16 (e.g. 5000 = 50%)
+    delegationDisabledAt?: bigint; // unix seconds
   }): Buffer {
+    // Option<u16> = 1 tag (+2 if Some); Option<i64> = 1 tag (+8 if Some)
+    const pendingBytes =
+      opts.pendingDelegateRewardShareRatio === undefined ? 1 : 3;
+    const disabledBytes = opts.delegationDisabledAt === undefined ? 1 : 9;
     // We use 1-char placeholders ("a") for label/fqdn/properties/note to keep
     // the math obvious. Each string contributes 4 (length prefix) + 1 (content).
     const STRING_BYTES = 4 + 1; // 4 length prefix + 1 char
@@ -125,6 +132,8 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
       2 + // delegate_reward_share_ratio
       8 + // min_delegated_stake
       1 + // allowlist_enabled
+      pendingBytes + // pending_delegate_reward_share_ratio: Option<u16> (Fix #7)
+      disabledBytes + // delegation_disabled_at: Option<i64> (Fix #6)
       4 + // registry_index.index
       1 + // registry_index._reserved
       32 + // observer_address
@@ -193,6 +202,26 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     // allowlist_enabled (bool)
     buf.writeUInt8(0, off);
     off += 1;
+    // pending_delegate_reward_share_ratio: Option<u16> (Fix #7)
+    if (opts.pendingDelegateRewardShareRatio === undefined) {
+      buf.writeUInt8(0, off);
+      off += 1;
+    } else {
+      buf.writeUInt8(1, off);
+      off += 1;
+      buf.writeUInt16LE(opts.pendingDelegateRewardShareRatio, off);
+      off += 2;
+    }
+    // delegation_disabled_at: Option<i64> (Fix #6)
+    if (opts.delegationDisabledAt === undefined) {
+      buf.writeUInt8(0, off);
+      off += 1;
+    } else {
+      buf.writeUInt8(1, off);
+      off += 1;
+      buf.writeBigInt64LE(opts.delegationDisabledAt, off);
+      off += 8;
+    }
     // registry_index.index (u32) + _reserved (u8)
     buf.writeUInt32LE(0, off);
     off += 4;
@@ -246,6 +275,38 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     });
     const gw = deserializeGatewayWithAccumulator(buf);
     assert.equal(gw.cumulativeRewardPerToken, big);
+  });
+
+  it('reads GatewaySettings2 1.1.0 fields (None) and keeps later offsets aligned', () => {
+    // Both Option fields absent (the common case). The layout grew by 2 bytes
+    // (two None tags), so cumulativeRewardPerToken must still land correctly.
+    const buf = buildGatewayBuffer({
+      operatorStake: 20_000_000_000n,
+      totalDelegatedStake: 7_000_000_000n,
+      cumulativeRewardPerToken: 500_000_000_000_000_000n,
+    });
+    const gw = deserializeGatewayWithAccumulator(buf);
+    assert.equal(gw.cumulativeRewardPerToken, 500_000_000_000_000_000n);
+    assert.equal(gw.settings.pendingDelegateRewardShareRatio, undefined);
+    assert.equal(gw.settings.delegationDisabledAt, undefined);
+  });
+
+  it('surfaces pending ratio + disabled timestamp (Some) without shifting later fields', () => {
+    // Fix #6/#7: a staged reward-share change (5000 bp = 50%) and a disable
+    // timestamp. The Some payloads widen GatewaySettings2 by 10 bytes; the
+    // accumulator after `settings` must still decode correctly.
+    const buf = buildGatewayBuffer({
+      operatorStake: 20_000_000_000n,
+      totalDelegatedStake: 9_000_000_000n,
+      cumulativeRewardPerToken: 750_000_000_000_000_000n,
+      pendingDelegateRewardShareRatio: 5000, // 50% in basis points
+      delegationDisabledAt: 1_700_000_000n,
+    });
+    const gw = deserializeGatewayWithAccumulator(buf);
+    assert.equal(gw.settings.pendingDelegateRewardShareRatio, 50); // 5000 / 100
+    assert.equal(gw.settings.delegationDisabledAt, 1_700_000_000);
+    // Critical: the layout after `settings` stays aligned.
+    assert.equal(gw.cumulativeRewardPerToken, 750_000_000_000_000_000n);
   });
 
   it('public deserializeGateway does NOT expose cumulativeRewardPerToken', () => {
