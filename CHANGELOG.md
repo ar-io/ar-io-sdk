@@ -1,3 +1,11 @@
+# [4.0.0-solana.25](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.24...v4.0.0-solana.25) (2026-06-02)
+
+
+### Features
+
+* **solana:** add getDisabledGatewaysWithDelegatedStake discovery helper ([bd3595d](https://github.com/ar-io/ar-io-sdk/commit/bd3595dbc9fb74b29e30b5ffa5d27c095d1a78d8)), closes [#6](https://github.com/ar-io/ar-io-sdk/issues/6)
+* **solana:** support disabled-gateway delegate claim + deferred reward-share ratio (GAR 1.1.0) ([2398c3b](https://github.com/ar-io/ar-io-sdk/commit/2398c3b65a6db4ef9ec2c1a15a1701bfc2d02da6)), closes [6/#7](https://github.com/ar-io/ar-io-sdk/issues/7) [#7](https://github.com/ar-io/ar-io-sdk/issues/7) [#6](https://github.com/ar-io/ar-io-sdk/issues/6)
+
 # [4.0.0-solana.24](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.23...v4.0.0-solana.24) (2026-06-01)
 
 
