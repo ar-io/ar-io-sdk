@@ -175,6 +175,7 @@ import { getTransferCheckedInstruction } from '@solana-program/token';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
+  getAntConfigPDA,
   getAntRecordPDA,
   getArioConfigPDA,
   getArnsRecordPDA,
@@ -2257,14 +2258,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Build the `remaining_accounts` slice + the `antProgramId` arg the
    * four ario-core primary-name instructions consume. Sprint 2/5
    * reshape (ADR-016): ario-core no longer reads MPL Core asset bytes.
-   * Authorization is "caller is the AntRecord.owner for this name" via
-   * PDA-seed-pinned lookup.
+   * Authorization is "caller is the effective AntRecord owner for this
+   * name", resolved from the `AntRecord` + `AntConfig` PDAs (freshness-
+   * gated against `AntConfig.last_known_owner` — see ario-core BD-097 /
+   * BD-109). Both are program-PDA-pinned lookups.
    *
    * Layouts the on-chain handlers expect:
    *   request_primary_name:               [arnsRecord, demandFactor]
-   *   request_and_set_primary_name:       [arnsRecord, demandFactor, antRecord]
-   *   approve_primary_name:               [arnsRecord, antRecord]
-   *   remove_primary_name_for_base_name:  [arnsRecord, antRecord(@)]
+   *   request_and_set_primary_name:       [arnsRecord, demandFactor, antRecord, antConfig]
+   *   approve_primary_name:               [arnsRecord, antRecord, antConfig]
+   *   remove_primary_name_for_base_name:  [arnsRecord, antRecord(@), antConfig]
    *
    * `antRecord` keys off the undername part for undernames (e.g.
    * "blog_arweave" → AntRecord at "blog") or the canonical "@" sentinel
@@ -2349,6 +2352,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         antProgram,
       );
       remaining.push({ address: antRecordPda, role: AccountRole.READONLY });
+
+      // AntConfig PDA (ANT-level owner snapshot). ario-core reads
+      // `AntConfig.last_known_owner` as the implicit-owner source and to
+      // freshness-gate the per-record `AntRecord.owner` delegate (BD-097 /
+      // BD-109). Derived under the SAME resolved `antProgram` as the
+      // AntRecord above. Required trailing account for all three ANT-auth
+      // variants (and the funding-plan variant, whose validation_account_count
+      // is derived from this array's length downstream).
+      const [antConfigPda] = await getAntConfigPDA(antMint, antProgram);
+      remaining.push({ address: antConfigPda, role: AccountRole.READONLY });
     }
 
     return { remaining, antProgram };
@@ -2590,7 +2603,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *
    * Mirrors the on-chain `approve_primary_name` instruction
    * (`programs/ario-core/src/instructions/primary_name.rs`).
-   * remaining_accounts: [arns_record(base), ant_record(undername | @)].
+   * remaining_accounts: [arns_record(base), ant_record(undername | @), ant_config].
    */
   async approvePrimaryName(
     params: { initiator: Address; name: string },
