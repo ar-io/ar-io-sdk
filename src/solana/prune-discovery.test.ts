@@ -334,6 +334,9 @@ function makeGatewayBytes(
       delegateRewardShareRatio: 0,
       minDelegationAmount: 0n,
       allowlistEnabled: false,
+      // GATEWAY_VERSION 1.1.0 GatewaySettings2 additions (Fix #6/#7); None.
+      pendingDelegateRewardShareRatio: null,
+      delegationDisabledAt: null,
     },
     registryIndex: { index: 0, _reserved: 0 },
     observerAddress: operator,

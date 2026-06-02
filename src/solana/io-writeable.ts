@@ -145,6 +145,7 @@ import {
   Protocol,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
+  getClaimDelegateFromDisabledGatewayInstructionAsync,
   getClaimDelegateFromLeavingGatewayInstructionAsync,
   getClaimWithdrawalInstructionAsync,
   getCloseDrainedWithdrawalInstruction,
@@ -2777,6 +2778,65 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         delegation: delegationPda,
         withdrawal: withdrawalPda,
         delegator: this.signer.address,
+        payer: this.signer,
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix], 1_000_000);
+    return { id: sig };
+  }
+
+  // =========================================
+  // Claim delegation from gateway with delegation DISABLED (ario-gar, Fix #6)
+  // =========================================
+
+  /**
+   * Claim a delegate's stake out of a gateway that has DISABLED delegation
+   * (`allow_delegated_staking == false`), moving it into the delegate's own
+   * withdrawal vault (WP §6.3 / Fix #6). This is the disabled-gateway analog of
+   * {@link claimDelegateFromLeavingGateway}: the on-chain instruction is
+   * permissionless, so a cranker can sweep delegates out (the operator cannot
+   * re-enable delegation until `total_delegated_stake == 0` and the cooldown
+   * elapses). The withdrawal-counter and withdrawal PDAs are seeded by the
+   * DELEGATOR, so a cranker must pass that delegate's `delegatorAddress`.
+   *
+   * @param params.gatewayAddress  The gateway whose delegation was disabled.
+   * @param params.delegatorAddress  The delegate to claim for. Defaults to the
+   *   signer (self-claim). Pass another address to crank on a delegate's behalf;
+   *   the signer covers rent (`payer`) but stake still routes to the delegate's
+   *   own vault (the delegator key is bound by the delegation PDA seeds).
+   */
+  async claimDelegateFromDisabledGateway(
+    params: { gatewayAddress: string; delegatorAddress?: string },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const gateway = address(params.gatewayAddress);
+    const delegator = params.delegatorAddress
+      ? address(params.delegatorAddress)
+      : this.signer.address;
+    const [gatewayPda] = await getGatewayPDA(gateway, this.garProgram);
+    const [delegationPda] = await getDelegationPDA(
+      gateway,
+      delegator,
+      this.garProgram,
+    );
+    // Withdrawal counter + vault are PDA-seeded by the delegator, not the payer.
+    const nextId = await this.getNextWithdrawalId(delegator);
+    const [withdrawalPda] = await getWithdrawalPDA(
+      delegator,
+      nextId,
+      this.garProgram,
+    );
+
+    const ix = await getClaimDelegateFromDisabledGatewayInstructionAsync(
+      {
+        gateway: gatewayPda,
+        delegation: delegationPda,
+        withdrawal: withdrawalPda,
+        // `delegator` is an unsigned seeds-derivation key; `payer` (the signer)
+        // covers rent on the init_if_needed counter + the new withdrawal.
+        delegator,
         payer: this.signer,
       },
       { programAddress: this.garProgram },

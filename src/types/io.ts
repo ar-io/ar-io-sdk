@@ -316,6 +316,22 @@ export type GatewaySettings = {
   fqdn: string;
   port: number;
   protocol: 'https';
+  /**
+   * Solana only (GATEWAY_VERSION 1.1.0+). A `delegateRewardShareRatio` change
+   * requested mid-epoch is staged here and applied at the next epoch's
+   * `tally_weights` (WP §6.3 / Fix #7), so the active value stays epoch-stable.
+   * When set, render the active `delegateRewardShareRatio` as the current rate
+   * and this as "pending until next epoch". Percent (0-95), same scale as
+   * `delegateRewardShareRatio`. Undefined when no change is queued.
+   */
+  pendingDelegateRewardShareRatio?: number;
+  /**
+   * Solana only (GATEWAY_VERSION 1.1.0+). Unix seconds when the operator
+   * disabled delegation (WP §6.3 / Fix #6). Re-enabling is blocked until every
+   * delegate has been withdrawn AND the withdrawal-period cooldown has elapsed
+   * since this time. Undefined when delegation is enabled.
+   */
+  delegationDisabledAt?: number;
 };
 
 export type BalanceWithAddress = {

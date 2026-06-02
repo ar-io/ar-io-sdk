@@ -140,6 +140,12 @@ class BorshReader {
     return this.readU32();
   }
 
+  readOptionU16(): number | undefined {
+    const tag = this.readU8();
+    if (tag === 0) return undefined;
+    return this.readU16();
+  }
+
   skip(bytes: number): void {
     this.offset += bytes;
   }
@@ -393,6 +399,16 @@ export function deserializeGatewayWithAccumulator(
   const delegateRewardShareRatio = r.readU16() / 100;
   const minDelegatedStake = r.readU64AsNumber();
   const allowlistEnabled = r.readBool();
+  // GATEWAY_VERSION 1.1.0 added two fields to GatewaySettings2 — MUST read them
+  // here to keep the byte stream aligned for every field after `settings`.
+  //   - pending_delegate_reward_share_ratio: Option<u16> (Fix #7) — basis points
+  //     of a deferred reward-share change applied at the next epoch's tally.
+  //   - delegation_disabled_at: Option<i64> (Fix #6) — unix seconds the operator
+  //     disabled delegation; starts the re-enable cooldown.
+  const pendingRatioRaw = r.readOptionU16();
+  const pendingDelegateRewardShareRatio =
+    pendingRatioRaw === undefined ? undefined : pendingRatioRaw / 100;
+  const delegationDisabledAt = r.readOptionI64();
 
   // RegistryIndex (index: u32, _reserved: u8 — was is_registered:bool)
   r.readU32(); // registryIndex
@@ -446,6 +462,8 @@ export function deserializeGatewayWithAccumulator(
     fqdn,
     port,
     protocol: 'https', // protocolIdx: 0=Http, 1=Https — only HTTPS in practice
+    pendingDelegateRewardShareRatio, // Fix #7: undefined when no change is queued
+    delegationDisabledAt, // Fix #6: undefined when delegation is enabled
   };
 
   return {
