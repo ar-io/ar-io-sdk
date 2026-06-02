@@ -1,3 +1,10 @@
+# [4.0.0-solana.26](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.25...v4.0.0-solana.26) (2026-06-02)
+
+
+### Bug Fixes
+
+* **solana:** pass AntConfig account for primary-name authorization ([1d6371b](https://github.com/ar-io/ar-io-sdk/commit/1d6371ba479605732a3e8ec8b77706247a94855d)), closes [#91](https://github.com/ar-io/ar-io-sdk/issues/91)
+
 # [4.0.0-solana.25](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.24...v4.0.0-solana.25) (2026-06-02)
 
 
