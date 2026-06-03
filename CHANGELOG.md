@@ -1,3 +1,10 @@
+# [4.0.0-solana.28](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.27...v4.0.0-solana.28) (2026-06-03)
+
+
+### Bug Fixes
+
+* **solana:** getTokenSupply protocolBalance = live reward reserve ([dc4a003](https://github.com/ar-io/ar-io-sdk/commit/dc4a003eadf54e1d738ed92b436d448653eb7f7b))
+
 # [4.0.0-solana.27](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.26...v4.0.0-solana.27) (2026-06-03)
 
 
