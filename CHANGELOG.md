@@ -1,3 +1,10 @@
+# [4.0.0-solana.27](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.26...v4.0.0-solana.27) (2026-06-03)
+
+
+### Bug Fixes
+
+* **solana:** finalize_gone discovers Leaving gateways + supplies swapped-slot PDA ([3f7bf04](https://github.com/ar-io/ar-io-sdk/commit/3f7bf04bfb36b0f95b0fef98e1957a3184d4b2b4))
+
 # [4.0.0-solana.26](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.25...v4.0.0-solana.26) (2026-06-02)
 
 
