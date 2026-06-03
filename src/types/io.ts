@@ -213,6 +213,16 @@ export type EligibleDistribution = {
   cursorId: string;
 };
 
+/**
+ * The six ARIO supply buckets. They are mutually exclusive and sum to `total`:
+ *   circulating + locked + staked + delegated + withdrawn + protocolBalance === total
+ *
+ * `protocolBalance` is the protocol **reward reserve** (the pool epoch rewards
+ * are paid from) — on Solana this is the live balance of the protocol token
+ * account, matching AO's `protocolBalance` (the qNvAoz0 reserve). It is NOT the
+ * on-chain `ArioConfig.protocol_balance` accounting field, which folds the
+ * staking buckets in and would double-count.
+ */
 export type TokenSupplyData = {
   total: number;
   circulating: number;
