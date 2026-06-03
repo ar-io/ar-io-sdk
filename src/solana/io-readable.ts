@@ -476,16 +476,45 @@ export class SolanaARIOReadable {
     let staked = 0;
     let delegated = 0;
     let withdrawn = 0;
+    // `protocolBalance` is the REWARD RESERVE: the live balance of the protocol
+    // token account the epoch cranker emits from (ario-gar `distribute_epoch`
+    // reads `protocol_token_account.amount`). This matches AO's `protocolBalance`
+    // semantics (the qNvAoz0 reserve) and makes the six buckets sum to `total`:
+    //   circulating + locked + staked + delegated + withdrawn + protocolBalance == total
+    //
+    // It is deliberately NOT `ArioConfig.protocol_balance`, which is a *folded*
+    // accounting field (= reserve + staked + delegated + withdrawn) and so
+    // double-counts the staking buckets — surfacing it as "protocol balance"
+    // over-reports the reward reserve by tens of millions of ARIO. We fall back
+    // to the folded value only when GatewaySettings or the token account can't
+    // be read (e.g. pre-init).
+    let protocolBalance = config.protocolBalance;
     if (garSettingsAccount.exists) {
+      const garData = Buffer.from(garSettingsAccount.data);
       try {
-        const counters = deserializeGarSupplyCounters(
-          Buffer.from(garSettingsAccount.data),
-        );
+        const counters = deserializeGarSupplyCounters(garData);
         staked = counters.totalStaked;
         delegated = counters.totalDelegated;
         withdrawn = counters.totalWithdrawn;
       } catch {
         // Old-layout account without supply counters — fall back to 0
+      }
+      // The protocol token account is pinned in GatewaySettings at offset 189
+      // (see ario-gar state/mod.rs::GatewaySettings: 8 disc + 32 authority +
+      // 32 mint + 6×8 economic params + 4 max_delegates + 1 migration_active +
+      // 32 migration_authority + 32 stake_token_account = 189; the pubkey runs
+      // [189, 221)). Read its live SPL balance as the reward reserve.
+      if (garData.length >= 221) {
+        try {
+          const protocolTokenAccount = addressDecoder.decode(
+            garData.subarray(189, 221),
+          );
+          const reserve =
+            await this.getTokenAccountAmount(protocolTokenAccount);
+          if (reserve !== null) protocolBalance = reserve;
+        } catch {
+          // Couldn't read the reserve — keep the folded fallback.
+        }
       }
     }
 
@@ -496,8 +525,31 @@ export class SolanaARIOReadable {
       staked,
       delegated,
       withdrawn,
-      protocolBalance: config.protocolBalance,
+      protocolBalance,
     };
+  }
+
+  /**
+   * Read the `amount` (in mARIO) of an SPL token account directly by address.
+   * Returns `null` if the account doesn't exist or is too small to be a token
+   * account, so callers can distinguish "absent" from a real zero balance.
+   *
+   * Uses a portable little-endian u64 decode — some browser bundlers strip the
+   * BigInt readers from the `buffer` shim's prototype (see `getBalance`).
+   */
+  private async getTokenAccountAmount(
+    tokenAccount: Address,
+  ): Promise<number | null> {
+    const account = await this.getAccount(tokenAccount);
+    if (!account.exists) return null;
+    const data = account.data;
+    if (data.length < 72) return null;
+    let amount = 0n;
+    for (let i = 7; i >= 0; i--) {
+      amount = (amount << 8n) | BigInt(data[64 + i]);
+    }
+    // ARIO supply caps at 1B * 1e6 mARIO ≈ 2^50, well under MAX_SAFE_INTEGER.
+    return Number(amount);
   }
 
   // =========================================
