@@ -3697,16 +3697,28 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const nextEpochStart =
       settings.genesisTimestamp + currentIndex * settings.epochDuration;
 
-    // Bootstrap: no epochs yet.
-    if (currentIndex === 0) {
-      if (now < nextEpochStart)
-        return { action: 'idle', reason: 'waiting_for_genesis' };
-      const { id } = await this.createEpoch();
-      return { action: 'create', epochIndex: 0, txId: id };
-    }
-
     const epoch = await this.getEpochRaw(targetEpochIndex);
-    if (!epoch) return { action: 'idle', reason: 'waiting_for_epoch' };
+
+    // Cold start: the live epoch (targetEpochIndex) doesn't exist yet. Two cases,
+    // handled identically — `create_epoch` always creates epoch[currentIndex] and
+    // then increments the counter, so the NEXT crank finds it live at currentIndex-1:
+    //   1. Genesis: currentIndex === 0 → create epoch 0.
+    //   2. AO→Solana continuity cold start: `admin_set_current_epoch_index` jumped
+    //      currentIndex to e.g. 454 with NO prior epochs on-chain (the AO-side
+    //      epochs were never created on Solana). targetEpochIndex (453) points at
+    //      an epoch that will never exist, so the old `currentIndex === 0`-only
+    //      bootstrap deadlocked here ('waiting_for_epoch' forever). Create
+    //      epoch[currentIndex] (454) directly — its start was re-anchored to ≈now.
+    if (!epoch) {
+      if (now < nextEpochStart)
+        return {
+          action: 'idle',
+          reason:
+            currentIndex === 0 ? 'waiting_for_genesis' : 'waiting_for_epoch',
+        };
+      const { id } = await this.createEpoch();
+      return { action: 'create', epochIndex: currentIndex, txId: id };
+    }
 
     // Tally (batched). activeGatewayCount===0 still needs one tx to flip the flag.
     if (epoch.weightsTallied === 0) {
