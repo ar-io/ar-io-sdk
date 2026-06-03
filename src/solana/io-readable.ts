@@ -2294,8 +2294,21 @@ export class SolanaARIOReadable {
   }
 
   /**
-   * Enumerate Gateway PDAs whose `status == Gone` (already left the
-   * network but PDA not yet GC'd). Eligible for `finalizeGone`.
+   * Enumerate Gateway PDAs that are candidates for `finalizeGone` GC — i.e.
+   * those whose `status == Leaving`.
+   *
+   * NOTE: despite the historical name, this returns `Leaving` (not `Gone`)
+   * gateways. `Gone` is NOT a persistent discovery state: the on-chain
+   * `finalize_gone` instruction accepts a `Leaving` gateway, flips it to
+   * `Gone`, and closes the Gateway PDA in the *same* instruction
+   * (programs/ario-gar/src/instructions/gateway.rs::finalize_gone), so a
+   * gateway is never observably parked at `Gone`. Filtering on `Gone` matched
+   * nothing and left Leaving gateways un-GC'd. Time/delegation eligibility is
+   * still enforced on-chain (`finalize_gone` reverts early if the leave window
+   * hasn't elapsed or delegations remain), so over-returning not-yet-eligible
+   * Leaving gateways is safe — the tx just no-ops/reverts.
+   *
+   * @deprecated Prefer {@link getLeavingGateways} — same result, accurate name.
    */
   async getGoneGateways(): Promise<
     Array<{ pubkey: Address; operator: Address }>
@@ -2309,7 +2322,7 @@ export class SolanaARIOReadable {
     for (const { pubkey, data } of accounts) {
       try {
         const g = decoder.decode(data);
-        if (g.status === GatewayStatus.Gone) {
+        if (g.status === GatewayStatus.Leaving) {
           out.push({ pubkey, operator: g.operator });
         }
       } catch {
@@ -2317,6 +2330,17 @@ export class SolanaARIOReadable {
       }
     }
     return out;
+  }
+
+  /**
+   * Enumerate Gateway PDAs whose `status == Leaving` — the persistent
+   * pre-finalization state that `finalizeGone` GC's. Alias for
+   * {@link getGoneGateways} with a name that matches the on-chain state.
+   */
+  async getLeavingGateways(): Promise<
+    Array<{ pubkey: Address; operator: Address }>
+  > {
+    return this.getGoneGateways();
   }
 
   /**
