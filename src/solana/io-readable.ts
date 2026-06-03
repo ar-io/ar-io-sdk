@@ -1640,6 +1640,11 @@ export class SolanaARIOReadable {
         break;
       }
 
+      // A Primary-Name-Request is priced identically to a single
+      // Increase-Undername-Limit operation against the same name: it uses the
+      // name-length-indexed base fee (`bf`) and a quantity of 1. Fall through
+      // to share that logic rather than duplicating it.
+      case 'Primary-Name-Request':
       case 'Increase-Undername-Limit': {
         const qty = BigInt(params.quantity ?? 1);
         let isPermabuy = false;
@@ -1657,14 +1662,6 @@ export class SolanaARIOReadable {
       case 'Upgrade-Name': {
         const permabuyCost = (bf * demandFactorRaw * 5n) / scale;
         cost = permabuyCost;
-        break;
-      }
-
-      case 'Primary-Name-Request': {
-        const primaryBaseFee = BigInt(df.fees[50]);
-        const annualPct = 200_000n;
-        const yearFactor = scale + annualPct;
-        cost = (primaryBaseFee * demandFactorRaw * yearFactor) / scale / scale;
         break;
       }
 

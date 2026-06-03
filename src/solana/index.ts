@@ -176,12 +176,13 @@ export {
   getEscrowVaultPDA,
 } from './pda.js';
 
-// Deserialization
+// Deserialization adapters
 //
-// NOTE: account discriminators come from the Codama-generated modules
-// under `./generated/<program>/accounts/*` (e.g. `BALANCE_DISCRIMINATOR`,
-// `ANT_RECORD_DISCRIMINATOR`). Pull them from there instead of asking
-// this module — single source of truth, derived from the IDL.
+// Thin wrappers over Codama-generated decoders from `@ar.io/solana-contracts`.
+// They accept raw `Buffer` data and return plain-object types (string/number)
+// instead of Codama's `Address`/`bigint` types, so SDK consumers don't need
+// to import the contracts package directly.
+// Account discriminators come from `@ar.io/solana-contracts/<program>`.
 export {
   BorshReader,
   BorshWriter,

@@ -30,7 +30,7 @@ function writeU128LE(buf: Buffer, off: number, val: bigint): void {
 }
 
 describe('deserializeDelegation (synthetic round-trip)', () => {
-  // Delegation layout (105 bytes total):
+  // Delegation layout:
   //   8  disc
   //   32 gateway: Pubkey
   //   32 delegator: Pubkey
@@ -38,7 +38,8 @@ describe('deserializeDelegation (synthetic round-trip)', () => {
   //   8  start_timestamp: i64
   //   16 reward_debt: u128
   //   1  bump: u8
-  const DELEGATION_SIZE = 8 + 32 + 32 + 8 + 8 + 16 + 1;
+  //   3  version: SchemaVersion (major, minor, patch)
+  const DELEGATION_SIZE = 8 + 32 + 32 + 8 + 8 + 16 + 1 + 3;
 
   it('extracts amount, startTimestamp, and rewardDebt at the expected offsets', () => {
     const buf = Buffer.alloc(DELEGATION_SIZE);
@@ -138,7 +139,8 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
       1 + // registry_index._reserved
       32 + // observer_address
       16 + // cumulative_reward_per_token
-      1; // bump
+      1 + // bump
+      3; // version: SchemaVersion (major, minor, patch)
 
     const buf = Buffer.alloc(SIZE);
     let off = 8 + 32; // skip disc + operator
@@ -235,6 +237,8 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     // bump (u8)
     buf.writeUInt8(255, off);
     off += 1;
+    // version: SchemaVersion { major, minor, patch } — 3 bytes
+    off += 3;
 
     assert.equal(off, SIZE, 'buffer build size mismatch');
     return buf;

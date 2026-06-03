@@ -39,8 +39,10 @@ import {
 } from '@solana-program/compute-budget';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
-import { getCreateV1Instruction } from './generated/mpl-core/instructions/index.js';
-import { DataState } from './generated/mpl-core/types/index.js';
+import {
+  DataState,
+  getCreateV1Instruction,
+} from '@ar.io/solana-contracts/mpl-core';
 import { getAntRecordPDA } from './pda.js';
 import type {
   SolanaRpc,

@@ -34,11 +34,13 @@ import {
 } from '@solana/kit';
 
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
-import { getAssetV1Decoder } from './generated/mpl-core/accounts/assetV1.js';
-import { getPluginHeaderV1Decoder } from './generated/mpl-core/accounts/pluginHeaderV1.js';
-import { getPluginRegistryV1Decoder } from './generated/mpl-core/accounts/pluginRegistryV1.js';
-import { getPluginDecoder } from './generated/mpl-core/types/plugin.js';
-import { PluginType } from './generated/mpl-core/types/pluginType.js';
+import {
+  PluginType,
+  getAssetV1Decoder,
+  getPluginDecoder,
+  getPluginHeaderV1Decoder,
+  getPluginRegistryV1Decoder,
+} from '@ar.io/solana-contracts/mpl-core';
 
 /**
  * On-chain trait keys. Marketplaces and DAS indexers query these by
