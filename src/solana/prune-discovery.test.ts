@@ -386,7 +386,7 @@ describe('SolanaARIOReadable.getDeficientGateways', () => {
 });
 
 describe('SolanaARIOReadable.getGoneGateways', () => {
-  it('returns only gateways with status === Gone', async () => {
+  it('returns only gateways with status === Leaving (Gone never persists)', async () => {
     const joined = makeGatewayBytes(PUBKEY_1, GatewayStatus.Joined, 0);
     const leaving = makeGatewayBytes(PUBKEY_2, GatewayStatus.Leaving, 0);
     const gone = makeGatewayBytes(PUBKEY_3, GatewayStatus.Gone, 0);
@@ -401,10 +401,29 @@ describe('SolanaARIOReadable.getGoneGateways', () => {
     assert.equal(
       out.length,
       1,
-      'only Gone gateways are eligible for finalize_gone GC',
+      'Leaving is the finalize_gone-eligible state; Gone is set+closed in one ix and never observed',
     );
-    assert.equal(out[0].pubkey, ADDR_C);
-    assert.equal(out[0].operator, PUBKEY_3);
+    assert.equal(out[0].pubkey, ADDR_B);
+    assert.equal(out[0].operator, PUBKEY_2);
+  });
+});
+
+describe('SolanaARIOReadable.getLeavingGateways', () => {
+  it('is an alias for getGoneGateways — returns only Leaving gateways', async () => {
+    const joined = makeGatewayBytes(PUBKEY_1, GatewayStatus.Joined, 0);
+    const leaving = makeGatewayBytes(PUBKEY_2, GatewayStatus.Leaving, 0);
+    const gone = makeGatewayBytes(PUBKEY_3, GatewayStatus.Gone, 0);
+    const rpc = stubRpcReturning([
+      { pubkey: ADDR_A, bytes: joined },
+      { pubkey: ADDR_B, bytes: leaving },
+      { pubkey: ADDR_C, bytes: gone },
+    ]);
+    const r = buildReadable(rpc);
+
+    const out = await r.getLeavingGateways();
+    assert.equal(out.length, 1);
+    assert.equal(out[0].pubkey, ADDR_B);
+    assert.equal(out[0].operator, PUBKEY_2);
   });
 });
 

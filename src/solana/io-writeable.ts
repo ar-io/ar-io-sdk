@@ -245,6 +245,42 @@ function withRemainingAccounts<I extends Instruction>(
 }
 
 /**
+ * Pick the swapped-gateway operator that `finalize_gone` needs as a writable
+ * `remaining_accounts[0]`.
+ *
+ * `finalize_gone` reclaims a gateway's slot from the compact GatewayRegistry by
+ * moving the LAST active slot into it and rewriting that swapped gateway's
+ * stored `registry_index`. When the finalized gateway is NOT already the last
+ * slot, the on-chain handler requires the swapped Gateway PDA (writable) at
+ * `remaining_accounts[0]`; when it IS the last slot, no swap occurs and no
+ * extra account is needed. See
+ * `programs/ario-gar/src/instructions/gateway.rs::finalize_gone`.
+ *
+ * `registryAddresses` MUST be the active registry operator addresses in slot
+ * order (`getRegistryGatewayAddresses()` — length === on-chain
+ * `registry.count`), so `registryAddresses[length - 1]` is exactly the
+ * `registry.gateways[count - 1].address` the on-chain swap reads.
+ *
+ * @returns the swapped gateway's operator address, or `null` when the finalized
+ *   gateway already occupies the last slot.
+ * @throws if `registryIndex` is outside the active registry count (mirrors the
+ *   on-chain `index < registry.count` guard, surfacing a stale index early).
+ */
+export function selectFinalizeGoneSwapOperator(
+  registryIndex: number,
+  registryAddresses: string[],
+): string | null {
+  if (registryIndex < 0 || registryIndex >= registryAddresses.length) {
+    throw new Error(
+      `finalizeGone: registry index ${registryIndex} is outside the active ` +
+        `registry count ${registryAddresses.length}`,
+    );
+  }
+  const lastIndex = registryAddresses.length - 1;
+  return registryIndex === lastIndex ? null : registryAddresses[lastIndex];
+}
+
+/**
  * Split a primary name into its undername + base parts using the same rule
  * as the on-chain `splitn(2, '_')` in `programs/ario-core/src/instructions/primary_name.rs`:
  * everything before the first '_' is the undername, the rest is the base.
@@ -4010,6 +4046,26 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const gatewayAddr = address(params.gateway);
     const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
 
+    // `finalize_gone` reclaims this gateway's compact-registry slot by
+    // swap-removing the LAST active slot into it. When this gateway is not the
+    // last slot, the on-chain handler rewrites the swapped gateway's stored
+    // registry_index and therefore requires that swapped Gateway PDA as
+    // writable remaining_accounts[0]
+    // (programs/ario-gar/src/instructions/gateway.rs::finalize_gone). Read the
+    // gateway's slot index + the active registry to decide.
+    const gatewayAccount = await fetchEncodedAccount(this.rpc, gatewayPda, {
+      commitment: this.commitment,
+    });
+    if (!gatewayAccount.exists) {
+      throw new Error(`Gateway not found for operator ${params.gateway}`);
+    }
+    const gateway = getGatewayDecoder().decode(gatewayAccount.data);
+    const registryAddresses = await this.getRegistryGatewayAddresses();
+    const swappedOperator = selectFinalizeGoneSwapOperator(
+      gateway.registryIndex.index,
+      registryAddresses,
+    );
+
     const ix = await getFinalizeGoneInstructionAsync(
       await this.withGarDefaults({
         gateway: gatewayPda,
@@ -4018,7 +4074,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    let finalIx = ix;
+    if (swappedOperator !== null) {
+      const [swappedGatewayPda] = await getGatewayPDA(
+        address(swappedOperator),
+        this.garProgram,
+      );
+      finalIx = withRemainingAccounts(ix, [
+        { address: swappedGatewayPda, role: AccountRole.WRITABLE },
+      ]);
+    }
+
+    const sig = await this.sendTransaction([finalIx]);
     return { id: sig };
   }
 
