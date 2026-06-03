@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Solana implementation of `ANT.spawn`.
  *
  * Mints a fresh Metaplex Core asset (the ANT NFT) AND initializes the
@@ -34,15 +49,15 @@ import {
 
 import { getInitializeInstructionAsync } from '@ar.io/solana-contracts/ant';
 import {
+  DataState,
+  getCreateV1Instruction,
+} from '@ar.io/solana-contracts/mpl-core';
+import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
-import {
-  DataState,
-  getCreateV1Instruction,
-} from '@ar.io/solana-contracts/mpl-core';
 import { getAntRecordPDA } from './pda.js';
 import type {
   SolanaRpc,
