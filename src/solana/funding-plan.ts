@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Multi-source, multi-gateway funding plan builder + executor for the AR.IO
  * Solana SDK.
  *
@@ -767,6 +782,7 @@ async function fetchUserWithdrawals(
   //   106..107 is_protected: bool   — BD-102: protected min-stake exit
   //                                    vaults are skipped (cannot fund-from)
   //   107..108 bump: u8
+  //   108..111 version: SchemaVersion { major, minor, patch }
   try {
     const result = await rpc
       .getProgramAccounts(garProgram, {
@@ -774,7 +790,7 @@ async function fetchUserWithdrawals(
           {
             memcmp: { offset: 8n, bytes: owner, encoding: 'base58' as const },
           },
-          { dataSize: BigInt(8 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 1 + 1 + 1) },
+          { dataSize: BigInt(8 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 3) },
         ],
         encoding: 'base64',
       } as Parameters<typeof rpc.getProgramAccounts>[1])
@@ -825,6 +841,7 @@ async function fetchUserDelegations(
   //   80..88   start_timestamp: i64
   //   88..104  reward_debt: u128
   //   104..105 bump: u8
+  //   105..108 version: SchemaVersion { major, minor, patch }
   try {
     const result = await rpc
       .getProgramAccounts(garProgram, {
@@ -832,7 +849,7 @@ async function fetchUserDelegations(
           {
             memcmp: { offset: 40n, bytes: owner, encoding: 'base58' as const },
           },
-          { dataSize: BigInt(8 + 32 + 32 + 8 + 8 + 16 + 1) },
+          { dataSize: BigInt(8 + 32 + 32 + 8 + 8 + 16 + 1 + 3) },
         ],
         encoding: 'base64',
       } as Parameters<typeof rpc.getProgramAccounts>[1])

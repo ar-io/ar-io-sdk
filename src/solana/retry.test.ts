@@ -138,7 +138,7 @@ describe('withRetry', () => {
     assert.equal(calls, 2);
   });
 
-  it('defaults to 6 maxAttempts', async () => {
+  it('defaults to 3 maxAttempts', async () => {
     let calls = 0;
     await assert.rejects(() =>
       withRetry(
@@ -149,6 +149,6 @@ describe('withRetry', () => {
         { baseDelayMs: 10, maxDelayMs: 50 },
       ),
     );
-    assert.equal(calls, 6);
+    assert.equal(calls, 3);
   });
 });

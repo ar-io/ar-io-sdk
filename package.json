@@ -39,11 +39,6 @@
       "types": "./lib/types/solana/index.d.ts",
       "import": "./lib/esm/solana/index.js",
       "default": "./lib/esm/solana/index.js"
-    },
-    "./solana/generated": {
-      "types": "./lib/types/solana/generated/index.d.ts",
-      "import": "./lib/esm/solana/generated/index.js",
-      "default": "./lib/esm/solana/generated/index.js"
     }
   },
   "bin": {
@@ -70,13 +65,10 @@
     "example:esm": "cd examples/esm && yarn && node index.mjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
-    "cli:local": "node lib/esm/cli/cli.js",
-    "codegen": "node ./scripts/codegen.mjs"
+    "cli:local": "node lib/esm/cli/cli.js"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@codama/nodes-from-anchor": "^1.4.1",
-    "@codama/renderers-js": "2.1.0",
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
@@ -94,7 +86,6 @@
     "@typescript-eslint/parser": "^6.4.0",
     "arconnect": "^1.0.3",
     "c8": "^10.1.3",
-    "codama": "^1.6.0",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "esbuild": "^0.27.1",
@@ -123,7 +114,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@ar.io/solana-contracts": "0.5.0-staging.15",
+    "@ar.io/solana-contracts": "0.7.0-staging.17",
     "@solana-program/address-lookup-table": "^0.11.0",
     "@solana-program/compute-budget": "^0.15.0",
     "@solana-program/token": "^0.13.0",

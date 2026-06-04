@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Lightweight retry helper with exponential back-off + jitter for Solana RPC
  * read calls.
  *
@@ -17,20 +32,20 @@ import { Logger } from '../common/logger.js';
 const logger = new Logger({ level: 'error' });
 
 export interface RetryOptions {
-  /** Maximum number of attempts (first call + retries). @default 6 */
+  /** Maximum number of attempts (first call + retries). @default 3 */
   maxAttempts?: number;
-  /** Base delay in ms before the first retry. Doubled each attempt. @default 500 */
+  /** Base delay in ms before the first retry. Doubled each attempt. @default 1_000 */
   baseDelayMs?: number;
-  /** Cap on any single delay in ms. @default 5_000 */
+  /** Cap on any single delay in ms. @default 10_000 */
   maxDelayMs?: number;
   /** Predicate that decides whether a thrown error is retryable.
    *  Defaults to {@link isRetryableError}. */
   isRetryable?: (error: unknown) => boolean;
 }
 
-const DEFAULT_MAX_ATTEMPTS = 6;
-const DEFAULT_BASE_DELAY_MS = 500;
-const DEFAULT_MAX_DELAY_MS = 5_000;
+const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_BASE_DELAY_MS = 1_000;
+const DEFAULT_MAX_DELAY_MS = 10_000;
 
 /**
  * Default retryable-error heuristic.

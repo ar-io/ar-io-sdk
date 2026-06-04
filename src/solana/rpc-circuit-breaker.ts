@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Circuit-breaker wrapper for Solana RPC transports using
  * [opossum](https://nodeshift.dev/opossum/).
  *
@@ -48,19 +63,19 @@ export interface CircuitBreakerRpcOptions {
   timeout?: number | false;
   /**
    * Error percentage (0-100) at which to open the circuit.
-   * @default 50
+   * @default 25
    */
   errorThresholdPercentage?: number;
   /**
    * Time in ms to wait before entering half-open state and retrying
    * the primary.
-   * @default 30_000
+   * @default 60_000
    */
   resetTimeout?: number;
   /**
    * Minimum number of requests within the rolling window before the
    * circuit can trip. Prevents opening the circuit after a single failure.
-   * @default 5
+   * @default 3
    */
   volumeThreshold?: number;
 }
@@ -105,9 +120,9 @@ export function createCircuitBreakerRpc({
     (request: TransportRequest) => primaryTransport(request),
     {
       timeout: opts.timeout ?? 10_000,
-      errorThresholdPercentage: opts.errorThresholdPercentage ?? 50,
-      resetTimeout: opts.resetTimeout ?? 30_000,
-      volumeThreshold: opts.volumeThreshold ?? 5,
+      errorThresholdPercentage: opts.errorThresholdPercentage ?? 25,
+      resetTimeout: opts.resetTimeout ?? 60_000,
+      volumeThreshold: opts.volumeThreshold ?? 3,
     },
   );
 

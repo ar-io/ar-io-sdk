@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Reader for the on-chain Metaplex Core asset (`AssetV1` + plugin chain).
  *
  * The codama-generated decoders in `generated/mpl-core` only cover the
@@ -33,12 +48,14 @@ import {
   fetchEncodedAccount,
 } from '@solana/kit';
 
+import {
+  PluginType,
+  getAssetV1Decoder,
+  getPluginDecoder,
+  getPluginHeaderV1Decoder,
+  getPluginRegistryV1Decoder,
+} from '@ar.io/solana-contracts/mpl-core';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
-import { getAssetV1Decoder } from './generated/mpl-core/accounts/assetV1.js';
-import { getPluginHeaderV1Decoder } from './generated/mpl-core/accounts/pluginHeaderV1.js';
-import { getPluginRegistryV1Decoder } from './generated/mpl-core/accounts/pluginRegistryV1.js';
-import { getPluginDecoder } from './generated/mpl-core/types/plugin.js';
-import { PluginType } from './generated/mpl-core/types/pluginType.js';
 
 /**
  * On-chain trait keys. Marketplaces and DAS indexers query these by

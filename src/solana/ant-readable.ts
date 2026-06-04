@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Solana implementation of ANT (Arweave Name Token) read interface.
  *
  * Reads ANT state from Metaplex Core NFT + PDA accounts on Solana.
@@ -14,12 +29,16 @@ import {
   fetchEncodedAccount,
 } from '@solana/kit';
 import bs58 from 'bs58';
-import { withRetry } from './retry.js';
 
-// AntRecordMetadata discriminator — regenerate via `yarn codegen` after IDL rebase
-// to expose ANT_RECORD_METADATA_DISCRIMINATOR. Until then, compute inline.
 import { createHash as __createHash } from 'crypto';
-import { ANT_RECORD_DISCRIMINATOR } from '@ar.io/solana-contracts/ant';
+import {
+  ANT_RECORD_DISCRIMINATOR,
+  ANT_RECORD_METADATA_DISCRIMINATOR,
+  decodeAntConfig,
+  decodeAntControllers,
+  getAntRecordDecoder,
+  getAntRecordMetadataDecoder,
+} from '@ar.io/solana-contracts/ant';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   ANTHandler,
@@ -33,23 +52,12 @@ import type { WalletAddress } from '../types/common.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { ANT_CONFIG_VERSION, ARIO_ANT_PROGRAM_ID } from './constants.js';
 import {
-  deserializeAntConfig,
-  deserializeAntControllers,
-  deserializeAntRecord,
-  deserializeAntRecordMetadata,
-} from './deserialize.js';
-const ANT_RECORD_METADATA_DISCRIMINATOR = new Uint8Array(
-  __createHash('sha256')
-    .update('account:AntRecordMetadata')
-    .digest()
-    .subarray(0, 8),
-);
-import {
   getAntConfigPDA,
   getAntControllersPDA,
   getAntRecordMetadataPDA,
   getAntRecordPDA,
 } from './pda.js';
+import { withRetry } from './retry.js';
 import type { SolanaRpc } from './types.js';
 
 /**
@@ -169,16 +177,30 @@ export class SolanaANTReadable {
     if (!account.exists) {
       throw new Error(`ANT config not found for ${this.processId}`);
     }
-    return deserializeAntConfig(Buffer.from(account.data));
+    const decoded = decodeAntConfig(account).data;
+    return {
+      mint: decoded.mint as string,
+      name: decoded.name,
+      ticker: decoded.ticker,
+      logo: decoded.logo,
+      description: decoded.description,
+      keywords: decoded.keywords,
+      owner: decoded.lastKnownOwner as string,
+      version: decoded.version.major,
+    };
   }
 
   private async fetchControllers() {
     const [pda] = await getAntControllersPDA(this.mint, this.antProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {
-      return { mint: this.processId, controllers: [] };
+      return { mint: this.processId, controllers: [] as string[] };
     }
-    return deserializeAntControllers(Buffer.from(account.data));
+    const decoded = decodeAntControllers(account).data;
+    return {
+      mint: decoded.mint as string,
+      controllers: decoded.controllers.map((c) => c as string),
+    };
   }
 
   async getOwner(_opts?: AntReadOptions): Promise<WalletAddress> {
@@ -238,22 +260,41 @@ export class SolanaANTReadable {
 
     if (!recordAccount.exists) return undefined;
 
-    const record = deserializeAntRecord(Buffer.from(recordAccount.data));
-    const meta: Partial<ReturnType<typeof deserializeAntRecordMetadata>> =
-      metaAccount.exists
-        ? deserializeAntRecordMetadata(Buffer.from(metaAccount.data))
-        : {};
+    const recordDecoder = getAntRecordDecoder();
+    const metaDecoder = getAntRecordMetadataDecoder();
+    const record = recordDecoder.decode(new Uint8Array(recordAccount.data));
+    const meta = metaAccount.exists
+      ? metaDecoder.decode(new Uint8Array(metaAccount.data))
+      : undefined;
 
     return {
-      transactionId: record.transactionId,
+      transactionId: record.target,
       targetProtocol: record.targetProtocol,
       ttlSeconds: record.ttlSeconds,
-      priority: record.priority,
-      owner: record.owner,
-      displayName: meta.displayName,
-      logo: meta.logo,
-      description: meta.description,
-      keywords: meta.keywords,
+      priority:
+        record.priority?.__option === 'Some'
+          ? record.priority.value
+          : undefined,
+      owner:
+        record.owner?.__option === 'Some'
+          ? (record.owner.value as string)
+          : undefined,
+      displayName:
+        meta?.displayName?.__option === 'Some'
+          ? meta.displayName.value
+          : undefined,
+      logo:
+        meta?.recordLogo?.__option === 'Some'
+          ? meta.recordLogo.value
+          : undefined,
+      description:
+        meta?.recordDescription?.__option === 'Some'
+          ? meta.recordDescription.value
+          : undefined,
+      keywords:
+        meta?.recordKeywords?.__option === 'Some'
+          ? meta.recordKeywords.value
+          : undefined,
     };
   }
 
@@ -298,23 +339,25 @@ export class SolanaANTReadable {
           .getProgramAccounts(this.antProgram, {
             commitment: this.commitment,
             encoding: 'base64',
-            filters: gpaFilter(bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR)),
+            filters: gpaFilter(
+              bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR as Uint8Array),
+            ),
           })
           .send(),
       ),
     ])) as [GpaResult, GpaResult];
 
+    const recordDecoder = getAntRecordDecoder();
+    const metaDecoder = getAntRecordMetadataDecoder();
+
     // Index metadata by undername hash for O(1) lookup.
     // AntRecordMetadata has undername_hash at offset 40 (8 disc + 32 mint).
-    const metaByHash = new Map<
-      string,
-      ReturnType<typeof deserializeAntRecordMetadata>
-    >();
+    const metaByHash = new Map<string, ReturnType<typeof metaDecoder.decode>>();
     for (const { account } of metaAccounts) {
       try {
         const buf = Buffer.from(account.data[0], 'base64');
         const hash = buf.subarray(40, 72).toString('hex');
-        metaByHash.set(hash, deserializeAntRecordMetadata(buf));
+        metaByHash.set(hash, metaDecoder.decode(new Uint8Array(buf)));
       } catch {
         // Skip malformed
       }
@@ -325,22 +368,39 @@ export class SolanaANTReadable {
     for (const { account } of recordAccounts) {
       try {
         const buf = Buffer.from(account.data[0], 'base64');
-        const record = deserializeAntRecord(buf);
+        const record = recordDecoder.decode(new Uint8Array(buf));
         const hash = __createHash('sha256')
           .update(record.undername.toLowerCase())
           .digest('hex');
-        const meta: Partial<ReturnType<typeof deserializeAntRecordMetadata>> =
-          metaByHash.get(hash) ?? {};
+        const meta = metaByHash.get(hash);
         result[record.undername] = {
-          transactionId: record.transactionId,
+          transactionId: record.target,
           targetProtocol: record.targetProtocol,
           ttlSeconds: record.ttlSeconds,
-          priority: record.priority,
-          owner: record.owner,
-          displayName: meta.displayName,
-          logo: meta.logo,
-          description: meta.description,
-          keywords: meta.keywords,
+          priority:
+            record.priority?.__option === 'Some'
+              ? record.priority.value
+              : undefined,
+          owner:
+            record.owner?.__option === 'Some'
+              ? (record.owner.value as string)
+              : undefined,
+          displayName:
+            meta?.displayName?.__option === 'Some'
+              ? meta.displayName.value
+              : undefined,
+          logo:
+            meta?.recordLogo?.__option === 'Some'
+              ? meta.recordLogo.value
+              : undefined,
+          description:
+            meta?.recordDescription?.__option === 'Some'
+              ? meta.recordDescription.value
+              : undefined,
+          keywords:
+            meta?.recordKeywords?.__option === 'Some'
+              ? meta.recordKeywords.value
+              : undefined,
           index: index++,
         };
       } catch {

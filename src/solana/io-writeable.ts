@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Solana implementation of ARIOWrite interface.
  *
  * Extends SolanaARIOReadable with write operations that build and send
@@ -24,11 +39,19 @@ import {
   type Address,
   type Instruction,
   address,
+  appendTransactionMessageInstructions,
+  compileTransaction,
+  createTransactionMessage,
   fetchEncodedAccount,
   getAddressDecoder,
+  getBase64EncodedWireTransaction,
+  pipe,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
 } from '@solana/kit';
 
 import {
+  CostIntent,
   PurchaseType,
   getBuyNameFromDelegationInstructionAsync,
   getBuyNameFromFundingPlanInstructionAsync,
@@ -45,6 +68,7 @@ import {
   getExtendLeaseFromOperatorStakeInstructionAsync,
   getExtendLeaseFromWithdrawalInstructionAsync,
   getExtendLeaseInstructionAsync,
+  getGetTokenCostInstructionAsync,
   getIncreaseUndernameLimitFromDelegationInstructionAsync,
   getIncreaseUndernameLimitFromFundingPlanInstructionAsync,
   getIncreaseUndernameLimitFromOperatorStakeInstructionAsync,
@@ -1532,6 +1556,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       };
     }
     // No explicit sources: discover + plan.
+    this.logger.debug(
+      `[funding] discovering sources for ${this.signer.address}`,
+      {
+        fundFrom: params.fundFrom,
+        amountNeeded: amountNeeded.toString(),
+      },
+    );
     const arnsConfig = await this.getArnsConfig();
     const { discoverFundingSources } = await import('./funding-plan.js');
     const sources = await discoverFundingSources(
@@ -1542,6 +1573,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         garProgram: this.garProgram,
       },
     );
+    this.logger.debug(`[funding] discovered ${sources.length} source(s)`, {
+      sources: sources.map((s) => {
+        if (s.kind === 'balance')
+          return { kind: s.kind, available: s.available.toString() };
+        if (s.kind === 'delegation')
+          return {
+            kind: s.kind,
+            gateway: s.gateway,
+            available: s.available.toString(),
+            minDelegationAmount: s.minDelegationAmount.toString(),
+          };
+        if (s.kind === 'operatorStake')
+          return {
+            kind: s.kind,
+            gateway: s.gateway,
+            available: s.available.toString(),
+          };
+        return {
+          kind: s.kind,
+          withdrawalId: s.withdrawalId.toString(),
+          gateway: s.gateway,
+          available: s.available.toString(),
+          availableAt: s.availableAt.toString(),
+        };
+      }),
+    });
     const plan = buildFundingPlanCore(sources, amountNeeded, {
       fundFrom: params.fundFrom as
         | 'balance'
@@ -1556,12 +1613,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       fundAsOperator: params.fundAsOperator,
     });
     if ('kind' in plan) {
+      this.logger.debug(`[funding] plan failed: ${plan.message}`);
       const err = new Error(plan.message) as Error & {
         cause: InternalInsufficientFundingError;
       };
       err.cause = plan;
       throw err;
     }
+    this.logger.debug(
+      `[funding] built plan with ${plan.sources.length} source(s)`,
+      {
+        sources: plan.sources.map((s, i) => ({
+          kind: s.kind,
+          amount: s.amount.toString(),
+          gateway: plan.gatewayPerSource[i] ?? null,
+        })),
+        residueDelegationIndexes: plan.residueDelegationIndexes,
+        hasBalanceSource: plan.hasBalanceSource,
+      },
+    );
     return plan;
   }
 
@@ -1590,7 +1660,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       args.arnsConfig.mint,
       this.signer.address,
     );
-    const cost = await this._estimateBuyNameCost(args.buyNameParams);
+    const cost = await this._simulateTokenCost({
+      intent: CostIntent.BuyName,
+      name: args.buyNameParams.name,
+      years: args.buyNameParams.years,
+      purchaseType: args.buyNameParams.purchaseType,
+    });
     const plan = await this._resolveFundingPlan(args.params, cost);
     const { remainingAccounts, withdrawalCounter, residueVaultCount } =
       await this._materializeFundingPlan(args.params, plan);
@@ -1754,55 +1829,91 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
-   * Best-effort cost estimation for `buy_name`. Reads the live DemandFactor
-   * + ArnsConfig and applies the on-chain pricing math. Used by the funding-
-   * plan path so callers don't have to compute cost client-side.
+   * Simulate the on-chain `get_token_cost` instruction and return the exact
+   * cost as a `bigint` (mARIO). This guarantees byte-exact agreement with the
+   * on-chain pricing math, avoiding integer-division rounding divergences
+   * that plagued the previous client-side reimplementation.
    *
-   * The estimate may be 1-2 mARIO higher than the actual on-chain cost when a
-   * demand-factor period rolls during the tx; the on-chain handler reads the
-   * live demand-factor and verifies sum(sources) == cost, so an overestimate
-   * fails fast with `FundingPlanAmountMismatch`. Callers should retry with a
-   * fresh estimate on that error.
+   * The program writes a LE-u64 cost into the transaction's return data;
+   * we parse it from the simulation result.
    */
-  private async _estimateBuyNameCost(buyNameParams: {
+  private async _simulateTokenCost(params: {
+    intent: CostIntent;
     name: string;
-    purchaseType: PurchaseType;
-    years: number;
+    years?: number;
+    quantity?: number;
+    purchaseType?: PurchaseType;
   }): Promise<bigint> {
-    // Importing the pricing helpers from generated/ would couple the SDK to
-    // codegen layout; instead we re-implement the same math (see
-    // programs/ario-arns/src/pricing.rs::calculate_registration_fee).
-    const [demandFactorPda] = await getDemandFactorPDA(this.arnsProgram);
-    const dfAccount = await fetchEncodedAccount(this.rpc, demandFactorPda, {
-      commitment: this.commitment,
+    const demandFactorAddr = await this.demandFactorPda();
+    this.logger.debug(`[funding] simulating token cost`, {
+      intent: params.intent,
+      name: params.name,
+      years: params.years,
+      quantity: params.quantity,
+      purchaseType: params.purchaseType,
+      arnsProgram: this.arnsProgram,
+      demandFactor: demandFactorAddr,
     });
-    if (!dfAccount.exists) throw new Error('DemandFactor not found');
-    const data = Buffer.from(dfAccount.data);
-    const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    const demandFactor = dv.getBigUint64(8, true);
-    // DemandFactor layout (Borsh, packed; ario-arns/src/state/mod.rs):
-    //   disc(8) + current_demand_factor(u64) + current_period(u64) +
-    //   purchases_this_period(u64) + revenue_this_period(u64) +
-    //   consecutive_periods_with_min_demand_factor(u32) +
-    //   trailing_period_purchases([u64; 7]) +
-    //   trailing_period_revenues([u64; 7]) + fees([u64; 51]) + ...
-    // -> fees starts at 8 + 8 + 8 + 8 + 8 + 4 + 56 + 56 = 156.
-    const FEES_OFFSET = 156;
-    if (data.length < FEES_OFFSET + 51 * 8) {
-      throw new Error('DemandFactor account data too short for fees array');
+
+    const ix = await getGetTokenCostInstructionAsync(
+      {
+        demandFactor: demandFactorAddr,
+        payer: this.signer,
+        intent: params.intent,
+        name: params.name,
+        years: params.years ?? null,
+        quantity: params.quantity ?? null,
+        purchaseType: params.purchaseType ?? null,
+      },
+      { programAddress: this.arnsProgram },
+    );
+
+    const { value: latestBlockhash } = await this.rpc
+      .getLatestBlockhash()
+      .send();
+
+    const message = pipe(
+      createTransactionMessage({ version: 0 }),
+      (m) => setTransactionMessageFeePayerSigner(this.signer, m),
+      (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+      (m) => appendTransactionMessageInstructions([ix], m),
+    );
+
+    const compiled = compileTransaction(message);
+    const wire = getBase64EncodedWireTransaction(compiled);
+    const sim = await this.rpc
+      .simulateTransaction(wire, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        encoding: 'base64',
+      })
+      .send();
+
+    if (sim.value.err) {
+      throw new Error(
+        `get_token_cost simulation failed (arnsProgram=${this.arnsProgram}, demandFactor=${demandFactorAddr}): ${JSON.stringify(sim.value.err)}` +
+          (sim.value.logs ? '\n' + sim.value.logs.join('\n') : ''),
+      );
     }
-    const nameLen = buyNameParams.name.length;
-    const idx = Math.min(Math.max(nameLen, 1), 51) - 1;
-    const baseFee = dv.getBigUint64(FEES_OFFSET + idx * 8, true);
-    const SCALE = 1_000_000n; // DEMAND_FACTOR_SCALE
-    if (buyNameParams.purchaseType === PurchaseType.Permabuy) {
-      // Permabuy = base_fee * 20% * 20 (annual share × 20 years cap)
-      const permabuy = (baseFee * 200_000n) / SCALE; // 20% annual
-      return (permabuy * 20n * demandFactor) / SCALE;
+
+    const returnData = sim.value.returnData;
+    if (!returnData?.data?.[0]) {
+      throw new Error(
+        'get_token_cost simulation returned no data; expected a u64 cost',
+      );
     }
-    // Lease: base_fee * (1 + 0.20 * years) * demand_factor
-    const leasePct = SCALE + 200_000n * BigInt(buyNameParams.years);
-    return (((baseFee * leasePct) / SCALE) * demandFactor) / SCALE;
+    const buf = Buffer.from(returnData.data[0], 'base64');
+    if (buf.length < 8) {
+      throw new Error(
+        `get_token_cost return data too short: ${buf.length} bytes (expected 8)`,
+      );
+    }
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const cost = dv.getBigUint64(0, true);
+    this.logger.debug(`[funding] simulated token cost: ${cost} mARIO`, {
+      name: params.name,
+    });
+    return cost;
   }
 
   private async arnsConfigPda(): Promise<Address> {
@@ -2117,8 +2228,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       // pricing path. Keep it pragmatic — let the planner build the plan
       // around the user's desired total (caller can pass explicit sources
       // to bypass cost estimation entirely).
-      const cost = await this._estimateManageStakeCost({
-        operation: args.operation,
+      const intentMap = {
+        upgrade: CostIntent.UpgradeName,
+        extend: CostIntent.ExtendLease,
+        increaseUndername: CostIntent.IncreaseUndernameLimit,
+      } as const;
+      const cost = await this._simulateTokenCost({
+        intent: intentMap[args.operation],
         name: args.params.name,
         years: args.years,
         quantity: args.quantity,
@@ -2167,50 +2283,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
     throw new Error(
       `unsupported fundFrom mode '${args.params.fundFrom}' for ${args.operation}`,
-    );
-  }
-
-  /**
-   * Cost estimate for manage operations (upgrade / extend / increaseUndername).
-   * Reads the live DemandFactor account + applies the on-chain pricing math.
-   */
-  private async _estimateManageStakeCost(args: {
-    operation: 'upgrade' | 'extend' | 'increaseUndername';
-    name: string;
-    years?: number;
-    quantity?: number;
-  }): Promise<bigint> {
-    const [demandFactorPda] = await getDemandFactorPDA(this.arnsProgram);
-    const dfAccount = await fetchEncodedAccount(this.rpc, demandFactorPda, {
-      commitment: this.commitment,
-    });
-    if (!dfAccount.exists) throw new Error('DemandFactor not found');
-    const data = Buffer.from(dfAccount.data);
-    const dv = new DataView(data.buffer, data.byteOffset, data.byteLength);
-    const demandFactor = dv.getBigUint64(8, true);
-    const FEES_OFFSET = 156; // see DemandFactor layout note above
-    const idx = Math.min(Math.max(args.name.length, 1), 51) - 1;
-    const baseFee = dv.getBigUint64(FEES_OFFSET + idx * 8, true);
-    const SCALE = 1_000_000n;
-    if (args.operation === 'upgrade') {
-      // Permabuy upgrade: 20% × 20 × demand_factor
-      const permabuy = (baseFee * 200_000n) / SCALE;
-      return (permabuy * 20n * demandFactor) / SCALE;
-    }
-    if (args.operation === 'extend') {
-      // Lease extension fee: base_fee * 0.20 * years * demand_factor
-      return (
-        (baseFee * 200_000n * BigInt(args.years!) * demandFactor) /
-        SCALE /
-        SCALE
-      );
-    }
-    // increaseUndername: base_fee * UNDERNAME_LEASE_FEE_PCT * quantity * demand_factor
-    // UNDERNAME_LEASE_FEE_PCT = 1% = 10_000 in RATE_SCALE = 1_000_000.
-    return (
-      (baseFee * 10_000n * BigInt(args.quantity!) * demandFactor) /
-      SCALE /
-      SCALE
     );
   }
 
@@ -2542,22 +2614,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
      *  validationAccounts. Ignored for the `request` variant. */
     antProgramId?: Address;
   }) {
-    // Estimate the fee — primary-name fee = PRIMARY_NAME_REQUEST_BASE_FEE *
-    // demand_factor / DEMAND_FACTOR_SCALE. Read demand_factor from chain.
-    const [demandFactorPda] = await getDemandFactorPDA(this.arnsProgram);
-    const dfAccount = await fetchEncodedAccount(this.rpc, demandFactorPda, {
-      commitment: this.commitment,
+    const fee = await this._simulateTokenCost({
+      intent: CostIntent.PrimaryNameRequest,
+      name: args.params.name,
     });
-    if (!dfAccount.exists) throw new Error('DemandFactor not found');
-    const dv = new DataView(
-      dfAccount.data.buffer,
-      dfAccount.data.byteOffset,
-      dfAccount.data.byteLength,
-    );
-    const demandFactor = dv.getBigUint64(8, true);
-    const PRIMARY_NAME_REQUEST_BASE_FEE = 200_000n; // 0.2 ARIO in mARIO
-    const SCALE = 1_000_000n;
-    const fee = (PRIMARY_NAME_REQUEST_BASE_FEE * demandFactor) / SCALE;
 
     const plan = await this._resolveFundingPlan(args.params, fee);
     const garConfig = await this.getGarConfig();
@@ -3089,10 +3149,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         // sources is provided. For 'any' without sources, we fall back to a
         // best-effort estimate using the plain registration fee — caller can
         // always retry with explicit sources on FundingPlanAmountMismatch.
-        const cost = await this._estimateBuyNameCost({
+        const cost = await this._simulateTokenCost({
+          intent: CostIntent.BuyName,
           name: params.name,
-          purchaseType: buyParams.purchaseType,
           years: buyParams.years,
+          purchaseType: buyParams.purchaseType,
         });
         const plan = await this._resolveFundingPlan(
           params as ArNSPurchaseParams,

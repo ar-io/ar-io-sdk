@@ -24,11 +24,11 @@
 // Re-export every Codama-emitted error constant so test files can import
 // from a stable path (`test/helpers/errors.js`) instead of reaching into
 // the generated tree directly.
-export * from '../../src/solana/generated/ant/errors/index.js';
-export * from '../../src/solana/generated/ant-escrow/errors/index.js';
-export * from '../../src/solana/generated/arns/errors/index.js';
-export * from '../../src/solana/generated/core/errors/index.js';
-export * from '../../src/solana/generated/gar/errors/index.js';
+export * from '@ar.io/solana-contracts/ant';
+export * from '@ar.io/solana-contracts/ant-escrow';
+export * from '@ar.io/solana-contracts/arns';
+export * from '@ar.io/solana-contracts/core';
+export * from '@ar.io/solana-contracts/gar';
 
 const ANCHOR_ERROR_CODE_OFFSET = 6000;
 

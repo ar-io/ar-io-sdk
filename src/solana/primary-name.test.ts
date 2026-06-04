@@ -365,6 +365,10 @@ function buildArnsRecordFixture(antMint: Address): Uint8Array {
   w.writeU64(0); // purchasePrice
   w.writeU8(255); // bump
   w.writeString('arweave'); // name
+  // SchemaVersion { major, minor, patch }
+  w.writeU8(0);
+  w.writeU8(0);
+  w.writeU8(0);
   return w.toBuffer();
 }
 

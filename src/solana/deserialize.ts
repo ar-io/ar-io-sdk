@@ -1,31 +1,28 @@
 /**
- * Account deserialization for AR.IO Solana programs.
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
  *
- * Reads raw account data (Borsh-encoded by Anchor) and returns SDK-compatible
- * types. Each function skips the 8-byte Anchor discriminator, then reads
- * fields in the exact order defined in the Rust structs.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * NOTE on discriminators: this module no longer exports a hand-rolled
- * discriminator table. The Codama-generated account modules under
- * `./generated/<program>/accounts/` already export
- * `<NAME>_DISCRIMINATOR: Uint8Array` constants pulled directly from each
- * IDL, so they're guaranteed to match the on-chain struct names.
- * Use those at the call site (see `io-readable.ts` for the
- * `getAccountsByDiscriminator` helper that bs58-encodes them for
- * `getProgramAccounts` memcmp filters).
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Borsh encoding rules (Anchor default):
- *   - u8/bool: 1 byte
- *   - u16: 2 bytes LE
- *   - u32: 4 bytes LE
- *   - u64: 8 bytes LE
- *   - u128: 16 bytes LE
- *   - i64: 8 bytes LE (signed)
- *   - Pubkey: 32 bytes
- *   - String: 4-byte LE length prefix + UTF-8 bytes
- *   - Option<T>: 1-byte tag (0=None, 1=Some) + T if Some
- *   - Vec<T>: 4-byte LE length + T[] elements
- *   - Enum: 1-byte variant index
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Thin adapter layer over Codama-generated account decoders from
+ * `@ar.io/solana-contracts`. Each function accepts a raw `Buffer` (as
+ * returned by `fetchEncodedAccount(...).data`) and returns the same
+ * SDK-compatible plain-object shape the hand-rolled BorshReader
+ * implementations used to return.
+ *
+ * The Codama decoders return `Address` (branded string) and `bigint`
+ * for numeric fields. This module maps them to plain `string` and
+ * `number` so the SDK's public API contract doesn't change.
  */
 import {
   type Address,
@@ -33,8 +30,39 @@ import {
   getAddressEncoder,
 } from '@solana/kit';
 
-import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
-import { getEpochDecoder } from '@ar.io/solana-contracts/gar';
+import {
+  getAclConfigDecoder,
+  getAclPageDecoder,
+  getAntConfigDecoder,
+  getAntControllersDecoder,
+  getAntRecordDecoder,
+  getAntRecordMetadataDecoder,
+} from '@ar.io/solana-contracts/ant';
+import {
+  PurchaseType,
+  getArnsRecordDecoder,
+  getDemandFactorDecoder,
+  getReservedNameDecoder,
+  getReturnedNameDecoder,
+} from '@ar.io/solana-contracts/arns';
+import {
+  getArioConfigDecoder,
+  getPrimaryNameDecoder,
+  getPrimaryNameRequestDecoder,
+  getVaultDecoder,
+} from '@ar.io/solana-contracts/core';
+import {
+  GatewayStatus,
+  getAllowlistEntryDecoder,
+  getDelegationDecoder,
+  getEpochDecoder,
+  getEpochSettingsDecoder,
+  getGatewaySettingsDecoder as getGarSettingsDecoder,
+  getGatewayDecoder,
+  getObservationDecoder,
+  getRedelegationRecordDecoder,
+  getWithdrawalDecoder,
+} from '@ar.io/solana-contracts/gar';
 import type {
   ArNSLeaseData,
   ArNSNameData,
@@ -51,8 +79,18 @@ import { RATE_SCALE } from './constants.js';
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();
 
+function optionToValue<T>(opt: { __option: 'Some' | 'None'; value?: T }):
+  | T
+  | undefined {
+  return opt.__option === 'Some' ? opt.value : undefined;
+}
+
+function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
+  return value / scale;
+}
+
 // =========================================
-// Buffer reader helper
+// Buffer reader/writer helpers (kept for test fixtures that synthesize account data)
 // =========================================
 
 class BorshReader {
@@ -209,10 +247,6 @@ class BorshReader {
   }
 }
 
-// =========================================
-// Buffer writer helper
-// =========================================
-
 class BorshWriter {
   private buf: Buffer;
   private offset: number;
@@ -259,7 +293,6 @@ class BorshWriter {
     this.offset += 32;
   }
 
-  /** Write raw bytes without a length prefix (fixed-size fields). */
   writeFixedBytes(data: Buffer | Uint8Array): void {
     for (let i = 0; i < data.length; i++) {
       this.buf[this.offset + i] = data[i];
@@ -310,7 +343,6 @@ class BorshWriter {
     }
   }
 
-  /** Borsh `Option<Vec<String>>`: 0/1 tag, then u32 length + each string. */
   writeOptionStringVec(val: string[] | undefined): void {
     if (val === undefined) {
       this.writeU8(0);
@@ -331,167 +363,94 @@ class BorshWriter {
 }
 
 // =========================================
-// Helper: scale factor -> float
-// =========================================
-
-/** Convert a RATE_SCALE-encoded u64 to a float (e.g., 1_000_000 -> 1.0) */
-function scaleToFloat(value: number, scale: number = RATE_SCALE): number {
-  return value / scale;
-}
-
-// =========================================
 // Gateway deserialization
 // =========================================
 
-/**
- * Internal variant of {@link deserializeGateway} that additionally surfaces
- * the on-chain `cumulative_reward_per_token` u128 accumulator. Used by the
- * live delegation balance pipeline ({@link computeLiveDelegationBalance} via
- * `getGatewayAccumulators` in `io-readable.ts`).
- *
- * Not part of the public Gateway shape — `bigint` is not JSON-serializable
- * and would leak through `getGateway` / `getGateways`. Prefer
- * {@link deserializeGateway} everywhere except inside live-balance plumbing.
- *
- * PDA: ["gateway", operator_pubkey] in ario-gar program.
- */
 export function deserializeGatewayWithAccumulator(
   data: Buffer,
 ): Gateway & { operator: string; cumulativeRewardPerToken: bigint } {
-  const r = new BorshReader(data, 8); // skip 8-byte discriminator
-
-  const operator = r.readPubkey();
-  const label = r.readString();
-  const fqdn = r.readString();
-  const port = r.readU16();
-  r.readU8(); // protocolIdx: 0=Http, 1=Https
-  const properties = r.readString();
-  const note = r.readString();
-  const operatorStake = r.readU64AsNumber();
-  const totalDelegatedStake = r.readU64AsNumber();
-  const statusIdx = r.readU8(); // 0=Joined, 1=Leaving
-  const startTimestamp = r.readI64AsNumber();
-  const leaveTimestamp = r.readOptionI64();
-  // leave_epoch_duration: i64 — snapshot of epoch_settings.epoch_duration captured
-  // at leave_network/prune_gateway. Not surfaced on Gateway; consume to stay aligned.
-  r.skip(8);
-
-  // GatewayStats
-  const passedEpochCount = r.readU32();
-  const failedEpochCount = r.readU32();
-  const totalEpochCount = r.readU32();
-  const prescribedEpochCount = r.readU32();
-  const observedEpochCount = r.readU32();
-  const failedConsecutiveEpochs = r.readU8();
-  const passedConsecutiveEpochs = r.readU8();
-
-  // GatewayWeights (7 x u64 — 7th is weights_epoch, set by tally_weights)
-  const stakeWeight = r.readU64AsNumber();
-  const tenureWeight = r.readU64AsNumber();
-  const gatewayPerformanceRatio = r.readU64AsNumber();
-  const observerPerformanceRatio = r.readU64AsNumber();
-  const compositeWeight = r.readU64AsNumber();
-  const normalizedCompositeWeight = r.readU64AsNumber();
-  r.skip(8); // weights_epoch — not surfaced on GatewayWeights
-
-  // GatewaySettings2 (auto_stake removed in cfc7a8b2 — never existed on Solana)
-  const allowDelegatedStaking = r.readBool();
-  const delegateRewardShareRatio = r.readU16() / 100;
-  const minDelegatedStake = r.readU64AsNumber();
-  const allowlistEnabled = r.readBool();
-  // GATEWAY_VERSION 1.1.0 added two fields to GatewaySettings2 — MUST read them
-  // here to keep the byte stream aligned for every field after `settings`.
-  //   - pending_delegate_reward_share_ratio: Option<u16> (Fix #7) — basis points
-  //     of a deferred reward-share change applied at the next epoch's tally.
-  //   - delegation_disabled_at: Option<i64> (Fix #6) — unix seconds the operator
-  //     disabled delegation; starts the re-enable cooldown.
-  const pendingRatioRaw = r.readOptionU16();
-  const pendingDelegateRewardShareRatio =
-    pendingRatioRaw === undefined ? undefined : pendingRatioRaw / 100;
-  const delegationDisabledAt = r.readOptionI64();
-
-  // RegistryIndex (index: u32, _reserved: u8 — was is_registered:bool)
-  r.readU32(); // registryIndex
-  r.readU8(); // _reserved (layout-preserving placeholder for the legacy is_registered byte)
-
-  // observer_address
-  const observerAddress = r.readPubkey();
-
-  // cumulative_reward_per_token: u128 — per-share accumulator advanced by
-  // distribute_epoch. Combined with each Delegation.reward_debt, this lets
-  // off-chain readers compute the live delegate balance without an on-chain
-  // settlement call. Not part of the public Gateway type but surfaced as
-  // an extra field on this function's return so internal readers can use it.
-  const cumulativeRewardPerToken = r.readU128();
-
-  // bump
-  r.skip(1);
+  const d = getGatewayDecoder().decode(new Uint8Array(data));
 
   const stats: GatewayStats = {
-    passedEpochCount,
-    failedEpochCount,
-    totalEpochCount,
-    prescribedEpochCount,
-    observedEpochCount,
-    passedConsecutiveEpochs,
-    failedConsecutiveEpochs,
+    passedEpochCount: d.stats.passedEpochs,
+    failedEpochCount: d.stats.failedEpochs,
+    totalEpochCount: d.stats.totalEpochs,
+    prescribedEpochCount: d.stats.prescribedEpochs,
+    observedEpochCount: d.stats.observedEpochs,
+    passedConsecutiveEpochs: d.stats.passedConsecutive,
+    failedConsecutiveEpochs: d.stats.failedConsecutive,
   };
 
   const weights: GatewayWeights = {
-    stakeWeight: scaleToFloat(stakeWeight),
-    tenureWeight: scaleToFloat(tenureWeight),
-    gatewayPerformanceRatio: scaleToFloat(gatewayPerformanceRatio),
-    observerPerformanceRatio: scaleToFloat(observerPerformanceRatio),
-    gatewayRewardRatioWeight: scaleToFloat(gatewayPerformanceRatio), // deprecated alias
-    observerRewardRatioWeight: scaleToFloat(observerPerformanceRatio), // deprecated alias
-    compositeWeight: scaleToFloat(compositeWeight),
-    normalizedCompositeWeight: scaleToFloat(normalizedCompositeWeight),
+    stakeWeight: scaleToFloat(Number(d.weights.stakeWeight)),
+    tenureWeight: scaleToFloat(Number(d.weights.tenureWeight)),
+    gatewayPerformanceRatio: scaleToFloat(
+      Number(d.weights.gatewayPerformanceRatio),
+    ),
+    observerPerformanceRatio: scaleToFloat(
+      Number(d.weights.observerPerformanceRatio),
+    ),
+    gatewayRewardRatioWeight: scaleToFloat(
+      Number(d.weights.gatewayPerformanceRatio),
+    ),
+    observerRewardRatioWeight: scaleToFloat(
+      Number(d.weights.observerPerformanceRatio),
+    ),
+    compositeWeight: scaleToFloat(Number(d.weights.compositeWeight)),
+    normalizedCompositeWeight: scaleToFloat(
+      Number(d.weights.normalizedCompositeWeight),
+    ),
   };
+
+  const pendingRatioRaw = optionToValue(
+    d.settings.pendingDelegateRewardShareRatio as any,
+  ) as number | undefined;
+  const pendingDelegateRewardShareRatio =
+    pendingRatioRaw === undefined ? undefined : pendingRatioRaw / 100;
+  const delegationDisabledAt = optionToValue(
+    d.settings.delegationDisabledAt as any,
+  ) as bigint | undefined;
 
   const settings: GatewaySettings = {
-    allowDelegatedStaking: allowlistEnabled
+    allowDelegatedStaking: d.settings.allowlistEnabled
       ? 'allowlist'
-      : allowDelegatedStaking,
-    delegateRewardShareRatio,
-    allowedDelegates: [], // populated separately from allowlist PDAs
-    minDelegatedStake,
-    autoStake: false, // not an on-chain field on Solana; preserved on GatewaySettings for AO parity
-    label,
-    note,
-    properties,
-    fqdn,
-    port,
-    protocol: 'https', // protocolIdx: 0=Http, 1=Https — only HTTPS in practice
-    pendingDelegateRewardShareRatio, // Fix #7: undefined when no change is queued
-    delegationDisabledAt, // Fix #6: undefined when delegation is enabled
+      : d.settings.allowDelegatedStaking,
+    delegateRewardShareRatio: d.settings.delegateRewardShareRatio / 100,
+    allowedDelegates: [],
+    minDelegatedStake: Number(d.settings.minDelegationAmount),
+    autoStake: false,
+    label: d.label,
+    note: d.note,
+    properties: d.properties,
+    fqdn: d.fqdn,
+    port: d.port,
+    protocol: 'https',
+    pendingDelegateRewardShareRatio,
+    delegationDisabledAt:
+      delegationDisabledAt !== undefined
+        ? Number(delegationDisabledAt)
+        : undefined,
   };
 
+  const leaveTimestamp = optionToValue(d.leaveTimestamp as any) as
+    | bigint
+    | undefined;
+
   return {
-    operator: operator,
+    operator: d.operator as string,
     settings,
     stats,
-    totalDelegatedStake,
-    startTimestamp,
-    endTimestamp: leaveTimestamp ?? 0,
-    observerAddress: observerAddress,
-    operatorStake,
-    status: statusIdx === 0 ? 'joined' : 'leaving',
+    totalDelegatedStake: Number(d.totalDelegatedStake),
+    startTimestamp: Number(d.startTimestamp),
+    endTimestamp: leaveTimestamp !== undefined ? Number(leaveTimestamp) : 0,
+    observerAddress: d.observerAddress as string,
+    operatorStake: Number(d.operatorStake),
+    status: d.status === GatewayStatus.Joined ? 'joined' : 'leaving',
     weights,
-    cumulativeRewardPerToken,
+    cumulativeRewardPerToken: d.cumulativeRewardPerToken,
   };
 }
 
-/**
- * Deserialize a Gateway account from raw bytes.
- *
- * Returns the SDK-compatible Gateway type (plus `operator: string`).
- * The on-chain `cumulative_reward_per_token` u128 is intentionally NOT
- * surfaced on the returned object — `bigint` is not JSON-serializable,
- * and leaking it through `getGateway` / `getGateways` would break
- * downstream consumers that call `JSON.stringify` on results. Use
- * {@link deserializeGatewayWithAccumulator} from within the live-balance
- * pipeline when the accumulator value is actually needed.
- */
 export function deserializeGateway(
   data: Buffer,
 ): Gateway & { operator: string } {
@@ -504,50 +463,28 @@ export function deserializeGateway(
 // ArNS Record deserialization
 // =========================================
 
-/**
- * Deserialize an ArNS record account from raw bytes.
- * PDA: ["arns_record", hash(name)] in ario-arns program.
- *
- * Field order is **load-bearing** and mirrors the on-chain
- * `ArnsRecord` struct in `contracts/programs/ario-arns/src/state/mod.rs`.
- * Every fixed-size field appears before the variable-length `name` so
- * `getProgramAccounts` callers can `memcmp`-filter on `ant` (offset
- * 72) — see `ARNS_RECORD_ANT_OFFSET` in `./constants.ts`. If you
- * touch the contract layout, both files have to move in lockstep.
- */
 export function deserializeArnsRecord(
   data: Buffer,
 ): ArNSNameData & { name: string; owner: string } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  r.readPubkey(); // 32-byte name hash (used as PDA seed)
-  const owner = r.readPubkey();
-  const ant = r.readPubkey(); // ANT Metaplex Core asset address
-  const typeIdx = r.readU8(); // 0=Lease, 1=Permabuy
-  const startTimestamp = r.readI64AsNumber();
-  const endTimestamp = r.readOptionI64();
-  // u16 on-chain — the prior implementation read u32 here and silently
-  // consumed two bytes of `purchase_price`, producing junk for both
-  // fields. Caught while reworking the layout for memcmp filtering.
-  const undernameLimit = r.readU16();
-  const purchasePrice = r.readU64AsNumber();
-  r.skip(1); // bump
-  const name = r.readString();
+  const d = getArnsRecordDecoder().decode(new Uint8Array(data));
+  const endTimestamp = optionToValue(d.endTimestamp as any) as
+    | bigint
+    | undefined;
 
   const baseData = {
-    name,
-    owner: owner,
-    processId: ant, // SDK calls ANT address "processId"
-    startTimestamp,
-    undernameLimit,
-    purchasePrice,
+    name: d.name,
+    owner: d.owner as string,
+    processId: d.ant as string,
+    startTimestamp: Number(d.startTimestamp),
+    undernameLimit: d.undernameLimit,
+    purchasePrice: Number(d.purchasePrice),
   };
 
-  if (typeIdx === 0 && endTimestamp !== undefined) {
+  if (d.purchaseType === PurchaseType.Lease && endTimestamp !== undefined) {
     return {
       ...baseData,
       type: 'lease' as const,
-      endTimestamp,
+      endTimestamp: Number(endTimestamp),
     } as ArNSLeaseData & { name: string; owner: string };
   }
 
@@ -561,43 +498,16 @@ export function deserializeArnsRecord(
 // Vault deserialization
 // =========================================
 
-/**
- * Deserialize a Vault account from raw bytes.
- * PDA: ["vault", owner, vault_id] in ario-core program.
- *
- * On-chain layout (matches `state::Vault`):
- *   disc(8) + owner(Pubkey=32) + vault_id(u64=8) + amount(u64=8)
- *   + start_timestamp(i64=8) + end_timestamp(i64=8)
- *   + controller(Option<Pubkey>=33) + revocable(bool=1) + bump(u8=1)
- */
 export function deserializeVault(data: Buffer): VaultData & { owner: string } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const owner = r.readPubkey();
-  // The Rust struct has vault_id BEFORE amount — easy to miss because the
-  // SDK only surfaces `balance` (the AO interface name for `amount`). The
-  // earlier deserializer skipped vault_id and read vault_id-as-balance →
-  // `balance` was always 0 for fresh vaults at index 0.
-  r.skip(8); // vault_id (recoverable from the PDA seeds; not surfaced)
-  const balance = r.readU64AsNumber();
-  const startTimestamp = r.readI64AsNumber();
-  const endTimestamp = r.readI64AsNumber();
-
-  // controller: Option<Pubkey>
-  const hasController = r.readU8();
-  const controller = hasController ? r.readPubkey() : undefined;
-
-  // revocable: bool
-  r.readBool();
-  // bump
-  r.skip(1);
+  const d = getVaultDecoder().decode(new Uint8Array(data));
+  const controller = optionToValue(d.controller as any) as Address | undefined;
 
   return {
-    owner: owner,
-    balance,
-    startTimestamp,
-    endTimestamp,
-    controller,
+    owner: d.owner as string,
+    balance: Number(d.amount),
+    startTimestamp: Number(d.startTimestamp),
+    endTimestamp: Number(d.endTimestamp),
+    controller: controller as string | undefined,
   };
 }
 
@@ -608,44 +518,20 @@ export function deserializeVault(data: Buffer): VaultData & { owner: string } {
 export type DeserializedDelegation = {
   gateway: string;
   delegator: string;
-  /**
-   * Last-settled principal (raw `Delegation.amount` from on-chain state).
-   * This value is stale between epochs — see `INVARIANTS.md` in the contracts
-   * repo. Use `computeLiveDelegationBalance` (with the gateway's current
-   * `cumulativeRewardPerToken`) to get the actual current balance.
-   */
   delegatedStake: number;
   startTimestamp: number;
-  /**
-   * Snapshot of `gateway.cumulative_reward_per_token` at the last settlement.
-   * Required input to `computeLiveDelegationBalance`.
-   */
   rewardDebt: bigint;
 };
 
-/**
- * Deserialize a Delegation account from raw bytes.
- * PDA: ["delegation", gateway, delegator] in ario-gar program.
- */
 export function deserializeDelegation(data: Buffer): DeserializedDelegation {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const gateway = r.readPubkey();
-  const delegator = r.readPubkey();
-  const amount = r.readU64AsNumber();
-  const startTimestamp = r.readI64AsNumber();
-  // reward_debt: u128 — snapshot of gateway.cumulative_reward_per_token at last
-  // settlement. Needed (together with the gateway's current accumulator) to
-  // compute the live delegate balance via computeLiveDelegationBalance().
-  const rewardDebt = r.readU128();
-  r.skip(1); // bump
+  const d = getDelegationDecoder().decode(new Uint8Array(data));
 
   return {
-    gateway: gateway,
-    delegator: delegator,
-    delegatedStake: amount,
-    startTimestamp,
-    rewardDebt,
+    gateway: d.gateway as string,
+    delegator: d.delegator as string,
+    delegatedStake: Number(d.amount),
+    startTimestamp: Number(d.startTimestamp),
+    rewardDebt: d.rewardDebt,
   };
 }
 
@@ -653,24 +539,19 @@ export function deserializeDelegation(data: Buffer): DeserializedDelegation {
 // Balance deserialization
 // =========================================
 
-/**
- * Deserialize a Balance account from raw bytes.
- * PDA: ["balance", owner] in ario-core program.
- *
- * Backed by the Codama-generated decoder so the encoder
- * (`getBalanceEncoder` used by migration/snapshot) and decoder share a single
- * source of truth derived from the `ario_core` IDL.
- */
 export function deserializeBalance(data: Buffer): {
   owner: string;
   balance: number;
 } {
-  const decoded = getBalanceDecoder().decode(data);
+  const d = getBalanceDecoder().decode(new Uint8Array(data));
   return {
-    owner: decoded.owner,
-    balance: Number(decoded.amount),
+    owner: d.owner as string,
+    balance: Number(d.amount),
   };
 }
+
+// Keep the import for deserializeBalance
+import { getBalanceDecoder } from '@ar.io/solana-contracts/core';
 
 // =========================================
 // Epoch Settings deserialization
@@ -682,25 +563,13 @@ export function deserializeEpochSettings(data: Buffer): {
   prescribedNameCount: number;
   maxObservers: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  r.skip(32); // authority
-  const epochDuration = r.readI64AsNumber();
-  const maxObservers = r.readU8(); // prescribed_observer_count
-  const prescribedNameCount = r.readU8();
-  r.skip(8); // min_observer_stake (u64)
-  r.skip(2); // slash_rate (u16)
-  r.skip(1); // enabled (bool)
-  r.skip(8); // current_epoch_index (u64)
-  const epochZeroStartTimestamp = r.readI64AsNumber(); // genesis_timestamp
+  const d = getEpochSettingsDecoder().decode(new Uint8Array(data));
 
   return {
-    // SDK expects milliseconds (matching AO convention), Solana stores
-    // seconds — convert both timestamps and durations here.
-    epochZeroStartTimestamp: epochZeroStartTimestamp * 1000,
-    durationMs: epochDuration * 1000,
-    prescribedNameCount,
-    maxObservers,
+    epochZeroStartTimestamp: Number(d.genesisTimestamp) * 1000,
+    durationMs: Number(d.epochDuration) * 1000,
+    prescribedNameCount: d.prescribedNameCount,
+    maxObservers: d.prescribedObserverCount,
   };
 }
 
@@ -708,34 +577,19 @@ export function deserializeEpochSettings(data: Buffer): {
 // ArIO Config deserialization
 // =========================================
 
-/**
- * Deserialize an ArioConfig account from raw bytes.
- * PDA: ["ario_config"] in ario-core program.
- */
 export function deserializeArioConfig(data: Buffer): {
   totalSupply: number;
   protocolBalance: number;
   circulatingSupply: number;
   lockedSupply: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  r.skip(32); // authority
-  r.skip(32); // mint
-  r.skip(32); // arns_program
-  r.skip(32); // treasury
-  const totalSupply = r.readU64AsNumber();
-  const protocolBalance = r.readU64AsNumber();
-  const circulatingSupply = r.readU64AsNumber();
-  const lockedSupply = r.readU64AsNumber();
-  // remaining fields not needed: min_vault_duration, max_vault_duration,
-  // primary_name_request_expiry, migration_active, migration_authority, bump
+  const d = getArioConfigDecoder().decode(new Uint8Array(data));
 
   return {
-    totalSupply,
-    protocolBalance,
-    circulatingSupply,
-    lockedSupply,
+    totalSupply: Number(d.totalSupply),
+    protocolBalance: Number(d.protocolBalance),
+    circulatingSupply: Number(d.circulatingSupply),
+    lockedSupply: Number(d.lockedSupply),
   };
 }
 
@@ -743,10 +597,6 @@ export function deserializeArioConfig(data: Buffer): {
 // Demand Factor deserialization
 // =========================================
 
-/**
- * Deserialize a DemandFactor account from raw bytes.
- * PDA: ["demand_factor"] in ario-arns program.
- */
 export function deserializeDemandFactor(data: Buffer): {
   currentDemandFactor: number;
   currentPeriod: number;
@@ -756,27 +606,17 @@ export function deserializeDemandFactor(data: Buffer): {
   trailingPeriodRevenues: number[];
   fees: number[];
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const currentDemandFactorRaw = r.readU64AsNumber();
-  const currentPeriod = r.readU64AsNumber();
-  r.skip(8); // purchases_this_period (u64)
-  r.skip(8); // revenue_this_period (u64)
-  const consecutivePeriodsWithMinDemandFactor = r.readU32();
-  const trailingPeriodPurchases = r.readFixedU64Array(7);
-  const trailingPeriodRevenues = r.readFixedU64Array(7);
-  const fees = r.readFixedU64Array(51);
-  const periodZeroStartTimestamp = r.readI64AsNumber();
-  // criteria: u8, bump: u8 — skip
+  const d = getDemandFactorDecoder().decode(new Uint8Array(data));
 
   return {
-    currentDemandFactor: currentDemandFactorRaw / RATE_SCALE,
-    currentPeriod,
-    periodZeroStartTimestamp,
-    consecutivePeriodsWithMinDemandFactor,
-    trailingPeriodPurchases,
-    trailingPeriodRevenues,
-    fees,
+    currentDemandFactor: Number(d.currentDemandFactor) / RATE_SCALE,
+    currentPeriod: Number(d.currentPeriod),
+    periodZeroStartTimestamp: Number(d.periodZeroStartTimestamp),
+    consecutivePeriodsWithMinDemandFactor:
+      d.consecutivePeriodsWithMinDemandFactor,
+    trailingPeriodPurchases: d.trailingPeriodPurchases.map(Number),
+    trailingPeriodRevenues: d.trailingPeriodRevenues.map(Number),
+    fees: d.fees.map(Number),
   };
 }
 
@@ -784,26 +624,21 @@ export function deserializeDemandFactor(data: Buffer): {
 // Reserved Name deserialization
 // =========================================
 
-/**
- * Deserialize a ReservedName account from raw bytes.
- * PDA: ["reserved_name", hash(name)] in ario-arns program.
- */
 export function deserializeReservedName(data: Buffer): {
   name: string;
   target?: string;
   endTimestamp?: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const name = r.readString();
-  const reservedFor = r.readOptionPubkey();
-  const expiresAt = r.readOptionI64();
-  // reserved_by: Pubkey, created_at: i64, bump: u8 — not needed
+  const d = getReservedNameDecoder().decode(new Uint8Array(data));
+  const reservedFor = optionToValue(d.reservedFor as any) as
+    | Address
+    | undefined;
+  const expiresAt = optionToValue(d.expiresAt as any) as bigint | undefined;
 
   return {
-    name,
-    target: reservedFor,
-    endTimestamp: expiresAt,
+    name: d.name,
+    target: reservedFor as string | undefined,
+    endTimestamp: expiresAt !== undefined ? Number(expiresAt) : undefined,
   };
 }
 
@@ -811,12 +646,8 @@ export function deserializeReservedName(data: Buffer): {
 // Returned Name deserialization
 // =========================================
 
-const RETURN_AUCTION_DURATION_SECONDS = 14 * 86_400; // 14 days
+const RETURN_AUCTION_DURATION_SECONDS = 14 * 86_400;
 
-/**
- * Deserialize a ReturnedName account from raw bytes.
- * PDA: ["returned_name", hash(name)] in ario-arns program.
- */
 export function deserializeReturnedName(data: Buffer): {
   name: string;
   startTimestamp: number;
@@ -824,20 +655,15 @@ export function deserializeReturnedName(data: Buffer): {
   initiator: string;
   premiumMultiplier: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const name = r.readString();
-  r.skip(32); // name_hash [u8; 32]
-  const initiator = r.readPubkey();
-  const returnedAt = r.readI64AsNumber();
-  // bump: u8 — skip
+  const d = getReturnedNameDecoder().decode(new Uint8Array(data));
+  const returnedAt = Number(d.returnedAt);
 
   return {
-    name,
+    name: d.name,
     startTimestamp: returnedAt,
     endTimestamp: returnedAt + RETURN_AUCTION_DURATION_SECONDS,
-    initiator: initiator,
-    premiumMultiplier: 1, // calculated at query time from elapsed vs auction duration
+    initiator: d.initiator as string,
+    premiumMultiplier: 1,
   };
 }
 
@@ -845,10 +671,6 @@ export function deserializeReturnedName(data: Buffer): {
 // Withdrawal deserialization
 // =========================================
 
-/**
- * Deserialize a Withdrawal account from raw bytes.
- * PDA: ["withdrawal", gateway, owner, withdrawal_id] in ario-gar program.
- */
 export function deserializeWithdrawal(data: Buffer): {
   owner: string;
   vaultId: string;
@@ -858,25 +680,16 @@ export function deserializeWithdrawal(data: Buffer): {
   endTimestamp: number;
   isDelegate: boolean;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const owner = r.readPubkey();
-  const withdrawalId = r.readU64AsNumber();
-  const gateway = r.readPubkey();
-  const amount = r.readU64AsNumber();
-  const createdAt = r.readI64AsNumber();
-  const availableAt = r.readI64AsNumber();
-  const isDelegate = r.readBool();
-  // is_exit_vault: bool, bump: u8 — skip
+  const d = getWithdrawalDecoder().decode(new Uint8Array(data));
 
   return {
-    owner: owner,
-    vaultId: String(withdrawalId),
-    gateway: gateway,
-    balance: amount,
-    startTimestamp: createdAt,
-    endTimestamp: availableAt,
-    isDelegate,
+    owner: d.owner as string,
+    vaultId: String(Number(d.withdrawalId)),
+    gateway: d.gateway as string,
+    balance: Number(d.amount),
+    startTimestamp: Number(d.createdAt),
+    endTimestamp: Number(d.availableAt),
+    isDelegate: d.isDelegate,
   };
 }
 
@@ -884,29 +697,19 @@ export function deserializeWithdrawal(data: Buffer): {
 // Redelegation Record deserialization
 // =========================================
 
-/**
- * Deserialize a RedelegationRecord account from raw bytes.
- * PDA: ["redelegation", delegator] in ario-gar program.
- */
 export function deserializeRedelegationRecord(data: Buffer): {
   delegator: string;
   redelegationCount: number;
   lastRedelegationAt: number;
   feeResetAt: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const delegator = r.readPubkey();
-  const redelegationCount = r.readU32();
-  const lastRedelegationAt = r.readI64AsNumber();
-  const feeResetAt = r.readI64AsNumber();
-  // bump: u8 — skip
+  const d = getRedelegationRecordDecoder().decode(new Uint8Array(data));
 
   return {
-    delegator: delegator,
-    redelegationCount,
-    lastRedelegationAt,
-    feeResetAt,
+    delegator: d.delegator as string,
+    redelegationCount: d.redelegationCount,
+    lastRedelegationAt: Number(d.lastRedelegationAt),
+    feeResetAt: Number(d.feeResetAt),
   };
 }
 
@@ -914,70 +717,41 @@ export function deserializeRedelegationRecord(data: Buffer): {
 // Primary Name Request deserialization
 // =========================================
 
-/**
- * Deserialize a PrimaryNameRequest account from raw bytes.
- * PDA: ["primary_name_request", initiator] in ario-core program.
- */
 export function deserializePrimaryNameRequest(data: Buffer): {
   name: string;
   initiator: string;
   startTimestamp: number;
   endTimestamp: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const initiator = r.readPubkey();
-  const name = r.readString();
-  const createdAt = r.readI64AsNumber();
-  const expiresAt = r.readI64AsNumber();
-  // bump: u8 — skip
+  const d = getPrimaryNameRequestDecoder().decode(new Uint8Array(data));
 
   return {
-    name,
-    initiator: initiator,
-    startTimestamp: createdAt,
-    endTimestamp: expiresAt,
+    name: d.name,
+    initiator: d.initiator as string,
+    startTimestamp: Number(d.createdAt),
+    endTimestamp: Number(d.expiresAt),
   };
 }
 
 // =========================================
-// GAR Settings deserialization (full)
+// GAR Settings deserialization
 // =========================================
 
-/**
- * Deserialize a GarSettings account from raw bytes and return
- * the full GatewayRegistrySettings type.
- * PDA: ["gar_settings"] in ario-gar program.
- *
- * Fields not stored in GarSettings are filled with protocol defaults.
- */
 export function deserializeGarSettings(data: Buffer): GatewayRegistrySettings {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  r.skip(32); // authority
-  r.skip(32); // mint
-  const minOperatorStake = r.readU64AsNumber();
-  const minDelegateStake = r.readU64AsNumber();
-  const withdrawalPeriod = r.readI64AsNumber(); // seconds
-  const maxExpeditedWithdrawalPenalty = r.readU64AsNumber();
-  const minExpeditedWithdrawalPenalty = r.readU64AsNumber();
-  const minExpeditedWithdrawalAmount = r.readU64AsNumber();
-  r.readU32(); // max_delegates_per_gateway
-  // migration_active: bool, migration_authority: Pubkey, bump: u8 — skip
-
-  const withdrawalPeriodMs = withdrawalPeriod * 1000;
+  const d = getGarSettingsDecoder().decode(new Uint8Array(data));
+  const withdrawalPeriodMs = Number(d.withdrawalPeriod) * 1000;
 
   return {
     delegates: {
-      minStake: minDelegateStake,
+      minStake: Number(d.minDelegateStake),
       withdrawLengthMs: withdrawalPeriodMs,
     },
     observers: {
-      tenureWeightDurationMs: 15_552_000_000, // 180 days in ms
+      tenureWeightDurationMs: 15_552_000_000,
       maxTenureWeight: 4,
     },
     operators: {
-      minStake: minOperatorStake,
+      minStake: Number(d.minOperatorStake),
       withdrawLengthMs: withdrawalPeriodMs,
       leaveLengthMs: withdrawalPeriodMs,
       maxDelegateRewardSharePct: 95,
@@ -991,53 +765,35 @@ export function deserializeGarSettings(data: Buffer): GatewayRegistrySettings {
       redelegationFeeResetIntervalMs: 7 * 86_400 * 1000,
     },
     expeditedWithdrawals: {
-      minExpeditedWithdrawalPenaltyRate: minExpeditedWithdrawalPenalty,
-      maxExpeditedWithdrawalPenaltyRate: maxExpeditedWithdrawalPenalty,
-      minExpeditedWithdrawalAmount: minExpeditedWithdrawalAmount,
+      minExpeditedWithdrawalPenaltyRate: Number(
+        d.minExpeditedWithdrawalPenalty,
+      ),
+      maxExpeditedWithdrawalPenaltyRate: Number(
+        d.maxExpeditedWithdrawalPenalty,
+      ),
+      minExpeditedWithdrawalAmount: Number(d.minExpeditedWithdrawalAmount),
     },
   };
 }
 
-/**
- * Deserialize supply counter fields from GatewaySettings account.
- * These 3 fields were added after arns_program_id, before bump.
- */
 export function deserializeGarSupplyCounters(data: Buffer): {
   totalStaked: number;
   totalDelegated: number;
   totalWithdrawn: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-  r.skip(32); // authority
-  r.skip(32); // mint
-  r.skip(8); // min_operator_stake
-  r.skip(8); // min_delegate_stake
-  r.skip(8); // withdrawal_period
-  r.skip(8); // max_expedited_withdrawal_penalty
-  r.skip(8); // min_expedited_withdrawal_penalty
-  r.skip(8); // min_expedited_withdrawal_amount
-  r.skip(4); // max_delegates_per_gateway
-  r.skip(1); // migration_active
-  r.skip(32); // migration_authority
-  r.skip(32); // stake_token_account
-  r.skip(32); // protocol_token_account
-  r.skip(32); // arns_program_id
-  const totalStaked = r.readU64AsNumber();
-  const totalDelegated = r.readU64AsNumber();
-  const totalWithdrawn = r.readU64AsNumber();
-  return { totalStaked, totalDelegated, totalWithdrawn };
+  const d = getGarSettingsDecoder().decode(new Uint8Array(data));
+
+  return {
+    totalStaked: Number(d.totalStaked),
+    totalDelegated: Number(d.totalDelegated),
+    totalWithdrawn: Number(d.totalWithdrawn),
+  };
 }
 
 // =========================================
 // Epoch Settings Full deserialization
 // =========================================
 
-/**
- * Deserialize the full EpochSettings account from raw bytes.
- * Unlike deserializeEpochSettings (which returns 4 fields), this reads
- * all fields from the on-chain struct.
- * PDA: ["epoch_settings"] in ario-gar program.
- */
 export function deserializeEpochSettingsFull(data: Buffer): {
   currentEpochIndex: number;
   genesisTimestamp: number;
@@ -1051,55 +807,27 @@ export function deserializeEpochSettingsFull(data: Buffer): {
   observerRewardRatio: number;
   maxConsecutiveFailures: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  r.skip(32); // authority
-  const epochDuration = r.readI64AsNumber();
-  const prescribedObserverCount = r.readU8();
-  const prescribedNameCount = r.readU8();
-  r.skip(8); // min_observer_stake (u64)
-  r.skip(2); // slash_rate (u16)
-  const enabled = r.readU8() !== 0;
-  const currentEpochIndex = r.readU64AsNumber();
-  const genesisTimestamp = r.readI64AsNumber();
-  const tenureWeightDuration = r.readI64AsNumber();
-  const maxTenureWeight = r.readU64AsNumber();
-  const gatewayRewardRatio = r.readU64AsNumber();
-  const observerRewardRatio = r.readU64AsNumber();
-  r.skip(8); // missed_observation_penalty_rate (u64)
-  r.skip(8); // max_reward_rate (u64)
-  r.skip(8); // min_reward_rate (u64)
-  r.skip(8); // reward_decay_start_epoch (u64)
-  r.skip(8); // reward_decay_last_epoch (u64)
-  const maxConsecutiveFailures = r.readU8();
-  // failed_gateway_slash_rate: u64, bump: u8 — skip
+  const d = getEpochSettingsDecoder().decode(new Uint8Array(data));
 
   return {
-    currentEpochIndex,
-    genesisTimestamp,
-    epochDuration,
-    enabled,
-    prescribedObserverCount,
-    prescribedNameCount,
-    tenureWeightDuration,
-    maxTenureWeight,
-    gatewayRewardRatio,
-    observerRewardRatio,
-    maxConsecutiveFailures,
+    currentEpochIndex: Number(d.currentEpochIndex),
+    genesisTimestamp: Number(d.genesisTimestamp),
+    epochDuration: Number(d.epochDuration),
+    enabled: d.enabled,
+    prescribedObserverCount: d.prescribedObserverCount,
+    prescribedNameCount: d.prescribedNameCount,
+    tenureWeightDuration: Number(d.tenureWeightDuration),
+    maxTenureWeight: Number(d.maxTenureWeight),
+    gatewayRewardRatio: Number(d.gatewayRewardRatio),
+    observerRewardRatio: Number(d.observerRewardRatio),
+    maxConsecutiveFailures: d.maxConsecutiveFailures,
   };
 }
 
 // =========================================
-// Epoch deserialization (zero-copy #[repr(C)])
+// Epoch deserialization
 // =========================================
 
-/**
- * Deserialize an Epoch account from raw bytes.
- * PDA: ["epoch", epoch_index_le_bytes] in ario-gar program.
- *
- * This is a zero-copy account with #[repr(C)] layout (not Borsh).
- * Fields are at fixed offsets after the 8-byte discriminator.
- */
 export function deserializeEpoch(data: Buffer): {
   epochIndex: number;
   startTimestamp: number;
@@ -1123,130 +851,30 @@ export function deserializeEpoch(data: Buffer): {
   prescribedNameHashes: Buffer[];
   hasObserved: Uint8Array;
 } {
-  // Codama-decoded path. Replaces the hand-rolled offset arithmetic
-  // below — that broke under cluster cfg changes (e.g. the
-  // `--features devnet-shrunk` build cuts the Epoch struct from
-  // ~9400 bytes down to ~3472 bytes, but the hand-rolled deser had
-  // hardcoded `base + 9388` reads that overshot the buffer). The
-  // codama decoder is regenerated from the on-chain IDL on every
-  // contract change, so layout drift is impossible by construction.
-  // The "old" hand-rolled body is kept below this early return so
-  // tests + any downstream consumers that need a specific subset
-  // of fields still see the shape they expect.
-  try {
-    const codamaEpoch = getEpochDecoder().decode(new Uint8Array(data));
-    return {
-      epochIndex: Number(codamaEpoch.epochIndex),
-      startTimestamp: Number(codamaEpoch.startTimestamp),
-      endTimestamp: Number(codamaEpoch.endTimestamp),
-      totalEligibleRewards: Number(codamaEpoch.totalEligibleRewards),
-      perGatewayReward: Number(codamaEpoch.perGatewayReward),
-      perObserverReward: Number(codamaEpoch.perObserverReward),
-      rewardRate: Number(codamaEpoch.rewardRate),
-      activeGatewayCount: codamaEpoch.activeGatewayCount,
-      distributionIndex: codamaEpoch.distributionIndex,
-      tallyIndex: codamaEpoch.tallyIndex,
-      observerCount: codamaEpoch.observerCount,
-      nameCount: codamaEpoch.nameCount,
-      observationsSubmitted: codamaEpoch.observationsSubmitted,
-      rewardsDistributed: codamaEpoch.rewardsDistributed,
-      weightsTallied: codamaEpoch.weightsTallied,
-      prescriptionsDone: codamaEpoch.prescriptionsDone,
-      failureCounts: Uint16Array.from(codamaEpoch.failureCounts),
-      prescribedObservers: codamaEpoch.prescribedObservers as Address[],
-      prescribedObserverGateways:
-        codamaEpoch.prescribedObserverGateways as Address[],
-      prescribedNameHashes: codamaEpoch.prescribedNames.map((b) =>
-        Buffer.from(b),
-      ),
-      hasObserved: new Uint8Array(codamaEpoch.hasObserved),
-    };
-  } catch (codamaErr: any) {
-    // Fall through to the legacy hand-rolled path so tests/fixtures
-    // that synthesize a custom Epoch buffer (e.g.
-    // save-observations.test.ts) keep working. Real on-chain data
-    // always succeeds via the codama path above.
-    void codamaErr;
-  }
-  // All offsets relative to start of struct (after 8-byte discriminator)
-  const base = 8;
-
-  const epochIndex = Number(data.readBigUInt64LE(base + 0));
-  const startTimestamp = Number(data.readBigInt64LE(base + 8));
-  const endTimestamp = Number(data.readBigInt64LE(base + 16));
-  const totalEligibleRewards = Number(data.readBigUInt64LE(base + 24));
-  const perGatewayReward = Number(data.readBigUInt64LE(base + 32));
-  const perObserverReward = Number(data.readBigUInt64LE(base + 40));
-  const rewardRate = Number(data.readBigUInt64LE(base + 48));
-  // total_composite_weight_lo/hi at 56, 64 — skip
-  // hashchain at 72 — skip (32 bytes)
-  const activeGatewayCount = data.readUInt32LE(base + 104);
-  const distributionIndex = data.readUInt32LE(base + 108);
-  const tallyIndex = data.readUInt32LE(base + 112);
-  const observerCount = data.readUInt8(base + 116);
-  const nameCount = data.readUInt8(base + 117);
-  const observationsSubmitted = data.readUInt8(base + 118);
-  const rewardsDistributed = data.readUInt8(base + 119);
-  const weightsTallied = data.readUInt8(base + 120);
-  const prescriptionsDone = data.readUInt8(base + 121);
-  // bump at 122, _padding1 at 123
-
-  // failure_counts: [u16; 3000] at offset 124
-  const failureCounts = new Uint16Array(3000);
-  for (let i = 0; i < 3000; i++) {
-    failureCounts[i] = data.readUInt16LE(base + 124 + i * 2);
-  }
-
-  // prescribed_observers: [Pubkey; 50] at offset 6124
-  const prescribedObservers: Address[] = [];
-  for (let i = 0; i < 50; i++) {
-    const off = base + 6124 + i * 32;
-    prescribedObservers.push(
-      addressDecoder.decode(data.subarray(off, off + 32)),
-    );
-  }
-
-  // prescribed_observer_gateways: [Pubkey; 50] at offset 7724
-  const prescribedObserverGateways: Address[] = [];
-  for (let i = 0; i < 50; i++) {
-    const off = base + 7724 + i * 32;
-    prescribedObserverGateways.push(
-      addressDecoder.decode(data.subarray(off, off + 32)),
-    );
-  }
-
-  // prescribed_names: [[u8; 32]; 2] at offset 9324
-  const prescribedNameHashes: Buffer[] = [];
-  for (let i = 0; i < 2; i++) {
-    const off = base + 9324 + i * 32;
-    prescribedNameHashes.push(Buffer.from(data.subarray(off, off + 32)));
-  }
-
-  // has_observed: [u8; 7] at offset 9388
-  const hasObserved = new Uint8Array(data.subarray(base + 9388, base + 9395));
+  const d = getEpochDecoder().decode(new Uint8Array(data));
 
   return {
-    epochIndex,
-    startTimestamp,
-    endTimestamp,
-    totalEligibleRewards,
-    perGatewayReward,
-    perObserverReward,
-    rewardRate,
-    activeGatewayCount,
-    distributionIndex,
-    tallyIndex,
-    observerCount,
-    nameCount,
-    observationsSubmitted,
-    rewardsDistributed,
-    weightsTallied,
-    prescriptionsDone,
-    failureCounts,
-    prescribedObservers,
-    prescribedObserverGateways,
-    prescribedNameHashes,
-    hasObserved,
+    epochIndex: Number(d.epochIndex),
+    startTimestamp: Number(d.startTimestamp),
+    endTimestamp: Number(d.endTimestamp),
+    totalEligibleRewards: Number(d.totalEligibleRewards),
+    perGatewayReward: Number(d.perGatewayReward),
+    perObserverReward: Number(d.perObserverReward),
+    rewardRate: Number(d.rewardRate),
+    activeGatewayCount: d.activeGatewayCount,
+    distributionIndex: d.distributionIndex,
+    tallyIndex: d.tallyIndex,
+    observerCount: d.observerCount,
+    nameCount: d.nameCount,
+    observationsSubmitted: d.observationsSubmitted,
+    rewardsDistributed: d.rewardsDistributed,
+    weightsTallied: d.weightsTallied,
+    prescriptionsDone: d.prescriptionsDone,
+    failureCounts: Uint16Array.from(d.failureCounts),
+    prescribedObservers: d.prescribedObservers as Address[],
+    prescribedObserverGateways: d.prescribedObserverGateways as Address[],
+    prescribedNameHashes: d.prescribedNames.map((b) => Buffer.from(b)),
+    hasObserved: new Uint8Array(d.hasObserved),
   };
 }
 
@@ -1254,10 +882,6 @@ export function deserializeEpoch(data: Buffer): {
 // Observation deserialization
 // =========================================
 
-/**
- * Deserialize an Observation account from raw bytes.
- * PDA: ["observation", epoch_index_le_bytes, observer_pubkey] in ario-gar program.
- */
 export function deserializeObservation(data: Buffer): {
   epochIndex: number;
   observer: string;
@@ -1266,22 +890,15 @@ export function deserializeObservation(data: Buffer): {
   reportTxId: string;
   submittedAt: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const epochIndex = r.readU64AsNumber();
-  const observer = r.readPubkey();
-  const gatewayResults = r.readFixedBytes(375);
-  const gatewayCount = r.readU16();
-  const reportTxId = r.readFixedBytes(32).toString('base64url');
-  const submittedAt = r.readI64AsNumber();
+  const d = getObservationDecoder().decode(new Uint8Array(data));
 
   return {
-    epochIndex,
-    observer,
-    gatewayResults,
-    gatewayCount,
-    reportTxId,
-    submittedAt,
+    epochIndex: Number(d.epochIndex),
+    observer: d.observer as string,
+    gatewayResults: Buffer.from(d.gatewayResults),
+    gatewayCount: d.gatewayCount,
+    reportTxId: Buffer.from(d.reportTxId).toString('base64url'),
+    submittedAt: Number(d.submittedAt),
   };
 }
 
@@ -1289,10 +906,6 @@ export function deserializeObservation(data: Buffer): {
 // ANT Config deserialization
 // =========================================
 
-/**
- * Deserialize an AntConfig account from raw bytes.
- * PDA: ["ant_config", mint] in ario-ant program.
- */
 export function deserializeAntConfig(data: Buffer): {
   mint: string;
   name: string;
@@ -1303,32 +916,17 @@ export function deserializeAntConfig(data: Buffer): {
   owner: string;
   version: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const mint = r.readPubkey();
-  const name = r.readString();
-  const ticker = r.readString();
-  const logo = r.readString();
-  const description = r.readString();
-  const keywords = r.readVecString();
-  const lastKnownOwner = r.readPubkey();
-  r.readU8(); // bump
-  let version = 0;
-  try {
-    version = r.readU8();
-  } catch {
-    /* pre-version accounts default to 0 */
-  }
+  const d = getAntConfigDecoder().decode(new Uint8Array(data));
 
   return {
-    mint: mint,
-    name,
-    ticker,
-    logo,
-    description,
-    keywords,
-    owner: lastKnownOwner,
-    version,
+    mint: d.mint as string,
+    name: d.name,
+    ticker: d.ticker,
+    logo: d.logo,
+    description: d.description,
+    keywords: d.keywords,
+    owner: d.lastKnownOwner as string,
+    version: d.version.major,
   };
 }
 
@@ -1336,23 +934,15 @@ export function deserializeAntConfig(data: Buffer): {
 // ANT Controllers deserialization
 // =========================================
 
-/**
- * Deserialize an AntControllers account from raw bytes.
- * PDA: ["ant_controllers", mint] in ario-ant program.
- */
 export function deserializeAntControllers(data: Buffer): {
   mint: string;
   controllers: string[];
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const mint = r.readPubkey();
-  const controllers = r.readVecPubkey().map((pk) => pk);
-  // bump: u8 — skip
+  const d = getAntControllersDecoder().decode(new Uint8Array(data));
 
   return {
-    mint: mint,
-    controllers,
+    mint: d.mint as string,
+    controllers: d.controllers.map((c) => c as string),
   };
 }
 
@@ -1360,10 +950,6 @@ export function deserializeAntControllers(data: Buffer): {
 // ANT Record deserialization
 // =========================================
 
-/**
- * Deserialize an AntRecord account from raw bytes.
- * PDA: ["ant_record", mint, hash(undername)] in ario-ant program.
- */
 export function deserializeAntRecord(data: Buffer): {
   mint: string;
   undername: string;
@@ -1373,32 +959,19 @@ export function deserializeAntRecord(data: Buffer): {
   priority?: number;
   owner?: string;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const mint = r.readPubkey();
-  const undername = r.readString();
-  const transactionId = r.readString(); // on-chain field: target
-  const targetProtocol = r.readU8(); // 0 = Arweave, 1 = IPFS
-  const ttlSeconds = r.readU32();
-  const priority = r.readOptionU32();
-  const ownerPk = r.readOptionPubkey();
-  // last_reconciled_owner: Pubkey, bump: u8 — skip
+  const d = getAntRecordDecoder().decode(new Uint8Array(data));
 
   return {
-    mint: mint,
-    undername,
-    transactionId,
-    targetProtocol,
-    ttlSeconds,
-    priority,
-    owner: ownerPk,
+    mint: d.mint as string,
+    undername: d.undername,
+    transactionId: d.target,
+    targetProtocol: d.targetProtocol,
+    ttlSeconds: d.ttlSeconds,
+    priority: optionToValue(d.priority as any) as number | undefined,
+    owner: optionToValue(d.owner as any) as string | undefined,
   };
 }
 
-/**
- * Deserialize an AntRecordMetadata account from raw bytes.
- * This is a separate PDA that holds optional per-record metadata fields.
- */
 export function deserializeAntRecordMetadata(data: Buffer): {
   mint: string;
   displayName?: string;
@@ -1406,89 +979,56 @@ export function deserializeAntRecordMetadata(data: Buffer): {
   description?: string;
   keywords?: string[];
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
+  const d = getAntRecordMetadataDecoder().decode(new Uint8Array(data));
 
-  const mint = r.readPubkey();
-  r.skip(32); // undername_hash — [u8; 32], not needed by callers
-  const displayName = r.readOptionString();
-  const logo = r.readOptionString();
-  const description = r.readOptionString();
-  const keywords = r.readOptionVecString();
-  // bump: u8 — skip
-
-  return { mint, displayName, logo, description, keywords };
+  return {
+    mint: d.mint as string,
+    displayName: optionToValue(d.displayName as any) as string | undefined,
+    logo: optionToValue(d.recordLogo as any) as string | undefined,
+    description: optionToValue(d.recordDescription as any) as
+      | string
+      | undefined,
+    keywords: optionToValue(d.recordKeywords as any) as string[] | undefined,
+  };
 }
 
 // =========================================
 // ANT ACL (paginated) deserialization
 // =========================================
 
-/**
- * Per-user ACL entry: a `(asset, role)` tuple where `role` is `0=Owner`,
- * `1=Controller` (see `AclRole` in ario-ant). The byte layout matches the
- * on-chain `AclEntry` (33 bytes).
- */
 export type DeserializedAclEntry = {
   asset: string;
   role: number;
 };
 
-/**
- * Deserialize an `AclConfig` account (paginated ACL head — ADR-012).
- * PDA: `["acl_config", user]` in ario-ant program.
- *
- * Holds counts but no entries. Read this first, then fan out to each
- * `AclPage` PDA (`["acl_page", user, page_idx_le]`) for the entries.
- */
 export function deserializeAclConfig(data: Buffer): {
   user: string;
   pageCount: bigint;
   totalEntries: bigint;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const user = r.readPubkey();
-  const pageCount = r.readU64();
-  const totalEntries = r.readU64();
-  // bump: u8 — managed by Anchor
+  const d = getAclConfigDecoder().decode(new Uint8Array(data));
 
   return {
-    user: user as string,
-    pageCount,
-    totalEntries,
+    user: d.user as string,
+    pageCount: d.pageCount,
+    totalEntries: d.totalEntries,
   };
 }
 
-/**
- * Deserialize an `AclPage` account (paginated ACL page — ADR-012).
- * PDA: `["acl_page", user, page_idx_le]` in ario-ant program.
- *
- * Stores up to `MAX_ACL_PAGE_ENTRIES` `(asset, role)` entries. Pages can
- * be sparse mid-life (entries are removed via `swap_remove`) — the SDK's
- * append path fills the first non-full page to keep density reasonable.
- */
 export function deserializeAclPage(data: Buffer): {
   user: string;
   pageIdx: bigint;
   entries: DeserializedAclEntry[];
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const user = r.readPubkey();
-  const pageIdx = r.readU64();
-  const entryCount = r.readU32();
-  const entries: DeserializedAclEntry[] = [];
-  for (let i = 0; i < entryCount; i++) {
-    const asset = r.readPubkey();
-    const role = r.readU8();
-    entries.push({ asset: asset as string, role });
-  }
-  // bump: u8 — managed by Anchor
+  const d = getAclPageDecoder().decode(new Uint8Array(data));
 
   return {
-    user: user as string,
-    pageIdx,
-    entries,
+    user: d.user as string,
+    pageIdx: d.pageIdx,
+    entries: d.entries.map((e) => ({
+      asset: e.asset as string,
+      role: e.role,
+    })),
   };
 }
 
@@ -1496,35 +1036,17 @@ export function deserializeAclPage(data: Buffer): {
 // Primary Name deserialization
 // =========================================
 
-/**
- * Deserialize a PrimaryName account from raw bytes.
- * PDA: ["primary_name", owner] in ario-core program.
- *
- * The on-chain `PrimaryName` (programs/ario-core/src/state/mod.rs) has
- * **no** `processId` field — only `{owner, name, set_at, bump}`. The ANT
- * mint that a primary name resolves to lives on the matching `ArnsRecord`
- * (looked up by `name`), and callers wanting an `PrimaryName`-shaped
- * result MUST enrich this output with that lookup. The previous
- * implementation read 32 bytes from where `set_at` (i64) + part of `bump`
- * actually sit and returned a fake `processId` pubkey, which broke every
- * `assert.equal(pn.processId, antMint)` check downstream.
- */
 export function deserializePrimaryName(data: Buffer): {
   owner: string;
   name: string;
   startTimestamp: number;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const owner = r.readPubkey();
-  const name = r.readString();
-  const startTimestamp = r.readI64AsNumber();
-  // bump: u8 — skip
+  const d = getPrimaryNameDecoder().decode(new Uint8Array(data));
 
   return {
-    owner,
-    name,
-    startTimestamp,
+    owner: d.owner as string,
+    name: d.name,
+    startTimestamp: Number(d.setAt),
   };
 }
 
@@ -1532,25 +1054,16 @@ export function deserializePrimaryName(data: Buffer): {
 // Allowlist deserialization
 // =========================================
 
-/**
- * Deserialize an Allowlist entry account from raw bytes.
- * PDA: ["allowlist", gateway, delegate] in ario-gar program.
- */
 export function deserializeAllowlist(data: Buffer): {
   gateway: string;
   delegate: string;
 } {
-  const r = new BorshReader(data, 8); // skip discriminator
-
-  const gateway = r.readPubkey();
-  const delegate = r.readPubkey();
-  // bump: u8 — skip
+  const d = getAllowlistEntryDecoder().decode(new Uint8Array(data));
 
   return {
-    gateway: gateway,
-    delegate: delegate,
+    gateway: d.gateway as string,
+    delegate: d.delegate as string,
   };
 }
 
-// Re-export the reader and writer for custom (de)serialization
 export { BorshReader, BorshWriter };

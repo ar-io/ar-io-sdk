@@ -3,9 +3,10 @@
 [![codecov](https://codecov.io/gh/ar-io/ar-io-sdk/graph/badge.svg?token=7dXKcT7dJy)](https://codecov.io/gh/ar-io/ar-io-sdk)
 
 The Solana-native SDK for the AR.IO network. Provides typed
-client classes (`ARIO`, `ANT`, `ANTRegistry`), Codama-generated
-instruction builders, Borsh deserializers, PDA helpers, and event
-decoders for the AR.IO protocol on Solana.
+client classes (`ARIO`, `ANT`, `ANTRegistry`), PDA helpers,
+deserializers, and escrow primitives for the AR.IO protocol on Solana.
+Codama-generated instruction builders and account decoders are
+supplied by [`@ar.io/solana-contracts`](https://www.npmjs.com/package/@ar.io/solana-contracts).
 
 ## Table of Contents
 
@@ -150,12 +151,9 @@ in various environments.
 ### Subpath exports
 
 - `@ar.io/sdk` — main entry. `ARIO`, `ANT`, `ANTRegistry`, Solana
-  client classes, PDA helpers, deserializers, event decoders, escrow
-  primitives.
+  client classes, PDA helpers, deserializers, escrow primitives.
 - `@ar.io/sdk/solana` — alias of the main entry (kept for one release
   while consumers migrate from the previous subpath layout).
-- `@ar.io/sdk/solana/generated` — Codama-emitted typed instruction
-  builders / account decoders for low-level transaction construction.
 
 ### Web
 
@@ -3246,14 +3244,14 @@ const result = await withRetry(() => rpc.getAccountInfo(addr).send(), {
 
 ### Generated instruction builders
 
-For custom transaction building, import Codama-emitted typed clients
-directly:
+For custom transaction building, import Codama-generated typed clients
+from [`@ar.io/solana-contracts`](https://www.npmjs.com/package/@ar.io/solana-contracts):
 
 ```ts
 import {
   getBuyNameInstructionAsync,
   ARIO_ARNS_PROGRAM_ADDRESS,
-} from '@ar.io/sdk/solana/generated';
+} from '@ar.io/solana-contracts/arns';
 ```
 
 ### Networks

@@ -1,4 +1,19 @@
 /**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * Solana backend for the AR.IO SDK.
  *
  * This module provides Solana-native implementations of the AR.IO read/write
@@ -176,12 +191,13 @@ export {
   getEscrowVaultPDA,
 } from './pda.js';
 
-// Deserialization
+// Deserialization adapters
 //
-// NOTE: account discriminators come from the Codama-generated modules
-// under `./generated/<program>/accounts/*` (e.g. `BALANCE_DISCRIMINATOR`,
-// `ANT_RECORD_DISCRIMINATOR`). Pull them from there instead of asking
-// this module — single source of truth, derived from the IDL.
+// Thin wrappers over Codama-generated decoders from `@ar.io/solana-contracts`.
+// They accept raw `Buffer` data and return plain-object types (string/number)
+// instead of Codama's `Address`/`bigint` types, so SDK consumers don't need
+// to import the contracts package directly.
+// Account discriminators come from `@ar.io/solana-contracts/<program>`.
 export {
   BorshReader,
   BorshWriter,
@@ -222,9 +238,8 @@ export {
 export * from './constants.js';
 
 // Cluster-specific deployment constants (devnet program IDs, RPC URL,
-// mint, treasury / stake token accounts). Source of truth is
-// `/devnet-config.json` — kept in sync via the drift guard test
-// `clusters.test.ts`.
+// mint). PDAs derive from these via the codama `find*Pda` helpers; token
+// accounts are read on-chain — neither is stored here.
 export * from './clusters.js';
 
 // RPC circuit breaker (opossum-backed transparent fallback)
