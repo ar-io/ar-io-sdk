@@ -1,3 +1,10 @@
+# [4.0.0-solana.31](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.30...v4.0.0-solana.31) (2026-06-04)
+
+
+### Bug Fixes
+
+* **gateway:** wire updateObserverAddress into updateGatewaySettings ([c9e4320](https://github.com/ar-io/ar-io-sdk/commit/c9e43205407aaf1de2a6cdaeabba78de5a8a896d))
+
 # [4.0.0-solana.30](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.29...v4.0.0-solana.30) (2026-06-04)
 
 
