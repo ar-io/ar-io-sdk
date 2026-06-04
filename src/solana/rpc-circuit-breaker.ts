@@ -95,7 +95,7 @@ export interface CircuitBreakerRpcOptions {
    * Throttling is always on; omitting this (or passing `<= 0`) uses the
    * {@link DEFAULT_MAX_RPS} default. To effectively remove the limit, pass a
    * very large number.
-   * @default 5
+   * @default 10
    */
   maxRequestsPerSecond?: number;
   /**
@@ -130,7 +130,7 @@ const DEFAULT_DEVNET_RPC = 'https://api.devnet.solana.com';
 // ---------------------------------------------------------------------------
 
 /** Default ceiling when `maxRequestsPerSecond` is not provided. */
-const DEFAULT_MAX_RPS = 5;
+const DEFAULT_MAX_RPS = 10;
 /** Multiply the current rate by this on a 429 with no usable header. */
 const AIMD_DECREASE = 0.5;
 /** Never throttle below this many requests/second. */

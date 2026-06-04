@@ -188,7 +188,7 @@ describe('createCircuitBreakerRpc', () => {
     assert.ok(elapsed >= 700, `expected throttling >=700ms, got ${elapsed}ms`);
   });
 
-  it('throttles by default (5 r/s) with no maxRequestsPerSecond set', async () => {
+  it('throttles by default (10 r/s) with no maxRequestsPerSecond set', async () => {
     let n = 0;
     const primary = await createStatusMockServer(() => ({
       statusCode: 200,
@@ -203,8 +203,8 @@ describe('createCircuitBreakerRpc', () => {
     });
 
     const start = Date.now();
-    // Default burst of 5, then 5 more at 5/s ≈ 1s.
-    for (let i = 0; i < 10; i++) {
+    // Default burst of 10, then 10 more at 10/s ≈ 1s.
+    for (let i = 0; i < 20; i++) {
       await rpc
         .getLatestBlockhash()
         .send({ abortSignal: AbortSignal.timeout(10_000) });
