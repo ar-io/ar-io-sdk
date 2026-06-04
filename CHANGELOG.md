@@ -1,3 +1,13 @@
+# [4.0.0-solana.30](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.29...v4.0.0-solana.30) (2026-06-04)
+
+
+### Bug Fixes
+
+* **codama clients:** update codama usage ([16b0f45](https://github.com/ar-io/ar-io-sdk/commit/16b0f45a0d7d44dfbd1428d4505fdbb8cdde08bf))
+* **codama:** update codama clients and primary name price fetching ([0a33d63](https://github.com/ar-io/ar-io-sdk/commit/0a33d632ce3eca2023f56ba758ccb69227d53423))
+* **mainnet ids:** add mainnet ids ([4957f18](https://github.com/ar-io/ar-io-sdk/commit/4957f188a92e29a6f0d928ef2c61fddf24d76fb6))
+* **program ids:** update program ids ([bfef46b](https://github.com/ar-io/ar-io-sdk/commit/bfef46b0fbf8641300ee835a3f28a6b7127ef07b))
+
 # [4.0.0-solana.29](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.28...v4.0.0-solana.29) (2026-06-04)
 
 
