@@ -1,3 +1,10 @@
+# [4.0.0-solana.33](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.32...v4.0.0-solana.33) (2026-06-04)
+
+
+### Features
+
+* **solana:** compound + demand-factor crank steps in crankEpochStep ([310ff1f](https://github.com/ar-io/ar-io-sdk/commit/310ff1f23f8d1f6a7deb309eb020f6c915834329))
+
 # [4.0.0-solana.32](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.31...v4.0.0-solana.32) (2026-06-04)
 
 
