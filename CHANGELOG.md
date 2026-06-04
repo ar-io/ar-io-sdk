@@ -1,3 +1,11 @@
+# [4.0.0-solana.34](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.33...v4.0.0-solana.34) (2026-06-04)
+
+
+### Bug Fixes
+
+* **payment:** update purchasing for names ([dc0fc2b](https://github.com/ar-io/ar-io-sdk/commit/dc0fc2b4f1a7a5706540228166d19f068b7b180f))
+* **token bucket:** add token bucket logic to circuit breaker rpc ([1065547](https://github.com/ar-io/ar-io-sdk/commit/1065547480cfa0c11177745f0b696f0c0aba13b2))
+
 # [4.0.0-solana.33](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.32...v4.0.0-solana.33) (2026-06-04)
 
 
