@@ -89,3 +89,56 @@ export function computeLiveDelegationBalance({
   const capped = live > U64_MAX ? U64_MAX : live;
   return Number(capped);
 }
+
+/**
+ * Select the delegations worth compounding, from decoded delegations + a map
+ * of their gateways' reward accumulators. Pure (no I/O) so it's unit-testable
+ * independently of RPC; `SolanaARIOReadable.getDelegationsToCompound` is just
+ * fetch+decode wrapped around this.
+ *
+ * A delegation is included when its pending reward (live balance − settled
+ * principal) exceeds `minPendingRewards`, EXCEPT when its gateway is `leaving`
+ * (those settle via `claim_delegate_from_leaving_gateway`, not compounding) or
+ * its gateway is missing/unreadable. Compounding sub-threshold dust only
+ * advances `reward_debt` for no balance gain, so it's filtered out.
+ */
+export function selectCompoundableDelegations(
+  delegations: Array<{
+    gateway: string;
+    delegator: string;
+    delegatedStake: number;
+    rewardDebt: bigint;
+  }>,
+  gatewaysByOperator: Map<
+    string,
+    { cumulativeRewardPerToken: bigint; status: string }
+  >,
+  minPendingRewards = 0,
+): Array<{
+  gatewayAddress: string;
+  delegatorAddress: string;
+  pendingRewards: number;
+}> {
+  const out: Array<{
+    gatewayAddress: string;
+    delegatorAddress: string;
+    pendingRewards: number;
+  }> = [];
+  for (const del of delegations) {
+    const gw = gatewaysByOperator.get(del.gateway);
+    if (!gw || gw.status === 'leaving') continue;
+    const live = computeLiveDelegationBalance({
+      delegatedStake: del.delegatedStake,
+      rewardDebt: del.rewardDebt,
+      cumulativeRewardPerToken: gw.cumulativeRewardPerToken,
+    });
+    const pendingRewards = live - del.delegatedStake;
+    if (pendingRewards <= minPendingRewards) continue;
+    out.push({
+      gatewayAddress: del.gateway,
+      delegatorAddress: del.delegator,
+      pendingRewards,
+    });
+  }
+  return out;
+}

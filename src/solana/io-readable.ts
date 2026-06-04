@@ -115,7 +115,10 @@ import {
   ARNS_RECORD_ANT_OFFSET,
   RATE_SCALE,
 } from './constants.js';
-import { computeLiveDelegationBalance } from './delegation-math.js';
+import {
+  computeLiveDelegationBalance,
+  selectCompoundableDelegations,
+} from './delegation-math.js';
 import {
   deserializeAllowlist,
   deserializeArioConfig,
@@ -2168,6 +2171,80 @@ export class SolanaARIOReadable {
     }));
 
     return paginate(items, params);
+  }
+
+  /**
+   * Enumerate every delegation that has pending (unsettled) rewards — the work
+   * list for the permissionless `compound_delegation_rewards` crank. Pending is
+   * computed from the gateway's reward-per-share accumulator (mirrors
+   * {@link computeLiveDelegationBalance}); the crank only changes balances, so
+   * rewards already accrue correctly without it.
+   *
+   * Skips delegations whose gateway is `Leaving` (those settle through
+   * `claim_delegate_from_leaving_gateway`, not compounding) and any below
+   * `minPendingRewards` — compounding sub-threshold dust just advances
+   * `reward_debt` for no balance gain. Feed the result, chunked, to
+   * `SolanaARIOWriteable.compoundDelegationRewardsBatch`.
+   */
+  async getDelegationsToCompound(params?: {
+    minPendingRewards?: number;
+  }): Promise<
+    Array<{
+      gatewayAddress: string;
+      delegatorAddress: string;
+      pendingRewards: number;
+    }>
+  > {
+    const minPending = params?.minPendingRewards ?? 0;
+
+    // One scan for gateways → accumulator + status.
+    const gatewayAccounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const gateways = new Map<
+      string,
+      { cumulativeRewardPerToken: bigint; status: string }
+    >();
+    for (const { data } of gatewayAccounts) {
+      try {
+        const gw = deserializeGatewayWithAccumulator(data);
+        gateways.set(gw.operator, {
+          cumulativeRewardPerToken: gw.cumulativeRewardPerToken,
+          status: gw.status,
+        });
+      } catch {
+        // Skip malformed.
+      }
+    }
+
+    // One scan for delegations; decode then delegate the selection logic to the
+    // pure `selectCompoundableDelegations` (unit-tested in delegation-math).
+    const delegationAccounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      DELEGATION_DISCRIMINATOR,
+    );
+    const delegations: Array<{
+      gateway: string;
+      delegator: string;
+      delegatedStake: number;
+      rewardDebt: bigint;
+    }> = [];
+    for (const { data } of delegationAccounts) {
+      try {
+        const del = deserializeDelegation(data);
+        delegations.push({
+          gateway: del.gateway,
+          delegator: del.delegator,
+          delegatedStake: del.delegatedStake,
+          rewardDebt: del.rewardDebt,
+        });
+      } catch {
+        // Skip malformed.
+      }
+    }
+
+    return selectCompoundableDelegations(delegations, gateways, minPending);
   }
 
   async getAllGatewayVaults(
