@@ -16,10 +16,11 @@
 /**
  * Cluster-specific deployment constants for AR.IO programs.
  *
- * Mainnet IDs are baked into the IDL at codegen time and surfaced via the
- * placeholder constants in `./constants.ts` (e.g. `ARIO_CORE_PROGRAM_ID`).
- * This module exposes the same values for *other* clusters where the
- * programs are deployed at non-default addresses — primarily devnet.
+ * The program-ID constants in `./constants.ts` (e.g. `ARIO_CORE_PROGRAM_ID`)
+ * are codama *placeholders* (`ARioCoreProgramXXX…`), not real on-chain
+ * addresses — consumers must pass real IDs via `ARIO.init({ programIds })`.
+ * This module exposes the deployed sets per cluster: `MAINNET_PROGRAM_IDS`
+ * and `DEVNET_PROGRAM_IDS`.
  *
  * Only root facts live here: program IDs, the RPC URL, and the ARIO mint.
  * Everything else is derived rather than stored — config/settings PDAs come
@@ -50,6 +51,15 @@
 import { type Address, address } from '@solana/kit';
 
 /**
+ * Default JSON-RPC URL for Solana mainnet-beta.
+ *
+ * The public endpoint rate-limits aggressively — for production use a premium
+ * RPC (QuickNode / Helius / Triton). Derive the WS URL with
+ * `MAINNET_RPC_URL.replace(/^https/, 'wss')`.
+ */
+export const MAINNET_RPC_URL = 'https://api.mainnet-beta.solana.com';
+
+/**
  * Default JSON-RPC URL for the Solana devnet cluster.
  *
  * Public devnet rate-limits aggressively — for high-volume work, swap in
@@ -57,6 +67,45 @@ import { type Address, address } from '@solana/kit';
  * `DEVNET_RPC_URL.replace(/^https/, 'wss')`.
  */
 export const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
+
+/**
+ * AR.IO program IDs deployed on Solana mainnet-beta.
+ *
+ * Shape matches the `programIds` argument of
+ * `ARIO.init({ backend: 'solana', programIds, ... })`.
+ */
+export const MAINNET_PROGRAM_IDS = {
+  core: address('73YoECm6NKXpVRoe5f1Q9BcP5DJGPFUjnFy6AxBE5Nvh'),
+  gar: address('89fNiiwgpFSPHKuqfNUkgYTYjtAJAhyqHjXmgXeppGpf'),
+  arns: address('2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ'),
+  ant: address('2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5'),
+  antEscrow: address('5HZhe9UqKL5zAsdz81nuuaxV41h8bFhudzxxBigAQndM'),
+} as const;
+
+/**
+ * Mainnet attestor pubkey — the key that signs cross-protocol attestations
+ * (e.g. escrow recipient proofs). Deployment metadata; not consumed by the
+ * SDK, exposed here for reference/verification by downstream tooling.
+ */
+export const MAINNET_ATTESTOR_PUBKEY: Address = address(
+  '7XtUnotZAeYZNzVSYV5nb7S9YH9qHXyVFM6NeNMu6efE',
+);
+
+/**
+ * Mainnet upgrade/admin authority pubkey — holds the upgrade authority for
+ * the programs above. Deployment metadata; not consumed by the SDK, exposed
+ * here for reference.
+ */
+export const MAINNET_AUTHORITY_PUBKEY: Address = address(
+  '45ZuEb1Jk7pbjshD1BVasBekAXhimdWuJjyswQzMyTB1',
+);
+
+// TODO(mainnet): placeholder — this reuses the devnet mint and is WRONG for
+// mainnet. Replace with the real mainnet ARIO mint once it is known.
+/** ARIO SPL Token mint on Solana mainnet-beta. */
+export const MAINNET_ARIO_MINT: Address = address(
+  '6vTw5CysRXQ4ybbHkDUiisHWVsBeMtUzYvJqs2iqHyaN',
+);
 
 /**
  * AR.IO program IDs deployed on Solana devnet (staging).
