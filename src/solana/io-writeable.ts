@@ -102,6 +102,7 @@ import type {
   DelegateStakeParams,
   ExtendLeaseParams,
   ExtendVaultParams,
+  FundFrom,
   IncreaseUndernameLimitParams,
   IncreaseVaultParams,
   JoinNetworkParams,
@@ -123,6 +124,7 @@ import {
   deserializePrimaryName,
 } from './deserialize.js';
 import {
+  type DiscoveredFundingSource,
   type FundingPlan as InternalFundingPlan,
   type InsufficientFundingError as InternalInsufficientFundingError,
   buildFundingPlan as buildFundingPlanCore,
@@ -1527,7 +1529,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         },
         { programAddress: this.arnsProgram },
       );
-    } else if (params.fundFrom === 'plan' || params.fundFrom === 'any') {
+    } else if (
+      params.fundFrom === 'plan' ||
+      params.fundFrom === 'any' ||
+      params.fundFrom === 'stakes' ||
+      params.fundFrom === 'withdrawal'
+    ) {
+      // 'stakes'/'withdrawal' WITHOUT an explicit gatewayAddress/withdrawalId
+      // land here (the single-source branches above handle the explicit case).
+      // Route through the funding planner, which constrains sources to the
+      // chosen mode — it never silently spends liquid balance and auto-splits
+      // across the caller's delegations/vaults. (Previously these fell through
+      // to the balance path below, silently draining liquid ARIO.)
       ix = await this._buildBuyNameFromFundingPlanIx({
         params,
         antPubkey,
@@ -1537,8 +1550,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         buyNameParams,
         arnsConfig,
       });
-    } else {
-      // 'balance' or undefined falls through to the original direct-buy path.
+    } else if (
+      !params.fundFrom ||
+      params.fundFrom === 'balance' ||
+      params.fundFrom === 'turbo'
+    ) {
+      // Direct balance-funded buy.
       ix = await getBuyNameInstructionAsync(
         await this.withArnsDefaults({
           arnsRecord,
@@ -1550,6 +1567,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           params: buyNameParams,
         }),
         { programAddress: this.arnsProgram },
+      );
+    } else {
+      throw new Error(
+        `unsupported fundFrom mode '${params.fundFrom}' for buyRecord`,
       );
     }
 
@@ -2303,7 +2324,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
     }
 
-    if (args.params.fundFrom === 'plan' || args.params.fundFrom === 'any') {
+    if (
+      args.params.fundFrom === 'plan' ||
+      args.params.fundFrom === 'any' ||
+      args.params.fundFrom === 'stakes' ||
+      args.params.fundFrom === 'withdrawal'
+    ) {
+      // 'stakes'/'withdrawal' without an explicit gatewayAddress/withdrawalId
+      // route here (the single-source branches above handle the explicit
+      // case). The planner constrains sources to the chosen mode and never
+      // spends liquid balance.
       // Cost estimation for manage variants: each operation has its own
       // pricing path. Keep it pragmatic — let the planner build the plan
       // around the user's desired total (caller can pass explicit sources
@@ -3150,12 +3180,60 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       ant: antPubkey,
     };
 
-    let ix;
+    // Returned-name price is a per-slot-decaying Dutch auction, so the
+    // multi-source funding plan (which pre-commits exact source amounts) can't
+    // match the execution-time cost → FundingPlanAmountMismatch (#6066). Prefer
+    // a single-source stake path: it carries no amount, so the program computes
+    // and draws the live cost itself. When the caller asked to fund from
+    // stakes/withdrawal/any without naming a specific gateway/vault,
+    // auto-resolve a single source with enough stake to cover the
+    // (premium-inclusive) cost.
+    let resolvedGateway = params.gatewayAddress;
+    let resolvedFundAsOperator = params.fundAsOperator ?? false;
+    let resolvedWithdrawalId = params.withdrawalId;
+    const wantsStake =
+      params.fundFrom === 'stakes' ||
+      params.fundFrom === 'withdrawal' ||
+      params.fundFrom === 'any';
     if (
+      wantsStake &&
+      resolvedGateway === undefined &&
+      resolvedWithdrawalId === undefined &&
+      !params.sources?.length
+    ) {
+      const picked = await this._autoPickReturnedNameStakeSource(params);
+      if (picked?.kind === 'delegation') {
+        resolvedGateway = picked.gateway;
+        resolvedFundAsOperator = false;
+      } else if (picked?.kind === 'operatorStake') {
+        resolvedGateway = picked.gateway;
+        resolvedFundAsOperator = true;
+      } else if (picked?.kind === 'withdrawal') {
+        resolvedWithdrawalId = picked.withdrawalId;
+      } else if (params.fundFrom !== 'any') {
+        // 'stakes'/'withdrawal' explicitly requested but nothing covers it.
+        throw new Error(
+          `buyReturnedName: no ${
+            params.fundFrom === 'withdrawal'
+              ? 'matured withdrawal vault'
+              : 'delegation/operator stake'
+          } large enough to fund '${params.name}' was found for ` +
+            `${this.signer.address}. Fund from balance, or add stake first.`,
+        );
+      }
+      // 'any' with nothing found → falls through to the balance path.
+    }
+
+    let ix;
+    const useBalance =
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
-      params.fundFrom === 'turbo'
-    ) {
+      params.fundFrom === 'turbo' ||
+      (params.fundFrom === 'any' &&
+        resolvedGateway === undefined &&
+        resolvedWithdrawalId === undefined &&
+        !params.sources?.length);
+    if (useBalance) {
       ix = await getBuyReturnedNameInstructionAsync(
         await this.withArnsDefaults({
           arnsRecord,
@@ -3187,10 +3265,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         params: buyParams,
       };
 
-      if (params.fundFrom === 'stakes' && params.gatewayAddress) {
-        const gatewayAddr = address(params.gatewayAddress);
+      if (resolvedGateway !== undefined) {
+        const gatewayAddr = address(resolvedGateway);
         const [gatewayPda] = await getGatewayPDA(gatewayAddr, this.garProgram);
-        if (params.fundAsOperator) {
+        if (resolvedFundAsOperator) {
           ix = await getBuyReturnedNameFromOperatorStakeInstructionAsync(
             { ...sharedReturnedBase, gateway: gatewayPda },
             { programAddress: this.arnsProgram },
@@ -3210,25 +3288,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
             { programAddress: this.arnsProgram },
           );
         }
-      } else if (
-        params.fundFrom === 'withdrawal' &&
-        params.withdrawalId !== undefined
-      ) {
+      } else if (resolvedWithdrawalId !== undefined) {
         const [withdrawalPda] = await getWithdrawalPDA(
           this.signer.address,
-          params.withdrawalId,
+          resolvedWithdrawalId,
           this.garProgram,
         );
         ix = await getBuyReturnedNameFromWithdrawalInstructionAsync(
           { ...sharedReturnedBase, withdrawal: withdrawalPda },
           { programAddress: this.arnsProgram },
         );
-      } else if (params.fundFrom === 'plan' || params.fundFrom === 'any') {
-        // Returned-name pricing is dynamic (Dutch auction premium); we trust
-        // explicit caller-supplied sources here and skip auto-discovery if
-        // sources is provided. For 'any' without sources, we fall back to a
-        // best-effort estimate using the plain registration fee — caller can
-        // always retry with explicit sources on FundingPlanAmountMismatch.
+      } else if (params.fundFrom === 'plan' && params.sources?.length) {
+        // Explicit caller-supplied plan only: the caller owns the source
+        // amounts and accepts the decay risk (the price moves per slot, so a
+        // stale plan trips FundingPlanAmountMismatch). We do NOT auto-discover
+        // a multi-source plan for returned names — see the single-source note
+        // above.
         const cost = await this._simulateTokenCost({
           intent: CostIntent.BuyName,
           name: params.name,
@@ -3264,6 +3339,27 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       }
     }
 
+    // The on-chain `buy_returned_name*` handlers take `initiator_token_account`
+    // and `buyer_token_account` as `Account<TokenAccount>` (NOT `init`), so
+    // Anchor requires both ATAs to already exist or fails with
+    // AccountNotInitialized (#3012). The original initiator may never have held
+    // ARIO, and the premium always settles from the buyer's liquid ATA — bundle
+    // idempotent ATA creates so the buy succeeds without a separate setup step
+    // (mirrors the vault-ATA handling above). Idempotent: ~1500 CU each, no-op
+    // when the account already exists.
+    const createInitiatorAtaIx = buildCreateAtaIdempotentIx(
+      this.signer.address,
+      initiatorATA,
+      initiator,
+      arnsConfig.mint,
+    );
+    const createBuyerAtaIx = buildCreateAtaIdempotentIx(
+      this.signer.address,
+      buyerATA,
+      this.signer.address,
+      arnsConfig.mint,
+    );
+
     // Sprint 4 / ADR-016: bundle ant.sync_attributes after the buy so the
     // Attributes plugin reflects the new record holder. assetOverride =
     // antPubkey because the ArnsRecord PDA is created by buy_returned_name
@@ -3272,8 +3368,71 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       antPubkey,
     );
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    const sig = await this.sendTransaction([
+      createBuyerAtaIx,
+      createInitiatorAtaIx,
+      ix,
+      ...(syncIx ? [syncIx] : []),
+    ]);
     return { id: sig };
+  }
+
+  /**
+   * Pick a single stake-derived funding source that can cover a returned-name
+   * purchase, for the single-source `buy_returned_name_from_*` paths.
+   *
+   * Returned-name prices decay per slot, so the multi-source funding plan
+   * (which pre-commits exact amounts) can't match the execution-time cost. The
+   * single-source paths carry no amount — the program draws the live cost — so
+   * we only need to pick ONE source with enough stake. We size the pick against
+   * the premium-inclusive estimate (an upper bound, since the price only falls
+   * from now) and choose the largest matching source. Returns `null` when no
+   * single source covers the estimate.
+   */
+  private async _autoPickReturnedNameStakeSource(params: {
+    name: string;
+    type: 'lease' | 'permabuy';
+    years?: number;
+    fundFrom?: FundFrom;
+    fundAsOperator?: boolean;
+  }): Promise<DiscoveredFundingSource | null> {
+    const estimate = BigInt(
+      Math.ceil(
+        await this.getTokenCost({
+          intent: 'Buy-Name',
+          name: params.name,
+          type: params.type,
+          years: params.years ?? 1,
+        }),
+      ),
+    );
+    const arnsConfig = await this.getArnsConfig();
+    const { discoverFundingSources } = await import('./funding-plan.js');
+    const sources = await discoverFundingSources(
+      this.rpc,
+      this.signer.address,
+      { arioMint: arnsConfig.mint, garProgram: this.garProgram },
+    );
+
+    // 'withdrawal' mode → matured withdrawal vaults only; otherwise prefer
+    // operator stake when the caller asked, else a delegation.
+    const wantKind =
+      params.fundFrom === 'withdrawal'
+        ? 'withdrawal'
+        : params.fundAsOperator === true
+          ? 'operatorStake'
+          : 'delegation';
+
+    const candidates = sources
+      .filter(
+        (s): s is Exclude<DiscoveredFundingSource, { kind: 'balance' }> =>
+          s.kind === wantKind && s.available >= estimate,
+      )
+      .sort((a, b) =>
+        b.available > a.available ? 1 : b.available < a.available ? -1 : 0,
+      );
+
+    return candidates[0] ?? null;
   }
 
   // =========================================
