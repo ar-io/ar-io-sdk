@@ -81,6 +81,7 @@ import {
   getPruneReturnedNamesInstructionAsync,
   getReassignNameInstructionAsync,
   getReleaseNameInstructionAsync,
+  getUpdateDemandFactorInstruction,
   getUpgradeNameFromDelegationInstructionAsync,
   getUpgradeNameFromFundingPlanInstructionAsync,
   getUpgradeNameFromOperatorStakeInstructionAsync,
@@ -117,6 +118,7 @@ import {
 } from './ata.js';
 import {
   deserializeArnsRecord,
+  deserializeDemandFactor,
   deserializeEpochSettingsFull,
   deserializePrimaryName,
 } from './deserialize.js';
@@ -176,6 +178,7 @@ import {
   getCloseEmptyDelegationInstruction,
   getCloseEpochInstructionAsync,
   getCloseObservationInstructionAsync,
+  getCompoundDelegationRewardsInstruction,
   getCreateEpochInstructionAsync,
   getDecreaseDelegateStakeInstructionAsync,
   getDecreaseOperatorStakeInstructionAsync,
@@ -433,12 +436,23 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
   return out;
 }
 
+/**
+ * Max `compound_delegation_rewards` instructions packed into one batched tx.
+ * Each carries a gateway + delegation + delegator account; 12 stays well within
+ * the per-tx account/1232-byte budget even when none share a gateway.
+ */
+const MAX_COMPOUND_BATCH = 12;
+/** Demand-factor period length (seconds) — mirrors `PERIOD_LENGTH_SECONDS` in ario-arns. */
+const DEMAND_FACTOR_PERIOD_SECONDS = 86_400;
+
 /** The single on-chain action a {@link SolanaARIOWriteable.crankEpochStep} call performed. */
 export type CrankAction =
   | 'create'
   | 'tally'
   | 'prescribe'
   | 'distribute'
+  | 'compound'
+  | 'update_demand_factor'
   | 'close'
   | 'idle';
 
@@ -456,6 +470,27 @@ export interface CrankEpochStepOptions {
   enableClose?: boolean;
   /** Epochs of retention before an epoch may be closed (GAR-006). Default 7. */
   epochRetention?: number;
+  /**
+   * Compound pending delegate rewards (settle the reward-per-share accumulator
+   * into delegated stake) once the live epoch is fully distributed, so the next
+   * epoch's tally weights the compounded stake. Default true. The delegate
+   * rewards are correct in the accumulator regardless — this only materializes
+   * them on-chain. Each step compounds one batch; runs only in the otherwise-
+   * idle tail (never during tally/distribute).
+   */
+  enableCompound?: boolean;
+  /**
+   * Skip compounding delegations whose pending reward is at/below this (mARIO).
+   * Avoids dust compounds that only advance `reward_debt`. Default 0.
+   */
+  compoundMinPendingRewards?: number;
+  /**
+   * Roll the demand factor forward when its (wall-clock) period has elapsed.
+   * Idempotent — only sends a tx when the stored period is behind. Pricing is
+   * always lazily correct without this; it keeps the STORED factor (and reads
+   * between buys) current. Default true. Runs only in the idle tail.
+   */
+  enableDemandFactorRoll?: boolean;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -3331,6 +3366,94 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   // =========================================
+  // Lazy-state crank steps — materialize accumulator/period state.
+  // Both are permissionless + idempotent (safe to crank on a schedule).
+  // =========================================
+
+  /**
+   * Roll the demand factor forward to the current period. Permissionless and
+   * idempotent — a no-op within the same period. Pricing already rolls the
+   * factor inline on every buy/extend, so this only refreshes the STORED
+   * factor that `getDemandFactor` and between-buy price previews read; a
+   * periodic crank (~once per 24h `PERIOD_LENGTH_SECONDS`) keeps it current.
+   */
+  async updateDemandFactor(_options?: WriteOptions): Promise<MessageResult> {
+    const [demandFactorPda] = await getDemandFactorPDA(this.arnsProgram);
+    const ix = getUpdateDemandFactorInstruction(
+      { demandFactor: demandFactorPda, payer: this.signer },
+      { programAddress: this.arnsProgram },
+    );
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Materialize a single delegate's pending rewards into their delegated
+   * stake by settling the gateway's reward-per-share accumulator.
+   * Permissionless — there is no signer beyond the fee payer; `delegator` is
+   * only a PDA-derivation seed. Rewards always accrue correctly in the
+   * accumulator regardless of this call; compounding makes the on-chain
+   * `delegatedStake` reflect them (and earn compound interest in the next
+   * epoch's weighting). Idempotent — a no-op once already settled.
+   */
+  async compoundDelegationRewards(
+    params: { gateway: string; delegator: string },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const ix = await this.buildCompoundDelegationRewardsInstruction(params);
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Compound many delegates' rewards in a SINGLE transaction — one
+   * `compound_delegation_rewards` instruction per entry. Idempotent and
+   * permissionless, so partial batches are safe to retry. Keep each batch
+   * within the per-tx account/CU budget; grouping entries that share a gateway
+   * lowers the unique-account count (the gateway account is reused across
+   * instructions). Typical cranker usage: enumerate with
+   * `SolanaARIOReadable.getDelegationsToCompound`, chunk, then call this.
+   */
+  async compoundDelegationRewardsBatch(
+    delegations: Array<{ gateway: string; delegator: string }>,
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    if (delegations.length === 0) {
+      throw new Error(
+        'compoundDelegationRewardsBatch: delegations list is empty',
+      );
+    }
+    const ixs = await Promise.all(
+      delegations.map((d) => this.buildCompoundDelegationRewardsInstruction(d)),
+    );
+    const sig = await this.sendTransaction(ixs, 1_400_000);
+    return { id: sig };
+  }
+
+  /**
+   * Build a single `compound_delegation_rewards` instruction (shared by the
+   * single + batch methods). PDAs are derived under the configured gar program
+   * so the program-id override always targets the right cluster.
+   */
+  private async buildCompoundDelegationRewardsInstruction(params: {
+    gateway: string;
+    delegator: string;
+  }) {
+    const gateway = address(params.gateway);
+    const delegator = address(params.delegator);
+    const [gatewayPda] = await getGatewayPDA(gateway, this.garProgram);
+    const [delegationPda] = await getDelegationPDA(
+      gateway,
+      delegator,
+      this.garProgram,
+    );
+    return getCompoundDelegationRewardsInstruction(
+      { gateway: gatewayPda, delegation: delegationPda, delegator },
+      { programAddress: this.garProgram },
+    );
+  }
+
+  // =========================================
   // Epoch cranking (ario-gar) — permissionless
   // =========================================
 
@@ -3793,6 +3916,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const enableClose = opts.enableClose ?? true;
     const retention = opts.epochRetention ?? 7;
+    const enableCompound = opts.enableCompound ?? true;
+    const compoundMinPending = opts.compoundMinPendingRewards ?? 0;
+    const enableDemandFactorRoll = opts.enableDemandFactorRoll ?? true;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -3897,6 +4023,21 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       }
     }
 
+    // Lazy-state maintenance — lower urgency than the lifecycle, reached only
+    // once the live epoch is fully distributed (rewardsDistributed === 1 here).
+    // Compound FIRST so delegated stake reflects the just-distributed rewards
+    // before the next epoch's tally weights it; then roll the demand factor if
+    // its period elapsed. Both are permissionless + idempotent, and run BEFORE
+    // creating the next epoch so the compounded stake is in place for its tally.
+    if (enableCompound) {
+      const compounded = await this.maybeCompoundStep(compoundMinPending);
+      if (compounded) return compounded;
+    }
+    if (enableDemandFactorRoll) {
+      const rolled = await this.maybeRollDemandFactorStep(now);
+      if (rolled) return rolled;
+    }
+
     // Current epoch fully processed — create the next once its start arrives.
     if (now >= nextEpochStart) {
       const { id } = await this.createEpoch();
@@ -3904,6 +4045,68 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
 
     return { action: 'idle', reason: 'epoch_complete' };
+  }
+
+  /**
+   * One compound batch over delegations with pending rewards (≤
+   * {@link MAX_COMPOUND_BATCH} per tx), or `null` when none are due. Settling
+   * is idempotent, so this converges over a few crank steps then no-ops until
+   * the next epoch's distribution advances the accumulator again.
+   */
+  private async maybeCompoundStep(
+    minPendingRewards: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const pending = await this.getDelegationsToCompound({ minPendingRewards });
+    if (pending.length === 0) return null;
+    const batch = pending.slice(0, MAX_COMPOUND_BATCH).map((p) => ({
+      gateway: p.gatewayAddress,
+      delegator: p.delegatorAddress,
+    }));
+    const { id } = await this.compoundDelegationRewardsBatch(batch);
+    return {
+      action: 'compound',
+      txId: id,
+      progress: { index: batch.length, total: pending.length },
+    };
+  }
+
+  /**
+   * Roll the demand factor forward if its (wall-clock) period elapsed since the
+   * last stored roll, else `null`. Mirrors the on-chain period math; the roll
+   * itself is idempotent.
+   */
+  private async maybeRollDemandFactorStep(
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const state = await this.getDemandFactorPeriodState();
+    if (!state) return null;
+    const elapsed = now - state.periodZeroStartTimestamp;
+    const periodForNow =
+      elapsed < 0 ? 1 : Math.floor(elapsed / DEMAND_FACTOR_PERIOD_SECONDS) + 1;
+    if (periodForNow <= state.currentPeriod) return null; // same period — no-op
+    const { id } = await this.updateDemandFactor();
+    return { action: 'update_demand_factor', txId: id };
+  }
+
+  /**
+   * The DemandFactor account's stored period + period-zero start (seconds) —
+   * the gate for {@link maybeRollDemandFactorStep}. `null` if the account
+   * doesn't exist (pre-genesis).
+   */
+  async getDemandFactorPeriodState(): Promise<{
+    currentPeriod: number;
+    periodZeroStartTimestamp: number;
+  } | null> {
+    const [pda] = await getDemandFactorPDA(this.arnsProgram);
+    const account = await fetchEncodedAccount(this.rpc, pda, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) return null;
+    const df = deserializeDemandFactor(Buffer.from(account.data));
+    return {
+      currentPeriod: df.currentPeriod,
+      periodZeroStartTimestamp: df.periodZeroStartTimestamp,
+    };
   }
 
   /**

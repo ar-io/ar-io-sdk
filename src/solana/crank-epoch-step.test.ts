@@ -108,6 +108,38 @@ class TestCranker extends SolanaARIOWriteable {
     if (e) throw e;
     return { id: 'tx-prescribe' };
   }
+
+  // --- Lazy-state maintenance stubs (compound + demand factor). Defaults make
+  // the idle tail a no-op so the lifecycle tests above are unaffected. ---
+  compoundable: Array<{
+    gatewayAddress: Address;
+    delegatorAddress: Address;
+    pendingRewards: number;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getDelegationsToCompound(): Promise<any> {
+    this.calls.push('getCompoundable');
+    return this.compoundable;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async compoundDelegationRewardsBatch(b: any[]): Promise<any> {
+    this.calls.push(`compound:${b.length}`);
+    return { id: 'tx-compound' };
+  }
+  dfPeriod: { currentPeriod: number; periodZeroStartTimestamp: number } | null =
+    null;
+  async getDemandFactorPeriodState(): Promise<{
+    currentPeriod: number;
+    periodZeroStartTimestamp: number;
+  } | null> {
+    this.calls.push('dfState');
+    return this.dfPeriod;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async updateDemandFactor(): Promise<any> {
+    this.calls.push('updateDemandFactor');
+    return { id: 'tx-df' };
+  }
 }
 
 const baseSettings: Settings = {
@@ -318,5 +350,72 @@ describe('crankEpochStep', () => {
     const r = await c.crankEpochStep({ now: 1200 }); // < nextEpochStart 1300
     assert.equal(r.action, 'idle');
     assert.equal(r.reason, 'epoch_complete');
+  });
+
+  // --- Lazy-state maintenance steps in the idle tail ---
+
+  it('compounds pending delegate rewards in the idle tail', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [
+      { gatewayAddress: pk(1), delegatorAddress: pk(2), pendingRewards: 100 },
+    ];
+    const r = await c.crankEpochStep({ now: 1200 }); // epoch_complete window
+    assert.equal(r.action, 'compound');
+    assert.equal(r.txId, 'tx-compound');
+    assert.ok(c.calls.includes('compound:1'));
+  });
+
+  it('skips compounding when enableCompound is false', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [
+      { gatewayAddress: pk(1), delegatorAddress: pk(2), pendingRewards: 100 },
+    ];
+    const r = await c.crankEpochStep({ now: 1200, enableCompound: false });
+    assert.equal(r.action, 'idle');
+    assert.equal(r.reason, 'epoch_complete');
+    assert.ok(!c.calls.some((x) => x.startsWith('compound:')));
+  });
+
+  it('rolls the demand factor in the idle tail when its period elapsed (preempts create)', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = []; // nothing to compound
+    c.dfPeriod = { currentPeriod: 1, periodZeroStartTimestamp: 0 };
+    // now in demand-factor period 2 (>= 86400) — also >= nextEpochStart, so this
+    // proves the roll preempts create-next.
+    const r = await c.crankEpochStep({ now: 90_000 });
+    assert.equal(r.action, 'update_demand_factor');
+    assert.equal(r.txId, 'tx-df');
+    assert.ok(!c.calls.includes('createEpoch'));
+  });
+
+  it('does not roll the demand factor within the same period', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [];
+    c.dfPeriod = { currentPeriod: 2, periodZeroStartTimestamp: 0 }; // already period 2
+    const r = await c.crankEpochStep({ now: 90_000 }); // still period 2
+    assert.notEqual(r.action, 'update_demand_factor');
+    assert.ok(!c.calls.includes('updateDemandFactor'));
+  });
+
+  it('compound takes precedence over demand-factor roll and create-next', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [
+      { gatewayAddress: pk(1), delegatorAddress: pk(2), pendingRewards: 5 },
+    ];
+    c.dfPeriod = { currentPeriod: 1, periodZeroStartTimestamp: 0 }; // also due
+    const r = await c.crankEpochStep({ now: 90_000 }); // create + df also due
+    assert.equal(r.action, 'compound');
+    assert.ok(!c.calls.includes('updateDemandFactor'));
+    assert.ok(!c.calls.includes('createEpoch'));
   });
 });
