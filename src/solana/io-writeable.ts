@@ -194,6 +194,7 @@ import {
   getSetAllowlistEnabledInstructionAsync,
   getTallyWeightsInstructionAsync,
   getUpdateGatewaySettingsInstructionAsync,
+  getUpdateObserverAddressInstructionAsync,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
@@ -1022,31 +1023,68 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     params: UpdateGatewaySettingsParams,
     _options?: WriteOptions,
   ): Promise<MessageResult> {
-    const ix = await getUpdateGatewaySettingsInstructionAsync(
-      await this.withGarDefaults({
-        operator: this.signer,
-        label: params.label ?? null,
-        fqdn: params.fqdn ?? null,
-        port: params.port ?? null,
-        // Codama exposes `protocol` as Option<Protocol>. We only ever updated
-        // the URL parts above, so leave protocol untouched (None).
-        protocol: null,
-        properties: params.properties ?? null,
-        note: params.note ?? null,
-        allowDelegatedStaking:
-          typeof params.allowDelegatedStaking === 'boolean'
-            ? params.allowDelegatedStaking
-            : null,
-        delegateRewardShareRatio: params.delegateRewardShareRatio ?? null,
-        minDelegateStake:
-          params.minDelegatedStake !== undefined
-            ? BigInt(params.minDelegatedStake)
-            : null,
-      }),
-      { programAddress: this.garProgram },
-    );
+    const ixs: Instruction[] = [];
 
-    const sig = await this.sendTransaction([ix], 1_000_000);
+    // Settings fields (label, fqdn, port, etc.) — only emit when at least one
+    // non-observer field is provided so we don't send a no-op instruction.
+    const { observerAddress: _observer, ...settingsFields } = params;
+    if (Object.keys(settingsFields).length > 0) {
+      const settingsIx = await getUpdateGatewaySettingsInstructionAsync(
+        await this.withGarDefaults({
+          operator: this.signer,
+          label: params.label ?? null,
+          fqdn: params.fqdn ?? null,
+          port: params.port ?? null,
+          // Codama exposes `protocol` as Option<Protocol>. We only ever updated
+          // the URL parts above, so leave protocol untouched (None).
+          protocol: null,
+          properties: params.properties ?? null,
+          note: params.note ?? null,
+          allowDelegatedStaking:
+            typeof params.allowDelegatedStaking === 'boolean'
+              ? params.allowDelegatedStaking
+              : null,
+          delegateRewardShareRatio: params.delegateRewardShareRatio ?? null,
+          minDelegateStake:
+            params.minDelegatedStake !== undefined
+              ? BigInt(params.minDelegatedStake)
+              : null,
+        }),
+        { programAddress: this.garProgram },
+      );
+      ixs.push(settingsIx);
+    }
+
+    // Observer address update — uses a separate on-chain instruction that
+    // swaps the observer lookup PDA from old → new.
+    if (params.observerAddress !== undefined) {
+      const newObserver = address(params.observerAddress);
+      const gateway = await this.getGateway({
+        address: this.signer.address as string,
+      });
+      const oldObserver = address(gateway.observerAddress);
+      const [oldObserverLookupPda] = await getObserverLookupPDA(
+        oldObserver,
+        this.garProgram,
+      );
+      const [newObserverLookupPda] = await getObserverLookupPDA(
+        newObserver,
+        this.garProgram,
+      );
+
+      const observerIx = await getUpdateObserverAddressInstructionAsync(
+        await this.withGarDefaults({
+          operator: this.signer,
+          oldObserverLookup: oldObserverLookupPda,
+          newObserverLookup: newObserverLookupPda,
+          newObserver,
+        }),
+        { programAddress: this.garProgram },
+      );
+      ixs.push(observerIx);
+    }
+
+    const sig = await this.sendTransaction(ixs, 1_000_000);
     return { id: sig };
   }
 
