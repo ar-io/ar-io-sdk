@@ -1209,6 +1209,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
 
     const sig = await this.sendTransaction([ix], 1_000_000);
+
+    if (!params.instant) {
+      return { id: sig };
+    }
+
+    // Instant boolean on decrease delegated stake (vs protected exit vault) is not currently supported by the contract — Instead we call InstantWithdrawal after creating the withdrawal, which achieves the same effect but requires two transactions. The protected exit vault is still created in the first transaction, but will be empty and can be ignored when instant = true.
+
+    await this.instantWithdrawal({ vaultId: nextId.toString() }, _options);
     return { id: sig };
   }
 
