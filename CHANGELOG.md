@@ -1,3 +1,10 @@
+# [4.0.0-solana.29](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.28...v4.0.0-solana.29) (2026-06-04)
+
+
+### Bug Fixes
+
+* **solana:** crankEpochStep handles AO-continuity cold start (currentIndex>0) ([baea1d8](https://github.com/ar-io/ar-io-sdk/commit/baea1d87a03fee93e2b685fc225af5a0c4bf6aab))
+
 # [4.0.0-solana.28](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.27...v4.0.0-solana.28) (2026-06-03)
 
 
