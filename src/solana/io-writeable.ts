@@ -1520,6 +1520,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       };
     }
     // No explicit sources: discover + plan.
+    this.logger.debug(
+      `[funding] discovering sources for ${this.signer.address}`,
+      {
+        fundFrom: params.fundFrom,
+        amountNeeded: amountNeeded.toString(),
+      },
+    );
     const arnsConfig = await this.getArnsConfig();
     const { discoverFundingSources } = await import('./funding-plan.js');
     const sources = await discoverFundingSources(
@@ -1530,6 +1537,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         garProgram: this.garProgram,
       },
     );
+    this.logger.debug(`[funding] discovered ${sources.length} source(s)`, {
+      sources: sources.map((s) => {
+        if (s.kind === 'balance')
+          return { kind: s.kind, available: s.available.toString() };
+        if (s.kind === 'delegation')
+          return {
+            kind: s.kind,
+            gateway: s.gateway,
+            available: s.available.toString(),
+            minDelegationAmount: s.minDelegationAmount.toString(),
+          };
+        if (s.kind === 'operatorStake')
+          return {
+            kind: s.kind,
+            gateway: s.gateway,
+            available: s.available.toString(),
+          };
+        return {
+          kind: s.kind,
+          withdrawalId: s.withdrawalId.toString(),
+          gateway: s.gateway,
+          available: s.available.toString(),
+          availableAt: s.availableAt.toString(),
+        };
+      }),
+    });
     const plan = buildFundingPlanCore(sources, amountNeeded, {
       fundFrom: params.fundFrom as
         | 'balance'
@@ -1544,12 +1577,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       fundAsOperator: params.fundAsOperator,
     });
     if ('kind' in plan) {
+      this.logger.debug(`[funding] plan failed: ${plan.message}`);
       const err = new Error(plan.message) as Error & {
         cause: InternalInsufficientFundingError;
       };
       err.cause = plan;
       throw err;
     }
+    this.logger.debug(
+      `[funding] built plan with ${plan.sources.length} source(s)`,
+      {
+        sources: plan.sources.map((s, i) => ({
+          kind: s.kind,
+          amount: s.amount.toString(),
+          gateway: plan.gatewayPerSource[i] ?? null,
+        })),
+        residueDelegationIndexes: plan.residueDelegationIndexes,
+        hasBalanceSource: plan.hasBalanceSource,
+      },
+    );
     return plan;
   }
 
@@ -1762,8 +1808,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     quantity?: number;
     purchaseType?: PurchaseType;
   }): Promise<bigint> {
+    const demandFactorAddr = await this.demandFactorPda();
+    this.logger.debug(`[funding] simulating token cost`, {
+      intent: params.intent,
+      name: params.name,
+      years: params.years,
+      quantity: params.quantity,
+      purchaseType: params.purchaseType,
+      arnsProgram: this.arnsProgram,
+      demandFactor: demandFactorAddr,
+    });
+
     const ix = await getGetTokenCostInstructionAsync(
       {
+        demandFactor: demandFactorAddr,
         payer: this.signer,
         intent: params.intent,
         name: params.name,
@@ -1797,7 +1855,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
     if (sim.value.err) {
       throw new Error(
-        `get_token_cost simulation failed: ${JSON.stringify(sim.value.err)}` +
+        `get_token_cost simulation failed (arnsProgram=${this.arnsProgram}, demandFactor=${demandFactorAddr}): ${JSON.stringify(sim.value.err)}` +
           (sim.value.logs ? '\n' + sim.value.logs.join('\n') : ''),
       );
     }
@@ -1815,7 +1873,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
     }
     const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-    return dv.getBigUint64(0, true);
+    const cost = dv.getBigUint64(0, true);
+    this.logger.debug(`[funding] simulated token cost: ${cost} mARIO`, {
+      name: params.name,
+    });
+    return cost;
   }
 
   private async arnsConfigPda(): Promise<Address> {

@@ -21,9 +21,13 @@
  * This module exposes the same values for *other* clusters where the
  * programs are deployed at non-default addresses — primarily devnet.
  *
- * Source of truth: `/devnet-config.json` at the repo root. Keep these
- * exports in sync when devnet is redeployed; the bundled drift test
- * (`clusters.test.ts`) will fail CI on mismatch.
+ * Only root facts live here: program IDs, the RPC URL, and the ARIO mint.
+ * Everything else is derived rather than stored — config/settings PDAs come
+ * from the codama `find*Pda` helpers in `@ar.io/solana-contracts` (seeded by
+ * the program IDs below), and genesis-time token accounts (treasury / stake)
+ * are read on-chain from the ArioConfig / GarSettings accounts at runtime
+ * (see `io-writeable.ts` `getGarConfig`). Nothing to keep in sync, nothing to
+ * drift.
  *
  * Usage:
  * ```ts
@@ -61,24 +65,14 @@ export const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
  * `ARIO.init({ backend: 'solana', programIds, ... })`.
  */
 export const DEVNET_PROGRAM_IDS = {
-  core: address('5iU1xZ4ocy7e96kcoEipvnxs8anSoq6JGznq6iS4svKn'),
-  gar: address('KpZMWCMeTiyH3dW3ZH9go4TwAg5vxgUXHuFVY8JbLFS'),
-  arns: address('2YjqZEYTTKLD3qg4NvYwpo2wVcDQCj2p4iD2WTYymfEC'),
-  ant: address('9SuQQKKW1mEvdRhXrdpHR5PqBMurY3wh7vbEkxzEsngu'),
-  antEscrow: address('GP5A7idQQmbGeuUcihAsgkV2Kc4LSpqoKyLMWBK46sCg'),
+  core: address('8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1'),
+  gar: address('7WsDTrtZBsfKtnP33XkjuqXCY69JE7n4QVYpynqJCFxz'),
+  arns: address('6EZNezcg4rc5hnh8HG34vGquT3WpW5xXypzPb24uyEpp'),
+  ant: address('DbHbRwUD1oAn1mrDSqtWtvwGcNrmhWdD2g8L4xmeQ7NX'),
+  antEscrow: address('bttco5oAnBwCucG63iKokBJCZmNr493f3Ewe9LM3oTx'),
 } as const;
 
-/** ARIO SPL Token mint on devnet. */
+/** ARIO SPL Token mint on devnet (Staging v2). */
 export const DEVNET_ARIO_MINT: Address = address(
-  'BZ3nczDe8To3c39eN7Beq9FW34BveUcEs9sDNkbGxn4U',
-);
-
-/** Protocol treasury token account on devnet (owner = ArioConfig PDA). */
-export const DEVNET_TREASURY_TOKEN_ACCOUNT: Address = address(
-  'WLh1PNwSg5QstPeATJxD21cb6wvYkj4ibQetkz5RTn3',
-);
-
-/** Protocol stake token account on devnet (owner = GatewaySettings PDA). */
-export const DEVNET_STAKE_TOKEN_ACCOUNT: Address = address(
-  '6vV7qQTf8Bv6SVagLKMSj3dnK7Vv9uaiujpMsHTJ2onF',
+  '6vTw5CysRXQ4ybbHkDUiisHWVsBeMtUzYvJqs2iqHyaN',
 );

@@ -63,19 +63,19 @@ export interface CircuitBreakerRpcOptions {
   timeout?: number | false;
   /**
    * Error percentage (0-100) at which to open the circuit.
-   * @default 50
+   * @default 25
    */
   errorThresholdPercentage?: number;
   /**
    * Time in ms to wait before entering half-open state and retrying
    * the primary.
-   * @default 30_000
+   * @default 60_000
    */
   resetTimeout?: number;
   /**
    * Minimum number of requests within the rolling window before the
    * circuit can trip. Prevents opening the circuit after a single failure.
-   * @default 5
+   * @default 3
    */
   volumeThreshold?: number;
 }
@@ -120,9 +120,9 @@ export function createCircuitBreakerRpc({
     (request: TransportRequest) => primaryTransport(request),
     {
       timeout: opts.timeout ?? 10_000,
-      errorThresholdPercentage: opts.errorThresholdPercentage ?? 50,
-      resetTimeout: opts.resetTimeout ?? 30_000,
-      volumeThreshold: opts.volumeThreshold ?? 5,
+      errorThresholdPercentage: opts.errorThresholdPercentage ?? 25,
+      resetTimeout: opts.resetTimeout ?? 60_000,
+      volumeThreshold: opts.volumeThreshold ?? 3,
     },
   );
 

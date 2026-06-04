@@ -238,9 +238,8 @@ export {
 export * from './constants.js';
 
 // Cluster-specific deployment constants (devnet program IDs, RPC URL,
-// mint, treasury / stake token accounts). Source of truth is
-// `/devnet-config.json` — kept in sync via the drift guard test
-// `clusters.test.ts`.
+// mint). PDAs derive from these via the codama `find*Pda` helpers; token
+// accounts are read on-chain — neither is stored here.
 export * from './clusters.js';
 
 // RPC circuit breaker (opossum-backed transparent fallback)

@@ -32,20 +32,20 @@ import { Logger } from '../common/logger.js';
 const logger = new Logger({ level: 'error' });
 
 export interface RetryOptions {
-  /** Maximum number of attempts (first call + retries). @default 6 */
+  /** Maximum number of attempts (first call + retries). @default 3 */
   maxAttempts?: number;
-  /** Base delay in ms before the first retry. Doubled each attempt. @default 500 */
+  /** Base delay in ms before the first retry. Doubled each attempt. @default 1_000 */
   baseDelayMs?: number;
-  /** Cap on any single delay in ms. @default 5_000 */
+  /** Cap on any single delay in ms. @default 10_000 */
   maxDelayMs?: number;
   /** Predicate that decides whether a thrown error is retryable.
    *  Defaults to {@link isRetryableError}. */
   isRetryable?: (error: unknown) => boolean;
 }
 
-const DEFAULT_MAX_ATTEMPTS = 6;
-const DEFAULT_BASE_DELAY_MS = 500;
-const DEFAULT_MAX_DELAY_MS = 5_000;
+const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_BASE_DELAY_MS = 1_000;
+const DEFAULT_MAX_DELAY_MS = 10_000;
 
 /**
  * Default retryable-error heuristic.
