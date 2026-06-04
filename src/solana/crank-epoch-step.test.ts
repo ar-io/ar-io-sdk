@@ -154,10 +154,23 @@ describe('crankEpochStep', () => {
     assert.equal(r.txId, 'tx-create');
   });
 
-  it('idle waiting_for_epoch when the current epoch account is missing', async () => {
+  it('creates epoch[currentIndex] on a continuity cold start (live epoch missing, started)', async () => {
+    // AO→Solana cutover: admin_set_current_epoch_index jumped currentIndex to
+    // N>0 with NO prior epochs on-chain, so the "live" epoch (currentIndex-1)
+    // was never created. Create epoch[currentIndex] directly once its start has
+    // passed — the old code idled 'waiting_for_epoch' here forever (deadlock).
     const c = new TestCranker();
-    c.settings = { ...baseSettings, currentEpochIndex: 1 }; // target 0, not present
+    c.settings = { ...baseSettings, currentEpochIndex: 1 }; // target 0 absent; epoch 1 start = 1100
     const r = await c.crankEpochStep({ now: 1500 });
+    assert.equal(r.action, 'create');
+    assert.equal(r.epochIndex, 1);
+    assert.equal(r.txId, 'tx-create');
+  });
+
+  it('idle waiting_for_epoch on a cold start before the epoch start arrives', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 }; // epoch 1 start = 1100
+    const r = await c.crankEpochStep({ now: 1050 }); // before 1100
     assert.equal(r.action, 'idle');
     assert.equal(r.reason, 'waiting_for_epoch');
   });
