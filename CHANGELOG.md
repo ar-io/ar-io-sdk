@@ -1,3 +1,10 @@
+# [4.0.0-solana.32](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.31...v4.0.0-solana.32) (2026-06-04)
+
+
+### Bug Fixes
+
+* use instant withdrawal when decreaase delegate instant boolean true ([2962cc3](https://github.com/ar-io/ar-io-sdk/commit/2962cc38f8af5104a685812f818be53b2cf2027a))
+
 # [4.0.0-solana.31](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.30...v4.0.0-solana.31) (2026-06-04)
 
 

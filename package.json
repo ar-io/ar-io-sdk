@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "4.0.0-solana.31",
+  "version": "4.0.0-solana.32",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
