@@ -44,6 +44,14 @@ export function createFaucet({
    */
   processId: string;
 }): ARIOWithFaucet<ARIORead | ARIOWrite> {
+  // The backend has no implicit default for `processId`; fail at the API
+  // boundary so callers get immediate feedback instead of an opaque HTTP
+  // error on the first faucet call.
+  if (typeof processId !== 'string' || processId.trim() === '') {
+    throw new Error(
+      'createFaucet: `processId` is required and must be non-empty',
+    );
+  }
   const faucet = new ARIOTokenFaucet({
     faucetUrl: faucetApiUrl,
     processId,

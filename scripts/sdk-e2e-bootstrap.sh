@@ -100,7 +100,13 @@ WALLET_PUBKEY="$(solana-keygen pubkey "$WALLET_FILE")"
 # airdrop` CLI fails against Surfpool 1.1.2 with InvalidProgramForExecution;
 # see https://github.com/txtx/surfpool.
 echo "[sdk-e2e-bootstrap] Airdropping 50 SOL to $WALLET_PUBKEY"
-curl -sf "$RPC_URL" -X POST -H 'Content-Type: application/json' \
+# Bound the call so a stalled/unreachable local RPC can't hang bootstrap
+# indefinitely: cap each attempt's connect/total time and retry a few times
+# (incl. connection-refused while surfpool is still coming up). `-f` + the
+# script's `set -e` make an exhausted retry budget fail the bootstrap.
+curl -sf --retry 5 --retry-connrefused --retry-delay 2 \
+  --connect-timeout 5 --max-time 30 \
+  "$RPC_URL" -X POST -H 'Content-Type: application/json' \
   -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"surfnet_setAccount\",\"params\":[\"$WALLET_PUBKEY\",{\"lamports\":50000000000,\"owner\":\"11111111111111111111111111111111\",\"executable\":false,\"data\":[]}]}" \
   >/dev/null
 

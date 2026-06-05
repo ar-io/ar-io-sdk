@@ -15,7 +15,10 @@ export const useGateways = ({
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["gateways"],
+    queryKey: [
+      "gateways",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () => ario.getGateways({ limit, cursor, sortBy, sortOrder }),
   });
 
@@ -34,7 +37,11 @@ export const useGatewayDelegations = ({
   cursor: string | undefined;
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["gateway-delegations", gatewayAddress],
+    queryKey: [
+      "gateway-delegations",
+      gatewayAddress,
+      { limit, cursor: cursor ?? null },
+    ],
     queryFn: () =>
       ario.getDelegations({
         address: gatewayAddress,

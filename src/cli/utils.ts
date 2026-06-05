@@ -353,7 +353,9 @@ export function requiredAddressFromOptions<O extends AddressCLIOptions>(
   if (address !== undefined) {
     return address;
   }
-  throw new Error('No address provided. Use --address or --wallet-file');
+  throw new Error(
+    'No address provided. Use --address, --wallet-file, or --private-key',
+  );
 }
 
 const defaultCliPaginationLimit = 10; // more friendly UX than 100
@@ -834,6 +836,9 @@ export function referrerFromOptions<
   return o.referrer;
 }
 
+/** Largest value representable by an unsigned 64-bit integer (2^64 - 1). */
+const U64_MAX = (1n << 64n) - 1n;
+
 /** Parse `--withdrawal-id` from CLI options into a bigint. */
 export function withdrawalIdFromOptions<
   O extends {
@@ -841,13 +846,22 @@ export function withdrawalIdFromOptions<
   },
 >(o: O): bigint | undefined {
   if (o.withdrawalId === undefined) return undefined;
+  let id: bigint;
   try {
-    return BigInt(o.withdrawalId);
+    id = BigInt(o.withdrawalId);
   } catch {
     throw new Error(
       `Invalid --withdrawal-id: '${o.withdrawalId}' is not a valid u64 integer`,
     );
   }
+  // The on-chain seed encoder treats the id as a u64; reject out-of-range
+  // values here with a clear message instead of a downstream encoder error.
+  if (id < 0n || id > U64_MAX) {
+    throw new Error(
+      `Invalid --withdrawal-id: '${o.withdrawalId}' is outside u64 range (0..${U64_MAX})`,
+    );
+  }
+  return id;
 }
 
 /**
@@ -916,6 +930,11 @@ export function fundingPlanFromOptions<
         `--funding-plan-json[${idx}].amount must be > 0 (got ${e.amount})`,
       );
     }
+    if (amount > U64_MAX) {
+      throw new Error(
+        `--funding-plan-json[${idx}].amount '${e.amount}' exceeds u64 max (${U64_MAX})`,
+      );
+    }
     const out: { kind: string; amount: bigint; gateway?: string } = {
       kind: e.kind,
       amount,
@@ -929,6 +948,17 @@ export function fundingPlanFromOptions<
       if (e.kind !== 'delegation' && e.kind !== 'operatorStake') {
         throw new Error(
           `--funding-plan-json[${idx}].gateway is only valid for kind 'delegation' or 'operatorStake' (got '${e.kind}')`,
+        );
+      }
+      // The gateway is going to be used: confirm it actually decodes as a
+      // base58 Solana address. `address()` throws on malformed input, so a
+      // bad string fails the CLI here rather than deep in instruction
+      // building.
+      try {
+        address(e.gateway);
+      } catch {
+        throw new Error(
+          `--funding-plan-json[${idx}].gateway '${e.gateway}' is not a valid base58 Solana address`,
         );
       }
       out.gateway = e.gateway;
