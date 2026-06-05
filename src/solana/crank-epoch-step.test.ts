@@ -36,6 +36,8 @@ type EpochRaw = {
   weightsTallied: number;
   prescriptionsDone: number;
   rewardsDistributed: number;
+  observationsSubmitted: number;
+  observationsClosed: number;
   activeGatewayCount: number;
   endTimestamp: number;
 };
@@ -94,9 +96,22 @@ class TestCranker extends SolanaARIOWriteable {
     return { id: 'tx-distribute' };
   }
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  closeEpochError: Error | null = null;
   async closeEpoch(p: any): Promise<any> {
     this.calls.push(`close:${p.epochIndex}`);
+    if (this.closeEpochError) throw this.closeEpochError;
     return { id: 'tx-close' };
+  }
+  // Observation-close stubs — close_observations must run before close_epoch.
+  epochObservers: Record<number, Address[]> = {};
+  async getEpochObservers(i: number): Promise<Address[]> {
+    this.calls.push(`getEpochObservers:${i}`);
+    return this.epochObservers[i] ?? [];
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async closeObservations(p: any): Promise<any> {
+    this.calls.push(`closeObservations:${p.epochIndex}:${p.observers.length}`);
+    return { id: 'tx-close-obs' };
   }
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async prescribeEpoch(p: any): Promise<any> {
@@ -173,6 +188,8 @@ const liveEpoch: EpochRaw = {
   weightsTallied: 1,
   prescriptionsDone: 1,
   rewardsDistributed: 1,
+  observationsSubmitted: 0,
+  observationsClosed: 0,
   activeGatewayCount: 10,
   endTimestamp: 1090,
 };
@@ -539,5 +556,69 @@ describe('crankEpochStep — returned-name pruning', () => {
     const r = await c.crankEpochStep({ now: 1050, pruneScanIntervalMs: 0 });
     assert.equal(r.action, 'prune_returned_names');
     assert.deepEqual(r.progress, { index: 2, total: 2 });
+  });
+});
+
+describe('crankEpochStep — close observations before close_epoch', () => {
+  // currentEpochIndex 10 → live target 9, retention 7 → closeTarget 2.
+  // nextEpochStart = genesis(1000) + 10*duration(100) = 2000.
+  const setup = (c: TestCranker, closeTargetEpoch: Partial<EpochRaw>) => {
+    c.settings = { ...baseSettings, currentEpochIndex: 10 };
+    c.epochs[9] = { ...liveEpoch, endTimestamp: 1000 };
+    c.epochs[2] = { ...liveEpoch, ...closeTargetEpoch };
+  };
+
+  it('closes observations (not the epoch) when the retention target has open observations', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 0 });
+    c.epochObservers[2] = [pk(1), pk(2), pk(3)];
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.equal(r.action, 'close_observation');
+    assert.equal(r.epochIndex, 2);
+    assert.deepEqual(r.progress, { index: 3, total: 3 });
+    assert.ok(c.calls.includes('closeObservations:2:3'));
+    assert.ok(
+      !c.calls.some((x) => x.startsWith('close:')),
+      'must NOT call close_epoch while observations are open',
+    );
+  });
+
+  it('caps the observation-close batch at 8', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 20, observationsClosed: 0 });
+    c.epochObservers[2] = Array.from({ length: 20 }, (_, i) => pk(i + 1));
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.equal(r.action, 'close_observation');
+    assert.deepEqual(r.progress, { index: 8, total: 20 });
+    assert.ok(c.calls.includes('closeObservations:2:8'));
+  });
+
+  it('closes the epoch once observations are fully closed', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 3 });
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.equal(r.action, 'close');
+    assert.equal(r.epochIndex, 2);
+    assert.ok(!c.calls.some((x) => x.startsWith('closeObservations')));
+  });
+
+  it('does NOT wedge when close_epoch fails — falls through to create-next', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 0, observationsClosed: 0 });
+    c.closeEpochError = new Error('EpochObservationsNotClosed');
+    // now >= nextEpochStart(2000) → create-next must fire instead of wedging.
+    const r = await c.crankEpochStep({ now: 5000, epochRetention: 7 });
+    assert.equal(r.action, 'create');
+    assert.ok(c.calls.includes('createEpoch'));
+  });
+
+  it('does not wedge on an orphaned observation counter (submitted>closed, no PDAs)', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 1, observationsClosed: 0 });
+    c.epochObservers[2] = []; // counter says open but no PDA exists to close
+    const r = await c.crankEpochStep({ now: 5000, epochRetention: 7 });
+    assert.notEqual(r.action, 'close_observation');
+    assert.notEqual(r.action, 'close');
+    assert.equal(r.action, 'create'); // progression continues
   });
 });

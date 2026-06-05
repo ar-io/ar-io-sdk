@@ -444,6 +444,9 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
  * the per-tx account/1232-byte budget even when none share a gateway.
  */
 const MAX_COMPOUND_BATCH = 12;
+/** Observation PDAs closed per tx before close_epoch (each ix carries Epoch +
+ *  Observation + payer + system accounts — keep well under the tx account cap). */
+const MAX_CLOSE_OBSERVATION_BATCH = 8;
 /** Demand-factor period length (seconds) — mirrors `PERIOD_LENGTH_SECONDS` in ario-arns. */
 const DEMAND_FACTOR_PERIOD_SECONDS = 86_400;
 
@@ -456,6 +459,7 @@ export type CrankAction =
   | 'compound'
   | 'update_demand_factor'
   | 'prune_returned_names'
+  | 'close_observation'
   | 'close'
   | 'idle';
 
@@ -4215,12 +4219,45 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
 
     // Close a fully-distributed epoch past retention (GAR-006).
+    //
+    // CRITICAL: this is cleanup of OLD epochs and must NEVER block creation of
+    // NEW ones. `close_epoch` reverts with EpochObservationsNotClosed until the
+    // epoch's Observation PDAs are closed (observations_closed ==
+    // observations_submitted), so we close those FIRST. The whole branch is
+    // wrapped so any failure falls through to create-next instead of throwing
+    // out of crankEpochStep — otherwise a single un-closeable epoch wedges epoch
+    // progression network-wide (every operator's crank hits the same wall).
     if (enableClose && targetEpochIndex >= retention) {
       const closeTarget = targetEpochIndex - retention;
-      const old = await this.getEpochRaw(closeTarget);
-      if (old && old.rewardsDistributed === 1) {
-        const { id } = await this.closeEpoch({ epochIndex: closeTarget });
-        return { action: 'close', epochIndex: closeTarget, txId: id };
+      try {
+        const old = await this.getEpochRaw(closeTarget);
+        if (old && old.rewardsDistributed === 1) {
+          if (old.observationsSubmitted > old.observationsClosed) {
+            // Open observations remain — close a batch before close_epoch.
+            const observers = await this.getEpochObservers(closeTarget);
+            if (observers.length > 0) {
+              const batch = observers.slice(0, MAX_CLOSE_OBSERVATION_BATCH);
+              const { id } = await this.closeObservations({
+                epochIndex: closeTarget,
+                observers: batch,
+              });
+              return {
+                action: 'close_observation',
+                epochIndex: closeTarget,
+                txId: id,
+                progress: { index: batch.length, total: observers.length },
+              };
+            }
+            // Counter says open but no Observation PDA exists (orphaned counter):
+            // can't close it, so don't attempt close_epoch (it would revert) and
+            // don't wedge — fall through to create-next.
+          } else {
+            const { id } = await this.closeEpoch({ epochIndex: closeTarget });
+            return { action: 'close', epochIndex: closeTarget, txId: id };
+          }
+        }
+      } catch {
+        // Best-effort cleanup — never block epoch creation. Retried next tick.
       }
     }
 
@@ -4361,6 +4398,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     weightsTallied: number;
     prescriptionsDone: number;
     rewardsDistributed: number;
+    observationsSubmitted: number;
+    observationsClosed: number;
     activeGatewayCount: number;
     endTimestamp: number;
   } | null> {
@@ -4386,10 +4425,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *   [8 per_obs][8 reward_rate][8 weight_lo][8 weight_hi][32 hashchain]
    *   [4 active_gw_count][4 dist_idx][4 tally_idx]
    *   [1 observer_count][1 name_count][1 obs_submitted][1 rewards_dist]
-   *   [1 weights_tallied][1 prescriptions_done][1 bump][1 _pad1]
+   *   [1 weights_tallied][1 prescriptions_done][1 bump][1 obs_closed]
    *   [6000 failure_counts][1600 prescribed_observers]
    *   [1600 prescribed_observer_gateways][64 prescribed_names]
    *   [7 has_observed][5 _pad2]
+   *
+   * NOTE: byte +123 is `observations_closed` (NOT padding) — `close_epoch`
+   * reverts with EpochObservationsNotClosed until it equals obs_submitted.
    */
   private fetchEpochRawFields(data: Buffer): {
     tallyIndex: number;
@@ -4397,6 +4439,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     weightsTallied: number;
     prescriptionsDone: number;
     rewardsDistributed: number;
+    observationsSubmitted: number;
+    observationsClosed: number;
     activeGatewayCount: number;
     endTimestamp: number;
   } {
@@ -4405,9 +4449,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const activeGatewayCount = data.readUInt32LE(base + 104);
     const distributionIndex = data.readUInt32LE(base + 108);
     const tallyIndex = data.readUInt32LE(base + 112);
+    const observationsSubmitted = data.readUInt8(base + 118);
     const rewardsDistributed = data.readUInt8(base + 119);
     const weightsTallied = data.readUInt8(base + 120);
     const prescriptionsDone = data.readUInt8(base + 121);
+    const observationsClosed = data.readUInt8(base + 123);
 
     return {
       tallyIndex,
@@ -4415,6 +4461,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       weightsTallied,
       prescriptionsDone,
       rewardsDistributed,
+      observationsSubmitted,
+      observationsClosed,
       activeGatewayCount,
       endTimestamp,
     };
@@ -4679,6 +4727,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
 
     const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Close multiple Observation PDAs for one epoch in a single tx (each
+   * `close_observation` increments the parent Epoch's `observations_closed`).
+   * Permissionless; rent is refunded to the payer. Used by the crank to satisfy
+   * `close_epoch`'s `observations_closed == observations_submitted` precondition
+   * before closing a retention-aged epoch. Keep the batch small — each ix carries
+   * the Epoch + Observation + payer + system accounts.
+   */
+  async closeObservations(
+    params: { epochIndex: number; observers: string[] },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    if (params.observers.length === 0) {
+      throw new Error('closeObservations: observers must be non-empty');
+    }
+    const ixs = await Promise.all(
+      params.observers.map(async (obs) => {
+        const [observationPda] = await getObservationPDA(
+          params.epochIndex,
+          address(obs),
+          this.garProgram,
+        );
+        return getCloseObservationInstructionAsync(
+          {
+            observation: observationPda,
+            payer: this.signer,
+            epochIndex: BigInt(params.epochIndex),
+          },
+          { programAddress: this.garProgram },
+        );
+      }),
+    );
+    const sig = await this.sendTransaction(ixs);
     return { id: sig };
   }
 
