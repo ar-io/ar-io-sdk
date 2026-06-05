@@ -18,6 +18,7 @@ supplied by [`@ar.io/solana-contracts`](https://www.npmjs.com/package/@ar.io/sol
 - [Usage](#usage)
 - [ARIO Contract](#ario-contract)
 - [ANT Contracts](#ant-contracts)
+- [Escrow](#escrow)
 - [Token Conversion](#token-conversion)
 - [Logging](#logging)
 - [Pagination](#pagination)
@@ -1996,6 +1997,40 @@ const observers = await ario.getPrescribedObservers({ epochIndex: 0 });
 
 </details>
 
+#### `crankEpochStep(options?)`
+
+High-level, permissionless epoch crank. Advances the epoch lifecycle by **one
+step per call** and returns the action it took — run it on a loop (this is what
+the standalone cranker and the observer-embedded cranker do). It owns the whole
+sequence so you don't orchestrate the individual instructions yourself:
+
+`create` → `tally` → `prescribe` → `distribute` → `close` — closing an epoch's
+observation PDAs first (`close_observation`) so `close_epoch` doesn't revert —
+plus an idle-tail of permissionless maintenance: `compound` delegate rewards,
+`update_demand_factor`, and `prune_returned_names`. The close path is
+non-wedging: a cleanup failure never blocks creation of the next epoch.
+
+```typescript
+const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
+
+// one step
+const result = await ario.crankEpochStep();
+// → { action, epochIndex?, txId?, progress? }
+//   action ∈ create | tally | prescribe | distribute | close
+//          | close_observation | compound | update_demand_factor
+//          | prune_returned_names | idle
+
+// or drive it on an interval
+setInterval(async () => {
+  const r = await ario.crankEpochStep();
+  if (r.action !== 'idle') console.log(r.action, r.epochIndex, r.txId);
+}, 60_000);
+```
+
+All options are optional: `batchSize`, `enableClose`, `epochRetention`,
+`enableCompound`, `compoundMinPendingRewards`, `enableDemandFactorRoll`,
+`enablePrune`, `pruneBatchSize`, `nameRegistryAccount`.
+
 ### Primary Names
 
 #### `getPrimaryNames({ cursor, limit, sortBy, sortOrder })`
@@ -3025,6 +3060,57 @@ console.log(recordAfter.owner); // undefined (controlled by ANT owner again)
 forking + name reassignment). On Solana, schema migration is a
 per-asset CPI exposed as the instance method `ant.upgrade()` documented
 above; new ANTs are created with `ANT.spawn()`.
+
+## Escrow
+
+Trustless, multi-protocol escrow for handing an asset to a recipient identified by
+an **Arweave** or **Ethereum** address, claimable once they hold a Solana wallet.
+Backed by the `ario-ant-escrow` program. Two clients:
+
+- `TokenEscrow` — escrow liquid **ARIO** (SPL) or a **time-locked vault**.
+- `ANTEscrow` — escrow an **ANT** (Metaplex Core NFT).
+
+Each supports **deposit → claim → cancel/refund → update-recipient**. Claims work
+three ways: **Arweave-attested** (an off-chain attestor re-signs the canonical
+claim with Ed25519, verified on-chain), **Ethereum** (on-chain `secp256k1_recover`
++ EIP-191), and **vault** (instruction introspection that preserves the remaining
+lock).
+
+```typescript
+import { TokenEscrow, canonicalMessageV2 } from '@ar.io/sdk';
+
+const escrow = new TokenEscrow({
+  rpc,
+  rpcSubscriptions,
+  signer,
+  programId,
+  coreProgram,
+});
+
+// deposit 50 ARIO to an Ethereum recipient
+await escrow.depositTokens({
+  assetId, // 32-byte client-supplied id
+  amount: 50_000_000n,
+  arioMint,
+  depositorTokenAccount,
+  recipient: { protocol: 'ethereum', publicKey: ethAddress20 },
+});
+
+// the recipient claims (Ethereum path) once they have a Solana wallet
+await escrow.claimTokensEthereum({
+  depositor,
+  assetId,
+  claimant,
+  claimantTokenAccount,
+  escrowTokenAccount,
+  signature, // recipient's EIP-191 signature over canonicalMessageV2(...)
+});
+```
+
+Build the exact bytes a recipient signs with `canonicalMessage` /
+`canonicalMessageV2` — byte-identical to the on-chain program (and the off-chain
+attestor). See the contracts repo's escrow design + protocol spec for the full
+flow and the cross-language canonical-message vectors.
 
 ## Token Conversion
 
