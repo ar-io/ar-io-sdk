@@ -1,3 +1,10 @@
+# [4.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-alpha.1...v4.0.0-alpha.2) (2026-06-05)
+
+
+### Bug Fixes
+
+* address CodeRabbit review findings from PR [#666](https://github.com/ar-io/ar-io-sdk/issues/666) ([6a45703](https://github.com/ar-io/ar-io-sdk/commit/6a4570386c5f889baf833b6e84b1b5001b5b4553))
+
 # [4.0.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.24.0-alpha.1...v4.0.0-alpha.1) (2026-06-05)
 
 
