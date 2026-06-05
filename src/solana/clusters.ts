@@ -100,11 +100,9 @@ export const MAINNET_AUTHORITY_PUBKEY: Address = address(
   '45ZuEb1Jk7pbjshD1BVasBekAXhimdWuJjyswQzMyTB1',
 );
 
-// TODO(mainnet): placeholder — this reuses the devnet mint and is WRONG for
-// mainnet. Replace with the real mainnet ARIO mint once it is known.
 /** ARIO SPL Token mint on Solana mainnet-beta. */
 export const MAINNET_ARIO_MINT: Address = address(
-  '6vTw5CysRXQ4ybbHkDUiisHWVsBeMtUzYvJqs2iqHyaN',
+  'DcNnMuFxwhgV4WY1HVSaSEgr92bv2b1vUvEKiNxWqHdF',
 );
 
 /**
