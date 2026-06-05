@@ -47,9 +47,15 @@ async function getSolanaWriter(o: PruneOptions): Promise<SolanaARIOWriteable> {
   return ario as unknown as SolanaARIOWriteable;
 }
 
-function parseMaxNames(o: PruneOptions): number {
+function parseMaxNames(o: PruneOptions, fallbackCount?: number): number {
   const raw = o.max;
   if (raw === undefined) {
+    // When an explicit name list is supplied, derive the u8 batch size from
+    // it (capped at the on-chain max of 255) so callers don't have to also
+    // pass --max. Discovery paths (no explicit list) still require --max.
+    if (fallbackCount !== undefined && fallbackCount > 0) {
+      return Math.min(fallbackCount, 255);
+    }
     throw new Error('--max <count> is required (u8 batch size, 1-255)');
   }
   const n = Number(raw);
@@ -64,7 +70,7 @@ function parseMaxNames(o: PruneOptions): number {
 // =========================================
 
 export async function pruneExpiredNamesCLICommand(o: PruneOptions) {
-  const max = parseMaxNames(o);
+  const max = parseMaxNames(o, o.arnsRecords?.length);
   const ario = await getSolanaWriter(o);
 
   // If `--arns-records` wasn't provided, discover them via the readable's
@@ -102,7 +108,7 @@ export async function pruneNameToReturnedCLICommand(o: PruneOptions) {
 }
 
 export async function pruneReturnedNamesCLICommand(o: PruneOptions) {
-  const max = parseMaxNames(o);
+  const max = parseMaxNames(o, o.returnedNames?.length);
   const ario = await getSolanaWriter(o);
 
   let returned: string[] = o.returnedNames ?? [];
@@ -233,15 +239,13 @@ export async function releaseVaultCLICommand(o: PruneOptions) {
   // configured signer as the owner. The `--owner` flag is accepted as
   // documentation but ignored unless it matches the signer; fail loud if
   // it doesn't, so users don't think they can release someone else's vault.
-  const ario = await getSolanaWriter(o);
-  if (o.owner) {
-    const signerAddr = (await writeARIOFromOptions(o)).signerAddress;
-    if (o.owner !== signerAddr) {
-      throw new Error(
-        `release-vault: --owner ${o.owner} does not match signer ${signerAddr}. ` +
-          `release_vault is owner-signed; use the owner's wallet to call it.`,
-      );
-    }
+  const { ario: arioWrite, signerAddress } = await writeARIOFromOptions(o);
+  const ario = arioWrite as unknown as SolanaARIOWriteable;
+  if (o.owner && o.owner !== signerAddress) {
+    throw new Error(
+      `release-vault: --owner ${o.owner} does not match signer ${signerAddress}. ` +
+        `release_vault is owner-signed; use the owner's wallet to call it.`,
+    );
   }
   const vaultIdStr = requiredStringFromOptions(o, 'vaultId');
   const vaultId = vaultIdStr;

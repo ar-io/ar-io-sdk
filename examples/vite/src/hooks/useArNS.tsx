@@ -15,7 +15,10 @@ export const useArNSReturnedNames = ({
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["ar-ns-returned-names"],
+    queryKey: [
+      "ar-ns-returned-names",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () =>
       ario.getArNSReturnedNames({ limit, cursor, sortBy, sortOrder }),
   });
@@ -43,7 +46,10 @@ export const useArNSRecords = ({
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["ar-ns-records"],
+    queryKey: [
+      "ar-ns-records",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () => ario.getArNSRecords({ limit, cursor, sortBy, sortOrder }),
   });
 

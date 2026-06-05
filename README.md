@@ -3344,7 +3344,7 @@ import {
 
 | Network | RPC | Programs |
 |---|---|---|
-| Mainnet | not yet deployed | TBD |
+| Mainnet | `https://api.mainnet-beta.solana.com` (mainnet-beta, default) | Not yet deployed — placeholder IDs in `src/solana/constants.ts` |
 | Devnet | `https://api.devnet.solana.com` | See `src/solana/constants.ts` for current devnet program IDs |
 | Localnet | Surfpool — `https://github.com/solana-foundation/surfpool` | Localnet harness in `solana-ar-io` monorepo |
 

@@ -143,9 +143,7 @@ export async function leaveNetwork(options: WriteActionCLIOptions) {
     );
   }
 
-  return (await writeARIOFromOptions(options)).ario.leaveNetwork(
-    customTagsFromOptions(options),
-  );
+  return ario.leaveNetwork(customTagsFromOptions(options));
 }
 
 export async function saveObservations(
@@ -406,21 +404,20 @@ export async function delegateStake(options: TransferCLIOptions) {
 export async function decreaseDelegateStake(
   options: DecreaseDelegateStakeCLIOptions,
 ) {
-  const ario = await (await writeARIOFromOptions(options)).ario;
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
   const { target, arioQuantity } =
     requiredTargetAndQuantityFromOptions(options);
   const instant = options.instant ?? false;
 
   if (!options.skipConfirmation) {
     // Verify the target gateway exists and look up delegation
-    const signerAddr = (await writeARIOFromOptions(options)).signerAddress;
     const targetGateway = await ario.getGateway({ address: target });
     if (targetGateway === undefined) {
       throw new Error(`Gateway not found: ${target}`);
     }
 
     // Find delegation to this gateway
-    const delegations = await ario.getDelegations({ address: signerAddr });
+    const delegations = await ario.getDelegations({ address: signerAddress });
     const delegation = delegations.items.find(
       (d) => d.gatewayAddress === target && d.type === 'stake',
     ) as StakeDelegation | undefined;
@@ -477,7 +474,7 @@ export async function decreaseDelegateStake(
 }
 
 export async function redelegateStake(options: RedelegateStakeCLIOptions) {
-  const ario = await (await writeARIOFromOptions(options)).ario;
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
   const params = redelegateParamsFromOptions(options);
 
   if (!options.skipConfirmation) {
@@ -496,8 +493,7 @@ export async function redelegateStake(options: RedelegateStakeCLIOptions) {
       throw new Error(`Source gateway not found: ${params.source}`);
     }
 
-    const signerAddr = (await writeARIOFromOptions(options)).signerAddress;
-    const delegations = await ario.getDelegations({ address: signerAddr });
+    const delegations = await ario.getDelegations({ address: signerAddress });
     const delegation = delegations.items.find(
       (d) => d.gatewayAddress === params.source && d.type === 'stake',
     ) as StakeDelegation | undefined;

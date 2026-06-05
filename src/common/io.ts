@@ -54,6 +54,26 @@ export type ARIOConfig = {
 export const DEFAULT_SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
 
 export class ARIO {
+  /**
+   * Create an ARIO client bound to a Solana RPC transport.
+   *
+   * The return type is selected by the {@link ARIOConfig} you pass:
+   * - **Read-write** — when `signer` (a {@link SolanaSigner}) is provided. A
+   *   {@link SolanaRpcSubscriptions} client is then also required so
+   *   `@solana/kit`'s `sendAndConfirmTransaction` can await confirmations;
+   *   omitting it throws. Returns {@link ARIOWrite}.
+   * - **Read-only** — when `signer` is omitted. Returns {@link ARIORead}.
+   *
+   * Program-id overrides (`coreProgramId` / `garProgramId` / `arnsProgramId` /
+   * `antProgramId`) are required on any non-mainnet cluster (devnet, localnet,
+   * Surfpool); see {@link ARIOConfig}.
+   *
+   * @param config - RPC transport, optional signer/subscriptions, and
+   *   per-cluster program-id overrides.
+   * @returns {@link ARIOWrite} when a signer is supplied, otherwise
+   *   {@link ARIORead}.
+   * @throws If a signer is supplied without `rpcSubscriptions`.
+   */
   // Overload: with signer -> writeable. `rpcSubscriptions` is required so
   // kit's `sendAndConfirmTransaction` can subscribe to the confirmation.
   static init(

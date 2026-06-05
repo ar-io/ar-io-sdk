@@ -23,6 +23,12 @@ const ario = ARIO.init({
   rpc: createSolanaRpc("https://api.devnet.solana.com"),
 });
 
+// The AR.IO faucet backend has not yet been ported to issue Solana-mint
+// transfers (see TODO above), so the "Request 100 tARIO" flow is gated off
+// to avoid routing users into a guaranteed runtime error. Flip to `true`
+// once the faucet backend gains Solana support.
+const FAUCET_AVAILABLE: boolean = false;
+
 function App() {
   const [balance, setBalance] = useState<number | null>(null);
   const [tokenRequestMessage, setTokenRequestMessage] = useState<string | null>(
@@ -181,6 +187,12 @@ function App() {
   };
 
   async function requestTokens() {
+    if (!FAUCET_AVAILABLE) {
+      setTokenRequestMessage(
+        "Faucet is temporarily unavailable: the AR.IO faucet backend is not yet ported to Solana.",
+      );
+      return;
+    }
     try {
       if (localStorage.getItem("ario-jwt")) {
         await ario.faucet
@@ -253,7 +265,7 @@ function App() {
         }}
       >
         <div className="header">
-          <h2>Testnet Faucet Integration</h2>
+          <h2>Devnet Faucet Integration</h2>
         </div>
         <div
           style={{
@@ -286,8 +298,11 @@ function App() {
             }}
           />
 
-          {/* Example of using the testnet faucet to request tokens */}
-          <button onClick={requestTokens} disabled={!selectedAddress}>
+          {/* Example of using the devnet faucet to request tokens */}
+          <button
+            onClick={requestTokens}
+            disabled={!selectedAddress || !FAUCET_AVAILABLE}
+          >
             Request 100 tARIO
           </button>
           {tokenRequestMessage && (
@@ -315,7 +330,7 @@ function App() {
             maxWidth: "500px",
           }}
         >
-          Note: This example uses the AR.IO testnet faucet to request test
+          Note: This example uses the AR.IO devnet faucet to request test
           tokens (tARIO). A captcha verification is required to claim tokens.
         </div>
       </div>

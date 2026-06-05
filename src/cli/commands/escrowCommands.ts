@@ -282,12 +282,20 @@ export async function escrowClaimArweaveCLICommand(
   if (sigBytes.length !== 512) {
     throw new Error(`signature file must be 512 bytes; got ${sigBytes.length}`);
   }
+  // RSA-PSS salt length: 0 is a valid value, so only reject NaN / negative /
+  // non-integer. An unset flag defaults to 32 (a full SHA-256 digest).
+  const saltLen = o.saltLen ? Number.parseInt(o.saltLen, 10) : 32;
+  if (!Number.isInteger(saltLen) || saltLen < 0) {
+    throw new Error(
+      `--salt-len must be a non-negative integer (got '${o.saltLen}')`,
+    );
+  }
   const escrow = await writeEscrowFromOptions(o);
   const sig = await escrow.claimArweave({
     antMint: antFromOptions(o),
     claimant: address(o.claimant),
     signature: sigBytes,
-    saltLen: o.saltLen ? Number(o.saltLen) : 32,
+    saltLen,
   });
   return { signature: sig };
 }

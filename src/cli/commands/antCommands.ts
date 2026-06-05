@@ -65,10 +65,7 @@ export async function setAntRecordCLICommand(
     );
   }
 
-  return (await writeANTFromOptions(o)).setRecord(
-    recordParams,
-    customTagsFromOptions(o),
-  );
+  return writeAnt.setRecord(recordParams, customTagsFromOptions(o));
 }
 
 export async function setAntBaseNameCLICommand(
@@ -98,10 +95,7 @@ export async function setAntBaseNameCLICommand(
     );
   }
 
-  return (await writeANTFromOptions(o)).setBaseNameRecord(
-    params,
-    customTagsFromOptions(o),
-  );
+  return writeAnt.setBaseNameRecord(params, customTagsFromOptions(o));
 }
 
 export async function setAntUndernameCLICommand(
@@ -133,10 +127,7 @@ export async function setAntUndernameCLICommand(
     );
   }
 
-  return (await writeANTFromOptions(o)).setUndernameRecord(
-    params,
-    customTagsFromOptions(o),
-  );
+  return writeAnt.setUndernameRecord(params, customTagsFromOptions(o));
 }
 
 export async function transferRecordOwnershipCLICommand(
@@ -158,7 +149,7 @@ export async function transferRecordOwnershipCLICommand(
     );
   }
 
-  return (await writeANTFromOptions(o)).transferRecord(
+  return writeAnt.transferRecord(
     { undername, recipient },
     customTagsFromOptions(o),
   );

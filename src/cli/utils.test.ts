@@ -10,7 +10,11 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fundingPlanFromOptions } from './utils.js';
+import {
+  fundingPlanFromOptions,
+  requiredAddressFromOptions,
+  withdrawalIdFromOptions,
+} from './utils.js';
 
 describe('fundingPlanFromOptions', () => {
   it('returns undefined when the flag is unset', () => {
@@ -56,15 +60,46 @@ describe('fundingPlanFromOptions', () => {
       {
         kind: 'operatorStake',
         amount: '500',
-        gateway: 'OpGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG',
+        gateway: 'GFGaZZWRT1PwKwFw2NkkyMhsRU6qSsxHmJThN7swUe1N',
       },
     ]);
     const out = fundingPlanFromOptions({ fundingPlanJson: json });
     assert.equal(out![0].kind, 'operatorStake');
     assert.equal(
       out![0].gateway,
-      'OpGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG',
+      'GFGaZZWRT1PwKwFw2NkkyMhsRU6qSsxHmJThN7swUe1N',
     );
+  });
+
+  it('rejects a gateway that is not valid base58', () => {
+    assert.throws(
+      () =>
+        fundingPlanFromOptions({
+          // 'O' is not in the base58 alphabet.
+          fundingPlanJson:
+            '[{"kind":"delegation","amount":"100","gateway":"OpGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"}]',
+        }),
+      /is not a valid base58 Solana address/,
+    );
+  });
+
+  it('rejects an amount above u64 max', () => {
+    const overU64 = (1n << 64n).toString(); // 2^64, one past the max
+    assert.throws(
+      () =>
+        fundingPlanFromOptions({
+          fundingPlanJson: `[{"kind":"balance","amount":"${overU64}"}]`,
+        }),
+      /exceeds u64 max/,
+    );
+  });
+
+  it('accepts an amount at exactly u64 max', () => {
+    const u64Max = ((1n << 64n) - 1n).toString();
+    const out = fundingPlanFromOptions({
+      fundingPlanJson: `[{"kind":"balance","amount":"${u64Max}"}]`,
+    });
+    assert.equal(out![0].amount, (1n << 64n) - 1n);
   });
 
   it('rejects gateway field on balance source', () => {
@@ -141,6 +176,54 @@ describe('fundingPlanFromOptions', () => {
           fundingPlanJson: '[{"kind":"balance","amount":"abc"}]',
         }),
       /not a valid u64/,
+    );
+  });
+});
+
+describe('withdrawalIdFromOptions', () => {
+  it('returns undefined when the flag is unset', () => {
+    assert.equal(withdrawalIdFromOptions({}), undefined);
+  });
+
+  it('parses a valid decimal id', () => {
+    assert.equal(withdrawalIdFromOptions({ withdrawalId: '42' }), 42n);
+  });
+
+  it('accepts the u64 max', () => {
+    const u64Max = ((1n << 64n) - 1n).toString();
+    assert.equal(
+      withdrawalIdFromOptions({ withdrawalId: u64Max }),
+      (1n << 64n) - 1n,
+    );
+  });
+
+  it('rejects a value above u64 max', () => {
+    assert.throws(
+      () => withdrawalIdFromOptions({ withdrawalId: (1n << 64n).toString() }),
+      /outside u64 range/,
+    );
+  });
+
+  it('rejects a negative value', () => {
+    assert.throws(
+      () => withdrawalIdFromOptions({ withdrawalId: '-1' }),
+      /outside u64 range/,
+    );
+  });
+
+  it('rejects a non-integer string', () => {
+    assert.throws(
+      () => withdrawalIdFromOptions({ withdrawalId: 'abc' }),
+      /not a valid u64 integer/,
+    );
+  });
+});
+
+describe('requiredAddressFromOptions', () => {
+  it('mentions --private-key when no address source is provided', () => {
+    assert.throws(
+      () => requiredAddressFromOptions({}),
+      /--address, --wallet-file, or --private-key/,
     );
   });
 });
