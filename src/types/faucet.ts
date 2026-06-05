@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AoARIORead, AoARIOWrite } from './io.js';
+import { ARIORead, ARIOWrite } from './io.js';
 
-export type ARIOWithFaucet<T extends AoARIORead | AoARIOWrite> = T & {
+export type ARIOWithFaucet<T extends ARIORead | ARIOWrite> = T & {
   faucet: TokenFaucet;
 };
 export interface TokenFaucet {

@@ -5,7 +5,7 @@ import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 const bundle = async () => {
   console.log('Building minified web bundle file.');
   return build({
-    entryPoints: ['./src/web/index.ts'],
+    entryPoints: ['./src/solana/index.ts'],
     bundle: true,
     minify: true,
     platform: 'browser',
@@ -14,21 +14,20 @@ const bundle = async () => {
     globalName: 'ar.io',
     plugins: [
       /**
-       * We need to polyfill the node modules that are used in the web bundle.
-       *
-       * Related: https://github.com/permaweb/ao/blob/9110d6af3be8540054c2e9ba2639fd1429033c9d/connect/esbuild.js#L43-L70
+       * Polyfill the Node primitives Solana code touches (currently
+       * `crypto.createHash` from src/solana/ant-readable.ts). `process` /
+       * `buffer` keep transitive deps happy in the browser.
        */
       polyfillNode({
         polyfills: {
           crypto: true,
           process: true,
-          fs: true,
           buffer: true,
         },
       }),
     ],
-    external: ['commander', 'prompts', 'winston'],
-    tsconfig: './tsconfig.web.json',
+    external: ['commander', 'prompts'],
+    tsconfig: './tsconfig.json',
     outfile: './bundles/web.bundle.min.js',
     metafile: true,
   }).catch((e) => {

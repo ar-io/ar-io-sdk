@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ANT } from '../../common/ant.js';
 import {
-  AoArNSPurchaseParams,
-  AoBuyRecordParams,
-  AoExtendLeaseParams,
-  AoIncreaseUndernameLimitParams,
+  ArNSPurchaseParams,
+  BuyRecordParams,
+  ExtendLeaseParams,
+  IncreaseUndernameLimitParams,
 } from '../../types/io.js';
 import { CLIWriteOptionsFromAoParams } from '../types.js';
 import {
@@ -26,19 +25,35 @@ import {
   assertEnoughBalanceForArNSPurchase,
   customTagsFromOptions,
   fundFromFromOptions,
+  fundingPlanFromOptions,
   positiveIntegerFromOptions,
   recordTypeFromOptions,
   referrerFromOptions,
   requiredPositiveIntegerFromOptions,
   requiredStringFromOptions,
   stringArrayFromOptions,
+  withdrawalIdFromOptions,
   writeARIOFromOptions,
 } from '../utils.js';
 
+import type { FundingSourceSpec } from '../../types/io.js';
+
+/** Coerce the JSON-parsed funding plan to the typed `FundingSourceSpec[]`. */
+function coerceFundingPlanSources(
+  parsed: { kind: string; amount: bigint; gateway?: string }[] | undefined,
+): FundingSourceSpec[] | undefined {
+  if (!parsed) return undefined;
+  return parsed.map((s) => ({
+    kind: s.kind as FundingSourceSpec['kind'],
+    amount: s.amount,
+    ...(s.gateway ? { gateway: s.gateway } : {}),
+  }));
+}
+
 export async function buyRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoBuyRecordParams>,
+  o: CLIWriteOptionsFromAoParams<BuyRecordParams>,
 ) {
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
   const type = recordTypeFromOptions(o);
   const years = positiveIntegerFromOptions(o, 'years');
@@ -67,15 +82,12 @@ export async function buyRecordCLICommand(
       },
     });
 
-    // assert spawn new ant with module id
-    let antSpawnConfirmation = '';
-    if (processId === undefined) {
-      const { moduleId, version } = await ANT.versions.getLatestANTVersion();
-      antSpawnConfirmation = `Note: A new ANT process will be spawned with module ${moduleId} (v${version}) and assigned to this name.`;
-    }
-
     await assertConfirmationPrompt(
-      `Are you sure you want to ${type} the record ${name}? ${antSpawnConfirmation}`,
+      `Are you sure you want to ${type} the record ${name}?${
+        processId === undefined
+          ? ' Note: A new ANT (MPL Core asset) will be spawned and assigned to this name.'
+          : ''
+      }`,
       o,
     );
   }
@@ -87,6 +99,12 @@ export async function buyRecordCLICommand(
       type,
       years,
       fundFrom: fundFromFromOptions(o),
+      gatewayAddress: o.gatewayAddress as string | undefined,
+      fundAsOperator: o.fundAsOperator as boolean | undefined,
+      withdrawalId: withdrawalIdFromOptions(o as { withdrawalId?: string }),
+      sources: coerceFundingPlanSources(
+        fundingPlanFromOptions(o as { fundingPlanJson?: string }),
+      ),
       paidBy: stringArrayFromOptions(o, 'paidBy'),
       referrer,
     },
@@ -95,10 +113,10 @@ export async function buyRecordCLICommand(
 }
 
 export async function upgradeRecordCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
 
@@ -131,19 +149,21 @@ export async function upgradeRecordCLICommand(
   return ario.upgradeRecord({
     name,
     fundFrom,
+    gatewayAddress: o.gatewayAddress as string | undefined,
+    fundAsOperator: o.fundAsOperator as boolean | undefined,
     paidBy: stringArrayFromOptions(o, 'paidBy'),
     referrer,
   });
 }
 
 export async function extendLeaseCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoExtendLeaseParams>,
+  o: CLIWriteOptionsFromAoParams<ExtendLeaseParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const years = requiredPositiveIntegerFromOptions(o, 'years');
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
 
   if (!o.skipConfirmation) {
     const existingRecord = await ario.getArNSRecord({
@@ -178,6 +198,9 @@ export async function extendLeaseCLICommand(
     {
       name,
       years,
+      fundFrom,
+      gatewayAddress: o.gatewayAddress as string | undefined,
+      fundAsOperator: o.fundAsOperator as boolean | undefined,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
       referrer,
     },
@@ -186,13 +209,13 @@ export async function extendLeaseCLICommand(
 }
 
 export async function increaseUndernameLimitCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoIncreaseUndernameLimitParams>,
+  o: CLIWriteOptionsFromAoParams<IncreaseUndernameLimitParams>,
 ) {
   const name = requiredStringFromOptions(o, 'name');
   const increaseCount = requiredPositiveIntegerFromOptions(o, 'increaseCount');
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
 
   if (!o.skipConfirmation) {
     const existingRecord = await ario.getArNSRecord({
@@ -224,6 +247,9 @@ export async function increaseUndernameLimitCLICommand(
     {
       name,
       increaseCount,
+      fundFrom,
+      gatewayAddress: o.gatewayAddress as string | undefined,
+      fundAsOperator: o.fundAsOperator as boolean | undefined,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
       referrer,
     },
@@ -232,9 +258,9 @@ export async function increaseUndernameLimitCLICommand(
 }
 
 export async function requestPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
@@ -275,9 +301,9 @@ export async function requestPrimaryNameCLICommand(
 }
 
 export async function setPrimaryNameCLICommand(
-  o: CLIWriteOptionsFromAoParams<AoArNSPurchaseParams>,
+  o: CLIWriteOptionsFromAoParams<ArNSPurchaseParams>,
 ) {
-  const { ario, signerAddress } = writeARIOFromOptions(o);
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const name = requiredStringFromOptions(o, 'name');
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
@@ -290,4 +316,28 @@ export async function setPrimaryNameCLICommand(
   }
 
   return ario.setPrimaryName({ name, fundFrom, referrer });
+}
+
+/**
+ * Reconcile the on-chain ANT Attributes plugin (`ArNS Name`, `Type`,
+ * `Undername Limit`) with the current `ArnsRecord` state. Permissionless.
+ *
+ * Use after a `buy-record` where the buyer was not the ANT NFT holder
+ * (the ANT-side trait CPI gets skipped at runtime in that case so the
+ * plugin stays empty until the actual holder reconciles).
+ */
+export async function syncAttributesCLICommand(
+  o: CLIWriteOptionsFromAoParams<{ name: string }>,
+) {
+  const name = requiredStringFromOptions(o, 'name');
+  const { ario } = await writeARIOFromOptions(o);
+
+  if (!o.skipConfirmation) {
+    await assertConfirmationPrompt(
+      `Sync on-chain ANT traits for "${name}" to match the current ArnsRecord?`,
+      o,
+    );
+  }
+
+  return ario.syncAttributes({ name });
 }

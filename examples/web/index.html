@@ -27,19 +27,20 @@
       // For production, use GitHub Releases: https://github.com/ar-io/ar-io-sdk/releases/download/v<version>/web.bundle.min.js
       import {
         ARIO,
-        arioDevnetProcessId,
         mARIOToken,
       } from "../../bundles/web.bundle.min.js";
+      import { createSolanaRpc } from "https://esm.sh/@solana/kit@6";
 
-      const ario = ARIO.init();
+      const rpc = createSolanaRpc("https://api.mainnet-beta.solana.com");
+      const ario = ARIO.init({ rpc });
+      // Sample wallet address for the balance demo below.
+      const sampleAddress = "11111111111111111111111111111111";
 
       // fetch data on page load
       async function init() {
         const gateways = await ario.getGateways();
         const balance = await ario
-          .getBalance({
-            address: arioDevnetProcessId,
-          })
+          .getBalance({ address: sampleAddress })
           .then((mARIO) => new mARIOToken(mARIO).toARIO());
         const record = await ario.getArNSRecord({ name: "ardrive" });
         const records = await ario.getArNSRecords();
@@ -140,7 +141,7 @@
       style="width: 750px"
     >
       <h1 class="w-full text-textPrimary font-bold">
-        Get Balance of address 7waR8v4STuwPnTck1zFVkQqJh5K9q9Zik4Y5-5dV7nk
+        Get Balance of address 11111111111111111111111111111111
       </h1>
       <div id="balance-result" class="text-primary mt-2">Loading...</div>
     </div>

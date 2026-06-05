@@ -29,38 +29,75 @@ export const optionMap = {
   },
   mainnet: {
     alias: '--mainnet',
-    description: 'Run against the AR.IO mainnet process',
+    description: 'Run against AR.IO mainnet (Solana)',
     type: 'boolean',
   },
-  testnet: {
-    alias: '--testnet',
-    description: 'Run against the AR.IO testnet process',
-    type: 'boolean',
+  rpcUrl: {
+    alias: '--rpc-url <rpcUrl>',
+    description: 'Solana RPC URL (defaults to mainnet-beta)',
   },
-  devnet: {
-    alias: '--dev, --devnet',
-    description: 'Run against the AR.IO devnet process',
-    type: 'boolean',
+  antProgramId: {
+    alias: '--ant-program-id <antProgramId>',
+    description:
+      'Override the ario-ant program id (Solana backend). Defaults to the SDK-bundled mainnet id; ' +
+      'set this when querying localnet/devnet (see migration/localnet/out/localnet.env -> ARIO_ANT_PROGRAM_ID).',
   },
-  arioProcessId: {
-    alias: '--ario-process-id <arioProcessId>',
-    description: 'Run against a custom AR.IO process id',
+  coreProgramId: {
+    alias: '--core-program-id <coreProgramId>',
+    description:
+      'Override the ario-core program id (Solana backend). See ARIO_CORE_PROGRAM_ID in localnet.env.',
   },
-  antRegistryProcessId: {
-    alias: '--ant-registry-process-id <antRegistryProcessId>',
-    description: 'Run against a custom ANT registry process id',
+  garProgramId: {
+    alias: '--gar-program-id <garProgramId>',
+    description:
+      'Override the ario-gar program id (Solana backend). See ARIO_GAR_PROGRAM_ID in localnet.env.',
   },
-  hyperbeamUrl: {
-    alias: '--hyperbeam-url <hyperbeamUrl>',
-    description: 'The URL for a custom hyperbeam node',
+  arnsProgramId: {
+    alias: '--arns-program-id <arnsProgramId>',
+    description:
+      'Override the ario-arns program id (Solana backend). See ARIO_ARNS_PROGRAM_ID in localnet.env.',
   },
-  cuUrl: {
-    alias: '--cu-url <cuUrl>',
-    description: 'The URL for a custom compute unit',
+  escrowProgramId: {
+    alias: '--escrow-program-id <escrowProgramId>',
+    description:
+      'Override the ario-ant-escrow program id. Defaults to the SDK-bundled placeholder; ' +
+      'set when running against a deployed devnet/mainnet instance.',
   },
-  paymentUrl: {
-    alias: '--payment-url <paymentUrl>',
-    description: 'The URL for a custom turbo payment service',
+  ant: {
+    alias: '--ant <antMint>',
+    description: 'The Metaplex Core ANT mint pubkey (base58)',
+  },
+  recipientArweave: {
+    alias: '--recipient-arweave <jwkFile>',
+    description:
+      'Path to an Arweave JWK file. The "n" field (RSA-4096 modulus) is used as the escrow recipient identity.',
+  },
+  recipientEthereum: {
+    alias: '--recipient-ethereum <0xAddress>',
+    description:
+      'A 0x-prefixed Ethereum address to use as the escrow recipient identity.',
+  },
+  newRecipientArweave: {
+    alias: '--new-recipient-arweave <jwkFile>',
+    description: 'New Arweave JWK file (for `escrow update-recipient`).',
+  },
+  newRecipientEthereum: {
+    alias: '--new-recipient-ethereum <0xAddress>',
+    description: 'New Ethereum address (for `escrow update-recipient`).',
+  },
+  signatureFile: {
+    alias: '--signature-file <path>',
+    description:
+      'Path to a binary signature file (512 bytes for Arweave PSS, 65 bytes for Ethereum r||s||v).',
+  },
+  saltLen: {
+    alias: '--salt-len <bytes>',
+    description:
+      'PSS salt length (Arweave only; defaults to 32, the wallet-default).',
+  },
+  claimant: {
+    alias: '--claimant <pubkey>',
+    description: 'Solana pubkey that will receive the ANT on claim.',
   },
   processId: {
     alias: '--process-id <processId>',
@@ -138,11 +175,6 @@ export const optionMap = {
     description:
       'The allowed delegates for the gateway. By default this is empty, meaning all are allowed delegate stake unless delegating is explicitly disallowed by the gateway',
     type: 'array',
-  },
-  services: {
-    alias: '--services <services>',
-    description:
-      'JSON string of gateway services configuration (e.g., \'{"bundlers":[{"fqdn":"bundler.example.com","port":443,"protocol":"https","path":"/bundler"}]}\')',
   },
   skipConfirmation: {
     alias: '--skip-confirmation',
@@ -242,7 +274,12 @@ export const optionMap = {
   },
   transactionId: {
     alias: '--transaction-id <transactionId>',
-    description: 'The transaction ID to interact with',
+    description: 'The content target (Arweave TX ID, IPFS CID, etc.)',
+  },
+  targetProtocol: {
+    alias: '--target-protocol <targetProtocol>',
+    description:
+      'Storage protocol for the target: "arweave" (default) or "ipfs"',
   },
   ttlSeconds: {
     alias: '--ttl-seconds <ttlSeconds>',
@@ -282,18 +319,40 @@ export const optionMap = {
   fundFrom: {
     alias: '--fund-from <fundFrom>',
     description:
-      'Where to fund the action from. e.g. "balance", "stakes", or "any',
+      'Funding source: balance | stakes | withdrawal | plan | any | turbo. ' +
+      "'stakes' requires --gateway-address (uses delegation; add --fund-as-operator " +
+      "for operator stake). 'withdrawal' requires --withdrawal-id. 'plan' / 'any' " +
+      'use the multi-source funding plan (see --funding-plan-json or auto-discover).',
+  },
+  gatewayAddress: {
+    alias: '--gateway-address <gatewayAddress>',
+    description:
+      'Gateway operator address for funding from stakes. Required when --fund-from is "stakes"',
+  },
+  fundAsOperator: {
+    alias: '--fund-as-operator',
+    description:
+      'Fund from operator stake instead of delegation (default: delegation)',
+    type: 'boolean',
+  },
+  withdrawalId: {
+    alias: '--withdrawal-id <withdrawalId>',
+    description:
+      'Withdrawal vault id (u64) — required when --fund-from is "withdrawal" (Solana). ' +
+      'Find with `ar.io listMyWithdrawals` or query Withdrawal PDAs directly.',
+  },
+  fundingPlanJson: {
+    alias: '--funding-plan-json <json>',
+    description:
+      'Explicit funding plan as JSON: [{"kind":"balance","amount":"100"},...]. ' +
+      "Used when --fund-from is 'plan' or 'any' to bypass auto-discovery. " +
+      "kind is 'balance' | 'delegation' | 'operatorStake' | 'withdrawal'; " +
+      'amount is a string-encoded mARIO bigint. Sum must equal the operation cost.',
   },
   revokable: {
     alias: '--revokable',
     description:
       'Whether the vaulted transfer is revokable by the sender. Defaults to false',
-    type: 'boolean',
-  },
-  removeControllers: {
-    alias: '--remove-controllers',
-    description:
-      'Whether to remove controllers when transferring ANT ownership. Defaults to true',
     type: 'boolean',
   },
   lockLengthMs: {
@@ -312,9 +371,10 @@ export const optionMap = {
     alias: '--logo <logo>',
     description: 'The ANT logo',
   },
-  module: {
-    alias: '--module <module>',
-    description: 'The module ID to use for spawning the ANT process',
+  metadataUri: {
+    alias: '--metadata-uri <metadataUri>',
+    description:
+      'spawn-ant only: URI baked into the Metaplex Core asset (e.g. "ar://<txid>" or "https://<gateway>/raw/<txid>"). Build the JSON with `buildAntMetadata` from `@ar.io/sdk` and upload via Turbo. See sdk/scripts/devnet-validation/populate-ant.ts.',
   },
   token: {
     alias: '-t, --token <type>',
@@ -330,10 +390,37 @@ export const optionMap = {
     alias: '--referrer <referrer>',
     description: 'The referrer for ArNS purchase tracking',
   },
-  reassignAffiliatedNames: {
-    alias: '--reassign-affiliated-names',
-    description: 'Reassign all affiliated names to the new process',
-    type: 'boolean',
+  // -----------------------------------------------------------------
+  // Prune / cleanup flags (Solana-only — see pruneCommands.ts)
+  // -----------------------------------------------------------------
+  gateway: {
+    alias: '--gateway <gateway>',
+    description: 'The gateway operator address (prune / finalize commands)',
+  },
+  delegator: {
+    alias: '--delegator <delegator>',
+    description: 'The delegator address (close-empty-delegation)',
+  },
+  observer: {
+    alias: '--observer <observer>',
+    description: 'The observer address (close-observation)',
+  },
+  max: {
+    alias: '--max <max>',
+    description:
+      'Per-tx batch size (1-255, u8) for prune-expired-names / prune-returned-names',
+  },
+  arnsRecords: {
+    alias: '--arns-records <arnsRecords...>',
+    description:
+      'Explicit ArnsRecord PDAs to prune. Default: discover via getExpiredArnsRecords.',
+    type: 'array',
+  },
+  returnedNames: {
+    alias: '--returned-names <returnedNames...>',
+    description:
+      'Explicit ReturnedName PDAs to prune. Default: discover via getExpiredReturnedNames.',
+    type: 'array',
   },
 };
 
@@ -346,13 +433,13 @@ export const walletOptions = [
 
 export const globalOptions = [
   ...walletOptions,
-  optionMap.devnet,
-  optionMap.testnet,
   optionMap.mainnet,
   optionMap.debug,
-  optionMap.arioProcessId,
-  optionMap.cuUrl,
-  optionMap.hyperbeamUrl,
+  optionMap.rpcUrl,
+  optionMap.antProgramId,
+  optionMap.coreProgramId,
+  optionMap.garProgramId,
+  optionMap.arnsProgramId,
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
@@ -361,8 +448,11 @@ export const arnsPurchaseOptions = [
   ...writeActionOptions,
   optionMap.name,
   optionMap.fundFrom,
+  optionMap.gatewayAddress,
+  optionMap.fundAsOperator,
+  optionMap.withdrawalId,
+  optionMap.fundingPlanJson,
   optionMap.paidBy,
-  optionMap.paymentUrl,
   optionMap.referrer,
 ];
 
@@ -395,7 +485,6 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
-  optionMap.paymentUrl,
 ];
 
 export const transferOptions = [
@@ -440,7 +529,6 @@ export const updateGatewaySettingsOptions = [
   optionMap.fqdn,
   optionMap.port,
   optionMap.protocol,
-  optionMap.services,
 ];
 
 export const joinNetworkOptions = [
@@ -463,15 +551,15 @@ export const antStateOptions = [
   optionMap.ticker,
   optionMap.name,
   optionMap.description,
-  optionMap.controllers,
   optionMap.ttlSeconds,
   optionMap.logo,
-  optionMap.module,
+  optionMap.metadataUri,
 ];
 
 export const setAntBaseNameOptions = [
   optionMap.processId,
   optionMap.transactionId,
+  optionMap.targetProtocol,
   optionMap.ttlSeconds,
   optionMap.owner,
   optionMap.displayName,
@@ -484,13 +572,6 @@ export const setAntBaseNameOptions = [
 export const setAntUndernameOptions = [
   ...setAntBaseNameOptions,
   optionMap.undername,
-];
-
-export const upgradeAntOptions = [
-  optionMap.processId,
-  optionMap.names,
-  optionMap.reassignAffiliatedNames,
-  ...writeActionOptions,
 ];
 
 export const transferRecordOwnershipOptions = [

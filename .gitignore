@@ -1,4 +1,6 @@
 node_modules
+.pnp.*
+.yarn
 lib
 bundles
 coverage
@@ -21,3 +23,7 @@ tests/wallets
 tests/contracts
 aos-ant-*.wasm
 ._*
+
+# Generated locally by sdk-e2e bootstrap (never commit secrets / RPC endpoints).
+test/.env.e2e
+test/e2e-wallet.json

@@ -1,4 +1,4 @@
-import { AoARIORead } from "@ar.io/sdk";
+import { ARIORead } from "@ar.io/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 export const useArNSReturnedNames = ({
@@ -8,14 +8,17 @@ export const useArNSReturnedNames = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy: "name" | "startTimestamp" | "initiator";
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["ar-ns-returned-names"],
+    queryKey: [
+      "ar-ns-returned-names",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () =>
       ario.getArNSReturnedNames({ limit, cursor, sortBy, sortOrder }),
   });
@@ -30,7 +33,7 @@ export const useArNSRecords = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy:
@@ -43,7 +46,10 @@ export const useArNSRecords = ({
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["ar-ns-records"],
+    queryKey: [
+      "ar-ns-records",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () => ario.getArNSRecords({ limit, cursor, sortBy, sortOrder }),
   });
 

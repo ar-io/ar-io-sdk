@@ -1,4 +1,4 @@
-import { AoARIORead } from "@ar.io/sdk";
+import { ARIORead } from "@ar.io/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 export const useGateways = ({
@@ -8,14 +8,17 @@ export const useGateways = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy: "startTimestamp" | "operatorStake" | "totalDelegatedStake";
   sortOrder: "asc" | "desc";
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["gateways"],
+    queryKey: [
+      "gateways",
+      { limit, cursor: cursor ?? null, sortBy, sortOrder },
+    ],
     queryFn: () => ario.getGateways({ limit, cursor, sortBy, sortOrder }),
   });
 
@@ -28,13 +31,17 @@ export const useGatewayDelegations = ({
   limit,
   cursor,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   gatewayAddress: string;
   limit: number;
   cursor: string | undefined;
 }) => {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["gateway-delegations", gatewayAddress],
+    queryKey: [
+      "gateway-delegations",
+      gatewayAddress,
+      { limit, cursor: cursor ?? null },
+    ],
     queryFn: () =>
       ario.getDelegations({
         address: gatewayAddress,

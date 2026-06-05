@@ -1,35 +1,29 @@
-import {
-  ANT,
-  ARIO,
-  ARIO_MAINNET_PROCESS_ID,
-  getANTProcessesOwnedByWallet,
-} from "@ar.io/sdk";
+import { ANT, ARIO } from "@ar.io/sdk";
+import { createSolanaRpc } from "@solana/kit";
 
 (async () => {
-  const arIO = ARIO.init();
-  const testnetGateways = await arIO.getGateways();
-  const protocolBalance = await arIO.getBalance({
-    address: ARIO_MAINNET_PROCESS_ID,
-  });
-  const contractInfo = await arIO.getInfo();
-  const ardriveRecord = await arIO.getArNSRecord({ name: "ardrive" });
-  const partialRecords = await arIO.getArNSRecords();
-  const epoch = await arIO.getCurrentEpoch();
-  const currentObservations = await arIO.getObservations();
-  const observations = await arIO.getObservations({ epochIndex: 0 });
-  const distributions = await arIO.getDistributions({ epochIndex: 0 });
-  const buyRecordCost = await arIO.getTokenCost({
+  const rpc = createSolanaRpc("https://api.mainnet-beta.solana.com");
+  const ario = ARIO.init({ rpc });
+
+  const contractInfo = await ario.getInfo();
+  const testnetGateways = await ario.getGateways();
+  const ardriveRecord = await ario.getArNSRecord({ name: "ardrive" });
+  const partialRecords = await ario.getArNSRecords();
+  const epoch = await ario.getCurrentEpoch();
+  const observations = await ario.getObservations({ epochIndex: 0 });
+  const distributions = await ario.getDistributions({ epochIndex: 0 });
+  const buyRecordCost = await ario.getTokenCost({
     intent: "Buy-Name",
     type: "lease",
     name: "ar-io-dapp-record",
     years: 1,
   });
-  const extendLeaseCost = await arIO.getTokenCost({
+  const extendLeaseCost = await ario.getTokenCost({
     intent: "Extend-Lease",
     name: "ardrive",
     years: 1,
   });
-  const increaseUndernameCost = await arIO.getTokenCost({
+  const increaseUndernameCost = await ario.getTokenCost({
     intent: "Increase-Undername-Limit",
     name: "ao",
     quantity: 1,
@@ -41,10 +35,8 @@ import {
       testnetGateways,
       ardriveRecord,
       epoch,
-      currentObservations,
       observations,
       distributions,
-      protocolBalance,
       records: partialRecords.items,
       buyRecordCost,
       extendLeaseCost,
@@ -53,29 +45,23 @@ import {
     { depth: 2 },
   );
 
-  // fetching ants owned by a wallet using an event emitter
-  const address = "ZjmB2vEUlHlJ7-rgJkYP09N5IzLPhJyStVrK5u9dDEo";
-  const affiliatedAnts = await getANTProcessesOwnedByWallet({
-    address,
-  });
-  const ant = ANT.init({
-    processId: affiliatedAnts[0],
-  });
-  const antRecords = await ant.getRecords();
-  const rootRecord = await ant.getRecord({ undername: "@" });
-  const owner = await ant.getOwner();
-  const controllers = await ant.getControllers();
-  const info = await ant.getInfo();
-  console.dir(
-    {
-      affiliatedAnts,
-      antProcessId: affiliatedAnts[0],
-      antRecords,
-      rootRecord,
-      controllers,
-      info,
-      owner,
-    },
-    { depth: 2 },
-  );
+  // Look up an ANT (Metaplex Core asset on Solana) by its mint pubkey.
+  // Replace with a real on-chain ANT mint to exercise the read surface.
+  if (ardriveRecord?.processId) {
+    const ant = await ANT.init({ processId: ardriveRecord.processId, rpc });
+    const antRecords = await ant.getRecords();
+    const rootRecord = await ant.getRecord({ undername: "@" });
+    const owner = await ant.getOwner();
+    const info = await ant.getInfo();
+    console.dir(
+      {
+        antProcessId: ardriveRecord.processId,
+        antRecords,
+        rootRecord,
+        info,
+        owner,
+      },
+      { depth: 2 },
+    );
+  }
 })();

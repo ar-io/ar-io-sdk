@@ -1,6 +1,6 @@
 # AR.IO CLI
 
-The AR.IO CLI is a Node.js command line interface for interacting with the AR.IO network. It allows you to perform various actions such as transferring ARIO, delegating stake, buying records, and more. The CLI is designed to be easy to use and provides detailed help information for each command. This document provides an overview of the CLI and its usage.
+The AR.IO CLI is a Node.js command line interface for interacting with the AR.IO network on Solana. It allows you to perform various actions such as transferring ARIO, delegating stake, buying records, and more. The CLI is designed to be easy to use and provides detailed help information for each command. This document provides an overview of the CLI and its usage.
 
 <!-- toc -->
 
@@ -14,13 +14,13 @@ The AR.IO CLI is a Node.js command line interface for interacting with the AR.IO
 
 ## Installation
 
-Ensure that you have Node.js installed on your system before installing the CLI. You can check if Node.js is installed by running:
+Ensure that you have Node.js (>= 18) installed on your system before installing the CLI. You can check if Node.js is installed by running:
 
 ```bash
 node --version
 ```
 
-The AR.IO CLI can be installed using npm or yarn. To install the CLI, run one the following commands:
+The AR.IO CLI can be installed using npm or yarn:
 
 ```bash
 npm install -g @ar.io/sdk
@@ -29,11 +29,8 @@ npm install -g @ar.io/sdk
 or
 
 ```bash
-yarn global add @ar.io/sdk --ignore-engines
+yarn global add @ar.io/sdk
 ```
-
-> [!NOTE]
-> The `--ignore-engines` flag is required when using yarn, as [permaweb/aoconnect] recommends only the use of npm. Alternatively, you can add a `.yarnrc.yml` file to your project containing `ignore-engines true` to ignore the engines check.
 
 After installing the CLI, you can run the `ar.io --version` command to verify that the CLI was installed successfully.
 
@@ -59,15 +56,16 @@ ar.io help <command>
 
 For each command the AR.IO CLI provides a set of options that allow you to customize the behavior of the CLI. Some of the common options include:
 
-- `--dev, --devnet`: Run against the AR.IO devnet process
-- `--testnet`: Run against the AR.IO testnet process
-- `--mainnet`: Run against the AR.IO mainnet process (default)
+- `--rpc-url <rpcUrl>`: Solana RPC URL (defaults to `https://api.mainnet-beta.solana.com`)
+- `--mainnet`: Run against AR.IO mainnet (Solana)
 - `--debug`: Enable debug log output
 - `--skip-confirmation`: Skip confirmation prompts
-- `--ario-process-id <arioProcessId>`: Run against a custom AR.IO process id
-- `--cu-url <cuUrl>`: The URL for a custom compute unit
-- `-w, --wallet-file <walletFilePath>`: The file path to the wallet to use for the interaction
-- `--private-key <key>`: Stringified private key to use with the action
+- `-w, --wallet-file <walletFilePath>`: Path to a Solana keypair JSON file (64-byte secret-key array)
+- `--private-key <key>`: Base58-encoded Solana secret key
+- `--core-program-id <id>`: Override the `ario-core` program id (devnet / localnet)
+- `--gar-program-id <id>`: Override the `ario-gar` program id (devnet / localnet)
+- `--arns-program-id <id>`: Override the `ario-arns` program id (devnet / localnet)
+- `--ant-program-id <id>`: Override the `ario-ant` program id (devnet / localnet)
 
 ## Commands
 
@@ -82,12 +80,13 @@ Options:
   -V, --version                           output the version number
   -w, --wallet-file <walletFilePath>      The file path to the wallet to use for the interaction
   --private-key <key>                     Stringified private key to use with the action
-  --dev, --devnet                         Run against the AR.IO devnet process
-  --testnet                               Run against the AR.IO testnet process
-  --mainnet                               Run against the AR.IO mainnet process
+  --mainnet                               Run against AR.IO mainnet (Solana)
   --debug                                 Enable debug log output
-  --ario-process-id <arioProcessId>       Run against a custom AR.IO process id
-  --cu-url <cuUrl>                        The URL for a custom compute unit
+  --rpc-url <rpcUrl>                      Solana RPC URL (defaults to mainnet-beta)
+  --ant-program-id <antProgramId>         Override the ario-ant program id
+  --core-program-id <coreProgramId>       Override the ario-core program id
+  --gar-program-id <garProgramId>         Override the ario-gar program id
+  --arns-program-id <arnsProgramId>       Override the ario-arns program id
   -h, --help                              display help for command
 
 Commands:
@@ -104,6 +103,7 @@ Commands:
   get-gateway [options]                   Get the gateway of an address
   get-gateway-delegates [options]         Get the delegates of a gateway
   get-gateway-vaults [options]            Get the vaults of a gateway
+  get-withdrawals [options]               Get all pending stake withdrawals (operator + delegate) owned by an address
   get-delegations [options]               Get all stake delegated to gateways from this address
   get-allowed-delegates [options]         Get the allow list of a gateway delegate
   get-arns-record [options]               Get an ArNS record by name
@@ -153,6 +153,7 @@ Commands:
   decrease-operator-stake [options]       Decrease operator stake
   instant-withdrawal [options]            Instantly withdraw stake from an existing gateway withdrawal vault
   cancel-withdrawal [options]             Cancel a pending gateway withdrawal vault
+  claim-withdrawal [options]              Claim a matured stake withdrawal vault
   delegate-stake [options]                Delegate stake to a gateway
   decrease-delegate-stake [options]       Decrease delegated stake
   redelegate-stake [options]              Redelegate stake to another gateway
@@ -161,60 +162,73 @@ Commands:
   extend-lease [options]                  Extend the lease of a record
   increase-undername-limit [options]      Increase the limit of a name
   request-primary-name [options]          Request a primary name
+  set-primary-name [options]              Set an ArNS name you own as your primary name
+  sync-attributes [options]               Sync the on-chain ANT Attributes plugin with the current ArnsRecord
+
+  # Prune / cleanup (permissionless crank surface)
+  prune-expired-names [options]           Batch-prune expired ArnsRecord PDAs
+  prune-name-to-returned [options]        Convert a single expired-but-not-yet-returned lease into a ReturnedName
+  prune-returned-names [options]          Batch-prune expired ReturnedName PDAs
+  prune-expired-reservation [options]     Close an expired ReservedName PDA
+  prune-gateway [options]                 Slash + remove a deficient gateway (≥30 consecutive failures)
+  finalize-gone [options]                 GC a Leaving/Gone gateway whose leave window has fully elapsed
+  close-observation [options]             Reclaim rent from an Observation PDA whose epoch has been distributed
+  close-empty-delegation [options]        Close an empty Delegation PDA (amount == 0)
+  close-drained-withdrawal [options]      Close a drained Withdrawal PDA (amount == 0)
+  release-vault [options]                 Release tokens from an expired vault back to the owner
+  close-expired-request [options]         Close an expired PrimaryNameRequest PDA
 
   # ANTS
 
   # Getters
-  get-ant-state [options]                 Get the state of an ANT process
-  get-ant-info [options]                  Get the info of an ANT process
-  get-ant-record [options]                Get a record of an ANT process
-  get-ant-owner [options]                 Get the owner of an ANT process
-  get-ant-name [options]                  Get the name of an ANT process
-  get-ant-ticker [options]                Get the ticker of an ANT process
-  get-ant-balance [options]               Get the balance of an ANT process
+  get-ant-state [options]                 Get the state of an ANT
+  get-ant-info [options]                  Get the info of an ANT
+  get-ant-record [options]                Get a record of an ANT
+  get-ant-owner [options]                 Get the owner of an ANT
+  get-ant-name [options]                  Get the name of an ANT
+  get-ant-ticker [options]                Get the ticker of an ANT
+  get-ant-balance [options]               Get the balance of an ANT
+  get-ants-for-address [options]          List all ANTs owned/controlled by an address
 
   # Spawn
-  spawn-ant [options]                     Spawn an ANT process
+  spawn-ant [options]                     Spawn an ANT (mints a new MPL Core asset + ario-ant PDAs)
 
   # ANT Paginated Handlers
-  list-ant-records [options]              Get the records of an ANT process
-  list-ant-controllers [options]          List the controllers of an ANT process
-  list-ant-balances [options]             Get the balances of an ANT process
+  list-ant-records [options]              Get the records of an ANT
+  list-ant-controllers [options]          List the controllers of an ANT
+  list-ant-balances [options]             Get the balances of an ANT
 
   # Actions
-  transfer-ant-ownership [options]        Transfer ownership of an ANT process
-  add-ant-controller [options]            Add a controller to an ANT process
-  remove-ant-controller [options]         Remove a controller from an ANT process
-  remove-ant-record [options]             Remove a record from an ANT process
-  set-ant-record [options]                Set a record of an ANT process. Deprecated: use set-ant-base-name and set-ant-undername
-  set-ant-base-name [options]             Set the base name of an ANT process
-  set-ant-undername [options]             Set an undername of an ANT process
+  transfer-ant-ownership [options]        Transfer ownership of an ANT
+  add-ant-controller [options]            Add a controller to an ANT
+  remove-ant-controller [options]         Remove a controller from an ANT
+  remove-ant-record [options]             Remove a record from an ANT
+  set-ant-record [options]                Set a record of an ANT (deprecated: use set-ant-base-name and set-ant-undername)
+  set-ant-base-name [options]             Set the base name of an ANT
+  set-ant-undername [options]             Set an undername of an ANT
   transfer-record [options]               Transfer ownership of a specific record (undername) to another address
-  set-ant-ticker [options]                Set the ticker of an ANT process
-  set-ant-name [options]                  Set the name of an ANT process
-  set-ant-description [options]           Set the description of an ANT process
-  set-ant-keywords [options]              Set the keywords of an ANT process
-  set-ant-logo [options]                  Set the logo of an ANT process
+  set-ant-ticker [options]                Set the ticker of an ANT
+  set-ant-name [options]                  Set the name of an ANT
+  set-ant-description [options]           Set the description of an ANT
+  set-ant-keywords [options]              Set the keywords of an ANT
+  set-ant-logo [options]                  Set the logo of an ANT
 
-  # ARIO Actions (messages are forwarded to the provided ario-process-id)
-  release-name [options]                  Release the name of an ANT process
-  reassign-name [options]                 Reassign the name of an ANT process to another ANT process
-  approve-primary-name-request [options]  Approve a primary name request
-  remove-primary-names [options]          Remove primary names
+  # ANT Escrow (trustless multi-protocol custody)
+  escrow-status [options]                 Read the on-chain EscrowAnt PDA for an ANT mint
+  escrow-deposit [options]                Lock an ANT into the trustless escrow program
+  escrow-cancel [options]                 Pull an escrowed ANT back to the depositor
+  escrow-update-recipient [options]       Re-target an active escrow at a different Arweave/Ethereum identity
+  escrow-claim-arweave [options]          Submit an Arweave RSA-PSS-4096 signature to release the ANT
+  escrow-claim-ethereum [options]         Submit an Ethereum ECDSA personal_sign signature to release the ANT
 
-  # Utilities
-  write-action [options]                  Send a write action to an AO Process
-  read-action [options]                   Send a dry-run read action to an AO Process
   help [command]                          display help for command
 ```
 
 ## Development
 
-To iterate on the CLI and run it locally, you can use the following to after making changes to the source code:
+To iterate on the CLI and run it locally, you can use the following after making changes to the source code:
 
 ```bash
 yarn build:esm
 node lib/esm/cli/cli.js <command>
 ```
-
-[permaweb/aoconnect]: https://github.com/permaweb/aoconnect
