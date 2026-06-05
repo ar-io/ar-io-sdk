@@ -18,15 +18,18 @@
  *
  * Produces the EXACT bytes a recipient signs to release an escrowed
  * ANT. Output MUST be byte-identical to the Rust implementation in
- * `contracts/programs/ario-ant-escrow/src/canonical.rs::build_canonical_message`.
- * Cross-language equivalence is asserted by `canonical-message.test.ts`
- * which spawns the Rust `canonical` example binary and diffs the bytes.
+ * `ario-ant-escrow/src/canonical.rs::build_ant_escrow_claim_message`
+ * (header `ANT_ESCROW_CLAIM_HEADER = "ar.io ant-escrow claim"`). The on-chain
+ * program reconstructs these exact bytes and verifies the signature against
+ * them, so any drift (header, field set, or ordering) makes every claim fail
+ * `EthereumAddressMismatch` / signature verification.
  *
  * Format (UTF-8, line-feed separated, no trailing newline):
  *
  * ```text
- * ar.io ant-escrow claim v1
+ * ar.io ant-escrow claim
  * network: <network>
+ * recipient: <base64url(sha256(recipient_pubkey)) — 43 chars, no pad>
  * ant: <ant_mint_base58>
  * claimant: <claimant_solana_pubkey_base58>
  * nonce: <nonce_hex_lowercase>
@@ -38,6 +41,7 @@
  *   (the wallet applies the EIP-191 prefix; on-chain code re-applies it).
  */
 
+import { sha256 } from '@noble/hashes/sha256';
 import type { Address } from '@solana/kit';
 
 /** Network bound into the canonical message at compile-time on the Rust
@@ -53,12 +57,18 @@ export interface CanonicalMessageInput {
   /** Solana pubkey that will receive the ANT on claim. Bound into the
    *  signature so front-runners can't redirect. */
   claimant: Address;
+  /** Recipient identity pubkey bytes the deposit targeted (ETH 20-byte
+   *  address, Solana 32-byte pubkey, or Arweave RSA modulus). Bound into the
+   *  message as `recipient: base64url(sha256(bytes))` to match the contract's
+   *  `derive_recipient_id_b64url`. REQUIRED — the program reconstructs this
+   *  line, so omitting it makes the claim mismatch. */
+  recipient: Uint8Array;
   /** 32-byte anti-replay nonce — read from the EscrowAnt account. */
   nonce: Uint8Array;
 }
 
-/** Header literal — must match Rust `CANONICAL_HEADER`. */
-const CANONICAL_HEADER = 'ar.io ant-escrow claim v1';
+/** Header literal — must match Rust `ANT_ESCROW_CLAIM_HEADER`. */
+const CANONICAL_HEADER = 'ar.io ant-escrow claim';
 
 /**
  * Build the canonical claim message bytes. UTF-8 encoded, no trailing
@@ -77,6 +87,7 @@ export function canonicalMessage(input: CanonicalMessageInput): Uint8Array {
   const text =
     `${CANONICAL_HEADER}\n` +
     `network: ${input.network}\n` +
+    `recipient: ${deriveRecipientId(input.recipient)}\n` +
     `ant: ${input.antMint}\n` +
     `claimant: ${input.claimant}\n` +
     `nonce: ${bytesToHexLower(input.nonce)}`;
@@ -99,12 +110,18 @@ export interface CanonicalMessageV2Input {
   amount: bigint;
   /** Solana pubkey that will receive the tokens on claim. */
   claimant: Address;
+  /** Recipient identity pubkey bytes the deposit targeted (ETH 20-byte
+   *  address, Solana 32-byte pubkey, or Arweave RSA modulus). Bound into the
+   *  message as `recipient: base64url(sha256(bytes))` to match the contract's
+   *  `derive_recipient_id_b64url`. REQUIRED — the program reconstructs this
+   *  line, so omitting it makes the claim mismatch. */
+  recipient: Uint8Array;
   /** 32-byte anti-replay nonce — read from the EscrowToken account. */
   nonce: Uint8Array;
 }
 
-/** Header literal — must match Rust `CANONICAL_HEADER_V2`. */
-const CANONICAL_HEADER_V2 = 'ar.io escrow claim v2';
+/** Header literal — must match Rust `ESCROW_CLAIM_HEADER`. */
+const CANONICAL_HEADER_V2 = 'ar.io escrow claim';
 
 /**
  * Build the v2 canonical claim message bytes for token/vault escrows.
@@ -112,8 +129,9 @@ const CANONICAL_HEADER_V2 = 'ar.io escrow claim v2';
  *
  * Format:
  * ```text
- * ar.io escrow claim v2
+ * ar.io escrow claim
  * network: <network>
+ * recipient: <base64url(sha256(recipient_pubkey)) — 43 chars, no pad>
  * type: <token|vault>
  * asset: <asset_id_hex_lowercase_64chars>
  * amount: <u64_decimal>
@@ -138,6 +156,7 @@ export function canonicalMessageV2(input: CanonicalMessageV2Input): Uint8Array {
   const text =
     `${CANONICAL_HEADER_V2}\n` +
     `network: ${input.network}\n` +
+    `recipient: ${deriveRecipientId(input.recipient)}\n` +
     `type: ${input.assetType}\n` +
     `asset: ${bytesToHexLower(input.assetId)}\n` +
     `amount: ${input.amount.toString()}\n` +
@@ -150,6 +169,21 @@ export function canonicalMessageV2(input: CanonicalMessageV2Input): Uint8Array {
 // =========================================
 // Shared utilities
 // =========================================
+
+/**
+ * Recipient identity bound into the claim message — `base64url(sha256(bytes))`
+ * with no padding (32-byte hash → 43 chars). Byte-identical to the contract's
+ * `canonical.rs::derive_recipient_id_b64url`. Input is the recipient pubkey
+ * bytes the deposit targeted (ETH 20-byte address / Solana 32-byte pubkey /
+ * Arweave RSA modulus, etc.).
+ */
+export function deriveRecipientId(recipient: Uint8Array): string {
+  if (recipient.length === 0) {
+    throw new Error('deriveRecipientId: recipient bytes must be non-empty');
+  }
+  // Node's 'base64url' encoding is unpadded — matches the Rust no-pad alphabet.
+  return Buffer.from(sha256(recipient)).toString('base64url');
+}
 
 /** Lowercase-hex encoding. Matches Rust `encode_hex_lowercase`. */
 export function bytesToHexLower(bytes: Uint8Array): string {
