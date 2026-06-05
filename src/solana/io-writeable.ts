@@ -440,10 +440,17 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
 
 /**
  * Max `compound_delegation_rewards` instructions packed into one batched tx.
- * Each carries a gateway + delegation + delegator account; 12 stays well within
- * the per-tx account/1232-byte budget even when none share a gateway.
+ * Each is a SEPARATE instruction carrying a gateway + delegation + delegator
+ * account, so — unlike the single-ix `remaining_accounts` lifecycle batch (see
+ * `MAX_LIFECYCLE_BATCH`) and unlike prescribe (which uses an ALT) — the per-item
+ * tx cost is high and there is nothing to compress. Cap low enough that a full
+ * worst-case batch (all-distinct gateways → no account dedup) stays under
+ * Solana's 1232-byte transaction limit. A full batch of 12 overflows it and
+ * wedged epoch progression on staging-V2 (the RPC rejected the tx — observed at
+ * 1928B base64, well over the 1232B raw cap). Exported so the regression test in
+ * `compound-crank.test.ts` asserts this invariant against the live constant.
  */
-const MAX_COMPOUND_BATCH = 12;
+export const MAX_COMPOUND_BATCH = 6;
 /** Observation PDAs closed per tx before close_epoch (each ix carries Epoch +
  *  Observation + payer + system accounts — keep well under the tx account cap). */
 const MAX_CLOSE_OBSERVATION_BATCH = 8;

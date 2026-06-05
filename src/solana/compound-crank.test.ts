@@ -1,10 +1,26 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address, type Instruction, getAddressDecoder } from '@solana/kit';
+import {
+  type Address,
+  type Instruction,
+  appendTransactionMessageInstructions,
+  blockhash,
+  compileTransaction,
+  createTransactionMessage,
+  getAddressDecoder,
+  getBase64EncodedWireTransaction,
+  pipe,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+} from '@solana/kit';
 
 import { selectCompoundableDelegations } from './delegation-math.js';
-import { SolanaARIOWriteable } from './io-writeable.js';
+import { MAX_COMPOUND_BATCH, SolanaARIOWriteable } from './io-writeable.js';
+
+// Solana's hard transaction-size limit (raw bytes). A versioned tx over this is
+// rejected by the RPC ("VersionedTransaction too large") and never lands.
+const MAX_TX_BYTES = 1232;
 
 const dec = getAddressDecoder();
 function pk(tag: number): Address {
@@ -136,6 +152,44 @@ describe('compoundDelegationRewardsBatch', () => {
     assert.equal(r.id, 'tx-stub');
     assert.equal(w.sent.length, 1, 'a single transaction');
     assert.equal(w.sent[0].ixs.length, 3, 'one instruction per delegation');
+  });
+
+  it('a full MAX_COMPOUND_BATCH batch fits the 1232-byte tx limit (worst case: all-distinct gateways)', async () => {
+    const w = new TestWriteable();
+    // Worst case for tx size: every delegation a distinct gateway, so no account
+    // dedup shrinks the message. This is the shape that wedged epoch progression
+    // on staging-V2 — a full batch of 12 overflows the 1232B raw limit and threw
+    // in the post-distribution tail before create_epoch, so the cranker never
+    // advanced. The cap must keep a full batch sendable.
+    const dels = Array.from({ length: MAX_COMPOUND_BATCH }, (_, i) => ({
+      gateway: pk(100 + i * 3),
+      delegator: pk(101 + i * 3),
+    }));
+    await w.compoundDelegationRewardsBatch(dels);
+    assert.equal(w.sent.length, 1, 'a single transaction');
+
+    // Compile the captured instructions into a real wire transaction and measure
+    // it, mirroring how `sendTransaction` builds the v0 tx.
+    const wire = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayer(pk(99), tx),
+      (tx) =>
+        setTransactionMessageLifetimeUsingBlockhash(
+          {
+            blockhash: blockhash('11111111111111111111111111111111'),
+            lastValidBlockHeight: 0n,
+          },
+          tx,
+        ),
+      (tx) => appendTransactionMessageInstructions(w.sent[0].ixs, tx),
+      (tx) => getBase64EncodedWireTransaction(compileTransaction(tx)),
+    );
+    const bytes = Buffer.from(wire, 'base64').length;
+    assert.ok(
+      bytes <= MAX_TX_BYTES,
+      `a full compound batch of ${MAX_COMPOUND_BATCH} compiled to ${bytes}B, ` +
+        `exceeding Solana's ${MAX_TX_BYTES}-byte tx limit`,
+    );
   });
 });
 
