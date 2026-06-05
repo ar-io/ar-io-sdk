@@ -1,3 +1,10 @@
+# [4.0.0-solana.35](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.34...v4.0.0-solana.35) (2026-06-05)
+
+
+### Bug Fixes
+
+* **apis:** add batch read apis ([e4ab718](https://github.com/ar-io/ar-io-sdk/commit/e4ab7180f8ebef6c89ed60b9d049b28cfbd6c41e))
+
 # [4.0.0-solana.34](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.33...v4.0.0-solana.34) (2026-06-04)
 
 
