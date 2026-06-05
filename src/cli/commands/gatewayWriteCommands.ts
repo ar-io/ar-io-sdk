@@ -15,7 +15,9 @@
  */
 import prompts from 'prompts';
 
-import { mARIOToken } from '../../node/index.js';
+import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
+import type { StakeDelegation } from '../../types/io.js';
+import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
   DecreaseDelegateStakeCLIOptions,
@@ -43,7 +45,7 @@ import {
 } from '../utils.js';
 
 export async function joinNetwork(options: JoinNetworkCLIOptions) {
-  const { ario, signerAddress } = writeARIOFromOptions(options);
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
 
   const mARIOQuantity = requiredMARIOFromOptions(options, 'operatorStake');
 
@@ -99,7 +101,7 @@ export async function joinNetwork(options: JoinNetworkCLIOptions) {
 export async function updateGatewaySettings(
   options: UpdateGatewaySettingsCLIOptions,
 ) {
-  const { ario, signerAddress } = writeARIOFromOptions(options);
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
   const gatewaySettings = gatewaySettingsFromOptions(options);
 
   if (Object.keys(gatewaySettings).length === 0) {
@@ -127,7 +129,7 @@ export async function updateGatewaySettings(
 }
 
 export async function leaveNetwork(options: WriteActionCLIOptions) {
-  const { ario, signerAddress } = writeARIOFromOptions(options);
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
 
   if (!options.skipConfirmation) {
     const gateway = await ario.getGateway({ address: signerAddress });
@@ -141,7 +143,7 @@ export async function leaveNetwork(options: WriteActionCLIOptions) {
     );
   }
 
-  return writeARIOFromOptions(options).ario.leaveNetwork(
+  return (await writeARIOFromOptions(options)).ario.leaveNetwork(
     customTagsFromOptions(options),
   );
 }
@@ -162,7 +164,7 @@ export async function saveObservations(
     o,
   );
 
-  return writeARIOFromOptions(o).ario.saveObservations(
+  return (await writeARIOFromOptions(o)).ario.saveObservations(
     {
       failedGateways: requiredStringArrayFromOptions(o, 'failedGateways'),
       reportTxId: requiredStringFromOptions(o, 'transactionId'),
@@ -181,7 +183,7 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
     o,
   );
 
-  return writeARIOFromOptions(o).ario.increaseOperatorStake(
+  return (await writeARIOFromOptions(o)).ario.increaseOperatorStake(
     {
       increaseQty,
     },
@@ -190,9 +192,33 @@ export async function increaseOperatorStake(o: OperatorStakeCLIOptions) {
 }
 
 export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
+  const { ario, signerAddress } = await writeARIOFromOptions(o);
   const decreaseQty = requiredMARIOFromOptions(o, 'operatorStake');
 
-  // TODO: Can assert stake is sufficient for action, and new target stake meets contract minimum
+  if (!o.skipConfirmation) {
+    const gateway = await ario.getGateway({ address: signerAddress });
+    if (gateway === undefined) {
+      throw new Error(
+        `No gateway found for address ${signerAddress}. You must be a gateway operator to decrease stake.`,
+      );
+    }
+
+    const settings = await ario.getGatewayRegistrySettings();
+    const currentStake = gateway.operatorStake;
+    const remaining = currentStake - decreaseQty.valueOf();
+
+    if (remaining < 0) {
+      throw new Error(
+        `Insufficient operator stake. Current: ${formatARIOWithCommas(new mARIOToken(currentStake).toARIO())} ARIO, requested decrease: ${formatARIOWithCommas(decreaseQty.toARIO())} ARIO`,
+      );
+    }
+
+    if (remaining > 0 && remaining < settings.operators.minStake) {
+      throw new Error(
+        `Remaining stake (${formatARIOWithCommas(new mARIOToken(remaining).toARIO())} ARIO) would be below minimum (${formatARIOWithCommas(new mARIOToken(settings.operators.minStake).toARIO())} ARIO). Decrease to exactly 0 (after calling leave-network) or keep above the minimum.`,
+      );
+    }
+  }
 
   await assertConfirmationPrompt(
     `You are about to decrease your operator stake by ${formatARIOWithCommas(
@@ -201,10 +227,28 @@ export async function decreaseOperatorStake(o: OperatorStakeCLIOptions) {
     o,
   );
 
-  return writeARIOFromOptions(o).ario.decreaseOperatorStake(
+  return ario.decreaseOperatorStake(
     {
       decreaseQty,
     },
+    customTagsFromOptions(o),
+  );
+}
+
+export async function claimWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
+  const vaultId = requiredStringFromOptions(o, 'vaultId');
+
+  await assertConfirmationPrompt(
+    `You are about to claim matured withdrawal vault ${vaultId}. Tokens will be transferred to your wallet.\nAre you sure?`,
+    o,
+  );
+
+  // claimWithdrawal is Solana-only — surface it through the SolanaARIOWriteable
+  // class rather than the shared ARIOWrite interface (see the comment in
+  // src/types/io.ts above syncAttributes).
+  const { ario } = await writeARIOFromOptions(o);
+  return (ario as unknown as SolanaARIOWriteable).claimWithdrawal(
+    { withdrawalId: vaultId },
     customTagsFromOptions(o),
   );
 }
@@ -218,7 +262,7 @@ export async function instantWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  return writeARIOFromOptions(o).ario.instantWithdrawal(
+  return (await writeARIOFromOptions(o)).ario.instantWithdrawal(
     {
       vaultId,
       gatewayAddress,
@@ -236,7 +280,7 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
     o,
   );
 
-  return writeARIOFromOptions(o).ario.cancelWithdrawal(
+  return (await writeARIOFromOptions(o)).ario.cancelWithdrawal(
     {
       vaultId,
       gatewayAddress,
@@ -246,7 +290,7 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
 }
 
 export async function delegateStake(options: TransferCLIOptions) {
-  const { ario, signerAddress } = writeARIOFromOptions(options);
+  const { ario, signerAddress } = await writeARIOFromOptions(options);
 
   const { target, arioQuantity } =
     requiredTargetAndQuantityFromOptions(options);
@@ -269,9 +313,67 @@ export async function delegateStake(options: TransferCLIOptions) {
       throw new Error(`Gateway does not allow delegated staking: ${target}`);
     }
 
-    // TODO: could get allow list and assert doesn't exist or user is on it
+    // Check allowlist if gateway restricts delegation. `allowDelegatedStaking`
+    // is `boolean | 'allowlist'`; the SDK maps `allowlist_enabled = true` on
+    // Solana to the `'allowlist'` variant (see deserialize.ts).
+    //
+    // `getGatewayDelegateAllowList` returns `PaginationResult<WalletAddress>`,
+    // so we walk pages by cursor — the previous shape (plain `string[]`) was
+    // never the actual return type and made the membership check dead code.
+    //
+    // Note: the on-chain delegate handler also lets you bypass the allowlist
+    // if you already have stake > 0 with this gateway (delegate.rs). We
+    // can't easily check that client-side, so this preflight surfaces the
+    // most common case (new-delegator-not-on-list) but falls through any
+    // unexpected error to let the on-chain check arbitrate.
+    if (targetGateway.settings.allowDelegatedStaking === 'allowlist') {
+      try {
+        let cursor: string | undefined;
+        let onAllowlist = false;
+        let allowlistHasEntries = false;
+        do {
+          const page = await ario.getGatewayDelegateAllowList({
+            address: target,
+            limit: 1_000,
+            cursor,
+          });
+          if (page.items.length > 0) allowlistHasEntries = true;
+          if (page.items.includes(signerAddress)) {
+            onAllowlist = true;
+            break;
+          }
+          cursor = page.nextCursor;
+        } while (cursor);
 
-    // TODO: could read from contract to get current delegated stake if there is none, get contract minimum delegated stake. Then see if the new stake value will satisfy minimum delegated stake for both the target gateway settings min delegate stake and contract min delegated amounts
+        if (allowlistHasEntries && !onAllowlist) {
+          throw new Error(
+            `You (${signerAddress}) are not on the delegation allowlist for gateway ${target}.`,
+          );
+        }
+      } catch (e: unknown) {
+        // Re-throw our own "not on allowlist" error; swallow anything else
+        // so the on-chain check can produce the canonical failure.
+        if (
+          e instanceof Error &&
+          e.message.includes('not on the delegation allowlist')
+        ) {
+          throw e;
+        }
+      }
+    }
+
+    // Validate minimum delegation amount
+    const settings = await ario.getGatewayRegistrySettings();
+    const contractMinDelegation = settings.delegates.minStake;
+    const gatewayMinDelegation =
+      targetGateway.settings.minDelegatedStake ?? contractMinDelegation;
+    const effectiveMin = Math.max(contractMinDelegation, gatewayMinDelegation);
+
+    if (mARIOQuantity.valueOf() < effectiveMin) {
+      throw new Error(
+        `Delegation amount (${formatARIOWithCommas(arioQuantity)} ARIO) is below minimum (${formatARIOWithCommas(new mARIOToken(effectiveMin).toARIO())} ARIO).`,
+      );
+    }
 
     const { confirm } = await prompts({
       type: 'confirm',
@@ -304,19 +406,58 @@ export async function delegateStake(options: TransferCLIOptions) {
 export async function decreaseDelegateStake(
   options: DecreaseDelegateStakeCLIOptions,
 ) {
-  const ario = writeARIOFromOptions(options).ario;
+  const ario = await (await writeARIOFromOptions(options)).ario;
   const { target, arioQuantity } =
     requiredTargetAndQuantityFromOptions(options);
   const instant = options.instant ?? false;
 
-  // TODO: Could assert sender is a delegate with enough stake to decrease
-  // TODO: Could assert new target stake meets contract and target gateway minimums
-  // TODO: Could present confirmation prompt with any fee for instant withdrawal (50% of the stake is put back into protocol??)
+  if (!options.skipConfirmation) {
+    // Verify the target gateway exists and look up delegation
+    const signerAddr = (await writeARIOFromOptions(options)).signerAddress;
+    const targetGateway = await ario.getGateway({ address: target });
+    if (targetGateway === undefined) {
+      throw new Error(`Gateway not found: ${target}`);
+    }
 
-  await assertConfirmationPrompt(
-    `Are you sure you'd like to decrease delegated stake of ${formatARIOWithCommas(arioQuantity)} ARIO on gateway ${target}?`,
-    options,
-  );
+    // Find delegation to this gateway
+    const delegations = await ario.getDelegations({ address: signerAddr });
+    const delegation = delegations.items.find(
+      (d) => d.gatewayAddress === target && d.type === 'stake',
+    ) as StakeDelegation | undefined;
+    if (!delegation) {
+      throw new Error(
+        `No active delegation found for you on gateway ${target}.`,
+      );
+    }
+    if (arioQuantity.toMARIO().valueOf() > delegation.balance) {
+      throw new Error(
+        `Cannot decrease by ${formatARIOWithCommas(arioQuantity)} ARIO — you only have ${formatARIOWithCommas(new mARIOToken(delegation.balance).toARIO())} ARIO delegated.`,
+      );
+    }
+
+    const remaining = delegation.balance - arioQuantity.toMARIO().valueOf();
+    if (remaining > 0) {
+      const registrySettings = await ario.getGatewayRegistrySettings();
+      const contractMin = registrySettings.delegates.minStake;
+      if (remaining < contractMin) {
+        throw new Error(
+          `Remaining delegation (${formatARIOWithCommas(new mARIOToken(remaining).toARIO())} ARIO) would be below minimum (${formatARIOWithCommas(new mARIOToken(contractMin).toARIO())} ARIO). Decrease to exactly 0 or keep above the minimum.`,
+        );
+      }
+    }
+  }
+
+  if (instant) {
+    await assertConfirmationPrompt(
+      `WARNING: Instant withdrawal incurs a penalty.\nAre you sure you'd like to instantly decrease delegated stake of ${formatARIOWithCommas(arioQuantity)} ARIO on gateway ${target}?`,
+      options,
+    );
+  } else {
+    await assertConfirmationPrompt(
+      `Are you sure you'd like to decrease delegated stake of ${formatARIOWithCommas(arioQuantity)} ARIO on gateway ${target}?`,
+      options,
+    );
+  }
 
   const result = await ario.decreaseDelegateStake({
     target,
@@ -336,12 +477,37 @@ export async function decreaseDelegateStake(
 }
 
 export async function redelegateStake(options: RedelegateStakeCLIOptions) {
-  const ario = writeARIOFromOptions(options).ario;
+  const ario = await (await writeARIOFromOptions(options)).ario;
   const params = redelegateParamsFromOptions(options);
 
-  // TODO: Could assert target gateway exists
-  // TODO: Could do assertion on source has enough stake to redelegate
-  // TODO: Could do assertions on source/target min delegate stakes are met
+  if (!options.skipConfirmation) {
+    const targetGateway = await ario.getGateway({ address: params.target });
+    if (targetGateway === undefined) {
+      throw new Error(`Target gateway not found: ${params.target}`);
+    }
+    if (targetGateway.settings.allowDelegatedStaking === false) {
+      throw new Error(
+        `Target gateway ${params.target} does not allow delegated staking.`,
+      );
+    }
+
+    const sourceGateway = await ario.getGateway({ address: params.source });
+    if (sourceGateway === undefined) {
+      throw new Error(`Source gateway not found: ${params.source}`);
+    }
+
+    const signerAddr = (await writeARIOFromOptions(options)).signerAddress;
+    const delegations = await ario.getDelegations({ address: signerAddr });
+    const delegation = delegations.items.find(
+      (d) => d.gatewayAddress === params.source && d.type === 'stake',
+    ) as StakeDelegation | undefined;
+    if (!delegation || delegation.balance < params.stakeQty.valueOf()) {
+      const available = delegation?.balance ?? 0;
+      throw new Error(
+        `Insufficient delegated stake on source gateway ${params.source}. Available: ${formatARIOWithCommas(new mARIOToken(available).toARIO())} ARIO, requested: ${formatARIOWithCommas(params.stakeQty.toARIO())} ARIO`,
+      );
+    }
+  }
 
   await assertConfirmationPrompt(
     `Are you sure you'd like to redelegate stake of ${formatARIOWithCommas(params.stakeQty.toARIO())} ARIO from ${params.source} to ${params.target}?`,

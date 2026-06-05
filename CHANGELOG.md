@@ -1,3 +1,437 @@
+# [4.0.0-solana.40](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.39...v4.0.0-solana.40) (2026-06-05)
+
+
+### Features
+
+* **crank:** close epoch observations before close_epoch (un-wedge progression) ([9b26e1e](https://github.com/ar-io/ar-io-sdk/commit/9b26e1e0a1225b3be19609bea289b44e2062715d))
+
+# [4.0.0-solana.39](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.38...v4.0.0-solana.39) (2026-06-05)
+
+
+### Bug Fixes
+
+* **contracts sdk:** bump version to 18 ([4ab5586](https://github.com/ar-io/ar-io-sdk/commit/4ab5586302a4083e7c8c16556ff7ac73939af9da))
+* **df:** update demand factor instruction ([20fd1fa](https://github.com/ar-io/ar-io-sdk/commit/20fd1fae93e02d7689f79a8da22c624088476d09))
+
+# [4.0.0-solana.38](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.37...v4.0.0-solana.38) (2026-06-05)
+
+
+### Features
+
+* **crank:** prune expired returned names inside crankEpochStep ([ad4ffbb](https://github.com/ar-io/ar-io-sdk/commit/ad4ffbbf05423ff8b3925629316705c1cd907f8b))
+
+# [4.0.0-solana.37](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.36...v4.0.0-solana.37) (2026-06-05)
+
+
+### Bug Fixes
+
+* **solana:** add tenure and performance checks to gateway operator discount ([65788f3](https://github.com/ar-io/ar-io-sdk/commit/65788f3f858fb0f3800a557f3f1085ba10810221))
+
+# [4.0.0-solana.36](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.35...v4.0.0-solana.36) (2026-06-05)
+
+
+### Bug Fixes
+
+* **escrow:** bind recipient + correct headers in canonical claim message ([857f8c8](https://github.com/ar-io/ar-io-sdk/commit/857f8c89f90092fec00962adde58ee5f35381069))
+
+# [4.0.0-solana.35](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.34...v4.0.0-solana.35) (2026-06-05)
+
+
+### Bug Fixes
+
+* **apis:** add batch read apis ([e4ab718](https://github.com/ar-io/ar-io-sdk/commit/e4ab7180f8ebef6c89ed60b9d049b28cfbd6c41e))
+
+# [4.0.0-solana.34](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.33...v4.0.0-solana.34) (2026-06-04)
+
+
+### Bug Fixes
+
+* **payment:** update purchasing for names ([dc0fc2b](https://github.com/ar-io/ar-io-sdk/commit/dc0fc2b4f1a7a5706540228166d19f068b7b180f))
+* **token bucket:** add token bucket logic to circuit breaker rpc ([1065547](https://github.com/ar-io/ar-io-sdk/commit/1065547480cfa0c11177745f0b696f0c0aba13b2))
+
+# [4.0.0-solana.33](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.32...v4.0.0-solana.33) (2026-06-04)
+
+
+### Features
+
+* **solana:** compound + demand-factor crank steps in crankEpochStep ([310ff1f](https://github.com/ar-io/ar-io-sdk/commit/310ff1f23f8d1f6a7deb309eb020f6c915834329))
+
+# [4.0.0-solana.32](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.31...v4.0.0-solana.32) (2026-06-04)
+
+
+### Bug Fixes
+
+* use instant withdrawal when decreaase delegate instant boolean true ([2962cc3](https://github.com/ar-io/ar-io-sdk/commit/2962cc38f8af5104a685812f818be53b2cf2027a))
+
+# [4.0.0-solana.31](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.30...v4.0.0-solana.31) (2026-06-04)
+
+
+### Bug Fixes
+
+* **gateway:** wire updateObserverAddress into updateGatewaySettings ([c9e4320](https://github.com/ar-io/ar-io-sdk/commit/c9e43205407aaf1de2a6cdaeabba78de5a8a896d))
+
+# [4.0.0-solana.30](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.29...v4.0.0-solana.30) (2026-06-04)
+
+
+### Bug Fixes
+
+* **codama clients:** update codama usage ([16b0f45](https://github.com/ar-io/ar-io-sdk/commit/16b0f45a0d7d44dfbd1428d4505fdbb8cdde08bf))
+* **codama:** update codama clients and primary name price fetching ([0a33d63](https://github.com/ar-io/ar-io-sdk/commit/0a33d632ce3eca2023f56ba758ccb69227d53423))
+* **mainnet ids:** add mainnet ids ([4957f18](https://github.com/ar-io/ar-io-sdk/commit/4957f188a92e29a6f0d928ef2c61fddf24d76fb6))
+* **program ids:** update program ids ([bfef46b](https://github.com/ar-io/ar-io-sdk/commit/bfef46b0fbf8641300ee835a3f28a6b7127ef07b))
+
+# [4.0.0-solana.29](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.28...v4.0.0-solana.29) (2026-06-04)
+
+
+### Bug Fixes
+
+* **solana:** crankEpochStep handles AO-continuity cold start (currentIndex>0) ([baea1d8](https://github.com/ar-io/ar-io-sdk/commit/baea1d87a03fee93e2b685fc225af5a0c4bf6aab))
+
+# [4.0.0-solana.28](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.27...v4.0.0-solana.28) (2026-06-03)
+
+
+### Bug Fixes
+
+* **solana:** getTokenSupply protocolBalance = live reward reserve ([dc4a003](https://github.com/ar-io/ar-io-sdk/commit/dc4a003eadf54e1d738ed92b436d448653eb7f7b))
+
+# [4.0.0-solana.27](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.26...v4.0.0-solana.27) (2026-06-03)
+
+
+### Bug Fixes
+
+* **solana:** finalize_gone discovers Leaving gateways + supplies swapped-slot PDA ([3f7bf04](https://github.com/ar-io/ar-io-sdk/commit/3f7bf04bfb36b0f95b0fef98e1957a3184d4b2b4))
+
+# [4.0.0-solana.26](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.25...v4.0.0-solana.26) (2026-06-02)
+
+
+### Bug Fixes
+
+* **solana:** pass AntConfig account for primary-name authorization ([1d6371b](https://github.com/ar-io/ar-io-sdk/commit/1d6371ba479605732a3e8ec8b77706247a94855d)), closes [#91](https://github.com/ar-io/ar-io-sdk/issues/91)
+
+# [4.0.0-solana.25](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.24...v4.0.0-solana.25) (2026-06-02)
+
+
+### Features
+
+* **solana:** add getDisabledGatewaysWithDelegatedStake discovery helper ([bd3595d](https://github.com/ar-io/ar-io-sdk/commit/bd3595dbc9fb74b29e30b5ffa5d27c095d1a78d8)), closes [#6](https://github.com/ar-io/ar-io-sdk/issues/6)
+* **solana:** support disabled-gateway delegate claim + deferred reward-share ratio (GAR 1.1.0) ([2398c3b](https://github.com/ar-io/ar-io-sdk/commit/2398c3b65a6db4ef9ec2c1a15a1701bfc2d02da6)), closes [6/#7](https://github.com/ar-io/ar-io-sdk/issues/7) [#7](https://github.com/ar-io/ar-io-sdk/issues/7) [#6](https://github.com/ar-io/ar-io-sdk/issues/6)
+
+# [4.0.0-solana.24](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.23...v4.0.0-solana.24) (2026-06-01)
+
+
+### Features
+
+* **solana:** add crankEpochStep() — generalized one-action epoch crank primitive ([ad4eb3e](https://github.com/ar-io/ar-io-sdk/commit/ad4eb3eab5f29b0875b9e76cb21166b0bcf26690))
+* **solana:** predict prescribe_epoch observer selection off-chain (size-safe cranker path) ([ebe3be3](https://github.com/ar-io/ar-io-sdk/commit/ebe3be3bfcd4fe23e2ce2c380c847ababb5a22b5))
+* **solana:** reclaim leaked prescribe Address Lookup Tables ([d0fbb43](https://github.com/ar-io/ar-io-sdk/commit/d0fbb433518e4cab3c612d6603f2c49e64d43ff0))
+* **solana:** submit prescribe via ephemeral Address Lookup Table; cap lifecycle batch ([a39ee6f](https://github.com/ar-io/ar-io-sdk/commit/a39ee6f066eb94f6461472f5cfe12dbd63a18465)), closes [#87](https://github.com/ar-io/ar-io-sdk/issues/87)
+
+# [4.0.0-solana.23](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.22...v4.0.0-solana.23) (2026-06-01)
+
+
+### Features
+
+* **circuit breaker:** add circuit breaker fallback on 429 to base public rpc ([1377b32](https://github.com/ar-io/ar-io-sdk/commit/1377b32ea72bbf176a5469884c172a6d384df909))
+
+# [4.0.0-solana.22](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.21...v4.0.0-solana.22) (2026-05-29)
+
+
+### Bug Fixes
+
+* **codama:** update codama generated clients ([889fedb](https://github.com/ar-io/ar-io-sdk/commit/889fedb876ae0778682c535e051f6ebd68dfe8e2))
+* **errors:** fix lint errors ([a34bc64](https://github.com/ar-io/ar-io-sdk/commit/a34bc64bc670a72b7f03dd9b73c9031fed883b53))
+* **solana:** fail-fast on legacy primary-name state + add localnet coverage ([174ccef](https://github.com/ar-io/ar-io-sdk/commit/174ccef6b3dfa8e07248a955ad333ea48c0707a7)), closes [#643](https://github.com/ar-io/ar-io-sdk/issues/643) [pre-#159](https://github.com/pre-/issues/159) [post-#159](https://github.com/post-/issues/159)
+
+# [4.0.0-solana.21](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.20...v4.0.0-solana.21) (2026-05-29)
+
+
+### Bug Fixes
+
+* **solana:** don't sign ANT writes against an untrusted auto-detected program ([6767501](https://github.com/ar-io/ar-io-sdk/commit/67675015db2e5169fed9664aa09806e3a8b61890))
+
+# [4.0.0-solana.20](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.19...v4.0.0-solana.20) (2026-05-29)
+
+
+### Features
+
+* **solana/escrow:** expose claimVaultArweaveIx for attested-claim composition ([5e0baed](https://github.com/ar-io/ar-io-sdk/commit/5e0baed03e87c08e60dc64c7d143d4e29f3cf243))
+
+# [4.0.0-solana.19](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.18...v4.0.0-solana.19) (2026-05-29)
+
+
+### Bug Fixes
+
+* **solana/escrow:** add clock-skew tolerance + isVaultClaimable helper ([6e690a0](https://github.com/ar-io/ar-io-sdk/commit/6e690a0035bd22c6c9d94a61bfb9fefd019bc256))
+
+# [4.0.0-solana.18](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.17...v4.0.0-solana.18) (2026-05-28)
+
+
+### Bug Fixes
+
+* **solana:** correct EscrowAntState/EscrowTokenState version field type ([7f210f3](https://github.com/ar-io/ar-io-sdk/commit/7f210f3b2a1d877cfbbc5baa58e277c11ae67826)), closes [#639](https://github.com/ar-io/ar-io-sdk/issues/639)
+
+# [4.0.0-solana.17](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.16...v4.0.0-solana.17) (2026-05-28)
+
+
+### Bug Fixes
+
+* **solana:** bump [@ar](https://github.com/ar).io/solana-contracts to 0.4.0; wire ant_asset for reassign/release ([50c92b2](https://github.com/ar-io/ar-io-sdk/commit/50c92b294a9b2fca134961540a0bad7eb4f29675)), closes [#74](https://github.com/ar-io/ar-io-sdk/issues/74) [#73](https://github.com/ar-io/ar-io-sdk/issues/73) [pre-PR-#73](https://github.com/pre-PR-/issues/73)
+* **solana:** disable active vault-claim path; require post-unlock liquid claim ([4a8087d](https://github.com/ar-io/ar-io-sdk/commit/4a8087d30e6c9516aa1dd74190fc9b5e4eaf72ad)), closes [#74](https://github.com/ar-io/ar-io-sdk/issues/74)
+
+# [4.0.0-solana.16](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.15...v4.0.0-solana.16) (2026-05-26)
+
+
+### Bug Fixes
+
+* **idls:** update idl package version ([c1a4f22](https://github.com/ar-io/ar-io-sdk/commit/c1a4f226bbf9589e9cbdf42319572c392b59504d))
+* **tests:** update tests ([752b4f6](https://github.com/ar-io/ar-io-sdk/commit/752b4f69636ff4cce34eb2a700e8afb1a3e73d4a))
+
+# [4.0.0-solana.15](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.14...v4.0.0-solana.15) (2026-05-26)
+
+
+### Bug Fixes
+
+* **ids:** upgrade program ids ([e152566](https://github.com/ar-io/ar-io-sdk/commit/e152566db3fe46a898837ba15242231e230e53da))
+
+# [4.0.0-solana.14](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.13...v4.0.0-solana.14) (2026-05-20)
+
+
+### Bug Fixes
+
+* **coderabbit:** address all 11 review findings ([74c06ca](https://github.com/ar-io/ar-io-sdk/commit/74c06ca46b99c3f546d93b5be760861b36931902))
+* **package:** update package.json types ([2d50249](https://github.com/ar-io/ar-io-sdk/commit/2d502496e4f9f8c6211966792a39370751e34fee))
+* **pkg:** re-export ARIO/ANT/ANTRegistry/types from solana barrel ([a801c86](https://github.com/ar-io/ar-io-sdk/commit/a801c862a016872e332ecbc3baa2ca4c76a26d53))
+* **solana:** honor interface contracts in getDelegations, getCostDetails, transfer ([e0bda92](https://github.com/ar-io/ar-io-sdk/commit/e0bda92af12b67570d7a65d013fe00fd176fba54)), closes [#1](https://github.com/ar-io/ar-io-sdk/issues/1)
+
+
+### Features
+
+* **solana:** finish AO rip — CLI cleanup, types prune, drop aoconnect dep ([488811f](https://github.com/ar-io/ar-io-sdk/commit/488811f9db8de209567dbe5ce407bd926ca70840))
+
+# [4.0.0-solana.13](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.12...v4.0.0-solana.13) (2026-05-19)
+
+
+### Bug Fixes
+
+* **package:** add default export conditions for sdk entrypoints ([980cbcf](https://github.com/ar-io/ar-io-sdk/commit/980cbcfc7c476a1d3c8764aedc1acbfa6019b28b))
+
+# [4.0.0-solana.12](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.11...v4.0.0-solana.12) (2026-05-15)
+
+
+### Bug Fixes
+
+* convert Solana delegate reward share from basis points to percent ([7b14292](https://github.com/ar-io/ar-io-sdk/commit/7b14292d8fbbc152398f80702b348d19d1926947))
+
+
+### Features
+
+* **solana:** add getWithdrawals per-owner read ([14b918b](https://github.com/ar-io/ar-io-sdk/commit/14b918b62c8325c37ceb8d16c1a545f7be1c1bc5))
+
+# [4.0.0-solana.11](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.10...v4.0.0-solana.11) (2026-05-15)
+
+
+### Bug Fixes
+
+* **cli:** make claim-withdrawal Solana-only ([24e3820](https://github.com/ar-io/ar-io-sdk/commit/24e382029a6031a2609e4f2d8fc9af994bd847d1))
+
+
+### Features
+
+* **cli:** add claim-withdrawal command ([d449db0](https://github.com/ar-io/ar-io-sdk/commit/d449db0f0e2678c4dce8f5f8886c8daad7744d77))
+
+# [4.0.0-solana.10](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.9...v4.0.0-solana.10) (2026-05-15)
+
+
+### Bug Fixes
+
+* **solana:** primary-name deserializer + approvePrimaryName config + test 9 hermeticity ([86edc61](https://github.com/ar-io/ar-io-sdk/commit/86edc612bf048aaa01ceb0ae802db89af5f97017))
+
+# [4.0.0-solana.9](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.8...v4.0.0-solana.9) (2026-05-14)
+
+
+### Bug Fixes
+
+* **localnet-e2e:** make sdk-e2e bootstrap work after monorepo split ([4bdc89d](https://github.com/ar-io/ar-io-sdk/commit/4bdc89de307f67a648d81fa3ca19dff597b4de0c)), closes [#6037](https://github.com/ar-io/ar-io-sdk/issues/6037)
+
+# [4.0.0-solana.8](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.7...v4.0.0-solana.8) (2026-05-12)
+
+
+### Bug Fixes
+
+* **solana:** keep cumulativeRewardPerToken out of the public AoGateway shape ([82dbfc4](https://github.com/ar-io/ar-io-sdk/commit/82dbfc4db057d8b0c2e3ca4576d6108608709eef))
+
+
+### Features
+
+* **solana:** return live delegation balances from read methods ([d2d53a7](https://github.com/ar-io/ar-io-sdk/commit/d2d53a75398275e2a2c953b8ebb45b8413f7c149))
+
+# [4.0.0-solana.7](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.6...v4.0.0-solana.7) (2026-05-12)
+
+
+### Features
+
+* **solana:** switch ario_* codegen to [@ar](https://github.com/ar).io/solana-contracts@0.1.0-devnet.0 ([f8a0970](https://github.com/ar-io/ar-io-sdk/commit/f8a09702ccf6671cbd32f2fa938c90da39153b8f)), closes [#19](https://github.com/ar-io/ar-io-sdk/issues/19)
+
+# [4.0.0-solana.6](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.5...v4.0.0-solana.6) (2026-05-12)
+
+
+### Bug Fixes
+
+* **solana:** off-by-one in getCurrentEpoch + use codama decoder for Epoch ([a3b356b](https://github.com/ar-io/ar-io-sdk/commit/a3b356b4712acb7dede3f1fa6e0c81fe13d81121))
+
+
+### Features
+
+* **solana:** expose save_observations + observer-side pre-flight helpers ([c84a7d3](https://github.com/ar-io/ar-io-sdk/commit/c84a7d306c04cb73762866e8a47b6e67822d7cdf))
+
+# [4.0.0-solana.5](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.4...v4.0.0-solana.5) (2026-05-11)
+
+
+### Features
+
+* **solana:** switch SDK transfer() to standard SPL transferChecked ([74a2fe5](https://github.com/ar-io/ar-io-sdk/commit/74a2fe5dac0f25af410c7ad8ba8d17259a719d72))
+
+
+### BREAKING CHANGES
+
+* **solana:** for SDK consumers; wire-level routing changes only
+
+The on-chain `ario-core::transfer` ix is being marked deprecated in
+`ar-io/ar-io-solana-contracts` (separate PR). Coordinated with
+`ar-io/solana-ar-io` PR for test cleanup + docs.
+
+Note for reviewers: the existing `@solana-program/compute-budget` dep
+in package.json is currently unused in source (`send.ts` hand-rolls
+compute budget IXs). This PR sets the precedent of actually consuming
+a `@solana-program/*` package — worth a follow-up to either consolidate
+on `@solana-program/*` or drop the unused dep.
+
+Plan: `docs/REMOVE_CUSTOM_TRANSFER_PLAN.md` in `ar-io/solana-ar-io`.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+
+# [4.0.0-solana.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.3...v4.0.0-solana.4) (2026-05-08)
+
+
+### Bug Fixes
+
+* **solana:** address CodeRabbit nits on prune surface ([99cf7f7](https://github.com/ar-io/ar-io-sdk/commit/99cf7f73492bbb60556e0ba6effa3a7350770cfc)), closes [#621](https://github.com/ar-io/ar-io-sdk/issues/621)
+* **solana:** bundle CreateATA on every fresh-wallet path; add prune surface ([9b84c33](https://github.com/ar-io/ar-io-sdk/commit/9b84c33656cc229ecfc513f7dff3697fe9f83560)), closes [#3012](https://github.com/ar-io/ar-io-sdk/issues/3012) [#112](https://github.com/ar-io/ar-io-sdk/issues/112)
+* **solana:** gateway deser drift + auto_stake cleanup ([28772ee](https://github.com/ar-io/ar-io-sdk/commit/28772ee50179eb53a61dcdfbe03b460152c39b7b))
+
+# [4.0.0-solana.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.2...v4.0.0-solana.3) (2026-05-07)
+
+
+### Bug Fixes
+
+* **version:** set version to 2 on solana tag ([29fee17](https://github.com/ar-io/ar-io-sdk/commit/29fee1741f162c43b6e268d562534ee71688ed11))
+
+# [4.0.0-solana.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.1...v4.0.0-solana.2) (2026-05-07)
+
+
+### Bug Fixes
+
+* **ant-readable:** use static crypto import for undername hash in getRecords ([5885903](https://github.com/ar-io/ar-io-sdk/commit/58859034bf63a7ab2b1c30963b8ed21bc1ae3c99))
+
+# [4.0.0-solana.1](https://github.com/ar-io/ar-io-sdk/compare/v3.24.0-solana.1...v4.0.0-solana.1) (2026-05-06)
+
+
+* feat!: port Solana backend from solana-ar-io monorepo ([6613766](https://github.com/ar-io/ar-io-sdk/commit/66137664a5fd136740308a166a293f2e9b499435)), closes [#5](https://github.com/ar-io/ar-io-sdk/issues/5)
+
+
+### Bug Fixes
+
+* **ci:** biome ignore test/fixtures (e2e-test-wallet.json) ([d2a2cd2](https://github.com/ar-io/ar-io-sdk/commit/d2a2cd23613e2481a2efc913f8e72682130f1d0b))
+* **ci:** keep AO defaults; lint/format fixes for CI ([6da8250](https://github.com/ar-io/ar-io-sdk/commit/6da82505268999fdb491d8643b51b8b2b4125bfd))
+* **solana:** sync IDLs (eventing + admin-repair) and add cluster constants ([94eca17](https://github.com/ar-io/ar-io-sdk/commit/94eca17184f681a54100f3f629bb5cd9bb759c6d)), closes [#103](https://github.com/ar-io/ar-io-sdk/issues/103) [#105](https://github.com/ar-io/ar-io-sdk/issues/105)
+
+
+### BREAKING CHANGES
+
+* adds a new `./solana` (and `./solana/generated`)
+subpath export. Default `.`/`./node`/`./web` entries unchanged and
+remain AO-only. Major version bump per the plan: 3.24.0-solana → 4.0.0-solana.
+
+## Code
+
+- src/solana/ — full SDK port: io-readable/io-writeable, ant-readable/
+  ant-writeable, ant-registry-readable/-writeable, escrow, spawn-ant,
+  funding-plan, canonical-message, deserialize, pda, send, ata,
+  metadata, mpl-core helpers, json-rpc shim, plus unit tests.
+- src/solana/generated/ — Codama-emitted typed clients for ario_ant,
+  ario_ant_escrow, ario_arns, ario_core, ario_gar, plus vendored
+  mpl_core. Committed per Solana ecosystem norm (mpl-core, spl-token).
+- src/cli/ — `--ao` switching flag, escrow CLI commands, ANT-program
+  override (--ant-program-id), Solana write paths in arnsPurchase /
+  gateway / transfer / antCommands. CLI is now a unified surface
+  across both AO + Solana backends.
+- src/common/io.ts, src/types/io.ts, src/utils/, src/types/ant*,
+  src/types/ant-registry.ts — Solana-aware factories on `ARIO`/`ANT`/
+  `ANTRegistry`, plus the AoARIO* / AoANT* type extensions
+  (`antProgram` field on records, etc.). Default `node` / `web`
+  entry points re-export Solana classes so `import { ARIO } from
+  '@ar.io/sdk/solana'` resolves to the kit-backed implementation.
+
+## IDLs + codegen
+
+- idls/ario_*.json — checked-in copies of contracts/target/idl/*.json
+  from solana-ar-io. Refresh runbook at docs/IDL_REFRESH.md.
+- idls/mpl_core.json — vendored from metaplex-foundation/mpl-core,
+  pinned to 4f97997fc1f514d51319ee32258902aae32a7ee0
+  (release/core@0.12.0).
+- scripts/codegen.mjs — Codama lowering pipeline. Reads idls/, emits
+  src/solana/generated/<program>/. Patches the
+  `from '../programs'` import on Codama's emitted `instructions/`
+  + `errors/` files to point at a slim `program-address.ts` shim
+  (drops the kit-Client `arioFooProgram()` plugin pattern we don't
+  use; keeps the per-instruction builders + per-error constants).
+- .github/workflows/build.yml — new `codegen-drift` job runs
+  `yarn codegen` on every PR and fails if `src/solana/generated/`
+  would change. Guarantees committed clients are always in sync
+  with `idls/`.
+
+## package.json
+
+- version: 3.24.0-solana.1 → 4.0.0-solana.0
+- keywords += "solana"
+- exports: + "./solana" + "./solana/generated"
+- dependencies: + @ardrive/turbo-sdk, + @solana-program/compute-budget,
+  + @solana/kit (runtime — kit types are in the public API),
+  + bs58
+- devDependencies: + @codama/nodes-from-anchor, + @codama/renderers-js
+  (pinned 2.1.0; 2.2.0 changed DISCRIMINATOR types to ReadonlyUint8Array
+  which breaks downstream typing), + codama
+- scripts: + "codegen": "node ./scripts/codegen.mjs"
+
+## Test fixtures
+
+- test/fixtures/e2e-test-wallet.json + README — localnet-only test
+  wallet copied from the monorepo. Localnet-only, never funded with
+  real assets.
+- test/helpers/{errors,index,time}.ts — `expectAnchorError` helper
+  + Solana error code re-exports from `src/solana/generated/<program>/
+  errors/index.ts`. Tests use the codama-emitted SCREAMING_SNAKE
+  error constants directly.
+
+## What stayed in the monorepo
+
+- *.localnet.test.ts — Surfpool-driven on-chain integration tests.
+
+# [3.24.0-solana.1](https://github.com/ar-io/ar-io-sdk/compare/v3.23.1...v3.24.0-solana.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **cu url:** update to use cu.ardrive.io ([75e84d3](https://github.com/ar-io/ar-io-sdk/commit/75e84d3402e6b6f4b9d048ceada41758eadcba19))
+* **marketplace:** add polling controls ([d092ef8](https://github.com/ar-io/ar-io-sdk/commit/d092ef89837453356f6ed5325ab26352d962947f))
+* **tests:** skip failing tests - the su is denying access to the process id ([265e6b6](https://github.com/ar-io/ar-io-sdk/commit/265e6b625f1b805779f68d31ff1247242e1204c3))
+* windows argv fix ([86a28bd](https://github.com/ar-io/ar-io-sdk/commit/86a28bd14d7d8230e73a97e04e4e6c6968c57621))
+
+
+### Features
+
+* **ao process:** add msg selector cb, allows apis to define the matcher for the response message ([8dcf551](https://github.com/ar-io/ar-io-sdk/commit/8dcf551a0c7d318546cd99c33cad09c40ba1742d))
+
 # [3.24.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v3.23.1...v3.24.0-alpha.1) (2026-03-24)
 
 

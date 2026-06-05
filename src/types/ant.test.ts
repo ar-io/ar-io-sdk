@@ -6,7 +6,7 @@ import {
   AntHandlerNames,
   AntInfoSchema,
   AntStateSchema,
-  isAoANTState,
+  isANTState,
 } from './ant.js';
 
 const stub_arweave_address = 'valid-address'.padEnd(43, '1');
@@ -115,7 +115,7 @@ describe('ANT Schemas', () => {
     assert.throws(() => AntInfoSchema.parse(invalidInfo), z.ZodError);
   });
 
-  it('should validate isAoANTState', () => {
+  it('should validate isANTState', () => {
     const validState = {
       Name: 'TestToken',
       Ticker: 'TST',
@@ -159,7 +159,7 @@ describe('ANT Schemas', () => {
       Initialized: true,
     };
 
-    assert.strictEqual(isAoANTState(validState), true);
-    assert.strictEqual(isAoANTState(invalidState), false);
+    assert.strictEqual(isANTState(validState), true);
+    assert.strictEqual(isANTState(invalidState), false);
   });
 });

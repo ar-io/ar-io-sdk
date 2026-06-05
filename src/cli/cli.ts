@@ -18,7 +18,6 @@
 // eslint-disable-next-line header/header -- This is a CLI file
 import { program } from 'commander';
 
-import { AOProcess, AoMessageResult, spawnANT } from '../node/index.js';
 import { mARIOToken } from '../types/token.js';
 import { version } from '../version.js';
 import {
@@ -26,7 +25,6 @@ import {
   setAntRecordCLICommand,
   setAntUndernameCLICommand,
   transferRecordOwnershipCLICommand,
-  upgradeAntCLICommand,
 } from './commands/antCommands.js';
 import {
   buyRecordCLICommand,
@@ -34,10 +32,20 @@ import {
   increaseUndernameLimitCLICommand,
   requestPrimaryNameCLICommand,
   setPrimaryNameCLICommand,
+  syncAttributesCLICommand,
   upgradeRecordCLICommand,
 } from './commands/arnsPurchaseCommands.js';
 import {
+  escrowCancelCLICommand,
+  escrowClaimArweaveCLICommand,
+  escrowClaimEthereumCLICommand,
+  escrowDepositCLICommand,
+  escrowStatusCLICommand,
+  escrowUpdateRecipientCLICommand,
+} from './commands/escrowCommands.js';
+import {
   cancelWithdrawal,
+  claimWithdrawal,
   decreaseDelegateStake,
   decreaseOperatorStake,
   delegateStake,
@@ -49,6 +57,19 @@ import {
   saveObservations,
   updateGatewaySettings,
 } from './commands/gatewayWriteCommands.js';
+import {
+  closeDrainedWithdrawalCLICommand,
+  closeEmptyDelegationCLICommand,
+  closeExpiredRequestCLICommand,
+  closeObservationCLICommand,
+  finalizeGoneCLICommand,
+  pruneExpiredNamesCLICommand,
+  pruneExpiredReservationCLICommand,
+  pruneGatewayCLICommand,
+  pruneNameToReturnedCLICommand,
+  pruneReturnedNamesCLICommand,
+  releaseVaultCLICommand,
+} from './commands/pruneCommands.js';
 import {
   getAllGatewayVaults,
   getAllowedDelegates,
@@ -66,6 +87,7 @@ import {
   getPrimaryName,
   getTokenCost,
   getVault,
+  getWithdrawals,
   listAllDelegatesCLICommand,
   listAntsForAddress,
   listArNSRecords,
@@ -105,7 +127,6 @@ import {
   transferOptions,
   transferRecordOwnershipOptions,
   updateGatewaySettingsOptions,
-  upgradeAntOptions,
   vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
@@ -121,20 +142,15 @@ import {
 } from './types.js';
 import {
   applyOptions,
-  arioProcessIdFromOptions,
   assertConfirmationPrompt,
   customTagsFromOptions,
   epochInputFromOptions,
   formatARIOWithCommas,
-  getANTStateFromOptions,
-  getLoggerFromOptions,
   makeCommand,
   paginationParamsFromOptions,
   readANTFromOptions,
   readARIOFromOptions,
   requiredAddressFromOptions,
-  requiredAoSignerFromOptions,
-  requiredProcessIdFromOptions,
   requiredStringArrayFromOptions,
   requiredStringFromOptions,
   writeANTFromOptions,
@@ -413,11 +429,7 @@ makeCommand({
 makeCommand({
   name: 'list-arns-names-for-address',
   description: 'List all ArNS names for an address',
-  options: [
-    ...paginationOptions,
-    optionMap.address,
-    optionMap.antRegistryProcessId,
-  ],
+  options: [...paginationOptions, optionMap.address],
   action: listArNSRecordsForAddress,
 });
 
@@ -488,6 +500,14 @@ makeCommand({
   description: 'List vaults from all gateways',
   options: paginationAddressOptions,
   action: getAllGatewayVaults,
+});
+
+makeCommand({
+  name: 'get-withdrawals',
+  description:
+    'Get all pending stake withdrawals (operator + delegate) owned by an address (Solana-only)',
+  options: paginationAddressOptions,
+  action: getWithdrawals,
 });
 
 // # Actions
@@ -594,6 +614,14 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'claim-withdrawal',
+  description:
+    'Claim tokens from a matured withdrawal vault (after the lock period has elapsed)',
+  options: [...writeActionOptions, optionMap.vaultId],
+  action: claimWithdrawal,
+});
+
+makeCommand({
   name: 'delegate-stake',
   description: 'Delegate stake to a gateway',
   options: delegateStakeOptions,
@@ -621,7 +649,12 @@ makeCommand({
   action: buyRecordCLICommand,
 });
 
-// TODO alias buy-record with buy-name
+makeCommand({
+  name: 'buy-name',
+  description: 'Buy a name (alias for buy-record)',
+  options: buyRecordOptions,
+  action: buyRecordCLICommand,
+});
 
 makeCommand({
   name: 'upgrade-record',
@@ -645,6 +678,16 @@ makeCommand({
 });
 
 makeCommand({
+  name: 'sync-attributes',
+  description:
+    'Sync the on-chain ANT Attributes plugin (ArNS Name / Type / Undername Limit) ' +
+    'with the current ArnsRecord. Solana-only; permissionless reconciliation. ' +
+    'Use after a buy/reassign where the buyer was not the ANT NFT holder.',
+  options: arnsPurchaseOptions,
+  action: syncAttributesCLICommand,
+});
+
+makeCommand({
   name: 'request-primary-name',
   description: 'Request a primary name',
   options: arnsPurchaseOptions,
@@ -658,12 +701,103 @@ makeCommand<AddressAndNameCLIOptions>({
   action: setPrimaryNameCLICommand,
 });
 
+// # Prune / cleanup (Solana-only — permissionless crank surface)
+makeCommand({
+  name: 'prune-expired-names',
+  description:
+    'Batch-prune expired ArnsRecord PDAs (Solana-only). Discovers eligible records ' +
+    'via getExpiredArnsRecords if --arns-records is omitted.',
+  options: [...writeActionOptions, optionMap.max, optionMap.arnsRecords],
+  action: pruneExpiredNamesCLICommand,
+});
+
+makeCommand({
+  name: 'prune-name-to-returned',
+  description:
+    'Convert a single expired-but-not-yet-returned lease into a ReturnedName ' +
+    '(starts the Dutch auction). Solana-only.',
+  options: [...writeActionOptions, optionMap.name],
+  action: pruneNameToReturnedCLICommand,
+});
+
+makeCommand({
+  name: 'prune-returned-names',
+  description:
+    'Batch-prune expired ReturnedName PDAs (Solana-only). Discovers via ' +
+    'getExpiredReturnedNames if --returned-names is omitted.',
+  options: [...writeActionOptions, optionMap.max, optionMap.returnedNames],
+  action: pruneReturnedNamesCLICommand,
+});
+
+makeCommand({
+  name: 'prune-expired-reservation',
+  description: 'Close an expired ReservedName PDA (Solana-only).',
+  options: [...writeActionOptions, optionMap.name],
+  action: pruneExpiredReservationCLICommand,
+});
+
+makeCommand({
+  name: 'prune-gateway',
+  description:
+    'Slash + remove a deficient gateway (≥30 consecutive failures). Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway],
+  action: pruneGatewayCLICommand,
+});
+
+makeCommand({
+  name: 'finalize-gone',
+  description:
+    'GC a Leaving/Gone gateway whose leave window has fully elapsed. Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway],
+  action: finalizeGoneCLICommand,
+});
+
+makeCommand({
+  name: 'close-observation',
+  description:
+    'Reclaim rent from an Observation PDA whose epoch has been distributed. Solana-only.',
+  options: [...writeActionOptions, optionMap.epochIndex, optionMap.observer],
+  action: closeObservationCLICommand,
+});
+
+makeCommand({
+  name: 'close-empty-delegation',
+  description:
+    'Close an empty Delegation PDA (amount == 0). Rent refunds to the original delegator. Solana-only.',
+  options: [...writeActionOptions, optionMap.gateway, optionMap.delegator],
+  action: closeEmptyDelegationCLICommand,
+});
+
+makeCommand({
+  name: 'close-drained-withdrawal',
+  description:
+    'Close a drained Withdrawal PDA (amount == 0). Rent refunds to the original owner. Solana-only.',
+  options: [...writeActionOptions, optionMap.owner, optionMap.withdrawalId],
+  action: closeDrainedWithdrawalCLICommand,
+});
+
+makeCommand({
+  name: 'release-vault',
+  description:
+    'Release tokens from an expired vault back to the owner (Solana-only). ' +
+    'NOT permissionless — must be called from the vault owner wallet.',
+  options: [...writeActionOptions, optionMap.vaultId, optionMap.owner],
+  action: releaseVaultCLICommand,
+});
+
+makeCommand({
+  name: 'close-expired-request',
+  description: 'Close an expired PrimaryNameRequest PDA. Solana-only.',
+  options: [...writeActionOptions, optionMap.initiator],
+  action: closeExpiredRequestCLICommand,
+});
+
 // # ANT Registry
 makeCommand({
   name: 'get-ants-for-address',
   description:
     'Get the list of ANTs owned by an address according to the ANT registry',
-  options: [optionMap.address, optionMap.antRegistryProcessId],
+  options: [optionMap.address],
   action: listAntsForAddress,
 });
 
@@ -675,7 +809,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the state of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getState();
+    return (await readANTFromOptions(options)).getState();
   },
 });
 
@@ -684,7 +818,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the info of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getInfo();
+    return (await readANTFromOptions(options)).getInfo();
   },
 });
 
@@ -698,7 +832,9 @@ makeCommand<
   options: [optionMap.processId, optionMap.undername],
   action: async (options) => {
     return (
-      (await readANTFromOptions(options).getRecord({
+      (await (
+        await readANTFromOptions(options)
+      ).getRecord({
         undername: requiredStringFromOptions(options, 'undername'),
       })) ?? { message: 'No record found' }
     );
@@ -710,7 +846,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the owner of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getOwner();
+    return (await readANTFromOptions(options)).getOwner();
   },
 });
 
@@ -719,7 +855,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the name of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getName();
+    return (await readANTFromOptions(options)).getName();
   },
 });
 
@@ -728,7 +864,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the ticker of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getTicker();
+    return (await readANTFromOptions(options)).getTicker();
   },
 });
 
@@ -737,7 +873,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the logo of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getLogo();
+    return (await readANTFromOptions(options)).getLogo();
   },
 });
 
@@ -746,7 +882,7 @@ makeCommand<ProcessIdCLIOptions & { address?: string }>({
   description: 'Get the balance of an ANT process',
   options: [optionMap.processId, optionMap.address],
   action: async (options) => {
-    return readANTFromOptions(options).getBalance({
+    return (await readANTFromOptions(options)).getBalance({
       address: requiredAddressFromOptions(options),
     });
   },
@@ -755,21 +891,18 @@ makeCommand<ProcessIdCLIOptions & { address?: string }>({
 // # Spawn
 makeCommand<ANTStateCLIOptions>({
   name: 'spawn-ant',
-  description: 'Spawn an ANT process',
+  description: 'Spawn an ANT (mints a new MPL Core asset + ario-ant PDAs)',
   options: antStateOptions,
   action: async (options) => {
-    const state = getANTStateFromOptions(options);
-    const antProcessId = await spawnANT({
-      state,
-      signer: requiredAoSignerFromOptions(options),
-      logger: getLoggerFromOptions(options),
-      ...(options.module !== undefined ? { module: options.module } : {}),
-    });
-
+    // The signer's pubkey IS the ANT owner on Solana — no separate
+    // `--address` flag is needed. Build the InitializeAntParams payload
+    // from CLI flags.
+    const { spawnSolanaANTFromOptions } = await import('./utils.js');
+    const result = await spawnSolanaANTFromOptions(options);
     return {
-      processId: antProcessId,
-      state,
-      message: `Spawned ANT process with process ID ${antProcessId}`,
+      processId: result.processId,
+      signature: result.signature,
+      message: `Spawned ANT (mint=${result.processId})`,
     };
   },
 });
@@ -780,7 +913,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the records of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getRecords();
+    return (await readANTFromOptions(options)).getRecords();
   },
 });
 
@@ -789,7 +922,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'List the controllers of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getControllers();
+    return (await readANTFromOptions(options)).getControllers();
   },
 });
 
@@ -798,7 +931,7 @@ makeCommand<ProcessIdCLIOptions>({
   description: 'Get the balances of an ANT process',
   options: [optionMap.processId],
   action: async (options) => {
-    return readANTFromOptions(options).getBalances();
+    return (await readANTFromOptions(options)).getBalances();
   },
 });
 
@@ -806,32 +939,20 @@ makeCommand<ProcessIdCLIOptions>({
 makeCommand<
   ProcessIdWriteActionCLIOptions & {
     target?: string;
-    removeControllers?: boolean;
   }
 >({
   name: 'transfer-ant-ownership',
-  description: 'Transfer ownership of an ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.target,
-    optionMap.removeControllers,
-    ...writeActionOptions,
-  ],
+  description:
+    'Transfer ownership of an ANT process. Ex-controllers are always cleared (Solana ACL semantics — see ANTWrite.transfer JSDoc).',
+  options: [optionMap.processId, optionMap.target, ...writeActionOptions],
   action: async (options) => {
     const target = requiredStringFromOptions(options, 'target');
-    const removeControllers =
-      options.removeControllers !== undefined
-        ? options.removeControllers
-        : true;
     await assertConfirmationPrompt(
-      `Are you sure you want to transfer ANT ownership to ${target}${removeControllers ? ' (controllers will be removed)' : ' (controllers will be retained)'}?`,
+      `Are you sure you want to transfer ANT ownership to ${target}? Existing controllers will be removed.`,
       options,
     );
-    return writeANTFromOptions(options).transfer(
-      {
-        target,
-        removeControllers,
-      },
+    return (await writeANTFromOptions(options)).transfer(
+      { target },
       customTagsFromOptions(options),
     );
   },
@@ -847,7 +968,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { controller?: string }>({
       `Are you sure you want to add ${controller} as a controller?`,
       options,
     );
-    return writeANTFromOptions(options).addController(
+    return (await writeANTFromOptions(options)).addController(
       {
         controller: requiredStringFromOptions(options, 'controller'),
       },
@@ -861,7 +982,7 @@ makeCommand<ProcessIdCLIOptions & { controller?: string }>({
   description: 'Remove a controller from an ANT process',
   options: [optionMap.processId, optionMap.controller, ...writeActionOptions],
   action: async (options) => {
-    return writeANTFromOptions(options).removeController(
+    return (await writeANTFromOptions(options)).removeController(
       {
         controller: requiredStringFromOptions(options, 'controller'),
       },
@@ -882,7 +1003,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { undername?: string }>({
       options,
     );
 
-    return writeANTFromOptions(options).removeRecord(
+    return (await writeANTFromOptions(options)).removeRecord(
       {
         undername,
       },
@@ -921,14 +1042,6 @@ makeCommand({
   action: transferRecordOwnershipCLICommand,
 });
 
-makeCommand({
-  name: 'upgrade-ant',
-  description:
-    'Upgrade an ANT by forking it to the latest version and reassigning names',
-  options: upgradeAntOptions,
-  action: upgradeAntCLICommand,
-});
-
 makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
   name: 'set-ant-ticker',
   description: 'Set the ticker of an ANT process',
@@ -941,7 +1054,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { ticker?: string }>({
       options,
     );
 
-    return writeANTFromOptions(options).setTicker(
+    return (await writeANTFromOptions(options)).setTicker(
       {
         ticker,
       },
@@ -965,7 +1078,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { name?: string }>({
       options,
     );
 
-    return writeANTFromOptions(options).setName(
+    return (await writeANTFromOptions(options)).setName(
       {
         name,
       },
@@ -986,7 +1099,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { description?: string }>({
       options,
     );
 
-    return writeANTFromOptions(options).setDescription(
+    return (await writeANTFromOptions(options)).setDescription(
       {
         description,
       },
@@ -1006,7 +1119,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { keywords?: string[] }>({
       `Are you sure you want to set the ANT keywords to ${keywords}?`,
       options,
     );
-    return writeANTFromOptions(options).setKeywords(
+    return (await writeANTFromOptions(options)).setKeywords(
       {
         keywords,
       },
@@ -1030,7 +1143,7 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
       `Are you sure you want to set the ANT logo to target Arweave TxID ${txId}?`,
       options,
     );
-    return writeANTFromOptions(options).setLogo(
+    return (await writeANTFromOptions(options)).setLogo(
       {
         txId,
       },
@@ -1039,163 +1152,84 @@ makeCommand<ProcessIdWriteActionCLIOptions & { transactionId?: string }>({
   },
 });
 
-// # ARIO Actions
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-  }
->({
-  name: 'release-name',
-  description: 'Release the name of an ANT process',
-  options: [optionMap.processId, optionMap.name, ...writeActionOptions],
-  action: async (options) => {
-    const name = requiredStringFromOptions(options, 'name');
+// =========================================
+// ANT Escrow commands (`ario-ant-escrow` program — Solana-only)
+// =========================================
 
-    await assertConfirmationPrompt(
-      `Are you sure you want to release the name ${name} back to the protocol?`,
-      options,
-    );
+// `optionMap.rpcUrl`, `walletFile`, and `privateKey` are already in
+// `globalOptions` and are merged in by `makeCommand` for every command — re-listing
+// them here would re-register the flags and crash Commander with
+// "due to conflicting flag '--rpc-url'" at CLI startup.
+const escrowCommonOptions = [optionMap.escrowProgramId, optionMap.ant];
 
-    return writeANTFromOptions(options).releaseName(
-      {
-        name,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-    target?: string;
-  }
->({
-  name: 'reassign-name',
-  description: 'Reassign the name of an ANT process to another ANT process',
-  options: [
-    optionMap.processId,
-    optionMap.name,
-    optionMap.target,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const targetProcess = requiredStringFromOptions(options, 'target');
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to reassign the name ${name} to ANT process ${targetProcess}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).reassignName(
-      {
-        name,
-        arioProcessId: arioProcessIdFromOptions(options),
-        antProcessId: targetProcess,
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    name?: string;
-    target?: string;
-  }
->({
-  name: 'approve-primary-name-request',
-  description: 'Approve a primary name request',
-  options: [
-    optionMap.processId,
-    optionMap.name,
-    optionMap.address,
-    ...writeActionOptions,
-  ],
-  action: async (options) => {
-    const address = requiredAddressFromOptions(options);
-    const name = requiredStringFromOptions(options, 'name');
-
-    await assertConfirmationPrompt(
-      `Are you sure you want to approve the primary name request ${name} to ${address}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).approvePrimaryNameRequest(
-      {
-        name,
-        address,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-makeCommand<
-  ProcessIdWriteActionCLIOptions & {
-    names?: string[];
-  }
->({
-  name: 'remove-primary-names',
-  description: 'Remove primary names',
-  options: [optionMap.processId, optionMap.names, ...writeActionOptions],
-  action: async (options) => {
-    const names = requiredStringArrayFromOptions(options, 'names');
-    await assertConfirmationPrompt(
-      `Are you sure you want to remove the primary names ${names}?`,
-      options,
-    );
-
-    return writeANTFromOptions(options).removePrimaryNames(
-      {
-        names,
-        arioProcessId: arioProcessIdFromOptions(options),
-      },
-      customTagsFromOptions(options),
-    );
-  },
-});
-
-// # Utilities
 makeCommand({
-  name: 'write-action',
-  description: 'Send a write action to an AO Process',
-  options: [...writeActionOptions, optionMap.processId],
-  action: async (options) => {
-    const process = new AOProcess({
-      processId: requiredProcessIdFromOptions(options),
-      logger: getLoggerFromOptions(options),
-    });
-    return process.send<AoMessageResult>({
-      tags: customTagsFromOptions(options).tags ?? [],
-      signer: requiredAoSignerFromOptions(options),
-    });
-  },
+  name: 'escrow-status',
+  description:
+    'Read the on-chain EscrowAnt PDA for an ANT mint (no signer needed).',
+  options: [optionMap.escrowProgramId, optionMap.ant],
+  action: escrowStatusCLICommand,
 });
 
 makeCommand({
-  name: 'read-action',
-  description: 'Send a dry-run read action to an AO Process',
-  options: [optionMap.processId, optionMap.tags],
-  action: async (options) => {
-    const process = new AOProcess({
-      processId: requiredProcessIdFromOptions(options),
-      logger: getLoggerFromOptions(options),
-    });
-    return process.read<AoMessageResult>({
-      tags: customTagsFromOptions(options).tags ?? [],
-    });
-  },
+  name: 'escrow-deposit',
+  description:
+    'Lock an ANT into the trustless escrow program. Use --recipient-arweave <jwk> or --recipient-ethereum <0x...>.',
+  options: [
+    ...escrowCommonOptions,
+    optionMap.recipientArweave,
+    optionMap.recipientEthereum,
+  ],
+  action: escrowDepositCLICommand,
 });
 
-// Normalize separators so includes() works on Windows (argv uses backslashes).
-const argvScript = process.argv[1].replace(/\\/g, '/');
+makeCommand({
+  name: 'escrow-cancel',
+  description:
+    'Pull an escrowed ANT back to the depositor. Closes the escrow PDA and refunds rent.',
+  options: escrowCommonOptions,
+  action: escrowCancelCLICommand,
+});
+
+makeCommand({
+  name: 'escrow-update-recipient',
+  description:
+    'Re-target an active escrow at a different Arweave/Ethereum identity. Rotates the on-chain nonce.',
+  options: [
+    ...escrowCommonOptions,
+    optionMap.newRecipientArweave,
+    optionMap.newRecipientEthereum,
+  ],
+  action: escrowUpdateRecipientCLICommand,
+});
+
+makeCommand({
+  name: 'escrow-claim-arweave',
+  description:
+    'Submit an Arweave RSA-PSS-4096 signature to release the ANT. Anyone can submit; only the named claimant receives.',
+  options: [
+    ...escrowCommonOptions,
+    optionMap.signatureFile,
+    optionMap.saltLen,
+    optionMap.claimant,
+  ],
+  action: escrowClaimArweaveCLICommand,
+});
+
+makeCommand({
+  name: 'escrow-claim-ethereum',
+  description:
+    'Submit an Ethereum ECDSA personal_sign signature (65 bytes r||s||v) to release the ANT.',
+  options: [
+    ...escrowCommonOptions,
+    optionMap.signatureFile,
+    optionMap.claimant,
+  ],
+  action: escrowClaimEthereumCLICommand,
+});
+
 if (
-  argvScript.includes('bin/ar.io') || // Running from global .bin
-  argvScript.includes('cli/cli') // Running from source
+  process.argv[1].includes('bin/ar.io') || // Running from global .bin
+  process.argv[1].includes('cli/cli') // Running from source
 ) {
   program.parse(process.argv);
 }

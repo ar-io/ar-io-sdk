@@ -1,4 +1,4 @@
-import { AoARIORead } from "@ar.io/sdk";
+import { ARIORead } from "@ar.io/sdk";
 import { useQuery } from "@tanstack/react-query";
 
 export const useArNSReturnedNames = ({
@@ -8,7 +8,7 @@ export const useArNSReturnedNames = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy: "name" | "startTimestamp" | "initiator";
@@ -30,7 +30,7 @@ export const useArNSRecords = ({
   sortBy,
   sortOrder,
 }: {
-  ario: AoARIORead;
+  ario: ARIORead;
   limit: number;
   cursor: string | undefined;
   sortBy:
