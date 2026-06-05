@@ -1811,14 +1811,31 @@ export class SolanaARIOReadable {
         if (gwAccount.exists) {
           const gw = deserializeGateway(Buffer.from(gwAccount.data));
           if (gw.status === 'joined') {
-            const discountAmount = Math.floor(
-              (tokenCost * 200_000) / RATE_SCALE,
-            );
-            discounts.push({
-              name: 'Gateway Operator',
-              discountTotal: discountAmount,
-              multiplier: 0.8,
-            });
+            // Match on-chain eligibility from ario-arns pricing.rs
+            // `try_apply_gateway_discount`:
+            // 1. Tenure: gateway running >= 180 days (15_552_000 seconds)
+            const GATEWAY_DISCOUNT_MIN_TENURE_S = 15_552_000;
+            const nowSeconds = Math.floor(Date.now() / 1000);
+            const timeRunning = nowSeconds - gw.startTimestamp;
+            // 2. Performance: >= 90% epoch pass rate
+            const passRate =
+              ((1 + gw.stats.passedEpochCount) /
+                (1 + gw.stats.totalEpochCount)) *
+              1_000_000;
+
+            if (
+              timeRunning >= GATEWAY_DISCOUNT_MIN_TENURE_S &&
+              passRate >= 900_000
+            ) {
+              const discountAmount = Math.floor(
+                (tokenCost * 200_000) / RATE_SCALE,
+              );
+              discounts.push({
+                name: 'Gateway Operator',
+                discountTotal: discountAmount,
+                multiplier: 0.8,
+              });
+            }
           }
         }
       } catch {
