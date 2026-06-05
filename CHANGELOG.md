@@ -1,3 +1,10 @@
+# [4.0.0-solana.36](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.35...v4.0.0-solana.36) (2026-06-05)
+
+
+### Bug Fixes
+
+* **escrow:** bind recipient + correct headers in canonical claim message ([857f8c8](https://github.com/ar-io/ar-io-sdk/commit/857f8c89f90092fec00962adde58ee5f35381069))
+
 # [4.0.0-solana.35](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.34...v4.0.0-solana.35) (2026-06-05)
 
 
