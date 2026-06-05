@@ -1,3 +1,10 @@
+# [4.0.0-solana.40](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.39...v4.0.0-solana.40) (2026-06-05)
+
+
+### Features
+
+* **crank:** close epoch observations before close_epoch (un-wedge progression) ([9b26e1e](https://github.com/ar-io/ar-io-sdk/commit/9b26e1e0a1225b3be19609bea289b44e2062715d))
+
 # [4.0.0-solana.39](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.38...v4.0.0-solana.39) (2026-06-05)
 
 
