@@ -1,3 +1,10 @@
+# [4.0.0-solana.38](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.37...v4.0.0-solana.38) (2026-06-05)
+
+
+### Features
+
+* **crank:** prune expired returned names inside crankEpochStep ([ad4ffbb](https://github.com/ar-io/ar-io-sdk/commit/ad4ffbbf05423ff8b3925629316705c1cd907f8b))
+
 # [4.0.0-solana.37](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.36...v4.0.0-solana.37) (2026-06-05)
 
 
