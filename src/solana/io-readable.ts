@@ -240,6 +240,13 @@ function arnsRecordToWithName(
   } as ArNSNameDataWithName;
 }
 
+/**
+ * TTL for {@link SolanaARIOReadable.getCachedAccount}. DemandFactor / config
+ * accounts change on the order of epochs, so a few seconds of staleness is a
+ * safe trade for collapsing burst reads (e.g. per-row cost lookups).
+ */
+const CONFIG_CACHE_TTL_MS = 30_000;
+
 function paginate<T>(
   items: T[],
   params?: { cursor?: string; limit?: number; sortOrder?: 'asc' | 'desc' },
@@ -289,6 +296,18 @@ export class SolanaARIOReadable {
   // for every SPL-ATA derivation in getBalance/getBalances).
   private _arioMint?: Address;
 
+  // Short-TTL cache for slow-changing config-ish accounts (DemandFactor,
+  // ArnsConfig, etc.). Collapses the many identical reads a UI fires in a
+  // burst — e.g. the returned-names page running `getCostDetails` per row,
+  // each re-reading the same DemandFactor PDA — into a single network call.
+  private _accountCache = new Map<
+    string,
+    {
+      account: Awaited<ReturnType<SolanaARIOReadable['getAccount']>>;
+      expiresAt: number;
+    }
+  >();
+
   constructor(
     config: SolanaReadConfig & {
       logger?: ILogger;
@@ -314,6 +333,27 @@ export class SolanaARIOReadable {
         commitment: this.commitment,
       }),
     );
+  }
+
+  /**
+   * Like {@link getAccount} but caches the result per-PDA for `ttlMs`. Use only
+   * for accounts that change slowly (DemandFactor, ArnsConfig) where a few
+   * seconds of staleness is acceptable in exchange for collapsing repeated
+   * reads. A successful fetch is cached; misses (`exists: false`) are not.
+   */
+  private async getCachedAccount(
+    pda: Address,
+    ttlMs = CONFIG_CACHE_TTL_MS,
+  ): Promise<Awaited<ReturnType<SolanaARIOReadable['getAccount']>>> {
+    const key = String(pda);
+    const now = Date.now();
+    const hit = this._accountCache.get(key);
+    if (hit && hit.expiresAt > now) return hit.account;
+    const account = await this.getAccount(pda);
+    if (account.exists) {
+      this._accountCache.set(key, { account, expiresAt: now + ttlMs });
+    }
+    return account;
   }
 
   /**
@@ -1313,7 +1353,11 @@ export class SolanaARIOReadable {
     name: string;
   }): Promise<ReturnedName> {
     const [pda] = await getReturnedNamePDA(name, this.arnsProgram);
-    const account = await this.getAccount(pda);
+    // A ReturnedName account is immutable once created (its premium is derived
+    // client-side from the static start/end timestamps), so cache the read.
+    // The returned-names price table reads each name's PDA twice (lease +
+    // permabuy) and `getTokenCost` reads it again — all share one fetch.
+    const account = await this.getCachedAccount(pda);
     if (!account.exists) {
       throw new Error(`Returned name not found: ${name}`);
     }
@@ -1648,7 +1692,7 @@ export class SolanaARIOReadable {
    */
   async getTokenCost(params: TokenCostParams): Promise<number> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
-    const dfAccount = await this.getAccount(dfPda);
+    const dfAccount = await this.getCachedAccount(dfPda);
     if (!dfAccount.exists) throw new Error('DemandFactor account not found');
     const df = deserializeDemandFactor(Buffer.from(dfAccount.data));
 
@@ -1752,14 +1796,27 @@ export class SolanaARIOReadable {
 
     if (params.fromAddress) {
       try {
-        const gw = await this.getGateway({ address: params.fromAddress });
-        if (gw.status === 'joined') {
-          const discountAmount = Math.floor((tokenCost * 200_000) / RATE_SCALE);
-          discounts.push({
-            name: 'Gateway Operator',
-            discountTotal: discountAmount,
-            multiplier: 0.8,
-          });
+        // Operator-discount check. Read the gateway PDA through the short-TTL
+        // cache (NOT public `getGateway`, which stays fresh for gateway pages):
+        // a price table calls `getCostDetails` many times for the SAME
+        // `fromAddress`, so this collapses N redundant gateway reads to one.
+        const [gwPda] = await getGatewayPDA(
+          address(params.fromAddress),
+          this.garProgram,
+        );
+        const gwAccount = await this.getCachedAccount(gwPda);
+        if (gwAccount.exists) {
+          const gw = deserializeGateway(Buffer.from(gwAccount.data));
+          if (gw.status === 'joined') {
+            const discountAmount = Math.floor(
+              (tokenCost * 200_000) / RATE_SCALE,
+            );
+            discounts.push({
+              name: 'Gateway Operator',
+              discountTotal: discountAmount,
+              multiplier: 0.8,
+            });
+          }
         }
       } catch {
         // Not a gateway operator — no discount
@@ -1901,7 +1958,7 @@ export class SolanaARIOReadable {
 
   async getRegistrationFees(): Promise<RegistrationFees> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
-    const account = await this.getAccount(dfPda);
+    const account = await this.getCachedAccount(dfPda);
     if (!account.exists) {
       throw new Error('DemandFactor account not found');
     }
@@ -1927,7 +1984,7 @@ export class SolanaARIOReadable {
 
   async getDemandFactor(): Promise<number> {
     const [pda] = await getDemandFactorPDA(this.arnsProgram);
-    const account = await this.getAccount(pda);
+    const account = await this.getCachedAccount(pda);
     if (!account.exists) {
       throw new Error('DemandFactor account not found');
     }
@@ -1937,7 +1994,7 @@ export class SolanaARIOReadable {
 
   async getDemandFactorSettings(): Promise<DemandFactorSettings> {
     const [pda] = await getDemandFactorPDA(this.arnsProgram);
-    const account = await this.getAccount(pda);
+    const account = await this.getCachedAccount(pda);
     if (!account.exists) {
       throw new Error('DemandFactor account not found');
     }
@@ -2221,7 +2278,7 @@ export class SolanaARIOReadable {
     now: number,
   ): Promise<Array<{ pubkey: Address; name: string; endTimestamp: bigint }>> {
     const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
-    const cfgAccount = await this.getAccount(arnsConfigPda);
+    const cfgAccount = await this.getCachedAccount(arnsConfigPda);
     if (!cfgAccount.exists) return [];
     const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
     const grace = Number(cfg.gracePeriodSeconds);
@@ -2264,7 +2321,7 @@ export class SolanaARIOReadable {
     now: number,
   ): Promise<Array<{ pubkey: Address; name: string; returnedAt: bigint }>> {
     const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
-    const cfgAccount = await this.getAccount(arnsConfigPda);
+    const cfgAccount = await this.getCachedAccount(arnsConfigPda);
     if (!cfgAccount.exists) return [];
     const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
     const auction = Number(cfg.returnAuctionDurationSeconds);
@@ -2590,7 +2647,7 @@ export class SolanaARIOReadable {
     returnAuctionDurationSeconds: bigint;
   } | null> {
     const [pda] = await getArnsSettingsPDA(this.arnsProgram);
-    const account = await this.getAccount(pda);
+    const account = await this.getCachedAccount(pda);
     if (!account.exists) return null;
     const cfg = getArnsConfigDecoder().decode(account.data);
     return {

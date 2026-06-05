@@ -27,6 +27,7 @@ import {
   type Commitment,
   address,
   fetchEncodedAccount,
+  fetchEncodedAccounts,
 } from '@solana/kit';
 import bs58 from 'bs58';
 
@@ -45,6 +46,7 @@ import type {
   ANTInfo,
   ANTRecord,
   ANTState,
+  ANTSummary,
   AntReadOptions,
   SortedANTRecords,
 } from '../types/ant.js';
@@ -203,6 +205,43 @@ export class SolanaANTReadable {
     };
   }
 
+  /**
+   * Fetch AntConfig + AntControllers in a single `getMultipleAccounts` round
+   * trip (instead of two single-account reads). Used by `getState` to shave one
+   * RPC per ANT — meaningful when a UI loads many ANTs.
+   */
+  private async _fetchConfigAndControllers() {
+    const [[configPda], [controllersPda]] = await Promise.all([
+      getAntConfigPDA(this.mint, this.antProgram),
+      getAntControllersPDA(this.mint, this.antProgram),
+    ]);
+    const [configAccount, controllersAccount] = await withRetry(() =>
+      fetchEncodedAccounts(this.rpc, [configPda, controllersPda], {
+        commitment: this.commitment,
+      }),
+    );
+    if (!configAccount.exists) {
+      throw new Error(`ANT config not found for ${this.processId}`);
+    }
+    const decodedConfig = decodeAntConfig(configAccount).data;
+    const config = {
+      mint: decodedConfig.mint as string,
+      name: decodedConfig.name,
+      ticker: decodedConfig.ticker,
+      logo: decodedConfig.logo,
+      description: decodedConfig.description,
+      keywords: decodedConfig.keywords,
+      owner: decodedConfig.lastKnownOwner as string,
+      version: decodedConfig.version.major,
+    };
+    const controllers = controllersAccount.exists
+      ? decodeAntControllers(controllersAccount).data.controllers.map(
+          (c) => c as string,
+        )
+      : [];
+    return { config, controllers };
+  }
+
   async getOwner(_opts?: AntReadOptions): Promise<WalletAddress> {
     const config = await this.fetchConfig();
     return config.owner;
@@ -253,10 +292,11 @@ export class SolanaANTReadable {
       getAntRecordMetadataPDA(this.mint, undername, this.antProgram),
     ]);
 
-    const [recordAccount, metaAccount] = await Promise.all([
-      this.getAccount(recordPda),
-      this.getAccount(metaPda),
-    ]);
+    const [recordAccount, metaAccount] = await withRetry(() =>
+      fetchEncodedAccounts(this.rpc, [recordPda, metaPda], {
+        commitment: this.commitment,
+      }),
+    );
 
     if (!recordAccount.exists) return undefined;
 
@@ -298,8 +338,12 @@ export class SolanaANTReadable {
     };
   }
 
-  async getRecords(_opts?: AntReadOptions): Promise<SortedANTRecords> {
-    // Fetch all AntRecord + AntRecordMetadata accounts for this mint in parallel.
+  async getRecords(opts?: AntReadOptions): Promise<SortedANTRecords> {
+    // Fetch all AntRecord accounts for this mint. AntRecordMetadata
+    // (displayName/logo/description/keywords) is a SECOND program scan and is
+    // only needed in detail/edit views, so skip it unless `includeMetadata` is
+    // set — halving the per-ANT request cost on list reads. See AntReadOptions.
+    const includeMetadata = opts?.includeMetadata === true;
     const gpaFilter = (discriminator: string) => [
       {
         memcmp: {
@@ -334,17 +378,19 @@ export class SolanaANTReadable {
           })
           .send(),
       ),
-      withRetry(() =>
-        (this.rpc as any)
-          .getProgramAccounts(this.antProgram, {
-            commitment: this.commitment,
-            encoding: 'base64',
-            filters: gpaFilter(
-              bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR as Uint8Array),
-            ),
-          })
-          .send(),
-      ),
+      includeMetadata
+        ? withRetry(() =>
+            (this.rpc as any)
+              .getProgramAccounts(this.antProgram, {
+                commitment: this.commitment,
+                encoding: 'base64',
+                filters: gpaFilter(
+                  bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR as Uint8Array),
+                ),
+              })
+              .send(),
+          )
+        : Promise.resolve([] as unknown as GpaResult),
     ])) as [GpaResult, GpaResult];
 
     const recordDecoder = getAntRecordDecoder();
@@ -411,6 +457,314 @@ export class SolanaANTReadable {
     return result;
   }
 
+  /**
+   * Bulk-load lightweight {@link ANTSummary} state for many ANTs in a handful
+   * of `getMultipleAccounts` calls instead of `N × getState`. For each mint it
+   * batches AntConfig + AntControllers + the apex (`@`) AntRecord — everything a
+   * portfolio/names table needs. Full undername records are NOT loaded here;
+   * fetch them lazily per-ANT via {@link getRecords}/{@link getState} when a
+   * name is opened.
+   *
+   * Requests: ~`ceil(3N / 100)` calls for N mints (10 → 1, 250 → 8), versus
+   * ~`4N` with per-ANT `getState`. Assumes every mint is deployed under this
+   * instance's `antProgram` (true for the standard AR.IO ANT program).
+   *
+   * Mints whose AntConfig doesn't exist are omitted from the result.
+   */
+  async getANTSummaries(
+    mints: ReadonlyArray<string>,
+  ): Promise<Record<string, ANTSummary>> {
+    const unique = Array.from(new Set(mints));
+    if (unique.length === 0) return {};
+
+    // Derive config + controllers + apex('@') record PDAs for every mint.
+    const triples = await Promise.all(
+      unique.map(async (m) => {
+        const mintAddr = address(m);
+        const [[configPda], [controllersPda], [apexPda]] = await Promise.all([
+          getAntConfigPDA(mintAddr, this.antProgram),
+          getAntControllersPDA(mintAddr, this.antProgram),
+          getAntRecordPDA(mintAddr, '@', this.antProgram),
+        ]);
+        return { mint: m, configPda, controllersPda, apexPda };
+      }),
+    );
+
+    // Batch-fetch all PDAs (3 per mint) — getMultipleAccounts caps at 100.
+    const allPdas = triples.flatMap((t) => [
+      t.configPda,
+      t.controllersPda,
+      t.apexPda,
+    ]);
+    type Acct = Awaited<ReturnType<typeof fetchEncodedAccounts>>[number];
+    const accounts: Acct[] = [];
+    for (let i = 0; i < allPdas.length; i += 100) {
+      const chunk = allPdas.slice(i, i + 100);
+      const res = await withRetry(() =>
+        fetchEncodedAccounts(this.rpc, chunk, { commitment: this.commitment }),
+      );
+      accounts.push(...res);
+    }
+
+    const recordDecoder = getAntRecordDecoder();
+    const result: Record<string, ANTSummary> = {};
+    for (let i = 0; i < triples.length; i++) {
+      const { mint } = triples[i];
+      const configAccount = accounts[i * 3];
+      const controllersAccount = accounts[i * 3 + 1];
+      const apexAccount = accounts[i * 3 + 2];
+      if (!configAccount?.exists) continue;
+
+      const config = decodeAntConfig(configAccount).data;
+      const controllers = controllersAccount?.exists
+        ? decodeAntControllers(controllersAccount).data.controllers.map(
+            (c) => c as string,
+          )
+        : [];
+
+      let apexRecord: ANTRecord | undefined;
+      if (apexAccount?.exists) {
+        const rec = recordDecoder.decode(new Uint8Array(apexAccount.data));
+        apexRecord = {
+          transactionId: rec.target,
+          targetProtocol: rec.targetProtocol,
+          ttlSeconds: rec.ttlSeconds,
+          priority:
+            rec.priority?.__option === 'Some' ? rec.priority.value : undefined,
+          owner:
+            rec.owner?.__option === 'Some'
+              ? (rec.owner.value as string)
+              : undefined,
+        };
+      }
+
+      result[mint] = {
+        processId: mint,
+        name: config.name,
+        ticker: config.ticker,
+        logo: config.logo,
+        description: config.description,
+        keywords: config.keywords,
+        owner: config.lastKnownOwner as string,
+        controllers,
+        apexRecord,
+      };
+    }
+    return result;
+  }
+
+  /**
+   * Bulk-load FULL {@link ANTState} (including all undername records) for many
+   * ANTs in a handful of calls instead of `N × getState`:
+   *   - AntConfig + AntControllers for every mint via `getMultipleAccounts`
+   *     (chunked at 100), and
+   *   - ALL undername records via a SINGLE program-wide `getProgramAccounts`
+   *     scan grouped by mint (offset 8), instead of one mint-filtered scan per
+   *     ANT.
+   *
+   * Requests: ~`ceil(2N / 100) + 1` (+1 when `includeMetadata`) regardless of
+   * N — e.g. 10 ANTs → 2 calls, 250 → ~6 — versus ~`2N` with per-ANT
+   * `getState`. The records scan reads every ANT's records program-wide (cheap
+   * per account, one round trip); prefer per-ANT {@link getState} when you only
+   * need one ANT. Mints with no AntConfig are omitted.
+   */
+  async getANTStates(
+    mints: ReadonlyArray<string>,
+    opts?: AntReadOptions,
+  ): Promise<Record<string, ANTState>> {
+    const unique = Array.from(new Set(mints));
+    if (unique.length === 0) return {};
+
+    // Config + controllers PDAs for every mint, batched (100 accounts/call).
+    const pairs = await Promise.all(
+      unique.map(async (m) => {
+        const mintAddr = address(m);
+        const [[configPda], [controllersPda]] = await Promise.all([
+          getAntConfigPDA(mintAddr, this.antProgram),
+          getAntControllersPDA(mintAddr, this.antProgram),
+        ]);
+        return { mint: m, configPda, controllersPda };
+      }),
+    );
+    const allPdas = pairs.flatMap((p) => [p.configPda, p.controllersPda]);
+    type Acct = Awaited<ReturnType<typeof fetchEncodedAccounts>>[number];
+    const accounts: Acct[] = [];
+    for (let i = 0; i < allPdas.length; i += 100) {
+      const res = await withRetry(() =>
+        fetchEncodedAccounts(this.rpc, allPdas.slice(i, i + 100), {
+          commitment: this.commitment,
+        }),
+      );
+      accounts.push(...res);
+    }
+
+    const recordsByMint = await this._recordsByMint(
+      opts?.includeMetadata === true,
+    );
+
+    const result: Record<string, ANTState> = {};
+    for (let i = 0; i < pairs.length; i++) {
+      const { mint } = pairs[i];
+      const configAccount = accounts[i * 2];
+      const controllersAccount = accounts[i * 2 + 1];
+      if (!configAccount?.exists) continue;
+
+      const config = decodeAntConfig(configAccount).data;
+      const controllers = controllersAccount?.exists
+        ? decodeAntControllers(controllersAccount).data.controllers.map(
+            (c) => c as string,
+          )
+        : [];
+
+      const sorted = recordsByMint.get(mint) ?? {};
+      const plainRecords: Record<string, ANTRecord> = {};
+      for (const [key, val] of Object.entries(sorted)) {
+        const { index: _, ...rec } = val;
+        plainRecords[key] = rec;
+      }
+      const owner = config.lastKnownOwner as string;
+
+      result[mint] = {
+        Name: config.name,
+        Ticker: config.ticker,
+        Description: config.description,
+        Keywords: config.keywords,
+        Denomination: 0,
+        Owner: owner,
+        Controllers: controllers,
+        Records: plainRecords,
+        Balances: { [owner]: 1 },
+        Logo: config.logo,
+        TotalSupply: 1,
+        Initialized: true,
+      };
+    }
+    return result;
+  }
+
+  /**
+   * Group every AntRecord (+ optional metadata) in the program by mint via a
+   * single `getProgramAccounts` scan (the mint sits at offset 8). Used by
+   * {@link getANTStates} to load all ANTs' undername records in one round trip
+   * instead of one mint-filtered scan per ANT.
+   */
+  private async _recordsByMint(
+    includeMetadata: boolean,
+  ): Promise<Map<string, SortedANTRecords>> {
+    const discFilter = (discriminator: string) => [
+      {
+        memcmp: {
+          offset: 0n,
+          bytes: discriminator,
+          encoding: 'base58' as const,
+        },
+      },
+    ];
+    type GpaResult = ReadonlyArray<{
+      account: { data: readonly [string, string] };
+      pubkey: Address;
+    }>;
+    const [recordAccounts, metaAccounts] = (await Promise.all([
+      withRetry(() =>
+        (this.rpc as any)
+          .getProgramAccounts(this.antProgram, {
+            commitment: this.commitment,
+            encoding: 'base64',
+            filters: discFilter(
+              bs58.encode(ANT_RECORD_DISCRIMINATOR as Uint8Array),
+            ),
+          })
+          .send(),
+      ),
+      includeMetadata
+        ? withRetry(() =>
+            (this.rpc as any)
+              .getProgramAccounts(this.antProgram, {
+                commitment: this.commitment,
+                encoding: 'base64',
+                filters: discFilter(
+                  bs58.encode(ANT_RECORD_METADATA_DISCRIMINATOR as Uint8Array),
+                ),
+              })
+              .send(),
+          )
+        : Promise.resolve([] as unknown as GpaResult),
+    ])) as [GpaResult, GpaResult];
+
+    const recordDecoder = getAntRecordDecoder();
+    const metaDecoder = getAntRecordMetadataDecoder();
+
+    // Metadata keyed by `${mint}:${undernameHash}` (mint at 8, hash at 40).
+    const metaByKey = new Map<string, ReturnType<typeof metaDecoder.decode>>();
+    for (const { account } of metaAccounts) {
+      try {
+        const buf = Buffer.from(account.data[0], 'base64');
+        const mint = bs58.encode(buf.subarray(8, 40));
+        const hash = buf.subarray(40, 72).toString('hex');
+        metaByKey.set(
+          `${mint}:${hash}`,
+          metaDecoder.decode(new Uint8Array(buf)),
+        );
+      } catch {
+        // Skip malformed
+      }
+    }
+
+    const byMint = new Map<string, SortedANTRecords>();
+    const indexByMint = new Map<string, number>();
+    for (const { account } of recordAccounts) {
+      try {
+        const buf = Buffer.from(account.data[0], 'base64');
+        const mint = bs58.encode(buf.subarray(8, 40));
+        const record = recordDecoder.decode(new Uint8Array(buf));
+        const hash = __createHash('sha256')
+          .update(record.undername.toLowerCase())
+          .digest('hex');
+        const meta = metaByKey.get(`${mint}:${hash}`);
+        const idx = indexByMint.get(mint) ?? 0;
+        let bucket = byMint.get(mint);
+        if (!bucket) {
+          bucket = {};
+          byMint.set(mint, bucket);
+        }
+        bucket[record.undername] = {
+          transactionId: record.target,
+          targetProtocol: record.targetProtocol,
+          ttlSeconds: record.ttlSeconds,
+          priority:
+            record.priority?.__option === 'Some'
+              ? record.priority.value
+              : undefined,
+          owner:
+            record.owner?.__option === 'Some'
+              ? (record.owner.value as string)
+              : undefined,
+          displayName:
+            meta?.displayName?.__option === 'Some'
+              ? meta.displayName.value
+              : undefined,
+          logo:
+            meta?.recordLogo?.__option === 'Some'
+              ? meta.recordLogo.value
+              : undefined,
+          description:
+            meta?.recordDescription?.__option === 'Some'
+              ? meta.recordDescription.value
+              : undefined,
+          keywords:
+            meta?.recordKeywords?.__option === 'Some'
+              ? meta.recordKeywords.value
+              : undefined,
+          index: idx,
+        };
+        indexByMint.set(mint, idx + 1);
+      } catch {
+        // Skip malformed
+      }
+    }
+    return byMint;
+  }
+
   // =========================================
   // Balance reads (NFT model — owner has balance 1)
   // =========================================
@@ -434,11 +788,10 @@ export class SolanaANTReadable {
   // State / Info composites
   // =========================================
 
-  async getState(_opts?: AntReadOptions): Promise<ANTState> {
-    const [config, controllersData, records] = await Promise.all([
-      this.fetchConfig(),
-      this.fetchControllers(),
-      this.getRecords(),
+  async getState(opts?: AntReadOptions): Promise<ANTState> {
+    const [{ config, controllers }, records] = await Promise.all([
+      this._fetchConfigAndControllers(),
+      this.getRecords(opts),
     ]);
 
     // Convert SortedANTRecords to ANTRecords (strip index)
@@ -455,7 +808,7 @@ export class SolanaANTReadable {
       Keywords: config.keywords,
       Denomination: 0,
       Owner: config.owner,
-      Controllers: controllersData.controllers,
+      Controllers: controllers,
       Records: plainRecords,
       Balances: { [config.owner]: 1 },
       Logo: config.logo,

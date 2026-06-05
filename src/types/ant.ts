@@ -146,6 +146,26 @@ export const AntStateSchema = z.object({
 
 export type ANTState = z.infer<typeof AntStateSchema>;
 
+/**
+ * Lightweight ANT view for portfolio/list rendering. Carries the config fields
+ * plus controllers and the apex (`@`) record — everything a names table needs —
+ * WITHOUT the full undername record set. Produced in bulk by
+ * `getANTSummaries(mints)` in a handful of `getMultipleAccounts` calls; fetch
+ * full undernames lazily via `getRecords`/`getState` when a name is opened.
+ */
+export type ANTSummary = {
+  processId: string;
+  name: string;
+  ticker: string;
+  logo: string;
+  description: string;
+  keywords: string[];
+  owner: WalletAddress;
+  controllers: WalletAddress[];
+  /** The apex (`@`) record — the name's primary target — if set. */
+  apexRecord?: ANTRecord;
+};
+
 export const SpawnANTStateSchema = z.object({
   name: z.string().describe('The name of the ANT.'),
   ticker: z.string().describe('The ticker symbol for the ANT.'),
@@ -246,7 +266,17 @@ export function isANTState(state: object): state is ANTState {
   return AntStateSchema.safeParse(state).success;
 }
 
-export type AntReadOptions = { strict?: boolean };
+export type AntReadOptions = {
+  strict?: boolean;
+  /**
+   * Include per-record metadata (`displayName`/`logo`/`description`/`keywords`)
+   * when reading undername records. Defaults to `false` — metadata requires a
+   * second `getProgramAccounts` scan per ANT and is only needed in detail/edit
+   * views, so list reads (`getState`/`getRecords`) skip it by default. Fetch a
+   * single record's metadata on demand via `getRecord`.
+   */
+  includeMetadata?: boolean;
+};
 
 export interface ANTRead {
   processId: string;
