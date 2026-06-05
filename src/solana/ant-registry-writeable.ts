@@ -64,10 +64,10 @@ import {
   getCloseAclConfigInstruction,
   getCloseAclPageInstruction,
   getRecordAclControllerInstructionAsync,
-  getRecordAclOwnerInstruction,
+  getRecordAclOwnerInstructionAsync,
   getRegisterAclConfigInstruction,
   getRemoveAclControllerInstructionAsync,
-  getRemoveAclOwnerInstruction,
+  getRemoveAclOwnerInstructionAsync,
 } from '@ar.io/solana-contracts/ant';
 import type {
   ANTRegistryWrite,
@@ -322,7 +322,7 @@ export class SolanaANTRegistryWriteable
       this.antProgram,
     );
     if (params.role === 'owner') {
-      return getRecordAclOwnerInstruction(
+      return getRecordAclOwnerInstructionAsync(
         { asset: params.asset, aclConfig, aclPage, payer: this.signer },
         { programAddress: this.antProgram },
       );
@@ -347,7 +347,7 @@ export class SolanaANTRegistryWriteable
       this.antProgram,
     );
     if (params.role === 'owner') {
-      return getRemoveAclOwnerInstruction(
+      return getRemoveAclOwnerInstructionAsync(
         { asset: params.asset, aclConfig, aclPage, payer: this.signer },
         { programAddress: this.antProgram },
       );

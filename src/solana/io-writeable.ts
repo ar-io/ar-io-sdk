@@ -1975,6 +1975,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       demandFactor: demandFactorAddr,
     });
 
+    // Roll the demand factor to the current period BEFORE pricing. The
+    // `GetTokenCost` view reads the STORED demand factor, which is stale until a
+    // crank (or a buy/extend) rolls it — but the `*FromFundingPlan` handlers
+    // roll it inline before computing the cost. Without this, at a period
+    // rollover the plan is sized to the old factor while the program charges
+    // the new one → FundingPlanAmountMismatch (#6066). `update_demand_factor`
+    // is permissionless + idempotent (no-op within the same period), and the
+    // write is local to this simulation; the subsequent `GetTokenCost` in the
+    // same tx sees the rolled value.
+    const updateDfIx = getUpdateDemandFactorInstruction(
+      { demandFactor: demandFactorAddr, payer: this.signer },
+      { programAddress: this.arnsProgram },
+    );
+
     const ix = await getGetTokenCostInstructionAsync(
       {
         demandFactor: demandFactorAddr,
@@ -1996,7 +2010,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       createTransactionMessage({ version: 0 }),
       (m) => setTransactionMessageFeePayerSigner(this.signer, m),
       (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-      (m) => appendTransactionMessageInstructions([ix], m),
+      (m) => appendTransactionMessageInstructions([updateDfIx, ix], m),
     );
 
     const compiled = compileTransaction(message);
