@@ -1,3 +1,10 @@
+# [4.0.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-alpha.3...v4.0.0-alpha.4) (2026-06-05)
+
+
+### Bug Fixes
+
+* **solana:** cap MAX_COMPOUND_BATCH at 6 so compound crank tx fits 1232B limit ([012ea6e](https://github.com/ar-io/ar-io-sdk/commit/012ea6e8c8ca73ab8dc9d7bb63e78f7dacfa4d9a))
+
 # [4.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2026-06-05)
 
 
