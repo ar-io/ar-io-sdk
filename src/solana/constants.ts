@@ -23,19 +23,22 @@ import { type Address, address } from '@solana/kit';
 
 // Program IDs — placeholder addresses (replace with deployed program IDs)
 export const ARIO_CORE_PROGRAM_ID: Address = address(
-  'ARioCoreProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  '73YoECm6NKXpVRoe5f1Q9BcP5DJGPFUjnFy6AxBE5Nvh',
 );
 export const ARIO_GAR_PROGRAM_ID: Address = address(
-  'ARioGarProgramXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  '89fNiiwgpFSPHKuqfNUkgYTYjtAJAhyqHjXmgXeppGpf',
 );
 export const ARIO_ARNS_PROGRAM_ID: Address = address(
-  'ARioArnsProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  '2yCUx5edFvUrkibYaUa2ZXWyx9kuJkS8CwyzsgHPWdZZ',
 );
 export const ARIO_ANT_PROGRAM_ID: Address = address(
-  'ARioAntProgXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  '2MWexMHfMhGJwMHv9Qm9YAVCqjUFUJwDJAysW4oCUGk5',
 );
 export const ARIO_ANT_ESCROW_PROGRAM_ID: Address = address(
-  'ARioAntEscrowXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  '5HZhe9UqKL5zAsdz81nuuaxV41h8bFhudzxxBigAQndM',
+);
+export const ARIO_TOKEN_MINT_ADDRESS: Address = address(
+  'DcNnMuFxwhgV4WY1HVSaSEgr92bv2b1vUvEKiNxWqHdF',
 );
 export const MPL_CORE_PROGRAM_ID: Address = address(
   'CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d',
