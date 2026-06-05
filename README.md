@@ -403,7 +403,7 @@ const ario = ARIO.init({
 On localnet (Surfpool) source program IDs from
 `migration/localnet/out/localnet.env` in the `solana-ar-io` monorepo.
 
-##### Faucet
+<!-- ##### Faucet
 
 The SDK exposes a `createFaucet` HTTP wrapper around the ar.io faucet
 service ([faucet.ar.io](https://faucet.ar.io)). The faucet backend has
@@ -476,7 +476,7 @@ if (
 }
 ```
 
-</details>
+</details> -->
 
 ### Vaults
 
@@ -2264,7 +2264,7 @@ console.log(`ANT was spawned with module: ${moduleId}`);
 
 // With custom GraphQL URL and retries
 const moduleId = await ant.getModuleId({
-  graphqlUrl: "https://arweave.net/graphql",
+  graphqlUrl: "https://turbo-gateway.com/graphql",
   retries: 5,
 });
 ```
@@ -2665,7 +2665,7 @@ const balance = await ant.getBalance({
 
 #### `transfer({ target })`
 
-Transfers ownership of the ANT to a new target address. Target MUST be an Arweave address.
+Transfers ownership of the ANT to a new target address. Target must be a Solana address. ANT transfers are standard Metaplex Core NFT transfers.
 
 _Note: Requires `signer` to be provided on `ANT.init` to sign the transaction._
 
