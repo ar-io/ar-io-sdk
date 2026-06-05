@@ -1,3 +1,10 @@
+# [4.0.0-solana.37](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.36...v4.0.0-solana.37) (2026-06-05)
+
+
+### Bug Fixes
+
+* **solana:** add tenure and performance checks to gateway operator discount ([65788f3](https://github.com/ar-io/ar-io-sdk/commit/65788f3f858fb0f3800a557f3f1085ba10810221))
+
 # [4.0.0-solana.36](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.35...v4.0.0-solana.36) (2026-06-05)
 
 
