@@ -140,6 +140,24 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push('updateDemandFactor');
     return { id: 'tx-df' };
   }
+
+  // --- Returned-name prune stubs. Default [] makes the prune step a no-op so
+  // the lifecycle tests above are unaffected. ---
+  expiredReturned: Array<{
+    pubkey: Address;
+    name: string;
+    returnedAt: bigint;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getExpiredReturnedNames(): Promise<any> {
+    this.calls.push('getExpiredReturned');
+    return this.expiredReturned;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async pruneReturnedNames(p: any): Promise<any> {
+    this.calls.push(`pruneReturned:${p.returnedNames.length}`);
+    return { id: 'tx-prune-returned' };
+  }
 }
 
 const baseSettings: Settings = {
@@ -417,5 +435,109 @@ describe('crankEpochStep', () => {
     assert.equal(r.action, 'compound');
     assert.ok(!c.calls.includes('updateDemandFactor'));
     assert.ok(!c.calls.includes('createEpoch'));
+  });
+});
+
+describe('crankEpochStep — returned-name pruning', () => {
+  const expired = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      pubkey: pk(20 + i),
+      name: `name${i}`,
+      returnedAt: 0n,
+    }));
+
+  // Live epoch parked in the observation window (now < endTimestamp), rewards
+  // not yet distributed — the dominant idle state where staging epochs sit.
+  const liveWaiting = (c: TestCranker) => {
+    c.settings = { ...baseSettings };
+    c.epochs[0] = { ...liveEpoch, rewardsDistributed: 0, endTimestamp: 9999 };
+  };
+
+  it('prunes expired returned names during the observation window', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = expired(3);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_returned_names');
+    assert.equal(r.txId, 'tx-prune-returned');
+    assert.deepEqual(r.progress, { index: 3, total: 3 });
+    assert.ok(c.calls.includes('pruneReturned:3'));
+  });
+
+  it('does NOT consult config.next_returned_names_prune_timestamp (scans directly)', async () => {
+    // The harness has no getArnsConfigRaw stub; if the step tried to gate on the
+    // config timestamp it would blow up. Reaching prune proves it scans direct.
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = expired(1);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_returned_names');
+  });
+
+  it('caps the prune batch at pruneBatchSize and reports total', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = expired(20);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneBatchSize: 5,
+    });
+    assert.equal(r.action, 'prune_returned_names');
+    assert.deepEqual(r.progress, { index: 5, total: 20 });
+    assert.ok(c.calls.includes('pruneReturned:5'));
+  });
+
+  it('idles waiting_for_observations when nothing is expired', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = [];
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'idle');
+    assert.equal(r.reason, 'waiting_for_observations');
+  });
+
+  it('enablePrune:false skips pruning even with expired names', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = expired(3);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enablePrune: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.equal(r.reason, 'waiting_for_observations');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneReturned')));
+  });
+
+  it('throttles the scan by pruneScanIntervalMs (no re-scan within the window)', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredReturned = expired(3);
+    const r1 = await c.crankEpochStep({ now: 5000 }); // default 60s; first call scans
+    assert.equal(r1.action, 'prune_returned_names');
+    const scansAfterFirst = c.calls.filter(
+      (x) => x === 'getExpiredReturned',
+    ).length;
+    const r2 = await c.crankEpochStep({ now: 5000 }); // immediate → throttled
+    assert.equal(r2.action, 'idle');
+    assert.equal(r2.reason, 'waiting_for_observations');
+    assert.equal(
+      c.calls.filter((x) => x === 'getExpiredReturned').length,
+      scansAfterFirst,
+      'second call within the throttle window must not re-scan',
+    );
+  });
+
+  it('prunes in the post-distribution tail (obs window passed, next epoch not started)', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...liveEpoch, endTimestamp: 1000 }; // fully distributed
+    c.expiredReturned = expired(2);
+    // now >= endTimestamp(1000) → past obs; now < nextEpochStart(1100) → no create.
+    const r = await c.crankEpochStep({ now: 1050, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_returned_names');
+    assert.deepEqual(r.progress, { index: 2, total: 2 });
   });
 });

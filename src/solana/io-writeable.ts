@@ -455,6 +455,7 @@ export type CrankAction =
   | 'distribute'
   | 'compound'
   | 'update_demand_factor'
+  | 'prune_returned_names'
   | 'close'
   | 'idle';
 
@@ -493,6 +494,24 @@ export interface CrankEpochStepOptions {
    * between buys) current. Default true. Runs only in the idle tail.
    */
   enableDemandFactorRoll?: boolean;
+  /**
+   * Prune expired ReturnedName PDAs (auction window elapsed) as part of the
+   * crank. Default true. Runs whenever the epoch lifecycle is otherwise idle
+   * (the live observation window AND the post-distribution tail), one batch per
+   * step. It scans the ReturnedName PDAs DIRECTLY (via getExpiredReturnedNames)
+   * and does NOT consult `config.next_returned_names_prune_timestamp` — that
+   * hint is only set for on-chain returns and is never updated for imported
+   * returned names, so trusting it strands imported auctions forever.
+   */
+  enablePrune?: boolean;
+  /** ReturnedName PDAs to prune per tx (u8, max 255). Default 15. */
+  pruneBatchSize?: number;
+  /**
+   * Minimum wall-clock gap between returned-name prune SCANS (ms). The scan is a
+   * `getProgramAccounts` over ReturnedName PDAs, so this throttles it below the
+   * crank poll rate. Default 60_000 (1 min). Set 0 to scan every step (tests).
+   */
+  pruneScanIntervalMs?: number;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -4077,6 +4096,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const enableCompound = opts.enableCompound ?? true;
     const compoundMinPending = opts.compoundMinPendingRewards ?? 0;
     const enableDemandFactorRoll = opts.enableDemandFactorRoll ?? true;
+    const enablePrune = opts.enablePrune ?? true;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -4143,9 +4163,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       return { action: 'prescribe', epochIndex: targetEpochIndex, txId: id };
     }
 
-    // Observations happen while the epoch is live.
-    if (now < epoch.endTimestamp)
+    // Observations happen while the epoch is live. This is the dominant idle
+    // window — fold returned-name pruning in here so it isn't starved on
+    // clusters whose epochs park here (e.g. imported gateways that can't
+    // observe → distribution never advances → the post-distribution tail below
+    // is never reached).
+    if (now < epoch.endTimestamp) {
+      if (enablePrune) {
+        const pruned = await this.maybePruneReturnedNamesStep(opts, now);
+        if (pruned) return pruned;
+      }
       return { action: 'idle', reason: 'waiting_for_observations' };
+    }
 
     // Distribute (batched).
     if (epoch.rewardsDistributed === 0) {
@@ -4194,6 +4223,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     if (enableDemandFactorRoll) {
       const rolled = await this.maybeRollDemandFactorStep(now);
       if (rolled) return rolled;
+    }
+    if (enablePrune) {
+      const pruned = await this.maybePruneReturnedNamesStep(opts, now);
+      if (pruned) return pruned;
     }
 
     // Current epoch fully processed — create the next once its start arrives.
@@ -4244,6 +4277,43 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     if (periodForNow <= state.currentPeriod) return null; // same period — no-op
     const { id } = await this.updateDemandFactor();
     return { action: 'update_demand_factor', txId: id };
+  }
+
+  /** Wall-clock (ms) of the last returned-name prune scan; throttles the
+   *  getProgramAccounts scan below the crank poll rate. */
+  private lastReturnedNamePruneScanMs = 0;
+
+  /**
+   * One prune batch over ReturnedName PDAs whose 14-day auction window has
+   * elapsed (≤ {@link CrankEpochStepOptions.pruneBatchSize} per tx), or `null`
+   * when none are due / the scan is throttled. Scans the PDAs directly — it does
+   * NOT gate on `config.next_returned_names_prune_timestamp`, which is never set
+   * for imported returned names and would strand them. The contract re-checks
+   * each account's window, so a slightly-skewed client clock is safe.
+   */
+  private async maybePruneReturnedNamesStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastReturnedNamePruneScanMs < scanInterval) return null;
+    this.lastReturnedNamePruneScanMs = wallNow;
+
+    const expired = await this.getExpiredReturnedNames(now);
+    if (expired.length === 0) return null;
+
+    const batchSize = opts.pruneBatchSize ?? 15;
+    const batch = expired.slice(0, batchSize).map((r) => r.pubkey);
+    const { id } = await this.pruneReturnedNames({
+      maxNames: batch.length,
+      returnedNames: batch,
+    });
+    return {
+      action: 'prune_returned_names',
+      txId: id,
+      progress: { index: batch.length, total: expired.length },
+    };
   }
 
   /**
