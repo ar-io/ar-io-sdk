@@ -1,3 +1,11 @@
+# [4.0.0-solana.39](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.38...v4.0.0-solana.39) (2026-06-05)
+
+
+### Bug Fixes
+
+* **contracts sdk:** bump version to 18 ([4ab5586](https://github.com/ar-io/ar-io-sdk/commit/4ab5586302a4083e7c8c16556ff7ac73939af9da))
+* **df:** update demand factor instruction ([20fd1fa](https://github.com/ar-io/ar-io-sdk/commit/20fd1fae93e02d7689f79a8da22c624088476d09))
+
 # [4.0.0-solana.38](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-solana.37...v4.0.0-solana.38) (2026-06-05)
 
 
