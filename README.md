@@ -2264,7 +2264,7 @@ console.log(`ANT was spawned with module: ${moduleId}`);
 
 // With custom GraphQL URL and retries
 const moduleId = await ant.getModuleId({
-  graphqlUrl: "http://turbo-gateway.com/graphql",
+  graphqlUrl: "https://turbo-gateway.com/graphql",
   retries: 5,
 });
 ```
