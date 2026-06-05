@@ -1,3 +1,10 @@
+# [4.0.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-alpha.2...v4.0.0-alpha.3) (2026-06-05)
+
+
+### Bug Fixes
+
+* **deps:** pin [@ar](https://github.com/ar).io/solana-contracts to stable 1.0.0 ([099c006](https://github.com/ar-io/ar-io-sdk/commit/099c006fc072972a604547697ae679c1be3b1067)), closes [#666](https://github.com/ar-io/ar-io-sdk/issues/666)
+
 # [4.0.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0-alpha.1...v4.0.0-alpha.2) (2026-06-05)
 
 
