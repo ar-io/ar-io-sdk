@@ -107,6 +107,7 @@ import type {
 } from '../types/io.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
+import { mapWithConcurrency } from './concurrency.js';
 import {
   ARIO_ANT_PROGRAM_ID,
   ARIO_ARNS_PROGRAM_ID,
@@ -678,8 +679,11 @@ export class SolanaARIOReadable {
    * Enumerate liquid ARIO balances by querying the SPL Token program for
    * every initialized token account on the ARIO mint.
    *
-   * Filters: token-account size = 165, mint at offset 0. We then decode
-   * `owner` (offset 32) and `amount` (offset 64) from each.
+   * Filters: token-account size = 165, mint at offset 0 — these apply to the
+   * full on-chain account. We then `dataSlice` the response down to the 40
+   * bytes spanning `owner` (offset 32) and `amount` (offset 64), cutting the
+   * returned payload by ~75%, and decode `owner` (sliced bytes 0..32) and
+   * `amount` (sliced bytes 32..40) from each.
    */
   async getBalances(
     params?: PaginationParams<BalanceWithAddress>,
@@ -702,6 +706,9 @@ export class SolanaARIOReadable {
           .getProgramAccounts(TOKEN_PROGRAM_ADDRESS, {
             commitment: this.commitment,
             encoding: 'base64',
+            // Filters above match the full 165-byte account; dataSlice only
+            // trims the RETURNED bytes to owner(32) + amount(8) = 40 bytes.
+            dataSlice: { offset: 32, length: 40 },
             filters,
           })
           .send() as Promise<
@@ -715,10 +722,20 @@ export class SolanaARIOReadable {
     const items: BalanceWithAddress[] = [];
     for (const entry of result) {
       try {
+        // With the dataSlice above the returned buffer is 40 bytes:
+        // [0..32]=owner, [32..40]=amount(u64 LE).
         const data = Buffer.from(entry.account.data[0], 'base64');
-        if (data.length < 72) continue;
-        const ownerAddress = addressDecoder.decode(data.subarray(32, 64));
-        const amount = Number(data.readBigUInt64LE(64));
+        if (data.length < 40) continue;
+        const ownerAddress = addressDecoder.decode(data.subarray(0, 32));
+        // NOTE: avoid `Buffer.readBigUInt64LE` — some browser bundlers (notably
+        // arns-react's Vite output) strip the BigInt readers from the
+        // `buffer@6.0.3` shim's prototype. Manual little-endian u64 decode is
+        // portable across every JS runtime (matches getBalance above).
+        let amountBig = 0n;
+        for (let i = 7; i >= 0; i--) {
+          amountBig = (amountBig << 8n) | BigInt(data[32 + i]);
+        }
+        const amount = Number(amountBig);
         if (amount > 0) {
           items.push({ address: ownerAddress, balance: amount });
         }
@@ -728,6 +745,70 @@ export class SolanaARIOReadable {
     }
 
     return paginate(items, params);
+  }
+
+  /**
+   * Batch-load liquid ARIO balances for a specific set of owner addresses in a
+   * single fan-out of `getMultipleAccounts` reads (O(1) RPC round-trips per
+   * 100-ATA chunk, fetched concurrently) rather than one `getBalance` call per
+   * address.
+   *
+   * Each owner's balance lives on its Associated Token Account for the ARIO
+   * mint (see {@link getBalance} for why the ATA — not the Balance PDA — is the
+   * canonical liquid balance). Returns one `{ address, balance }` per input
+   * address in INPUT ORDER; `balance` is 0 when the ATA is not yet initialized.
+   */
+  async getBalancesForAddresses({
+    addresses,
+  }: {
+    addresses: string[];
+  }): Promise<BalanceWithAddress[]> {
+    if (addresses.length === 0) return [];
+
+    const mint = await this.getArioMint();
+    const atas = await Promise.all(
+      addresses.map((owner) =>
+        getAssociatedTokenAddressKit(mint, address(owner)),
+      ),
+    );
+    const chunks: Address[][] = [];
+    for (let i = 0; i < atas.length; i += 100) {
+      chunks.push(atas.slice(i, i + 100));
+    }
+    const BALANCE_FETCH_CONCURRENCY = 8;
+    const chunkResults = await mapWithConcurrency(
+      chunks,
+      BALANCE_FETCH_CONCURRENCY,
+      async (chunk) =>
+        withRetry(() =>
+          fetchEncodedAccounts(this.rpc, chunk, {
+            commitment: this.commitment,
+          }),
+        ),
+    );
+    const accounts = chunkResults.flat();
+
+    const items: BalanceWithAddress[] = [];
+    for (let i = 0; i < addresses.length; i++) {
+      const acct = accounts[i];
+      let balance = 0;
+      // SPL Token Account layout: [0..32]=mint, [32..64]=owner,
+      // [64..72]=amount(u64 LE). Decode amount with a manual little-endian
+      // loop (avoid `Buffer.readBigUInt64LE` — see getBalance for rationale).
+      if (acct?.exists) {
+        const data = Buffer.from(acct.data);
+        if (data.length >= 72) {
+          let amount = 0n;
+          for (let b = 7; b >= 0; b--) {
+            amount = (amount << 8n) | BigInt(data[64 + b]);
+          }
+          balance = Number(amount);
+        }
+      }
+      items.push({ address: addresses[i], balance });
+    }
+
+    return items;
   }
 
   // =========================================
@@ -832,32 +913,100 @@ export class SolanaARIOReadable {
       }
     }
 
-    // Batch fetch gateway PDAs (kit has no hard limit but keep 100-at-a-time
-    // for sensible RPC request sizes).
-    const allItems: GatewayWithAddress[] = [];
-    for (let i = 0; i < gatewayAddresses.length; i += 100) {
-      const batch = gatewayAddresses.slice(i, i + 100);
-      const pdas = await Promise.all(
-        batch.map(
-          async (addr) => (await getGatewayPDA(addr, this.garProgram))[0],
-        ),
-      );
-      const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
-        commitment: this.commitment,
-      });
-
-      for (const acct of accounts) {
-        if (!acct.exists) continue;
-        try {
-          const gw = deserializeGateway(Buffer.from(acct.data));
-          allItems.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
-        } catch {
-          // Skip malformed
-        }
-      }
+    // Derive every gateway PDA up front, then fetch them in 100-at-a-time
+    // chunks (kit has no hard limit but smaller `getMultipleAccounts` requests
+    // stay RPC-friendly). The chunks are fetched CONCURRENTLY with a bounded
+    // worker pool — previously this was a sequential loop, which serialized one
+    // round-trip per chunk. `mapWithConcurrency` preserves chunk order so the
+    // flattened result still comes back in registry order.
+    const pdas = await Promise.all(
+      gatewayAddresses.map(
+        async (addr) => (await getGatewayPDA(addr, this.garProgram))[0],
+      ),
+    );
+    const chunks: Address[][] = [];
+    for (let i = 0; i < pdas.length; i += 100) {
+      chunks.push(pdas.slice(i, i + 100));
     }
+    const GATEWAY_FETCH_CONCURRENCY = 8;
+    const chunkResults = await mapWithConcurrency(
+      chunks,
+      GATEWAY_FETCH_CONCURRENCY,
+      async (chunk) => {
+        const accounts = await withRetry(() =>
+          fetchEncodedAccounts(this.rpc, chunk, {
+            commitment: this.commitment,
+          }),
+        );
+        const items: GatewayWithAddress[] = [];
+        for (const acct of accounts) {
+          if (!acct.exists) continue;
+          try {
+            const gw = deserializeGateway(Buffer.from(acct.data));
+            items.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
+          } catch {
+            // Skip malformed
+          }
+        }
+        return items;
+      },
+    );
+    const allItems: GatewayWithAddress[] = chunkResults.flat();
 
     return paginate(allItems, params);
+  }
+
+  /**
+   * Batch-load gateways for a specific set of operator addresses in a single
+   * fan-out of `getMultipleAccounts` reads (O(1) RPC round-trips per 100-PDA
+   * chunk, fetched concurrently) rather than one `getGateway` call per address.
+   *
+   * Returns items in INPUT ORDER, shaped like {@link getGateways} entries.
+   * Addresses whose gateway PDA does not exist (or fails to deserialize) are
+   * OMITTED from the result.
+   */
+  async getGatewaysByAddresses({
+    addresses,
+  }: {
+    addresses: string[];
+  }): Promise<GatewayWithAddress[]> {
+    if (addresses.length === 0) return [];
+
+    const pdas = await Promise.all(
+      addresses.map(
+        async (addr) =>
+          (await getGatewayPDA(address(addr), this.garProgram))[0],
+      ),
+    );
+    const chunks: Address[][] = [];
+    for (let i = 0; i < pdas.length; i += 100) {
+      chunks.push(pdas.slice(i, i + 100));
+    }
+    const GATEWAY_FETCH_CONCURRENCY = 8;
+    const chunkResults = await mapWithConcurrency(
+      chunks,
+      GATEWAY_FETCH_CONCURRENCY,
+      async (chunk) => {
+        const accounts = await withRetry(() =>
+          fetchEncodedAccounts(this.rpc, chunk, {
+            commitment: this.commitment,
+          }),
+        );
+        const items: GatewayWithAddress[] = [];
+        for (const acct of accounts) {
+          if (!acct.exists) continue;
+          try {
+            const gw = deserializeGateway(Buffer.from(acct.data));
+            items.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
+          } catch {
+            // Skip malformed
+          }
+        }
+        return items;
+      },
+    );
+
+    return chunkResults.flat();
   }
 
   async getGatewayDelegates(
@@ -1432,44 +1581,83 @@ export class SolanaARIOReadable {
     const epochIndex = await this.resolveEpochIndex(epoch);
     const epochData = await this.fetchEpoch(epochIndex);
 
-    // Build prescribed observers list (only up to observerCount)
-    const prescribedObservers: WeightedObserver[] = [];
+    // Build prescribed observers list (only up to observerCount).
+    //
+    // Previously this fetched each observer's gateway with a separate
+    // sequential `getGateway` call (up to ~50 round-trips). Instead, collect
+    // every valid (observer, gateway) pair first, then batch-fetch all gateway
+    // accounts in ONE getMultipleAccounts pass (same mechanism as
+    // getGatewayAccumulators). Order and the zero-default fallback for
+    // missing/malformed gateways are preserved exactly.
+    const DEFAULT_WEIGHTS: GatewayWeights = {
+      stakeWeight: 0,
+      tenureWeight: 0,
+      gatewayRewardRatioWeight: 0,
+      observerRewardRatioWeight: 0,
+      gatewayPerformanceRatio: 0,
+      observerPerformanceRatio: 0,
+      compositeWeight: 0,
+      normalizedCompositeWeight: 0,
+    };
+
+    const observerPairs: { observerAddress: string; gatewayAddress: string }[] =
+      [];
     for (let i = 0; i < epochData.observerCount; i++) {
       const observerAddress = epochData.prescribedObservers[i];
       const gatewayAddress = epochData.prescribedObserverGateways[i];
       if (observerAddress === DEFAULT_ADDRESS) continue;
-
-      // Try to fetch gateway data for weights
-      let weights: GatewayWeights = {
-        stakeWeight: 0,
-        tenureWeight: 0,
-        gatewayRewardRatioWeight: 0,
-        observerRewardRatioWeight: 0,
-        gatewayPerformanceRatio: 0,
-        observerPerformanceRatio: 0,
-        compositeWeight: 0,
-        normalizedCompositeWeight: 0,
-      };
-      let stake = 0;
-      let startTimestamp = 0;
-
-      try {
-        const gw = await this.getGateway({ address: gatewayAddress as string });
-        weights = gw.weights;
-        stake = gw.operatorStake;
-        // gw.startTimestamp is already converted to ms by getGateway.
-        startTimestamp = gw.startTimestamp;
-      } catch {
-        // Gateway may no longer exist
-      }
-
-      prescribedObservers.push({
-        gatewayAddress: gatewayAddress as string,
+      observerPairs.push({
         observerAddress: observerAddress as string,
-        stake,
-        startTimestamp,
-        ...weights,
+        gatewayAddress: gatewayAddress as string,
       });
+    }
+
+    const prescribedObservers: WeightedObserver[] = [];
+    if (observerPairs.length > 0) {
+      const observerGatewayPdas = await Promise.all(
+        observerPairs.map(
+          async (pair) =>
+            (
+              await getGatewayPDA(address(pair.gatewayAddress), this.garProgram)
+            )[0],
+        ),
+      );
+      const observerGatewayAccounts = await withRetry(() =>
+        fetchEncodedAccounts(this.rpc, observerGatewayPdas, {
+          commitment: this.commitment,
+        }),
+      );
+
+      for (let i = 0; i < observerPairs.length; i++) {
+        const { observerAddress, gatewayAddress } = observerPairs[i];
+        let weights: GatewayWeights = DEFAULT_WEIGHTS;
+        let stake = 0;
+        let startTimestamp = 0;
+
+        const acct = observerGatewayAccounts[i];
+        if (acct?.exists) {
+          try {
+            // Mirror getGateway's projection: deserialize then toMsTimestamps
+            // so startTimestamp is in ms, matching the pre-batch behavior.
+            const gw = toMsTimestamps(
+              deserializeGateway(Buffer.from(acct.data)),
+            );
+            weights = gw.weights;
+            stake = gw.operatorStake;
+            startTimestamp = gw.startTimestamp;
+          } catch {
+            // Gateway data malformed — keep zero defaults.
+          }
+        }
+
+        prescribedObservers.push({
+          gatewayAddress,
+          observerAddress,
+          stake,
+          startTimestamp,
+          ...weights,
+        });
+      }
     }
 
     // Build prescribed names list by resolving hashes → ArnsRecord PDAs
