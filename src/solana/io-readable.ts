@@ -1619,6 +1619,40 @@ export class SolanaARIOReadable {
     return { failureSummaries, reports };
   }
 
+  /**
+   * Observer pubkeys that have an OPEN Observation PDA for `epochIndex`. Lean —
+   * reads only the Observation accounts (no gateway-registry decode like
+   * {@link getObservations}). Used by the crank to close observations before
+   * `close_epoch`, whose `observations_closed == observations_submitted`
+   * precondition would otherwise wedge epoch progression.
+   */
+  async getEpochObservers(epochIndex: number): Promise<Address[]> {
+    const epochIndexBuf = Buffer.alloc(8);
+    epochIndexBuf.writeBigUInt64LE(BigInt(epochIndex));
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      OBSERVATION_DISCRIMINATOR,
+      [
+        {
+          memcmp: {
+            offset: 8n,
+            bytes: bs58.encode(epochIndexBuf),
+            encoding: 'base58',
+          },
+        },
+      ],
+    );
+    const observers: Address[] = [];
+    for (const { data } of accounts) {
+      try {
+        observers.push(address(deserializeObservation(data).observer));
+      } catch {
+        // skip malformed
+      }
+    }
+    return observers;
+  }
+
   async getDistributions(epoch?: EpochInput): Promise<EpochDistributionData> {
     const epochIndex = await this.resolveEpochIndex(epoch);
     const epochData = await this.fetchEpoch(epochIndex);
