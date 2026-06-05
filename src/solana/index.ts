@@ -133,6 +133,7 @@ export type {
 export {
   canonicalMessage,
   canonicalMessageV2,
+  deriveRecipientId,
   bytesToHexLower,
 } from './canonical-message.js';
 export type {

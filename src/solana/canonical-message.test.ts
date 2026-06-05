@@ -7,7 +7,26 @@ import {
   bytesToHexLower,
   canonicalMessage,
   canonicalMessageV2,
+  deriveRecipientId,
 } from './canonical-message.js';
+
+// Stable "Arweave-shaped" recipient bytes shared with the Rust canonical tests
+// (`TEST_RECIPIENT_AB512` in canonical.rs): 512 bytes of 0xAB. The builder only
+// hashes them, so the exact content is irrelevant — only the derived id matters.
+const RECIPIENT = new Uint8Array(512).fill(0xab);
+// base64url(sha256(RECIPIENT)), no padding — must match the Rust
+// `derive_recipient_id_b64url(TEST_RECIPIENT_AB512)`.
+const RECIPIENT_ID = 'hHx6v09k4T8WQVZDGCYNaxNPodBlgwvSYKfMABJ0TDE';
+
+describe('deriveRecipientId', () => {
+  it('matches the Rust derive_recipient_id_b64url for 512×0xAB', () => {
+    assert.equal(deriveRecipientId(RECIPIENT), RECIPIENT_ID);
+    assert.equal(RECIPIENT_ID.length, 43); // 32-byte hash → 43 b64url chars, no pad
+  });
+  it('rejects empty recipient bytes', () => {
+    assert.throws(() => deriveRecipientId(new Uint8Array()), /non-empty/);
+  });
+});
 
 describe('canonical message', () => {
   const ant = address('9PnRFwk2Yp7QyU3sQzXwUhJj6tVyM4nN2KqL5fT8RbAW');
@@ -23,15 +42,17 @@ describe('canonical message', () => {
       network: 'solana-mainnet',
       antMint: ant,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const text = new TextDecoder().decode(out);
     // Must match Rust `canonical_message_matches_design_doc_example` test
-    // and docs/ANT_ESCROW_DESIGN.md § Canonical message format.
+    // (ario-ant-escrow/src/canonical.rs) and docs/ANT_ESCROW_DESIGN.md.
     assert.equal(
       text,
-      'ar.io ant-escrow claim v1\n' +
+      'ar.io ant-escrow claim\n' +
         'network: solana-mainnet\n' +
+        `recipient: ${RECIPIENT_ID}\n` +
         'ant: 9PnRFwk2Yp7QyU3sQzXwUhJj6tVyM4nN2KqL5fT8RbAW\n' +
         'claimant: Hk6RfBp4FpvF2hYBmJ9kqyL5dE3xR8wPzN7sV6cTqL2A\n' +
         'nonce: a3f1c8d92e0b4f7a8e1d6c5b4a3920817f6e5d4c3b2a19188776655443322110',
@@ -43,6 +64,7 @@ describe('canonical message', () => {
       network: 'solana-mainnet',
       antMint: ant,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notEqual(out[out.length - 1], 0x0a);
@@ -55,6 +77,7 @@ describe('canonical message', () => {
           network: 'solana-mainnet',
           antMint: ant,
           claimant,
+          recipient: RECIPIENT,
           nonce: new Uint8Array(31),
         }),
       /32 bytes/,
@@ -66,15 +89,26 @@ describe('canonical message', () => {
       network: 'solana-mainnet',
       antMint: ant,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const otherNetwork = canonicalMessage({
       network: 'solana-devnet',
       antMint: ant,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notDeepEqual(otherNetwork, base);
+
+    const otherRecipient = canonicalMessage({
+      network: 'solana-mainnet',
+      antMint: ant,
+      claimant,
+      recipient: new Uint8Array(512).fill(0xcd),
+      nonce,
+    });
+    assert.notDeepEqual(otherRecipient, base);
 
     const otherNonce = new Uint8Array(nonce);
     otherNonce[0] ^= 0x01;
@@ -82,6 +116,7 @@ describe('canonical message', () => {
       network: 'solana-mainnet',
       antMint: ant,
       claimant,
+      recipient: RECIPIENT,
       nonce: otherNonce,
     });
     assert.notDeepEqual(tweakedNonce, base);
@@ -104,13 +139,15 @@ describe('canonical message v2', () => {
       assetId,
       amount: 500_000_000n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const text = new TextDecoder().decode(out);
     assert.equal(
       text,
-      'ar.io escrow claim v2\n' +
+      'ar.io escrow claim\n' +
         'network: solana-mainnet\n' +
+        `recipient: ${RECIPIENT_ID}\n` +
         'type: token\n' +
         'asset: abababababababababababababababababababababababababababababababab\n' +
         'amount: 500000000\n' +
@@ -126,6 +163,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notEqual(out[out.length - 1], 0x0a);
@@ -140,6 +178,7 @@ describe('canonical message v2', () => {
           assetId: new Uint8Array(31),
           amount: 100n,
           claimant,
+          recipient: RECIPIENT,
           nonce,
         }),
       /32 bytes/,
@@ -155,6 +194,7 @@ describe('canonical message v2', () => {
           assetId,
           amount: 100n,
           claimant,
+          recipient: RECIPIENT,
           nonce: new Uint8Array(31),
         }),
       /32 bytes/,
@@ -168,6 +208,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const vault = canonicalMessageV2({
@@ -176,9 +217,32 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notDeepEqual(token, vault);
+  });
+
+  it('changes with recipient', () => {
+    const base = canonicalMessageV2({
+      network: 'solana-mainnet',
+      assetType: 'token',
+      assetId,
+      amount: 100n,
+      claimant,
+      recipient: RECIPIENT,
+      nonce,
+    });
+    const other = canonicalMessageV2({
+      network: 'solana-mainnet',
+      assetType: 'token',
+      assetId,
+      amount: 100n,
+      claimant,
+      recipient: new Uint8Array(20).fill(0x11), // ETH-shaped, different id
+      nonce,
+    });
+    assert.notDeepEqual(base, other);
   });
 
   it('changes with asset id', () => {
@@ -188,6 +252,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const other = canonicalMessageV2({
@@ -196,6 +261,7 @@ describe('canonical message v2', () => {
       assetId: new Uint8Array(32).fill(0xcd),
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notDeepEqual(base, other);
@@ -208,6 +274,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const other = canonicalMessageV2({
@@ -216,6 +283,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 200n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notDeepEqual(base, other);
@@ -228,6 +296,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const devnet = canonicalMessageV2({
@@ -236,6 +305,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     assert.notDeepEqual(mainnet, devnet);
@@ -248,6 +318,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     });
     const otherNonce = new Uint8Array(nonce);
@@ -258,6 +329,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 100n,
       claimant,
+      recipient: RECIPIENT,
       nonce: otherNonce,
     });
     assert.notDeepEqual(base, other);
@@ -270,6 +342,7 @@ describe('canonical message v2', () => {
       assetId,
       amount: 1_000_000n,
       claimant,
+      recipient: RECIPIENT,
       nonce,
     };
     const a = canonicalMessageV2(input);
@@ -277,19 +350,21 @@ describe('canonical message v2', () => {
     assert.deepEqual(a, b);
   });
 
-  it('matches the Rust v2_format_structure test', () => {
+  it('matches the Rust v2 format structure', () => {
     const out = canonicalMessageV2({
       network: 'solana-mainnet',
       assetType: 'token',
       assetId: new Uint8Array(32).fill(0xab),
       amount: 500_000_000n,
       claimant: address('Hk6RfBp4FpvF2hYBmJ9kqyL5dE3xR8wPzN7sV6cTqL2A'),
+      recipient: RECIPIENT,
       nonce: new Uint8Array(32).fill(0xcd),
     });
     const text = new TextDecoder().decode(out);
 
-    assert.ok(text.startsWith('ar.io escrow claim v2\n'));
+    assert.ok(text.startsWith('ar.io escrow claim\n'));
     assert.ok(text.includes('network: '));
+    assert.ok(text.includes(`\nrecipient: ${RECIPIENT_ID}\n`));
     assert.ok(text.includes('\ntype: token\n'));
     assert.ok(
       text.includes(
