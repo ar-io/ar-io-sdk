@@ -2387,11 +2387,27 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         extend: CostIntent.ExtendLease,
         increaseUndername: CostIntent.IncreaseUndernameLimit,
       } as const;
+      // IncreaseUndernameLimit pricing requires the record's purchase type
+      // (lease vs permabuy) — undername cost differs by type, and the on-chain
+      // instruction reads it from the record. `get_token_cost` can't read the
+      // record (it only gets demandFactor + payer), so it prices from params and
+      // REQUIRES `purchase_type` for this intent (else InvalidParameter #6039).
+      // Pass the record's actual type so the estimate matches what the
+      // instruction will charge.
+      let purchaseType: PurchaseType | undefined;
+      if (args.operation === 'increaseUndername') {
+        const record = await this.getArNSRecord({ name: args.params.name });
+        purchaseType =
+          record.type === 'permabuy'
+            ? PurchaseType.Permabuy
+            : PurchaseType.Lease;
+      }
       const cost = await this._simulateTokenCost({
         intent: intentMap[args.operation],
         name: args.params.name,
         years: args.years,
         quantity: args.quantity,
+        purchaseType,
       });
       const plan = await this._resolveFundingPlan(args.params, cost);
       const buyerATA = await getAssociatedTokenAddressKit(
