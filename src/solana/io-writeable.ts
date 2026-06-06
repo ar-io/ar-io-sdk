@@ -2784,9 +2784,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
      *  validationAccounts. Ignored for the `request` variant. */
     antProgramId?: Address;
   }) {
+    // The primary-name fee is purchase-type-aware: the on-chain handler
+    // (ario-core `primary_name_base_fee`) reads the base record's purchase_type
+    // and charges 5x for permabuy vs lease. `get_token_cost` defaults a missing
+    // purchase_type to Lease, so for a permabuy base name the estimate would be
+    // 5x too low → FundingPlanAmountMismatch (#6066). Pass the base record's
+    // actual type so the plan total matches what the program charges.
+    const baseRecord = await this.getArNSRecord({
+      name: splitPrimaryName(args.params.name).baseName,
+    });
     const fee = await this._simulateTokenCost({
       intent: CostIntent.PrimaryNameRequest,
       name: args.params.name,
+      purchaseType:
+        baseRecord.type === 'permabuy'
+          ? PurchaseType.Permabuy
+          : PurchaseType.Lease,
     });
 
     const plan = await this._resolveFundingPlan(args.params, fee);
