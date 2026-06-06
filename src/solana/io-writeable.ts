@@ -2387,11 +2387,27 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         extend: CostIntent.ExtendLease,
         increaseUndername: CostIntent.IncreaseUndernameLimit,
       } as const;
+      // IncreaseUndernameLimit pricing requires the record's purchase type
+      // (lease vs permabuy) — undername cost differs by type, and the on-chain
+      // instruction reads it from the record. `get_token_cost` can't read the
+      // record (it only gets demandFactor + payer), so it prices from params and
+      // REQUIRES `purchase_type` for this intent (else InvalidParameter #6039).
+      // Pass the record's actual type so the estimate matches what the
+      // instruction will charge.
+      let purchaseType: PurchaseType | undefined;
+      if (args.operation === 'increaseUndername') {
+        const record = await this.getArNSRecord({ name: args.params.name });
+        purchaseType =
+          record.type === 'permabuy'
+            ? PurchaseType.Permabuy
+            : PurchaseType.Lease;
+      }
       const cost = await this._simulateTokenCost({
         intent: intentMap[args.operation],
         name: args.params.name,
         years: args.years,
         quantity: args.quantity,
+        purchaseType,
       });
       const plan = await this._resolveFundingPlan(args.params, cost);
       const buyerATA = await getAssociatedTokenAddressKit(
@@ -2768,9 +2784,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
      *  validationAccounts. Ignored for the `request` variant. */
     antProgramId?: Address;
   }) {
+    // The primary-name fee is purchase-type-aware: the on-chain handler
+    // (ario-core `primary_name_base_fee`) reads the base record's purchase_type
+    // and charges 5x for permabuy vs lease. `get_token_cost` defaults a missing
+    // purchase_type to Lease, so for a permabuy base name the estimate would be
+    // 5x too low → FundingPlanAmountMismatch (#6066). Pass the base record's
+    // actual type so the plan total matches what the program charges.
+    const baseRecord = await this.getArNSRecord({
+      name: splitPrimaryName(args.params.name).baseName,
+    });
     const fee = await this._simulateTokenCost({
       intent: CostIntent.PrimaryNameRequest,
       name: args.params.name,
+      purchaseType:
+        baseRecord.type === 'permabuy'
+          ? PurchaseType.Permabuy
+          : PurchaseType.Lease,
     });
 
     const plan = await this._resolveFundingPlan(args.params, fee);
