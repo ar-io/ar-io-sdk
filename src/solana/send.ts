@@ -38,6 +38,9 @@ import {
   type Address,
   type Commitment,
   type Instruction,
+  SOLANA_ERROR__BLOCK_HEIGHT_EXCEEDED,
+  SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
+  SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND,
   type TransactionSigner,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -46,6 +49,7 @@ import {
   getAddressDecoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
+  isSolanaError,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -146,56 +150,75 @@ export async function sendAndConfirm({
         ? 0n
         : BigInt(priorityFeeMicroLamports);
 
-  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+  // Pin an explicit, NON-ZERO priority fee so wallets like Phantom don't
+  // rewrite the message to inject their own compute-budget instructions.
+  // Phantom treats a missing/zero fee as "unset" and overrides it on mainnet —
+  // that mutation invalidates the already-attached signatures (→ "Transaction
+  // did not pass signature verification" / preflight #-32002). A real,
+  // network-rate fee makes the wallet leave the message alone.
+  const allInstructions = [
+    getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
+    getSetComputeUnitPriceInstruction({ microLamports }),
+    ...instructions,
+  ];
 
-  const baseMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [
-          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
-          // don't rewrite the message to inject their own compute-budget
-          // instructions. Phantom treats a missing/zero fee as "unset" and
-          // overrides it on mainnet — that mutation invalidates the already-
-          // attached signatures (→ "Transaction did not pass signature
-          // verification" / preflight #-32002). A real, network-rate fee
-          // (see `microLamports` above) makes the wallet leave the message
-          // alone, so signatures over the original bytes still verify.
-          getSetComputeUnitPriceInstruction({ microLamports }),
-          ...instructions,
-        ],
-        tx,
-      ),
-  );
-
-  // Compress against any supplied lookup tables (v0). No-op when none given.
-  const message = addressLookupTables
-    ? compressTransactionMessageUsingAddressLookupTables(
-        baseMessage,
-        addressLookupTables as never,
-      )
-    : baseMessage;
-
-  const signedTx = await signTransactionMessageWithSigners(message);
-  const sendAndConfirmFactory = sendAndConfirmTransactionFactory({
+  const sendAndConfirmTx = sendAndConfirmTransactionFactory({
     rpc,
     rpcSubscriptions,
   });
-  // Cast narrows the transaction type to what sendAndConfirmFactory expects —
-  // the kit signer pipeline produces a fully-signed transaction with a blockhash
-  // lifetime, but the factory's argument type doesn't quite line up with the
-  // inferred union. The runtime object is correct.
-  try {
-    await sendAndConfirmFactory(signedTx as never, { commitment });
-  } catch (err) {
-    logSolanaErrorContext(err);
-    await logSimulationDiagnostics(rpc, message, err);
-    throw err;
+
+  // Retry loop: wallet signing delays (e.g. Phantom service-worker reconnects)
+  // or circuit-breaker endpoint splits can cause the blockhash to expire between
+  // acquisition and submission. On blockhash-related failures we re-acquire a
+  // fresh blockhash, re-build the message, re-sign, and re-send.
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 500;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const { value: blockhash } = await rpc.getLatestBlockhash().send();
+
+    const baseMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
+      (tx) => appendTransactionMessageInstructions(allInstructions, tx),
+    );
+
+    // Compress against any supplied lookup tables (v0). No-op when none given.
+    const message = addressLookupTables
+      ? compressTransactionMessageUsingAddressLookupTables(
+          baseMessage,
+          addressLookupTables as never,
+        )
+      : baseMessage;
+
+    const signedTx = await signTransactionMessageWithSigners(message);
+
+    try {
+      // Cast narrows the transaction type to what the factory expects — the kit
+      // signer pipeline produces a fully-signed transaction with a blockhash
+      // lifetime, but the factory's argument type doesn't quite line up with
+      // the inferred union. The runtime object is correct.
+      await sendAndConfirmTx(signedTx as never, { commitment });
+      return getSignatureFromTransaction(signedTx) as string;
+    } catch (err) {
+      if (attempt < MAX_RETRIES && isBlockhashError(err)) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[solana-send] blockhash expired, retrying (${attempt + 1}/${MAX_RETRIES})...`,
+        );
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        continue;
+      }
+      // Final attempt or non-blockhash error: log diagnostics and throw.
+      logSolanaErrorContext(err);
+      await logSimulationDiagnostics(rpc, message, err);
+      throw err;
+    }
   }
-  return getSignatureFromTransaction(signedTx) as string;
+
+  // Unreachable — the loop always returns or throws — but TypeScript needs it.
+  throw new Error('[solana-send] exhausted blockhash retries');
 }
 
 /**
@@ -280,6 +303,69 @@ async function logSimulationDiagnostics(
     // eslint-disable-next-line no-console
     console.warn('[solana-send] failed to collect diagnostics', diagErr);
   }
+}
+
+/**
+ * Detect errors caused by blockhash expiry. Walks the kit `SolanaError` cause
+ * chain checking for:
+ *
+ * 1. `SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND` (7050008) — the RPC
+ *    rejected the tx at preflight because the blockhash was already gone.
+ * 2. `SOLANA_ERROR__BLOCK_HEIGHT_EXCEEDED` (1) — the tx was sent but the
+ *    network progressed past `lastValidBlockHeight` before confirmation.
+ * 3. `SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE`
+ *    (-32002) with empty logs / 0 CU — the generic preflight wrapper that
+ *    encloses case 1; caught here as a fallback in case the inner cause is
+ *    missing from the chain.
+ * 4. String fallback: "blockhash not found" anywhere in a message, for
+ *    non-kit error wrappers or future message format changes.
+ */
+function isBlockhashError(err: unknown): boolean {
+  let current: unknown = err;
+  let depth = 0;
+  while (current && depth < 10) {
+    // Direct kit error code checks (preferred).
+    if (
+      isSolanaError(
+        current,
+        SOLANA_ERROR__TRANSACTION_ERROR__BLOCKHASH_NOT_FOUND,
+      ) ||
+      isSolanaError(current, SOLANA_ERROR__BLOCK_HEIGHT_EXCEEDED)
+    ) {
+      return true;
+    }
+    // Preflight -32002 with empty logs = rejected before execution (blockhash gone).
+    if (
+      isSolanaError(
+        current,
+        SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
+      )
+    ) {
+      const ctx = (current as { context?: Record<string, unknown> }).context;
+      if (ctx && typeof ctx === 'object') {
+        const logs = ctx.logs;
+        const units = ctx.unitsConsumed;
+        if (
+          (!Array.isArray(logs) || logs.length === 0) &&
+          (units === undefined || units === 0 || units === 0n)
+        ) {
+          return true;
+        }
+      }
+    }
+
+    // String fallback for non-kit wrappers.
+    const msg = (
+      (current as { message?: string })?.message ?? ''
+    ).toLowerCase();
+    if (msg.includes('blockhash not found')) {
+      return true;
+    }
+
+    current = (current as { cause?: unknown })?.cause;
+    depth += 1;
+  }
+  return false;
 }
 
 /**
