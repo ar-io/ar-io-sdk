@@ -56,6 +56,45 @@ import {
 import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
 
 /**
+ * Floor for the auto-estimated priority fee (micro-lamports per CU). Ensures a
+ * non-zero fee so message-modifying wallets (Phantom) leave the tx alone. The
+ * absolute cost stays tiny: `fee ≈ price * CU_limit / 1e6` lamports
+ * (e.g. 10_000 µ£/CU × 400k CU ≈ 4_000 lamports ≈ 0.000004 SOL).
+ */
+const MIN_PRIORITY_FEE_MICRO_LAMPORTS = 10_000n;
+/** Cap so a spiky fee market can't blow up the fee unexpectedly. */
+const MAX_PRIORITY_FEE_MICRO_LAMPORTS = 2_000_000n;
+
+/**
+ * Estimate a compute-unit price from recent on-chain prioritization fees: the
+ * 75th percentile of recent non-zero per-slot fees, clamped to
+ * [{@link MIN_PRIORITY_FEE_MICRO_LAMPORTS}, {@link MAX_PRIORITY_FEE_MICRO_LAMPORTS}].
+ * Falls back to the floor when there's no data or the query fails. Matching the
+ * going rate both lands the tx and keeps Phantom from bumping (and thus
+ * rewriting) the fee.
+ */
+export async function estimatePriorityFeeMicroLamports(
+  rpc: SolanaRpc,
+): Promise<bigint> {
+  try {
+    const recent = await rpc.getRecentPrioritizationFees().send();
+    const fees = recent
+      .map((r) => BigInt(r.prioritizationFee))
+      .filter((f) => f > 0n)
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    if (fees.length === 0) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+    const p75 = fees[Math.min(fees.length - 1, Math.floor(fees.length * 0.75))];
+    if (p75 < MIN_PRIORITY_FEE_MICRO_LAMPORTS)
+      return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+    if (p75 > MAX_PRIORITY_FEE_MICRO_LAMPORTS)
+      return MAX_PRIORITY_FEE_MICRO_LAMPORTS;
+    return p75;
+  } catch {
+    return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+  }
+}
+
+/**
  * Build, sign, send, and confirm a transaction in one call.
  *
  * The caller supplies the core instructions; a compute-unit-limit instruction
@@ -68,6 +107,7 @@ export async function sendAndConfirm({
   instructions,
   commitment = 'confirmed',
   computeUnitLimit = 400_000,
+  priorityFeeMicroLamports = 'auto',
   addressLookupTables,
 }: {
   rpc: SolanaRpc;
@@ -76,6 +116,19 @@ export async function sendAndConfirm({
   instructions: Instruction[];
   commitment?: Commitment;
   computeUnitLimit?: number;
+  /**
+   * Compute-unit price (priority fee), in micro-lamports per CU.
+   * - `'auto'` (default): estimate from recent on-chain fees (see
+   *   {@link estimatePriorityFeeMicroLamports}). A NON-ZERO fee is essential:
+   *   wallets like Phantom treat a missing/zero fee as "unset" and rewrite the
+   *   transaction to inject their own, which invalidates already-attached
+   *   signatures (→ "Transaction did not pass signature verification"). A real,
+   *   network-rate fee makes the wallet leave the message untouched.
+   * - a `number`/`bigint`: pin exactly this price.
+   * - `false`: no priority fee (price 0) — only for environments with no fee
+   *   market (localnet) where wallet rewriting isn't a concern.
+   */
+  priorityFeeMicroLamports?: bigint | number | 'auto' | false;
   /**
    * Address Lookup Tables to compress the (v0) message against, as
    * `{ [tableAddress]: addresses }`. Accounts present in a table are referenced
@@ -86,6 +139,13 @@ export async function sendAndConfirm({
    */
   addressLookupTables?: Record<string, Address[]>;
 }): Promise<string> {
+  const microLamports =
+    priorityFeeMicroLamports === 'auto'
+      ? await estimatePriorityFeeMicroLamports(rpc)
+      : priorityFeeMicroLamports === false
+        ? 0n
+        : BigInt(priorityFeeMicroLamports);
+
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
   const baseMessage = pipe(
@@ -96,16 +156,15 @@ export async function sendAndConfirm({
       appendTransactionMessageInstructions(
         [
           getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Always pin the priority fee (even at 0) so wallets like Phantom
-          // don't silently *append* their own compute-budget instructions
-          // when the transaction is missing either limit or price. That
-          // mutation invalidates signatures already attached by paired
-          // keypair signers (e.g. the ANT mint signer in `spawnSolanaANT`),
-          // producing `Transaction did not pass signature verification` on
-          // the validator. Pre-supplying both keeps the wallet from
-          // rewriting the message, so signatures over the original bytes
-          // still verify.
-          getSetComputeUnitPriceInstruction({ microLamports: 0n }),
+          // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
+          // don't rewrite the message to inject their own compute-budget
+          // instructions. Phantom treats a missing/zero fee as "unset" and
+          // overrides it on mainnet — that mutation invalidates the already-
+          // attached signatures (→ "Transaction did not pass signature
+          // verification" / preflight #-32002). A real, network-rate fee
+          // (see `microLamports` above) makes the wallet leave the message
+          // alone, so signatures over the original bytes still verify.
+          getSetComputeUnitPriceInstruction({ microLamports }),
           ...instructions,
         ],
         tx,
