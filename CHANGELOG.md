@@ -1,3 +1,10 @@
+## [4.0.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.1...v4.0.2-alpha.2) (2026-06-06)
+
+
+### Bug Fixes
+
+* **send tx:** update send tx ([693cb93](https://github.com/ar-io/ar-io-sdk/commit/693cb9391c9a87b3d6b4025e8a943b0d2659c226))
+
 ## [4.0.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.1...v4.0.2-alpha.1) (2026-06-06)
 
 
