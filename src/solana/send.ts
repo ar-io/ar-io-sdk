@@ -46,6 +46,7 @@ import {
   getAddressDecoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
+  isTransactionModifyingSigner,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -64,6 +65,20 @@ import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
 const MIN_PRIORITY_FEE_MICRO_LAMPORTS = 10_000n;
 /** Cap so a spiky fee market can't blow up the fee unexpectedly. */
 const MAX_PRIORITY_FEE_MICRO_LAMPORTS = 2_000_000n;
+
+/**
+ * Multiplier applied to the simulated `unitsConsumed` to derive the pinned
+ * compute-unit limit, giving headroom for run-to-run variance (account state
+ * the simulation didn't see, slightly different inputs at land time).
+ */
+const COMPUTE_UNIT_LIMIT_BUFFER = 1.3;
+/**
+ * Floor for the auto-sized compute-unit limit. Keeps tiny instructions from
+ * being pinned so tight that benign variance trips a "exceeded CUs" failure.
+ */
+const MIN_COMPUTE_UNIT_LIMIT = 10_000;
+/** Solana's hard per-transaction compute-unit ceiling. */
+const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
 
 /**
  * Estimate a compute-unit price from recent on-chain prioritization fees: the
@@ -95,6 +110,50 @@ export async function estimatePriorityFeeMicroLamports(
 }
 
 /**
+ * Simulate `message` (sig-verify off) to learn its actual `unitsConsumed`, then
+ * return a tight compute-unit limit: `unitsConsumed * COMPUTE_UNIT_LIMIT_BUFFER`,
+ * clamped to [{@link MIN_COMPUTE_UNIT_LIMIT}, `fallback`].
+ *
+ * Why this matters: a wildly over-provisioned CU limit (e.g. the blanket
+ * `1_000_000` several writes pass) is exactly what message-modifying wallets
+ * like Phantom *rewrite* — they tighten the limit to lower the fee
+ * (fee = price × limit), sign their modified message, and the SDK's already-
+ * attached signatures no longer match the submitted bytes →
+ * "Transaction did not pass signature verification" even though simulation
+ * (sig-verify off) passes. Pinning a realistic limit leaves the wallet nothing
+ * to optimize, so the signed bytes are the submitted bytes.
+ *
+ * Best-effort: on any simulation error (including a program error — let the real
+ * send surface it) we fall back to `fallback` so behavior never regresses.
+ */
+export async function estimateComputeUnitLimit(
+  rpc: SolanaRpc,
+  message: unknown,
+  fallback: number,
+): Promise<number> {
+  try {
+    const compiled = compileTransaction(message as never);
+    const wire = getBase64EncodedWireTransaction(compiled as never);
+    const sim = await rpc
+      .simulateTransaction(wire, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        encoding: 'base64',
+      })
+      .send();
+    const consumed = sim.value.unitsConsumed;
+    if (sim.value.err != null || consumed == null) return fallback;
+    const sized = Math.ceil(Number(consumed) * COMPUTE_UNIT_LIMIT_BUFFER);
+    return Math.min(
+      Math.max(sized, MIN_COMPUTE_UNIT_LIMIT),
+      Math.min(fallback, MAX_COMPUTE_UNIT_LIMIT),
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Build, sign, send, and confirm a transaction in one call.
  *
  * The caller supplies the core instructions; a compute-unit-limit instruction
@@ -107,6 +166,7 @@ export async function sendAndConfirm({
   instructions,
   commitment = 'confirmed',
   computeUnitLimit = 400_000,
+  autoComputeUnitLimit = true,
   priorityFeeMicroLamports = 'auto',
   addressLookupTables,
 }: {
@@ -115,7 +175,20 @@ export async function sendAndConfirm({
   signer: TransactionSigner;
   instructions: Instruction[];
   commitment?: Commitment;
+  /**
+   * Upper bound for the compute-unit limit. By default the limit is auto-sized
+   * from a pre-send simulation (see {@link estimateComputeUnitLimit}) and this
+   * value is only the ceiling/fallback. Pass `autoComputeUnitLimit: false` to
+   * pin exactly this value instead (e.g. localnet, or when simulation is
+   * unavailable).
+   */
   computeUnitLimit?: number;
+  /**
+   * When `true` (default), simulate before signing and pin a tight CU limit so
+   * message-modifying wallets (Phantom) don't rewrite the over-provisioned limit
+   * and invalidate signatures. When `false`, pin `computeUnitLimit` verbatim.
+   */
+  autoComputeUnitLimit?: boolean;
   /**
    * Compute-unit price (priority fee), in micro-lamports per CU.
    * - `'auto'` (default): estimate from recent on-chain fees (see
@@ -148,36 +221,65 @@ export async function sendAndConfirm({
 
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-  const baseMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [
-          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
-          // don't rewrite the message to inject their own compute-budget
-          // instructions. Phantom treats a missing/zero fee as "unset" and
-          // overrides it on mainnet — that mutation invalidates the already-
-          // attached signatures (→ "Transaction did not pass signature
-          // verification" / preflight #-32002). A real, network-rate fee
-          // (see `microLamports` above) makes the wallet leave the message
-          // alone, so signatures over the original bytes still verify.
-          getSetComputeUnitPriceInstruction({ microLamports }),
-          ...instructions,
-        ],
-        tx,
-      ),
-  );
+  // Build the (optionally ALT-compressed) message for a given CU limit. We may
+  // build it twice: once with the ceiling limit to simulate, once with the
+  // tight limit we actually sign.
+  const buildMessage = (units: number) => {
+    const baseMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [
+            getSetComputeUnitLimitInstruction({ units }),
+            // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
+            // don't rewrite the message to inject their own compute-budget
+            // instructions. Phantom treats a missing/zero fee as "unset" and
+            // overrides it on mainnet — that mutation invalidates the already-
+            // attached signatures (→ "Transaction did not pass signature
+            // verification" / preflight #-32002). A real, network-rate fee
+            // (see `microLamports` above) makes the wallet leave the message
+            // alone, so signatures over the original bytes still verify.
+            getSetComputeUnitPriceInstruction({ microLamports }),
+            ...instructions,
+          ],
+          tx,
+        ),
+    );
 
-  // Compress against any supplied lookup tables (v0). No-op when none given.
-  const message = addressLookupTables
-    ? compressTransactionMessageUsingAddressLookupTables(
-        baseMessage,
-        addressLookupTables as never,
+    // Compress against any supplied lookup tables (v0). No-op when none given.
+    return addressLookupTables
+      ? compressTransactionMessageUsingAddressLookupTables(
+          baseMessage,
+          addressLookupTables as never,
+        )
+      : baseMessage;
+  };
+
+  // Right-size the CU limit from a pre-send simulation — but ONLY for
+  // non-modifying (keypair) signers, where it saves fees and nothing will
+  // rewrite the message.
+  //
+  // Message-modifying wallets (Phantom etc.) re-optimize the compute budget
+  // themselves AND attach simulation-based guards (e.g. Lighthouse) keyed to
+  // the budget/state they expect. Handing them a tightly-sized limit interferes
+  // with that and trips the guard at execution time (observed: Lighthouse
+  // `AssertionFailed` 0x1900 on `joinNetwork`, even though the tx itself
+  // simulates clean). The modifying-signer bridge already captures whatever the
+  // wallet rewrites, so sizing the limit for them is both unnecessary and
+  // harmful — leave the generous `computeUnitLimit` and let the wallet tune it.
+  const shouldAutoSize =
+    autoComputeUnitLimit && !isTransactionModifyingSigner(signer);
+  const units = shouldAutoSize
+    ? await estimateComputeUnitLimit(
+        rpc,
+        buildMessage(computeUnitLimit),
+        computeUnitLimit,
       )
-    : baseMessage;
+    : computeUnitLimit;
+
+  const message = buildMessage(units);
 
   const signedTx = await signTransactionMessageWithSigners(message);
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({

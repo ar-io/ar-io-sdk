@@ -63,7 +63,10 @@ import {
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
 import { getAntRecordPDA } from './pda.js';
-import { estimatePriorityFeeMicroLamports } from './send.js';
+import {
+  estimateComputeUnitLimit,
+  estimatePriorityFeeMicroLamports,
+} from './send.js';
 import type {
   SolanaRpc,
   SolanaRpcSubscriptions,
@@ -357,26 +360,43 @@ export async function spawnSolanaANT(
     estimatePriorityFeeMicroLamports(rpc),
   ]);
 
-  const message = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [
-          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Pin a non-zero priority fee (see `estimatePriorityFeeMicroLamports`).
-          // A real fee both lands the tx and, per Phantom's docs, stops the
-          // wallet from injecting its own fee. The paired mint-keypair signing
-          // is handled below.
-          getSetComputeUnitPriceInstruction({ microLamports }),
-          createIx,
-          initIx,
-          ...aclIxs,
-        ],
-        tx,
-      ),
-  );
+  const buildMessage = (units: number) =>
+    pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [
+            getSetComputeUnitLimitInstruction({ units }),
+            // Pin a non-zero priority fee (see `estimatePriorityFeeMicroLamports`).
+            // A real fee both lands the tx and, per Phantom's docs, stops the
+            // wallet from injecting its own fee. The paired mint-keypair signing
+            // is handled below.
+            getSetComputeUnitPriceInstruction({ microLamports }),
+            createIx,
+            initIx,
+            ...aclIxs,
+          ],
+          tx,
+        ),
+    );
+
+  // Right-size the CU limit from a pre-send simulation — but ONLY for
+  // non-modifying (keypair) signers. Message-modifying wallets (Phantom etc.)
+  // re-optimize the compute budget themselves and attach simulation-based
+  // guards (Lighthouse) keyed to the budget they expect; a tightly-sized limit
+  // interferes with that and trips the guard. The wallet rewrite is captured by
+  // the modifying-signer flow below, so `computeUnitLimit` (the ceiling) is left
+  // generous for them.
+  const units = isTransactionModifyingSigner(signer)
+    ? computeUnitLimit
+    : await estimateComputeUnitLimit(
+        rpc,
+        buildMessage(computeUnitLimit),
+        computeUnitLimit,
+      );
+  const message = buildMessage(units);
 
   // Attach the mint signer so kit can satisfy the WRITABLE_SIGNER role on the
   // mint account. `addSignersToTransactionMessage` walks the message's account
