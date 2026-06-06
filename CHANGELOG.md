@@ -1,3 +1,10 @@
+## [4.0.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0...v4.0.1) (2026-06-05)
+
+
+### Bug Fixes
+
+* **clusters:** update clusters config ([be8f3c7](https://github.com/ar-io/ar-io-sdk/commit/be8f3c7d745c877c4edbe32e6252f67d4d4658b6))
+
 # [4.0.0](https://github.com/ar-io/ar-io-sdk/compare/v3.24.0...v4.0.0) (2026-06-05)
 
 
