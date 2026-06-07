@@ -1,3 +1,10 @@
+## [4.0.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.2...v4.0.2-alpha.3) (2026-06-07)
+
+
+### Bug Fixes
+
+* **arns:** floor returned-name premium at 1x to match on-chain pricing ([9ddfd9e](https://github.com/ar-io/ar-io-sdk/commit/9ddfd9eac36e3a2d14aa9152450dbfbfbf7dd955))
+
 ## [4.0.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.1...v4.0.2-alpha.2) (2026-06-06)
 
 
