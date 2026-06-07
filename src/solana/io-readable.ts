@@ -1768,10 +1768,16 @@ export class SolanaARIOReadable {
             const elapsed = now - returned.startTimestamp;
             const duration = 14 * 86_400_000;
             if (elapsed < duration) {
-              const remaining = BigInt(duration - elapsed);
+              // Returned Name Premium (RNP) decays linearly from 50x to 1x
+              // over the window, matching the whitepaper (RNP = 50 - 49/14*t)
+              // and the on-chain ario-arns pricing
+              // (calculate_returned_name_premium):
+              //   multiplier = (50*dur - 49*elapsed) * scale / dur
+              // Floors at 1x at window close (NOT 0x) — at which point the
+              // name reverts to standard pricing.
               const dur = BigInt(duration);
-              const pctRemaining = (remaining * scale) / dur;
-              const multiplier = 50n * pctRemaining;
+              const el = BigInt(elapsed);
+              const multiplier = ((50n * dur - 49n * el) * scale) / dur;
               cost = (cost * multiplier) / scale;
             }
           }
