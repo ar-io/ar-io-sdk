@@ -219,6 +219,14 @@ function toMsTimestamps<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
+function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size) as T[]);
+  }
+  return chunks;
+}
+
 /**
  * Drop the SDK-internal extras (`name`, `owner`) and the `processId` re-key
  * that `deserializeArnsRecord` adds, projecting back to the cross-backend
@@ -423,28 +431,30 @@ export class SolanaARIOReadable {
   ): Promise<Map<string, bigint>> {
     const unique = Array.from(new Set(operatorAddresses));
     if (unique.length === 0) return new Map();
-    const pdas = await Promise.all(
-      unique.map(
-        async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
-      ),
-    );
-    const accounts = await withRetry(() =>
-      fetchEncodedAccounts(this.rpc, pdas, {
-        commitment: this.commitment,
-      }),
-    );
     const out = new Map<string, bigint>();
-    for (let i = 0; i < accounts.length; i++) {
-      const acct = accounts[i];
-      if (!acct.exists) continue;
-      try {
-        // Internal variant: surfaces the u128 accumulator that the public
-        // `deserializeGateway` deliberately drops (BigInt is not
-        // JSON-serializable and would leak through getGateway).
-        const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
-        out.set(unique[i], gw.cumulativeRewardPerToken);
-      } catch {
-        // Skip malformed; the caller will fall back to the raw delegation amount.
+    for (const group of chunk(unique, 100)) {
+      const pdas = await Promise.all(
+        group.map(
+          async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
+        ),
+      );
+      const accounts = await withRetry(() =>
+        fetchEncodedAccounts(this.rpc, pdas, {
+          commitment: this.commitment,
+        }),
+      );
+      for (let i = 0; i < accounts.length; i++) {
+        const acct = accounts[i];
+        if (!acct.exists) continue;
+        try {
+          // Internal variant: surfaces the u128 accumulator that the public
+          // `deserializeGateway` deliberately drops (BigInt is not
+          // JSON-serializable and would leak through getGateway).
+          const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
+          out.set(group[i], gw.cumulativeRewardPerToken);
+        } catch {
+          // Skip malformed; the caller will fall back to the raw delegation amount.
+        }
       }
     }
     return out;
