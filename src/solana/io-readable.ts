@@ -33,6 +33,13 @@ import bs58 from 'bs58';
 
 import {
   ARNS_RECORD_DISCRIMINATOR,
+  DEMAND_FACTOR_DOWN_ADJUSTMENT,
+  DEMAND_FACTOR_MIN,
+  DEMAND_FACTOR_SCALE,
+  DEMAND_FACTOR_UP_ADJUSTMENT,
+  MAX_PERIODS_AT_MIN_DEMAND_FACTOR,
+  MOVING_AVG_PERIOD_COUNT,
+  PERIOD_LENGTH_SECONDS,
   RESERVED_NAME_DISCRIMINATOR,
   RETURNED_NAME_DISCRIMINATOR,
   getArnsConfigDecoder,
@@ -2070,15 +2077,30 @@ export class SolanaARIOReadable {
     }
     const df = deserializeDemandFactor(Buffer.from(account.data));
 
+    // Derive every static setting from the on-chain program constants
+    // (`@ar.io/solana-contracts/arns`, lifted from the Rust source-of-truth)
+    // rather than hand-copied literals, which had drifted: the down-adjustment
+    // was hardcoded `25` (2.5%) while the program uses
+    // DEMAND_FACTOR_DOWN_ADJUSTMENT = 985_000 → 0.985× → 1.5% (`15`), and
+    // `maxPeriodsAtMinDemandFactor` returned the live consecutive-period
+    // counter instead of the MAX_PERIODS_AT_MIN_DEMAND_FACTOR threshold.
+    //
+    // The `*AdjustmentRate` fields are the per-period step magnitude scaled by
+    // 1000 (up: 1.05× → 50; down: 0.985× → 15), matching the existing units.
+    const scale = DEMAND_FACTOR_SCALE;
     return {
       periodZeroStartTimestamp: df.periodZeroStartTimestamp,
-      movingAvgPeriodCount: 7,
-      periodLengthMs: 86_400 * 1000,
+      movingAvgPeriodCount: MOVING_AVG_PERIOD_COUNT,
+      periodLengthMs: Number(PERIOD_LENGTH_SECONDS) * 1000,
       demandFactorBaseValue: 1,
-      demandFactorMin: 0.5,
-      demandFactorUpAdjustmentRate: 50,
-      demandFactorDownAdjustmentRate: 25,
-      maxPeriodsAtMinDemandFactor: df.consecutivePeriodsWithMinDemandFactor,
+      demandFactorMin: Number(DEMAND_FACTOR_MIN) / Number(scale),
+      demandFactorUpAdjustmentRate: Number(
+        ((DEMAND_FACTOR_UP_ADJUSTMENT - scale) * 1000n) / scale,
+      ),
+      demandFactorDownAdjustmentRate: Number(
+        ((scale - DEMAND_FACTOR_DOWN_ADJUSTMENT) * 1000n) / scale,
+      ),
+      maxPeriodsAtMinDemandFactor: MAX_PERIODS_AT_MIN_DEMAND_FACTOR,
       criteria: 'revenue',
     };
   }
