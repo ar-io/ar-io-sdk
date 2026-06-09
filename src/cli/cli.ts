@@ -1227,9 +1227,11 @@ makeCommand({
   action: escrowClaimEthereumCLICommand,
 });
 
+const normalizedArgv1 = process.argv[1].replace(/\\/g, '/');
+
 if (
-  process.argv[1].includes('bin/ar.io') || // Running from global .bin
-  process.argv[1].includes('cli/cli') // Running from source
+  normalizedArgv1.includes('bin/ar.io') || // Running from global .bin
+  normalizedArgv1.includes('cli/cli') // Running from source
 ) {
   program.parse(process.argv);
 }
