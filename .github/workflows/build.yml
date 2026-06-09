@@ -9,6 +9,7 @@ on:
     branches-ignore:
       - main
       - alpha
+      - solana
   workflow_dispatch:
   workflow_call:
 
@@ -46,7 +47,7 @@ jobs:
   test:
     strategy:
       matrix:
-        suite: [unit, esm, cjs, web]
+        suite: [unit]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,6 +78,7 @@ jobs:
       - name: Send Slack notification
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_TITLE: "Build / E2E tests succeeded!"
+          SLACK_TITLE: "Build & unit tests succeeded!"
           SLACK_COLOR: "good"
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+

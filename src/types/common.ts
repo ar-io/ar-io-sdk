@@ -13,27 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import {
-  ArconnectSigner,
-  ArweaveSigner,
-  EthereumSigner,
-  InjectedEthereumSigner,
-  Signer,
-} from '@dha-team/arbundles';
-import {
-  dryrun,
-  message,
-  monitor,
-  result,
-  results,
-  spawn,
-  unmonitor,
-} from '@permaweb/aoconnect';
-import Arweave from 'arweave';
-
-import { SpawnANTState } from './ant.js';
-import { AoArNSPurchaseParams, AoBuyRecordParams } from './io.js';
-import { AoSigner } from './token.js';
+import { ArNSPurchaseParams, BuyRecordParams } from './io.js';
 
 export type BlockHeight = number;
 export type SortKey = string;
@@ -41,26 +21,6 @@ export type Timestamp = number;
 export type WalletAddress = string;
 export type TransactionId = string;
 export type ProcessId = string;
-export type OptionalArweave<T = NonNullable<unknown>> = {
-  arweave?: Arweave;
-} & T;
-export type OptionalPaymentUrl<T = NonNullable<unknown>> = {
-  paymentUrl?: string;
-} & T;
-// TODO: TurboArNSSigner could be simply `Signer` but we need to implement each message signing method for signing headers.
-export type TurboArNSSigner =
-  | EthereumSigner
-  | InjectedEthereumSigner
-  | ArweaveSigner
-  | ArconnectSigner
-  | Window['arweaveWallet'];
-export type ContractSigner = Signer | Window['arweaveWallet'] | AoSigner;
-export type WithSigner<T = NonNullable<unknown>> = {
-  signer: ContractSigner;
-} & T; // TODO: optionally allow JWK in place of signer
-export type OptionalSigner<T = NonNullable<unknown>> = {
-  signer?: ContractSigner | undefined;
-} & T;
 
 export type ReadParameters<Input> = {
   functionName: string;
@@ -73,36 +33,37 @@ export type WriteOptions<K extends string = string, T = unknown> = {
   onSigningProgress?: (name: K, payload: T) => void;
 };
 
-export type WriteParameters<Input> = WithSigner<
-  Required<ReadParameters<Input>>
->;
-
-export type AoMessageResult<
+/**
+ * Result envelope shared with the legacy AO message-pump shape. Solana
+ * transactions surface their signature via `id` and may include a typed
+ * `result` payload for handlers that return structured data.
+ */
+export type MessageResult<
   T = Record<string, string | number | boolean | null>,
 > = {
   id: string;
   result?: T;
 };
 
-export type AoPrimaryNameRequest = {
+export type PrimaryNameRequest = {
   name: string;
   initiator: WalletAddress;
   startTimestamp: Timestamp;
   endTimestamp: Timestamp;
 };
 
-export type AoCreatePrimaryNameRequest = {
-  request: Omit<AoPrimaryNameRequest, 'initiator'> & {
+export type CreatePrimaryNameRequest = {
+  request: Omit<PrimaryNameRequest, 'initiator'> & {
     initiator: WalletAddress;
   };
-  newPrimaryName: AoPrimaryName;
+  newPrimaryName: PrimaryName;
   baseNameOwner: WalletAddress;
   fundingPlan: Record<string, unknown>;
   fundingResult: Record<string, unknown>;
   demandFactor: Record<string, unknown>;
 };
 
-export type AoPrimaryName = {
+export type PrimaryName = {
   owner: WalletAddress;
   processId: ProcessId;
   name: string;
@@ -113,7 +74,7 @@ export type AoPrimaryName = {
  * Users are allowed one free redelegation every seven epochs. Each additional
  * redelegation increases the fee by 10%, capping at a 60% redelegation fee
  */
-export type AoRedelegationFeeInfo = {
+export type RedelegationFeeInfo = {
   /** Percentage of redelegated stake that will be returned to the protocol on redelegation */
   redelegationFeeRate: number;
   /** Timestamp when the redelegation fee will reset to zero */
@@ -142,22 +103,12 @@ export interface HTTPClient {
   }): Promise<K>;
 }
 
-export interface AoClient {
-  result: typeof result;
-  results: typeof results;
-  message: typeof message;
-  spawn: typeof spawn;
-  monitor: typeof monitor;
-  unmonitor: typeof unmonitor;
-  dryrun: typeof dryrun;
-}
-
 export type SpawnAntProgressEvent = {
   'spawning-ant': {
     moduleId: string;
     antRegistryId: string;
     version: string | undefined;
-    state: SpawnANTState | undefined;
+    state: unknown;
   };
   'verifying-state': {
     processId: ProcessId;
@@ -204,62 +155,29 @@ export type UpgradeAntProgressEvent = SpawnAntProgressEvent & {
 };
 
 export type BuyArNSNameProgressEvents = SpawnAntProgressEvent & {
-  'buying-name': AoBuyRecordParams;
+  'buying-name': BuyRecordParams;
 };
 
 export type SetPrimaryNameProgressEvents = {
-  'requesting-primary-name': AoArNSPurchaseParams;
+  'requesting-primary-name': ArNSPurchaseParams;
   'request-already-exists': {
     name: string;
     initiator: WalletAddress;
   };
   'approving-request': {
-    request: AoPrimaryNameRequest;
+    request: PrimaryNameRequest;
     name: string;
     processId: ProcessId;
   };
 };
 
-export interface AOContract {
-  read<K>({
-    tags,
-    retries,
-  }: {
-    tags?: { name: string; value: string }[];
-    retries?: number;
-  }): Promise<K>;
-  send<K>({
-    tags,
-    data,
-    signer,
-  }: {
-    tags: { name: string; value: string }[];
-    data: string | undefined;
-    signer: AoSigner;
-  }): Promise<{ id: string; result?: K }>;
-}
-
 /** utility type to ensure WriteOptions are appended to each parameter set */
-export type AoWriteAction<
+export type WriteAction<
   P,
-  R = AoMessageResult,
+  R = MessageResult,
   K extends string = string,
   L = unknown,
 > = (params: P, options?: WriteOptions<K, L>) => Promise<R>;
-
-// the following are from @permaweb/aoconnect which does not export these types directly
-export type DryRunResult = {
-  Output: any;
-  Messages: any[];
-  Spawns: any[];
-  Error?: any;
-};
-export type MessageResult = {
-  Output: any;
-  Messages: any[];
-  Spawns: any[];
-  Error?: any;
-};
 
 export type JSONValue =
   | string

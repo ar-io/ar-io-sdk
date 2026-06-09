@@ -1,14 +1,15 @@
 {
   "name": "@ar.io/sdk",
-  "version": "3.23.1",
+  "version": "4.0.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
   },
-  "main": "./lib/cjs/node/index.js",
-  "module": "./lib/esm/node/index.js",
-  "types": "./lib/types/node/index.d.ts",
+  "main": "./lib/esm/solana/index.js",
+  "module": "./lib/esm/solana/index.js",
+  "types": "./lib/types/solana/index.d.ts",
   "type": "module",
+  "packageManager": "yarn@1.22.22",
   "engines": {
     "node": ">=18"
   },
@@ -22,22 +23,22 @@
     "email": "info@ar.io",
     "website": "https://ar.io"
   },
-  "keywords": ["arweave", "ar", "blockchain", "ar.io", "ao"],
+  "keywords": ["arweave", "ar", "blockchain", "ar.io", "solana"],
   "exports": {
     ".": {
-      "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js"
-    },
-    "./node": {
-      "types": "./lib/types/node/index.d.ts",
-      "import": "./lib/esm/node/index.js",
-      "require": "./lib/cjs/node/index.js"
+      "types": "./lib/types/solana/index.d.ts",
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
     },
     "./web": {
-      "types": "./lib/types/web/index.d.ts",
-      "import": "./lib/esm/web/index.js",
-      "require": "./lib/cjs/web/index.js"
+      "types": "./lib/types/solana/index.d.ts",
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
+    },
+    "./solana": {
+      "types": "./lib/types/solana/index.d.ts",
+      "import": "./lib/esm/solana/index.js",
+      "default": "./lib/esm/solana/index.js"
     }
   },
   "bin": {
@@ -46,25 +47,22 @@
   "scripts": {
     "build:web": "node bundle.mjs",
     "build:esm": "yarn tsc -p tsconfig.json",
-    "build:cjs": "yarn tsc -p tsconfig.cjs.json && echo \"{\\\"type\\\": \\\"commonjs\\\"}\" > lib/cjs/package.json",
-    "build": "yarn clean && yarn build:web && yarn build:esm && yarn build:cjs",
+    "build": "yarn clean && yarn build:web && yarn build:esm",
     "clean": "rimraf [ lib bundles coverage tests/contracts tests/wallets ]",
     "lint:fix": "biome check --write --unsafe",
     "lint:check": "biome check --unsafe",
     "format:fix": "biome format --write",
     "format:check": "biome format",
-    "test": "yarn test:unit && yarn test:e2e",
-    "test:cjs": "yarn build:cjs && yarn link && cd ./tests/e2e/cjs && yarn && yarn test",
-    "test:esm": "yarn build:esm && yarn link && cd ./tests/e2e/esm && yarn && yarn test",
-    "test:web": "yarn build:esm && yarn link && cd ./tests/e2e/web && yarn && yarn test",
-    "test:unit": "c8 tsx --test --test-reporter=spec --enable-source-maps --trace-warnings 'src/**/*.test.ts'",
+    "test": "yarn test:unit",
+    "test:unit": "c8 tsx --test --test-reporter=spec --enable-source-maps --trace-warnings $(find src -type f -name '*.test.ts' -not -name '*.localnet.test.ts' -not -name '*.cross.test.ts' -not -name '*.e2e.test.ts')",
     "test:link": "yarn build && yarn link",
-    "test:e2e": "yarn test:cjs && yarn test:esm && yarn test:web",
-    "test:integration": "yarn build:esm && yarn link && cd ./tests/integration && yarn && yarn test",
+    "test:localnet:io-write": "tsx --test --test-reporter=spec src/solana/io-writeable.localnet.test.ts",
+    "sdk-e2e:up": "bash scripts/sdk-e2e-bootstrap.sh",
+    "test:sdk-e2e:run": "tsx --test --test-reporter=spec src/solana/sdk.e2e.test.ts",
+    "test:sdk-e2e": "bash -c 'set -a && source test/.env.e2e && set +a && yarn test:sdk-e2e:run'",
     "prepare": "husky install",
     "docs:update": "markdown-toc-gen insert README.md --max-depth 2",
     "example:esm": "cd examples/esm && yarn && node index.mjs",
-    "example:cjs": "yarn build:cjs && yarn link && cd examples/cjs && yarn && node index.cjs",
     "example:web": "yarn build:web && http-server --port 8080 --host -o examples/web",
     "example:vite": "yarn build:esm && yarn link && cd examples/vite && yarn && yarn start",
     "cli:local": "node lib/esm/cli/cli.js"
@@ -81,6 +79,7 @@
     "@swc/core": "^1.11.22",
     "@trivago/prettier-plugin-sort-imports": "^4.2.0",
     "@types/node": "^22.14.1",
+    "@types/opossum": "^8.1.9",
     "@types/prompts": "^2.4.9",
     "@types/sinon": "^10.0.15",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -115,16 +114,20 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@dha-team/arbundles": "^1.0.1",
-    "@permaweb/aoconnect": "0.0.68",
-    "arweave": "1.15.5",
-    "axios": "^1.13.2",
+    "@ar.io/solana-contracts": "1.0.0",
+    "@noble/hashes": "^1.8.0",
+    "@solana-program/address-lookup-table": "^0.11.0",
+    "@solana-program/compute-budget": "^0.15.0",
+    "@solana-program/token": "^0.13.0",
+    "@solana/kit": "^6.8.0",
+    "bs58": "^6.0.0",
     "commander": "^12.1.0",
-    "eventemitter3": "^5.0.1",
-    "prompts": "^2.4.2"
+    "opossum": "^9.0.0",
+    "prompts": "^2.4.2",
+    "zod": "^3.25.76"
   },
   "lint-staged": {
-    "**/*.{ts,js,mjs,cjs,md,json}": ["biome format --write"],
+    "**/*.{ts,js,mjs,cjs,json}": ["biome format --write"],
     "**/README.md": ["markdown-toc-gen insert --max-depth 2"]
   }
 }

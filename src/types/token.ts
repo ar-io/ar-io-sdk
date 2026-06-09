@@ -152,10 +152,3 @@ export class mARIOToken extends PositiveFiniteInteger {
     return new ARIOToken(this.valueOf() / MARIO_PER_ARIO);
   }
 }
-
-export type AoSigner = (args: {
-  data: string | Buffer;
-  tags?: { name: string; value: string }[];
-  target?: string;
-  anchor?: string;
-}) => Promise<{ id: string; raw: ArrayBuffer }>;

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 import {
-  AoAddressParams,
-  AoArNSNameParams,
-  AoGetVaultParams,
-  AoJoinNetworkParams,
-  AoTokenCostParams,
+  AddressParams,
+  ArNSNameParams,
+  GetVaultParams,
+  JoinNetworkParams,
   PaginationParams,
+  TokenCostParams,
 } from '../types/io.js';
 
 export type SupportedCLITokenType = 'ethereum' | 'arweave';
@@ -32,15 +32,13 @@ export type WalletCLIOptions = {
 };
 
 export type GlobalCLIOptions = WalletCLIOptions & {
-  devnet: boolean;
-  testnet: boolean;
   mainnet: boolean;
   debug: boolean;
-  arioProcessId?: string;
-  antRegistryProcessId?: string;
-  hyperbeamUrl?: string;
-  cuUrl?: string;
-  paymentUrl?: string;
+  rpcUrl?: string;
+  antProgramId?: string;
+  coreProgramId?: string;
+  garProgramId?: string;
+  arnsProgramId?: string;
 };
 
 export type WriteActionCLIOptions = GlobalCLIOptions & {
@@ -96,7 +94,7 @@ export type PaginationCLIOptions = GlobalCLIOptions &
   CLIOptionsFromAoParams<PaginationParams>;
 
 export type AddressCLIOptions = GlobalCLIOptions &
-  CLIOptionsFromAoParams<AoAddressParams>;
+  CLIOptionsFromAoParams<AddressParams>;
 
 export type ProcessIdCLIOptions = GlobalCLIOptions & {
   processId?: string;
@@ -120,17 +118,17 @@ export type EpochCLIOptions = GlobalCLIOptions &
   }>;
 
 export type GetTokenCostCLIOptions = GlobalCLIOptions &
-  CLIOptionsFromAoParams<AoTokenCostParams>;
+  CLIOptionsFromAoParams<TokenCostParams>;
 
 export type PaginationAddressCLIOptions = AddressCLIOptions &
   PaginationCLIOptions;
 
 export type NameCLIOptions = GlobalCLIOptions &
-  CLIOptionsFromAoParams<AoArNSNameParams>;
+  CLIOptionsFromAoParams<ArNSNameParams>;
 export type NameWriteCLIOptions = WriteActionCLIOptions & NameCLIOptions;
 
 export type AddressAndVaultIdCLIOptions =
-  CLIOptionsFromAoParams<AoGetVaultParams> & GlobalCLIOptions;
+  CLIOptionsFromAoParams<GetVaultParams> & GlobalCLIOptions;
 
 export type AddressAndVaultIdCLIWriteOptions = WriteActionCLIOptions &
   AddressAndVaultIdCLIOptions;
@@ -141,7 +139,7 @@ export type TransferCLIOptions = WriteActionCLIOptions & {
 };
 
 export type JoinNetworkCLIOptions = WriteActionCLIOptions &
-  CLIOptionsFromAoParams<AoJoinNetworkParams>;
+  CLIOptionsFromAoParams<JoinNetworkParams>;
 
 export type UpdateGatewaySettingsCLIOptions = Omit<
   JoinNetworkCLIOptions,

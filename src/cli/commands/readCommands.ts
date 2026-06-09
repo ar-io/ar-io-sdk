@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 import {
-  AoArNSNameDataWithName,
-  AoDelegation,
-  AoGatewayDelegateWithAddress,
-  AoGatewayVault,
-  AoGetCostDetailsParams,
+  ArNSNameDataWithName,
+  Delegation,
+  GatewayDelegateWithAddress,
+  GatewayVault,
+  GetCostDetailsParams,
+  UserWithdrawal,
 } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
@@ -74,7 +75,7 @@ export async function getGatewayDelegates(o: AddressCLIOptions) {
     address,
     ...paginationParamsFromOptions<
       AddressCLIOptions,
-      AoGatewayDelegateWithAddress
+      GatewayDelegateWithAddress
     >(o),
   });
 
@@ -89,9 +90,7 @@ export async function getDelegations(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getDelegations({
     address,
-    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoDelegation>(
-      o,
-    ),
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, Delegation>(o),
   });
 
   return result.items?.length
@@ -126,9 +125,7 @@ export async function getArNSRecord(o: NameCLIOptions) {
 
 export async function listArNSRecords(o: PaginationCLIOptions) {
   const records = await readARIOFromOptions(o).getArNSRecords(
-    paginationParamsFromOptions<PaginationCLIOptions, AoArNSNameDataWithName>(
-      o,
-    ),
+    paginationParamsFromOptions<PaginationCLIOptions, ArNSNameDataWithName>(o),
   );
   return records.items.length ? records : { message: 'No records found' };
 }
@@ -136,13 +133,12 @@ export async function listArNSRecords(o: PaginationCLIOptions) {
 export async function listArNSRecordsForAddress(o: PaginationCLIOptions) {
   const paginationParams = paginationParamsFromOptions<
     PaginationCLIOptions,
-    AoArNSNameDataWithName
+    ArNSNameDataWithName
   >(o);
   const address = requiredAddressFromOptions(o);
   const names = await readARIOFromOptions(o).getArNSRecordsForAddress({
     ...paginationParams,
     address,
-    antRegistryProcessId: o.antRegistryProcessId,
   });
   return names.items.length ? names : { message: 'No names found' };
 }
@@ -216,7 +212,7 @@ export async function getTokenCost(o: GetTokenCostCLIOptions) {
 }
 
 export async function getCostDetails(
-  o: GlobalCLIOptions & CLIOptionsFromAoParams<AoGetCostDetailsParams>,
+  o: GlobalCLIOptions & CLIOptionsFromAoParams<GetCostDetailsParams>,
 ) {
   const costDetails = await readARIOFromOptions(o).getCostDetails({
     ...getTokenCostParamsFromOptions(o),
@@ -262,7 +258,7 @@ export async function getGatewayVaults(o: PaginationAddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
   const result = await readARIOFromOptions(o).getGatewayVaults({
     address,
-    ...paginationParamsFromOptions<PaginationAddressCLIOptions, AoGatewayVault>(
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, GatewayVault>(
       o,
     ),
   });
@@ -283,6 +279,22 @@ export async function getAllGatewayVaults(o: PaginationCLIOptions) {
     ? result
     : {
         message: `No vaults found`,
+      };
+}
+
+export async function getWithdrawals(o: PaginationAddressCLIOptions) {
+  const address = requiredAddressFromOptions(o);
+  const result = await readARIOFromOptions(o).getWithdrawals({
+    address,
+    ...paginationParamsFromOptions<PaginationAddressCLIOptions, UserWithdrawal>(
+      o,
+    ),
+  });
+
+  return result.items?.length
+    ? result
+    : {
+        message: `No pending withdrawals found for address ${address}`,
       };
 }
 
@@ -308,8 +320,19 @@ export async function resolveArNSName(o: NameCLIOptions) {
 
 export async function listAntsForAddress(o: AddressCLIOptions) {
   const address = requiredAddressFromOptions(o);
-  const result = await readANTRegistryFromOptions(o).accessControlList({
+
+  // Both AO and Solana backends expose `accessControlList({ address })`.
+  // Solana is backed by the paginated per-user ACL (ADR-012): a head
+  // `AclConfig` PDA at ["acl_config", user] plus N `AclPage` PDAs at
+  // ["acl_page", user, page_idx_le]. The ario-ant program maintains them
+  // alongside `initialize`, `add_controller`, `remove_controller`,
+  // `transfer_record`, and the marketplace reconcile path.
+  const registry = await readANTRegistryFromOptions(o);
+  const result = await registry.accessControlList({
     address,
   });
-  return result ?? { message: `No ANTs found for address ${address}` };
+
+  const hasAny =
+    result && (result.Owned.length > 0 || result.Controlled.length > 0);
+  return hasAny ? result : { message: `No ANTs found for address ${address}` };
 }
