@@ -1,3 +1,10 @@
+## [4.0.2-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.3...v4.0.2-alpha.4) (2026-06-08)
+
+
+### Bug Fixes
+
+* chunk delegates getMultipleAccounts call at 100 ([bfeaa60](https://github.com/ar-io/ar-io-sdk/commit/bfeaa6042507491dbd2b2714272d1bd25f1ce3fb))
+
 ## [4.0.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.2...v4.0.2-alpha.3) (2026-06-07)
 
 

@@ -15,4 +15,4 @@
  */
 
 // AUTOMATICALLY GENERATED FILE - DO NOT TOUCH
-export const version = '4.0.2-alpha.3';
+export const version = '4.0.2-alpha.4';
