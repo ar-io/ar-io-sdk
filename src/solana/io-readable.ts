@@ -368,6 +368,35 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * The Solana cluster's `unix_timestamp` (in SECONDS), read read-only.
+   *
+   * On-chain handlers measure time against the cluster clock
+   * (`Clock::get()?.unix_timestamp`), NOT the client wall clock. For any
+   * pricing math that must agree with what the program will charge (e.g. the
+   * Dutch-auction premium for returned names, whose elapsed time gates the
+   * multiplier), the SDK must compare against this same clock — `Date.now()`
+   * drifts from `unix_timestamp` (the cluster clock famously lags real
+   * wall-clock by seconds-to-minutes), which would make the SDK over-estimate
+   * elapsed time and therefore UNDER-quote the premium.
+   *
+   * Sourced via the latest slot's block time (`getSlot` → `getBlockTime`),
+   * which the runtime derives from the same stake-weighted clock the on-chain
+   * `Clock` sysvar exposes. Read-only: no signer, no transaction.
+   */
+  private async getClusterUnixTimestampSeconds(): Promise<number> {
+    const slot = await withRetry(() =>
+      this.rpc.getSlot({ commitment: this.commitment }).send(),
+    );
+    const blockTime = await withRetry(() => this.rpc.getBlockTime(slot).send());
+    if (blockTime == null) {
+      throw new Error(
+        `Cluster block time unavailable for slot ${slot}; cannot match on-chain Clock::get().unix_timestamp`,
+      );
+    }
+    return Number(blockTime);
+  }
+
+  /**
    * Helper for `getProgramAccounts` with a discriminator memcmp filter.
    *
    * Pass the Codama-generated `<NAME>_DISCRIMINATOR: Uint8Array` constant
@@ -1743,6 +1772,51 @@ export class SolanaARIOReadable {
     if (!dfAccount.exists) throw new Error('DemandFactor account not found');
     const df = deserializeDemandFactor(Buffer.from(dfAccount.data));
 
+    // Match the on-chain clock: the program measures time against the Solana
+    // cluster's `Clock::get().unix_timestamp`, not the client wall clock.
+    // Fetch it ONCE here and thread it through both the demand-factor
+    // staleness check and the returned-name premium math below. (Seconds.)
+    const clusterNowSeconds = await this.getClusterUnixTimestampSeconds();
+
+    // Demand-factor staleness warning.
+    //
+    // The handlers that actually charge roll the demand factor INLINE to the
+    // current period before pricing, whereas this read uses the STORED factor —
+    // which is stale whenever a demand period has rolled but no crank (or
+    // buy/extend) has landed to roll it. When that happens the chain prices
+    // against the rolled factor (a +5%/-1.5% step), so this quote can be off by
+    // one demand adjustment.
+    //
+    // We deliberately do NOT replicate the roll client-side: the authoritative
+    // roll math (multi-period catch-up, consecutive-min fee-halving) lives in
+    // the Rust program and depends on inputs a read-only client can't reproduce
+    // faithfully, so guessing would risk replacing a known small error with a
+    // wrong-direction one. The byte-exact path is the writeable
+    // `getCostDetails`, which simulates the on-chain instruction (rolling the
+    // factor inline). Here we just detect the rollover against the cluster
+    // clock and surface it as a debug warning.
+    const PERIOD_LENGTH_SECONDS = 86_400; // mirrors PERIOD_LENGTH_SECONDS in ario-arns
+    const elapsedSincePeriodZero =
+      clusterNowSeconds - df.periodZeroStartTimestamp;
+    const periodForNow =
+      elapsedSincePeriodZero < 0
+        ? 1
+        : Math.floor(elapsedSincePeriodZero / PERIOD_LENGTH_SECONDS) + 1;
+    if (periodForNow > df.currentPeriod) {
+      this.logger.debug(
+        '[pricing] demand factor period has rolled but stored factor is stale; ' +
+          'quote may be off by one demand adjustment until a crank rolls it. ' +
+          'Use the writeable simulated getCostDetails for a byte-exact quote.',
+        {
+          name: params.name,
+          intent: params.intent,
+          storedPeriod: df.currentPeriod,
+          clusterPeriod: periodForNow,
+          storedDemandFactor: df.currentDemandFactor,
+        },
+      );
+    }
+
     const name = params.name.toLowerCase();
     const nameLen = Math.min(Math.max(name.length, 1), 51);
     const baseFee = df.fees[nameLen - 1] ?? df.fees[df.fees.length - 1];
@@ -1774,7 +1848,15 @@ export class SolanaARIOReadable {
           if (returned) {
             // returned.startTimestamp is in ms (public API convention),
             // so the rest of this comparison is in ms too.
-            const now = Date.now();
+            //
+            // CRITICAL: "now" must be the Solana cluster clock, NOT
+            // `Date.now()`. The on-chain returned-name handler measures
+            // premium-elapsed against `Clock::get().unix_timestamp`; because
+            // that clock lags real wall-clock, using `Date.now()` here
+            // over-estimates elapsed time, under-estimates the remaining
+            // premium, and quotes LOW versus what the chain charges. Convert
+            // the cluster seconds to ms to match `startTimestamp`'s units.
+            const now = clusterNowSeconds * 1000;
             const elapsed = now - returned.startTimestamp;
             const duration = 14 * 86_400_000;
             if (elapsed < duration) {
@@ -1864,6 +1946,10 @@ export class SolanaARIOReadable {
             // Match on-chain eligibility from ario-arns pricing.rs
             // `try_apply_gateway_discount`:
             // 1. Tenure: gateway running >= 180 days (15_552_000 seconds)
+            // (This is a coarse 180-day eligibility gate, not the
+            // premium/auction math fixed above; sub-minute cluster-clock drift
+            // is immaterial at this granularity, so the client wall clock is
+            // fine here and we avoid an extra RPC round trip.)
             const GATEWAY_DISCOUNT_MIN_TENURE_S = 15_552_000;
             const nowSeconds = Math.floor(Date.now() / 1000);
             const timeRunning = nowSeconds - gw.startTimestamp;
