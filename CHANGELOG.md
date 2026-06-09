@@ -1,3 +1,10 @@
+## [4.0.2-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.4...v4.0.2-alpha.5) (2026-06-09)
+
+
+### Bug Fixes
+
+* **cli:** normalize argv[1] path separators for Windows compatibility ([c1d100b](https://github.com/ar-io/ar-io-sdk/commit/c1d100bad47537ceaa0a6c70a01e8fff52dbbe63))
+
 ## [4.0.2-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.3...v4.0.2-alpha.4) (2026-06-08)
 
 
