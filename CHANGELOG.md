@@ -1,3 +1,11 @@
+## [4.0.2-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.5...v4.0.2-alpha.6) (2026-06-09)
+
+
+### Bug Fixes
+
+* **solana:** price returned-name premium against the cluster clock ([8ffec26](https://github.com/ar-io/ar-io-sdk/commit/8ffec264a77f0a54f0f83d484fe0431bb0094827))
+* **solana:** source demand-factor settings from program constants ([f5bccb1](https://github.com/ar-io/ar-io-sdk/commit/f5bccb123da246fa2aabccb5d632965ca5bb56f1)), closes [ar-io/ar-io-solana-contracts#export-arns-constants](https://github.com/ar-io/ar-io-solana-contracts/issues/export-arns-constants)
+
 ## [4.0.2-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.4...v4.0.2-alpha.5) (2026-06-09)
 
 
