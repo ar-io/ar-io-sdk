@@ -92,6 +92,7 @@ import type {
   EpochSettings,
   FundFrom,
   FundingPlan,
+  GasEstimate,
   Gateway,
   GatewayDelegateWithAddress,
   GatewayRegistrySettings,
@@ -100,6 +101,7 @@ import type {
   GatewayWithAddress,
   GetArNSRecordsParams,
   GetCostDetailsParams,
+  Intent,
   PaginatedAddressParams,
   PaginationParams,
   PaginationResult,
@@ -148,8 +150,10 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
+import { estimateRentLamports, getIntentGasProfile } from './gas.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
+  getAclConfigPDA,
   getArioConfigPDA,
   getArnsRecordPDA,
   getArnsRecordPDAFromHash,
@@ -168,6 +172,10 @@ import {
   getVaultPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
+import {
+  estimateGasFee,
+  estimateQuotePriorityFeeMicroLamports,
+} from './send.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
 const addressDecoder = getAddressDecoder();
@@ -265,6 +273,15 @@ function arnsRecordToWithName(
  */
 const CONFIG_CACHE_TTL_MS = 30_000;
 
+/**
+ * TTL for the memoized priority-fee (compute-unit price) estimate used by
+ * {@link SolanaARIOReadable.getGasEstimate}. The fee market moves slot to
+ * slot, but a quote tolerates seconds of staleness — and a price table
+ * calling `getCostDetails` per row shouldn't re-query
+ * `getRecentPrioritizationFees` for every name.
+ */
+const PRIORITY_FEE_CACHE_TTL_MS = 10_000;
+
 function paginate<T>(
   items: T[],
   params?: { cursor?: string; limit?: number; sortOrder?: 'asc' | 'desc' },
@@ -325,6 +342,14 @@ export class SolanaARIOReadable {
       expiresAt: number;
     }
   >();
+
+  // Short-TTL memo of the estimated compute-unit price (priority fee), so
+  // burst `getCostDetails` calls share one getRecentPrioritizationFees query.
+  private _priorityFeeCache?: { microLamports: bigint; expiresAt: number };
+
+  // Memo of getMinimumBalanceForRentExemption results keyed by byte size.
+  // Rent parameters are cluster constants in practice, so no TTL.
+  private _rentCache = new Map<number, number>();
 
   constructor(
     config: SolanaReadConfig & {
@@ -1773,6 +1798,101 @@ export class SolanaARIOReadable {
    * Mirrors the Rust pricing functions in ario-arns/src/pricing.rs.
    * Uses BigInt for u128-equivalent overflow-safe arithmetic.
    */
+  /**
+   * Estimate the Solana network cost ("gas") for executing an intent, in
+   * lamports — transaction fees PLUS rent-exempt deposits for the accounts
+   * the flow creates. The intent matters: Buy-Name runs two transactions
+   * (ANT spawn + buy) and deposits rent for the spawned asset/PDAs and the
+   * ArNS record — ~0.015 SOL, vs ~0.00001 SOL of fees. First-time buyers
+   * (no ACL config yet) additionally pay for the ACL bootstrap accounts
+   * (~0.06 SOL); pass `fromAddress` so that check can be made — without it
+   * the estimate conservatively assumes a first-time buyer.
+   *
+   * Fees mirror what the writeable client's `sendAndConfirm` will attach:
+   * the default 400k compute-unit limit every ArNS purchase write uses, and
+   * a compute-unit price quoted from recent on-chain prioritization fees
+   * (memoized for {@link PRIORITY_FEE_CACHE_TTL_MS}). Rent is quoted from
+   * the cluster's `getMinimumBalanceForRentExemption` (memoized per size).
+   *
+   * See {@link GasEstimate} for the breakdown shape and why the fee side is
+   * a conservative upper bound.
+   */
+  async getGasEstimate(
+    opts: {
+      intent?: Intent;
+      name?: string;
+      fromAddress?: WalletAddress;
+      computeUnitLimit?: number;
+    } = {},
+  ): Promise<GasEstimate> {
+    const now = Date.now();
+    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
+      this._priorityFeeCache = {
+        // Quote-grade rate: covers what a browser wallet will attach, not
+        // just the (near-floor) base estimate keypair sends pay.
+        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
+        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
+      };
+    }
+
+    // Conditional accounts: only created when the buyer doesn't already
+    // have them. Unknown buyer → assume they're needed (over-quote rather
+    // than under-gate). Both checks are best-effort: an RPC failure falls
+    // back to the conservative assumption instead of failing the quote.
+    let needsAclBootstrap = false;
+    let needsPrimaryNameAccount = false;
+    if (opts.intent === 'Buy-Name' || opts.intent === 'Buy-Record') {
+      needsAclBootstrap = true;
+      if (opts.fromAddress) {
+        try {
+          const [aclPda] = await getAclConfigPDA(
+            address(opts.fromAddress),
+            this.antProgram,
+          );
+          needsAclBootstrap = !(await this.getCachedAccount(aclPda)).exists;
+        } catch {
+          // keep the conservative default
+        }
+      }
+    } else if (opts.intent === 'Primary-Name-Request') {
+      needsPrimaryNameAccount = true;
+      if (opts.fromAddress) {
+        try {
+          const [pnPda] = await getPrimaryNamePDA(
+            address(opts.fromAddress),
+            this.coreProgram,
+          );
+          needsPrimaryNameAccount = !(await this.getCachedAccount(pnPda))
+            .exists;
+        } catch {
+          // keep the conservative default
+        }
+      }
+    }
+
+    const profile = getIntentGasProfile({
+      intent: opts.intent,
+      name: opts.name,
+      needsAclBootstrap,
+      needsPrimaryNameAccount,
+    });
+
+    const rentKey = profile.accountBytes.reduce((sum, b) => sum + b, 0);
+    let rentLamports = this._rentCache.get(rentKey);
+    if (rentLamports === undefined) {
+      rentLamports = await estimateRentLamports(this.rpc, profile.accountBytes);
+      this._rentCache.set(rentKey, rentLamports);
+    }
+
+    return estimateGasFee(this.rpc, {
+      computeUnitLimit: opts.computeUnitLimit,
+      signatureCount: profile.signatureCount,
+      transactionCount: profile.transactionCount,
+      rentLamports,
+      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+    });
+  }
+
   async getTokenCost(params: TokenCostParams): Promise<number> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
     const dfAccount = await this.getCachedAccount(dfPda);
@@ -1928,6 +2048,14 @@ export class SolanaARIOReadable {
   async getCostDetails(
     params: GetCostDetailsParams,
   ): Promise<CostDetailsResult> {
+    // Network-cost quote runs concurrently with the pricing reads. It never
+    // rejects (the fee and rent queries fall back internally), so kicking it
+    // off before the awaits below can't leave an unhandled rejection behind.
+    const gasEstimatePromise = this.getGasEstimate({
+      intent: params.intent,
+      name: params.name,
+      fromAddress: params.fromAddress,
+    });
     const tokenCost = await this.getTokenCost(params);
 
     const discounts: Array<{
@@ -2010,6 +2138,7 @@ export class SolanaARIOReadable {
     return {
       tokenCost: finalCost,
       discounts,
+      gasEstimate: await gasEstimatePromise,
       ...(fundingPlan ? { fundingPlan } : {}),
     };
   }

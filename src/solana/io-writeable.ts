@@ -235,6 +235,7 @@ import {
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
 import {
+  DEFAULT_COMPUTE_UNIT_LIMIT,
   reclaimLookupTablesForSigner,
   sendAndConfirm,
   sendWithEphemeralLookupTable,
@@ -599,7 +600,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
   protected async sendTransaction(
     instructions: Instruction[],
-    computeUnitLimit = 400_000,
+    computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
   ): Promise<string> {
     return sendAndConfirm({
       rpc: this.rpc,
