@@ -80,10 +80,14 @@ const ACL_PAGE_BYTES = 8504;
 
 /**
  * PrimaryName PDA created on approve — fixed allocation (verified
- * size-identical for 5- and 39-char names). The request flow also creates
- * a transient PrimaryNameRequest PDA that is closed (rent refunded) on
- * approve — approximated with the same size so the wallet is gated on
- * what it must hold UPFRONT, not the net cost.
+ * size-identical for 5- and 39-char names). No codama size export exists:
+ * the codec embeds a length-prefixed `name` string, so it's variable-size
+ * to codama, and `get*Size()` is only emitted for fixed-size codecs — the
+ * program's max-capacity allocation is only observable on chain.
+ *
+ * The request flow also creates a transient PrimaryNameRequest PDA that is
+ * closed (rent refunded) on approve — approximated with the same size so
+ * the wallet is gated on what it must hold UPFRONT, not the net cost.
  */
 const PRIMARY_NAME_BYTES = 119;
 
@@ -144,6 +148,14 @@ const GAR_REDELEGATION_RECORD_BYTES = getRedelegationRecordSize();
  */
 export const GAR_COMPUTE_UNIT_LIMIT = 1_000_000;
 
+/**
+ * User-facing GAR workflows the estimator can quote. Deliberately NOT the
+ * codama `ArioGarInstruction` enum: that enumerates all ~50 instructions
+ * (including admin/epoch/migration ops that aren't quotable user actions),
+ * is numeric, and is per-instruction — whereas a workflow here can span
+ * several ('decrease-delegate-stake' + instant runs decrease_delegate_stake
+ * THEN instant_withdrawal). Names follow the SDK CLI command spelling.
+ */
 export type GarGasWorkflow =
   | 'join-network'
   | 'leave-network'
