@@ -274,12 +274,14 @@ export {
 } from './send.js';
 export {
   ACL_BOOTSTRAP_ACCOUNT_BYTES,
-  antRecordBytes,
+  ANT_RECORD_BYTES,
+  GAR_COMPUTE_UNIT_LIMIT,
   estimateRentLamports,
+  getGarWorkflowGasProfile,
   getIntentGasProfile,
   spawnAntAccountBytes,
 } from './gas.js';
-export type { IntentGasProfile } from './gas.js';
+export type { GarGasWorkflow, IntentGasProfile } from './gas.js';
 
 // Types
 export type {

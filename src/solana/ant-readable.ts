@@ -56,7 +56,7 @@ import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { ANT_CONFIG_VERSION, ARIO_ANT_PROGRAM_ID } from './constants.js';
 import {
   ACL_BOOTSTRAP_ACCOUNT_BYTES,
-  antRecordBytes,
+  ANT_RECORD_BYTES,
   estimateRentLamports,
   spawnAntAccountBytes,
 } from './gas.js';
@@ -279,7 +279,7 @@ export class SolanaANTReadable {
    */
   async getGasEstimate(
     params:
-      | { workflow: 'set-record'; undername: string; targetLength?: number }
+      | { workflow: 'set-record'; undername: string }
       // Editing an existing record mutates in place — fees only.
       | { workflow: 'edit-record'; undername: string }
       | { workflow: 'remove-record'; undername: string }
@@ -292,7 +292,7 @@ export class SolanaANTReadable {
     switch (params.workflow) {
       case 'set-record': {
         const rentLamports = await estimateRentLamports(this.rpc, [
-          antRecordBytes(params.undername.length, params.targetLength),
+          ANT_RECORD_BYTES,
         ]);
         return estimateGasFee(this.rpc, { rentLamports });
       }

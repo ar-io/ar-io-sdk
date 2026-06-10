@@ -6,7 +6,7 @@ import bs58 from 'bs58';
 import { Logger } from '../common/logger.js';
 import { SolanaANTReadable } from './ant-readable.js';
 import {
-  antRecordBytes,
+  ANT_RECORD_BYTES,
   estimateRentLamports,
   getIntentGasProfile,
 } from './gas.js';
@@ -163,8 +163,8 @@ describe('getIntentGasProfile', () => {
     });
     assert.equal(profile.transactionCount, 2);
     assert.equal(profile.signatureCount, 3);
-    // asset, antConfig, antControllers, rootRecord, arnsRecord
-    assert.deepEqual(profile.accountBytes, [302, 452, 176, 316, 191]);
+    // asset (281 + 2×12), antConfig, antControllers, rootRecord, arnsRecord
+    assert.deepEqual(profile.accountBytes, [305, 452, 176, 316, 191]);
   });
 
   it('adds ACL bootstrap accounts for first-time buyers', () => {
@@ -173,7 +173,7 @@ describe('getIntentGasProfile', () => {
       name: 'brandybuck35',
       needsAclBootstrap: true,
     });
-    assert.deepEqual(profile.accountBytes, [302, 452, 176, 316, 191, 60, 8504]);
+    assert.deepEqual(profile.accountBytes, [305, 452, 176, 316, 191, 60, 8504]);
   });
 
   it('models mutate-in-place intents as a single free-rent transaction', () => {
@@ -194,7 +194,7 @@ describe('getIntentGasProfile', () => {
   it('models Primary-Name-Request as request + approve', () => {
     const profile = getIntentGasProfile({
       intent: 'Primary-Name-Request',
-      name: 'amsterdam-trip', // 14 chars — matches the mainnet measurement
+      name: 'amsterdam-trip',
       needsPrimaryNameAccount: true,
     });
     assert.equal(profile.transactionCount, 2);
@@ -238,7 +238,7 @@ describe('SolanaARIOReadable.getGasEstimate', () => {
       name: 'brandybuck35',
     });
     // No fromAddress → conservatively assumes first-time buyer (ACL incl.)
-    const bytes = 302 + 452 + 176 + 316 + 191 + 60 + 8504 + 128 * 6;
+    const bytes = 305 + 452 + 176 + 316 + 191 + 60 + 8504 + 128 * 6;
     assert.equal(quote.rentLamports, Number((128n + BigInt(bytes)) * 6960n));
     assert.equal(quote.transactionCount, 2);
     assert.equal(quote.signatureCount, 3);
@@ -307,7 +307,7 @@ describe('SolanaANTReadable.getGasEstimate', () => {
       undername: 'docs',
     });
     const expectedRent = Number(
-      (128n + BigInt(antRecordBytes('docs'.length))) * RENT_PER_BYTE,
+      (128n + BigInt(ANT_RECORD_BYTES)) * RENT_PER_BYTE,
     );
     assert.equal(quote.rentLamports, expectedRent);
     assert.equal(quote.rentReclaimedLamports, 0);
@@ -333,5 +333,64 @@ describe('SolanaANTReadable.getGasEstimate', () => {
     assert.equal(quote.rentLamports, 0);
     assert.equal(quote.rentReclaimedLamports, 0);
     assert.equal(quote.transactionCount, 1);
+  });
+});
+
+describe('SolanaARIOReadable.getGarGasEstimate', () => {
+  function makeReadable(rpc: unknown) {
+    return new SolanaARIOReadable({
+      rpc: rpc as never,
+      logger: new Logger({ level: 'none' }),
+    });
+  }
+
+  it('quotes gateway + observer-lookup rent and registry realloc on join', async () => {
+    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const quote = await makeReadable(rpc).getGarGasEstimate({
+      workflow: 'join-network',
+    });
+    // gateway(964) + observerLookup(44) + inter-account overhead(128)
+    // + registry realloc(32); the rpc quote adds the final 128.
+    const expectedRent = Number((128n + 1168n) * RENT_PER_BYTE);
+    assert.equal(quote.rentLamports, expectedRent);
+    // GAR writes pin a 1M CU limit — fees are quoted on it
+    assert.equal(quote.computeUnitLimit, 1_000_000);
+    assert.equal(quote.priorityFeeLamports, 100_000); // 1M × 100_000 / 1e6
+  });
+
+  it('quotes a withdrawal vault (and first-time counter) on decrease', async () => {
+    // getAccountInfo stub → null: no withdrawal counter yet
+    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const quote = await makeReadable(rpc).getGarGasEstimate({
+      workflow: 'decrease-delegate-stake',
+      fromAddress: bs58.encode(Buffer.alloc(32, 5)),
+    });
+    // withdrawal(111) + counter(52) + overhead(128)
+    assert.equal(quote.rentLamports, Number((128n + 291n) * RENT_PER_BYTE));
+    assert.equal(quote.transactionCount, 1);
+    assert.equal(quote.rentReclaimedLamports, 0);
+  });
+
+  it('reports the vault rent as reclaimed for instant decreases', async () => {
+    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const quote = await makeReadable(rpc).getGarGasEstimate({
+      workflow: 'decrease-delegate-stake',
+      fromAddress: bs58.encode(Buffer.alloc(32, 5)),
+      instant: true,
+    });
+    assert.equal(quote.transactionCount, 2);
+    assert.equal(quote.rentReclaimedLamports, quote.rentLamports);
+  });
+
+  it('quotes fees only for settings updates', async () => {
+    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const quote = await makeReadable(rpc).getGarGasEstimate({
+      workflow: 'update-gateway-settings',
+    });
+    assert.equal(quote.rentLamports, 0);
+    assert.equal(
+      quote.totalLamports,
+      BASE_FEE_LAMPORTS_PER_SIGNATURE + 100_000,
+    );
   });
 });

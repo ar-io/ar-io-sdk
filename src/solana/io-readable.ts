@@ -150,7 +150,13 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
-import { estimateRentLamports, getIntentGasProfile } from './gas.js';
+import {
+  GAR_COMPUTE_UNIT_LIMIT,
+  type GarGasWorkflow,
+  estimateRentLamports,
+  getGarWorkflowGasProfile,
+  getIntentGasProfile,
+} from './gas.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getAclConfigPDA,
@@ -158,6 +164,7 @@ import {
   getArnsRecordPDA,
   getArnsRecordPDAFromHash,
   getArnsSettingsPDA,
+  getDelegationPDA,
   getDemandFactorPDA,
   getEpochPDA,
   getEpochSettingsPDA,
@@ -167,9 +174,12 @@ import {
   getObserverLookupPDA,
   getPrimaryNamePDA,
   getPrimaryNameRequestPDA,
+  getRedelegationRecordPDA,
   getReservedNamePDA,
   getReturnedNamePDA,
   getVaultPDA,
+  getWithdrawalCounterPDA,
+  getWithdrawalPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
 import {
@@ -1889,6 +1899,171 @@ export class SolanaARIOReadable {
       signatureCount: profile.signatureCount,
       transactionCount: profile.transactionCount,
       rentLamports,
+      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+    });
+  }
+
+  /**
+   * Estimate the Solana network cost ("gas") of a GAR (gateway registry)
+   * workflow, in lamports — fees on the 1M compute-unit limit every GAR
+   * write pins, plus rent for the accounts the workflow creates, plus the
+   * deposit refunded when it closes a withdrawal vault:
+   *
+   * - `join-network`: gateway + observer-lookup accounts and the registry
+   *   growing by one entry — ~0.009 SOL.
+   * - `leave-network`: up to two withdrawal vaults (~0.0035 SOL,
+   *   conservative — the excess vault is only consumed when post-stake
+   *   excess exists). The gateway account's own deposit returns at prune
+   *   time, far later, and is not quoted.
+   * - `delegate-stake` / `redelegate-stake`: a Delegation PDA (~0.0016 SOL)
+   *   when the delegator has none with that gateway yet (pass
+   *   `fromAddress` + `gatewayAddress` to check live; unknown → assumed).
+   * - `decrease-*-stake`: a withdrawal vault (~0.0017 SOL, refunded when
+   *   later claimed/cancelled) plus the one-time withdrawal counter on the
+   *   actor's first-ever withdrawal. With `instant: true` the follow-up
+   *   transaction closes the vault again — reported as reclaimed.
+   * - `claim-withdrawal` / `cancel-withdrawal` / `instant-withdrawal`:
+   *   refunds the vault's live deposit (pass `fromAddress` + `vaultId` for
+   *   the exact number).
+   * - `update-gateway-settings` / `increase-operator-stake`: fees only.
+   */
+  async getGarGasEstimate(opts: {
+    workflow: GarGasWorkflow;
+    /** The acting wallet (operator or delegator). Enables live checks. */
+    fromAddress?: WalletAddress;
+    /** Target gateway for delegate/redelegate-stake delegation checks. */
+    gatewayAddress?: WalletAddress;
+    /** Vault id for withdrawal-closing workflows (exact reclaim quote). */
+    vaultId?: string | number | bigint;
+    /** decrease-delegate-stake with instant payout (second transaction). */
+    instant?: boolean;
+  }): Promise<GasEstimate> {
+    const now = Date.now();
+    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
+      this._priorityFeeCache = {
+        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
+        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
+      };
+    }
+
+    // Conditional accounts — checked live when the actor is known,
+    // conservative (assume creation) otherwise. All best-effort.
+    let needsDelegation = true;
+    let needsWithdrawalCounter = true;
+    let needsRedelegationRecord = true;
+    let rentReclaimedLamports = 0;
+
+    const isDelegationWorkflow =
+      opts.workflow === 'delegate-stake' ||
+      opts.workflow === 'redelegate-stake';
+    if (isDelegationWorkflow && opts.fromAddress && opts.gatewayAddress) {
+      try {
+        const [delegationPda] = await getDelegationPDA(
+          address(opts.gatewayAddress),
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsDelegation = !(await this.getCachedAccount(delegationPda)).exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    const isWithdrawalCreatingWorkflow =
+      opts.workflow === 'leave-network' ||
+      opts.workflow === 'decrease-operator-stake' ||
+      opts.workflow === 'decrease-delegate-stake';
+    if (isWithdrawalCreatingWorkflow && opts.fromAddress) {
+      try {
+        const [counterPda] = await getWithdrawalCounterPDA(
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsWithdrawalCounter = !(await this.getCachedAccount(counterPda))
+          .exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    if (opts.workflow === 'redelegate-stake' && opts.fromAddress) {
+      try {
+        const [recordPda] = await getRedelegationRecordPDA(
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsRedelegationRecord = !(await this.getCachedAccount(recordPda))
+          .exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    // Withdrawal-closing workflows refund the vault's actual deposit —
+    // read it live when the caller identifies the vault.
+    const isWithdrawalClosingWorkflow =
+      opts.workflow === 'claim-withdrawal' ||
+      opts.workflow === 'cancel-withdrawal' ||
+      opts.workflow === 'instant-withdrawal';
+    if (
+      isWithdrawalClosingWorkflow &&
+      opts.fromAddress &&
+      opts.vaultId !== undefined
+    ) {
+      try {
+        const [withdrawalPda] = await getWithdrawalPDA(
+          address(opts.fromAddress),
+          BigInt(opts.vaultId),
+          this.garProgram,
+        );
+        const account = await this.getAccount(withdrawalPda);
+        if (account.exists) {
+          rentReclaimedLamports = Number(account.lamports);
+        }
+      } catch {
+        // quote stays fees-only; the refund still happens on chain
+      }
+    }
+
+    const profile = getGarWorkflowGasProfile({
+      workflow: opts.workflow,
+      needsDelegation,
+      needsWithdrawalCounter,
+      needsRedelegationRecord,
+      instant: opts.instant,
+    });
+
+    const reallocBytes = profile.reallocBytes ?? 0;
+    const rentKey =
+      profile.accountBytes.reduce((sum, b) => sum + b, 0) +
+      reallocBytes +
+      profile.accountBytes.length;
+    let rentLamports = this._rentCache.get(rentKey);
+    if (rentLamports === undefined) {
+      rentLamports = await estimateRentLamports(
+        this.rpc,
+        profile.accountBytes,
+        reallocBytes,
+      );
+      this._rentCache.set(rentKey, rentLamports);
+    }
+
+    // Instant decrease: the second transaction immediately closes the
+    // vault created by the first — its deposit round-trips back.
+    if (
+      opts.instant &&
+      (opts.workflow === 'decrease-delegate-stake' ||
+        opts.workflow === 'decrease-operator-stake')
+    ) {
+      rentReclaimedLamports = rentLamports;
+    }
+
+    return estimateGasFee(this.rpc, {
+      computeUnitLimit: GAR_COMPUTE_UNIT_LIMIT,
+      signatureCount: profile.signatureCount,
+      transactionCount: profile.transactionCount,
+      rentLamports,
+      rentReclaimedLamports,
       priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
     });
   }
