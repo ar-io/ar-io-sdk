@@ -146,6 +146,7 @@ export type {
 export {
   spawnSolanaANT,
   ARIO_LOGO_TX_ID,
+  LANDING_PAGE_TX_ID,
   DEFAULT_ANT_TRANSACTION_ID,
 } from './spawn-ant.js';
 export type {

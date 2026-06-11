@@ -73,16 +73,18 @@ import type {
   SolanaSigner,
 } from './types.js';
 
-/** AR.IO logo Arweave TX — matches the Rust default in `ario_ant::initialize`. */
+/** AR.IO logo Arweave TX — used as the default logo for newly spawned ANTs. */
 export const ARIO_LOGO_TX_ID = 'AnYvLJTWcG9lr2Ll5MwYWZR2o5uTE39WbpYB0zCxwKM';
+
+/** ArNS landing page Arweave TX — the default content target for the root `@` record. */
+export const LANDING_PAGE_TX_ID = 'T9_V2HfiAq5qlLzObfyayj2-cjPujxpg25TRi4OZbe4';
 
 /**
  * Default Arweave transaction id used when an ANT is spawned without an
- * explicit `transactionId`. Empty string would fail the on-chain
- * `is_valid_arweave_id` check, so we fall back to the AR.IO logo TX (which is
- * a real Arweave id and won't trip validation).
+ * explicit `transactionId`. Points to the ArNS landing page so newly
+ * registered names resolve to useful content out of the box.
  */
-export const DEFAULT_ANT_TRANSACTION_ID = ARIO_LOGO_TX_ID;
+export const DEFAULT_ANT_TRANSACTION_ID = LANDING_PAGE_TX_ID;
 
 export type SpawnSolanaANTState = {
   /** ANT display name (1–51 chars). */
@@ -91,8 +93,7 @@ export type SpawnSolanaANTState = {
   ticker?: string;
   /**
    * Content target for the root `@` record (Arweave TX ID, IPFS CID, etc.).
-   * Defaults to the AR.IO logo TX — callers that want a real pointer should
-   * override this.
+   * Defaults to the ArNS landing page TX.
    */
   transactionId?: string;
   /**
