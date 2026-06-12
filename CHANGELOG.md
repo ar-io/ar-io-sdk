@@ -1,3 +1,12 @@
+## [4.0.2-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.6...v4.0.2-alpha.7) (2026-06-12)
+
+
+### Bug Fixes
+
+* **gas est:** add gas estimation utils ([12f2bcf](https://github.com/ar-io/ar-io-sdk/commit/12f2bcf8ba680757712d6f1c52cf6572d2e1b4ff))
+* **gas:** update gas estimate logic ([e667568](https://github.com/ar-io/ar-io-sdk/commit/e667568d712c9700e8f07356cdcb3c7aaf0ea21b))
+* **gas:** update gas utils comments ([af4889b](https://github.com/ar-io/ar-io-sdk/commit/af4889bd1d29fbfa6f462a349b10319a2f856edf))
+
 ## [4.0.2-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.5...v4.0.2-alpha.6) (2026-06-09)
 
 
