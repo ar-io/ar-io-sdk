@@ -66,6 +66,7 @@ import { getAntRecordPDA } from './pda.js';
 import {
   estimateComputeUnitLimit,
   estimatePriorityFeeMicroLamports,
+  estimateQuotePriorityFeeMicroLamports,
 } from './send.js';
 import type {
   SolanaRpc,
@@ -355,9 +356,13 @@ export async function spawnSolanaANT(
   // them up from the account metadata roles: accounts marked as SIGNER roles
   // must have a matching `TransactionSigner` attached. We do that by placing
   // the mint signer on the message alongside the fee payer signer.
+  // Signer-aware fee (see sendAndConfirm): wallet signers get the market
+  // rate their own estimator would pick; keypairs keep the cheap base rate.
   const [{ value: latestBlockhash }, microLamports] = await Promise.all([
     rpc.getLatestBlockhash().send(),
-    estimatePriorityFeeMicroLamports(rpc),
+    isTransactionModifyingSigner(signer)
+      ? estimateQuotePriorityFeeMicroLamports(rpc)
+      : estimatePriorityFeeMicroLamports(rpc),
   ]);
 
   const buildMessage = (units: number) =>

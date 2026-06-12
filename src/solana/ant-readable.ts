@@ -51,15 +51,24 @@ import type {
   SortedANTRecords,
 } from '../types/ant.js';
 import type { WalletAddress } from '../types/common.js';
+import type { GasEstimate } from '../types/io.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { ANT_CONFIG_VERSION, ARIO_ANT_PROGRAM_ID } from './constants.js';
 import {
+  ACL_BOOTSTRAP_ACCOUNT_BYTES,
+  ANT_RECORD_BYTES,
+  estimateRentLamports,
+  spawnAntAccountBytes,
+} from './gas.js';
+import {
+  getAclConfigPDA,
   getAntConfigPDA,
   getAntControllersPDA,
   getAntRecordMetadataPDA,
   getAntRecordPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
+import { estimateGasFee } from './send.js';
 import type { SolanaRpc } from './types.js';
 
 /**
@@ -245,6 +254,107 @@ export class SolanaANTReadable {
   async getOwner(_opts?: AntReadOptions): Promise<WalletAddress> {
     const config = await this.fetchConfig();
     return config.owner;
+  }
+
+  /**
+   * Estimate the Solana network cost ("gas") of an ANT management action,
+   * in lamports — transaction fees plus rent for accounts the action
+   * creates, and (for closes) the rent refunded back to the caller.
+   *
+   * - `set-record` (add/edit undername): creating the record deposits rent
+   *   (~0.0022 SOL); editing an existing record costs fees only, but this
+   *   quote conservatively assumes creation.
+   * - `remove-record`: the record account (and its metadata PDA, if any) is
+   *   CLOSED and its actual on-chain deposit refunded to the caller —
+   *   reported in `rentReclaimedLamports`, read live from the chain.
+   * - `transfer`: the caller pays to bootstrap the RECIPIENT's ACL
+   *   registry accounts (~0.06 SOL) when the recipient has never owned an
+   *   ANT; otherwise fees only. Removed ACL entries don't refund rent —
+   *   pages stay open.
+   * - `reassign-name`: mutates the ArNS record in place; fees only.
+   *
+   * Never throws on the quote path: fee and rent queries fall back
+   * internally, and the recipient-ACL check falls back to the conservative
+   * (bootstrap-needed) assumption.
+   */
+  async getGasEstimate(
+    params:
+      | { workflow: 'set-record'; undername: string }
+      // Editing an existing record mutates in place — fees only.
+      | { workflow: 'edit-record'; undername: string }
+      | { workflow: 'remove-record'; undername: string }
+      | { workflow: 'transfer'; recipient: WalletAddress }
+      // `spawnsNewAnt` covers the "reassign to a brand-new ANT" flow,
+      // which spawns a fresh asset first (rent for the spawned accounts;
+      // `name` sizes the name-bearing ones).
+      | { workflow: 'reassign-name'; spawnsNewAnt?: boolean; name?: string },
+  ): Promise<GasEstimate> {
+    switch (params.workflow) {
+      case 'set-record': {
+        const rentLamports = await estimateRentLamports(this.rpc, [
+          ANT_RECORD_BYTES,
+        ]);
+        return estimateGasFee(this.rpc, { rentLamports });
+      }
+      case 'remove-record': {
+        // Exact, not modeled: the close refunds whatever the record account
+        // actually holds, so read its (and the metadata PDA's) lamports.
+        let rentReclaimedLamports = 0;
+        try {
+          const [[recordPda], [metaPda]] = await Promise.all([
+            getAntRecordPDA(this.mint, params.undername, this.antProgram),
+            getAntRecordMetadataPDA(
+              this.mint,
+              params.undername,
+              this.antProgram,
+            ),
+          ]);
+          const accounts = await withRetry(() =>
+            fetchEncodedAccounts(this.rpc, [recordPda, metaPda], {
+              commitment: this.commitment,
+            }),
+          );
+          rentReclaimedLamports = accounts.reduce(
+            (sum, a) => (a.exists ? sum + Number(a.lamports) : sum),
+            0,
+          );
+        } catch {
+          // Quote stays fees-only; the refund still happens on chain.
+        }
+        return estimateGasFee(this.rpc, { rentReclaimedLamports });
+      }
+      case 'transfer': {
+        let needsAclBootstrap = true;
+        try {
+          const [aclPda] = await getAclConfigPDA(
+            address(params.recipient),
+            this.antProgram,
+          );
+          needsAclBootstrap = !(await this.getAccount(aclPda)).exists;
+        } catch {
+          // keep the conservative default
+        }
+        const rentLamports = needsAclBootstrap
+          ? await estimateRentLamports(this.rpc, ACL_BOOTSTRAP_ACCOUNT_BYTES)
+          : 0;
+        return estimateGasFee(this.rpc, { rentLamports });
+      }
+      case 'reassign-name': {
+        if (!params.spawnsNewAnt) return estimateGasFee(this.rpc);
+        // spawn (fee payer + mint keypair) then reassign (fee payer)
+        const rentLamports = await estimateRentLamports(
+          this.rpc,
+          spawnAntAccountBytes(params.name?.length ?? 12),
+        );
+        return estimateGasFee(this.rpc, {
+          rentLamports,
+          transactionCount: 2,
+          signatureCount: 3,
+        });
+      }
+      default:
+        return estimateGasFee(this.rpc);
+    }
   }
 
   /** Get the on-chain schema version of this ANT's config. */

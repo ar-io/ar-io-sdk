@@ -1624,6 +1624,8 @@ const price = await ario
 
 Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Name' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
 
+On Solana, the result also includes a `gasEstimate` — the total SOL (in lamports) the wallet needs to execute the intent: transaction fees (quoted from recent on-chain prioritization fees) plus rent-exempt deposits for the accounts the flow creates. For `Buy-Name` that covers both transactions (ANT spawn + buy) and the rent for the spawned asset/PDAs and the ArNS record; first-time buyers with no ACL accounts yet are quoted the ACL bootstrap rent as well (pass `fromAddress` so that check can be made). The fee side is a conservative upper bound: the write path tightens the compute-unit limit from a pre-send simulation, so the landed fee is usually lower.
+
 ```typescript
 const costDetails = await ario.getCostDetails({
   intent: "Buy-Name",
@@ -1646,7 +1648,19 @@ const costDetails = await ario.getCostDetails({
       "discountTotal": 476850455,
       "multiplier": 0.8
     }
-  ]
+  ],
+  "gasEstimate": {
+    "totalLamports": 14679680,
+    "feeLamports": 23000,
+    "baseFeeLamports": 15000,
+    "priorityFeeLamports": 8000,
+    "rentLamports": 14656680,
+    "rentReclaimedLamports": 0,
+    "priorityFeeMicroLamports": 10000,
+    "computeUnitLimit": 400000,
+    "signatureCount": 3,
+    "transactionCount": 2
+  }
 }
 ```
 

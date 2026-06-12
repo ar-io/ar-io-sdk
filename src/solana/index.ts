@@ -257,6 +257,32 @@ export type {
 export { withRetry, isRetryableError } from './retry.js';
 export type { RetryOptions } from './retry.js';
 
+// Gas (network cost) estimation utilities. `estimateGasFee` quotes the
+// lamports a flow needs (transaction fees + rent deposits) without building
+// anything; `getIntentGasProfile`/`estimateRentLamports` model what each
+// ArNS intent creates on chain (Buy-Name = ANT spawn + buy, with rent for
+// the spawned accounts). `SolanaARIOReadable.getCostDetails` includes the
+// combined quote as `gasEstimate`. The `GasEstimate` result type is
+// exported via `../types/index.js` above.
+export {
+  BASE_FEE_LAMPORTS_PER_SIGNATURE,
+  DEFAULT_COMPUTE_UNIT_LIMIT,
+  estimateGasFee,
+  estimatePriorityFeeMicroLamports,
+  estimateQuotePriorityFeeMicroLamports,
+  estimateWalletPriorityFeeMicroLamports,
+} from './send.js';
+export {
+  ACL_BOOTSTRAP_ACCOUNT_BYTES,
+  ANT_RECORD_BYTES,
+  GAR_COMPUTE_UNIT_LIMIT,
+  estimateRentLamports,
+  getGarWorkflowGasProfile,
+  getIntentGasProfile,
+  spawnAntAccountBytes,
+} from './gas.js';
+export type { GarGasWorkflow, IntentGasProfile } from './gas.js';
+
 // Types
 export type {
   SolanaConfig,
