@@ -295,7 +295,11 @@ function makeGatewayBytes(
   operator: Address,
   status: GatewayStatus,
   failedConsecutive: number,
-  opts: { allowDelegatedStaking?: boolean; totalDelegatedStake?: bigint } = {},
+  opts: {
+    allowDelegatedStaking?: boolean;
+    totalDelegatedStake?: bigint;
+    leaveTimestamp?: bigint | null;
+  } = {},
 ): Uint8Array {
   const enc = getGatewayEncoder();
   return enc.encode({
@@ -310,7 +314,7 @@ function makeGatewayBytes(
     totalDelegatedStake: opts.totalDelegatedStake ?? 0n,
     status,
     startTimestamp: 0n,
-    leaveTimestamp: null,
+    leaveTimestamp: opts.leaveTimestamp ?? null,
     leaveEpochDuration: 0n,
     stats: {
       passedEpochs: 0,
@@ -424,6 +428,90 @@ describe('SolanaARIOReadable.getLeavingGateways', () => {
     assert.equal(out.length, 1);
     assert.equal(out[0].pubkey, ADDR_B);
     assert.equal(out[0].operator, PUBKEY_2);
+  });
+});
+
+describe('SolanaARIOReadable.getFinalizableGoneGateways', () => {
+  // Leave window timestamps are on-chain seconds; fix `now` to test the boundary.
+  const NOW = 1_000_000;
+
+  it('includes a Leaving gateway whose leave window elapsed and has no delegations', async () => {
+    const joined = makeGatewayBytes(PUBKEY_1, GatewayStatus.Joined, 0);
+    const eligible = makeGatewayBytes(PUBKEY_2, GatewayStatus.Leaving, 0, {
+      leaveTimestamp: BigInt(NOW - 1), // window already elapsed
+      totalDelegatedStake: 0n,
+    });
+    const r = buildReadable(
+      stubRpcReturning([
+        { pubkey: ADDR_A, bytes: joined },
+        { pubkey: ADDR_B, bytes: eligible },
+      ]),
+    );
+
+    const out = await r.getFinalizableGoneGateways(NOW);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].pubkey, ADDR_B);
+    assert.equal(out[0].operator, PUBKEY_2);
+  });
+
+  it('excludes a Leaving gateway whose leave window has NOT elapsed (would revert LeaveWindowNotExpired)', async () => {
+    const notYet = makeGatewayBytes(PUBKEY_1, GatewayStatus.Leaving, 0, {
+      leaveTimestamp: BigInt(NOW + 1), // window ends in the future
+      totalDelegatedStake: 0n,
+    });
+    const r = buildReadable(
+      stubRpcReturning([{ pubkey: ADDR_A, bytes: notYet }]),
+    );
+    assert.deepEqual(await r.getFinalizableGoneGateways(NOW), []);
+  });
+
+  it('treats the boundary (now === leaveTimestamp) as eligible', async () => {
+    const atBoundary = makeGatewayBytes(PUBKEY_1, GatewayStatus.Leaving, 0, {
+      leaveTimestamp: BigInt(NOW),
+      totalDelegatedStake: 0n,
+    });
+    const r = buildReadable(
+      stubRpcReturning([{ pubkey: ADDR_A, bytes: atBoundary }]),
+    );
+    assert.equal((await r.getFinalizableGoneGateways(NOW)).length, 1);
+  });
+
+  it('excludes a Leaving gateway that still holds delegated stake', async () => {
+    const stillDelegated = makeGatewayBytes(
+      PUBKEY_1,
+      GatewayStatus.Leaving,
+      0,
+      {
+        leaveTimestamp: BigInt(NOW - 1),
+        totalDelegatedStake: 5_000n,
+      },
+    );
+    const r = buildReadable(
+      stubRpcReturning([{ pubkey: ADDR_A, bytes: stillDelegated }]),
+    );
+    assert.deepEqual(await r.getFinalizableGoneGateways(NOW), []);
+  });
+
+  it('excludes a Leaving gateway with no leaveTimestamp set', async () => {
+    const noWindow = makeGatewayBytes(PUBKEY_1, GatewayStatus.Leaving, 0, {
+      leaveTimestamp: null,
+      totalDelegatedStake: 0n,
+    });
+    const r = buildReadable(
+      stubRpcReturning([{ pubkey: ADDR_A, bytes: noWindow }]),
+    );
+    assert.deepEqual(await r.getFinalizableGoneGateways(NOW), []);
+  });
+
+  it('excludes Joined gateways regardless of timestamps', async () => {
+    const joined = makeGatewayBytes(PUBKEY_1, GatewayStatus.Joined, 0, {
+      leaveTimestamp: BigInt(NOW - 1),
+      totalDelegatedStake: 0n,
+    });
+    const r = buildReadable(
+      stubRpcReturning([{ pubkey: ADDR_A, bytes: joined }]),
+    );
+    assert.deepEqual(await r.getFinalizableGoneGateways(NOW), []);
   });
 });
 

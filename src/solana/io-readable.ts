@@ -3021,6 +3021,52 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Enumerate `Leaving` Gateway PDAs that are ACTUALLY eligible for
+   * `finalizeGone` at `now` — i.e. their leave window has fully elapsed
+   * (`now >= leaveTimestamp`) AND no delegated stake remains
+   * (`totalDelegatedStake === 0`). These are exactly the two preconditions the
+   * on-chain `finalize_gone` enforces: it reverts `LeaveWindowNotExpired`
+   * before the window elapses, and will not GC a gateway that still has live
+   * delegations (programs/ario-gar/src/instructions/gateway.rs::finalize_gone).
+   *
+   * {@link getLeavingGateways} over-returns *every* `Leaving` gateway and
+   * relies on those reverts happening on-chain. A cranker that calls
+   * `finalizeGone` per result therefore burns a tx attempt — and logs a
+   * simulation failure — on every not-yet-eligible gateway, every tick. Prefer
+   * this method in cranker loops so only finalizable gateways are attempted.
+   * Mirrors the expiry-filtered discovery pattern of {@link getExpiredVaults}.
+   *
+   * @param now Unix seconds (e.g. `Math.floor(Date.now() / 1000)`).
+   */
+  async getFinalizableGoneGateways(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; operator: Address }>> {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Array<{ pubkey: Address; operator: Address }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const g = decoder.decode(data);
+        if (g.status !== GatewayStatus.Leaving) continue;
+        // `leaveTimestamp` is the leave-window END in on-chain seconds; it is
+        // `Some` for a Leaving gateway. Skip until the window has elapsed.
+        if (g.leaveTimestamp.__option !== 'Some') continue;
+        if (Number(g.leaveTimestamp.value) > now) continue;
+        // Live delegations must be cranked out first (separate GC path), else
+        // finalize_gone reverts.
+        if (g.totalDelegatedStake !== 0n) continue;
+        out.push({ pubkey, operator: g.operator });
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
    * Enumerate Joined Gateway PDAs whose delegation has been DISABLED
    * (`allow_delegated_staking == false`) yet still hold delegated stake
    * (`total_delegated_stake > 0`) — i.e. delegates that an operator's disable
