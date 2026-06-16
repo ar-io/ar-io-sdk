@@ -1,3 +1,10 @@
+## [4.0.2-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.7...v4.0.2-alpha.8) (2026-06-16)
+
+
+### Bug Fixes
+
+* **solana:** filter finalize_gone candidates by leave-window eligibility ([900319c](https://github.com/ar-io/ar-io-sdk/commit/900319c43fb5a090e00d43a2f74309f3d18c047e))
+
 ## [4.0.2-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.6...v4.0.2-alpha.7) (2026-06-12)
 
 
