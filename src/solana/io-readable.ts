@@ -324,6 +324,21 @@ function paginate<T>(
  * const record = await ario.getArNSRecord({ name: 'ardrive' });
  * ```
  */
+
+/**
+ * Fixed leave cooldown (seconds) a `Leaving` gateway must wait before
+ * `finalize_gone` can GC it. Mirrors the on-chain `GATEWAY_LEAVE_PERIOD`
+ * (90 days) in ar-io-solana-contracts (`programs/ario-gar/src/lib.rs`).
+ */
+const GATEWAY_LEAVE_PERIOD_SECONDS = 90 * 86_400; // 7_776_000
+
+/**
+ * Epoch-retention multiplier in the on-chain finalize_gone window
+ * (`leave_timestamp + GATEWAY_LEAVE_PERIOD + 7 * epoch_duration`), mirroring
+ * the GAR-006 epoch retention.
+ */
+const FINALIZE_GONE_EPOCH_RETENTION = 7;
+
 export class SolanaARIOReadable {
   protected readonly rpc: SolanaRpc;
   protected readonly commitment: Commitment;
@@ -3022,25 +3037,45 @@ export class SolanaARIOReadable {
 
   /**
    * Enumerate `Leaving` Gateway PDAs that are ACTUALLY eligible for
-   * `finalizeGone` at `now` — i.e. their leave window has fully elapsed
-   * (`now >= leaveTimestamp`) AND no delegated stake remains
-   * (`totalDelegatedStake === 0`). These are exactly the two preconditions the
-   * on-chain `finalize_gone` enforces: it reverts `LeaveWindowNotExpired`
-   * before the window elapses, and will not GC a gateway that still has live
-   * delegations (programs/ario-gar/src/instructions/gateway.rs::finalize_gone).
+   * `finalizeGone` at `now`. The on-chain GC window
+   * (`programs/ario-gar/src/instructions/gateway.rs::finalize_gone`) is:
    *
-   * {@link getLeavingGateways} over-returns *every* `Leaving` gateway and
-   * relies on those reverts happening on-chain. A cranker that calls
-   * `finalizeGone` per result therefore burns a tx attempt — and logs a
-   * simulation failure — on every not-yet-eligible gateway, every tick. Prefer
-   * this method in cranker loops so only finalizable gateways are attempted.
-   * Mirrors the expiry-filtered discovery pattern of {@link getExpiredVaults}.
+   * ```
+   * eligibleAt = leaveTimestamp
+   *            + GATEWAY_LEAVE_PERIOD                 // 90 days, fixed
+   *            + 7 * max(leaveEpochDuration, epoch_settings.epoch_duration)
+   * ```
+   *
+   * The 7-epoch term mirrors GAR-006 epoch retention; the `max` is the
+   * program's defense against an admin shortening `epoch_duration` after a
+   * gateway left (`leaveEpochDuration` is the snapshot taken at leave time).
+   * A gateway is finalizable only once `now >= eligibleAt` AND it holds no
+   * delegated stake (`totalDelegatedStake === 0`) — `finalize_gone` reverts
+   * `LeaveWindowNotExpired` before the window and won't GC a gateway with live
+   * delegations.
+   *
+   * {@link getLeavingGateways} over-returns *every* `Leaving` gateway; a cranker
+   * that calls `finalizeGone` on those burns a reverting tx (and a logged
+   * simulation failure) on every not-yet-eligible gateway each tick. Prefer
+   * this method in cranker loops so only truly-finalizable gateways are tried.
    *
    * @param now Unix seconds (e.g. `Math.floor(Date.now() / 1000)`).
    */
   async getFinalizableGoneGateways(
     now: number,
   ): Promise<Array<{ pubkey: Address; operator: Address }>> {
+    // Current epoch_duration (seconds) for the on-chain `max(snapshot, current)`.
+    // If the settings read fails, fall back to 0 so only the per-gateway
+    // snapshot is used — the dominant GATEWAY_LEAVE_PERIOD term still applies.
+    let currentEpochDuration = 0;
+    try {
+      currentEpochDuration = Number(
+        (await this.getEpochSettings()).epochDuration,
+      );
+    } catch {
+      // settings unavailable — snapshot-only window
+    }
+
     const accounts = await this.getAccountsByDiscriminator(
       this.garProgram,
       GATEWAY_DISCRIMINATOR,
@@ -3051,13 +3086,19 @@ export class SolanaARIOReadable {
       try {
         const g = decoder.decode(data);
         if (g.status !== GatewayStatus.Leaving) continue;
-        // `leaveTimestamp` is the leave-window END in on-chain seconds; it is
-        // `Some` for a Leaving gateway. Skip until the window has elapsed.
         if (g.leaveTimestamp.__option !== 'Some') continue;
-        if (Number(g.leaveTimestamp.value) > now) continue;
         // Live delegations must be cranked out first (separate GC path), else
         // finalize_gone reverts.
         if (g.totalDelegatedStake !== 0n) continue;
+        const epochDuration = Math.max(
+          Number(g.leaveEpochDuration),
+          currentEpochDuration,
+        );
+        const eligibleAt =
+          Number(g.leaveTimestamp.value) +
+          GATEWAY_LEAVE_PERIOD_SECONDS +
+          FINALIZE_GONE_EPOCH_RETENTION * epochDuration;
+        if (eligibleAt > now) continue;
         out.push({ pubkey, operator: g.operator });
       } catch {
         // skip malformed
