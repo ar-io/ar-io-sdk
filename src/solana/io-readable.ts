@@ -29,8 +29,6 @@ import {
   fetchEncodedAccounts,
   getAddressDecoder,
 } from '@solana/kit';
-import bs58 from 'bs58';
-
 import {
   ARNS_RECORD_DISCRIMINATOR,
   DEMAND_FACTOR_DOWN_ADJUSTMENT,
@@ -442,9 +440,11 @@ export class SolanaARIOReadable {
    * Helper for `getProgramAccounts` with a discriminator memcmp filter.
    *
    * Pass the Codama-generated `<NAME>_DISCRIMINATOR: Uint8Array` constant
-   * directly — kit's RPC requires a base58 string for `memcmp.bytes`, so
-   * we bs58-encode here to keep call sites from doing it inline (and to
-   * keep the IDL-derived bytes as the single source of truth).
+   * directly — we base64-encode here to keep call sites from doing it
+   * inline (and to keep the IDL-derived bytes as the single source of
+   * truth). Uses base64 rather than base58 because some browser
+   * environments / RPC proxies mishandle base58-encoded memcmp filters
+   * when multiple filters are present.
    */
   private async getAccountsByDiscriminator(
     programId: Address,
@@ -455,8 +455,8 @@ export class SolanaARIOReadable {
       {
         memcmp: {
           offset: 0n,
-          bytes: bs58.encode(discriminator as Uint8Array),
-          encoding: 'base58',
+          bytes: Buffer.from(discriminator as Uint8Array).toString('base64'),
+          encoding: 'base64',
         },
       },
       ...extraFilters,
@@ -1657,8 +1657,8 @@ export class SolanaARIOReadable {
         {
           memcmp: {
             offset: 8n,
-            bytes: bs58.encode(epochIndexBuf),
-            encoding: 'base58',
+            bytes: Buffer.from(epochIndexBuf).toString('base64'),
+            encoding: 'base64',
           },
         },
       ],
@@ -1717,8 +1717,8 @@ export class SolanaARIOReadable {
         {
           memcmp: {
             offset: 8n,
-            bytes: bs58.encode(epochIndexBuf),
-            encoding: 'base58',
+            bytes: Buffer.from(epochIndexBuf).toString('base64'),
+            encoding: 'base64',
           },
         },
       ],
