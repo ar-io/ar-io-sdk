@@ -1,3 +1,10 @@
+## [4.0.2-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.8...v4.0.2-alpha.9) (2026-06-17)
+
+
+### Bug Fixes
+
+* **solana:** use base64 encoding for memcmp filters in getProgramAccounts ([26de129](https://github.com/ar-io/ar-io-sdk/commit/26de12916ffaaa3ad4ee8917b9db568fe2b6b95e))
+
 ## [4.0.2-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.7...v4.0.2-alpha.8) (2026-06-16)
 
 
