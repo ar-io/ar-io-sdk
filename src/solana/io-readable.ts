@@ -3069,9 +3069,10 @@ export class SolanaARIOReadable {
     // snapshot is used — the dominant GATEWAY_LEAVE_PERIOD term still applies.
     let currentEpochDuration = 0;
     try {
-      currentEpochDuration = Number(
-        (await this.getEpochSettings()).epochDuration,
-      );
+      // getEpochSettings() exposes the duration as `durationMs`; the on-chain
+      // window math is in seconds (matching leaveTimestamp/leaveEpochDuration).
+      currentEpochDuration =
+        Number((await this.getEpochSettings()).durationMs) / 1000;
     } catch {
       // settings unavailable — snapshot-only window
     }
