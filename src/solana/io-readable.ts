@@ -1,3 +1,25 @@
+/**
+ * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Solana implementation of the ARIORead interface.
+ *
+ * Reads AR.IO protocol state directly from Solana PDAs using RPC,
+ * returning the same types that the AO implementation returns.
+ * This allows consumers to switch backends transparently.
+ */
 import {
   ARNS_RECORD_DISCRIMINATOR,
   DEMAND_FACTOR_DOWN_ADJUSTMENT,
@@ -32,28 +54,6 @@ import {
   getGatewayDecoder,
   getWithdrawalDecoder,
 } from '@ar.io/solana-contracts/gar';
-/**
- * Copyright (C) 2022-2024 Permanent Data Solutions, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * Solana implementation of the ARIORead interface.
- *
- * Reads AR.IO protocol state directly from Solana PDAs using RPC,
- * returning the same types that the AO implementation returns.
- * This allows consumers to switch backends transparently.
- */
 import {
   type Address,
   type Commitment,
