@@ -1,3 +1,11 @@
+## [4.0.2-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.9...v4.0.2-alpha.10) (2026-06-18)
+
+
+### Bug Fixes
+
+* **solana:** finalize_gone eligibility must use the full leave window ([49c70d2](https://github.com/ar-io/ar-io-sdk/commit/49c70d202f1bcdbe45448d26eb55028ba6471fdc)), closes [#685](https://github.com/ar-io/ar-io-sdk/issues/685)
+* **solana:** use epoch duration in seconds for finalize_gone window ([de99061](https://github.com/ar-io/ar-io-sdk/commit/de990613af7806a1b7a0c96a0d0e453eeb09f1aa))
+
 ## [4.0.2-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.8...v4.0.2-alpha.9) (2026-06-17)
 
 
