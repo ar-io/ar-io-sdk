@@ -546,6 +546,60 @@ export type CostDiscount = {
   multiplier: number;
 };
 
+/**
+ * Estimated network ("gas") cost for executing an intent on the underlying
+ * chain — separate from `tokenCost`, which is the protocol price in mARIO.
+ * Currently populated only by the Solana implementations, where amounts are
+ * denominated in lamports (1 SOL = 1e9 lamports).
+ *
+ * `totalLamports` is what the wallet must hold in SOL:
+ * `feeLamports` (transaction fees across every transaction the intent
+ * sends) plus `rentLamports` (rent-exempt deposits for accounts the flow
+ * creates — for Buy-Name that includes the ANT spawn's MPL Core asset,
+ * config/controllers/root-record PDAs, first-time ACL bootstrap accounts,
+ * and the ArNS record itself; rent dwarfs the fees by ~3 orders of
+ * magnitude).
+ *
+ * The fee side is conservative: the priority fee is charged on the
+ * compute-unit LIMIT each transaction pins, and the write path auto-tightens
+ * that limit from a pre-send simulation, so the fee actually paid is usually
+ * lower.
+ */
+export type GasEstimate = {
+  /** Grand total in lamports the wallet needs: `feeLamports + rentLamports`. */
+  totalLamports: number;
+  /** Transaction fees across all transactions (base + priority). */
+  feeLamports: number;
+  /** Flat per-signature fee: 5000 lamports × `signatureCount`. */
+  baseFeeLamports: number;
+  /**
+   * Prioritization fee: `transactionCount` × ceil(`computeUnitLimit` × price
+   * ÷ 1e6) lamports.
+   */
+  priorityFeeLamports: number;
+  /**
+   * Rent-exempt deposits (lamports) for accounts the intent creates. Zero
+   * for intents that only mutate existing accounts (Extend-Lease,
+   * Upgrade-Name, Increase-Undername-Limit).
+   */
+  rentLamports: number;
+  /**
+   * Rent (lamports) returned to the caller by accounts the action CLOSES —
+   * e.g. removing an undername record refunds that record's deposit. Not
+   * subtracted from `totalLamports`, which stays the upfront requirement;
+   * the net cost of the action is `totalLamports − rentReclaimedLamports`.
+   */
+  rentReclaimedLamports: number;
+  /** Compute-unit price used for the quote, in micro-lamports per CU. */
+  priorityFeeMicroLamports: number;
+  /** Compute-unit limit the quote assumes EACH transaction will pin. */
+  computeUnitLimit: number;
+  /** Total signatures across all transactions. */
+  signatureCount: number;
+  /** Number of transactions the intent sends (Buy-Name: spawn ANT + buy). */
+  transactionCount: number;
+};
+
 export type CostDetailsResult = {
   tokenCost: number;
   discounts: CostDiscount[];
@@ -554,6 +608,11 @@ export type CostDetailsResult = {
   };
   fundingPlan?: FundingPlan;
   wincQty?: string;
+  /**
+   * Network-fee quote for executing the action on chain. Solana-only;
+   * `undefined` on backends without per-transaction gas (e.g. AO).
+   */
+  gasEstimate?: GasEstimate;
 };
 
 export type GetVaultParams = {

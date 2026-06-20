@@ -39,6 +39,7 @@ import {
   type Commitment,
   type Instruction,
   type TransactionSigner,
+  address,
   appendTransactionMessageInstructions,
   compileTransaction,
   compressTransactionMessageUsingAddressLookupTables,
@@ -46,6 +47,7 @@ import {
   getAddressDecoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
+  isTransactionModifyingSigner,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -53,6 +55,7 @@ import {
   signTransactionMessageWithSigners,
 } from '@solana/kit';
 
+import type { GasEstimate } from '../types/io.js';
 import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
 
 /**
@@ -66,32 +69,258 @@ const MIN_PRIORITY_FEE_MICRO_LAMPORTS = 10_000n;
 const MAX_PRIORITY_FEE_MICRO_LAMPORTS = 2_000_000n;
 
 /**
+ * Multiplier applied to the simulated `unitsConsumed` to derive the pinned
+ * compute-unit limit, giving headroom for run-to-run variance (account state
+ * the simulation didn't see, slightly different inputs at land time).
+ */
+const COMPUTE_UNIT_LIMIT_BUFFER = 1.3;
+/**
+ * Floor for the auto-sized compute-unit limit. Keeps tiny instructions from
+ * being pinned so tight that benign variance trips a "exceeded CUs" failure.
+ */
+const MIN_COMPUTE_UNIT_LIMIT = 10_000;
+/** Solana's hard per-transaction compute-unit ceiling. */
+const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
+
+/** Flat base fee Solana charges per signature, in lamports. */
+export const BASE_FEE_LAMPORTS_PER_SIGNATURE = 5_000;
+/**
+ * Compute-unit limit {@link sendAndConfirm} pins when the caller doesn't pass
+ * one — and therefore the default a fee quote should assume. Every ArNS
+ * purchase write (buy/extend/upgrade/undername/primary-name) uses this
+ * default; only GAR/epoch operations pass a higher explicit limit.
+ */
+export const DEFAULT_COMPUTE_UNIT_LIMIT = 400_000;
+
+/** Clamped percentile over the non-zero per-slot fees of a fee response. */
+function clampedFeePercentile(
+  recent: ReadonlyArray<{ prioritizationFee: bigint | number }>,
+  percentile: number,
+): bigint {
+  const fees = recent
+    .map((r) => BigInt(r.prioritizationFee))
+    .filter((f) => f > 0n)
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (fees.length === 0) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+  const value =
+    fees[Math.min(fees.length - 1, Math.floor(fees.length * percentile))];
+  if (value < MIN_PRIORITY_FEE_MICRO_LAMPORTS)
+    return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+  if (value > MAX_PRIORITY_FEE_MICRO_LAMPORTS)
+    return MAX_PRIORITY_FEE_MICRO_LAMPORTS;
+  return value;
+}
+
+/**
  * Estimate a compute-unit price from recent on-chain prioritization fees: the
  * 75th percentile of recent non-zero per-slot fees, clamped to
  * [{@link MIN_PRIORITY_FEE_MICRO_LAMPORTS}, {@link MAX_PRIORITY_FEE_MICRO_LAMPORTS}].
- * Falls back to the floor when there's no data or the query fails. Matching the
- * going rate both lands the tx and keeps Phantom from bumping (and thus
- * rewriting) the fee.
+ * Falls back to the floor when there's no data or the query fails.
+ *
+ * NOTE: the unscoped query reports each slot's MINIMUM landed fee, which on
+ * mainnet is almost always 0 (every block lands zero-fee txs) — so in
+ * practice this returns the floor. That's fine for keypair sends (they land),
+ * but it is NOT what browser wallets charge; see
+ * {@link estimateWalletPriorityFeeMicroLamports} for the wallet-rate quote.
  */
 export async function estimatePriorityFeeMicroLamports(
   rpc: SolanaRpc,
 ): Promise<bigint> {
   try {
     const recent = await rpc.getRecentPrioritizationFees().send();
-    const fees = recent
-      .map((r) => BigInt(r.prioritizationFee))
-      .filter((f) => f > 0n)
-      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-    if (fees.length === 0) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
-    const p75 = fees[Math.min(fees.length - 1, Math.floor(fees.length * 0.75))];
-    if (p75 < MIN_PRIORITY_FEE_MICRO_LAMPORTS)
-      return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
-    if (p75 > MAX_PRIORITY_FEE_MICRO_LAMPORTS)
-      return MAX_PRIORITY_FEE_MICRO_LAMPORTS;
-    return p75;
+    return clampedFeePercentile(recent, 0.75);
   } catch {
     return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
   }
+}
+
+/**
+ * Busy, long-lived mainnet accounts (USDC + USDT mints) used as fee-market
+ * references. Scoping `getRecentPrioritizationFees` to a contended account
+ * surfaces what fee-paying transactions actually attach, instead of the
+ * all-zero per-slot minimums the unscoped query reports. Two references are
+ * pooled because either alone is a thin sample (~10–20 fee-paying slots per
+ * 150) whose tail percentiles swing several-fold minute to minute. On
+ * clusters where these accounts don't exist (devnet/localnet) the queries
+ * return no signal and the estimate falls back to the floor.
+ */
+const MARKET_FEE_REFERENCE_ACCOUNTS = [
+  address('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'), // USDC mint
+  address('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'), // USDT mint
+] as const;
+
+/**
+ * The compute-unit price Phantom's fee recommendation typically lands on
+ * for ordinary transactions under normal mainnet conditions (calibrated
+ * against its fee display). The sampled market percentile is shrunk toward
+ * this prior because the reference accounts yield only ~10–40 fee-paying
+ * slots per query — too thin for a stable tail percentile on its own.
+ */
+const WALLET_FEE_PRIOR_MICRO_LAMPORTS = 500_000n;
+
+/**
+ * Estimate the compute-unit price a browser wallet (Phantom et al.) will
+ * attach: the 85th percentile of the POOLED recent fees scoped to the
+ * {@link MARKET_FEE_REFERENCE_ACCOUNTS}, averaged with
+ * {@link WALLET_FEE_PRIOR_MICRO_LAMPORTS} to damp thin-sample swings, and
+ * clamped like the base estimator. Calibrated against Phantom's fee
+ * display: Phantom rewrites the priority fee to its own (deliberately
+ * generous, smoothed) recommendation no matter what the transaction pins —
+ * see the wallet-bridge notes in consumers.
+ *
+ * On clusters with no fee market at all (devnet/localnet — zero fee-paying
+ * slots on the references) this returns the plain floor, not the prior:
+ * wallets have nothing to price against there either.
+ *
+ * Used for gas QUOTES (so the UI shows what a wallet flow will actually
+ * pay) and pinned for message-modifying signers in {@link sendAndConfirm}
+ * (honoring wallets then pay the quoted rate; Phantom replaces it with its
+ * own near-identical rate, which the modifying-signer bridge captures).
+ * Keypair sends keep the cheap base estimate.
+ */
+export async function estimateWalletPriorityFeeMicroLamports(
+  rpc: SolanaRpc,
+): Promise<bigint> {
+  const samples = await Promise.all(
+    MARKET_FEE_REFERENCE_ACCOUNTS.map(async (account) => {
+      try {
+        return await rpc.getRecentPrioritizationFees([account]).send();
+      } catch {
+        return [];
+      }
+    }),
+  );
+  const pooled = samples.flat();
+  const hasSignal = pooled.some((r) => BigInt(r.prioritizationFee) > 0n);
+  if (!hasSignal) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
+  const sampled = clampedFeePercentile(pooled, 0.85);
+  const shrunk = (sampled + WALLET_FEE_PRIOR_MICRO_LAMPORTS) / 2n;
+  return shrunk > MAX_PRIORITY_FEE_MICRO_LAMPORTS
+    ? MAX_PRIORITY_FEE_MICRO_LAMPORTS
+    : shrunk;
+}
+
+/**
+ * The price a gas QUOTE should assume: the higher of the base estimate and
+ * the wallet-rate estimate — whichever path signs (keypair or wallet), the
+ * quote covers it. Both legs fall back internally, so this never throws.
+ */
+export async function estimateQuotePriorityFeeMicroLamports(
+  rpc: SolanaRpc,
+): Promise<bigint> {
+  const [base, wallet] = await Promise.all([
+    estimatePriorityFeeMicroLamports(rpc),
+    estimateWalletPriorityFeeMicroLamports(rpc),
+  ]);
+  return base > wallet ? base : wallet;
+}
+
+/**
+ * Simulate `message` (sig-verify off) to learn its actual `unitsConsumed`, then
+ * return a tight compute-unit limit: `unitsConsumed * COMPUTE_UNIT_LIMIT_BUFFER`,
+ * clamped to [{@link MIN_COMPUTE_UNIT_LIMIT}, `fallback`].
+ *
+ * Why this matters: a wildly over-provisioned CU limit (e.g. the blanket
+ * `1_000_000` several writes pass) is exactly what message-modifying wallets
+ * like Phantom *rewrite* — they tighten the limit to lower the fee
+ * (fee = price × limit), sign their modified message, and the SDK's already-
+ * attached signatures no longer match the submitted bytes →
+ * "Transaction did not pass signature verification" even though simulation
+ * (sig-verify off) passes. Pinning a realistic limit leaves the wallet nothing
+ * to optimize, so the signed bytes are the submitted bytes.
+ *
+ * Best-effort: on any simulation error (including a program error — let the real
+ * send surface it) we fall back to `fallback` so behavior never regresses.
+ */
+export async function estimateComputeUnitLimit(
+  rpc: SolanaRpc,
+  message: unknown,
+  fallback: number,
+): Promise<number> {
+  try {
+    const compiled = compileTransaction(message as never);
+    const wire = getBase64EncodedWireTransaction(compiled as never);
+    const sim = await rpc
+      .simulateTransaction(wire, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        encoding: 'base64',
+      })
+      .send();
+    const consumed = sim.value.unitsConsumed;
+    if (sim.value.err != null || consumed == null) return fallback;
+    const sized = Math.ceil(Number(consumed) * COMPUTE_UNIT_LIMIT_BUFFER);
+    return Math.min(
+      Math.max(sized, MIN_COMPUTE_UNIT_LIMIT),
+      Math.min(fallback, MAX_COMPUTE_UNIT_LIMIT),
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Quote the network cost ("gas") for an intent without building or sending
+ * anything: `BASE_FEE_LAMPORTS_PER_SIGNATURE × signatureCount` plus a
+ * per-transaction priority fee `ceil(computeUnitLimit × pricePerCU / 1e6)`,
+ * plus any caller-supplied `rentLamports` for accounts the flow creates.
+ * The compute-unit price comes from {@link estimatePriorityFeeMicroLamports}
+ * unless pinned by the caller.
+ *
+ * The fee side mirrors what {@link sendAndConfirm} will actually attach: the
+ * same default CU limit and the same auto price estimate. It's a conservative
+ * upper bound — the runtime charges the priority fee on the pinned LIMIT, and
+ * `sendAndConfirm` tightens that limit from a pre-send simulation for keypair
+ * signers, so the landed fee is usually lower. Never throws: the only RPC
+ * call is the priority-fee query, which falls back to its floor internally.
+ */
+export async function estimateGasFee(
+  rpc: SolanaRpc,
+  {
+    computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+    signatureCount = 1,
+    transactionCount = 1,
+    rentLamports = 0,
+    rentReclaimedLamports = 0,
+    priorityFeeMicroLamports,
+  }: {
+    /** Compute-unit limit assumed for EACH transaction. */
+    computeUnitLimit?: number;
+    /** Total signatures across all transactions. */
+    signatureCount?: number;
+    /** Number of transactions the intent sends. */
+    transactionCount?: number;
+    /** Rent-exempt deposits for accounts the flow creates, in lamports. */
+    rentLamports?: number;
+    /** Rent refunded to the caller by accounts the flow closes, in lamports. */
+    rentReclaimedLamports?: number;
+    /** Pin a compute-unit price instead of estimating from recent fees. */
+    priorityFeeMicroLamports?: bigint | number;
+  } = {},
+): Promise<GasEstimate> {
+  const microLamports =
+    priorityFeeMicroLamports !== undefined
+      ? BigInt(priorityFeeMicroLamports)
+      : await estimateQuotePriorityFeeMicroLamports(rpc);
+  const baseFeeLamports = BASE_FEE_LAMPORTS_PER_SIGNATURE * signatureCount;
+  // Ceil-divide micro-lamports → lamports per transaction; the runtime
+  // rounds the prioritization fee up to whole lamports.
+  const priorityFeeLamports =
+    transactionCount *
+    Number((BigInt(computeUnitLimit) * microLamports + 999_999n) / 1_000_000n);
+  const feeLamports = baseFeeLamports + priorityFeeLamports;
+  return {
+    totalLamports: feeLamports + rentLamports,
+    feeLamports,
+    baseFeeLamports,
+    priorityFeeLamports,
+    rentLamports,
+    rentReclaimedLamports,
+    priorityFeeMicroLamports: Number(microLamports),
+    computeUnitLimit,
+    signatureCount,
+    transactionCount,
+  };
 }
 
 /**
@@ -106,7 +335,8 @@ export async function sendAndConfirm({
   signer,
   instructions,
   commitment = 'confirmed',
-  computeUnitLimit = 400_000,
+  computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+  autoComputeUnitLimit = true,
   priorityFeeMicroLamports = 'auto',
   addressLookupTables,
 }: {
@@ -115,7 +345,20 @@ export async function sendAndConfirm({
   signer: TransactionSigner;
   instructions: Instruction[];
   commitment?: Commitment;
+  /**
+   * Upper bound for the compute-unit limit. By default the limit is auto-sized
+   * from a pre-send simulation (see {@link estimateComputeUnitLimit}) and this
+   * value is only the ceiling/fallback. Pass `autoComputeUnitLimit: false` to
+   * pin exactly this value instead (e.g. localnet, or when simulation is
+   * unavailable).
+   */
   computeUnitLimit?: number;
+  /**
+   * When `true` (default), simulate before signing and pin a tight CU limit so
+   * message-modifying wallets (Phantom) don't rewrite the over-provisioned limit
+   * and invalidate signatures. When `false`, pin `computeUnitLimit` verbatim.
+   */
+  autoComputeUnitLimit?: boolean;
   /**
    * Compute-unit price (priority fee), in micro-lamports per CU.
    * - `'auto'` (default): estimate from recent on-chain fees (see
@@ -139,45 +382,83 @@ export async function sendAndConfirm({
    */
   addressLookupTables?: Record<string, Address[]>;
 }): Promise<string> {
+  // 'auto' pricing is signer-aware: keypair signers pay the cheap base rate
+  // (their txs land fine and bot flows send many), while message-modifying
+  // wallets get the market rate the SDK's gas quotes assume. Wallets that
+  // honor pinned budgets (Solflare/Backpack) then pay exactly the quoted
+  // rate; Phantom rewrites the fee to its own near-identical market rate
+  // regardless (see the wallet-bridge notes), and the modifying-signer
+  // bridge captures that rewrite.
   const microLamports =
     priorityFeeMicroLamports === 'auto'
-      ? await estimatePriorityFeeMicroLamports(rpc)
+      ? isTransactionModifyingSigner(signer)
+        ? await estimateQuotePriorityFeeMicroLamports(rpc)
+        : await estimatePriorityFeeMicroLamports(rpc)
       : priorityFeeMicroLamports === false
         ? 0n
         : BigInt(priorityFeeMicroLamports);
 
   const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-  const baseMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [
-          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
-          // don't rewrite the message to inject their own compute-budget
-          // instructions. Phantom treats a missing/zero fee as "unset" and
-          // overrides it on mainnet — that mutation invalidates the already-
-          // attached signatures (→ "Transaction did not pass signature
-          // verification" / preflight #-32002). A real, network-rate fee
-          // (see `microLamports` above) makes the wallet leave the message
-          // alone, so signatures over the original bytes still verify.
-          getSetComputeUnitPriceInstruction({ microLamports }),
-          ...instructions,
-        ],
-        tx,
-      ),
-  );
+  // Build the (optionally ALT-compressed) message for a given CU limit. We may
+  // build it twice: once with the ceiling limit to simulate, once with the
+  // tight limit we actually sign.
+  const buildMessage = (units: number) => {
+    const baseMessage = pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [
+            getSetComputeUnitLimitInstruction({ units }),
+            // Pin an explicit, NON-ZERO priority fee so wallets like Phantom
+            // don't rewrite the message to inject their own compute-budget
+            // instructions. Phantom treats a missing/zero fee as "unset" and
+            // overrides it on mainnet — that mutation invalidates the already-
+            // attached signatures (→ "Transaction did not pass signature
+            // verification" / preflight #-32002). A real, network-rate fee
+            // (see `microLamports` above) makes the wallet leave the message
+            // alone, so signatures over the original bytes still verify.
+            getSetComputeUnitPriceInstruction({ microLamports }),
+            ...instructions,
+          ],
+          tx,
+        ),
+    );
 
-  // Compress against any supplied lookup tables (v0). No-op when none given.
-  const message = addressLookupTables
-    ? compressTransactionMessageUsingAddressLookupTables(
-        baseMessage,
-        addressLookupTables as never,
+    // Compress against any supplied lookup tables (v0). No-op when none given.
+    return addressLookupTables
+      ? compressTransactionMessageUsingAddressLookupTables(
+          baseMessage,
+          addressLookupTables as never,
+        )
+      : baseMessage;
+  };
+
+  // Right-size the CU limit from a pre-send simulation — but ONLY for
+  // non-modifying (keypair) signers, where it saves fees and nothing will
+  // rewrite the message.
+  //
+  // Message-modifying wallets (Phantom etc.) re-optimize the compute budget
+  // themselves AND attach simulation-based guards (e.g. Lighthouse) keyed to
+  // the budget/state they expect. Handing them a tightly-sized limit interferes
+  // with that and trips the guard at execution time (observed: Lighthouse
+  // `AssertionFailed` 0x1900 on `joinNetwork`, even though the tx itself
+  // simulates clean). The modifying-signer bridge already captures whatever the
+  // wallet rewrites, so sizing the limit for them is both unnecessary and
+  // harmful — leave the generous `computeUnitLimit` and let the wallet tune it.
+  const shouldAutoSize =
+    autoComputeUnitLimit && !isTransactionModifyingSigner(signer);
+  const units = shouldAutoSize
+    ? await estimateComputeUnitLimit(
+        rpc,
+        buildMessage(computeUnitLimit),
+        computeUnitLimit,
       )
-    : baseMessage;
+    : computeUnitLimit;
+
+  const message = buildMessage(units);
 
   const signedTx = await signTransactionMessageWithSigners(message);
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({

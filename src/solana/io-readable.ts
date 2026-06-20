@@ -21,18 +21,14 @@
  * This allows consumers to switch backends transparently.
  */
 import {
-  type Address,
-  type Commitment,
-  type ReadonlyUint8Array,
-  address,
-  fetchEncodedAccount,
-  fetchEncodedAccounts,
-  getAddressDecoder,
-} from '@solana/kit';
-import bs58 from 'bs58';
-
-import {
   ARNS_RECORD_DISCRIMINATOR,
+  DEMAND_FACTOR_DOWN_ADJUSTMENT,
+  DEMAND_FACTOR_MIN,
+  DEMAND_FACTOR_SCALE,
+  DEMAND_FACTOR_UP_ADJUSTMENT,
+  MAX_PERIODS_AT_MIN_DEMAND_FACTOR,
+  MOVING_AVG_PERIOD_COUNT,
+  PERIOD_LENGTH_SECONDS,
   RESERVED_NAME_DISCRIMINATOR,
   RETURNED_NAME_DISCRIMINATOR,
   getArnsConfigDecoder,
@@ -58,6 +54,15 @@ import {
   getGatewayDecoder,
   getWithdrawalDecoder,
 } from '@ar.io/solana-contracts/gar';
+import {
+  type Address,
+  type Commitment,
+  type ReadonlyUint8Array,
+  address,
+  fetchEncodedAccount,
+  fetchEncodedAccounts,
+  getAddressDecoder,
+} from '@solana/kit';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   PrimaryName,
@@ -85,6 +90,7 @@ import type {
   EpochSettings,
   FundFrom,
   FundingPlan,
+  GasEstimate,
   Gateway,
   GatewayDelegateWithAddress,
   GatewayRegistrySettings,
@@ -93,6 +99,7 @@ import type {
   GatewayWithAddress,
   GetArNSRecordsParams,
   GetCostDetailsParams,
+  Intent,
   PaginatedAddressParams,
   PaginationParams,
   PaginationResult,
@@ -141,12 +148,21 @@ import {
   deserializeVault,
   deserializeWithdrawal,
 } from './deserialize.js';
+import {
+  GAR_COMPUTE_UNIT_LIMIT,
+  type GarGasWorkflow,
+  estimateRentLamports,
+  getGarWorkflowGasProfile,
+  getIntentGasProfile,
+} from './gas.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
+  getAclConfigPDA,
   getArioConfigPDA,
   getArnsRecordPDA,
   getArnsRecordPDAFromHash,
   getArnsSettingsPDA,
+  getDelegationPDA,
   getDemandFactorPDA,
   getEpochPDA,
   getEpochSettingsPDA,
@@ -156,11 +172,18 @@ import {
   getObserverLookupPDA,
   getPrimaryNamePDA,
   getPrimaryNameRequestPDA,
+  getRedelegationRecordPDA,
   getReservedNamePDA,
   getReturnedNamePDA,
   getVaultPDA,
+  getWithdrawalCounterPDA,
+  getWithdrawalPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
+import {
+  estimateGasFee,
+  estimateQuotePriorityFeeMicroLamports,
+} from './send.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
 const addressDecoder = getAddressDecoder();
@@ -219,6 +242,14 @@ function toMsTimestamps<T extends Record<string, unknown>>(obj: T): T {
   return out as T;
 }
 
+function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size) as T[]);
+  }
+  return chunks;
+}
+
 /**
  * Drop the SDK-internal extras (`name`, `owner`) and the `processId` re-key
  * that `deserializeArnsRecord` adds, projecting back to the cross-backend
@@ -249,6 +280,15 @@ function arnsRecordToWithName(
  * safe trade for collapsing burst reads (e.g. per-row cost lookups).
  */
 const CONFIG_CACHE_TTL_MS = 30_000;
+
+/**
+ * TTL for the memoized priority-fee (compute-unit price) estimate used by
+ * {@link SolanaARIOReadable.getGasEstimate}. The fee market moves slot to
+ * slot, but a quote tolerates seconds of staleness — and a price table
+ * calling `getCostDetails` per row shouldn't re-query
+ * `getRecentPrioritizationFees` for every name.
+ */
+const PRIORITY_FEE_CACHE_TTL_MS = 10_000;
 
 function paginate<T>(
   items: T[],
@@ -284,6 +324,21 @@ function paginate<T>(
  * const record = await ario.getArNSRecord({ name: 'ardrive' });
  * ```
  */
+
+/**
+ * Fixed leave cooldown (seconds) a `Leaving` gateway must wait before
+ * `finalize_gone` can GC it. Mirrors the on-chain `GATEWAY_LEAVE_PERIOD`
+ * (90 days) in ar-io-solana-contracts (`programs/ario-gar/src/lib.rs`).
+ */
+const GATEWAY_LEAVE_PERIOD_SECONDS = 90 * 86_400; // 7_776_000
+
+/**
+ * Epoch-retention multiplier in the on-chain finalize_gone window
+ * (`leave_timestamp + GATEWAY_LEAVE_PERIOD + 7 * epoch_duration`), mirroring
+ * the GAR-006 epoch retention.
+ */
+const FINALIZE_GONE_EPOCH_RETENTION = 7;
+
 export class SolanaARIOReadable {
   protected readonly rpc: SolanaRpc;
   protected readonly commitment: Commitment;
@@ -310,6 +365,14 @@ export class SolanaARIOReadable {
       expiresAt: number;
     }
   >();
+
+  // Short-TTL memo of the estimated compute-unit price (priority fee), so
+  // burst `getCostDetails` calls share one getRecentPrioritizationFees query.
+  private _priorityFeeCache?: { microLamports: bigint; expiresAt: number };
+
+  // Memo of getMinimumBalanceForRentExemption results keyed by byte size.
+  // Rent parameters are cluster constants in practice, so no TTL.
+  private _rentCache = new Map<number, number>();
 
   constructor(
     config: SolanaReadConfig & {
@@ -360,12 +423,43 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * The Solana cluster's `unix_timestamp` (in SECONDS), read read-only.
+   *
+   * On-chain handlers measure time against the cluster clock
+   * (`Clock::get()?.unix_timestamp`), NOT the client wall clock. For any
+   * pricing math that must agree with what the program will charge (e.g. the
+   * Dutch-auction premium for returned names, whose elapsed time gates the
+   * multiplier), the SDK must compare against this same clock — `Date.now()`
+   * drifts from `unix_timestamp` (the cluster clock famously lags real
+   * wall-clock by seconds-to-minutes), which would make the SDK over-estimate
+   * elapsed time and therefore UNDER-quote the premium.
+   *
+   * Sourced via the latest slot's block time (`getSlot` → `getBlockTime`),
+   * which the runtime derives from the same stake-weighted clock the on-chain
+   * `Clock` sysvar exposes. Read-only: no signer, no transaction.
+   */
+  private async getClusterUnixTimestampSeconds(): Promise<number> {
+    const slot = await withRetry(() =>
+      this.rpc.getSlot({ commitment: this.commitment }).send(),
+    );
+    const blockTime = await withRetry(() => this.rpc.getBlockTime(slot).send());
+    if (blockTime == null) {
+      throw new Error(
+        `Cluster block time unavailable for slot ${slot}; cannot match on-chain Clock::get().unix_timestamp`,
+      );
+    }
+    return Number(blockTime);
+  }
+
+  /**
    * Helper for `getProgramAccounts` with a discriminator memcmp filter.
    *
    * Pass the Codama-generated `<NAME>_DISCRIMINATOR: Uint8Array` constant
-   * directly — kit's RPC requires a base58 string for `memcmp.bytes`, so
-   * we bs58-encode here to keep call sites from doing it inline (and to
-   * keep the IDL-derived bytes as the single source of truth).
+   * directly — we base64-encode here to keep call sites from doing it
+   * inline (and to keep the IDL-derived bytes as the single source of
+   * truth). Uses base64 rather than base58 because some browser
+   * environments / RPC proxies mishandle base58-encoded memcmp filters
+   * when multiple filters are present.
    */
   private async getAccountsByDiscriminator(
     programId: Address,
@@ -376,8 +470,8 @@ export class SolanaARIOReadable {
       {
         memcmp: {
           offset: 0n,
-          bytes: bs58.encode(discriminator as Uint8Array),
-          encoding: 'base58',
+          bytes: Buffer.from(discriminator as Uint8Array).toString('base64'),
+          encoding: 'base64',
         },
       },
       ...extraFilters,
@@ -423,28 +517,30 @@ export class SolanaARIOReadable {
   ): Promise<Map<string, bigint>> {
     const unique = Array.from(new Set(operatorAddresses));
     if (unique.length === 0) return new Map();
-    const pdas = await Promise.all(
-      unique.map(
-        async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
-      ),
-    );
-    const accounts = await withRetry(() =>
-      fetchEncodedAccounts(this.rpc, pdas, {
-        commitment: this.commitment,
-      }),
-    );
     const out = new Map<string, bigint>();
-    for (let i = 0; i < accounts.length; i++) {
-      const acct = accounts[i];
-      if (!acct.exists) continue;
-      try {
-        // Internal variant: surfaces the u128 accumulator that the public
-        // `deserializeGateway` deliberately drops (BigInt is not
-        // JSON-serializable and would leak through getGateway).
-        const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
-        out.set(unique[i], gw.cumulativeRewardPerToken);
-      } catch {
-        // Skip malformed; the caller will fall back to the raw delegation amount.
+    for (const group of chunk(unique, 100)) {
+      const pdas = await Promise.all(
+        group.map(
+          async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
+        ),
+      );
+      const accounts = await withRetry(() =>
+        fetchEncodedAccounts(this.rpc, pdas, {
+          commitment: this.commitment,
+        }),
+      );
+      for (let i = 0; i < accounts.length; i++) {
+        const acct = accounts[i];
+        if (!acct.exists) continue;
+        try {
+          // Internal variant: surfaces the u128 accumulator that the public
+          // `deserializeGateway` deliberately drops (BigInt is not
+          // JSON-serializable and would leak through getGateway).
+          const gw = deserializeGatewayWithAccumulator(Buffer.from(acct.data));
+          out.set(group[i], gw.cumulativeRewardPerToken);
+        } catch {
+          // Skip malformed; the caller will fall back to the raw delegation amount.
+        }
       }
     }
     return out;
@@ -1576,8 +1672,8 @@ export class SolanaARIOReadable {
         {
           memcmp: {
             offset: 8n,
-            bytes: bs58.encode(epochIndexBuf),
-            encoding: 'base58',
+            bytes: Buffer.from(epochIndexBuf).toString('base64'),
+            encoding: 'base64',
           },
         },
       ],
@@ -1636,8 +1732,8 @@ export class SolanaARIOReadable {
         {
           memcmp: {
             offset: 8n,
-            bytes: bs58.encode(epochIndexBuf),
-            encoding: 'base58',
+            bytes: Buffer.from(epochIndexBuf).toString('base64'),
+            encoding: 'base64',
           },
         },
       ],
@@ -1727,11 +1823,316 @@ export class SolanaARIOReadable {
    * Mirrors the Rust pricing functions in ario-arns/src/pricing.rs.
    * Uses BigInt for u128-equivalent overflow-safe arithmetic.
    */
+  /**
+   * Estimate the Solana network cost ("gas") for executing an intent, in
+   * lamports — transaction fees PLUS rent-exempt deposits for the accounts
+   * the flow creates. The intent matters: Buy-Name runs two transactions
+   * (ANT spawn + buy) and deposits rent for the spawned asset/PDAs and the
+   * ArNS record — ~0.015 SOL, vs ~0.00001 SOL of fees. First-time buyers
+   * (no ACL config yet) additionally pay for the ACL bootstrap accounts
+   * (~0.06 SOL); pass `fromAddress` so that check can be made — without it
+   * the estimate conservatively assumes a first-time buyer.
+   *
+   * Fees mirror what the writeable client's `sendAndConfirm` will attach:
+   * the default 400k compute-unit limit every ArNS purchase write uses, and
+   * a compute-unit price quoted from recent on-chain prioritization fees
+   * (memoized for {@link PRIORITY_FEE_CACHE_TTL_MS}). Rent is quoted from
+   * the cluster's `getMinimumBalanceForRentExemption` (memoized per size).
+   *
+   * See {@link GasEstimate} for the breakdown shape and why the fee side is
+   * a conservative upper bound.
+   */
+  async getGasEstimate(
+    opts: {
+      intent?: Intent;
+      name?: string;
+      fromAddress?: WalletAddress;
+      computeUnitLimit?: number;
+    } = {},
+  ): Promise<GasEstimate> {
+    const now = Date.now();
+    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
+      this._priorityFeeCache = {
+        // Quote-grade rate: covers what a browser wallet will attach, not
+        // just the (near-floor) base estimate keypair sends pay.
+        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
+        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
+      };
+    }
+
+    // Conditional accounts: only created when the buyer doesn't already
+    // have them. Unknown buyer → assume they're needed (over-quote rather
+    // than under-gate). Both checks are best-effort: an RPC failure falls
+    // back to the conservative assumption instead of failing the quote.
+    let needsAclBootstrap = false;
+    let needsPrimaryNameAccount = false;
+    if (opts.intent === 'Buy-Name' || opts.intent === 'Buy-Record') {
+      needsAclBootstrap = true;
+      if (opts.fromAddress) {
+        try {
+          const [aclPda] = await getAclConfigPDA(
+            address(opts.fromAddress),
+            this.antProgram,
+          );
+          needsAclBootstrap = !(await this.getCachedAccount(aclPda)).exists;
+        } catch {
+          // keep the conservative default
+        }
+      }
+    } else if (opts.intent === 'Primary-Name-Request') {
+      needsPrimaryNameAccount = true;
+      if (opts.fromAddress) {
+        try {
+          const [pnPda] = await getPrimaryNamePDA(
+            address(opts.fromAddress),
+            this.coreProgram,
+          );
+          needsPrimaryNameAccount = !(await this.getCachedAccount(pnPda))
+            .exists;
+        } catch {
+          // keep the conservative default
+        }
+      }
+    }
+
+    const profile = getIntentGasProfile({
+      intent: opts.intent,
+      name: opts.name,
+      needsAclBootstrap,
+      needsPrimaryNameAccount,
+    });
+
+    const rentKey = profile.accountBytes.reduce((sum, b) => sum + b, 0);
+    let rentLamports = this._rentCache.get(rentKey);
+    if (rentLamports === undefined) {
+      rentLamports = await estimateRentLamports(this.rpc, profile.accountBytes);
+      this._rentCache.set(rentKey, rentLamports);
+    }
+
+    return estimateGasFee(this.rpc, {
+      computeUnitLimit: opts.computeUnitLimit,
+      signatureCount: profile.signatureCount,
+      transactionCount: profile.transactionCount,
+      rentLamports,
+      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+    });
+  }
+
+  /**
+   * Estimate the Solana network cost ("gas") of a GAR (gateway registry)
+   * workflow, in lamports — fees on the 1M compute-unit limit every GAR
+   * write pins, plus rent for the accounts the workflow creates, plus the
+   * deposit refunded when it closes a withdrawal vault:
+   *
+   * - `join-network`: gateway + observer-lookup accounts and the registry
+   *   growing by one entry — ~0.009 SOL.
+   * - `leave-network`: up to two withdrawal vaults (~0.0035 SOL,
+   *   conservative — the excess vault is only consumed when post-stake
+   *   excess exists). The gateway account's own deposit returns at prune
+   *   time, far later, and is not quoted.
+   * - `delegate-stake` / `redelegate-stake`: a Delegation PDA (~0.0016 SOL)
+   *   when the delegator has none with that gateway yet (pass
+   *   `fromAddress` + `gatewayAddress` to check live; unknown → assumed).
+   * - `decrease-*-stake`: a withdrawal vault (~0.0017 SOL, refunded when
+   *   later claimed/cancelled) plus the one-time withdrawal counter on the
+   *   actor's first-ever withdrawal. With `instant: true` the follow-up
+   *   transaction closes the vault again — reported as reclaimed.
+   * - `claim-withdrawal` / `cancel-withdrawal` / `instant-withdrawal`:
+   *   refunds the vault's live deposit (pass `fromAddress` + `vaultId` for
+   *   the exact number).
+   * - `update-gateway-settings` / `increase-operator-stake`: fees only.
+   */
+  async getGarGasEstimate(opts: {
+    workflow: GarGasWorkflow;
+    /** The acting wallet (operator or delegator). Enables live checks. */
+    fromAddress?: WalletAddress;
+    /** Target gateway for delegate/redelegate-stake delegation checks. */
+    gatewayAddress?: WalletAddress;
+    /** Vault id for withdrawal-closing workflows (exact reclaim quote). */
+    vaultId?: string | number | bigint;
+    /** decrease-delegate-stake with instant payout (second transaction). */
+    instant?: boolean;
+  }): Promise<GasEstimate> {
+    const now = Date.now();
+    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
+      this._priorityFeeCache = {
+        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
+        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
+      };
+    }
+
+    // Conditional accounts — checked live when the actor is known,
+    // conservative (assume creation) otherwise. All best-effort.
+    let needsDelegation = true;
+    let needsWithdrawalCounter = true;
+    let needsRedelegationRecord = true;
+    let rentReclaimedLamports = 0;
+
+    const isDelegationWorkflow =
+      opts.workflow === 'delegate-stake' ||
+      opts.workflow === 'redelegate-stake';
+    if (isDelegationWorkflow && opts.fromAddress && opts.gatewayAddress) {
+      try {
+        const [delegationPda] = await getDelegationPDA(
+          address(opts.gatewayAddress),
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsDelegation = !(await this.getCachedAccount(delegationPda)).exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    const isWithdrawalCreatingWorkflow =
+      opts.workflow === 'leave-network' ||
+      opts.workflow === 'decrease-operator-stake' ||
+      opts.workflow === 'decrease-delegate-stake';
+    if (isWithdrawalCreatingWorkflow && opts.fromAddress) {
+      try {
+        const [counterPda] = await getWithdrawalCounterPDA(
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsWithdrawalCounter = !(await this.getCachedAccount(counterPda))
+          .exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    if (opts.workflow === 'redelegate-stake' && opts.fromAddress) {
+      try {
+        const [recordPda] = await getRedelegationRecordPDA(
+          address(opts.fromAddress),
+          this.garProgram,
+        );
+        needsRedelegationRecord = !(await this.getCachedAccount(recordPda))
+          .exists;
+      } catch {
+        // keep the conservative default
+      }
+    }
+
+    // Withdrawal-closing workflows refund the vault's actual deposit —
+    // read it live when the caller identifies the vault.
+    const isWithdrawalClosingWorkflow =
+      opts.workflow === 'claim-withdrawal' ||
+      opts.workflow === 'cancel-withdrawal' ||
+      opts.workflow === 'instant-withdrawal';
+    if (
+      isWithdrawalClosingWorkflow &&
+      opts.fromAddress &&
+      opts.vaultId !== undefined
+    ) {
+      try {
+        const [withdrawalPda] = await getWithdrawalPDA(
+          address(opts.fromAddress),
+          BigInt(opts.vaultId),
+          this.garProgram,
+        );
+        const account = await this.getAccount(withdrawalPda);
+        if (account.exists) {
+          rentReclaimedLamports = Number(account.lamports);
+        }
+      } catch {
+        // quote stays fees-only; the refund still happens on chain
+      }
+    }
+
+    const profile = getGarWorkflowGasProfile({
+      workflow: opts.workflow,
+      needsDelegation,
+      needsWithdrawalCounter,
+      needsRedelegationRecord,
+      instant: opts.instant,
+    });
+
+    const reallocBytes = profile.reallocBytes ?? 0;
+    const rentKey =
+      profile.accountBytes.reduce((sum, b) => sum + b, 0) +
+      reallocBytes +
+      profile.accountBytes.length;
+    let rentLamports = this._rentCache.get(rentKey);
+    if (rentLamports === undefined) {
+      rentLamports = await estimateRentLamports(
+        this.rpc,
+        profile.accountBytes,
+        reallocBytes,
+      );
+      this._rentCache.set(rentKey, rentLamports);
+    }
+
+    // Instant decrease: the second transaction immediately closes the
+    // vault created by the first — its deposit round-trips back.
+    if (
+      opts.instant &&
+      (opts.workflow === 'decrease-delegate-stake' ||
+        opts.workflow === 'decrease-operator-stake')
+    ) {
+      rentReclaimedLamports = rentLamports;
+    }
+
+    return estimateGasFee(this.rpc, {
+      computeUnitLimit: GAR_COMPUTE_UNIT_LIMIT,
+      signatureCount: profile.signatureCount,
+      transactionCount: profile.transactionCount,
+      rentLamports,
+      rentReclaimedLamports,
+      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+    });
+  }
+
   async getTokenCost(params: TokenCostParams): Promise<number> {
     const [dfPda] = await getDemandFactorPDA(this.arnsProgram);
     const dfAccount = await this.getCachedAccount(dfPda);
     if (!dfAccount.exists) throw new Error('DemandFactor account not found');
     const df = deserializeDemandFactor(Buffer.from(dfAccount.data));
+
+    // Match the on-chain clock: the program measures time against the Solana
+    // cluster's `Clock::get().unix_timestamp`, not the client wall clock.
+    // Fetch it ONCE here and thread it through both the demand-factor
+    // staleness check and the returned-name premium math below. (Seconds.)
+    const clusterNowSeconds = await this.getClusterUnixTimestampSeconds();
+
+    // Demand-factor staleness warning.
+    //
+    // The handlers that actually charge roll the demand factor INLINE to the
+    // current period before pricing, whereas this read uses the STORED factor —
+    // which is stale whenever a demand period has rolled but no crank (or
+    // buy/extend) has landed to roll it. When that happens the chain prices
+    // against the rolled factor (a +5%/-1.5% step), so this quote can be off by
+    // one demand adjustment.
+    //
+    // We deliberately do NOT replicate the roll client-side: the authoritative
+    // roll math (multi-period catch-up, consecutive-min fee-halving) lives in
+    // the Rust program and depends on inputs a read-only client can't reproduce
+    // faithfully, so guessing would risk replacing a known small error with a
+    // wrong-direction one. The byte-exact path is the writeable
+    // `getCostDetails`, which simulates the on-chain instruction (rolling the
+    // factor inline). Here we just detect the rollover against the cluster
+    // clock and surface it as a debug warning.
+    const PERIOD_LENGTH_SECONDS = 86_400; // mirrors PERIOD_LENGTH_SECONDS in ario-arns
+    const elapsedSincePeriodZero =
+      clusterNowSeconds - df.periodZeroStartTimestamp;
+    const periodForNow =
+      elapsedSincePeriodZero < 0
+        ? 1
+        : Math.floor(elapsedSincePeriodZero / PERIOD_LENGTH_SECONDS) + 1;
+    if (periodForNow > df.currentPeriod) {
+      this.logger.debug(
+        '[pricing] demand factor period has rolled but stored factor is stale; ' +
+          'quote may be off by one demand adjustment until a crank rolls it. ' +
+          'Use the writeable simulated getCostDetails for a byte-exact quote.',
+        {
+          name: params.name,
+          intent: params.intent,
+          storedPeriod: df.currentPeriod,
+          clusterPeriod: periodForNow,
+          storedDemandFactor: df.currentDemandFactor,
+        },
+      );
+    }
 
     const name = params.name.toLowerCase();
     const nameLen = Math.min(Math.max(name.length, 1), 51);
@@ -1764,14 +2165,28 @@ export class SolanaARIOReadable {
           if (returned) {
             // returned.startTimestamp is in ms (public API convention),
             // so the rest of this comparison is in ms too.
-            const now = Date.now();
+            //
+            // CRITICAL: "now" must be the Solana cluster clock, NOT
+            // `Date.now()`. The on-chain returned-name handler measures
+            // premium-elapsed against `Clock::get().unix_timestamp`; because
+            // that clock lags real wall-clock, using `Date.now()` here
+            // over-estimates elapsed time, under-estimates the remaining
+            // premium, and quotes LOW versus what the chain charges. Convert
+            // the cluster seconds to ms to match `startTimestamp`'s units.
+            const now = clusterNowSeconds * 1000;
             const elapsed = now - returned.startTimestamp;
             const duration = 14 * 86_400_000;
             if (elapsed < duration) {
-              const remaining = BigInt(duration - elapsed);
+              // Returned Name Premium (RNP) decays linearly from 50x to 1x
+              // over the window, matching the whitepaper (RNP = 50 - 49/14*t)
+              // and the on-chain ario-arns pricing
+              // (calculate_returned_name_premium):
+              //   multiplier = (50*dur - 49*elapsed) * scale / dur
+              // Floors at 1x at window close (NOT 0x) — at which point the
+              // name reverts to standard pricing.
               const dur = BigInt(duration);
-              const pctRemaining = (remaining * scale) / dur;
-              const multiplier = 50n * pctRemaining;
+              const el = BigInt(elapsed);
+              const multiplier = ((50n * dur - 49n * el) * scale) / dur;
               cost = (cost * multiplier) / scale;
             }
           }
@@ -1823,6 +2238,14 @@ export class SolanaARIOReadable {
   async getCostDetails(
     params: GetCostDetailsParams,
   ): Promise<CostDetailsResult> {
+    // Network-cost quote runs concurrently with the pricing reads. It never
+    // rejects (the fee and rent queries fall back internally), so kicking it
+    // off before the awaits below can't leave an unhandled rejection behind.
+    const gasEstimatePromise = this.getGasEstimate({
+      intent: params.intent,
+      name: params.name,
+      fromAddress: params.fromAddress,
+    });
     const tokenCost = await this.getTokenCost(params);
 
     const discounts: Array<{
@@ -1848,6 +2271,10 @@ export class SolanaARIOReadable {
             // Match on-chain eligibility from ario-arns pricing.rs
             // `try_apply_gateway_discount`:
             // 1. Tenure: gateway running >= 180 days (15_552_000 seconds)
+            // (This is a coarse 180-day eligibility gate, not the
+            // premium/auction math fixed above; sub-minute cluster-clock drift
+            // is immaterial at this granularity, so the client wall clock is
+            // fine here and we avoid an extra RPC round trip.)
             const GATEWAY_DISCOUNT_MIN_TENURE_S = 15_552_000;
             const nowSeconds = Math.floor(Date.now() / 1000);
             const timeRunning = nowSeconds - gw.startTimestamp;
@@ -1901,6 +2328,7 @@ export class SolanaARIOReadable {
     return {
       tokenCost: finalCost,
       discounts,
+      gasEstimate: await gasEstimatePromise,
       ...(fundingPlan ? { fundingPlan } : {}),
     };
   }
@@ -2054,15 +2482,30 @@ export class SolanaARIOReadable {
     }
     const df = deserializeDemandFactor(Buffer.from(account.data));
 
+    // Derive every static setting from the on-chain program constants
+    // (`@ar.io/solana-contracts/arns`, lifted from the Rust source-of-truth)
+    // rather than hand-copied literals, which had drifted: the down-adjustment
+    // was hardcoded `25` (2.5%) while the program uses
+    // DEMAND_FACTOR_DOWN_ADJUSTMENT = 985_000 → 0.985× → 1.5% (`15`), and
+    // `maxPeriodsAtMinDemandFactor` returned the live consecutive-period
+    // counter instead of the MAX_PERIODS_AT_MIN_DEMAND_FACTOR threshold.
+    //
+    // The `*AdjustmentRate` fields are the per-period step magnitude scaled by
+    // 1000 (up: 1.05× → 50; down: 0.985× → 15), matching the existing units.
+    const scale = DEMAND_FACTOR_SCALE;
     return {
       periodZeroStartTimestamp: df.periodZeroStartTimestamp,
-      movingAvgPeriodCount: 7,
-      periodLengthMs: 86_400 * 1000,
+      movingAvgPeriodCount: MOVING_AVG_PERIOD_COUNT,
+      periodLengthMs: Number(PERIOD_LENGTH_SECONDS) * 1000,
       demandFactorBaseValue: 1,
-      demandFactorMin: 0.5,
-      demandFactorUpAdjustmentRate: 50,
-      demandFactorDownAdjustmentRate: 25,
-      maxPeriodsAtMinDemandFactor: df.consecutivePeriodsWithMinDemandFactor,
+      demandFactorMin: Number(DEMAND_FACTOR_MIN) / Number(scale),
+      demandFactorUpAdjustmentRate: Number(
+        ((DEMAND_FACTOR_UP_ADJUSTMENT - scale) * 1000n) / scale,
+      ),
+      demandFactorDownAdjustmentRate: Number(
+        ((scale - DEMAND_FACTOR_DOWN_ADJUSTMENT) * 1000n) / scale,
+      ),
+      maxPeriodsAtMinDemandFactor: MAX_PERIODS_AT_MIN_DEMAND_FACTOR,
       criteria: 'revenue',
     };
   }
@@ -2590,6 +3033,79 @@ export class SolanaARIOReadable {
     Array<{ pubkey: Address; operator: Address }>
   > {
     return this.getGoneGateways();
+  }
+
+  /**
+   * Enumerate `Leaving` Gateway PDAs that are ACTUALLY eligible for
+   * `finalizeGone` at `now`. The on-chain GC window
+   * (`programs/ario-gar/src/instructions/gateway.rs::finalize_gone`) is:
+   *
+   * ```
+   * eligibleAt = leaveTimestamp
+   *            + GATEWAY_LEAVE_PERIOD                 // 90 days, fixed
+   *            + 7 * max(leaveEpochDuration, epoch_settings.epoch_duration)
+   * ```
+   *
+   * The 7-epoch term mirrors GAR-006 epoch retention; the `max` is the
+   * program's defense against an admin shortening `epoch_duration` after a
+   * gateway left (`leaveEpochDuration` is the snapshot taken at leave time).
+   * A gateway is finalizable only once `now >= eligibleAt` AND it holds no
+   * delegated stake (`totalDelegatedStake === 0`) — `finalize_gone` reverts
+   * `LeaveWindowNotExpired` before the window and won't GC a gateway with live
+   * delegations.
+   *
+   * {@link getLeavingGateways} over-returns *every* `Leaving` gateway; a cranker
+   * that calls `finalizeGone` on those burns a reverting tx (and a logged
+   * simulation failure) on every not-yet-eligible gateway each tick. Prefer
+   * this method in cranker loops so only truly-finalizable gateways are tried.
+   *
+   * @param now Unix seconds (e.g. `Math.floor(Date.now() / 1000)`).
+   */
+  async getFinalizableGoneGateways(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; operator: Address }>> {
+    // Current epoch_duration (seconds) for the on-chain `max(snapshot, current)`.
+    // If the settings read fails, fall back to 0 so only the per-gateway
+    // snapshot is used — the dominant GATEWAY_LEAVE_PERIOD term still applies.
+    let currentEpochDuration = 0;
+    try {
+      // getEpochSettings() exposes the duration as `durationMs`; the on-chain
+      // window math is in seconds (matching leaveTimestamp/leaveEpochDuration).
+      currentEpochDuration =
+        Number((await this.getEpochSettings()).durationMs) / 1000;
+    } catch {
+      // settings unavailable — snapshot-only window
+    }
+
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Array<{ pubkey: Address; operator: Address }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const g = decoder.decode(data);
+        if (g.status !== GatewayStatus.Leaving) continue;
+        if (g.leaveTimestamp.__option !== 'Some') continue;
+        // Live delegations must be cranked out first (separate GC path), else
+        // finalize_gone reverts.
+        if (g.totalDelegatedStake !== 0n) continue;
+        const epochDuration = Math.max(
+          Number(g.leaveEpochDuration),
+          currentEpochDuration,
+        );
+        const eligibleAt =
+          Number(g.leaveTimestamp.value) +
+          GATEWAY_LEAVE_PERIOD_SECONDS +
+          FINALIZE_GONE_EPOCH_RETENTION * epochDuration;
+        if (eligibleAt > now) continue;
+        out.push({ pubkey, operator: g.operator });
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
   }
 
   /**

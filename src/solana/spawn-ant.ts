@@ -35,11 +35,15 @@ import {
   type Commitment,
   type Instruction,
   type KeyPairSigner,
+  type TransactionModifyingSigner,
   addSignersToTransactionMessage,
   appendTransactionMessageInstructions,
+  compileTransaction,
   createTransactionMessage,
   generateKeyPairSigner,
   getSignatureFromTransaction,
+  isTransactionModifyingSigner,
+  partiallySignTransaction,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -59,6 +63,11 @@ import {
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
 import { getAntRecordPDA } from './pda.js';
+import {
+  estimateComputeUnitLimit,
+  estimatePriorityFeeMicroLamports,
+  estimateQuotePriorityFeeMicroLamports,
+} from './send.js';
 import type {
   SolanaRpc,
   SolanaRpcSubscriptions,
@@ -347,28 +356,52 @@ export async function spawnSolanaANT(
   // them up from the account metadata roles: accounts marked as SIGNER roles
   // must have a matching `TransactionSigner` attached. We do that by placing
   // the mint signer on the message alongside the fee payer signer.
-  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+  // Signer-aware fee (see sendAndConfirm): wallet signers get the market
+  // rate their own estimator would pick; keypairs keep the cheap base rate.
+  const [{ value: latestBlockhash }, microLamports] = await Promise.all([
+    rpc.getLatestBlockhash().send(),
+    isTransactionModifyingSigner(signer)
+      ? estimateQuotePriorityFeeMicroLamports(rpc)
+      : estimatePriorityFeeMicroLamports(rpc),
+  ]);
 
-  const message = pipe(
-    createTransactionMessage({ version: 0 }),
-    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-    (tx) =>
-      appendTransactionMessageInstructions(
-        [
-          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
-          // Pin the priority fee (at 0) so wallets like Phantom don't
-          // silently append their own compute-budget instructions and
-          // invalidate the paired mint keypair signer's signature. See
-          // `sendAndConfirm` in `./send.js` for the full rationale.
-          getSetComputeUnitPriceInstruction({ microLamports: 0n }),
-          createIx,
-          initIx,
-          ...aclIxs,
-        ],
-        tx,
-      ),
-  );
+  const buildMessage = (units: number) =>
+    pipe(
+      createTransactionMessage({ version: 0 }),
+      (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        appendTransactionMessageInstructions(
+          [
+            getSetComputeUnitLimitInstruction({ units }),
+            // Pin a non-zero priority fee (see `estimatePriorityFeeMicroLamports`).
+            // A real fee both lands the tx and, per Phantom's docs, stops the
+            // wallet from injecting its own fee. The paired mint-keypair signing
+            // is handled below.
+            getSetComputeUnitPriceInstruction({ microLamports }),
+            createIx,
+            initIx,
+            ...aclIxs,
+          ],
+          tx,
+        ),
+    );
+
+  // Right-size the CU limit from a pre-send simulation — but ONLY for
+  // non-modifying (keypair) signers. Message-modifying wallets (Phantom etc.)
+  // re-optimize the compute budget themselves and attach simulation-based
+  // guards (Lighthouse) keyed to the budget they expect; a tightly-sized limit
+  // interferes with that and trips the guard. The wallet rewrite is captured by
+  // the modifying-signer flow below, so `computeUnitLimit` (the ceiling) is left
+  // generous for them.
+  const units = isTransactionModifyingSigner(signer)
+    ? computeUnitLimit
+    : await estimateComputeUnitLimit(
+        rpc,
+        buildMessage(computeUnitLimit),
+        computeUnitLimit,
+      );
+  const message = buildMessage(units);
 
   // Attach the mint signer so kit can satisfy the WRITABLE_SIGNER role on the
   // mint account. `addSignersToTransactionMessage` walks the message's account
@@ -376,7 +409,30 @@ export async function spawnSolanaANT(
   // `signTransactionMessageWithSigners` then looks up to produce signatures.
   const withMintSigner = addSignersToTransactionMessage([mintSigner], message);
 
-  const signedTx = await signTransactionMessageWithSigners(withMintSigner);
+  // Multi-signer spawn (fee-payer wallet + fresh mint keypair). Browser wallets
+  // like Phantom REWRITE transactions that carry no signature yet (injecting
+  // priority-fee / Lighthouse-guard instructions) — which invalidates the mint
+  // keypair's signature → "address is not a signer" (#5663015). Per Phantom's
+  // docs it leaves a transaction alone once it already has a signature. So when
+  // the wallet is a modifying signer, sign with the mint keypair FIRST, then let
+  // the wallet sign: it sees the existing mint signature and won't rewrite,
+  // keeping both signatures valid. kit's own pipeline can't express this order
+  // (it always runs modifying signers before partial ones), so we orchestrate
+  // it manually here. Non-modifying signers (keypairs in node/tests) carry no
+  // rewrite risk and use kit's normal pipeline.
+  let signedTx;
+  if (isTransactionModifyingSigner(signer)) {
+    const compiled = compileTransaction(withMintSigner);
+    const mintPreSigned = await partiallySignTransaction(
+      [mintSigner.keyPair],
+      compiled,
+    );
+    [signedTx] = await (
+      signer as unknown as TransactionModifyingSigner
+    ).modifyAndSignTransactions([mintPreSigned]);
+  } else {
+    signedTx = await signTransactionMessageWithSigners(withMintSigner);
+  }
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({
     rpc,
     rpcSubscriptions,
