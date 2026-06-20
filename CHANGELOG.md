@@ -74,6 +74,13 @@
 * **signing:** update signing to include compute budget and limit, update blockheight logic ([189dc44](https://github.com/ar-io/ar-io-sdk/commit/189dc4447917cd868b0e4d757615b7569acc9ac2))
 * **undername increase:** fix undername increase action ([83aa1de](https://github.com/ar-io/ar-io-sdk/commit/83aa1deb7944fcf73a8253cd9f31c5c98cf63438))
 
+## [4.0.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.1...v4.0.2) (2026-06-06)
+
+
+### Bug Fixes
+
+* **signing:** update signing to include compute budget and limit, update blockheight logic ([189dc44](https://github.com/ar-io/ar-io-sdk/commit/189dc4447917cd868b0e4d757615b7569acc9ac2))
+
 ## [4.0.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0...v4.0.1) (2026-06-05)
 
 

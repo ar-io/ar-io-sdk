@@ -1,6 +1,6 @@
 {
   "name": "@ar.io/sdk",
-  "version": "4.0.2-alpha.10",
+  "version": "4.0.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ar-io/ar-io-sdk.git"
@@ -114,7 +114,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@ar.io/solana-contracts": "1.0.1",
+    "@ar.io/solana-contracts": "1.0.0",
     "@noble/hashes": "^1.8.0",
     "@solana-program/address-lookup-table": "^0.11.0",
     "@solana-program/compute-budget": "^0.15.0",
