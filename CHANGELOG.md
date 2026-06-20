@@ -1,3 +1,24 @@
+## [4.0.3](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2...v4.0.3) (2026-06-20)
+
+
+### Bug Fixes
+
+* **arns:** floor returned-name premium at 1x to match on-chain pricing ([9ddfd9e](https://github.com/ar-io/ar-io-sdk/commit/9ddfd9eac36e3a2d14aa9152450dbfbfbf7dd955))
+* chunk delegates getMultipleAccounts call at 100 ([bfeaa60](https://github.com/ar-io/ar-io-sdk/commit/bfeaa6042507491dbd2b2714272d1bd25f1ce3fb))
+* **cli:** normalize argv[1] path separators for Windows compatibility ([c1d100b](https://github.com/ar-io/ar-io-sdk/commit/c1d100bad47537ceaa0a6c70a01e8fff52dbbe63))
+* **gas est:** add gas estimation utils ([12f2bcf](https://github.com/ar-io/ar-io-sdk/commit/12f2bcf8ba680757712d6f1c52cf6572d2e1b4ff))
+* **gas:** update gas estimate logic ([e667568](https://github.com/ar-io/ar-io-sdk/commit/e667568d712c9700e8f07356cdcb3c7aaf0ea21b))
+* **gas:** update gas utils comments ([af4889b](https://github.com/ar-io/ar-io-sdk/commit/af4889bd1d29fbfa6f462a349b10319a2f856edf))
+* **primary names:** fix primary names funding plan for permabought names ([0aac17c](https://github.com/ar-io/ar-io-sdk/commit/0aac17c7626f8487417e8bc4631c5954f89c558b))
+* **send tx:** update send tx ([693cb93](https://github.com/ar-io/ar-io-sdk/commit/693cb9391c9a87b3d6b4025e8a943b0d2659c226))
+* **solana:** filter finalize_gone candidates by leave-window eligibility ([900319c](https://github.com/ar-io/ar-io-sdk/commit/900319c43fb5a090e00d43a2f74309f3d18c047e))
+* **solana:** finalize_gone eligibility must use the full leave window ([49c70d2](https://github.com/ar-io/ar-io-sdk/commit/49c70d202f1bcdbe45448d26eb55028ba6471fdc)), closes [#685](https://github.com/ar-io/ar-io-sdk/issues/685)
+* **solana:** price returned-name premium against the cluster clock ([8ffec26](https://github.com/ar-io/ar-io-sdk/commit/8ffec264a77f0a54f0f83d484fe0431bb0094827))
+* **solana:** source demand-factor settings from program constants ([f5bccb1](https://github.com/ar-io/ar-io-sdk/commit/f5bccb123da246fa2aabccb5d632965ca5bb56f1)), closes [ar-io/ar-io-solana-contracts#export-arns-constants](https://github.com/ar-io/ar-io-solana-contracts/issues/export-arns-constants)
+* **solana:** use base64 encoding for memcmp filters in getProgramAccounts ([26de129](https://github.com/ar-io/ar-io-sdk/commit/26de12916ffaaa3ad4ee8917b9db568fe2b6b95e))
+* **solana:** use epoch duration in seconds for finalize_gone window ([de99061](https://github.com/ar-io/ar-io-sdk/commit/de990613af7806a1b7a0c96a0d0e453eeb09f1aa))
+* **undername increase:** fix undername increase action ([83aa1de](https://github.com/ar-io/ar-io-sdk/commit/83aa1deb7944fcf73a8253cd9f31c5c98cf63438))
+
 ## [4.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2...v4.0.3-alpha.1) (2026-06-20)
 
 
