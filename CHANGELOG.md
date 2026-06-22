@@ -1,3 +1,10 @@
+# [4.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.3-alpha.1...v4.1.0-alpha.1) (2026-06-22)
+
+
+### Features
+
+* **acl:** add sync acl api ([892811b](https://github.com/ar-io/ar-io-sdk/commit/892811bab1f2f0659fb6b6bf9702bc1ef658d31e))
+
 ## [4.0.3-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2...v4.0.3-alpha.1) (2026-06-20)
 
 
