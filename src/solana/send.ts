@@ -38,7 +38,10 @@ import {
   type Address,
   type Commitment,
   type Instruction,
+  type KeyPairSigner,
+  type TransactionModifyingSigner,
   type TransactionSigner,
+  addSignersToTransactionMessage,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -48,6 +51,7 @@ import {
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   isTransactionModifyingSigner,
+  partiallySignTransaction,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -339,6 +343,7 @@ export async function sendAndConfirm({
   autoComputeUnitLimit = true,
   priorityFeeMicroLamports = 'auto',
   addressLookupTables,
+  extraSigners = [],
 }: {
   rpc: SolanaRpc;
   rpcSubscriptions: SolanaRpcSubscriptions;
@@ -381,6 +386,16 @@ export async function sendAndConfirm({
    * on-chain and active. See {@link sendWithEphemeralLookupTable}.
    */
   addressLookupTables?: Record<string, Address[]>;
+  /**
+   * Extra keypair signers (beyond the fee-payer `signer`) whose
+   * WRITABLE/READONLY_SIGNER roles the message must satisfy — e.g. a freshly
+   * generated ANT mint when bundling a spawn into the transaction. They are
+   * attached via `addSignersToTransactionMessage`, and for message-modifying
+   * wallets they are PRE-SIGNED before the wallet signs so the wallet doesn't
+   * rewrite the message and invalidate their signatures (see the ordering note
+   * below, mirrored from `spawnSolanaANT`).
+   */
+  extraSigners?: KeyPairSigner[];
 }): Promise<string> {
   // 'auto' pricing is signer-aware: keypair signers pay the cheap base rate
   // (their txs land fine and bot flows send many), while message-modifying
@@ -460,7 +475,36 @@ export async function sendAndConfirm({
 
   const message = buildMessage(units);
 
-  const signedTx = await signTransactionMessageWithSigners(message);
+  // Attach any extra keypair signers (e.g. a freshly generated ANT mint) so kit
+  // can satisfy their SIGNER roles. `addSignersToTransactionMessage` walks the
+  // message's account metas and registers each matching signer by address.
+  const messageWithSigners =
+    extraSigners.length > 0
+      ? addSignersToTransactionMessage(extraSigners, message)
+      : message;
+
+  // Signing order matters when both an extra keypair AND a message-modifying
+  // wallet (Phantom) are involved: the wallet REWRITES an unsigned tx (injecting
+  // priority-fee / Lighthouse-guard ixs), which invalidates any keypair
+  // signature added after → "address is not a signer". Per Phantom's docs it
+  // leaves a tx alone once it already carries a signature, so we pre-sign with
+  // the extra keypairs FIRST, then hand the partially-signed tx to the wallet.
+  // kit's own pipeline can't express this order (it always runs modifying
+  // signers before partial ones), so we orchestrate it manually here. Keypair
+  // fee-payers (node/tests) carry no rewrite risk and use kit's normal pipeline.
+  let signedTx;
+  if (extraSigners.length > 0 && isTransactionModifyingSigner(signer)) {
+    const compiled = compileTransaction(messageWithSigners);
+    const preSigned = await partiallySignTransaction(
+      extraSigners.map((s) => s.keyPair),
+      compiled,
+    );
+    [signedTx] = await (
+      signer as unknown as TransactionModifyingSigner
+    ).modifyAndSignTransactions([preSigned]);
+  } else {
+    signedTx = await signTransactionMessageWithSigners(messageWithSigners);
+  }
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({
     rpc,
     rpcSubscriptions,
