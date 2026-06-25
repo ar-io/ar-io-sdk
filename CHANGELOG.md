@@ -1,3 +1,10 @@
+# [4.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.1...v4.1.0-alpha.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* **solana:** getVaults returns numeric vaultId so release/revoke work ([eae22cc](https://github.com/ar-io/ar-io-sdk/commit/eae22cc98297a65237068aec334af3bdfb402238))
+
 # [4.1.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.3-alpha.1...v4.1.0-alpha.1) (2026-06-22)
 
 
