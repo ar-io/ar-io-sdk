@@ -869,7 +869,11 @@ export class SolanaARIOReadable {
         const vault = deserializeVault(data);
         items.push({
           address: vault.owner,
-          vaultId: pubkey as string,
+          // PDA address — stable globally-unique handle for list keys /
+          // explorer links. NOT accepted by releaseVault/revokeVault.
+          cursorId: pubkey as string,
+          // Numeric per-owner vault id — pass THIS to releaseVault/revokeVault.
+          vaultId: vault.vaultId,
           balance: vault.balance,
           startTimestamp: secToMs(vault.startTimestamp),
           endTimestamp: secToMs(vault.endTimestamp),

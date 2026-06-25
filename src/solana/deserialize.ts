@@ -498,12 +498,18 @@ export function deserializeArnsRecord(
 // Vault deserialization
 // =========================================
 
-export function deserializeVault(data: Buffer): VaultData & { owner: string } {
+export function deserializeVault(
+  data: Buffer,
+): VaultData & { owner: string; vaultId: string } {
   const d = getVaultDecoder().decode(new Uint8Array(data));
   const controller = optionToValue(d.controller as any) as Address | undefined;
 
   return {
     owner: d.owner as string,
+    // Numeric per-owner vault id (u64 as string) — this is what
+    // releaseVault/revokeVault expect, NOT the PDA address. Mirrors
+    // deserializeWithdrawal's `vaultId`.
+    vaultId: String(Number(d.vaultId)),
     balance: Number(d.amount),
     startTimestamp: Number(d.startTimestamp),
     endTimestamp: Number(d.endTimestamp),
