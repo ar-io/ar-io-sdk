@@ -2967,7 +2967,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.coreProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    // The on-chain handler transfers into ownerTokenAccount but does NOT
+    // init it (it's a plain `mut` TokenAccount constraint). A holder who only
+    // ever held vaults (e.g. migrated investor/team allocations) may have no
+    // ARIO ATA yet — bundle an idempotent create so the release can't fail on
+    // a missing destination. Same pattern as createVault/vaultedTransfer.
+    const createOwnerAtaIx = buildCreateAtaIdempotentIx(
+      this.signer.address,
+      ownerATA,
+      this.signer.address,
+      mint,
+    );
+
+    const sig = await this.sendTransaction([createOwnerAtaIx, ix]);
     return { id: sig };
   }
 
