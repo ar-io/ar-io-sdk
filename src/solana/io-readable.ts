@@ -64,6 +64,7 @@ import {
   getAddressDecoder,
 } from '@solana/kit';
 import { type ILogger, Logger } from '../common/logger.js';
+import type { ANTRecord } from '../types/ant.js';
 import type {
   PrimaryName,
   PrimaryNameRequest,
@@ -76,6 +77,7 @@ import type {
   AllGatewayVaults,
   ArNSNameData,
   ArNSNameDataWithName,
+  ArNSNameResolutionData,
   ArNSReservedNameData,
   ArNSReservedNameDataWithName,
   BalanceWithAddress,
@@ -112,6 +114,7 @@ import type {
   WalletVault,
   WeightedObserver,
 } from '../types/io.js';
+import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import {
@@ -3310,19 +3313,59 @@ export class SolanaARIOReadable {
   // Name resolution (ArNSNameResolver)
   // =========================================
 
-  async resolveArNSName({ name }: { name: string }) {
+  /**
+   * Fetch the undername record from the ANT backing `processId`.
+   *
+   * Uses {@link SolanaANTReadable.fromAsset} — the canonical resolution-path
+   * factory — so the correct ANT program id is read from the asset's
+   * `ANT Program` Attributes-plugin entry (ADR-016 / BD-100) rather than
+   * assuming the canonical program. Returns `undefined` when the ANT has no
+   * record for the undername. Split out so the resolution mapping in
+   * {@link resolveArNSName} stays unit-testable without an RPC.
+   */
+  protected async resolveAntRecord(
+    processId: string,
+    undername: string,
+  ): Promise<ANTRecord | undefined> {
+    const ant = await SolanaANTReadable.fromAsset({
+      rpc: this.rpc,
+      processId,
+      commitment: this.commitment,
+      logger: this.logger,
+    });
+    return ant.getRecord({ undername });
+  }
+
+  async resolveArNSName({
+    name,
+  }: {
+    name: string;
+  }): Promise<ArNSNameResolutionData> {
     const parts = name.split('_');
+    // The base name is the final `_`-delimited segment; everything before it is
+    // the undername. A bare name (no underscore) resolves the apex record `@`.
     const baseName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    const undername = parts.length > 1 ? parts.slice(0, -1).join('_') : '@';
 
     const record = await this.getArNSRecord({ name: baseName });
 
-    // TODO: resolve undername via ANT program when undername !== '@'
+    // Resolve the undername record on the ANT to obtain the target tx id, TTL,
+    // and priority. The ArNS record only points at the ANT (`processId`); the
+    // data the name resolves to lives one hop further, on the ANT itself.
+    const antRecord = await this.resolveAntRecord(record.processId, undername);
+    if (antRecord === undefined) {
+      throw new Error(
+        `ArNS name "${name}" has no "${undername}" record on ANT ${record.processId}`,
+      );
+    }
+
     return {
-      name: baseName,
-      txId: '',
+      name,
+      txId: antRecord.transactionId,
       type: record.type,
       processId: record.processId,
-      ttlSeconds: 3600,
+      ttlSeconds: antRecord.ttlSeconds,
+      priority: antRecord.priority,
       undernameLimit: record.undernameLimit,
     };
   }
