@@ -38,7 +38,8 @@ import {
   ARIO_CORE_PROGRAM_ID,
 } from './constants.js';
 import { BorshWriter } from './deserialize.js';
-import { SolanaARIOWriteable, splitPrimaryName } from './io-writeable.js';
+import { SolanaARIOWriteable } from './io-writeable.js';
+import { splitPrimaryName } from './name.js';
 import {
   getAntConfigPDA,
   getAntRecordPDA,

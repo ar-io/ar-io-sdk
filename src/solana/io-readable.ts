@@ -64,7 +64,6 @@ import {
   getAddressDecoder,
 } from '@solana/kit';
 import { type ILogger, Logger } from '../common/logger.js';
-import type { ANTRecord } from '../types/ant.js';
 import type {
   PrimaryName,
   PrimaryNameRequest,
@@ -159,6 +158,7 @@ import {
   getIntentGasProfile,
 } from './gas.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
+import { splitPrimaryName } from './name.js';
 import {
   getAclConfigPDA,
   getArioConfigPDA,
@@ -3313,54 +3313,38 @@ export class SolanaARIOReadable {
   // Name resolution (ArNSNameResolver)
   // =========================================
 
-  /**
-   * Fetch the undername record from the ANT backing `processId`.
-   *
-   * Uses {@link SolanaANTReadable.fromAsset} — the canonical resolution-path
-   * factory — so the correct ANT program id is read from the asset's
-   * `ANT Program` Attributes-plugin entry (ADR-016 / BD-100) rather than
-   * assuming the canonical program. Returns `undefined` when the ANT has no
-   * record for the undername. Split out so the resolution mapping in
-   * {@link resolveArNSName} stays unit-testable without an RPC.
-   */
-  protected async resolveAntRecord(
-    processId: string,
-    undername: string,
-  ): Promise<ANTRecord | undefined> {
-    const ant = await SolanaANTReadable.fromAsset({
-      rpc: this.rpc,
-      processId,
-      commitment: this.commitment,
-      logger: this.logger,
-    });
-    return ant.getRecord({ undername });
-  }
-
   async resolveArNSName({
     name,
   }: {
     name: string;
   }): Promise<ArNSNameResolutionData> {
-    const parts = name.split('_');
-    // The base name is the final `_`-delimited segment; everything before it is
-    // the undername. A bare name (no underscore) resolves the apex record `@`.
-    const baseName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-    const undername = parts.length > 1 ? parts.slice(0, -1).join('_') : '@';
+    // Split on the first `_` (apex `@` when there's none), matching the on-chain
+    // `splitn(2, '_')` rule and lowercasing for case-insensitive resolution.
+    const { baseName, undername } = splitPrimaryName(name);
+    const undernameKey = undername ?? '@';
 
     const record = await this.getArNSRecord({ name: baseName });
 
     // Resolve the undername record on the ANT to obtain the target tx id, TTL,
     // and priority. The ArNS record only points at the ANT (`processId`); the
     // data the name resolves to lives one hop further, on the ANT itself.
-    const antRecord = await this.resolveAntRecord(record.processId, undername);
+    // `fromAsset` reads the ANT program id from the asset (ADR-016 / BD-100),
+    // falling back to the canonical program.
+    const ant = await SolanaANTReadable.fromAsset({
+      rpc: this.rpc,
+      processId: record.processId,
+      commitment: this.commitment,
+      logger: this.logger,
+    });
+    const antRecord = await ant.getRecord({ undername: undernameKey });
     if (antRecord === undefined) {
       throw new Error(
-        `ArNS name "${name}" has no "${undername}" record on ANT ${record.processId}`,
+        `ArNS name "${name}" has no "${undernameKey}" record on ANT ${record.processId}`,
       );
     }
 
     return {
-      name,
+      name: name.toLowerCase(),
       txId: antRecord.transactionId,
       type: record.type,
       processId: record.processId,
