@@ -43,6 +43,7 @@ import {
   compileTransaction,
   createTransactionMessage,
   fetchEncodedAccount,
+  fetchEncodedAccounts,
   getAddressDecoder,
   getBase64EncodedWireTransaction,
   pipe,
@@ -4271,7 +4272,21 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         if (old && old.rewardsDistributed === 1) {
           if (old.observationsSubmitted > old.observationsClosed) {
             // Open observations remain — close a batch before close_epoch.
-            const observers = await this.getEpochObservers(closeTarget);
+            //
+            // getEpochObservers discovers observers via getProgramAccounts,
+            // whose secondary index LAGS finalized state — badly under RPC 429
+            // pressure. It can return Observation PDAs that were already closed.
+            // Including a ghost in the atomic closeObservations batch reverts the
+            // WHOLE tx with AccountNotInitialized, so nothing closes, the counter
+            // never advances, and we retry the identical doomed batch every crank
+            // tick: a self-reinforcing wedge + 429 firehose. Re-validate the
+            // candidates against fresh per-account reads (read-after-write
+            // consistent, unlike getProgramAccounts) and only close live PDAs.
+            const candidates = await this.getEpochObservers(closeTarget);
+            const observers = await this.filterLiveObservations(
+              closeTarget,
+              candidates,
+            );
             if (observers.length > 0) {
               const batch = observers.slice(0, MAX_CLOSE_OBSERVATION_BATCH);
               const { id } = await this.closeObservations({
@@ -4285,9 +4300,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
                 progress: { index: batch.length, total: observers.length },
               };
             }
-            // Counter says open but no Observation PDA exists (orphaned counter):
-            // can't close it, so don't attempt close_epoch (it would revert) and
-            // don't wedge — fall through to create-next.
+            // Counter says open but no LIVE Observation PDA exists — an orphaned
+            // counter, or getProgramAccounts ghosts from a stale index. Can't
+            // close it, so don't attempt close_epoch (it would revert) and don't
+            // wedge — fall through to create-next.
           } else {
             const { id } = await this.closeEpoch({ epochIndex: closeTarget });
             return { action: 'close', epochIndex: closeTarget, txId: id };
@@ -4775,6 +4791,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * before closing a retention-aged epoch. Keep the batch small — each ix carries
    * the Epoch + Observation + payer + system accounts.
    */
+  /**
+   * Filter a candidate observer set down to those whose Observation PDA still
+   * exists on-chain, using fresh per-account reads.
+   *
+   * {@link getEpochObservers} discovers observers via `getProgramAccounts`,
+   * whose secondary index lags finalized state (and lags badly under RPC 429
+   * pressure), so it can return observers whose Observation PDA was already
+   * closed. Feeding those ghosts into the atomic {@link closeObservations}
+   * batch makes the whole tx revert with `AccountNotInitialized`, wedging the
+   * close and retrying the identical doomed batch every crank tick.
+   *
+   * `fetchEncodedAccounts` (getMultipleAccounts) is read-after-write consistent
+   * at this client's commitment, so it does not return ghosts — one RPC call
+   * validates the entire candidate set.
+   */
+  protected async filterLiveObservations(
+    epochIndex: number,
+    observers: string[],
+  ): Promise<string[]> {
+    if (observers.length === 0) return [];
+    const pdas = await Promise.all(
+      observers.map(async (obs) => {
+        const [pda] = await getObservationPDA(
+          epochIndex,
+          address(obs),
+          this.garProgram,
+        );
+        return pda;
+      }),
+    );
+    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
+      commitment: this.commitment,
+    });
+    return observers.filter((_obs, i) => accounts[i]?.exists);
+  }
+
   async closeObservations(
     params: { epochIndex: number; observers: string[] },
     _options?: WriteOptions,
