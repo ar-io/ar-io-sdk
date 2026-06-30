@@ -38,6 +38,7 @@ import {
   AccountRole,
   type Address,
   type Instruction,
+  type KeyPairSigner,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -203,6 +204,7 @@ import {
   getUpdateObserverAddressInstructionAsync,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
+import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
@@ -241,6 +243,7 @@ import {
   sendAndConfirm,
   sendWithEphemeralLookupTable,
 } from './send.js';
+import { buildSpawnAntInstructions } from './spawn-ant.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -453,6 +456,14 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
  * `compound-crank.test.ts` asserts this invariant against the live constant.
  */
 export const MAX_COMPOUND_BATCH = 6;
+/**
+ * CU ceiling for the atomic spawn-and-buy tx (`[CreateV1, initialize,
+ * buy_name]`). buy_name CPIs into MPL Core `UpdatePluginV1` on top of the MPL
+ * Core mint + ario-ant initialize, so it needs more headroom than a plain
+ * buy (`DEFAULT_COMPUTE_UNIT_LIMIT`). Keypair signers auto-size below this from
+ * a pre-send simulation; message-modifying wallets keep this generous ceiling.
+ */
+const SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT = 800_000;
 /** Observation PDAs closed per tx before close_epoch (each ix carries Epoch +
  *  Observation + payer + system accounts — keep well under the tx account cap). */
 const MAX_CLOSE_OBSERVATION_BATCH = 8;
@@ -602,6 +613,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected async sendTransaction(
     instructions: Instruction[],
     computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+    extraSigners: KeyPairSigner[] = [],
   ): Promise<string> {
     return sendAndConfirm({
       rpc: this.rpc,
@@ -610,6 +622,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       instructions,
       commitment: this.commitment,
       computeUnitLimit,
+      extraSigners,
     });
   }
 
@@ -1472,9 +1485,31 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       arnsConfig.mint,
       this.signer.address,
     );
-    const antPubkey = address(
-      params.processId ?? ('11111111111111111111111111111111' as Address),
-    );
+
+    // When no ANT (`processId`) is supplied, atomically spawn a fresh ANT and
+    // assign the name to it in the SAME transaction. `buy_name` CPIs into the
+    // new asset's Attributes plugin to write the ArNS traits — instructions
+    // execute in order, so the asset (minted by the prepended `CreateV1`)
+    // exists by the time `buy_name` runs. The owner's ACL registry bootstrap +
+    // trait sync are deferred to a follow-up tx to keep this one under the
+    // 1232-byte transaction-size limit (neither needs to be atomic with the
+    // purchase). See `_bootstrapSpawnedAntAcl`.
+    let spawnIxs: Instruction[] = [];
+    let mintSigner: KeyPairSigner | undefined;
+    let antPubkey: Address;
+    if (params.processId === undefined) {
+      const spawn = await buildSpawnAntInstructions({
+        signer: this.signer,
+        state: { name: params.name },
+        antProgramId: this.antProgram,
+      });
+      spawnIxs = spawn.instructions;
+      mintSigner = spawn.mintSigner;
+      antPubkey = spawn.mint;
+    } else {
+      antPubkey = address(params.processId);
+    }
+
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
     const [reservedNameCheck] = await getReservedNamePDA(
       params.name,
@@ -1606,6 +1641,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
     }
 
+    // Spawn-and-buy: prepend `[CreateV1, initialize]` and attach the mint
+    // signer. We DON'T bundle `sync_attributes` here — the asset doesn't exist
+    // on-chain at SDK build time (it's minted in THIS tx), so the owner check
+    // in `_buildSyncAttributesIxIfOwner` would 404. The ACL bootstrap + trait
+    // sync run in a separate follow-up tx (`buy_name` already populated the
+    // asset's traits via CPI, so the deferred sync just mirrors them into the
+    // ANT's on-chain record).
+    if (mintSigner !== undefined) {
+      const sig = await this.sendTransaction(
+        [...spawnIxs, ix],
+        SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+        [mintSigner],
+      );
+      await this._bootstrapSpawnedAntAcl(antPubkey, params.name);
+      // Surface the freshly-minted ANT's id so callers don't have to re-fetch
+      // the record to discover which asset the name was assigned to.
+      return { id: sig, result: { processId: antPubkey as string } };
+    }
+
     // Sprint 4 / ADR-016: bundle `ant.sync_attributes` IFF the buyer
     // owns the ANT (preserves BD-096 — non-holder buys defer the trait
     // sync to a later `syncAttributes()` call by the actual owner).
@@ -1618,6 +1672,50 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
     return { id: sig };
+  }
+
+  /**
+   * Post-spawn housekeeping for the atomic spawn-and-buy path: bootstrap the
+   * new owner's paginated ACL registry entries (so "ANTs I own / control"
+   * lookups resolve) and sync the ANT's on-chain record from the asset's
+   * Attributes plugin (which `buy_name` populated via CPI). Sent as a SEPARATE
+   * transaction because bundling it with `[create, initialize, buy_name]`
+   * would overflow the 1232-byte transaction-size limit — and neither step
+   * needs to be atomic with the purchase.
+   *
+   * Best-effort: the name purchase + ANT mint already confirmed in the prior
+   * tx, so a failure here is logged rather than thrown. The owner can reconcile
+   * later via the sync-ACL API and `syncAttributes()`.
+   */
+  private async _bootstrapSpawnedAntAcl(
+    asset: Address,
+    name: string,
+  ): Promise<void> {
+    try {
+      const registry = new SolanaANTRegistryWriteable({
+        rpc: this.rpc,
+        signer: this.signer,
+        commitment: this.commitment,
+        antProgramId: this.antProgram,
+        logger: this.logger,
+      });
+      const aclIxs = await registry.bootstrapOwnerOnSpawn({
+        owner: this.signer.address,
+        asset,
+      });
+      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
+      const ixs = syncIx ? [...aclIxs, syncIx] : aclIxs;
+      if (ixs.length > 0) {
+        await this.sendTransaction(ixs);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `[buyRecord] spawned ANT ${asset} for "${name}" but post-spawn ACL ` +
+          `bootstrap / attribute sync failed; reconcile later via the sync-ACL ` +
+          `API and syncAttributes(). Purchase + mint already confirmed.`,
+        err,
+      );
+    }
   }
 
   /**
