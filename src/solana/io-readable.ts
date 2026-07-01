@@ -113,6 +113,7 @@ import type {
   WalletVault,
   WeightedObserver,
 } from '../types/io.js';
+import { splitPrimaryName } from '../utils/arns.js';
 import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
@@ -158,7 +159,6 @@ import {
   getIntentGasProfile,
 } from './gas.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
-import { splitPrimaryName } from './name.js';
 import {
   getAclConfigPDA,
   getArioConfigPDA,

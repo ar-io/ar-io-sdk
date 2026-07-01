@@ -18,10 +18,10 @@ import bs58 from 'bs58';
 import { getAntRecordEncoder } from '@ar.io/solana-contracts/ant';
 
 import { Logger } from '../common/logger.js';
+import { splitPrimaryName } from '../utils/arns.js';
 import { ARIO_ANT_PROGRAM_ID, ARIO_ARNS_PROGRAM_ID } from './constants.js';
 import { BorshWriter } from './deserialize.js';
 import { SolanaARIOReadable } from './io-readable.js';
-import { splitPrimaryName } from './name.js';
 import {
   getAntRecordMetadataPDA,
   getAntRecordPDA,

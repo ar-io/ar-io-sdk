@@ -113,6 +113,7 @@ import type {
 } from '../types/io.js';
 import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 import type { mARIOToken } from '../types/token.js';
+import { splitPrimaryName } from '../utils/arns.js';
 import {
   buildCreateAtaIdempotentIx,
   getAssociatedTokenAddressKit,
@@ -204,7 +205,6 @@ import {
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
-import { splitPrimaryName } from './name.js';
 import {
   getAntConfigPDA,
   getAntRecordPDA,
