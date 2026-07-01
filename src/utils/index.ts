@@ -17,3 +17,4 @@ export * from './base64.js';
 export * from './json.js';
 export * from './schema.js';
 export * from './ant.js';
+export * from './arns.js';

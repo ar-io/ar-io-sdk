@@ -76,6 +76,7 @@ import type {
   AllGatewayVaults,
   ArNSNameData,
   ArNSNameDataWithName,
+  ArNSNameResolutionData,
   ArNSReservedNameData,
   ArNSReservedNameDataWithName,
   BalanceWithAddress,
@@ -112,6 +113,8 @@ import type {
   WalletVault,
   WeightedObserver,
 } from '../types/io.js';
+import { splitPrimaryName } from '../utils/arns.js';
+import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import {
@@ -3310,19 +3313,43 @@ export class SolanaARIOReadable {
   // Name resolution (ArNSNameResolver)
   // =========================================
 
-  async resolveArNSName({ name }: { name: string }) {
-    const parts = name.split('_');
-    const baseName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  async resolveArNSName({
+    name,
+  }: {
+    name: string;
+  }): Promise<ArNSNameResolutionData> {
+    // Split on the first `_` (apex `@` when there's none), matching the on-chain
+    // `splitn(2, '_')` rule and lowercasing for case-insensitive resolution.
+    const { baseName, undername } = splitPrimaryName(name);
+    const undernameKey = undername ?? '@';
 
     const record = await this.getArNSRecord({ name: baseName });
 
-    // TODO: resolve undername via ANT program when undername !== '@'
+    // Resolve the undername record on the ANT to obtain the target tx id, TTL,
+    // and priority. The ArNS record only points at the ANT (`processId`); the
+    // data the name resolves to lives one hop further, on the ANT itself.
+    // `fromAsset` reads the ANT program id from the asset (ADR-016 / BD-100),
+    // falling back to the canonical program.
+    const ant = await SolanaANTReadable.fromAsset({
+      rpc: this.rpc,
+      processId: record.processId,
+      commitment: this.commitment,
+      logger: this.logger,
+    });
+    const antRecord = await ant.getRecord({ undername: undernameKey });
+    if (antRecord === undefined) {
+      throw new Error(
+        `ArNS name "${name}" has no "${undernameKey}" record on ANT ${record.processId}`,
+      );
+    }
+
     return {
-      name: baseName,
-      txId: '',
+      name: name.toLowerCase(),
+      txId: antRecord.transactionId,
       type: record.type,
       processId: record.processId,
-      ttlSeconds: 3600,
+      ttlSeconds: antRecord.ttlSeconds,
+      priority: antRecord.priority,
       undernameLimit: record.undernameLimit,
     };
   }
