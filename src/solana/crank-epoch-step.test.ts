@@ -113,6 +113,19 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`closeObservations:${p.epochIndex}:${p.observers.length}`);
     return { id: 'tx-close-obs' };
   }
+  // filterLiveObservations stub — mirrors the SDK's stale-ghost guard without
+  // touching RPC. Default is identity (every candidate is live); a test sets
+  // `liveObservers[i]` to simulate getProgramAccounts returning already-closed
+  // (stale-index) ghosts.
+  liveObservers: Record<number, Address[]> | null = null;
+  protected async filterLiveObservations(
+    epochIndex: number,
+    observers: string[],
+  ): Promise<string[]> {
+    this.calls.push(`filterLive:${epochIndex}:${observers.length}`);
+    if (this.liveObservers === null) return observers;
+    return this.liveObservers[epochIndex] ?? [];
+  }
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async prescribeEpoch(p: any): Promise<any> {
     this.prescribeAttempts++;
@@ -583,6 +596,46 @@ describe('crankEpochStep — close observations before close_epoch', () => {
     );
   });
 
+  it('closes only the LIVE observers, dropping stale-index ghosts', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 0 });
+    // getProgramAccounts (getEpochObservers) returns 3 — but its index is stale.
+    c.epochObservers[2] = [pk(1), pk(2), pk(3)];
+    // Only pk(1) still exists on-chain; pk(2)/pk(3) were already closed.
+    c.liveObservers = { 2: [pk(1)] };
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.equal(r.action, 'close_observation');
+    assert.ok(
+      c.calls.includes('closeObservations:2:1'),
+      'closes only the 1 live observer',
+    );
+    assert.ok(
+      !c.calls.includes('closeObservations:2:3'),
+      'never builds the doomed 3-wide batch that would revert AccountNotInitialized',
+    );
+  });
+
+  it('does NOT attempt a close (no wedge) when every candidate is a stale ghost', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 0 });
+    c.epochObservers[2] = [pk(1), pk(2), pk(3)];
+    c.liveObservers = { 2: [] }; // all already closed; the counter is just stale
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.ok(
+      !c.calls.some((x) => x.startsWith('closeObservations:')),
+      'must not submit a close_observations tx that would revert + wedge',
+    );
+    assert.ok(
+      !c.calls.some((x) => x.startsWith('close:')),
+      'must not attempt close_epoch with the counter still open',
+    );
+    assert.notEqual(
+      r.action,
+      'close_observation',
+      'falls through to create-next instead of retrying a doomed batch',
+    );
+  });
+
   it('caps the observation-close batch at 8', async () => {
     const c = new TestCranker();
     setup(c, { observationsSubmitted: 20, observationsClosed: 0 });
@@ -620,5 +673,64 @@ describe('crankEpochStep — close observations before close_epoch', () => {
     assert.notEqual(r.action, 'close_observation');
     assert.notEqual(r.action, 'close');
     assert.equal(r.action, 'create'); // progression continues
+  });
+});
+
+// --- direct test of the REAL filterLiveObservations (the stale-ghost guard) ---
+//
+// Exercises the actual PDA-derive → getMultipleAccounts → `.exists` filter (not
+// the TestCranker stub), with a mock RPC whose per-index existence we control.
+function existenceRpc(exists: boolean[]) {
+  return {
+    getMultipleAccounts: (addrs: unknown[]) => ({
+      send: async () => ({
+        value: addrs.map((_a, i) =>
+          exists[i]
+            ? {
+                data: ['', 'base64'],
+                executable: false,
+                lamports: 1n,
+                owner: '11111111111111111111111111111111',
+                rentEpoch: 0n,
+                space: 0n,
+              }
+            : null,
+        ),
+      }),
+    }),
+  };
+}
+
+class LiveFilterHarness extends SolanaARIOWriteable {
+  constructor(rpc: any) {
+    super({
+      rpc,
+      rpcSubscriptions: {} as never,
+      signer: { address: pk(99) } as never,
+    } as never);
+  }
+  run(epochIndex: number, observers: string[]): Promise<string[]> {
+    return this.filterLiveObservations(epochIndex, observers);
+  }
+}
+
+describe('filterLiveObservations (stale getProgramAccounts ghost guard)', () => {
+  it('keeps only observers whose Observation PDA still exists on a fresh read', async () => {
+    const h = new LiveFilterHarness(existenceRpc([true, false, true]));
+    const live = await h.run(5, [pk(1), pk(2), pk(3)]);
+    assert.deepEqual(live, [pk(1), pk(3)]);
+  });
+
+  it('returns [] without any RPC call for an empty candidate set', async () => {
+    let called = false;
+    const rpc = {
+      getMultipleAccounts: () => {
+        called = true;
+        return { send: async () => ({ value: [] }) };
+      },
+    };
+    const h = new LiveFilterHarness(rpc as never);
+    assert.deepEqual(await h.run(5, []), []);
+    assert.equal(called, false, 'empty candidate set must not hit the RPC');
   });
 });

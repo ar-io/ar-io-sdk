@@ -1,3 +1,10 @@
+# [4.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.2...v4.1.0-alpha.3) (2026-06-30)
+
+
+### Bug Fixes
+
+* **solana:** drop stale getProgramAccounts ghosts before close_observations batch ([f95937c](https://github.com/ar-io/ar-io-sdk/commit/f95937c5f5e3012153b3c8f0b16adacb720fac9b))
+
 # [4.1.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.1...v4.1.0-alpha.2) (2026-06-25)
 
 
