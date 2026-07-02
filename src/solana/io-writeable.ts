@@ -114,6 +114,7 @@ import type {
 } from '../types/io.js';
 import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 import type { mARIOToken } from '../types/token.js';
+import { splitPrimaryName } from '../utils/arns.js';
 import {
   buildCreateAtaIdempotentIx,
   getAssociatedTokenAddressKit,
@@ -310,31 +311,6 @@ export function selectFinalizeGoneSwapOperator(
   }
   const lastIndex = registryAddresses.length - 1;
   return registryIndex === lastIndex ? null : registryAddresses[lastIndex];
-}
-
-/**
- * Split a primary name into its undername + base parts using the same rule
- * as the on-chain `splitn(2, '_')` in `programs/ario-core/src/instructions/primary_name.rs`:
- * everything before the first '_' is the undername, the rest is the base.
- *
- * Exposed as a top-level helper so it can be unit-tested without spinning up
- * an `SolanaARIOWriteable`. Lowercases the input to match contract behavior.
- */
-export function splitPrimaryName(name: string): {
-  isUndername: boolean;
-  baseName: string;
-  undername: string | null;
-} {
-  const lower = name.toLowerCase();
-  const ix = lower.indexOf('_');
-  if (ix === -1) {
-    return { isUndername: false, baseName: lower, undername: null };
-  }
-  return {
-    isUndername: true,
-    baseName: lower.slice(ix + 1),
-    undername: lower.slice(0, ix),
-  };
 }
 
 /**
