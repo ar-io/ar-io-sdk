@@ -249,6 +249,16 @@ export type GatewayDelegateAllowList = WalletAddress[];
 
 export type WalletVault = VaultData & {
   address: WalletAddress;
+  /**
+   * Vault PDA address — globally-unique, stable handle for React keys /
+   * explorer links. Mirrors `GatewayVault.cursorId`. This is NOT a valid
+   * argument to `releaseVault`/`revokeVault`; use `vaultId` for those.
+   */
+  cursorId: string;
+  /**
+   * Numeric per-owner vault id (u64 as string). Pass this to
+   * `releaseVault({ vaultId })` / `revokeVault({ vaultId })`.
+   */
   vaultId: string;
 };
 
