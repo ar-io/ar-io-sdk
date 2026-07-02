@@ -1,3 +1,10 @@
+# [4.1.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.3...v4.1.0-alpha.4) (2026-07-02)
+
+
+### Bug Fixes
+
+* **arns:** resolve txId from ANT record in resolveArNSName ([ba061cf](https://github.com/ar-io/ar-io-sdk/commit/ba061cf51c74ddf827a678f447193316f76ffb03))
+
 # [4.1.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.2...v4.1.0-alpha.3) (2026-06-30)
 
 
