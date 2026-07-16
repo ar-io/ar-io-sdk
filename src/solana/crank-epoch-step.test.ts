@@ -1,8 +1,14 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address, getAddressDecoder } from '@solana/kit';
+import {
+  AccountRole,
+  type Address,
+  type Instruction,
+  getAddressDecoder,
+} from '@solana/kit';
 
+import { getAdminSetRewardRatiosInstructionDataDecoder } from '@ar.io/solana-contracts/gar';
 import { SolanaARIOWriteable } from './io-writeable.js';
 
 const dec = getAddressDecoder();
@@ -732,5 +738,131 @@ describe('filterLiveObservations (stale getProgramAccounts ghost guard)', () => 
     const h = new LiveFilterHarness(rpc as never);
     assert.deepEqual(await h.run(5, []), []);
     assert.equal(called, false, 'empty candidate set must not hit the RPC');
+  });
+});
+
+// =========================================================================
+// Built-instruction ABI (contracts ar-io-solana-contracts#116)
+// =========================================================================
+//
+// The lifecycle tests above stub `closeObservations`, so they never build a
+// real instruction. These tests exercise the REAL builders through a
+// capturing `sendTransaction` override and assert the exact on-chain account
+// list a cranker submits — the surface the observer / cranker follow-up has
+// to match.
+
+const SIGNER = pk(99); // the fee-paying caller (matches TestCranker's signer)
+const OBSERVER_A = pk(7);
+const OBSERVER_B = pk(8);
+
+// A minimal but real `TransactionSigner`: Codama's account-meta factory only
+// emits a *signer* meta (role WRITABLE_SIGNER / READONLY_SIGNER, with a
+// `.signer` field) when the account value passes `isTransactionSigner` — i.e.
+// carries at least one signing method. A bare `{ address }` is silently
+// downgraded to a non-signer, so the stub must expose the signing surface.
+const signerStub = {
+  address: SIGNER,
+  signTransactions: async () => [],
+  signAndSendTransactions: async () => [],
+};
+
+/** Builds instructions but captures them instead of sending. */
+class CaptureWriteable extends SolanaARIOWriteable {
+  captured: Instruction[] = [];
+  constructor() {
+    super({
+      rpc: {} as never,
+      rpcSubscriptions: {} as never,
+      signer: signerStub as never,
+    } as never);
+  }
+  // Capture built instructions instead of sending them.
+  protected async sendTransaction(
+    instructions: Instruction[],
+  ): Promise<string> {
+    this.captured.push(...instructions);
+    return 'captured-sig';
+  }
+}
+
+describe('close_observation — rent routes to the observer, not the caller', () => {
+  it('closeObservation builds [epoch, observation, observer, caller] with the observer as rent recipient', async () => {
+    const c = new CaptureWriteable();
+    await c.closeObservation({ epochIndex: 2, observer: OBSERVER_A });
+
+    assert.equal(c.captured.length, 1);
+    const accounts = c.captured[0].accounts ?? [];
+    assert.equal(accounts.length, 4, 'no legacy `payer` account — 4 accounts');
+
+    const [, , observer, caller] = accounts;
+    // observer (index 2): the observation's recorded observer, writable, NON-signer.
+    assert.equal(observer.address, OBSERVER_A);
+    assert.equal(observer.role, AccountRole.WRITABLE);
+    assert.ok(!('signer' in observer), 'observer must not sign');
+    // caller (index 3): the fee-paying signer.
+    assert.equal(caller.address, SIGNER);
+    assert.equal(caller.role, AccountRole.WRITABLE_SIGNER);
+    assert.ok('signer' in caller, 'caller must be the signer');
+    // rent goes to the observer, which is distinct from the caller.
+    assert.notEqual(observer.address, caller.address);
+  });
+
+  it('closeObservations emits one ix per observer, each routing rent to that observer', async () => {
+    const c = new CaptureWriteable();
+    await c.closeObservations({
+      epochIndex: 2,
+      observers: [OBSERVER_A, OBSERVER_B],
+    });
+
+    assert.equal(c.captured.length, 2);
+    const [ixA, ixB] = c.captured;
+    // ix[0]: rent → OBSERVER_A, signed by the caller.
+    assert.equal(ixA.accounts?.[2].address, OBSERVER_A);
+    assert.equal(ixA.accounts?.[3].address, SIGNER);
+    // ix[1]: rent → OBSERVER_B, signed by the caller.
+    assert.equal(ixB.accounts?.[2].address, OBSERVER_B);
+    assert.equal(ixB.accounts?.[3].address, SIGNER);
+  });
+});
+
+describe('adminSetRewardRatios — authority-signed epoch reward-split setter', () => {
+  it('builds [epochSettings(writable), authority(signer)] carrying both u64 ratios', async () => {
+    const c = new CaptureWriteable();
+    await c.adminSetRewardRatios({
+      gatewayRewardRatio: 900_000,
+      observerRewardRatio: 100_000,
+    });
+
+    assert.equal(c.captured.length, 1);
+    const ix = c.captured[0];
+    const accounts = ix.accounts ?? [];
+    assert.equal(accounts.length, 2);
+
+    const [epochSettings, authority] = accounts;
+    assert.equal(epochSettings.role, AccountRole.WRITABLE);
+    assert.ok(!('signer' in epochSettings), 'epochSettings must not sign');
+    assert.equal(authority.address, SIGNER);
+    assert.equal(authority.role, AccountRole.READONLY_SIGNER);
+    assert.ok('signer' in authority, 'authority must be the signer');
+
+    // The instruction data carries both ratios as u64.
+    const decoded = getAdminSetRewardRatiosInstructionDataDecoder().decode(
+      ix.data,
+    );
+    assert.equal(decoded.gatewayRewardRatio, 900_000n);
+    assert.equal(decoded.observerRewardRatio, 100_000n);
+  });
+
+  it('accepts bigint ratios and round-trips them through the encoder', async () => {
+    const c = new CaptureWriteable();
+    await c.adminSetRewardRatios({
+      gatewayRewardRatio: 750_000n,
+      observerRewardRatio: 250_000n,
+    });
+    const decoded = getAdminSetRewardRatiosInstructionDataDecoder().decode(
+      c.captured[0].data,
+    );
+    assert.equal(decoded.gatewayRewardRatio, 750_000n);
+    assert.equal(decoded.observerRewardRatio, 250_000n);
   });
 });
