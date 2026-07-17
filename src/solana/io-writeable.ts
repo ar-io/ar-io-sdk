@@ -207,6 +207,7 @@ import { getTransferCheckedInstruction } from '@solana-program/token';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
+  getAntAuthorityPDA,
   getAntConfigPDA,
   getAntRecordPDA,
   getArioConfigPDA,
@@ -2162,11 +2163,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     asset: Address,
   ): Promise<Instruction> {
     const [arnsRecord] = await getArnsRecordPDA(name, this.arnsProgram);
+    // ADR-028: the `authority` signer is gone. Program-controlled ANTs are
+    // synced permissionlessly (the program signs UpdatePluginV1 with the
+    // per-asset `ant_authority` PDA); legacy ANTs still require the owner as
+    // `payer`. Either way we pass the derived PDA.
+    const [antAuthority] = await getAntAuthorityPDA(asset, this.antProgram);
     return getSyncAttributesInstruction(
       {
         asset,
         payer: this.signer,
-        authority: this.signer,
+        antAuthority,
         arnsRecord,
         name,
       },
