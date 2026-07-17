@@ -258,29 +258,44 @@ async function buildInitializeAntIx({
   );
 }
 
+export type SpawnAntInstructions = {
+  /**
+   * Ordered core spawn instructions: `[CreateV1, ario_ant::initialize]`.
+   * Excludes compute-budget and ACL-bootstrap ixs — callers that want a
+   * fully-bootstrapped, ready-to-send spawn should use {@link spawnSolanaANT};
+   * this builder is for bundling the mint into a larger compound transaction
+   * (e.g. atomic spawn + ArNS `buy_name`).
+   */
+  instructions: Instruction[];
+  /**
+   * Fresh (or caller-supplied) mint keypair signer. MUST be attached to the
+   * transaction so kit can satisfy the asset's WRITABLE_SIGNER role, and — for
+   * message-modifying wallets — pre-signed BEFORE the wallet signs (see the
+   * ordering note in {@link spawnSolanaANT}).
+   */
+  mintSigner: KeyPairSigner;
+  /** The asset pubkey = the SDK-canonical `processId` for the new ANT. */
+  mint: Address;
+};
+
 /**
- * Spawn a brand-new ANT on Solana. Returns the asset address, which is the
- * SDK's stable `processId` for that ANT.
+ * Build the ordered `[CreateV1, ario_ant::initialize]` instructions for a fresh
+ * ANT without sending them. Extracted from {@link spawnSolanaANT} so the same
+ * mint can be bundled into a larger compound transaction (e.g. atomic spawn +
+ * `buy_name`). The caller is responsible for attaching `mintSigner`, prepending
+ * a compute budget, and bootstrapping the owner's ACL afterwards.
  */
-export async function spawnSolanaANT(
-  params: SpawnSolanaANTParams,
-): Promise<SpawnSolanaANTResult> {
+export async function buildSpawnAntInstructions(params: {
+  signer: SolanaSigner;
+  state: SpawnSolanaANTState;
+  antProgramId?: Address;
+  mintSigner?: KeyPairSigner;
+}): Promise<SpawnAntInstructions> {
   if (!params.state?.name || params.state.name.length === 0) {
-    throw new Error('spawnSolanaANT: state.name is required');
+    throw new Error('buildSpawnAntInstructions: state.name is required');
   }
-
-  const {
-    rpc,
-    rpcSubscriptions,
-    signer,
-    state,
-    antProgramId = ARIO_ANT_PROGRAM_ID,
-    commitment = 'confirmed',
-    computeUnitLimit = 400_000,
-  } = params;
-
+  const { signer, state, antProgramId = ARIO_ANT_PROGRAM_ID } = params;
   const mintSigner = params.mintSigner ?? (await generateKeyPairSigner());
-  const owner = signer.address;
   const mint = mintSigner.address;
 
   const uri =
@@ -332,6 +347,42 @@ export async function spawnSolanaANT(
     mint,
     signer,
     state,
+  });
+
+  return { instructions: [createIx, initIx], mintSigner, mint };
+}
+
+/**
+ * Spawn a brand-new ANT on Solana. Returns the asset address, which is the
+ * SDK's stable `processId` for that ANT.
+ */
+export async function spawnSolanaANT(
+  params: SpawnSolanaANTParams,
+): Promise<SpawnSolanaANTResult> {
+  if (!params.state?.name || params.state.name.length === 0) {
+    throw new Error('spawnSolanaANT: state.name is required');
+  }
+
+  const {
+    rpc,
+    rpcSubscriptions,
+    signer,
+    state,
+    antProgramId = ARIO_ANT_PROGRAM_ID,
+    commitment = 'confirmed',
+    computeUnitLimit = 400_000,
+  } = params;
+
+  const owner = signer.address;
+  const {
+    instructions: [createIx, initIx],
+    mintSigner,
+    mint,
+  } = await buildSpawnAntInstructions({
+    signer,
+    state,
+    antProgramId,
+    mintSigner: params.mintSigner,
   });
 
   // ADR-012 (ACL): bootstrap the new owner's paginated ACL. The
