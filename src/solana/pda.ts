@@ -34,6 +34,7 @@ import {
   ACL_CONFIG_SEED,
   ACL_PAGE_SEED,
   ALLOWLIST_SEED,
+  ANT_AUTHORITY_SEED,
   ANT_CONFIG_SEED,
   ANT_CONTROLLERS_SEED,
   ANT_RECORD_META_SEED,
@@ -399,6 +400,21 @@ export async function getAntControllersPDA(
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [ANT_CONTROLLERS_SEED, addressEncoder.encode(mint)],
+  });
+}
+
+/**
+ * ADR-028: per-asset program-signer PDA that holds the Metaplex Core
+ * UpdateAuthority for an ANT. New ANTs mint with UpdateAuthority set to this
+ * address so all MPL Core updates route through the ario-ant program.
+ */
+export async function getAntAuthorityPDA(
+  mint: Address,
+  programId: Address = ARIO_ANT_PROGRAM_ID,
+): Promise<Pda> {
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [ANT_AUTHORITY_SEED, addressEncoder.encode(mint)],
   });
 }
 
