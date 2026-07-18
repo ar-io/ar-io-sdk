@@ -240,6 +240,8 @@ import {
 } from './predict-prescribed-observers.js';
 import {
   DEFAULT_COMPUTE_UNIT_LIMIT,
+  MAX_TX_SIZE_BYTES,
+  estimateCompiledTxSize,
   reclaimLookupTablesForSigner,
   sendAndConfirm,
   sendWithEphemeralLookupTable,
@@ -440,6 +442,39 @@ export const MAX_COMPOUND_BATCH = 6;
  * a pre-send simulation; message-modifying wallets keep this generous ceiling.
  */
 const SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT = 800_000;
+/**
+ * Collect the account addresses in `instructions` that are safe to serve from
+ * an Address Lookup Table: every account meta EXCEPT signers (which must remain
+ * in the static keys) and the invoked top-level program ids (a program invoked
+ * by an instruction cannot be loaded from an ALT). `alwaysInline` pins extra
+ * addresses static — the fee payer and any bundled mint signer. CPI-target
+ * programs that appear only as account metas (e.g. system, token) ARE eligible.
+ * Deduped; order-independent.
+ */
+function altEligibleAddresses(
+  instructions: Instruction[],
+  alwaysInline: Address[],
+): Address[] {
+  const inline = new Set<string>(alwaysInline as string[]);
+  for (const ix of instructions) {
+    inline.add(ix.programAddress);
+    for (const acc of ix.accounts ?? []) {
+      if (
+        acc.role === AccountRole.READONLY_SIGNER ||
+        acc.role === AccountRole.WRITABLE_SIGNER
+      ) {
+        inline.add(acc.address);
+      }
+    }
+  }
+  const eligible = new Set<Address>();
+  for (const ix of instructions) {
+    for (const acc of ix.accounts ?? []) {
+      if (!inline.has(acc.address)) eligible.add(acc.address);
+    }
+  }
+  return [...eligible];
+}
 /** Observation PDAs closed per tx before close_epoch (each ix carries Epoch +
  *  Observation + payer + system accounts — keep well under the tx account cap). */
 const MAX_CLOSE_OBSERVATION_BATCH = 8;
@@ -1625,11 +1660,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // asset's traits via CPI, so the deferred sync just mirrors them into the
     // ANT's on-chain record).
     if (mintSigner !== undefined) {
-      const sig = await this.sendTransaction(
-        [...spawnIxs, ix],
-        SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
-        [mintSigner],
-      );
+      const spawnAndBuyIxs = [...spawnIxs, ix];
+      // Balance/credit-funded spawn-and-buy fits inline (~1.1 KB) and lands in
+      // ONE signature. But a multi-source funding plan appends per-source
+      // remaining accounts to `buy_name` (~33 bytes each) and can blow past
+      // Solana's 1232-byte limit. When that happens, route the whole
+      // spawn-and-buy through an ephemeral Address Lookup Table (create →
+      // extend → compressed v0 tx), compressing every non-signer,
+      // non-invoked-program account. The mint stays inline (it's a signer).
+      const inlineSize = estimateCompiledTxSize({
+        signer: this.signer,
+        instructions: spawnAndBuyIxs,
+        extraSigners: [mintSigner],
+        computeUnitLimit: SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+      });
+      let sig: string;
+      if (inlineSize <= MAX_TX_SIZE_BYTES) {
+        sig = await this.sendTransaction(
+          spawnAndBuyIxs,
+          SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+          [mintSigner],
+        );
+      } else {
+        sig = await sendWithEphemeralLookupTable({
+          rpc: this.rpc,
+          rpcSubscriptions: this.rpcSubscriptions,
+          signer: this.signer,
+          instructions: spawnAndBuyIxs,
+          lookupAddresses: altEligibleAddresses(spawnAndBuyIxs, [
+            this.signer.address,
+            mintSigner.address,
+          ]),
+          commitment: this.commitment,
+          computeUnitLimit: SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+          extraSigners: [mintSigner],
+        });
+      }
       await this._bootstrapSpawnedAntAcl(antPubkey, params.name);
       // Surface the freshly-minted ANT's id so callers don't have to re-fetch
       // the record to discover which asset the name was assigned to.
@@ -1667,6 +1733,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     asset: Address,
     name: string,
   ): Promise<void> {
+    // Record the owner/controller ACL entries FIRST, in their OWN transaction.
+    // This is the ownership-critical step — the app-side drift detection treats
+    // a missing ACL owner entry as "needs ownership sync". It must NOT be
+    // bundled with `sync_attributes`: if that instruction reverts (e.g. an ANT
+    // program build whose `sync_attributes` enforces an `ant_authority` PDA the
+    // client doesn't yet derive), an atomic bundle would roll the ACL records
+    // back too, silently un-recording ownership.
     try {
       const registry = new SolanaANTRegistryWriteable({
         rpc: this.rpc,
@@ -1679,16 +1752,33 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         owner: this.signer.address,
         asset,
       });
-      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
-      const ixs = syncIx ? [...aclIxs, syncIx] : aclIxs;
-      if (ixs.length > 0) {
-        await this.sendTransaction(ixs);
+      if (aclIxs.length > 0) {
+        await this.sendTransaction(aclIxs);
       }
     } catch (err) {
       this.logger.warn(
-        `[buyRecord] spawned ANT ${asset} for "${name}" but post-spawn ACL ` +
-          `bootstrap / attribute sync failed; reconcile later via the sync-ACL ` +
-          `API and syncAttributes(). Purchase + mint already confirmed.`,
+        `[buyRecord] spawned ANT ${asset} for "${name}" but ACL owner/controller ` +
+          `bootstrap failed; reconcile via the sync-ACL API. Purchase + mint ` +
+          `already confirmed.`,
+        err,
+      );
+    }
+
+    // Mirror the asset's Attributes plugin (populated by `buy_name`'s CPI) into
+    // the ANT's on-chain record. Best-effort and INDEPENDENT of the ACL step
+    // above — a failure here (e.g. a program/client version skew on
+    // `sync_attributes`) must not undo the ownership records. Reconcilable later
+    // via the public `syncAttributes()`.
+    try {
+      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
+      if (syncIx) {
+        await this.sendTransaction([syncIx]);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `[buyRecord] spawned ANT ${asset} for "${name}": ACL recorded, but ` +
+          `sync_attributes failed; ANT record traits will reconcile on a later ` +
+          `syncAttributes() call.`,
         err,
       );
     }
@@ -3902,7 +3992,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         rpc: this.rpc,
         rpcSubscriptions: this.rpcSubscriptions,
         signer: this.signer,
-        instruction: fullIx,
+        instructions: [fullIx],
         lookupAddresses: remaining.map((a) => a.address),
         commitment: this.commitment,
         computeUnitLimit: 1_000_000,
