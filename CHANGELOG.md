@@ -1,3 +1,11 @@
+# [4.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.5...v4.1.0-alpha.6) (2026-07-18)
+
+
+### Bug Fixes
+
+* **solana:** don't let sync_attributes revert the spawned-ANT ACL records ([ba3cd1e](https://github.com/ar-io/ar-io-sdk/commit/ba3cd1e415d0ff712a569e52a9a36765349d21cf))
+* **solana:** route oversized atomic spawn-and-buy through a lookup table ([a929556](https://github.com/ar-io/ar-io-sdk/commit/a92955603d9b34951b5073f25b35aaa3aaf47040))
+
 # [4.1.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.4...v4.1.0-alpha.5) (2026-07-17)
 
 
