@@ -1733,6 +1733,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     asset: Address,
     name: string,
   ): Promise<void> {
+    // Record the owner/controller ACL entries FIRST, in their OWN transaction.
+    // This is the ownership-critical step — the app-side drift detection treats
+    // a missing ACL owner entry as "needs ownership sync". It must NOT be
+    // bundled with `sync_attributes`: if that instruction reverts (e.g. an ANT
+    // program build whose `sync_attributes` enforces an `ant_authority` PDA the
+    // client doesn't yet derive), an atomic bundle would roll the ACL records
+    // back too, silently un-recording ownership.
     try {
       const registry = new SolanaANTRegistryWriteable({
         rpc: this.rpc,
@@ -1745,16 +1752,33 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         owner: this.signer.address,
         asset,
       });
-      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
-      const ixs = syncIx ? [...aclIxs, syncIx] : aclIxs;
-      if (ixs.length > 0) {
-        await this.sendTransaction(ixs);
+      if (aclIxs.length > 0) {
+        await this.sendTransaction(aclIxs);
       }
     } catch (err) {
       this.logger.warn(
-        `[buyRecord] spawned ANT ${asset} for "${name}" but post-spawn ACL ` +
-          `bootstrap / attribute sync failed; reconcile later via the sync-ACL ` +
-          `API and syncAttributes(). Purchase + mint already confirmed.`,
+        `[buyRecord] spawned ANT ${asset} for "${name}" but ACL owner/controller ` +
+          `bootstrap failed; reconcile via the sync-ACL API. Purchase + mint ` +
+          `already confirmed.`,
+        err,
+      );
+    }
+
+    // Mirror the asset's Attributes plugin (populated by `buy_name`'s CPI) into
+    // the ANT's on-chain record. Best-effort and INDEPENDENT of the ACL step
+    // above — a failure here (e.g. a program/client version skew on
+    // `sync_attributes`) must not undo the ownership records. Reconcilable later
+    // via the public `syncAttributes()`.
+    try {
+      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
+      if (syncIx) {
+        await this.sendTransaction([syncIx]);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `[buyRecord] spawned ANT ${asset} for "${name}": ACL recorded, but ` +
+          `sync_attributes failed; ANT record traits will reconcile on a later ` +
+          `syncAttributes() call.`,
         err,
       );
     }
