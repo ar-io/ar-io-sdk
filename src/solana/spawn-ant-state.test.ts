@@ -6,9 +6,19 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { validateSpawnAntState } from './spawn-ant.js';
+import { generateKeyPairSigner } from '@solana/kit';
+
+import {
+  buildSpawnAntInstructions,
+  DEFAULT_ANT_TRANSACTION_ID,
+  validateSpawnAntState,
+} from './spawn-ant.js';
 
 const TX = 'a'.repeat(43); // valid 43-char Arweave id shape
+
+const utf8Hex = (s: string) => Buffer.from(s, 'utf8').toString('hex');
+const ixHex = (data: unknown) =>
+  Buffer.from(data as Uint8Array).toString('hex');
 
 describe('validateSpawnAntState', () => {
   it('accepts undefined / empty state', () => {
@@ -71,5 +81,69 @@ describe('validateSpawnAntState', () => {
     );
     // Empty target is treated as unset.
     assert.doesNotThrow(() => validateSpawnAntState({ transactionId: '' }));
+  });
+});
+
+/**
+ * Proves that metadata supplied at buy/spawn time is actually forwarded into
+ * the on-chain `ario_ant::initialize` instruction (the second instruction the
+ * spawn builder emits). `buyRecord` passes `{ name, ...antState }` straight into
+ * `buildSpawnAntInstructions`, so this covers the end-to-end threading: if the
+ * spawn stopped forwarding a field, or `buyRecord` stopped spreading `antState`,
+ * the encoded bytes would no longer contain these values.
+ */
+describe('buildSpawnAntInstructions threads metadata into initialize', () => {
+  const MARKER_TARGET = 'b'.repeat(43);
+  const MARKER_DESC = 'ZZUNIQUEDESCRIPTIONMARKER';
+  const MARKER_KEYWORD = 'ZZUNIQUEKEYWORD';
+  const MARKER_TICKER = 'ZZTICK';
+
+  it('encodes the supplied @ target, ticker, description, and keywords', async () => {
+    const signer = await generateKeyPairSigner();
+    const { instructions } = await buildSpawnAntInstructions({
+      signer,
+      state: {
+        name: 'threading-test',
+        ticker: MARKER_TICKER,
+        description: MARKER_DESC,
+        keywords: [MARKER_KEYWORD],
+        transactionId: MARKER_TARGET,
+      },
+    });
+    // [0] = CreateV1 (MPL Core), [1] = ario_ant::initialize.
+    const initData = ixHex(instructions[1]!.data);
+    assert.ok(
+      initData.includes(utf8Hex(MARKER_TARGET)),
+      'target not forwarded',
+    );
+    assert.ok(
+      initData.includes(utf8Hex(MARKER_TICKER)),
+      'ticker not forwarded',
+    );
+    assert.ok(
+      initData.includes(utf8Hex(MARKER_DESC)),
+      'description not forwarded',
+    );
+    assert.ok(
+      initData.includes(utf8Hex(MARKER_KEYWORD)),
+      'keyword not forwarded',
+    );
+  });
+
+  it('falls back to the default target when none is supplied', async () => {
+    const signer = await generateKeyPairSigner();
+    const { instructions } = await buildSpawnAntInstructions({
+      signer,
+      state: { name: 'threading-test' },
+    });
+    const initData = ixHex(instructions[1]!.data);
+    assert.ok(
+      initData.includes(utf8Hex(DEFAULT_ANT_TRANSACTION_ID)),
+      'default target not used',
+    );
+    assert.ok(
+      !initData.includes(utf8Hex(MARKER_DESC)),
+      'unexpected description bytes',
+    );
   });
 });
