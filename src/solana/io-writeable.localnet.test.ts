@@ -400,6 +400,58 @@ describe(
       );
     });
 
+    it('buyRecord with antState bakes the @ target + metadata into the spawned ANT', async () => {
+      // The atomic buy should mint an ANT whose `@` record already points at the
+      // caller-supplied target (not the default AR.IO logo) and carries the
+      // supplied ticker/description/keywords — all in the single buy tx.
+      const buyer = await freshSigner(scratch, 'antstate-buy');
+      await airdrop(buyer.keypairPath, 5);
+      mintArio(buyer.signer.address, 100_000_000_000n); // 100k ARIO
+
+      const buyerArio = buildArio(buyer.signer, RPC_URL!, WS_URL!);
+      const name = 'antstate' + Date.now().toString(36).slice(-6);
+      const target = 'b'.repeat(43); // valid 43-char Arweave-id shape, non-default
+
+      const result = await buyerArio.buyRecord({
+        name,
+        type: 'lease',
+        years: 1,
+        antState: {
+          transactionId: target,
+          ticker: 'E2E',
+          description: 'atomic buy metadata',
+          keywords: ['e2e', 'atomic'],
+        },
+      });
+      const spawnedProcessId = result.result?.processId as string | undefined;
+      assert.ok(spawnedProcessId, 'buyRecord must surface the spawned ANT');
+
+      const rpc = createSolanaRpc(RPC_URL!);
+      const antReader = await ANT.init({
+        rpc,
+        processId: spawnedProcessId!,
+        antProgramId: address(ANT_ID!),
+      });
+      const state = await antReader.getState();
+
+      // The @ record resolves to the supplied target — the headline win.
+      assert.equal(
+        state.Records['@']?.transactionId,
+        target,
+        '@ record must point at the supplied antState.transactionId',
+      );
+      assert.equal(state.Ticker, 'E2E', 'ticker must be set from antState');
+      assert.equal(
+        state.Description,
+        'atomic buy metadata',
+        'description must be set from antState',
+      );
+      assert.ok(
+        state.Keywords.includes('e2e') && state.Keywords.includes('atomic'),
+        'keywords must be set from antState',
+      );
+    });
+
     it('buyRecord({ fundFrom: "stakes", fundAsOperator: false }) deducts from delegation', async () => {
       // Fresh delegator signer
       const delegator = await freshSigner(scratch, 'delegator');
