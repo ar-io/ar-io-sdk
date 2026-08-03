@@ -1520,7 +1520,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       validateSpawnAntState(params.antState);
       const spawn = await buildSpawnAntInstructions({
         signer: this.signer,
-        state: { name: params.name, ...params.antState },
+        // Whitelist only the supported metadata fields — never spread
+        // `antState` wholesale, so a stray `name`/`uri` can't override the
+        // purchased name or bypass URI derivation at runtime.
+        state: {
+          name: params.name,
+          ticker: params.antState?.ticker,
+          description: params.antState?.description,
+          keywords: params.antState?.keywords,
+          logo: params.antState?.logo,
+          transactionId: params.antState?.transactionId,
+          targetProtocol: params.antState?.targetProtocol,
+        },
         antProgramId: this.antProgram,
       });
       spawnIxs = spawn.instructions;

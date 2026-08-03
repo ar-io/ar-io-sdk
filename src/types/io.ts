@@ -672,7 +672,7 @@ export type ArNSBuyAntState = {
   /** Base `@` record target — Arweave TX id (or IPFS CID when targetProtocol=1). */
   transactionId?: string;
   /** Storage protocol for the `@` target: 0 = Arweave (default), 1 = IPFS. */
-  targetProtocol?: number;
+  targetProtocol?: 0 | 1;
 };
 
 export type BuyRecordParams = ArNSPurchaseParams & {

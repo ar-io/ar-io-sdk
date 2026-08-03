@@ -82,6 +82,19 @@ describe('validateSpawnAntState', () => {
     // Empty target is treated as unset.
     assert.doesNotThrow(() => validateSpawnAntState({ transactionId: '' }));
   });
+
+  it('rejects a targetProtocol other than 0 or 1', () => {
+    // The runtime guard must reject out-of-range values arriving from untyped
+    // callers (CLI / JSON), even though the public `ArNSBuyAntState` is 0 | 1.
+    for (const bad of [2, -1, Number.NaN]) {
+      assert.throws(
+        () => validateSpawnAntState({ targetProtocol: bad }),
+        /targetProtocol must be 0 \(Arweave\) or 1 \(IPFS\)/,
+      );
+    }
+    assert.doesNotThrow(() => validateSpawnAntState({ targetProtocol: 0 }));
+    assert.doesNotThrow(() => validateSpawnAntState({ targetProtocol: 1 }));
+  });
 });
 
 /**
