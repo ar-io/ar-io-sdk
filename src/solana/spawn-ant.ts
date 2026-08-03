@@ -60,6 +60,7 @@ import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
+import { ARWEAVE_TX_REGEX } from '../constants.js';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
 import { getAntRecordPDA } from './pda.js';
@@ -113,6 +114,56 @@ export type SpawnSolanaANTState = {
    */
   uri?: string;
 };
+
+/** The optional metadata subset of {@link SpawnSolanaANTState} to validate. */
+type ValidatableAntState = Partial<
+  Pick<
+    SpawnSolanaANTState,
+    | 'ticker'
+    | 'description'
+    | 'keywords'
+    | 'logo'
+    | 'transactionId'
+    | 'targetProtocol'
+  >
+>;
+
+/**
+ * Fast-fail validation of optional ANT initial state before an atomic buy /
+ * spawn. Mirrors the on-chain `ario_ant::initialize` limits so callers get a
+ * clear, actionable error instead of an opaque program revert. Only provided
+ * fields are checked; empty strings are treated as "unset". The `@` target is
+ * only shape-checked as an Arweave TX ID when `targetProtocol` is Arweave (0 /
+ * undefined) — for IPFS (1) the target is a CID, not an Arweave id.
+ */
+export function validateSpawnAntState(state?: ValidatableAntState): void {
+  if (!state) return;
+  if (state.description !== undefined && state.description.length > 512) {
+    throw new Error('ANT description must be 512 characters or fewer');
+  }
+  if (state.keywords !== undefined && state.keywords.length > 16) {
+    throw new Error('ANT keywords must be 16 entries or fewer');
+  }
+  if (
+    state.logo !== undefined &&
+    state.logo.length > 0 &&
+    !ARWEAVE_TX_REGEX.test(state.logo)
+  ) {
+    throw new Error('ANT logo must be a 43-character Arweave transaction ID');
+  }
+  const targetIsArweave =
+    state.targetProtocol === undefined || state.targetProtocol === 0;
+  if (
+    state.transactionId !== undefined &&
+    state.transactionId.length > 0 &&
+    targetIsArweave &&
+    !ARWEAVE_TX_REGEX.test(state.transactionId)
+  ) {
+    throw new Error(
+      'ANT base @ target must be a 43-character Arweave transaction ID',
+    );
+  }
+}
 
 export type SpawnSolanaANTParams = {
   /** RPC client used to fetch a recent blockhash + send the spawn transaction. */

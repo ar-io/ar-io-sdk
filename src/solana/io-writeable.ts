@@ -246,7 +246,10 @@ import {
   sendAndConfirm,
   sendWithEphemeralLookupTable,
 } from './send.js';
-import { buildSpawnAntInstructions } from './spawn-ant.js';
+import {
+  buildSpawnAntInstructions,
+  validateSpawnAntState,
+} from './spawn-ant.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -1509,15 +1512,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     let mintSigner: KeyPairSigner | undefined;
     let antPubkey: Address;
     if (params.processId === undefined) {
+      // Fold optional caller-supplied metadata + `@` target into the freshly
+      // minted ANT so a name can resolve to real content in the SAME buy tx.
+      // Validated up front for a clean error instead of an on-chain revert.
+      validateSpawnAntState(params.antState);
       const spawn = await buildSpawnAntInstructions({
         signer: this.signer,
-        state: { name: params.name },
+        state: { name: params.name, ...params.antState },
         antProgramId: this.antProgram,
       });
       spawnIxs = spawn.instructions;
       mintSigner = spawn.mintSigner;
       antPubkey = spawn.mint;
     } else {
+      if (params.antState !== undefined) {
+        this.logger.warn(
+          '[buyRecord] antState is ignored when buying to an existing ANT ' +
+            '(processId set); set metadata via the ANT writeable instead.',
+        );
+      }
       antPubkey = address(params.processId);
     }
 
