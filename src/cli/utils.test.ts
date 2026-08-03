@@ -11,6 +11,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
+  buyAntStateFromOptions,
   fundingPlanFromOptions,
   requiredAddressFromOptions,
   withdrawalIdFromOptions,
@@ -225,5 +226,65 @@ describe('requiredAddressFromOptions', () => {
       () => requiredAddressFromOptions({}),
       /--address, --wallet-file, or --private-key/,
     );
+  });
+});
+
+describe('buyAntStateFromOptions', () => {
+  it('returns undefined when no metadata flags are supplied', () => {
+    assert.equal(buyAntStateFromOptions({}), undefined);
+  });
+
+  it('maps --transaction-id and --target onto the @ target', () => {
+    assert.deepEqual(buyAntStateFromOptions({ transactionId: 'tx1' }), {
+      transactionId: 'tx1',
+    });
+    // --target is accepted as an alias for the @ record's tx id.
+    assert.deepEqual(buyAntStateFromOptions({ target: 'tx2' }), {
+      transactionId: 'tx2',
+    });
+  });
+
+  it('maps ticker/description/keywords/logo through', () => {
+    assert.deepEqual(
+      buyAntStateFromOptions({
+        ticker: 'BLOG',
+        description: 'hi',
+        keywords: ['a', 'b'],
+        logo: 'logotx',
+      }),
+      {
+        ticker: 'BLOG',
+        description: 'hi',
+        keywords: ['a', 'b'],
+        logo: 'logotx',
+      },
+    );
+  });
+
+  it('parses --target-protocol arweave/ipfs (and numeric) to 0/1', () => {
+    assert.equal(
+      buyAntStateFromOptions({ targetProtocol: 'arweave' })?.targetProtocol,
+      0,
+    );
+    assert.equal(
+      buyAntStateFromOptions({ targetProtocol: 'ipfs' })?.targetProtocol,
+      1,
+    );
+    assert.equal(
+      buyAntStateFromOptions({ targetProtocol: '1' })?.targetProtocol,
+      1,
+    );
+  });
+
+  it('throws on an invalid --target-protocol', () => {
+    assert.throws(
+      () => buyAntStateFromOptions({ targetProtocol: 'https' }),
+      /--target-protocol must be/,
+    );
+  });
+
+  it('does not set TTL (not settable at mint)', () => {
+    const state = buyAntStateFromOptions({ transactionId: 'tx1' });
+    assert.ok(state && !('ttlSeconds' in state));
   });
 });

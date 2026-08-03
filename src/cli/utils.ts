@@ -41,6 +41,7 @@ import type {
   ARIOWrite,
   EpochInput,
   FundFrom,
+  ArNSBuyAntState,
   GetCostDetailsParams,
   PaginationParams,
   RedelegateStakeParams,
@@ -736,6 +737,43 @@ export function requiredPositiveIntegerFromOptions<O extends GlobalCLIOptions>(
  * `--keywords`, `--logo`, `--target` for the @ record tx id) onto the Solana
  * `InitializeAntParams` payload.
  */
+/**
+ * Assemble the optional `antState` for an atomic `buyRecord` from CLI options.
+ * Mirrors the spawn-ant mapping (`--target`/`--transaction-id` → the `@`
+ * record's tx id). Returns `undefined` when no metadata flags were supplied so
+ * a plain buy stays plain. `--ttl-seconds` is intentionally NOT mapped here:
+ * the mint `initialize` instruction has no TTL field, so TTL must be set with a
+ * post-buy `setBaseNameRecord`.
+ */
+export function buyAntStateFromOptions(o: {
+  target?: string;
+  transactionId?: string;
+  ticker?: string;
+  description?: string;
+  keywords?: string[];
+  logo?: string;
+  targetProtocol?: string;
+}): ArNSBuyAntState | undefined {
+  let targetProtocol: number | undefined;
+  if (o.targetProtocol !== undefined) {
+    const p = o.targetProtocol.toLowerCase();
+    if (p === 'arweave' || p === '0') targetProtocol = 0;
+    else if (p === 'ipfs' || p === '1') targetProtocol = 1;
+    else throw new Error('--target-protocol must be "arweave" or "ipfs"');
+  }
+
+  const state: ArNSBuyAntState = {};
+  const target = o.target ?? o.transactionId;
+  if (target !== undefined) state.transactionId = target;
+  if (o.ticker !== undefined) state.ticker = o.ticker;
+  if (o.description !== undefined) state.description = o.description;
+  if (o.keywords !== undefined) state.keywords = o.keywords;
+  if (o.logo !== undefined) state.logo = o.logo;
+  if (targetProtocol !== undefined) state.targetProtocol = targetProtocol;
+
+  return Object.keys(state).length > 0 ? state : undefined;
+}
+
 export async function spawnSolanaANTFromOptions(
   options: ANTStateCLIOptions,
 ): Promise<import('../solana/spawn-ant.js').SpawnSolanaANTResult> {
