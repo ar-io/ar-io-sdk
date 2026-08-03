@@ -23,6 +23,7 @@ import { CLIWriteOptionsFromAoParams } from '../types.js';
 import {
   assertConfirmationPrompt,
   assertEnoughBalanceForArNSPurchase,
+  buyAntStateFromOptions,
   customTagsFromOptions,
   fundFromFromOptions,
   fundingPlanFromOptions,
@@ -60,6 +61,11 @@ export async function buyRecordCLICommand(
   const fundFrom = fundFromFromOptions(o);
   const referrer = referrerFromOptions(o);
   const processId = o.processId;
+  // Optional ANT metadata + `@` target — only meaningful for an atomic buy
+  // (no processId); the SDK ignores it with a warning when processId is set.
+  const antState = buyAntStateFromOptions(
+    o as Parameters<typeof buyAntStateFromOptions>[0],
+  );
 
   if (!o.skipConfirmation) {
     const existingRecord = await ario.getArNSRecord({
@@ -96,6 +102,7 @@ export async function buyRecordCLICommand(
     {
       name: requiredStringFromOptions(o, 'name'),
       processId,
+      antState,
       type,
       years,
       fundFrom: fundFromFromOptions(o),
