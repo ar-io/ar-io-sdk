@@ -173,6 +173,9 @@ export function readARIOFromOptions(options: GlobalCLIOptions): ARIORead {
     ...(options.arnsProgramId
       ? { arnsProgramId: address(options.arnsProgramId) }
       : {}),
+    ...(options.antProgramId
+      ? { antProgramId: address(options.antProgramId) }
+      : {}),
   });
 }
 
@@ -271,6 +274,11 @@ export async function writeARIOFromOptions(options: GlobalCLIOptions): Promise<{
         : {}),
       ...(options.arnsProgramId
         ? { arnsProgramId: address(options.arnsProgramId) }
+        : {}),
+      // Without this, buyRecord's atomic ANT spawn targets the mainnet ANT
+      // program default and fails with ProgramAccountNotFound on devnet/localnet.
+      ...(options.antProgramId
+        ? { antProgramId: address(options.antProgramId) }
         : {}),
     }),
     signerAddress: signer.address as string,
