@@ -151,6 +151,13 @@ export function validateSpawnAntState(state?: ValidatableAntState): void {
   ) {
     throw new Error('ANT logo must be a 43-character Arweave transaction ID');
   }
+  if (
+    state.targetProtocol !== undefined &&
+    state.targetProtocol !== 0 &&
+    state.targetProtocol !== 1
+  ) {
+    throw new Error('ANT targetProtocol must be 0 (Arweave) or 1 (IPFS)');
+  }
   const targetIsArweave =
     state.targetProtocol === undefined || state.targetProtocol === 0;
   if (

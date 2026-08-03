@@ -754,7 +754,7 @@ export function buyAntStateFromOptions(o: {
   logo?: string;
   targetProtocol?: string;
 }): ArNSBuyAntState | undefined {
-  let targetProtocol: number | undefined;
+  let targetProtocol: 0 | 1 | undefined;
   if (o.targetProtocol !== undefined) {
     const p = o.targetProtocol.toLowerCase();
     if (p === 'arweave' || p === '0') targetProtocol = 0;
