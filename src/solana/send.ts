@@ -38,7 +38,10 @@ import {
   type Address,
   type Commitment,
   type Instruction,
+  type KeyPairSigner,
+  type TransactionModifyingSigner,
   type TransactionSigner,
+  addSignersToTransactionMessage,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -48,6 +51,7 @@ import {
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   isTransactionModifyingSigner,
+  partiallySignTransaction,
   pipe,
   sendAndConfirmTransactionFactory,
   setTransactionMessageFeePayerSigner,
@@ -339,6 +343,7 @@ export async function sendAndConfirm({
   autoComputeUnitLimit = true,
   priorityFeeMicroLamports = 'auto',
   addressLookupTables,
+  extraSigners = [],
 }: {
   rpc: SolanaRpc;
   rpcSubscriptions: SolanaRpcSubscriptions;
@@ -381,6 +386,16 @@ export async function sendAndConfirm({
    * on-chain and active. See {@link sendWithEphemeralLookupTable}.
    */
   addressLookupTables?: Record<string, Address[]>;
+  /**
+   * Extra keypair signers (beyond the fee-payer `signer`) whose
+   * WRITABLE/READONLY_SIGNER roles the message must satisfy — e.g. a freshly
+   * generated ANT mint when bundling a spawn into the transaction. They are
+   * attached via `addSignersToTransactionMessage`, and for message-modifying
+   * wallets they are PRE-SIGNED before the wallet signs so the wallet doesn't
+   * rewrite the message and invalidate their signatures (see the ordering note
+   * below, mirrored from `spawnSolanaANT`).
+   */
+  extraSigners?: KeyPairSigner[];
 }): Promise<string> {
   // 'auto' pricing is signer-aware: keypair signers pay the cheap base rate
   // (their txs land fine and bot flows send many), while message-modifying
@@ -460,7 +475,36 @@ export async function sendAndConfirm({
 
   const message = buildMessage(units);
 
-  const signedTx = await signTransactionMessageWithSigners(message);
+  // Attach any extra keypair signers (e.g. a freshly generated ANT mint) so kit
+  // can satisfy their SIGNER roles. `addSignersToTransactionMessage` walks the
+  // message's account metas and registers each matching signer by address.
+  const messageWithSigners =
+    extraSigners.length > 0
+      ? addSignersToTransactionMessage(extraSigners, message)
+      : message;
+
+  // Signing order matters when both an extra keypair AND a message-modifying
+  // wallet (Phantom) are involved: the wallet REWRITES an unsigned tx (injecting
+  // priority-fee / Lighthouse-guard ixs), which invalidates any keypair
+  // signature added after → "address is not a signer". Per Phantom's docs it
+  // leaves a tx alone once it already carries a signature, so we pre-sign with
+  // the extra keypairs FIRST, then hand the partially-signed tx to the wallet.
+  // kit's own pipeline can't express this order (it always runs modifying
+  // signers before partial ones), so we orchestrate it manually here. Keypair
+  // fee-payers (node/tests) carry no rewrite risk and use kit's normal pipeline.
+  let signedTx;
+  if (extraSigners.length > 0 && isTransactionModifyingSigner(signer)) {
+    const compiled = compileTransaction(messageWithSigners);
+    const preSigned = await partiallySignTransaction(
+      extraSigners.map((s) => s.keyPair),
+      compiled,
+    );
+    [signedTx] = await (
+      signer as unknown as TransactionModifyingSigner
+    ).modifyAndSignTransactions([preSigned]);
+  } else {
+    signedTx = await signTransactionMessageWithSigners(messageWithSigners);
+  }
   const sendAndConfirmFactory = sendAndConfirmTransactionFactory({
     rpc,
     rpcSubscriptions,
@@ -563,36 +607,101 @@ async function logSimulationDiagnostics(
   }
 }
 
+/** Solana's hard cap on a serialized transaction (signatures + message). */
+export const MAX_TX_SIZE_BYTES = 1232;
+
 /**
- * Submit `instruction` in a v0 transaction whose `lookupAddresses` (read-only
- * accounts) are served from a freshly-created, ephemeral Address Lookup Table,
- * so an instruction touching far more accounts than fit inline (e.g.
- * `prescribe_epoch` with ≤50 observer PDAs + NameRegistry, ~2 KB of keys) still
- * fits Solana's 1232-byte transaction-size limit.
+ * Compiled wire size (signatures + message) of the v0 transaction
+ * `sendAndConfirm` would build for `instructions` — i.e. WITH the two
+ * compute-budget instructions it always prepends and `extraSigners` attached,
+ * but WITHOUT any lookup-table compression. Lets callers decide up front
+ * (before prompting a wallet) whether a tx needs to be routed through an
+ * Address Lookup Table to fit {@link MAX_TX_SIZE_BYTES}.
+ *
+ * Uses a zero blockhash and zero-filled signatures — neither affects the byte
+ * length (blockhash is always 32 bytes, each signature 64) — so no RPC call is
+ * needed.
+ */
+export function estimateCompiledTxSize({
+  signer,
+  instructions,
+  extraSigners = [],
+  computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+}: {
+  signer: TransactionSigner;
+  instructions: Instruction[];
+  extraSigners?: KeyPairSigner[];
+  computeUnitLimit?: number;
+}): number {
+  const message = pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+    (tx) =>
+      setTransactionMessageLifetimeUsingBlockhash(
+        {
+          blockhash: '11111111111111111111111111111111' as never,
+          lastValidBlockHeight: 0n,
+        },
+        tx,
+      ),
+    (tx) =>
+      appendTransactionMessageInstructions(
+        [
+          getSetComputeUnitLimitInstruction({ units: computeUnitLimit }),
+          getSetComputeUnitPriceInstruction({ microLamports: 1n }),
+          ...instructions,
+        ],
+        tx,
+      ),
+    (tx) =>
+      extraSigners.length > 0
+        ? addSignersToTransactionMessage(extraSigners, tx)
+        : tx,
+  );
+  const compiled = compileTransaction(message);
+  const numSigners = Object.keys(compiled.signatures).length;
+  // wire tx = [compact-u16 sig count (1 byte for < 128 sigs)][sigs][message]
+  return 1 + numSigners * 64 + compiled.messageBytes.length;
+}
+
+/**
+ * Submit `instructions` in a v0 transaction whose `lookupAddresses` (non-signer,
+ * non-invoked-program accounts) are served from a freshly-created, ephemeral
+ * Address Lookup Table, so a transaction touching far more accounts than fit
+ * inline (e.g. `prescribe_epoch` with ≤50 observer PDAs, or the atomic
+ * spawn-and-buy with a large multi-source funding plan) still fits Solana's
+ * 1232-byte transaction-size limit.
  *
  * Three confirmed steps: create the table, extend it with the addresses (in
  * ≤20-address batches to stay within the extend tx size), then send
- * `instruction` compressed against the table. The sequential confirmations
+ * `instructions` compressed against the table. The sequential confirmations
  * satisfy the rule that appended addresses are only usable the slot AFTER they
  * are added. `signer` is the table's authority + payer; the table's (tiny) rent
  * is left allocated — a future cleanup pass can deactivate + close it.
+ *
+ * `extraSigners` (e.g. a freshly generated ANT mint keypair when the final
+ * transaction bundles a spawn) are attached to the compressed send. Only the
+ * final consuming transaction carries them; the create/extend txs are signed by
+ * `signer` alone.
  */
 export async function sendWithEphemeralLookupTable({
   rpc,
   rpcSubscriptions,
   signer,
-  instruction,
+  instructions,
   lookupAddresses,
   commitment = 'confirmed',
   computeUnitLimit = 1_000_000,
+  extraSigners = [],
 }: {
   rpc: SolanaRpc;
   rpcSubscriptions: SolanaRpcSubscriptions;
   signer: TransactionSigner;
-  instruction: Instruction;
+  instructions: Instruction[];
   lookupAddresses: Address[];
   commitment?: Commitment;
   computeUnitLimit?: number;
+  extraSigners?: KeyPairSigner[];
 }): Promise<string> {
   const recentSlot = await rpc.getSlot({ commitment: 'finalized' }).send();
   const createIx = await getCreateLookupTableInstructionAsync({
@@ -639,15 +748,16 @@ export async function sendWithEphemeralLookupTable({
   // them. Skipping this yields "address table lookup uses an invalid index".
   await waitForLookupTableActive(rpc, tableAddress, lookupAddresses.length);
 
-  // Send the real instruction, compressed against the now-active table.
+  // Send the real instructions, compressed against the now-active table.
   return sendAndConfirm({
     rpc,
     rpcSubscriptions,
     signer,
-    instructions: [instruction],
+    instructions,
     commitment,
     computeUnitLimit,
     addressLookupTables: { [tableAddress]: lookupAddresses },
+    extraSigners,
   });
 }
 

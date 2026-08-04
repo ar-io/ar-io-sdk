@@ -1296,7 +1296,7 @@ const delegates = await ario.getAllDelegates({
 
 </details>
 
-### Arweave Name System (ArNS)
+### ar.io Name System (ArNS)
 
 #### `resolveArNSName({ name })`
 

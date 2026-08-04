@@ -41,9 +41,11 @@ import {
 
 import { ANT } from '../common/ant.js';
 import { ARIO } from '../common/io.js';
+import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import { deserializeWithdrawal } from './deserialize.js';
 import { SolanaARIOWriteable } from './io-writeable.js';
+import { fetchMplCoreOwner } from './mpl-core.js';
 import {
   getArioConfigPDA,
   getPrimaryNamePDA,
@@ -339,6 +341,62 @@ describe(
         stakeBefore - stakeAfter,
         BigInt(record.purchasePrice),
         'operator_stake must decrease by exactly the purchase price',
+      );
+    });
+
+    it('buyRecord without processId spawns a fresh ANT and assigns the name in one tx', async () => {
+      // Hermetic fresh buyer: spawn-and-buy mints a new asset (rent) + pays the
+      // ArNS price, so fund SOL + ARIO up front.
+      const buyer = await freshSigner(scratch, 'spawn-buy');
+      await airdrop(buyer.keypairPath, 5);
+      mintArio(buyer.signer.address, 100_000_000_000n); // 100k ARIO
+
+      const buyerArio = buildArio(buyer.signer, RPC_URL!, WS_URL!);
+      const name = 'spawnbuy' + Date.now().toString(36).slice(-6);
+
+      // No `processId` → the SDK spawns an ANT and assigns the name atomically
+      // in a single [CreateV1, initialize, buy_name] transaction.
+      const result = await buyerArio.buyRecord({
+        name,
+        type: 'lease',
+        years: 1,
+      });
+      assert.ok(result.id, 'spawn-and-buy buyRecord must return a tx id');
+      const spawnedProcessId = result.result?.processId as string | undefined;
+      assert.ok(
+        spawnedProcessId,
+        'buyRecord must surface the spawned ANT processId',
+      );
+
+      // The record points at the freshly-minted ANT — NOT the "no ANT" sentinel.
+      const record = await buyerArio.getArNSRecord({ name });
+      assert.equal(record.processId, spawnedProcessId);
+      assert.notEqual(record.processId, '11111111111111111111111111111111');
+      assert.equal(record.type, 'lease');
+      assert.ok(record.purchasePrice > 0, 'purchasePrice must be > 0');
+
+      // The spawned asset is a real MPL Core NFT owned by the buyer.
+      const rpc = createSolanaRpc(RPC_URL!);
+      const owner = await fetchMplCoreOwner(rpc, address(spawnedProcessId!), {
+        commitment: 'confirmed',
+      });
+      assert.equal(owner?.toLowerCase(), buyer.signer.address.toLowerCase());
+
+      // The deferred follow-up tx bootstrapped the buyer's ACL (owner + controller).
+      const registry = new SolanaANTRegistryReadable({
+        rpc,
+        antProgramId: address(ANT_ID!),
+      });
+      const acl = await registry.accessControlList({
+        address: buyer.signer.address as string,
+      });
+      assert.ok(
+        acl.Owned.includes(spawnedProcessId!),
+        'spawned ANT must appear in the owner ACL after the follow-up tx',
+      );
+      assert.ok(
+        acl.Controlled.includes(spawnedProcessId!),
+        'spawned ANT must appear in the controller ACL after the follow-up tx',
       );
     });
 
