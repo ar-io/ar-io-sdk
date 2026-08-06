@@ -489,7 +489,9 @@ export type CrankAction =
   | 'distribute'
   | 'compound'
   | 'update_demand_factor'
+  | 'prune_name_to_returned'
   | 'prune_returned_names'
+  | 'prune_expired_names'
   | 'close_observation'
   | 'close'
   | 'idle';
@@ -547,6 +549,34 @@ export interface CrankEpochStepOptions {
    * crank poll rate. Default 60_000 (1 min). Set 0 to scan every step (tests).
    */
   pruneScanIntervalMs?: number;
+  /**
+   * Convert leases past their grace period into ReturnedName Dutch auctions
+   * (`prune_name_to_returned`) as part of the crank. Default true.
+   *
+   * Without this the ArNS lifecycle never advances: `prune_returned_names`
+   * only cleans up ReturnedName PDAs, and none can ever exist unless something
+   * creates them. Nobody else has an incentive to — `prune_to_returned` always
+   * sets `initiator = config`, so `buy_returned_name` pays 100% to the protocol
+   * and 0% to the caller. The cranker is the designated actor
+   * (`WORKFLOWS.md`: "Cranker — drive epoch pipeline, update demand factor,
+   * prune state | ario-gar, ario-arns").
+   *
+   * One name per tx — the instruction takes a single record, not a batch.
+   */
+  enablePruneToReturned?: boolean;
+  /**
+   * Directly close lease records that are past `grace + auction` — they missed
+   * their auction window, so `prune_expired_names` closes them without minting
+   * a fresh (unearned) auction. Default true. Batched like the returned-name
+   * step; rent refunds to the cranker, so this is net-positive on SOL.
+   */
+  enablePruneExpired?: boolean;
+  /**
+   * ArnsRecord PDAs to close per `prune_expired_names` tx. Default 26 — the
+   * measured ceiling before the 1232-byte tx limit is exceeded (26 → 1178 B,
+   * 28 → over). Capped at 26 internally.
+   */
+  pruneExpiredBatchSize?: number;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -4329,6 +4359,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const compoundMinPending = opts.compoundMinPendingRewards ?? 0;
     const enableDemandFactorRoll = opts.enableDemandFactorRoll ?? true;
     const enablePrune = opts.enablePrune ?? true;
+    const enablePruneToReturned = opts.enablePruneToReturned ?? true;
+    const enablePruneExpired = opts.enablePruneExpired ?? true;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -4401,10 +4433,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // observe → distribution never advances → the post-distribution tail below
     // is never reached).
     if (now < epoch.endTimestamp) {
-      if (enablePrune) {
-        const pruned = await this.maybePruneReturnedNamesStep(opts, now);
-        if (pruned) return pruned;
-      }
+      const pruned = await this.maybeArnsLifecycleStep(opts, now, {
+        toReturned: enablePruneToReturned,
+        returned: enablePrune,
+        expired: enablePruneExpired,
+      });
+      if (pruned) return pruned;
       return { action: 'idle', reason: 'waiting_for_observations' };
     }
 
@@ -4504,8 +4538,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       const rolled = await this.maybeRollDemandFactorStep(now);
       if (rolled) return rolled;
     }
-    if (enablePrune) {
-      const pruned = await this.maybePruneReturnedNamesStep(opts, now);
+    {
+      const pruned = await this.maybeArnsLifecycleStep(opts, now, {
+        toReturned: enablePruneToReturned,
+        returned: enablePrune,
+        expired: enablePruneExpired,
+      });
       if (pruned) return pruned;
     }
 
@@ -4563,6 +4601,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *  getProgramAccounts scan below the crank poll rate. */
   private lastReturnedNamePruneScanMs = 0;
 
+  /** Wall-clock (ms) of the last prune-to-returned scan. Throttled separately
+   *  from the returned-name scan so one can't starve the other. */
+  private lastPruneToReturnedScanMs = 0;
+
+  /** Wall-clock (ms) of the last past-auction (direct close) prune scan. */
+  private lastPruneExpiredScanMs = 0;
+
   /**
    * One prune batch over ReturnedName PDAs whose 14-day auction window has
    * elapsed (≤ {@link CrankEpochStepOptions.pruneBatchSize} per tx), or `null`
@@ -4591,6 +4636,106 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
     return {
       action: 'prune_returned_names',
+      txId: id,
+      progress: { index: batch.length, total: expired.length },
+    };
+  }
+
+  /**
+   * The full ArNS lifecycle-maintenance sweep, run wherever the epoch pipeline
+   * is otherwise idle. Returns the first step that did work, or `null`.
+   *
+   * Order is load-bearing. `prune_name_to_returned` goes FIRST because it is
+   * the only time-sensitive step: a lease past its grace period must be
+   * converted while it is still inside its auction window, otherwise it ages
+   * into the past-auction band and gets closed directly — the protocol loses
+   * that Dutch auction (and its revenue) permanently. The two cleanup steps
+   * have no such deadline, so they yield to it.
+   */
+  private async maybeArnsLifecycleStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+    flags: { toReturned: boolean; returned: boolean; expired: boolean },
+  ): Promise<CrankEpochStepResult | null> {
+    if (flags.toReturned) {
+      const r = await this.maybePruneToReturnedStep(opts, now);
+      if (r) return r;
+    }
+    if (flags.returned) {
+      const r = await this.maybePruneReturnedNamesStep(opts, now);
+      if (r) return r;
+    }
+    if (flags.expired) {
+      const r = await this.maybePruneExpiredNamesStep(opts, now);
+      if (r) return r;
+    }
+    return null;
+  }
+
+  /**
+   * Convert ONE lease that is past its grace period — but still inside its
+   * return-auction window — into a `ReturnedName` Dutch auction, or `null`
+   * when none are due / the scan is throttled.
+   *
+   * This is the step whose absence stalled the whole ArNS lifecycle: without
+   * it no ReturnedName PDA is ever created, so `prune_returned_names` drains a
+   * queue that is never filled and expired names keep resolving forever.
+   *
+   * One name per tx (the instruction takes a single record). Records past
+   * `grace + auction` are intentionally NOT handled here — see
+   * {@link maybePruneExpiredNamesStep}. The contract re-checks the grace
+   * window itself, so a skewed client clock is safe.
+   */
+  private async maybePruneToReturnedStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastPruneToReturnedScanMs < scanInterval) return null;
+    this.lastPruneToReturnedScanMs = wallNow;
+
+    const due = await this.getPruneableToReturnedRecords(now);
+    if (due.length === 0) return null;
+
+    const target = due[0];
+    const { id } = await this.pruneNameToReturned({ name: target.name });
+    return {
+      action: 'prune_name_to_returned',
+      txId: id,
+      progress: { index: 1, total: due.length },
+    };
+  }
+
+  /**
+   * One batch of `prune_expired_names` over lease records past
+   * `grace + auction`, or `null` when none are due / the scan is throttled.
+   *
+   * These missed their auction window entirely, so the contract closes them
+   * directly rather than minting a fresh 50x-premium auction. Closing returns
+   * the record's rent to the cranker, making this step net-positive on SOL.
+   */
+  private async maybePruneExpiredNamesStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastPruneExpiredScanMs < scanInterval) return null;
+    this.lastPruneExpiredScanMs = wallNow;
+
+    const expired = await this.getExpiredArnsRecords(now);
+    if (expired.length === 0) return null;
+
+    // 26 is the measured ceiling before the 1232-byte tx limit (26 -> 1178 B).
+    const batchSize = Math.min(opts.pruneExpiredBatchSize ?? 26, 26);
+    const batch = expired.slice(0, batchSize).map((r) => r.pubkey as string);
+    const { id } = await this.pruneExpiredNames({
+      maxNames: batch.length,
+      arnsRecords: batch,
+    });
+    return {
+      action: 'prune_expired_names',
       txId: id,
       progress: { index: batch.length, total: expired.length },
     };
