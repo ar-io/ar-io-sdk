@@ -1,3 +1,10 @@
+# [4.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.6...v4.1.0-alpha.7) (2026-08-06)
+
+
+### Features
+
+* **crank:** drive the full ArNS lease lifecycle from crankEpochStep ([0d8b7ea](https://github.com/ar-io/ar-io-sdk/commit/0d8b7ea00525edd9dcb0d7f0f3fb8153acf6da9f))
+
 # [4.1.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.5...v4.1.0-alpha.6) (2026-07-18)
 
 
