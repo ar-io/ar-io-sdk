@@ -186,6 +186,41 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`pruneReturned:${p.returnedNames.length}`);
     return { id: 'tx-prune-returned' };
   }
+
+  // --- ArNS lifecycle steps: leases past grace (→ auction) and leases past
+  // grace+auction (→ closed directly). Both default empty so every pre-existing
+  // test keeps its old behaviour. ---
+  pruneableToReturned: Array<{
+    pubkey: Address;
+    name: string;
+    endTimestamp: bigint;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getPruneableToReturnedRecords(): Promise<any> {
+    this.calls.push('getPruneableToReturned');
+    return this.pruneableToReturned;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async pruneNameToReturned(p: any): Promise<any> {
+    this.calls.push(`pruneToReturned:${p.name}`);
+    return { id: 'tx-prune-to-returned' };
+  }
+
+  expiredArns: Array<{
+    pubkey: Address;
+    name: string;
+    endTimestamp: bigint;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getExpiredArnsRecords(): Promise<any> {
+    this.calls.push('getExpiredArns');
+    return this.expiredArns;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async pruneExpiredNames(p: any): Promise<any> {
+    this.calls.push(`pruneExpired:${p.arnsRecords.length}`);
+    return { id: 'tx-prune-expired' };
+  }
 }
 
 const baseSettings: Settings = {
@@ -732,5 +767,177 @@ describe('filterLiveObservations (stale getProgramAccounts ghost guard)', () => 
     const h = new LiveFilterHarness(rpc as never);
     assert.deepEqual(await h.run(5, []), []);
     assert.equal(called, false, 'empty candidate set must not hit the RPC');
+  });
+});
+
+describe('crankEpochStep — ArNS lease lifecycle (prune_name_to_returned / prune_expired_names)', () => {
+  const leases = (n: number, tag = 40) =>
+    Array.from({ length: n }, (_, i) => ({
+      pubkey: pk(tag + i),
+      name: `lease${i}`,
+      endTimestamp: 0n,
+    }));
+  const returned = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      pubkey: pk(20 + i),
+      name: `ret${i}`,
+      returnedAt: 0n,
+    }));
+
+  // Live epoch parked in the observation window — the dominant idle state.
+  const liveWaiting = (c: TestCranker) => {
+    c.settings = { ...baseSettings };
+    c.epochs[0] = { ...liveEpoch, rewardsDistributed: 0, endTimestamp: 9999 };
+  };
+  // Fully-distributed epoch, before the next one is due — the tail window.
+  const tail = (c: TestCranker) => {
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [];
+    c.dfPeriod = { currentPeriod: 2, periodZeroStartTimestamp: 0 };
+  };
+
+  it('converts a past-grace lease into a returned-name auction', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(3);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.equal(r.txId, 'tx-prune-to-returned');
+    // one name per tx — the instruction takes a single record
+    assert.deepEqual(r.progress, { index: 1, total: 3 });
+    assert.ok(c.calls.includes('pruneToReturned:lease0'));
+  });
+
+  it('prioritises prune_name_to_returned over both cleanup steps', async () => {
+    // All three have work. The to-returned step is the only time-sensitive one:
+    // miss the auction window and the auction is lost permanently.
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(1);
+    c.expiredReturned = returned(5);
+    c.expiredArns = leases(5, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneReturned')));
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneExpired')));
+  });
+
+  it('closes past-auction leases once the earlier steps have nothing to do', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = [];
+    c.expiredReturned = [];
+    c.expiredArns = leases(4, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_expired_names');
+    assert.equal(r.txId, 'tx-prune-expired');
+    assert.deepEqual(r.progress, { index: 4, total: 4 });
+    assert.ok(c.calls.includes('pruneExpired:4'));
+  });
+
+  it('caps the expired-name batch at 26 (the 1232-byte tx ceiling)', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredArns = leases(100, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_expired_names');
+    assert.deepEqual(r.progress, { index: 26, total: 100 });
+    assert.ok(c.calls.includes('pruneExpired:26'));
+  });
+
+  it('honours a smaller pruneExpiredBatchSize but never exceeds 26', async () => {
+    const small = new TestCranker();
+    liveWaiting(small);
+    small.expiredArns = leases(100, 60);
+    const r1 = await small.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneExpiredBatchSize: 5,
+    });
+    assert.deepEqual(r1.progress, { index: 5, total: 100 });
+
+    const big = new TestCranker();
+    liveWaiting(big);
+    big.expiredArns = leases(100, 60);
+    const r2 = await big.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneExpiredBatchSize: 250, // oversized caller value must be clamped
+    });
+    assert.deepEqual(r2.progress, { index: 26, total: 100 });
+  });
+
+  it('enablePruneToReturned:false leaves past-grace leases alone', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(3);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enablePruneToReturned: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneToReturned')));
+  });
+
+  it('enablePruneExpired:false leaves past-auction leases alone', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredArns = leases(3, 60);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enablePruneExpired: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneExpired')));
+  });
+
+  it('throttles each scan independently so neither starves the other', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(1);
+    c.expiredArns = leases(3, 60);
+    // default 60s throttle: first call scans + converts
+    const r1 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(r1.action, 'prune_name_to_returned');
+    const toReturnedScans = c.calls.filter(
+      (x) => x === 'getPruneableToReturned',
+    ).length;
+    // immediate second call → to-returned scan throttled; must not re-scan
+    const r2 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(
+      c.calls.filter((x) => x === 'getPruneableToReturned').length,
+      toReturnedScans,
+      'throttled step must not re-scan within its window',
+    );
+    // ...while the expired step, on its own independent clock, is still free to
+    // run this tick. That independence is the whole point: the to-returned
+    // step's throttle must not starve the cleanup steps behind it.
+    assert.equal(r2.action, 'prune_expired_names');
+    // Third call: every scan is now inside its own window → genuinely idle.
+    const r3 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(r3.action, 'idle');
+  });
+
+  it('also runs the lifecycle in the post-distribution tail', async () => {
+    const c = new TestCranker();
+    tail(c);
+    c.pruneableToReturned = leases(2);
+    const r = await c.crankEpochStep({ now: 1200, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.ok(c.calls.includes('pruneToReturned:lease0'));
+  });
+
+  it('idles when the whole ArNS lifecycle is clear', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = [];
+    c.expiredReturned = [];
+    c.expiredArns = [];
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'idle');
+    assert.equal(r.reason, 'waiting_for_observations');
   });
 });
