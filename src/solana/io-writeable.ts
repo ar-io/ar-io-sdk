@@ -38,11 +38,13 @@ import {
   AccountRole,
   type Address,
   type Instruction,
+  type KeyPairSigner,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
   createTransactionMessage,
   fetchEncodedAccount,
+  fetchEncodedAccounts,
   getAddressDecoder,
   getBase64EncodedWireTransaction,
   pipe,
@@ -113,6 +115,7 @@ import type {
 } from '../types/io.js';
 import { type FundingSourceSpec as PublicFundingSourceSpec } from '../types/io.js';
 import type { mARIOToken } from '../types/token.js';
+import { splitPrimaryName } from '../utils/arns.js';
 import {
   buildCreateAtaIdempotentIx,
   getAssociatedTokenAddressKit,
@@ -171,6 +174,7 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import {
   Protocol,
+  getAdminSetRewardRatiosInstructionAsync,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
   getClaimDelegateFromDisabledGatewayInstructionAsync,
@@ -202,9 +206,11 @@ import {
   getUpdateObserverAddressInstructionAsync,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
+import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
+  getAntAuthorityPDA,
   getAntConfigPDA,
   getAntRecordPDA,
   getArioConfigPDA,
@@ -236,10 +242,16 @@ import {
 } from './predict-prescribed-observers.js';
 import {
   DEFAULT_COMPUTE_UNIT_LIMIT,
+  MAX_TX_SIZE_BYTES,
+  estimateCompiledTxSize,
   reclaimLookupTablesForSigner,
   sendAndConfirm,
   sendWithEphemeralLookupTable,
 } from './send.js';
+import {
+  buildSpawnAntInstructions,
+  validateSpawnAntState,
+} from './spawn-ant.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -309,31 +321,6 @@ export function selectFinalizeGoneSwapOperator(
   }
   const lastIndex = registryAddresses.length - 1;
   return registryIndex === lastIndex ? null : registryAddresses[lastIndex];
-}
-
-/**
- * Split a primary name into its undername + base parts using the same rule
- * as the on-chain `splitn(2, '_')` in `programs/ario-core/src/instructions/primary_name.rs`:
- * everything before the first '_' is the undername, the rest is the base.
- *
- * Exposed as a top-level helper so it can be unit-tested without spinning up
- * an `SolanaARIOWriteable`. Lowercases the input to match contract behavior.
- */
-export function splitPrimaryName(name: string): {
-  isUndername: boolean;
-  baseName: string;
-  undername: string | null;
-} {
-  const lower = name.toLowerCase();
-  const ix = lower.indexOf('_');
-  if (ix === -1) {
-    return { isUndername: false, baseName: lower, undername: null };
-  }
-  return {
-    isUndername: true,
-    baseName: lower.slice(ix + 1),
-    undername: lower.slice(0, ix),
-  };
 }
 
 /**
@@ -452,6 +439,47 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
  * `compound-crank.test.ts` asserts this invariant against the live constant.
  */
 export const MAX_COMPOUND_BATCH = 6;
+/**
+ * CU ceiling for the atomic spawn-and-buy tx (`[CreateV1, initialize,
+ * buy_name]`). buy_name CPIs into MPL Core `UpdatePluginV1` on top of the MPL
+ * Core mint + ario-ant initialize, so it needs more headroom than a plain
+ * buy (`DEFAULT_COMPUTE_UNIT_LIMIT`). Keypair signers auto-size below this from
+ * a pre-send simulation; message-modifying wallets keep this generous ceiling.
+ */
+const SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT = 800_000;
+/**
+ * Collect the account addresses in `instructions` that are safe to serve from
+ * an Address Lookup Table: every account meta EXCEPT signers (which must remain
+ * in the static keys) and the invoked top-level program ids (a program invoked
+ * by an instruction cannot be loaded from an ALT). `alwaysInline` pins extra
+ * addresses static — the fee payer and any bundled mint signer. CPI-target
+ * programs that appear only as account metas (e.g. system, token) ARE eligible.
+ * Deduped; order-independent.
+ */
+function altEligibleAddresses(
+  instructions: Instruction[],
+  alwaysInline: Address[],
+): Address[] {
+  const inline = new Set<string>(alwaysInline as string[]);
+  for (const ix of instructions) {
+    inline.add(ix.programAddress);
+    for (const acc of ix.accounts ?? []) {
+      if (
+        acc.role === AccountRole.READONLY_SIGNER ||
+        acc.role === AccountRole.WRITABLE_SIGNER
+      ) {
+        inline.add(acc.address);
+      }
+    }
+  }
+  const eligible = new Set<Address>();
+  for (const ix of instructions) {
+    for (const acc of ix.accounts ?? []) {
+      if (!inline.has(acc.address)) eligible.add(acc.address);
+    }
+  }
+  return [...eligible];
+}
 /** Observation PDAs closed per tx before close_epoch (each ix carries Epoch +
  *  Observation + payer + system accounts — keep well under the tx account cap). */
 const MAX_CLOSE_OBSERVATION_BATCH = 8;
@@ -466,7 +494,9 @@ export type CrankAction =
   | 'distribute'
   | 'compound'
   | 'update_demand_factor'
+  | 'prune_name_to_returned'
   | 'prune_returned_names'
+  | 'prune_expired_names'
   | 'close_observation'
   | 'close'
   | 'idle';
@@ -524,6 +554,34 @@ export interface CrankEpochStepOptions {
    * crank poll rate. Default 60_000 (1 min). Set 0 to scan every step (tests).
    */
   pruneScanIntervalMs?: number;
+  /**
+   * Convert leases past their grace period into ReturnedName Dutch auctions
+   * (`prune_name_to_returned`) as part of the crank. Default true.
+   *
+   * Without this the ArNS lifecycle never advances: `prune_returned_names`
+   * only cleans up ReturnedName PDAs, and none can ever exist unless something
+   * creates them. Nobody else has an incentive to — `prune_to_returned` always
+   * sets `initiator = config`, so `buy_returned_name` pays 100% to the protocol
+   * and 0% to the caller. The cranker is the designated actor
+   * (`WORKFLOWS.md`: "Cranker — drive epoch pipeline, update demand factor,
+   * prune state | ario-gar, ario-arns").
+   *
+   * One name per tx — the instruction takes a single record, not a batch.
+   */
+  enablePruneToReturned?: boolean;
+  /**
+   * Directly close lease records that are past `grace + auction` — they missed
+   * their auction window, so `prune_expired_names` closes them without minting
+   * a fresh (unearned) auction. Default true. Batched like the returned-name
+   * step; rent refunds to the cranker, so this is net-positive on SOL.
+   */
+  enablePruneExpired?: boolean;
+  /**
+   * ArnsRecord PDAs to close per `prune_expired_names` tx. Default 26 — the
+   * measured ceiling before the 1232-byte tx limit is exceeded (26 → 1178 B,
+   * 28 → over). Capped at 26 internally.
+   */
+  pruneExpiredBatchSize?: number;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -601,6 +659,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected async sendTransaction(
     instructions: Instruction[],
     computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+    extraSigners: KeyPairSigner[] = [],
   ): Promise<string> {
     return sendAndConfirm({
       rpc: this.rpc,
@@ -609,6 +668,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       instructions,
       commitment: this.commitment,
       computeUnitLimit,
+      extraSigners,
     });
   }
 
@@ -1471,9 +1531,52 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       arnsConfig.mint,
       this.signer.address,
     );
-    const antPubkey = address(
-      params.processId ?? ('11111111111111111111111111111111' as Address),
-    );
+
+    // When no ANT (`processId`) is supplied, atomically spawn a fresh ANT and
+    // assign the name to it in the SAME transaction. `buy_name` CPIs into the
+    // new asset's Attributes plugin to write the ArNS traits — instructions
+    // execute in order, so the asset (minted by the prepended `CreateV1`)
+    // exists by the time `buy_name` runs. The owner's ACL registry bootstrap +
+    // trait sync are deferred to a follow-up tx to keep this one under the
+    // 1232-byte transaction-size limit (neither needs to be atomic with the
+    // purchase). See `_bootstrapSpawnedAntAcl`.
+    let spawnIxs: Instruction[] = [];
+    let mintSigner: KeyPairSigner | undefined;
+    let antPubkey: Address;
+    if (params.processId === undefined) {
+      // Fold optional caller-supplied metadata + `@` target into the freshly
+      // minted ANT so a name can resolve to real content in the SAME buy tx.
+      // Validated up front for a clean error instead of an on-chain revert.
+      validateSpawnAntState(params.antState);
+      const spawn = await buildSpawnAntInstructions({
+        signer: this.signer,
+        // Whitelist only the supported metadata fields — never spread
+        // `antState` wholesale, so a stray `name`/`uri` can't override the
+        // purchased name or bypass URI derivation at runtime.
+        state: {
+          name: params.name,
+          ticker: params.antState?.ticker,
+          description: params.antState?.description,
+          keywords: params.antState?.keywords,
+          logo: params.antState?.logo,
+          transactionId: params.antState?.transactionId,
+          targetProtocol: params.antState?.targetProtocol,
+        },
+        antProgramId: this.antProgram,
+      });
+      spawnIxs = spawn.instructions;
+      mintSigner = spawn.mintSigner;
+      antPubkey = spawn.mint;
+    } else {
+      if (params.antState !== undefined) {
+        this.logger.warn(
+          '[buyRecord] antState is ignored when buying to an existing ANT ' +
+            '(processId set); set metadata via the ANT writeable instead.',
+        );
+      }
+      antPubkey = address(params.processId);
+    }
+
     const [arnsRecord] = await getArnsRecordPDA(params.name, this.arnsProgram);
     const [reservedNameCheck] = await getReservedNamePDA(
       params.name,
@@ -1605,6 +1708,56 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
     }
 
+    // Spawn-and-buy: prepend `[CreateV1, initialize]` and attach the mint
+    // signer. We DON'T bundle `sync_attributes` here — the asset doesn't exist
+    // on-chain at SDK build time (it's minted in THIS tx), so the owner check
+    // in `_buildSyncAttributesIxIfOwner` would 404. The ACL bootstrap + trait
+    // sync run in a separate follow-up tx (`buy_name` already populated the
+    // asset's traits via CPI, so the deferred sync just mirrors them into the
+    // ANT's on-chain record).
+    if (mintSigner !== undefined) {
+      const spawnAndBuyIxs = [...spawnIxs, ix];
+      // Balance/credit-funded spawn-and-buy fits inline (~1.1 KB) and lands in
+      // ONE signature. But a multi-source funding plan appends per-source
+      // remaining accounts to `buy_name` (~33 bytes each) and can blow past
+      // Solana's 1232-byte limit. When that happens, route the whole
+      // spawn-and-buy through an ephemeral Address Lookup Table (create →
+      // extend → compressed v0 tx), compressing every non-signer,
+      // non-invoked-program account. The mint stays inline (it's a signer).
+      const inlineSize = estimateCompiledTxSize({
+        signer: this.signer,
+        instructions: spawnAndBuyIxs,
+        extraSigners: [mintSigner],
+        computeUnitLimit: SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+      });
+      let sig: string;
+      if (inlineSize <= MAX_TX_SIZE_BYTES) {
+        sig = await this.sendTransaction(
+          spawnAndBuyIxs,
+          SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+          [mintSigner],
+        );
+      } else {
+        sig = await sendWithEphemeralLookupTable({
+          rpc: this.rpc,
+          rpcSubscriptions: this.rpcSubscriptions,
+          signer: this.signer,
+          instructions: spawnAndBuyIxs,
+          lookupAddresses: altEligibleAddresses(spawnAndBuyIxs, [
+            this.signer.address,
+            mintSigner.address,
+          ]),
+          commitment: this.commitment,
+          computeUnitLimit: SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT,
+          extraSigners: [mintSigner],
+        });
+      }
+      await this._bootstrapSpawnedAntAcl(antPubkey, params.name);
+      // Surface the freshly-minted ANT's id so callers don't have to re-fetch
+      // the record to discover which asset the name was assigned to.
+      return { id: sig, result: { processId: antPubkey as string } };
+    }
+
     // Sprint 4 / ADR-016: bundle `ant.sync_attributes` IFF the buyer
     // owns the ANT (preserves BD-096 — non-holder buys defer the trait
     // sync to a later `syncAttributes()` call by the actual owner).
@@ -1617,6 +1770,74 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
     const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
     return { id: sig };
+  }
+
+  /**
+   * Post-spawn housekeeping for the atomic spawn-and-buy path: bootstrap the
+   * new owner's paginated ACL registry entries (so "ANTs I own / control"
+   * lookups resolve) and sync the ANT's on-chain record from the asset's
+   * Attributes plugin (which `buy_name` populated via CPI). Sent as a SEPARATE
+   * transaction because bundling it with `[create, initialize, buy_name]`
+   * would overflow the 1232-byte transaction-size limit — and neither step
+   * needs to be atomic with the purchase.
+   *
+   * Best-effort: the name purchase + ANT mint already confirmed in the prior
+   * tx, so a failure here is logged rather than thrown. The owner can reconcile
+   * later via the sync-ACL API and `syncAttributes()`.
+   */
+  private async _bootstrapSpawnedAntAcl(
+    asset: Address,
+    name: string,
+  ): Promise<void> {
+    // Record the owner/controller ACL entries FIRST, in their OWN transaction.
+    // This is the ownership-critical step — the app-side drift detection treats
+    // a missing ACL owner entry as "needs ownership sync". It must NOT be
+    // bundled with `sync_attributes`: if that instruction reverts (e.g. an ANT
+    // program build whose `sync_attributes` enforces an `ant_authority` PDA the
+    // client doesn't yet derive), an atomic bundle would roll the ACL records
+    // back too, silently un-recording ownership.
+    try {
+      const registry = new SolanaANTRegistryWriteable({
+        rpc: this.rpc,
+        signer: this.signer,
+        commitment: this.commitment,
+        antProgramId: this.antProgram,
+        logger: this.logger,
+      });
+      const aclIxs = await registry.bootstrapOwnerOnSpawn({
+        owner: this.signer.address,
+        asset,
+      });
+      if (aclIxs.length > 0) {
+        await this.sendTransaction(aclIxs);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `[buyRecord] spawned ANT ${asset} for "${name}" but ACL owner/controller ` +
+          `bootstrap failed; reconcile via the sync-ACL API. Purchase + mint ` +
+          `already confirmed.`,
+        err,
+      );
+    }
+
+    // Mirror the asset's Attributes plugin (populated by `buy_name`'s CPI) into
+    // the ANT's on-chain record. Best-effort and INDEPENDENT of the ACL step
+    // above — a failure here (e.g. a program/client version skew on
+    // `sync_attributes`) must not undo the ownership records. Reconcilable later
+    // via the public `syncAttributes()`.
+    try {
+      const syncIx = await this._buildSyncAttributesIxIfOwner(name, asset);
+      if (syncIx) {
+        await this.sendTransaction([syncIx]);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `[buyRecord] spawned ANT ${asset} for "${name}": ACL recorded, but ` +
+          `sync_attributes failed; ANT record traits will reconcile on a later ` +
+          `syncAttributes() call.`,
+        err,
+      );
+    }
   }
 
   /**
@@ -2185,11 +2406,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     asset: Address,
   ): Promise<Instruction> {
     const [arnsRecord] = await getArnsRecordPDA(name, this.arnsProgram);
+    // ADR-028: the `authority` signer is gone. Program-controlled ANTs are
+    // synced permissionlessly (the program signs UpdatePluginV1 with the
+    // per-asset `ant_authority` PDA); legacy ANTs still require the owner as
+    // `payer`. Either way we pass the derived PDA.
+    const [antAuthority] = await getAntAuthorityPDA(asset, this.antProgram);
     return getSyncAttributesInstruction(
       {
         asset,
         payer: this.signer,
-        authority: this.signer,
+        antAuthority,
         arnsRecord,
         name,
       },
@@ -2967,7 +3193,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.coreProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    // The on-chain handler transfers into ownerTokenAccount but does NOT
+    // init it (it's a plain `mut` TokenAccount constraint). A holder who only
+    // ever held vaults (e.g. migrated investor/team allocations) may have no
+    // ARIO ATA yet — bundle an idempotent create so the release can't fail on
+    // a missing destination. Same pattern as createVault/vaultedTransfer.
+    const createOwnerAtaIx = buildCreateAtaIdempotentIx(
+      this.signer.address,
+      ownerATA,
+      this.signer.address,
+      mint,
+    );
+
+    const sig = await this.sendTransaction([createOwnerAtaIx, ix]);
     return { id: sig };
   }
 
@@ -3815,7 +4053,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         rpc: this.rpc,
         rpcSubscriptions: this.rpcSubscriptions,
         signer: this.signer,
-        instruction: fullIx,
+        instructions: [fullIx],
         lookupAddresses: remaining.map((a) => a.address),
         commitment: this.commitment,
         computeUnitLimit: 1_000_000,
@@ -4089,6 +4327,38 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * Set the epoch reward split between gateways and observers on the
+   * `EpochSettings` PDA (authority-signed). Both ratios are scaled by
+   * `RATE_SCALE` (1_000_000 == 100%) and MUST sum to exactly `RATE_SCALE`;
+   * the on-chain instruction rejects any other sum. The new split takes
+   * effect at the NEXT epoch prescription — already-computed epochs keep
+   * their stamped per-gateway / per-observer rewards.
+   *
+   * Authority-gated and NOT migration-gated (survives `finalize_migration`),
+   * so the split remains a governable parameter post-cutover. Solana-only.
+   */
+  async adminSetRewardRatios(
+    params: {
+      gatewayRewardRatio: number | bigint;
+      observerRewardRatio: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [epochSettings] = await getEpochSettingsPDA(this.garProgram);
+    const ix = await getAdminSetRewardRatiosInstructionAsync(
+      {
+        epochSettings,
+        authority: this.signer,
+        gatewayRewardRatio: BigInt(params.gatewayRewardRatio),
+        observerRewardRatio: BigInt(params.observerRewardRatio),
+      },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
    * Submit `prescribe_epoch` using the off-chain-predicted observer set, with a
    * single re-predict-and-retry on `InvalidGatewayAccount` (covers a gateway
    * leaving the registry between the prediction read and the tx landing).
@@ -4152,6 +4422,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const compoundMinPending = opts.compoundMinPendingRewards ?? 0;
     const enableDemandFactorRoll = opts.enableDemandFactorRoll ?? true;
     const enablePrune = opts.enablePrune ?? true;
+    const enablePruneToReturned = opts.enablePruneToReturned ?? true;
+    const enablePruneExpired = opts.enablePruneExpired ?? true;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -4224,10 +4496,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // observe → distribution never advances → the post-distribution tail below
     // is never reached).
     if (now < epoch.endTimestamp) {
-      if (enablePrune) {
-        const pruned = await this.maybePruneReturnedNamesStep(opts, now);
-        if (pruned) return pruned;
-      }
+      const pruned = await this.maybeArnsLifecycleStep(opts, now, {
+        toReturned: enablePruneToReturned,
+        returned: enablePrune,
+        expired: enablePruneExpired,
+      });
+      if (pruned) return pruned;
       return { action: 'idle', reason: 'waiting_for_observations' };
     }
 
@@ -4271,7 +4545,21 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         if (old && old.rewardsDistributed === 1) {
           if (old.observationsSubmitted > old.observationsClosed) {
             // Open observations remain — close a batch before close_epoch.
-            const observers = await this.getEpochObservers(closeTarget);
+            //
+            // getEpochObservers discovers observers via getProgramAccounts,
+            // whose secondary index LAGS finalized state — badly under RPC 429
+            // pressure. It can return Observation PDAs that were already closed.
+            // Including a ghost in the atomic closeObservations batch reverts the
+            // WHOLE tx with AccountNotInitialized, so nothing closes, the counter
+            // never advances, and we retry the identical doomed batch every crank
+            // tick: a self-reinforcing wedge + 429 firehose. Re-validate the
+            // candidates against fresh per-account reads (read-after-write
+            // consistent, unlike getProgramAccounts) and only close live PDAs.
+            const candidates = await this.getEpochObservers(closeTarget);
+            const observers = await this.filterLiveObservations(
+              closeTarget,
+              candidates,
+            );
             if (observers.length > 0) {
               const batch = observers.slice(0, MAX_CLOSE_OBSERVATION_BATCH);
               const { id } = await this.closeObservations({
@@ -4285,9 +4573,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
                 progress: { index: batch.length, total: observers.length },
               };
             }
-            // Counter says open but no Observation PDA exists (orphaned counter):
-            // can't close it, so don't attempt close_epoch (it would revert) and
-            // don't wedge — fall through to create-next.
+            // Counter says open but no LIVE Observation PDA exists — an orphaned
+            // counter, or getProgramAccounts ghosts from a stale index. Can't
+            // close it, so don't attempt close_epoch (it would revert) and don't
+            // wedge — fall through to create-next.
           } else {
             const { id } = await this.closeEpoch({ epochIndex: closeTarget });
             return { action: 'close', epochIndex: closeTarget, txId: id };
@@ -4312,8 +4601,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       const rolled = await this.maybeRollDemandFactorStep(now);
       if (rolled) return rolled;
     }
-    if (enablePrune) {
-      const pruned = await this.maybePruneReturnedNamesStep(opts, now);
+    {
+      const pruned = await this.maybeArnsLifecycleStep(opts, now, {
+        toReturned: enablePruneToReturned,
+        returned: enablePrune,
+        expired: enablePruneExpired,
+      });
       if (pruned) return pruned;
     }
 
@@ -4371,6 +4664,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *  getProgramAccounts scan below the crank poll rate. */
   private lastReturnedNamePruneScanMs = 0;
 
+  /** Wall-clock (ms) of the last prune-to-returned scan. Throttled separately
+   *  from the returned-name scan so one can't starve the other. */
+  private lastPruneToReturnedScanMs = 0;
+
+  /** Wall-clock (ms) of the last past-auction (direct close) prune scan. */
+  private lastPruneExpiredScanMs = 0;
+
   /**
    * One prune batch over ReturnedName PDAs whose 14-day auction window has
    * elapsed (≤ {@link CrankEpochStepOptions.pruneBatchSize} per tx), or `null`
@@ -4399,6 +4699,106 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
     return {
       action: 'prune_returned_names',
+      txId: id,
+      progress: { index: batch.length, total: expired.length },
+    };
+  }
+
+  /**
+   * The full ArNS lifecycle-maintenance sweep, run wherever the epoch pipeline
+   * is otherwise idle. Returns the first step that did work, or `null`.
+   *
+   * Order is load-bearing. `prune_name_to_returned` goes FIRST because it is
+   * the only time-sensitive step: a lease past its grace period must be
+   * converted while it is still inside its auction window, otherwise it ages
+   * into the past-auction band and gets closed directly — the protocol loses
+   * that Dutch auction (and its revenue) permanently. The two cleanup steps
+   * have no such deadline, so they yield to it.
+   */
+  private async maybeArnsLifecycleStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+    flags: { toReturned: boolean; returned: boolean; expired: boolean },
+  ): Promise<CrankEpochStepResult | null> {
+    if (flags.toReturned) {
+      const r = await this.maybePruneToReturnedStep(opts, now);
+      if (r) return r;
+    }
+    if (flags.returned) {
+      const r = await this.maybePruneReturnedNamesStep(opts, now);
+      if (r) return r;
+    }
+    if (flags.expired) {
+      const r = await this.maybePruneExpiredNamesStep(opts, now);
+      if (r) return r;
+    }
+    return null;
+  }
+
+  /**
+   * Convert ONE lease that is past its grace period — but still inside its
+   * return-auction window — into a `ReturnedName` Dutch auction, or `null`
+   * when none are due / the scan is throttled.
+   *
+   * This is the step whose absence stalled the whole ArNS lifecycle: without
+   * it no ReturnedName PDA is ever created, so `prune_returned_names` drains a
+   * queue that is never filled and expired names keep resolving forever.
+   *
+   * One name per tx (the instruction takes a single record). Records past
+   * `grace + auction` are intentionally NOT handled here — see
+   * {@link maybePruneExpiredNamesStep}. The contract re-checks the grace
+   * window itself, so a skewed client clock is safe.
+   */
+  private async maybePruneToReturnedStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastPruneToReturnedScanMs < scanInterval) return null;
+    this.lastPruneToReturnedScanMs = wallNow;
+
+    const due = await this.getPruneableToReturnedRecords(now);
+    if (due.length === 0) return null;
+
+    const target = due[0];
+    const { id } = await this.pruneNameToReturned({ name: target.name });
+    return {
+      action: 'prune_name_to_returned',
+      txId: id,
+      progress: { index: 1, total: due.length },
+    };
+  }
+
+  /**
+   * One batch of `prune_expired_names` over lease records past
+   * `grace + auction`, or `null` when none are due / the scan is throttled.
+   *
+   * These missed their auction window entirely, so the contract closes them
+   * directly rather than minting a fresh 50x-premium auction. Closing returns
+   * the record's rent to the cranker, making this step net-positive on SOL.
+   */
+  private async maybePruneExpiredNamesStep(
+    opts: CrankEpochStepOptions,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastPruneExpiredScanMs < scanInterval) return null;
+    this.lastPruneExpiredScanMs = wallNow;
+
+    const expired = await this.getExpiredArnsRecords(now);
+    if (expired.length === 0) return null;
+
+    // 26 is the measured ceiling before the 1232-byte tx limit (26 -> 1178 B).
+    const batchSize = Math.min(opts.pruneExpiredBatchSize ?? 26, 26);
+    const batch = expired.slice(0, batchSize).map((r) => r.pubkey as string);
+    const { id } = await this.pruneExpiredNames({
+      maxNames: batch.length,
+      arnsRecords: batch,
+    });
+    return {
+      action: 'prune_expired_names',
       txId: id,
       progress: { index: batch.length, total: expired.length },
     };
@@ -4742,6 +5142,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Reclaim rent from an Observation PDA whose epoch has been distributed.
    * Permissionless. Pass `epochIndex` and the `observer` address used as
    * the Observation seed.
+   *
+   * Rent is refunded to the `observer` (bound on-chain to
+   * `observation.observer` via an address constraint), NOT to the caller —
+   * the signer (`caller`) only pays the tx fee. A third-party closer cannot
+   * redirect the reclaimed rent to itself.
    */
   async closeObservation(
     params: { epochIndex: number; observer: string },
@@ -4757,7 +5162,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const ix = await getCloseObservationInstructionAsync(
       {
         observation: observationPda,
-        payer: this.signer,
+        observer: observerAddr,
+        caller: this.signer,
         epochIndex: BigInt(params.epochIndex),
       },
       { programAddress: this.garProgram },
@@ -4770,11 +5176,49 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   /**
    * Close multiple Observation PDAs for one epoch in a single tx (each
    * `close_observation` increments the parent Epoch's `observations_closed`).
-   * Permissionless; rent is refunded to the payer. Used by the crank to satisfy
+   * Permissionless; rent for each observation is refunded to its recorded
+   * `observer` (NOT the caller — bound on-chain via an address constraint),
+   * while the signer only pays the tx fee. Used by the crank to satisfy
    * `close_epoch`'s `observations_closed == observations_submitted` precondition
    * before closing a retention-aged epoch. Keep the batch small — each ix carries
-   * the Epoch + Observation + payer + system accounts.
+   * the Epoch + Observation + observer + caller accounts.
    */
+  /**
+   * Filter a candidate observer set down to those whose Observation PDA still
+   * exists on-chain, using fresh per-account reads.
+   *
+   * {@link getEpochObservers} discovers observers via `getProgramAccounts`,
+   * whose secondary index lags finalized state (and lags badly under RPC 429
+   * pressure), so it can return observers whose Observation PDA was already
+   * closed. Feeding those ghosts into the atomic {@link closeObservations}
+   * batch makes the whole tx revert with `AccountNotInitialized`, wedging the
+   * close and retrying the identical doomed batch every crank tick.
+   *
+   * `fetchEncodedAccounts` (getMultipleAccounts) is read-after-write consistent
+   * at this client's commitment, so it does not return ghosts — one RPC call
+   * validates the entire candidate set.
+   */
+  protected async filterLiveObservations(
+    epochIndex: number,
+    observers: string[],
+  ): Promise<string[]> {
+    if (observers.length === 0) return [];
+    const pdas = await Promise.all(
+      observers.map(async (obs) => {
+        const [pda] = await getObservationPDA(
+          epochIndex,
+          address(obs),
+          this.garProgram,
+        );
+        return pda;
+      }),
+    );
+    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
+      commitment: this.commitment,
+    });
+    return observers.filter((_obs, i) => accounts[i]?.exists);
+  }
+
   async closeObservations(
     params: { epochIndex: number; observers: string[] },
     _options?: WriteOptions,
@@ -4784,15 +5228,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
     const ixs = await Promise.all(
       params.observers.map(async (obs) => {
+        const observerAddr = address(obs);
         const [observationPda] = await getObservationPDA(
           params.epochIndex,
-          address(obs),
+          observerAddr,
           this.garProgram,
         );
         return getCloseObservationInstructionAsync(
           {
             observation: observationPda,
-            payer: this.signer,
+            observer: observerAddr,
+            caller: this.signer,
             epochIndex: BigInt(params.epochIndex),
           },
           { programAddress: this.garProgram },

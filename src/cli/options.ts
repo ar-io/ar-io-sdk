@@ -542,6 +542,14 @@ export const buyRecordOptions = [
   optionMap.type,
   optionMap.years,
   optionMap.processId,
+  // Optional ANT metadata + `@` target for an atomic buy (no --process-id).
+  // TTL is omitted on purpose — it can't be set at mint (see buyAntStateFromOptions).
+  optionMap.transactionId,
+  optionMap.targetProtocol,
+  optionMap.ticker,
+  optionMap.description,
+  optionMap.keywords,
+  optionMap.logo,
 ];
 
 export const antStateOptions = [

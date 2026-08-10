@@ -1,8 +1,14 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address, getAddressDecoder } from '@solana/kit';
+import {
+  AccountRole,
+  type Address,
+  type Instruction,
+  getAddressDecoder,
+} from '@solana/kit';
 
+import { getAdminSetRewardRatiosInstructionDataDecoder } from '@ar.io/solana-contracts/gar';
 import { SolanaARIOWriteable } from './io-writeable.js';
 
 const dec = getAddressDecoder();
@@ -95,8 +101,8 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`distribute:${p.gatewayAccounts.length}`);
     return { id: 'tx-distribute' };
   }
-  // biome-ignore lint/suspicious/noExplicitAny: test stubs
   closeEpochError: Error | null = null;
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async closeEpoch(p: any): Promise<any> {
     this.calls.push(`close:${p.epochIndex}`);
     if (this.closeEpochError) throw this.closeEpochError;
@@ -112,6 +118,19 @@ class TestCranker extends SolanaARIOWriteable {
   async closeObservations(p: any): Promise<any> {
     this.calls.push(`closeObservations:${p.epochIndex}:${p.observers.length}`);
     return { id: 'tx-close-obs' };
+  }
+  // filterLiveObservations stub — mirrors the SDK's stale-ghost guard without
+  // touching RPC. Default is identity (every candidate is live); a test sets
+  // `liveObservers[i]` to simulate getProgramAccounts returning already-closed
+  // (stale-index) ghosts.
+  liveObservers: Record<number, Address[]> | null = null;
+  protected async filterLiveObservations(
+    epochIndex: number,
+    observers: string[],
+  ): Promise<string[]> {
+    this.calls.push(`filterLive:${epochIndex}:${observers.length}`);
+    if (this.liveObservers === null) return observers;
+    return this.liveObservers[epochIndex] ?? [];
   }
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async prescribeEpoch(p: any): Promise<any> {
@@ -172,6 +191,41 @@ class TestCranker extends SolanaARIOWriteable {
   async pruneReturnedNames(p: any): Promise<any> {
     this.calls.push(`pruneReturned:${p.returnedNames.length}`);
     return { id: 'tx-prune-returned' };
+  }
+
+  // --- ArNS lifecycle steps: leases past grace (→ auction) and leases past
+  // grace+auction (→ closed directly). Both default empty so every pre-existing
+  // test keeps its old behaviour. ---
+  pruneableToReturned: Array<{
+    pubkey: Address;
+    name: string;
+    endTimestamp: bigint;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getPruneableToReturnedRecords(): Promise<any> {
+    this.calls.push('getPruneableToReturned');
+    return this.pruneableToReturned;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async pruneNameToReturned(p: any): Promise<any> {
+    this.calls.push(`pruneToReturned:${p.name}`);
+    return { id: 'tx-prune-to-returned' };
+  }
+
+  expiredArns: Array<{
+    pubkey: Address;
+    name: string;
+    endTimestamp: bigint;
+  }> = [];
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getExpiredArnsRecords(): Promise<any> {
+    this.calls.push('getExpiredArns');
+    return this.expiredArns;
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async pruneExpiredNames(p: any): Promise<any> {
+    this.calls.push(`pruneExpired:${p.arnsRecords.length}`);
+    return { id: 'tx-prune-expired' };
   }
 }
 
@@ -583,6 +637,46 @@ describe('crankEpochStep — close observations before close_epoch', () => {
     );
   });
 
+  it('closes only the LIVE observers, dropping stale-index ghosts', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 0 });
+    // getProgramAccounts (getEpochObservers) returns 3 — but its index is stale.
+    c.epochObservers[2] = [pk(1), pk(2), pk(3)];
+    // Only pk(1) still exists on-chain; pk(2)/pk(3) were already closed.
+    c.liveObservers = { 2: [pk(1)] };
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.equal(r.action, 'close_observation');
+    assert.ok(
+      c.calls.includes('closeObservations:2:1'),
+      'closes only the 1 live observer',
+    );
+    assert.ok(
+      !c.calls.includes('closeObservations:2:3'),
+      'never builds the doomed 3-wide batch that would revert AccountNotInitialized',
+    );
+  });
+
+  it('does NOT attempt a close (no wedge) when every candidate is a stale ghost', async () => {
+    const c = new TestCranker();
+    setup(c, { observationsSubmitted: 3, observationsClosed: 0 });
+    c.epochObservers[2] = [pk(1), pk(2), pk(3)];
+    c.liveObservers = { 2: [] }; // all already closed; the counter is just stale
+    const r = await c.crankEpochStep({ now: 1900, epochRetention: 7 });
+    assert.ok(
+      !c.calls.some((x) => x.startsWith('closeObservations:')),
+      'must not submit a close_observations tx that would revert + wedge',
+    );
+    assert.ok(
+      !c.calls.some((x) => x.startsWith('close:')),
+      'must not attempt close_epoch with the counter still open',
+    );
+    assert.notEqual(
+      r.action,
+      'close_observation',
+      'falls through to create-next instead of retrying a doomed batch',
+    );
+  });
+
   it('caps the observation-close batch at 8', async () => {
     const c = new TestCranker();
     setup(c, { observationsSubmitted: 20, observationsClosed: 0 });
@@ -620,5 +714,362 @@ describe('crankEpochStep — close observations before close_epoch', () => {
     assert.notEqual(r.action, 'close_observation');
     assert.notEqual(r.action, 'close');
     assert.equal(r.action, 'create'); // progression continues
+  });
+});
+
+// --- direct test of the REAL filterLiveObservations (the stale-ghost guard) ---
+//
+// Exercises the actual PDA-derive → getMultipleAccounts → `.exists` filter (not
+// the TestCranker stub), with a mock RPC whose per-index existence we control.
+function existenceRpc(exists: boolean[]) {
+  return {
+    getMultipleAccounts: (addrs: unknown[]) => ({
+      send: async () => ({
+        value: addrs.map((_a, i) =>
+          exists[i]
+            ? {
+                data: ['', 'base64'],
+                executable: false,
+                lamports: 1n,
+                owner: '11111111111111111111111111111111',
+                rentEpoch: 0n,
+                space: 0n,
+              }
+            : null,
+        ),
+      }),
+    }),
+  };
+}
+
+class LiveFilterHarness extends SolanaARIOWriteable {
+  constructor(rpc: any) {
+    super({
+      rpc,
+      rpcSubscriptions: {} as never,
+      signer: { address: pk(99) } as never,
+    } as never);
+  }
+  run(epochIndex: number, observers: string[]): Promise<string[]> {
+    return this.filterLiveObservations(epochIndex, observers);
+  }
+}
+
+describe('filterLiveObservations (stale getProgramAccounts ghost guard)', () => {
+  it('keeps only observers whose Observation PDA still exists on a fresh read', async () => {
+    const h = new LiveFilterHarness(existenceRpc([true, false, true]));
+    const live = await h.run(5, [pk(1), pk(2), pk(3)]);
+    assert.deepEqual(live, [pk(1), pk(3)]);
+  });
+
+  it('returns [] without any RPC call for an empty candidate set', async () => {
+    let called = false;
+    const rpc = {
+      getMultipleAccounts: () => {
+        called = true;
+        return { send: async () => ({ value: [] }) };
+      },
+    };
+    const h = new LiveFilterHarness(rpc as never);
+    assert.deepEqual(await h.run(5, []), []);
+    assert.equal(called, false, 'empty candidate set must not hit the RPC');
+  });
+});
+
+// =========================================================================
+// Built-instruction ABI (contracts ar-io-solana-contracts#116)
+// =========================================================================
+//
+// The lifecycle tests above stub `closeObservations`, so they never build a
+// real instruction. These tests exercise the REAL builders through a
+// capturing `sendTransaction` override and assert the exact on-chain account
+// list a cranker submits — the surface the observer / cranker follow-up has
+// to match.
+
+const SIGNER = pk(99); // the fee-paying caller (matches TestCranker's signer)
+const OBSERVER_A = pk(7);
+const OBSERVER_B = pk(8);
+
+// A minimal but real `TransactionSigner`: Codama's account-meta factory only
+// emits a *signer* meta (role WRITABLE_SIGNER / READONLY_SIGNER, with a
+// `.signer` field) when the account value passes `isTransactionSigner` — i.e.
+// carries at least one signing method. A bare `{ address }` is silently
+// downgraded to a non-signer, so the stub must expose the signing surface.
+const signerStub = {
+  address: SIGNER,
+  signTransactions: async () => [],
+  signAndSendTransactions: async () => [],
+};
+
+/** Builds instructions but captures them instead of sending. */
+class CaptureWriteable extends SolanaARIOWriteable {
+  captured: Instruction[] = [];
+  constructor() {
+    super({
+      rpc: {} as never,
+      rpcSubscriptions: {} as never,
+      signer: signerStub as never,
+    } as never);
+  }
+  // Capture built instructions instead of sending them.
+  protected async sendTransaction(
+    instructions: Instruction[],
+  ): Promise<string> {
+    this.captured.push(...instructions);
+    return 'captured-sig';
+  }
+}
+
+describe('close_observation — rent routes to the observer, not the caller', () => {
+  it('closeObservation builds [epoch, observation, observer, caller] with the observer as rent recipient', async () => {
+    const c = new CaptureWriteable();
+    await c.closeObservation({ epochIndex: 2, observer: OBSERVER_A });
+
+    assert.equal(c.captured.length, 1);
+    const accounts = c.captured[0].accounts ?? [];
+    assert.equal(accounts.length, 4, 'no legacy `payer` account — 4 accounts');
+
+    const [, , observer, caller] = accounts;
+    // observer (index 2): the observation's recorded observer, writable, NON-signer.
+    assert.equal(observer.address, OBSERVER_A);
+    assert.equal(observer.role, AccountRole.WRITABLE);
+    assert.ok(!('signer' in observer), 'observer must not sign');
+    // caller (index 3): the fee-paying signer.
+    assert.equal(caller.address, SIGNER);
+    assert.equal(caller.role, AccountRole.WRITABLE_SIGNER);
+    assert.ok('signer' in caller, 'caller must be the signer');
+    // rent goes to the observer, which is distinct from the caller.
+    assert.notEqual(observer.address, caller.address);
+  });
+
+  it('closeObservations emits one ix per observer, each routing rent to that observer', async () => {
+    const c = new CaptureWriteable();
+    await c.closeObservations({
+      epochIndex: 2,
+      observers: [OBSERVER_A, OBSERVER_B],
+    });
+
+    assert.equal(c.captured.length, 2);
+    const [ixA, ixB] = c.captured;
+    // ix[0]: rent → OBSERVER_A, signed by the caller.
+    assert.equal(ixA.accounts?.[2].address, OBSERVER_A);
+    assert.equal(ixA.accounts?.[3].address, SIGNER);
+    // ix[1]: rent → OBSERVER_B, signed by the caller.
+    assert.equal(ixB.accounts?.[2].address, OBSERVER_B);
+    assert.equal(ixB.accounts?.[3].address, SIGNER);
+  });
+});
+
+describe('adminSetRewardRatios — authority-signed epoch reward-split setter', () => {
+  it('builds [epochSettings(writable), authority(signer)] carrying both u64 ratios', async () => {
+    const c = new CaptureWriteable();
+    await c.adminSetRewardRatios({
+      gatewayRewardRatio: 900_000,
+      observerRewardRatio: 100_000,
+    });
+
+    assert.equal(c.captured.length, 1);
+    const ix = c.captured[0];
+    const accounts = ix.accounts ?? [];
+    assert.equal(accounts.length, 2);
+
+    const [epochSettings, authority] = accounts;
+    assert.equal(epochSettings.role, AccountRole.WRITABLE);
+    assert.ok(!('signer' in epochSettings), 'epochSettings must not sign');
+    assert.equal(authority.address, SIGNER);
+    assert.equal(authority.role, AccountRole.READONLY_SIGNER);
+    assert.ok('signer' in authority, 'authority must be the signer');
+
+    // The instruction data carries both ratios as u64.
+    const decoded = getAdminSetRewardRatiosInstructionDataDecoder().decode(
+      ix.data,
+    );
+    assert.equal(decoded.gatewayRewardRatio, 900_000n);
+    assert.equal(decoded.observerRewardRatio, 100_000n);
+  });
+
+  it('accepts bigint ratios and round-trips them through the encoder', async () => {
+    const c = new CaptureWriteable();
+    await c.adminSetRewardRatios({
+      gatewayRewardRatio: 750_000n,
+      observerRewardRatio: 250_000n,
+    });
+    const decoded = getAdminSetRewardRatiosInstructionDataDecoder().decode(
+      c.captured[0].data,
+    );
+    assert.equal(decoded.gatewayRewardRatio, 750_000n);
+    assert.equal(decoded.observerRewardRatio, 250_000n);
+  });
+});
+
+describe('crankEpochStep — ArNS lease lifecycle (prune_name_to_returned / prune_expired_names)', () => {
+  const leases = (n: number, tag = 40) =>
+    Array.from({ length: n }, (_, i) => ({
+      pubkey: pk(tag + i),
+      name: `lease${i}`,
+      endTimestamp: 0n,
+    }));
+  const returned = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      pubkey: pk(20 + i),
+      name: `ret${i}`,
+      returnedAt: 0n,
+    }));
+
+  // Live epoch parked in the observation window — the dominant idle state.
+  const liveWaiting = (c: TestCranker) => {
+    c.settings = { ...baseSettings };
+    c.epochs[0] = { ...liveEpoch, rewardsDistributed: 0, endTimestamp: 9999 };
+  };
+  // Fully-distributed epoch, before the next one is due — the tail window.
+  const tail = (c: TestCranker) => {
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1000 };
+    c.compoundable = [];
+    c.dfPeriod = { currentPeriod: 2, periodZeroStartTimestamp: 0 };
+  };
+
+  it('converts a past-grace lease into a returned-name auction', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(3);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.equal(r.txId, 'tx-prune-to-returned');
+    // one name per tx — the instruction takes a single record
+    assert.deepEqual(r.progress, { index: 1, total: 3 });
+    assert.ok(c.calls.includes('pruneToReturned:lease0'));
+  });
+
+  it('prioritises prune_name_to_returned over both cleanup steps', async () => {
+    // All three have work. The to-returned step is the only time-sensitive one:
+    // miss the auction window and the auction is lost permanently.
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(1);
+    c.expiredReturned = returned(5);
+    c.expiredArns = leases(5, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneReturned')));
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneExpired')));
+  });
+
+  it('closes past-auction leases once the earlier steps have nothing to do', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = [];
+    c.expiredReturned = [];
+    c.expiredArns = leases(4, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_expired_names');
+    assert.equal(r.txId, 'tx-prune-expired');
+    assert.deepEqual(r.progress, { index: 4, total: 4 });
+    assert.ok(c.calls.includes('pruneExpired:4'));
+  });
+
+  it('caps the expired-name batch at 26 (the 1232-byte tx ceiling)', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredArns = leases(100, 60);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_expired_names');
+    assert.deepEqual(r.progress, { index: 26, total: 100 });
+    assert.ok(c.calls.includes('pruneExpired:26'));
+  });
+
+  it('honours a smaller pruneExpiredBatchSize but never exceeds 26', async () => {
+    const small = new TestCranker();
+    liveWaiting(small);
+    small.expiredArns = leases(100, 60);
+    const r1 = await small.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneExpiredBatchSize: 5,
+    });
+    assert.deepEqual(r1.progress, { index: 5, total: 100 });
+
+    const big = new TestCranker();
+    liveWaiting(big);
+    big.expiredArns = leases(100, 60);
+    const r2 = await big.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneExpiredBatchSize: 250, // oversized caller value must be clamped
+    });
+    assert.deepEqual(r2.progress, { index: 26, total: 100 });
+  });
+
+  it('enablePruneToReturned:false leaves past-grace leases alone', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(3);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enablePruneToReturned: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneToReturned')));
+  });
+
+  it('enablePruneExpired:false leaves past-auction leases alone', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.expiredArns = leases(3, 60);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enablePruneExpired: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.ok(!c.calls.some((x) => x.startsWith('pruneExpired')));
+  });
+
+  it('throttles each scan independently so neither starves the other', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(1);
+    c.expiredArns = leases(3, 60);
+    // default 60s throttle: first call scans + converts
+    const r1 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(r1.action, 'prune_name_to_returned');
+    const toReturnedScans = c.calls.filter(
+      (x) => x === 'getPruneableToReturned',
+    ).length;
+    // immediate second call → to-returned scan throttled; must not re-scan
+    const r2 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(
+      c.calls.filter((x) => x === 'getPruneableToReturned').length,
+      toReturnedScans,
+      'throttled step must not re-scan within its window',
+    );
+    // ...while the expired step, on its own independent clock, is still free to
+    // run this tick. That independence is the whole point: the to-returned
+    // step's throttle must not starve the cleanup steps behind it.
+    assert.equal(r2.action, 'prune_expired_names');
+    // Third call: every scan is now inside its own window → genuinely idle.
+    const r3 = await c.crankEpochStep({ now: 5000 });
+    assert.equal(r3.action, 'idle');
+  });
+
+  it('also runs the lifecycle in the post-distribution tail', async () => {
+    const c = new TestCranker();
+    tail(c);
+    c.pruneableToReturned = leases(2);
+    const r = await c.crankEpochStep({ now: 1200, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.ok(c.calls.includes('pruneToReturned:lease0'));
+  });
+
+  it('idles when the whole ArNS lifecycle is clear', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = [];
+    c.expiredReturned = [];
+    c.expiredArns = [];
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'idle');
+    assert.equal(r.reason, 'waiting_for_observations');
   });
 });

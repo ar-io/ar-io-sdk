@@ -5,12 +5,13 @@
  * change to MPL Core's `CreateV1` schema or our default attribute-plugin
  * shape is caught at the unit-test level instead of at deploy time.
  *
- * The migration import package emits the same `CreateV1` payload via the
- * legacy @solana/web3.js path (`migration/import/src/instructions/mint-nft.ts`).
- * The byte fixtures below were captured from that path before this PR and
- * must stay byte-identical — divergence would mean migration-minted ANTs
- * and SDK-minted ANTs no longer share a shape, which would in turn break
- * `purchase`'s `UpdatePluginV1` CPI on the SDK-minted side (or vice-versa).
+ * ADR-028: fresh ANTs now mint with the Attributes-plugin authority =
+ * `UpdateAuthority` (plugin authority byte `02`, was `01` = Owner) and the
+ * asset `updateAuthority` set to the per-asset `ant_authority` PDA. This is an
+ * intentional divergence from legacy (pre-ADR-028) mints — including historical
+ * migration-import ANTs, which are `adopt_authority`-adoptable onto the new
+ * model. The `authority` byte is the only data-level change; the account list
+ * gains the explicit `updateAuthority` at kinobi position 5.
  */
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
@@ -22,6 +23,8 @@ import { buildCreateAntInstruction } from './spawn-ant.js';
 const FIXED_MINT: Address = address('11111111111111111111111111111112');
 const FIXED_AUTH: Address = address('11111111111111111111111111111113');
 const FIXED_PAY: Address = address('11111111111111111111111111111114');
+// ADR-028: the per-asset `ant_authority` PDA. Fixed placeholder for byte-pinning.
+const FIXED_UA: Address = address('11111111111111111111111111111115');
 
 function hex(b: Uint8Array | ReadonlyUint8Array | undefined): string {
   assert.ok(b, 'instruction data must be defined');
@@ -43,11 +46,12 @@ function assertIxAccounts(ix: {
 }
 
 describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
-  it('emits an empty Attributes plugin (Owner authority) by default', () => {
+  it('emits an empty Attributes plugin (UpdateAuthority) by default', () => {
     const ix = buildCreateAntInstruction({
       mint: FIXED_MINT,
       authority: FIXED_AUTH,
       payer: FIXED_PAY,
+      updateAuthority: FIXED_UA,
       name: 'test-ant',
       uri: 'ar://abc',
     });
@@ -64,7 +68,7 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
     //   06          Plugin::Attributes
     //   00000000    attribute_list len = 0
     //   01          plugin authority Option = Some
-    //   01          PluginAuthority::Owner
+    //   02          PluginAuthority::UpdateAuthority (ADR-028; was Owner=01)
     const expected =
       '0000' +
       '08000000' +
@@ -74,12 +78,12 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
       '0101000000' +
       '06' +
       '00000000' +
-      '0101';
+      '0102';
 
     assertIxData(ix);
     assert.equal(hex(ix.data), expected);
-    // 38 bytes — captured before this PR from the migration mint's
-    // backwards-compat path. Locks future regressions.
+    // 38 bytes — only the trailing plugin-authority variant changed (01 → 02);
+    // the payload length is unchanged.
     assert.equal(ix.data.length, 38);
   });
 
@@ -88,6 +92,7 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
       mint: FIXED_MINT,
       authority: FIXED_AUTH,
       payer: FIXED_PAY,
+      updateAuthority: FIXED_UA,
       name: 'test-ant',
       uri: 'ar://abc',
       attributes: [
@@ -121,29 +126,34 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
       '556e6465726e616d65204c696d6974' + // "Undername Limit"
       '02000000' +
       '3130' + // "10"
-      '0101'; // PluginAuthority Some + Owner
+      '0102'; // PluginAuthority Some + UpdateAuthority (ADR-028)
 
     assertIxData(ix);
     assert.equal(hex(ix.data), expected);
     assert.equal(ix.data.length, 108);
   });
 
-  it('places mint+authority+payer in the correct kinobi account positions', () => {
+  it('places mint+authority+payer+updateAuthority in the correct kinobi account positions', () => {
     const ix = buildCreateAntInstruction({
       mint: FIXED_MINT,
       authority: FIXED_AUTH,
       payer: FIXED_PAY,
+      updateAuthority: FIXED_UA,
       name: 'x',
       uri: 'y',
     });
 
     assertIxAccounts(ix);
-    // 8 accounts in kinobi createV1 order; positions 1, 4, 5, 7 are
-    // optional placeholders (= MPL Core program id).
+    // 8 accounts in kinobi createV1 order; positions 1 and 7 are optional
+    // placeholders (= MPL Core program id).
     assert.equal(ix.accounts.length, 8);
     assert.equal(ix.accounts[0]!.address, FIXED_MINT, 'pos 0 = asset');
     assert.equal(ix.accounts[2]!.address, FIXED_AUTH, 'pos 2 = authority');
     assert.equal(ix.accounts[3]!.address, FIXED_PAY, 'pos 3 = payer');
+    // pos 4 = owner (ADR-028: explicit = authority, so the PDA never becomes owner)
+    assert.equal(ix.accounts[4]!.address, FIXED_AUTH, 'pos 4 = owner');
+    // pos 5 = updateAuthority (ADR-028: the ant_authority PDA)
+    assert.equal(ix.accounts[5]!.address, FIXED_UA, 'pos 5 = updateAuthority');
     // pos 6 = system_program
     assert.equal(
       ix.accounts[6]!.address,
@@ -160,6 +170,7 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
       mint: FIXED_MINT,
       authority: FIXED_AUTH,
       payer: FIXED_PAY,
+      updateAuthority: FIXED_UA,
       name: 'a',
       uri: 'b',
     });
@@ -176,7 +187,7 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
         '0101000000' +
         '06' +
         '00000000' +
-        '0101',
+        '0102',
     );
   });
 });

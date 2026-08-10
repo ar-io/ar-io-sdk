@@ -76,6 +76,7 @@ import type {
   AllGatewayVaults,
   ArNSNameData,
   ArNSNameDataWithName,
+  ArNSNameResolutionData,
   ArNSReservedNameData,
   ArNSReservedNameDataWithName,
   BalanceWithAddress,
@@ -112,6 +113,8 @@ import type {
   WalletVault,
   WeightedObserver,
 } from '../types/io.js';
+import { splitPrimaryName } from '../utils/arns.js';
+import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import {
@@ -869,7 +872,11 @@ export class SolanaARIOReadable {
         const vault = deserializeVault(data);
         items.push({
           address: vault.owner,
-          vaultId: pubkey as string,
+          // PDA address — stable globally-unique handle for list keys /
+          // explorer links. NOT accepted by releaseVault/revokeVault.
+          cursorId: pubkey as string,
+          // Numeric per-owner vault id — pass THIS to releaseVault/revokeVault.
+          vaultId: vault.vaultId,
           balance: vault.balance,
           startTimestamp: secToMs(vault.startTimestamp),
           endTimestamp: secToMs(vault.endTimestamp),
@@ -2885,6 +2892,58 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Enumerate ArnsRecord PDAs whose lease is past its grace period but whose
+   * return-auction window has NOT yet elapsed
+   * (`end_timestamp + grace_period <= now < end_timestamp + grace_period +
+   * return_auction_duration`) — i.e. the records `prune_name_to_returned`
+   * should convert into a Dutch auction.
+   *
+   * Deliberately excludes records past `grace + auction`: those missed their
+   * auction window entirely and belong to {@link getExpiredArnsRecords} /
+   * `prune_expired_names`, which closes them directly. Sending them here
+   * instead would mint them a *fresh* 50x-premium auction they are not
+   * entitled to. Permabuys (no `end_timestamp`) are excluded.
+   */
+  async getPruneableToReturnedRecords(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; name: string; endTimestamp: bigint }>> {
+    const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
+    const cfgAccount = await this.getCachedAccount(arnsConfigPda);
+    if (!cfgAccount.exists) return [];
+    const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
+    const grace = Number(cfg.gracePeriodSeconds);
+    const auction = Number(cfg.returnAuctionDurationSeconds);
+
+    const accounts = await this.getAccountsByDiscriminator(
+      this.arnsProgram,
+      ARNS_RECORD_DISCRIMINATOR,
+    );
+    const decoder = getArnsRecordDecoder();
+    const out: Array<{
+      pubkey: Address;
+      name: string;
+      endTimestamp: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (r.endTimestamp.__option !== 'Some') continue;
+        const end = Number(r.endTimestamp.value);
+        if (end + grace <= now && now < end + grace + auction) {
+          out.push({
+            pubkey,
+            name: r.name,
+            endTimestamp: r.endTimestamp.value,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
    * Enumerate ReturnedName PDAs whose Dutch auction window has fully
    * elapsed (`returned_at + return_auction_duration <= now`).
    */
@@ -3306,19 +3365,43 @@ export class SolanaARIOReadable {
   // Name resolution (ArNSNameResolver)
   // =========================================
 
-  async resolveArNSName({ name }: { name: string }) {
-    const parts = name.split('_');
-    const baseName = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  async resolveArNSName({
+    name,
+  }: {
+    name: string;
+  }): Promise<ArNSNameResolutionData> {
+    // Split on the first `_` (apex `@` when there's none), matching the on-chain
+    // `splitn(2, '_')` rule and lowercasing for case-insensitive resolution.
+    const { baseName, undername } = splitPrimaryName(name);
+    const undernameKey = undername ?? '@';
 
     const record = await this.getArNSRecord({ name: baseName });
 
-    // TODO: resolve undername via ANT program when undername !== '@'
+    // Resolve the undername record on the ANT to obtain the target tx id, TTL,
+    // and priority. The ArNS record only points at the ANT (`processId`); the
+    // data the name resolves to lives one hop further, on the ANT itself.
+    // `fromAsset` reads the ANT program id from the asset (ADR-016 / BD-100),
+    // falling back to the canonical program.
+    const ant = await SolanaANTReadable.fromAsset({
+      rpc: this.rpc,
+      processId: record.processId,
+      commitment: this.commitment,
+      logger: this.logger,
+    });
+    const antRecord = await ant.getRecord({ undername: undernameKey });
+    if (antRecord === undefined) {
+      throw new Error(
+        `ArNS name "${name}" has no "${undernameKey}" record on ANT ${record.processId}`,
+      );
+    }
+
     return {
-      name: baseName,
-      txId: '',
+      name: name.toLowerCase(),
+      txId: antRecord.transactionId,
       type: record.type,
       processId: record.processId,
-      ttlSeconds: 3600,
+      ttlSeconds: antRecord.ttlSeconds,
+      priority: antRecord.priority,
       undernameLimit: record.undernameLimit,
     };
   }

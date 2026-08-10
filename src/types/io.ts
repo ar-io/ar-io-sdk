@@ -249,6 +249,16 @@ export type GatewayDelegateAllowList = WalletAddress[];
 
 export type WalletVault = VaultData & {
   address: WalletAddress;
+  /**
+   * Vault PDA address — globally-unique, stable handle for React keys /
+   * explorer links. Mirrors `GatewayVault.cursorId`. This is NOT a valid
+   * argument to `releaseVault`/`revokeVault`; use `vaultId` for those.
+   */
+  cursorId: string;
+  /**
+   * Numeric per-owner vault id (u64 as string). Pass this to
+   * `releaseVault({ vaultId })` / `revokeVault({ vaultId })`.
+   */
   vaultId: string;
 };
 
@@ -639,10 +649,38 @@ export type ArNSPurchaseParams = ArNSNameParams & {
   referrer?: string;
 };
 
+/**
+ * Optional ANT metadata + base `@` target baked into an ATOMIC name buy — i.e.
+ * when `processId` is omitted and the SDK mints a fresh user-owned ANT in the
+ * same transaction. Ignored (with a warning) when buying to an existing ANT via
+ * `processId`; set metadata on that ANT via the ANT writeable instead.
+ *
+ * A backend-neutral subset of the Solana spawn state. `name` is omitted (it is
+ * always the bought name) and `uri` is derived. Note the base `@` target sets at
+ * mint, but its TTL cannot — `initialize` has no TTL field, so a non-default TTL
+ * still needs a post-buy `setBaseNameRecord`. Solana backend only today.
+ */
+export type ArNSBuyAntState = {
+  /** ANT ticker (defaults to "ANT" on chain). */
+  ticker?: string;
+  /** Description (≤ 512 chars). */
+  description?: string;
+  /** Keywords (≤ 16 entries). */
+  keywords?: string[];
+  /** Logo Arweave TX id (43 chars). */
+  logo?: string;
+  /** Base `@` record target — Arweave TX id (or IPFS CID when targetProtocol=1). */
+  transactionId?: string;
+  /** Storage protocol for the `@` target: 0 = Arweave (default), 1 = IPFS. */
+  targetProtocol?: 0 | 1;
+};
+
 export type BuyRecordParams = ArNSPurchaseParams & {
   years?: number;
   type: 'lease' | 'permabuy';
   processId?: string;
+  /** Initial ANT metadata + `@` target for an atomic buy (no `processId`). */
+  antState?: ArNSBuyAntState;
 };
 
 export type ExtendLeaseParams = ArNSPurchaseParams & {

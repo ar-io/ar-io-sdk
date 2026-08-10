@@ -252,6 +252,41 @@ describe('SolanaARIOReadable.getExpiredVaults', () => {
 });
 
 // ---------------------------------------------------------------
+// Vault: getVaults surfaces the NUMERIC vaultId (not the PDA address).
+// Regression guard — releaseVault/revokeVault do BigInt(vaultId) to derive
+// the PDA, so a pubkey here makes every release/revoke throw.
+// ---------------------------------------------------------------
+
+describe('SolanaARIOReadable.getVaults', () => {
+  it('returns numeric vaultId in `vaultId` and the PDA in `cursorId`', async () => {
+    const enc = getVaultEncoder();
+    const bytes = enc.encode({
+      owner: PUBKEY_1,
+      vaultId: 27n,
+      amount: 2_961_491_000_000n,
+      startTimestamp: 1_000n,
+      endTimestamp: 2_000n,
+      controller: null,
+      revocable: false,
+      bump: 252,
+      version: VERSION,
+    });
+    const rpc = stubRpcReturning([{ pubkey: ADDR_A, bytes }]);
+    const r = buildReadable(rpc);
+
+    const { items } = await r.getVaults({ limit: 10 });
+    assert.equal(items.length, 1);
+    // The numeric id BigInt() can parse — NOT the base58 PDA.
+    assert.equal(items[0].vaultId, '27');
+    assert.doesNotThrow(() => BigInt(items[0].vaultId));
+    // The PDA address is preserved separately for keys/links.
+    assert.equal(items[0].cursorId, ADDR_A);
+    assert.equal(items[0].address, PUBKEY_1);
+    assert.equal(items[0].balance, 2_961_491_000_000);
+  });
+});
+
+// ---------------------------------------------------------------
 // PrimaryNameRequest: getExpiredPrimaryNameRequests filters expiresAt <= now
 // ---------------------------------------------------------------
 

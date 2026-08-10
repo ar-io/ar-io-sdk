@@ -74,9 +74,13 @@ import type {
 import type { MessageResult, WriteOptions } from '../types/common.js';
 import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
-import { deserializeAntControllers } from './deserialize.js';
+import {
+  deserializeAntConfig,
+  deserializeAntControllers,
+} from './deserialize.js';
 import { getAccountInfoLegacy } from './json-rpc.js';
 import {
+  getAntConfigPDA,
   getAntControllersPDA,
   getAntRecordMetadataPDA,
   getAntRecordPDA,
@@ -571,6 +575,132 @@ export class SolanaANTWriteable extends SolanaANTReadable {
       { programAddress: this.antProgram },
     );
     const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * Heal the per-user ACL after the asset was acquired out-of-band (e.g. a
+   * raw Metaplex Core marketplace/UI transfer that bypassed {@link transfer},
+   * so none of the SDK's inline ACL maintenance ran).
+   *
+   * The caller MUST be the asset's current MPL Core owner — every ix here is
+   * permissionless but the contract verifies the on-chain relationship, so a
+   * non-holder simply produces a failing tx; we pre-check to fail fast with a
+   * clear error instead.
+   *
+   * In a single tx it:
+   *   1. `reconcile`s `AntConfig.last_known_owner` to the live NFT owner and
+   *      clears the now-stale `AntControllers` list;
+   *   2. records the caller's `owner` ACL entry (bootstrapping their
+   *      `AclConfig` / `AclPage` if absent) — this is what makes the ANT show
+   *      up in "ANTs I own" lookups (`getArNSRecordsForAddress`,
+   *      `ANTRegistry.accessControlList`);
+   *   3. removes the previous owner's stale `owner` ACL entry (if any);
+   *   4. removes the ex-controllers' stale `controller` ACL entries.
+   *
+   * Unlike {@link reconcile} (which only touches `AntConfig`/`AntControllers`)
+   * and {@link SolanaARIOWriteable.syncAttributes} (which only rewrites the
+   * asset's Attributes-plugin traits), this reconciles the paginated ACL that
+   * the registry/record reverse-indexes read from. Idempotent: a no-drift
+   * call records nothing new and the remove ixs no-op against absent entries.
+   */
+  async syncAcl(_options?: WriteOptions): Promise<MessageResult> {
+    const caller = this.signer.address;
+
+    // Fail fast if the caller isn't the live NFT owner — every inner ix would
+    // otherwise abort on its on-chain ownership check.
+    const { fetchMplCoreOwner } = await import('./mpl-core.js');
+    const nftOwner = await fetchMplCoreOwner(this.rpc, this.mint, {
+      commitment: this.commitment,
+    });
+    if (nftOwner === null) {
+      throw new Error(`MPL Core asset ${this.mint} not found.`);
+    }
+    if (nftOwner !== caller) {
+      throw new Error(
+        `Cannot sync ACL: ${caller} is not the current owner of ANT ` +
+          `${this.mint} (owner is ${nftOwner}).`,
+      );
+    }
+
+    // Snapshot the pre-reconcile owner + controllers so we know whose stale
+    // ACL entries to remove (reconcile clears `AntControllers` mid-tx).
+    const [configPda] = await getAntConfigPDA(this.mint, this.antProgram);
+    const configAccount = await getAccountInfoLegacy(
+      this.rpc,
+      configPda,
+      this.commitment,
+    );
+    const previousOwner = configAccount
+      ? deserializeAntConfig(configAccount.data as Buffer).owner
+      : null;
+
+    const [controllersPda] = await getAntControllersPDA(
+      this.mint,
+      this.antProgram,
+    );
+    const controllersAccount = await getAccountInfoLegacy(
+      this.rpc,
+      controllersPda,
+      this.commitment,
+    );
+    const exControllers = controllersAccount
+      ? deserializeAntControllers(controllersAccount.data as Buffer).controllers
+      : [];
+
+    const ixs: Instruction[] = [];
+
+    // 1. reconcile `AntConfig` / clear `AntControllers` (no-op if unchanged).
+    ixs.push(
+      await getReconcileInstructionAsync(
+        { asset: this.mint, caller: this.signer },
+        { programAddress: this.antProgram },
+      ),
+    );
+
+    // 2. record the caller's owner ACL entry (bootstrap config/page if needed).
+    const dest = await this.registry.resolveDestinationAclAccounts({
+      user: caller,
+    });
+    ixs.push(...dest.prepIxs);
+    ixs.push(
+      await this.registry.buildRecordIx({
+        user: caller,
+        asset: this.mint,
+        role: 'owner',
+        pageIdx: dest.pageIdx,
+      }),
+    );
+
+    // 3. remove the previous owner's stale owner entry, if one exists.
+    if (previousOwner && previousOwner !== caller) {
+      const source = await this.registry.resolveSourceAclAccountsForEntry({
+        user: address(previousOwner),
+        asset: this.mint,
+        role: 'owner',
+      });
+      if (source) {
+        ixs.push(
+          await this.registry.buildRemoveIx({
+            user: address(previousOwner),
+            asset: this.mint,
+            role: 'owner',
+            pageIdx: source.pageIdx,
+          }),
+        );
+      }
+    }
+
+    // 4. remove ex-controllers' stale controller entries (reconcile above
+    //    cleared the canonical list; this heals the reverse index).
+    ixs.push(
+      ...(await this.registry.bulkRemoveControllerEntries({
+        asset: this.mint,
+        controllers: exControllers,
+      })),
+    );
+
+    const sig = await this.sendTransaction(ixs);
     return { id: sig };
   }
 
