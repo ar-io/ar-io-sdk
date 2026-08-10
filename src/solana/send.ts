@@ -781,6 +781,7 @@ async function waitForLookupTableActive(
   const META = 56;
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
+    const remaining = maxWaitMs - (Date.now() - start);
     // Poll at 'finalized' so the table (with all its addresses) is visible to
     // (nearly) every validator before the consuming tx is sent. A table that is
     // only 'confirmed' lives on our RPC's fork; on mainnet the leader that
@@ -788,17 +789,29 @@ async function waitForLookupTableActive(
     // drops the tx (it simulates fine on our RPC but never lands). Finalization
     // guarantees network-wide visibility, so the tx resolves the table wherever
     // it's processed.
+    //
+    // Bound the RPC call by the remaining deadline so a hung request can't run
+    // past maxWaitMs (AbortSignal.timeout is Node 18+, which the SDK targets);
+    // a timed-out or transient failure yields null and re-polls until the loop
+    // deadline. The final `throw` still reports the bounded wait.
     const acc = await rpc
       .getAccountInfo(table, { encoding: 'base64', commitment: 'finalized' })
-      .send();
-    if (acc.value) {
+      .send({ abortSignal: AbortSignal.timeout(remaining) })
+      .catch(() => null);
+    if (acc?.value) {
       const len = Buffer.from(acc.value.data[0], 'base64').length;
       const count = len >= META ? Math.floor((len - META) / 32) : 0;
       if (count >= expectedCount) {
         return; // finalized with every address → resolvable by any leader
       }
     }
-    await new Promise((r) => setTimeout(r, 800));
+    // Cap the poll delay to the time left so it never overshoots the deadline.
+    await new Promise((r) =>
+      setTimeout(
+        r,
+        Math.min(800, Math.max(0, maxWaitMs - (Date.now() - start))),
+      ),
+    );
   }
   throw new Error(
     `lookup table ${table} not finalized with >=${expectedCount} addresses within ${maxWaitMs}ms`,
