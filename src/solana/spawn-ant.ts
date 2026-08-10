@@ -403,7 +403,7 @@ export async function buildSpawnAntInstructions(params: {
     // omitted, so with updateAuthority = the ant_authority PDA an omitted owner
     // would make the PROGRAM PDA the NFT owner (user loses custody). Pin it to
     // the spawning wallet.
-    owner,
+    owner: signer.address,
     updateAuthority: antAuthority,
     dataState: DataState.AccountState,
     name: state.name,
