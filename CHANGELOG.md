@@ -1,3 +1,10 @@
+## [4.1.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0...v4.1.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **solana:** wait for ephemeral ALT finalization before the consuming tx ([f255656](https://github.com/ar-io/ar-io-sdk/commit/f2556563939d97482762d2d7dfc83fa1ce58ba82))
+
 # [4.1.0](https://github.com/ar-io/ar-io-sdk/compare/v4.0.3...v4.1.0) (2026-08-10)
 
 
