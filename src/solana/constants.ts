@@ -114,6 +114,12 @@ export const ANT_CONFIG_SEED = Buffer.from('ant_config');
 export const ANT_CONTROLLERS_SEED = Buffer.from('ant_controllers');
 export const ANT_RECORD_SEED = Buffer.from('ant_record');
 export const ANT_RECORD_META_SEED = Buffer.from('ant_record_meta');
+// ADR-028: per-asset program-signer PDA that holds the Metaplex Core
+// UpdateAuthority (and, via `Authority::UpdateAuthority`, the Attributes-plugin
+// authority) for ANTs. New ANTs mint with UpdateAuthority set to this PDA so all
+// MPL Core updates route through the ario-ant program. PDA:
+// ["ant_authority", asset].
+export const ANT_AUTHORITY_SEED = Buffer.from('ant_authority');
 
 // Per-user paginated ACL (ADR-012). See `docs/ACCOUNT_SCALING_PATTERNS.md`
 // Pattern C: a head `AclConfig` plus deterministically-addressed `AclPage`s

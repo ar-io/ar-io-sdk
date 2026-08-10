@@ -184,6 +184,7 @@ export {
   getRedelegationRecordPDA,
   getAntConfigPDA,
   getAntControllersPDA,
+  getAntAuthorityPDA,
   getAntRecordPDA,
   getAclConfigPDA,
   getAclPagePDA,

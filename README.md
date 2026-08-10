@@ -1348,7 +1348,7 @@ const record = await ario.resolveArNSName({ name: "logo_ardrive" });
 
 </details>
 
-#### `buyRecord({ name, type, years, processId })`
+#### `buyRecord({ name, type, years, processId, antState })`
 
 Purchases a new ArNS record with the specified name, type, processId, and duration.
 
@@ -1361,6 +1361,22 @@ _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 - `processId` - _optional_: the process id of an existing ANT process. If not provided, a new ANT process using the provided `signer` will be spawned, and the ArNS record will be assigned to that process.
 - `years` - _optional_: the duration of the ArNS record in years. If not provided and `type` is `lease`, the record will be leased for 1 year. If not provided and `type` is `permabuy`, the record will be permanently registered.
 - `referrer` - _optional_: track purchase referrals for analytics (e.g. `my-app.com`)
+- `antState` - _optional_ (**Solana atomic buy only**): initial ANT metadata + base `@` target to bake into the newly minted ANT in the same transaction, so the name resolves to your content immediately instead of the default AR.IO logo. Fields: `transactionId` (the `@` target — Arweave TX id, or IPFS CID when `targetProtocol` is `1`), `targetProtocol` (`0` = Arweave (default), `1` = IPFS), `ticker`, `logo` (43-char Arweave TX id), `description` (≤ 512 chars), `keywords` (≤ 16). **Ignored (with a warning) when `processId` is provided** — set metadata on an existing ANT via the ANT writeable instead. Note: TTL cannot be set at mint (`initialize` has no TTL field), so a non-default TTL still needs a post-buy `setBaseNameRecord`; and a very long `description`/`keywords` set may exceed the transaction size limit — keep those on the post-buy path.
+
+```typescript
+// Atomic buy that also points the name at your content in one transaction:
+const record = await ario.buyRecord({
+  name: "ardrive",
+  type: "lease",
+  years: 1,
+  antState: {
+    transactionId: "432l1cy0aksiL_x9M359faGzM_yjralacHIUo8_nQXM", // base @ target
+    ticker: "ARDRIVE",
+    description: "Permanent, decentralized data storage.",
+    keywords: ["storage", "permaweb"],
+  },
+});
+```
 
 ```typescript
 const ario = ARIO.init({ rpc, rpcSubscriptions, signer });

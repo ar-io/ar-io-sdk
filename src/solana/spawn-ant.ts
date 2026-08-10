@@ -60,9 +60,10 @@ import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from '@solana-program/compute-budget';
+import { ARWEAVE_TX_REGEX } from '../constants.js';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
-import { getAntRecordPDA } from './pda.js';
+import { getAntAuthorityPDA, getAntRecordPDA } from './pda.js';
 import {
   estimateComputeUnitLimit,
   estimatePriorityFeeMicroLamports,
@@ -113,6 +114,63 @@ export type SpawnSolanaANTState = {
    */
   uri?: string;
 };
+
+/** The optional metadata subset of {@link SpawnSolanaANTState} to validate. */
+type ValidatableAntState = Partial<
+  Pick<
+    SpawnSolanaANTState,
+    | 'ticker'
+    | 'description'
+    | 'keywords'
+    | 'logo'
+    | 'transactionId'
+    | 'targetProtocol'
+  >
+>;
+
+/**
+ * Fast-fail validation of optional ANT initial state before an atomic buy /
+ * spawn. Mirrors the on-chain `ario_ant::initialize` limits so callers get a
+ * clear, actionable error instead of an opaque program revert. Only provided
+ * fields are checked; empty strings are treated as "unset". The `@` target is
+ * only shape-checked as an Arweave TX ID when `targetProtocol` is Arweave (0 /
+ * undefined) — for IPFS (1) the target is a CID, not an Arweave id.
+ */
+export function validateSpawnAntState(state?: ValidatableAntState): void {
+  if (!state) return;
+  if (state.description !== undefined && state.description.length > 512) {
+    throw new Error('ANT description must be 512 characters or fewer');
+  }
+  if (state.keywords !== undefined && state.keywords.length > 16) {
+    throw new Error('ANT keywords must be 16 entries or fewer');
+  }
+  if (
+    state.logo !== undefined &&
+    state.logo.length > 0 &&
+    !ARWEAVE_TX_REGEX.test(state.logo)
+  ) {
+    throw new Error('ANT logo must be a 43-character Arweave transaction ID');
+  }
+  if (
+    state.targetProtocol !== undefined &&
+    state.targetProtocol !== 0 &&
+    state.targetProtocol !== 1
+  ) {
+    throw new Error('ANT targetProtocol must be 0 (Arweave) or 1 (IPFS)');
+  }
+  const targetIsArweave =
+    state.targetProtocol === undefined || state.targetProtocol === 0;
+  if (
+    state.transactionId !== undefined &&
+    state.transactionId.length > 0 &&
+    targetIsArweave &&
+    !ARWEAVE_TX_REGEX.test(state.transactionId)
+  ) {
+    throw new Error(
+      'ANT base @ target must be a 43-character Arweave transaction ID',
+    );
+  }
+}
 
 export type SpawnSolanaANTParams = {
   /** RPC client used to fetch a recent blockhash + send the spawn transaction. */
@@ -168,17 +226,23 @@ export type AntAttribute = { key: string; value: string };
  * are bundling the mint into a larger compound transaction.
  *
  * **Why we always emit an Attributes plugin (even with an empty list):**
- * `ario_arns::buy_record` and friends CPI into `UpdatePluginV1` to populate
- * traits at purchase time. If the asset has no Attributes plugin, that CPI
+ * `ario_ant::sync_attributes` CPIs into `UpdatePluginV1` to populate traits
+ * after an ArNS purchase. If the asset has no Attributes plugin, that CPI
  * fails. Emitting an empty plugin here keeps every spawned ANT
  * `purchase`-ready and matches what `migration/import` mints — see ADR-012
- * and BD-096. Authority is `Owner` so the ANT NFT holder (= asset owner)
- * can sign their own trait updates.
+ * and BD-096.
+ *
+ * **ADR-028 — program-controlled authority:** the asset's `updateAuthority`
+ * is set to the per-asset `ant_authority` PDA and the Attributes plugin
+ * authority is `UpdateAuthority` (so it resolves to that PDA). The ario-ant
+ * program signs MPL Core updates with the PDA; the NFT holder keeps `owner`
+ * (custody). Callers derive the PDA via `getAntAuthorityPDA(mint)`.
  */
 export function buildCreateAntInstruction({
   mint,
   authority,
   payer,
+  updateAuthority,
   name,
   uri,
   attributes = [],
@@ -186,6 +250,8 @@ export function buildCreateAntInstruction({
   mint: Address;
   authority: Address;
   payer: Address;
+  /** The `ant_authority` PDA — see `getAntAuthorityPDA` (ADR-028). */
+  updateAuthority: Address;
   name: string;
   uri: string;
   attributes?: AntAttribute[];
@@ -200,6 +266,11 @@ export function buildCreateAntInstruction({
     asset: asSigner(mint),
     authority: asSigner(authority),
     payer: asSigner(payer),
+    // `owner` MUST be explicit (= the authority/holder). MPL Core defaults owner
+    // to updateAuthority when omitted, so with updateAuthority = the
+    // ant_authority PDA an omitted owner would make the PDA the NFT owner.
+    owner: authority,
+    updateAuthority,
     dataState: DataState.AccountState,
     name,
     uri,
@@ -209,7 +280,7 @@ export function buildCreateAntInstruction({
           __kind: 'Attributes',
           fields: [{ attributeList: attributes }],
         },
-        authority: { __kind: 'Owner' },
+        authority: { __kind: 'UpdateAuthority' },
       },
     ],
   });
@@ -318,10 +389,22 @@ export async function buildSpawnAntInstructions(params: {
   //
   // Default value is the canonical `ARIO_ANT_PROGRAM_ID`; passing
   // `antProgramId` opts into the BYO-ANT (third-party) path.
+  //
+  // ADR-028: the asset's UpdateAuthority is the per-asset `ant_authority` PDA
+  // and the Attributes plugin authority is `UpdateAuthority` (→ that PDA), so
+  // all MPL Core updates route through the ario-ant program. The owner (the
+  // spawning signer) keeps custody of the NFT.
+  const [antAuthority] = await getAntAuthorityPDA(mint, antProgramId);
   const createIx = getCreateV1Instruction({
     asset: mintSigner,
     payer: signer,
     authority: signer,
+    // `owner` MUST be explicit. MPL Core defaults owner to updateAuthority when
+    // omitted, so with updateAuthority = the ant_authority PDA an omitted owner
+    // would make the PROGRAM PDA the NFT owner (user loses custody). Pin it to
+    // the spawning wallet.
+    owner: signer.address,
+    updateAuthority: antAuthority,
     dataState: DataState.AccountState,
     name: state.name,
     uri,
@@ -337,7 +420,7 @@ export async function buildSpawnAntInstructions(params: {
             },
           ],
         },
-        authority: { __kind: 'Owner' },
+        authority: { __kind: 'UpdateAuthority' },
       },
     ],
   });

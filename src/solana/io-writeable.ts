@@ -174,6 +174,7 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import {
   Protocol,
+  getAdminSetRewardRatiosInstructionAsync,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
   getClaimDelegateFromDisabledGatewayInstructionAsync,
@@ -209,6 +210,7 @@ import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
+  getAntAuthorityPDA,
   getAntConfigPDA,
   getAntRecordPDA,
   getArioConfigPDA,
@@ -246,7 +248,10 @@ import {
   sendAndConfirm,
   sendWithEphemeralLookupTable,
 } from './send.js';
-import { buildSpawnAntInstructions } from './spawn-ant.js';
+import {
+  buildSpawnAntInstructions,
+  validateSpawnAntState,
+} from './spawn-ant.js';
 import type {
   SolanaRpcSubscriptions,
   SolanaSigner,
@@ -1539,15 +1544,36 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     let mintSigner: KeyPairSigner | undefined;
     let antPubkey: Address;
     if (params.processId === undefined) {
+      // Fold optional caller-supplied metadata + `@` target into the freshly
+      // minted ANT so a name can resolve to real content in the SAME buy tx.
+      // Validated up front for a clean error instead of an on-chain revert.
+      validateSpawnAntState(params.antState);
       const spawn = await buildSpawnAntInstructions({
         signer: this.signer,
-        state: { name: params.name },
+        // Whitelist only the supported metadata fields — never spread
+        // `antState` wholesale, so a stray `name`/`uri` can't override the
+        // purchased name or bypass URI derivation at runtime.
+        state: {
+          name: params.name,
+          ticker: params.antState?.ticker,
+          description: params.antState?.description,
+          keywords: params.antState?.keywords,
+          logo: params.antState?.logo,
+          transactionId: params.antState?.transactionId,
+          targetProtocol: params.antState?.targetProtocol,
+        },
         antProgramId: this.antProgram,
       });
       spawnIxs = spawn.instructions;
       mintSigner = spawn.mintSigner;
       antPubkey = spawn.mint;
     } else {
+      if (params.antState !== undefined) {
+        this.logger.warn(
+          '[buyRecord] antState is ignored when buying to an existing ANT ' +
+            '(processId set); set metadata via the ANT writeable instead.',
+        );
+      }
       antPubkey = address(params.processId);
     }
 
@@ -2380,11 +2406,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     asset: Address,
   ): Promise<Instruction> {
     const [arnsRecord] = await getArnsRecordPDA(name, this.arnsProgram);
+    // ADR-028: the `authority` signer is gone. Program-controlled ANTs are
+    // synced permissionlessly (the program signs UpdatePluginV1 with the
+    // per-asset `ant_authority` PDA); legacy ANTs still require the owner as
+    // `payer`. Either way we pass the derived PDA.
+    const [antAuthority] = await getAntAuthorityPDA(asset, this.antProgram);
     return getSyncAttributesInstruction(
       {
         asset,
         payer: this.signer,
-        authority: this.signer,
+        antAuthority,
         arnsRecord,
         name,
       },
@@ -4296,6 +4327,38 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * Set the epoch reward split between gateways and observers on the
+   * `EpochSettings` PDA (authority-signed). Both ratios are scaled by
+   * `RATE_SCALE` (1_000_000 == 100%) and MUST sum to exactly `RATE_SCALE`;
+   * the on-chain instruction rejects any other sum. The new split takes
+   * effect at the NEXT epoch prescription — already-computed epochs keep
+   * their stamped per-gateway / per-observer rewards.
+   *
+   * Authority-gated and NOT migration-gated (survives `finalize_migration`),
+   * so the split remains a governable parameter post-cutover. Solana-only.
+   */
+  async adminSetRewardRatios(
+    params: {
+      gatewayRewardRatio: number | bigint;
+      observerRewardRatio: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [epochSettings] = await getEpochSettingsPDA(this.garProgram);
+    const ix = await getAdminSetRewardRatiosInstructionAsync(
+      {
+        epochSettings,
+        authority: this.signer,
+        gatewayRewardRatio: BigInt(params.gatewayRewardRatio),
+        observerRewardRatio: BigInt(params.observerRewardRatio),
+      },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
    * Submit `prescribe_epoch` using the off-chain-predicted observer set, with a
    * single re-predict-and-retry on `InvalidGatewayAccount` (covers a gateway
    * leaving the registry between the prediction read and the tx landing).
@@ -5079,6 +5142,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Reclaim rent from an Observation PDA whose epoch has been distributed.
    * Permissionless. Pass `epochIndex` and the `observer` address used as
    * the Observation seed.
+   *
+   * Rent is refunded to the `observer` (bound on-chain to
+   * `observation.observer` via an address constraint), NOT to the caller —
+   * the signer (`caller`) only pays the tx fee. A third-party closer cannot
+   * redirect the reclaimed rent to itself.
    */
   async closeObservation(
     params: { epochIndex: number; observer: string },
@@ -5094,7 +5162,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const ix = await getCloseObservationInstructionAsync(
       {
         observation: observationPda,
-        payer: this.signer,
+        observer: observerAddr,
+        caller: this.signer,
         epochIndex: BigInt(params.epochIndex),
       },
       { programAddress: this.garProgram },
@@ -5107,10 +5176,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   /**
    * Close multiple Observation PDAs for one epoch in a single tx (each
    * `close_observation` increments the parent Epoch's `observations_closed`).
-   * Permissionless; rent is refunded to the payer. Used by the crank to satisfy
+   * Permissionless; rent for each observation is refunded to its recorded
+   * `observer` (NOT the caller — bound on-chain via an address constraint),
+   * while the signer only pays the tx fee. Used by the crank to satisfy
    * `close_epoch`'s `observations_closed == observations_submitted` precondition
    * before closing a retention-aged epoch. Keep the batch small — each ix carries
-   * the Epoch + Observation + payer + system accounts.
+   * the Epoch + Observation + observer + caller accounts.
    */
   /**
    * Filter a candidate observer set down to those whose Observation PDA still
@@ -5157,15 +5228,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
     const ixs = await Promise.all(
       params.observers.map(async (obs) => {
+        const observerAddr = address(obs);
         const [observationPda] = await getObservationPDA(
           params.epochIndex,
-          address(obs),
+          observerAddr,
           this.garProgram,
         );
         return getCloseObservationInstructionAsync(
           {
             observation: observationPda,
-            payer: this.signer,
+            observer: observerAddr,
+            caller: this.signer,
             epochIndex: BigInt(params.epochIndex),
           },
           { programAddress: this.garProgram },
