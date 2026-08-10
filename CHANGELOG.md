@@ -1,3 +1,20 @@
+# [4.1.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.7...v4.1.0-alpha.8) (2026-08-10)
+
+
+### Bug Fixes
+
+* **cli:** forward --ant-program-id to ARIO read/write clients ([c1f9c0e](https://github.com/ar-io/ar-io-sdk/commit/c1f9c0e63f0fc41e7392a48b5dc6e41da9a31fda))
+* **solana:** harden atomic-buy antState (CodeRabbit) ([6d1a3d8](https://github.com/ar-io/ar-io-sdk/commit/6d1a3d8de77606ab03e8adb6b7fdef117a49d340))
+* **solana:** pin spawn owner to signer + skip stale escrow ADR-022 test ([7a6bc2b](https://github.com/ar-io/ar-io-sdk/commit/7a6bc2bbeaf144eca32631a50719964234a766e9)), closes [post-#698](https://github.com/post-/issues/698)
+
+
+### Features
+
+* **cli:** expose atomic-buy ANT metadata (antState) in buy-record + docs ([73dcbf9](https://github.com/ar-io/ar-io-sdk/commit/73dcbf9ca230d699ad5c5584cb120a3a8ed99248))
+* **solana:** allow setting ANT metadata + @ target atomically in buyRecord ([e7c4ef4](https://github.com/ar-io/ar-io-sdk/commit/e7c4ef404421c66efd79edacce2fae16862ce30c))
+* **solana:** close_observation refunds rent to observer + adminSetRewardRatios ([dd1c246](https://github.com/ar-io/ar-io-sdk/commit/dd1c2465a1ff8730b74118f1dc1efb52d90f0f27)), closes [ar-io-solana-contracts#116](https://github.com/ar-io-solana-contracts/issues/116)
+* **solana:** mint ANTs with program-controlled UpdateAuthority (ADR-028) ([fc67988](https://github.com/ar-io/ar-io-sdk/commit/fc67988844915e0a67d5bde22a8facd882bfe8b7))
+
 # [4.1.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.6...v4.1.0-alpha.7) (2026-08-06)
 
 
