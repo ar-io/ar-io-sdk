@@ -101,8 +101,8 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`distribute:${p.gatewayAccounts.length}`);
     return { id: 'tx-distribute' };
   }
-  // biome-ignore lint/suspicious/noExplicitAny: test stubs
   closeEpochError: Error | null = null;
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async closeEpoch(p: any): Promise<any> {
     this.calls.push(`close:${p.epochIndex}`);
     if (this.closeEpochError) throw this.closeEpochError;

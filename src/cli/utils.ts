@@ -39,9 +39,9 @@ import type { WriteOptions } from '../types/common.js';
 import type {
   ARIORead,
   ARIOWrite,
+  ArNSBuyAntState,
   EpochInput,
   FundFrom,
-  ArNSBuyAntState,
   GetCostDetailsParams,
   PaginationParams,
   RedelegateStakeParams,

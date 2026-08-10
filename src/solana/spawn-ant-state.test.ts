@@ -9,8 +9,8 @@ import { describe, it } from 'node:test';
 import { generateKeyPairSigner } from '@solana/kit';
 
 import {
-  buildSpawnAntInstructions,
   DEFAULT_ANT_TRANSACTION_ID,
+  buildSpawnAntInstructions,
   validateSpawnAntState,
 } from './spawn-ant.js';
 
