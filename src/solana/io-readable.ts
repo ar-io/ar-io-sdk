@@ -2892,6 +2892,58 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Enumerate ArnsRecord PDAs whose lease is past its grace period but whose
+   * return-auction window has NOT yet elapsed
+   * (`end_timestamp + grace_period <= now < end_timestamp + grace_period +
+   * return_auction_duration`) — i.e. the records `prune_name_to_returned`
+   * should convert into a Dutch auction.
+   *
+   * Deliberately excludes records past `grace + auction`: those missed their
+   * auction window entirely and belong to {@link getExpiredArnsRecords} /
+   * `prune_expired_names`, which closes them directly. Sending them here
+   * instead would mint them a *fresh* 50x-premium auction they are not
+   * entitled to. Permabuys (no `end_timestamp`) are excluded.
+   */
+  async getPruneableToReturnedRecords(
+    now: number,
+  ): Promise<Array<{ pubkey: Address; name: string; endTimestamp: bigint }>> {
+    const [arnsConfigPda] = await getArnsSettingsPDA(this.arnsProgram);
+    const cfgAccount = await this.getCachedAccount(arnsConfigPda);
+    if (!cfgAccount.exists) return [];
+    const cfg = getArnsConfigDecoder().decode(cfgAccount.data);
+    const grace = Number(cfg.gracePeriodSeconds);
+    const auction = Number(cfg.returnAuctionDurationSeconds);
+
+    const accounts = await this.getAccountsByDiscriminator(
+      this.arnsProgram,
+      ARNS_RECORD_DISCRIMINATOR,
+    );
+    const decoder = getArnsRecordDecoder();
+    const out: Array<{
+      pubkey: Address;
+      name: string;
+      endTimestamp: bigint;
+    }> = [];
+    for (const { pubkey, data } of accounts) {
+      try {
+        const r = decoder.decode(data);
+        if (r.endTimestamp.__option !== 'Some') continue;
+        const end = Number(r.endTimestamp.value);
+        if (end + grace <= now && now < end + grace + auction) {
+          out.push({
+            pubkey,
+            name: r.name,
+            endTimestamp: r.endTimestamp.value,
+          });
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
    * Enumerate ReturnedName PDAs whose Dutch auction window has fully
    * elapsed (`returned_at + return_auction_duration <= now`).
    */
