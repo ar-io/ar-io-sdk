@@ -763,39 +763,45 @@ export async function sendWithEphemeralLookupTable({
 
 /**
  * Poll until an Address Lookup Table holds at least `expectedCount` addresses
- * AND at least one slot has elapsed since they all landed. Lookup-table entries
- * are only usable the slot AFTER they are appended, and the leader processing
- * the consuming tx must already see them — otherwise the runtime rejects the tx
- * with "address table lookup uses an invalid index". ALT account layout is a
- * 56-byte metadata header followed by 32-byte addresses.
+ * AT 'finalized' COMMITMENT. Lookup-table entries are only usable once the
+ * leader that processes the consuming tx can resolve them; a table that is only
+ * 'confirmed' lives on our RPC's fork and, on mainnet, is often not yet visible
+ * to the (different) leader building the big ALT-referencing tx — which then
+ * silently drops it (simulates fine on our RPC but never lands). Waiting for
+ * finalization guarantees network-wide visibility. Without this, mainnet atomic
+ * spawn-and-buy (and prescribe) txs intermittently fail to confirm. ALT account
+ * layout is a 56-byte metadata header followed by 32-byte addresses.
  */
 async function waitForLookupTableActive(
   rpc: SolanaRpc,
   table: Address,
   expectedCount: number,
-  maxWaitMs = 30_000,
+  maxWaitMs = 45_000,
 ): Promise<void> {
   const META = 56;
   const start = Date.now();
-  let slotAllPresent: bigint | null = null;
   while (Date.now() - start < maxWaitMs) {
-    const acc = await rpc.getAccountInfo(table, { encoding: 'base64' }).send();
-    const slot = acc.context.slot;
+    // Poll at 'finalized' so the table (with all its addresses) is visible to
+    // (nearly) every validator before the consuming tx is sent. A table that is
+    // only 'confirmed' lives on our RPC's fork; on mainnet the leader that
+    // processes the big ALT-referencing tx may not have it yet and silently
+    // drops the tx (it simulates fine on our RPC but never lands). Finalization
+    // guarantees network-wide visibility, so the tx resolves the table wherever
+    // it's processed.
+    const acc = await rpc
+      .getAccountInfo(table, { encoding: 'base64', commitment: 'finalized' })
+      .send();
     if (acc.value) {
       const len = Buffer.from(acc.value.data[0], 'base64').length;
       const count = len >= META ? Math.floor((len - META) / 32) : 0;
       if (count >= expectedCount) {
-        if (slotAllPresent === null) {
-          slotAllPresent = slot;
-        } else if (slot > slotAllPresent) {
-          return; // all addresses present + a slot has elapsed → warm
-        }
+        return; // finalized with every address → resolvable by any leader
       }
     }
     await new Promise((r) => setTimeout(r, 800));
   }
   throw new Error(
-    `lookup table ${table} not active (≥${expectedCount} addresses + 1 slot) within ${maxWaitMs}ms`,
+    `lookup table ${table} not finalized with >=${expectedCount} addresses within ${maxWaitMs}ms`,
   );
 }
 
