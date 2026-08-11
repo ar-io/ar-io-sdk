@@ -566,7 +566,9 @@ export interface CrankEpochStepOptions {
    * (`WORKFLOWS.md`: "Cranker — drive epoch pipeline, update demand factor,
    * prune state | ario-gar, ario-arns").
    *
-   * One name per tx — the instruction takes a single record, not a batch.
+   * One name per tx — the instruction takes a single record, not a batch —
+   * but several txs may be submitted per scan; see
+   * {@link CrankEpochStepOptions.pruneToReturnedTxsPerCycle}.
    */
   enablePruneToReturned?: boolean;
   /**
@@ -582,6 +584,24 @@ export interface CrankEpochStepOptions {
    * 28 → over). Capped at 26 internally.
    */
   pruneExpiredBatchSize?: number;
+  /**
+   * Maximum `prune_name_to_returned` transactions to submit per scan.
+   * Default 10.
+   *
+   * The instruction takes a single record, so unlike the two cleanup steps this
+   * step cannot batch into one tx — its throughput is (txs per scan) × (scan
+   * rate). At one per scan a backlog can never drain faster than it accrues:
+   * the AR.IO cranker derives its scan interval from the epoch duration and
+   * clamps it to 30 min, so on a daily epoch throughput caps at ~48 names/day —
+   * the same order as the rate at which leases fall past their grace period.
+   * Any backlog then persists indefinitely, and every name that ages out of its
+   * auction window costs the protocol that Dutch auction permanently.
+   *
+   * Draining several per scan makes throughput proportional to the backlog
+   * rather than to the scan rate. Keep it under the caller's per-cycle tx
+   * budget (the AR.IO cranker allows 50 across all six phases).
+   */
+  pruneToReturnedTxsPerCycle?: number;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -596,6 +616,14 @@ export interface CrankEpochStepResult {
   txId?: string;
   /** Batch progress for `'tally'` / `'distribute'`. */
   progress?: { index: number; total: number };
+  /**
+   * Set when a batched step stopped early because a submission failed. The
+   * step still reports the work it completed in `progress`; the failed item
+   * stays due and is retried on the next scan. Without this a partial drain is
+   * indistinguishable from a full one — the caller just sees a smaller
+   * `progress.index` and cannot tell whether the budget or an error bounded it.
+   */
+  partialFailureReason?: string;
   /** For `action: 'idle'`, why nothing was done. */
   reason?:
     | 'epochs_disabled'
@@ -4736,15 +4764,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
-   * Convert ONE lease that is past its grace period — but still inside its
-   * return-auction window — into a `ReturnedName` Dutch auction, or `null`
-   * when none are due / the scan is throttled.
+   * Convert leases that are past their grace period — but still inside their
+   * return-auction window — into `ReturnedName` Dutch auctions, or `null` when
+   * none are due / the scan is throttled.
    *
    * This is the step whose absence stalled the whole ArNS lifecycle: without
    * it no ReturnedName PDA is ever created, so `prune_returned_names` drains a
    * queue that is never filled and expired names keep resolving forever.
    *
-   * One name per tx (the instruction takes a single record). Records past
+   * One name per tx (the instruction takes a single record), but up to
+   * {@link CrankEpochStepOptions.pruneToReturnedTxsPerCycle} txs per scan, off
+   * a single `getProgramAccounts`. Draining only one per scan caps throughput
+   * at the scan rate instead of the backlog size, which lets names age out of
+   * their auction window faster than they can be converted. Records past
    * `grace + auction` are intentionally NOT handled here — see
    * {@link maybePruneExpiredNamesStep}. The contract re-checks the grace
    * window itself, so a skewed client clock is safe.
@@ -4761,12 +4793,35 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const due = await this.getPruneableToReturnedRecords(now);
     if (due.length === 0) return null;
 
-    const target = due[0];
-    const { id } = await this.pruneNameToReturned({ name: target.name });
+    const budget = Math.max(1, opts.pruneToReturnedTxsPerCycle ?? 10);
+    let lastTxId: string | undefined;
+    let partialFailureReason: string | undefined;
+    let pruned = 0;
+
+    for (const target of due.slice(0, budget)) {
+      try {
+        const { id } = await this.pruneNameToReturned({ name: target.name });
+        lastTxId = id;
+        pruned++;
+      } catch (error) {
+        // One unconvertible record must not strand the rest of the backlog —
+        // the deadline is per-name, so forfeiting the cycle to a single
+        // failure can cost auctions. Rethrow only when nothing succeeded, so a
+        // genuinely broken step still reaches the caller's error classifier;
+        // otherwise stop early and report real progress. The failed record
+        // stays due and is retried on the next scan.
+        if (pruned === 0) throw error;
+        partialFailureReason =
+          error instanceof Error ? error.message : String(error);
+        break;
+      }
+    }
+
     return {
       action: 'prune_name_to_returned',
-      txId: id,
-      progress: { index: 1, total: due.length },
+      txId: lastTxId,
+      progress: { index: pruned, total: due.length },
+      ...(partialFailureReason !== undefined ? { partialFailureReason } : {}),
     };
   }
 
