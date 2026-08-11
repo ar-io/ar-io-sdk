@@ -1240,7 +1240,7 @@ export class SolanaARIOReadable {
     }
     const record = deserializeArnsRecord(Buffer.from(account.data));
     const { name: _, owner: __, ...nameData } = record;
-    return nameData;
+    return toMsTimestamps(nameData);
   }
 
   async getArNSRecords(
