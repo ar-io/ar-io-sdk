@@ -1,11 +1,11 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address } from '@solana/kit';
 import {
   PurchaseType,
   getArnsRecordEncoder,
 } from '@ar.io/solana-contracts/arns';
+import { type Address } from '@solana/kit';
 import bs58 from 'bs58';
 
 import { Logger } from '../common/logger.js';
