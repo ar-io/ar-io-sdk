@@ -1,3 +1,10 @@
+## [4.1.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2-alpha.1...v4.1.2-alpha.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* convert timestamps to milliseconds in getArNSRecord ([1af52db](https://github.com/ar-io/ar-io-sdk/commit/1af52dbabe367adfd13c9931ac9ad28f8428976c))
+
 ## [4.1.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.1...v4.1.2-alpha.1) (2026-08-11)
 
 
