@@ -206,9 +206,14 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push('getPruneableToReturned');
     return this.pruneableToReturned;
   }
+  /** Name whose `pruneNameToReturned` should throw, for partial-drain tests. */
+  pruneToReturnedFailOn?: string;
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async pruneNameToReturned(p: any): Promise<any> {
     this.calls.push(`pruneToReturned:${p.name}`);
+    if (this.pruneToReturnedFailOn === p.name) {
+      throw new Error(`boom:${p.name}`);
+    }
     return { id: 'tx-prune-to-returned' };
   }
 
@@ -929,16 +934,95 @@ describe('crankEpochStep — ArNS lease lifecycle (prune_name_to_returned / prun
     c.dfPeriod = { currentPeriod: 2, periodZeroStartTimestamp: 0 };
   };
 
-  it('converts a past-grace lease into a returned-name auction', async () => {
+  it('converts past-grace leases into returned-name auctions', async () => {
     const c = new TestCranker();
     liveWaiting(c);
     c.pruneableToReturned = leases(3);
     const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
     assert.equal(r.action, 'prune_name_to_returned');
     assert.equal(r.txId, 'tx-prune-to-returned');
-    // one name per tx — the instruction takes a single record
-    assert.deepEqual(r.progress, { index: 1, total: 3 });
+    // one name per tx, but the whole backlog drains within the default budget
+    assert.deepEqual(r.progress, { index: 3, total: 3 });
     assert.ok(c.calls.includes('pruneToReturned:lease0'));
+    assert.ok(c.calls.includes('pruneToReturned:lease2'));
+  });
+
+  it('drains up to pruneToReturnedTxsPerCycle names per scan', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(25);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneToReturnedTxsPerCycle: 4,
+    });
+    assert.deepEqual(r.progress, { index: 4, total: 25 });
+    assert.equal(
+      c.calls.filter((x) => x.startsWith('pruneToReturned:')).length,
+      4,
+    );
+  });
+
+  it('defaults to 10 txs per scan', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(25);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.deepEqual(r.progress, { index: 10, total: 25 });
+    // a clean budget-bounded drain must NOT look like a failure
+    assert.equal(r.partialFailureReason, undefined);
+  });
+
+  it('scans getPruneableToReturnedRecords once per drain, not once per name', async () => {
+    // The scan is a getProgramAccounts over every ArnsRecord; re-running it per
+    // name would make draining a backlog quadratic in RPC cost.
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(10);
+    await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(
+      c.calls.filter((x) => x === 'getPruneableToReturned').length,
+      1,
+    );
+  });
+
+  it('reports partial progress when a later name fails mid-drain', async () => {
+    // The deadline is per-name, so one unconvertible record must not forfeit
+    // the whole cycle — the names already converted still count.
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(5);
+    c.pruneToReturnedFailOn = 'lease2';
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.deepEqual(r.progress, { index: 2, total: 5 });
+    // the caller must be able to tell a bounded drain from a broken one
+    assert.match(String(r.partialFailureReason), /boom:lease2/);
+    // stopped at the failure rather than ploughing on
+    assert.ok(!c.calls.includes('pruneToReturned:lease3'));
+  });
+
+  it('rethrows when the very first name fails, so the step still surfaces errors', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(5);
+    c.pruneToReturnedFailOn = 'lease0';
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 }),
+      /boom:lease0/,
+    );
+  });
+
+  it('never submits fewer than one tx even with a zero/negative budget', async () => {
+    const c = new TestCranker();
+    liveWaiting(c);
+    c.pruneableToReturned = leases(5);
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      pruneToReturnedTxsPerCycle: 0,
+    });
+    assert.deepEqual(r.progress, { index: 1, total: 5 });
   });
 
   it('prioritises prune_name_to_returned over both cleanup steps', async () => {

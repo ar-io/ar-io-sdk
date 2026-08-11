@@ -1,3 +1,35 @@
+## [4.1.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0...v4.1.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **solana:** wait for ephemeral ALT finalization before the consuming tx ([f255656](https://github.com/ar-io/ar-io-sdk/commit/f2556563939d97482762d2d7dfc83fa1ce58ba82))
+
+# [4.1.0](https://github.com/ar-io/ar-io-sdk/compare/v4.0.3...v4.1.0) (2026-08-10)
+
+
+### Bug Fixes
+
+* **arns:** resolve txId from ANT record in resolveArNSName ([ba061cf](https://github.com/ar-io/ar-io-sdk/commit/ba061cf51c74ddf827a678f447193316f76ffb03))
+* **cli:** forward --ant-program-id to ARIO read/write clients ([c1f9c0e](https://github.com/ar-io/ar-io-sdk/commit/c1f9c0e63f0fc41e7392a48b5dc6e41da9a31fda))
+* **solana:** don't let sync_attributes revert the spawned-ANT ACL records ([ba3cd1e](https://github.com/ar-io/ar-io-sdk/commit/ba3cd1e415d0ff712a569e52a9a36765349d21cf))
+* **solana:** drop stale getProgramAccounts ghosts before close_observations batch ([f95937c](https://github.com/ar-io/ar-io-sdk/commit/f95937c5f5e3012153b3c8f0b16adacb720fac9b))
+* **solana:** getVaults returns numeric vaultId so release/revoke work ([eae22cc](https://github.com/ar-io/ar-io-sdk/commit/eae22cc98297a65237068aec334af3bdfb402238))
+* **solana:** harden atomic-buy antState (CodeRabbit) ([6d1a3d8](https://github.com/ar-io/ar-io-sdk/commit/6d1a3d8de77606ab03e8adb6b7fdef117a49d340))
+* **solana:** pin spawn owner to signer + skip stale escrow ADR-022 test ([7a6bc2b](https://github.com/ar-io/ar-io-sdk/commit/7a6bc2bbeaf144eca32631a50719964234a766e9)), closes [post-#698](https://github.com/post-/issues/698)
+* **solana:** route oversized atomic spawn-and-buy through a lookup table ([a929556](https://github.com/ar-io/ar-io-sdk/commit/a92955603d9b34951b5073f25b35aaa3aaf47040))
+
+
+### Features
+
+* **acl:** add sync acl api ([892811b](https://github.com/ar-io/ar-io-sdk/commit/892811bab1f2f0659fb6b6bf9702bc1ef658d31e))
+* **cli:** expose atomic-buy ANT metadata (antState) in buy-record + docs ([73dcbf9](https://github.com/ar-io/ar-io-sdk/commit/73dcbf9ca230d699ad5c5584cb120a3a8ed99248))
+* **crank:** drive the full ArNS lease lifecycle from crankEpochStep ([0d8b7ea](https://github.com/ar-io/ar-io-sdk/commit/0d8b7ea00525edd9dcb0d7f0f3fb8153acf6da9f))
+* **solana:** allow setting ANT metadata + @ target atomically in buyRecord ([e7c4ef4](https://github.com/ar-io/ar-io-sdk/commit/e7c4ef404421c66efd79edacce2fae16862ce30c))
+* **solana:** atomically spawn an ANT during buyRecord when no processId ([35b3dea](https://github.com/ar-io/ar-io-sdk/commit/35b3dea306b6bc3461a25122581f4c13eca07ff0))
+* **solana:** close_observation refunds rent to observer + adminSetRewardRatios ([dd1c246](https://github.com/ar-io/ar-io-sdk/commit/dd1c2465a1ff8730b74118f1dc1efb52d90f0f27)), closes [ar-io-solana-contracts#116](https://github.com/ar-io-solana-contracts/issues/116)
+* **solana:** mint ANTs with program-controlled UpdateAuthority (ADR-028) ([fc67988](https://github.com/ar-io/ar-io-sdk/commit/fc67988844915e0a67d5bde22a8facd882bfe8b7))
+
 # [4.1.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0-alpha.7...v4.1.0-alpha.8) (2026-08-10)
 
 
