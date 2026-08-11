@@ -1,3 +1,17 @@
+## [4.1.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2-alpha.1...v4.1.2-alpha.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* convert timestamps to milliseconds in getArNSRecord ([1af52db](https://github.com/ar-io/ar-io-sdk/commit/1af52dbabe367adfd13c9931ac9ad28f8428976c))
+
+## [4.1.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.1...v4.1.2-alpha.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* **crank:** drain several prune_name_to_returned txs per scan ([198d0e6](https://github.com/ar-io/ar-io-sdk/commit/198d0e69c72fc208a135b28337cd923f7c71079d))
+
 ## [4.1.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.0...v4.1.1) (2026-08-10)
 
 
