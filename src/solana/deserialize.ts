@@ -583,7 +583,17 @@ export function deserializeEpochSettings(data: Buffer): {
 // ArIO Config deserialization
 // =========================================
 
+/**
+ * Decode an `ArioConfig` account (ario-core singleton).
+ *
+ * @param data - Raw encoded `ArioConfig` account data.
+ * @returns The configured ARIO SPL mint plus the declared supply fields. Note
+ * that `totalSupply` is the **genesis declaration** written once by
+ * `finalize_supply` — it does not track holder burns, so callers reporting real
+ * supply should read the `mint`'s live `supply` instead.
+ */
 export function deserializeArioConfig(data: Buffer): {
+  mint: Address;
   totalSupply: number;
   protocolBalance: number;
   circulatingSupply: number;
@@ -592,6 +602,7 @@ export function deserializeArioConfig(data: Buffer): {
   const d = getArioConfigDecoder().decode(new Uint8Array(data));
 
   return {
+    mint: d.mint,
     totalSupply: Number(d.totalSupply),
     protocolBalance: Number(d.protocolBalance),
     circulatingSupply: Number(d.circulatingSupply),
