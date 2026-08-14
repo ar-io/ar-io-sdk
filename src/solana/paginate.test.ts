@@ -7,14 +7,33 @@ type Row = {
   name: string;
   stake: bigint;
   score?: number;
+  status?: string;
   settings?: { fqdn: string };
 };
 
 const rows: Row[] = [
-  { name: 'c', stake: 300n, score: 3, settings: { fqdn: 'c.example' } },
-  { name: 'a', stake: 100n, score: 1, settings: { fqdn: 'a.example' } },
-  { name: 'd', stake: 400n, settings: { fqdn: 'd.example' } }, // score missing
-  { name: 'b', stake: 200n, score: 2, settings: { fqdn: 'b.example' } },
+  {
+    name: 'c',
+    stake: 300n,
+    score: 3,
+    status: 'joined',
+    settings: { fqdn: 'c.example' },
+  },
+  {
+    name: 'a',
+    stake: 100n,
+    score: 1,
+    status: 'leaving',
+    settings: { fqdn: 'a.example' },
+  },
+  { name: 'd', stake: 400n, status: 'joined', settings: { fqdn: 'd.example' } }, // score missing
+  {
+    name: 'b',
+    stake: 200n,
+    score: 2,
+    status: 'joined',
+    settings: { fqdn: 'b.example' },
+  },
 ];
 
 describe('paginate', () => {
@@ -109,6 +128,59 @@ describe('paginate', () => {
       sortOrder: 'desc',
     });
     assert.equal(desc.items[desc.items.length - 1].name, 'd');
+  });
+
+  it('applies filters, which were previously declared and discarded', () => {
+    const r = paginate(rows, { limit: 10, filters: { status: 'joined' } });
+    assert.deepEqual(
+      r.items.map((i) => i.name),
+      ['c', 'd', 'b'],
+    );
+    // totalItems must describe the FILTERED set, or paging over it is wrong.
+    assert.equal(r.totalItems, 3);
+    assert.equal(r.hasMore, false);
+  });
+
+  it('treats an array filter as alternatives, and separate keys as AND', () => {
+    const anyOf = paginate(rows, {
+      limit: 10,
+      filters: { status: ['joined', 'leaving'] },
+    });
+    assert.equal(anyOf.totalItems, 4);
+
+    const both = paginate(rows, {
+      limit: 10,
+      filters: { status: 'joined', score: 3 },
+    });
+    assert.deepEqual(
+      both.items.map((i) => i.name),
+      ['c'],
+    );
+  });
+
+  it('matches a bigint field against a plain number filter', () => {
+    // Callers write numbers; mARIO fields are bigint. Comparing by type alone
+    // would silently match nothing.
+    const r = paginate(rows, { limit: 10, filters: { stake: 300 } });
+    assert.deepEqual(
+      r.items.map((i) => i.name),
+      ['c'],
+    );
+  });
+
+  it('filters before sorting and slicing', () => {
+    const r = paginate(rows, {
+      limit: 2,
+      filters: { status: 'joined' },
+      sortBy: 'stake',
+      sortOrder: 'desc',
+    });
+    assert.deepEqual(
+      r.items.map((i) => i.name),
+      ['d', 'c'],
+    );
+    assert.equal(r.totalItems, 3);
+    assert.equal(r.hasMore, true);
   });
 
   it('does not mutate the caller’s array', () => {

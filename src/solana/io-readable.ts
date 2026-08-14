@@ -353,6 +353,41 @@ function compareValues(a: unknown, b: unknown): number {
 }
 
 /**
+ * Equality for filter matching. Numeric fields arrive as bigint (mARIO amounts)
+ * while a caller naturally writes a plain number in a filter, so the two are
+ * compared by value rather than by type; everything else is strict.
+ */
+function valuesEqual(actual: unknown, expected: unknown): boolean {
+  if (actual === expected) return true;
+  const aNum = typeof actual === 'bigint' || typeof actual === 'number';
+  const eNum = typeof expected === 'bigint' || typeof expected === 'number';
+  if (aNum && eNum) return compareValues(actual, expected) === 0;
+  return false;
+}
+
+/**
+ * Apply `PaginationParams.filters`. A scalar matches by equality; an array
+ * matches if ANY of its entries do, i.e. the values are alternatives for one
+ * field, while separate fields must all match.
+ *
+ * Like `sortBy`, this was previously declared on the params type and silently
+ * discarded, so a filtered query returned the full unfiltered set.
+ */
+function matchesFilters<T>(
+  item: T,
+  filters?: Record<string, unknown>,
+): boolean {
+  if (!filters) return true;
+  for (const [key, expected] of Object.entries(filters)) {
+    if (expected === undefined) continue;
+    const actual = valueAtPath(item, key);
+    const accepted = Array.isArray(expected) ? expected : [expected];
+    if (!accepted.some((e) => valuesEqual(actual, e))) return false;
+  }
+  return true;
+}
+
+/**
  * Slice a fully-materialised result set into a page.
  *
  * `sortBy` is applied here rather than ignored. Previously this helper only
@@ -375,17 +410,31 @@ export function paginate<T>(
     limit?: number;
     sortBy?: SortBy<T>;
     sortOrder?: 'asc' | 'desc';
+    filters?: Partial<
+      Record<
+        keyof T,
+        string | string[] | number | number[] | boolean | boolean[]
+      >
+    >;
   },
 ): PaginationResult<T> {
   const limit = params?.limit ?? 100;
   const startIdx = params?.cursor ? parseInt(params.cursor, 10) : 0;
   const sortOrder = params?.sortOrder ?? 'asc';
 
-  let ordered = items;
+  // Filter first: totalItems, hasMore and the page must all describe the
+  // filtered set, not the raw one.
+  const filtered = params?.filters
+    ? items.filter((item) =>
+        matchesFilters(item, params.filters as Record<string, unknown>),
+      )
+    : items;
+
+  let ordered = filtered;
   if (params?.sortBy !== undefined) {
     const key = params.sortBy;
     const direction = sortOrder === 'desc' ? -1 : 1;
-    ordered = [...items].sort((a, b) => {
+    ordered = [...filtered].sort((a, b) => {
       const cmp = compareValues(valueAtPath(a, key), valueAtPath(b, key));
       // Nullish always trails, so don't let `desc` hoist missing values.
       if (cmp === 1 && valueAtPath(a, key) == null) return 1;
