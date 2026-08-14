@@ -104,6 +104,7 @@ import type {
   PaginatedAddressParams,
   PaginationParams,
   PaginationResult,
+  SortBy,
   RegistrationFees,
   ReturnedName,
   TokenCostParams,
@@ -372,7 +373,7 @@ export function paginate<T>(
   params?: {
     cursor?: string;
     limit?: number;
-    sortBy?: string;
+    sortBy?: SortBy<T>;
     sortOrder?: 'asc' | 'desc';
   },
 ): PaginationResult<T> {
@@ -400,6 +401,10 @@ export function paginate<T>(
     items: page,
     limit,
     totalItems: ordered.length,
+    // PaginationResult<T> declares sortBy; echoing the key actually applied lets
+    // a caller confirm the ranking rather than infer it, which is the whole
+    // point of the metadata that previously lied about sortOrder.
+    sortBy: params?.sortBy,
     sortOrder,
     hasMore,
     nextCursor: hasMore ? String(startIdx + limit) : undefined,

@@ -44,6 +44,24 @@ describe('paginate', () => {
     assert.equal(r.sortOrder, 'desc');
   });
 
+  it('reports the sortBy it applied, not just the order', () => {
+    // PaginationResult<T> declares sortBy. Leaving it undefined while sorting is
+    // the same defect as the original bug in the other direction: metadata that
+    // does not describe what happened.
+    const sorted = paginate(rows, {
+      limit: 10,
+      sortBy: 'stake',
+      sortOrder: 'desc',
+    });
+    assert.equal(sorted.sortBy, 'stake');
+    assert.equal(sorted.sortOrder, 'desc');
+
+    // No key requested -> nothing claimed.
+    const unsorted = paginate(rows, { limit: 10 });
+    assert.equal(unsorted.sortBy, undefined);
+    assert.equal(unsorted.sortOrder, 'asc');
+  });
+
   it('sorts before slicing, so limit returns the true top N', () => {
     const r = paginate(rows, { limit: 2, sortBy: 'stake', sortOrder: 'desc' });
     assert.deepEqual(
