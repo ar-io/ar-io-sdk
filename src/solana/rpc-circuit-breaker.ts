@@ -47,7 +47,11 @@ import CircuitBreaker from 'opossum';
 import { Logger } from '../common/logger.js';
 import type { SolanaRpc } from './types.js';
 
-const logger = new Logger({ level: 'error' });
+// Use the shared logger so consumers control verbosity via
+// `Logger.default.setLogLevel(...)`. A private `new Logger({ level: 'error' })`
+// silently swallowed every warn/info below, including circuit OPEN/CLOSE
+// transitions — the events an operator most needs during an RPC incident.
+const logger = Logger.default;
 
 // ---------------------------------------------------------------------------
 // Public types
