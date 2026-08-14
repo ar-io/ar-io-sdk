@@ -1,10 +1,19 @@
-## [4.1.2-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2-alpha.2...v4.1.2-alpha.3) (2026-08-14)
+## [4.1.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2...v4.1.3) (2026-08-14)
 
 
 ### Bug Fixes
 
-* **solana:** report the live SPL mint supply in getTokenSupply ([40e64bd](https://github.com/ar-io/ar-io-sdk/commit/40e64bd62fc7797275ee288aee01802abe214bf9))
-* **solana:** take the lifetime blockhash after CU simulation ([70ac303](https://github.com/ar-io/ar-io-sdk/commit/70ac3031196605a9c4284741b10e3e974ebb231a))
+* **solana:** apply filters in paginate as well ([14bc31c](https://github.com/ar-io/ar-io-sdk/commit/14bc31ca0f5380458480bb19d1321552951a8d03))
+* **solana:** apply sortBy in paginate instead of only echoing sortOrder ([e25a965](https://github.com/ar-io/ar-io-sdk/commit/e25a9658d22e583aafd33d5cc411fb237171ffa6))
+* **solana:** type sortBy as SortBy<T> and report it in the result ([88f6818](https://github.com/ar-io/ar-io-sdk/commit/88f6818af822e0271a9fd1dddff7ea60b215add7)), closes [#707](https://github.com/ar-io/ar-io-sdk/issues/707)
+
+## [4.1.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.1...v4.1.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* convert timestamps to milliseconds in getArNSRecord ([1af52db](https://github.com/ar-io/ar-io-sdk/commit/1af52dbabe367adfd13c9931ac9ad28f8428976c))
+* **crank:** drain several prune_name_to_returned txs per scan ([198d0e6](https://github.com/ar-io/ar-io-sdk/commit/198d0e69c72fc208a135b28337cd923f7c71079d))
 
 ## [4.1.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2-alpha.1...v4.1.2-alpha.2) (2026-08-11)
 
