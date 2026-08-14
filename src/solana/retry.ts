@@ -144,9 +144,12 @@ export async function withRetry<T>(
         // error. Reaching the last attempt at all means earlier ones were
         // retried, which already implies the error was retryable.
         if (isLast && attempt > 0) {
-          logger.warn(`[retry] exhausted ${maxAttempts} attempt(s), giving up`, {
-            error: String(error),
-          });
+          logger.warn(
+            `[retry] exhausted ${maxAttempts} attempt(s), giving up`,
+            {
+              error: String(error),
+            },
+          );
         }
         throw error;
       }
