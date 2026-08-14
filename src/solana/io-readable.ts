@@ -106,6 +106,7 @@ import type {
   PaginationResult,
   RegistrationFees,
   ReturnedName,
+  SortBy,
   TokenCostParams,
   TokenSupplyData,
   UserWithdrawal,
@@ -293,20 +294,167 @@ const CONFIG_CACHE_TTL_MS = 30_000;
  */
 const PRIORITY_FEE_CACHE_TTL_MS = 10_000;
 
-function paginate<T>(
+/**
+ * Resolve a `SortBy<T>` key against an item. `SortBy<T>` is `NestedKeys<T>`, so
+ * it may be a dot path such as `settings.fqdn`.
+ */
+function valueAtPath(item: unknown, path: string): unknown {
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (acc, key) =>
+        acc == null ? undefined : (acc as Record<string, unknown>)[key],
+      item,
+    );
+}
+
+/**
+ * Ascending comparison across the value types these records actually hold.
+ *
+ * `bigint` is handled explicitly rather than coerced: stake and balance fields
+ * are mARIO and routinely exceed Number.MAX_SAFE_INTEGER, so comparing them via
+ * Number() would collapse distinct values into ties and mis-rank the top of a
+ * leaderboard — exactly the query this sort exists to serve.
+ *
+ * Nullish values sort last in BOTH directions; a missing field is not "smallest",
+ * it is absent, and burying it is more useful than floating it to the top of a
+ * descending list.
+ */
+function compareValues(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+
+  const aNum = typeof a === 'bigint' || typeof a === 'number';
+  const bNum = typeof b === 'bigint' || typeof b === 'number';
+  if (aNum && bNum) {
+    if (typeof a === 'bigint' && typeof b === 'bigint') {
+      return a < b ? -1 : a > b ? 1 : 0;
+    }
+    // Mixed bigint/number: compare as bigint when both are integral so large
+    // values keep full precision, else fall back to numeric comparison.
+    const aInt = typeof a === 'bigint' || Number.isInteger(a);
+    const bInt = typeof b === 'bigint' || Number.isInteger(b);
+    if (aInt && bInt) {
+      const ab = typeof a === 'bigint' ? a : BigInt(a as number);
+      const bb = typeof b === 'bigint' ? b : BigInt(b as number);
+      return ab < bb ? -1 : ab > bb ? 1 : 0;
+    }
+    const an = Number(a);
+    const bn = Number(b);
+    return an < bn ? -1 : an > bn ? 1 : 0;
+  }
+
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    return a === b ? 0 : a ? 1 : -1;
+  }
+
+  return String(a).localeCompare(String(b));
+}
+
+/**
+ * Equality for filter matching. Numeric fields arrive as bigint (mARIO amounts)
+ * while a caller naturally writes a plain number in a filter, so the two are
+ * compared by value rather than by type; everything else is strict.
+ */
+function valuesEqual(actual: unknown, expected: unknown): boolean {
+  if (actual === expected) return true;
+  const aNum = typeof actual === 'bigint' || typeof actual === 'number';
+  const eNum = typeof expected === 'bigint' || typeof expected === 'number';
+  if (aNum && eNum) return compareValues(actual, expected) === 0;
+  return false;
+}
+
+/**
+ * Apply `PaginationParams.filters`. A scalar matches by equality; an array
+ * matches if ANY of its entries do, i.e. the values are alternatives for one
+ * field, while separate fields must all match.
+ *
+ * Like `sortBy`, this was previously declared on the params type and silently
+ * discarded, so a filtered query returned the full unfiltered set.
+ */
+function matchesFilters<T>(
+  item: T,
+  filters?: Record<string, unknown>,
+): boolean {
+  if (!filters) return true;
+  for (const [key, expected] of Object.entries(filters)) {
+    if (expected === undefined) continue;
+    const actual = valueAtPath(item, key);
+    const accepted = Array.isArray(expected) ? expected : [expected];
+    if (!accepted.some((e) => valuesEqual(actual, e))) return false;
+  }
+  return true;
+}
+
+/**
+ * Slice a fully-materialised result set into a page.
+ *
+ * `sortBy` is applied here rather than ignored. Previously this helper only
+ * sliced and then echoed `sortOrder` straight back into the result, so a caller
+ * asking for `{ sortBy: 'operatorStake', sortOrder: 'desc' }` received registry
+ * insertion order while the response asserted it was sorted descending. Silently
+ * dropping the key is bad; reporting a sort that did not happen is worse,
+ * because it defeats the check a careful caller would make.
+ *
+ * Sorting is applied only when `sortBy` is supplied, so existing callers that
+ * pass no key keep their current ordering. The input array is copied rather
+ * than sorted in place, since callers may hold their own reference to it.
+ *
+ * Exported for unit tests only; it is not re-exported from the package index.
+ */
+export function paginate<T>(
   items: T[],
-  params?: { cursor?: string; limit?: number; sortOrder?: 'asc' | 'desc' },
+  params?: {
+    cursor?: string;
+    limit?: number;
+    sortBy?: SortBy<T>;
+    sortOrder?: 'asc' | 'desc';
+    filters?: Partial<
+      Record<
+        keyof T,
+        string | string[] | number | number[] | boolean | boolean[]
+      >
+    >;
+  },
 ): PaginationResult<T> {
   const limit = params?.limit ?? 100;
   const startIdx = params?.cursor ? parseInt(params.cursor, 10) : 0;
-  const page = items.slice(startIdx, startIdx + limit);
-  const hasMore = startIdx + limit < items.length;
+  const sortOrder = params?.sortOrder ?? 'asc';
+
+  // Filter first: totalItems, hasMore and the page must all describe the
+  // filtered set, not the raw one.
+  const filtered = params?.filters
+    ? items.filter((item) =>
+        matchesFilters(item, params.filters as Record<string, unknown>),
+      )
+    : items;
+
+  let ordered = filtered;
+  if (params?.sortBy !== undefined) {
+    const key = params.sortBy;
+    const direction = sortOrder === 'desc' ? -1 : 1;
+    ordered = [...filtered].sort((a, b) => {
+      const cmp = compareValues(valueAtPath(a, key), valueAtPath(b, key));
+      // Nullish always trails, so don't let `desc` hoist missing values.
+      if (cmp === 1 && valueAtPath(a, key) == null) return 1;
+      if (cmp === -1 && valueAtPath(b, key) == null) return -1;
+      return cmp * direction;
+    });
+  }
+
+  const page = ordered.slice(startIdx, startIdx + limit);
+  const hasMore = startIdx + limit < ordered.length;
 
   return {
     items: page,
     limit,
-    totalItems: items.length,
-    sortOrder: params?.sortOrder ?? 'asc',
+    totalItems: ordered.length,
+    // PaginationResult<T> declares sortBy; echoing the key actually applied lets
+    // a caller confirm the ranking rather than infer it, which is the whole
+    // point of the metadata that previously lied about sortOrder.
+    sortBy: params?.sortBy,
+    sortOrder,
     hasMore,
     nextCursor: hasMore ? String(startIdx + limit) : undefined,
   };

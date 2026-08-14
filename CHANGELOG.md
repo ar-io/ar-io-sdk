@@ -1,3 +1,12 @@
+## [4.1.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2...v4.1.3) (2026-08-14)
+
+
+### Bug Fixes
+
+* **solana:** apply filters in paginate as well ([14bc31c](https://github.com/ar-io/ar-io-sdk/commit/14bc31ca0f5380458480bb19d1321552951a8d03))
+* **solana:** apply sortBy in paginate instead of only echoing sortOrder ([e25a965](https://github.com/ar-io/ar-io-sdk/commit/e25a9658d22e583aafd33d5cc411fb237171ffa6))
+* **solana:** type sortBy as SortBy<T> and report it in the result ([88f6818](https://github.com/ar-io/ar-io-sdk/commit/88f6818af822e0271a9fd1dddff7ea60b215add7)), closes [#707](https://github.com/ar-io/ar-io-sdk/issues/707)
+
 ## [4.1.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.1...v4.1.2) (2026-08-11)
 
 
