@@ -136,11 +136,17 @@ export async function withRetry<T>(
         // Surface *why* we gave up. The rethrown error carries no retry
         // context, so without this an operator cannot distinguish "failed
         // once, not retryable" from "exhausted every attempt".
-        if (isLast && retryable(error)) {
-          logger.warn(
-            `[retry] exhausted ${maxAttempts} attempt(s), giving up`,
-            { error: String(error) },
-          );
+        //
+        // `attempt > 0` is deliberately used instead of re-testing the
+        // predicate: `||` short-circuits, so on the final attempt
+        // `retryable()` has not been evaluated, and calling it here would
+        // let a throwing user-supplied predicate mask the operation's own
+        // error. Reaching the last attempt at all means earlier ones were
+        // retried, which already implies the error was retryable.
+        if (isLast && attempt > 0) {
+          logger.warn(`[retry] exhausted ${maxAttempts} attempt(s), giving up`, {
+            error: String(error),
+          });
         }
         throw error;
       }

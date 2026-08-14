@@ -233,6 +233,8 @@ describe('withRetry logging', () => {
     // The actual regression: a private error-level logger made this impossible.
     const seen: string[] = [];
     const original = Logger.default.debug.bind(Logger.default);
+    // Logger has no level getter, so restore the documented constructor
+    // default ('info') rather than leaking 'debug' into later tests.
     Logger.default.setLogLevel('debug');
     (Logger.default as unknown as { debug: (m: string) => void }).debug = (
       m: string,
@@ -251,9 +253,72 @@ describe('withRetry logging', () => {
       );
     } finally {
       (Logger.default as unknown as { debug: unknown }).debug = original;
+      Logger.default.setLogLevel('info');
     }
 
     assert.equal(seen.length, 1);
     assert.match(seen[0], /\[retry\] attempt 1\/3 failed/);
+  });
+
+  /**
+   * The exhaustion warn must not re-evaluate the retry predicate.
+   *
+   * `if (isLast || !retryable(error))` short-circuits, so on the final
+   * attempt `retryable()` is never called. Testing it again inside the
+   * branch would let a throwing user-supplied predicate replace the
+   * operation's own error -- the caller would see "predicate blew up"
+   * instead of the real failure.
+   */
+  it('does not consult the retry predicate on the final attempt', async () => {
+    const { lines, logger } = collect();
+    let predicateCalls = 0;
+    const opError = new TypeError('fetch failed');
+
+    await assert.rejects(
+      () =>
+        withRetry(
+          async () => {
+            throw opError;
+          },
+          {
+            maxAttempts: 2,
+            baseDelayMs: 1,
+            maxDelayMs: 5,
+            logger,
+            isRetryable: () => {
+              predicateCalls++;
+              return true;
+            },
+          },
+        ),
+      (err: unknown) => err === opError,
+    );
+
+    // attempt 0 consults it; the final attempt short-circuits via isLast
+    assert.equal(predicateCalls, 1);
+    assert.equal(lines.filter((l) => l.level === 'warn').length, 1);
+  });
+
+  it('surfaces the operation error even if the predicate throws', async () => {
+    const { logger } = collect();
+    const opError = new TypeError('fetch failed');
+
+    await assert.rejects(
+      () =>
+        withRetry(
+          async () => {
+            throw opError;
+          },
+          {
+            maxAttempts: 1,
+            baseDelayMs: 1,
+            logger,
+            isRetryable: () => {
+              throw new Error('predicate blew up');
+            },
+          },
+        ),
+      (err: unknown) => err === opError,
+    );
   });
 });
