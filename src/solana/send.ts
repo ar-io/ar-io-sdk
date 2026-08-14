@@ -413,16 +413,21 @@ export async function sendAndConfirm({
         ? 0n
         : BigInt(priorityFeeMicroLamports);
 
-  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+  // A blockhash is needed to compile the SIMULATION message, but its value is
+  // irrelevant there: `estimateComputeUnitLimit` simulates with
+  // `replaceRecentBlockhash: true`, so the validator substitutes its own. The
+  // blockhash that matters is the one on the message we sign — see the re-fetch
+  // below.
+  let latestBlockhash = (await rpc.getLatestBlockhash().send()).value;
 
   // Build the (optionally ALT-compressed) message for a given CU limit. We may
   // build it twice: once with the ceiling limit to simulate, once with the
   // tight limit we actually sign.
-  const buildMessage = (units: number) => {
+  const buildMessage = (units: number, blockhash: typeof latestBlockhash) => {
     const baseMessage = pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
       (tx) =>
         appendTransactionMessageInstructions(
           [
@@ -468,12 +473,35 @@ export async function sendAndConfirm({
   const units = shouldAutoSize
     ? await estimateComputeUnitLimit(
         rpc,
-        buildMessage(computeUnitLimit),
+        buildMessage(computeUnitLimit, latestBlockhash),
         computeUnitLimit,
       )
     : computeUnitLimit;
 
-  const message = buildMessage(units);
+  // Re-fetch the blockhash AFTER simulation. A blockhash is only valid for
+  // ~150 blocks (~60s), and that clock starts when it is issued — not when we
+  // send. `estimateComputeUnitLimit` is a full `simulateTransaction` round trip
+  // against a possibly-large message, so on a slow or rate-limited RPC it can
+  // burn a large slice of the window before the tx is even signed. Observed on
+  // mainnet: an observer's `save_observations` expired by exactly one block
+  // (`lastValidBlockHeight` 417090556 vs `currentBlockHeight` 417090557),
+  // losing that epoch's observation and reward. Taking the lifetime blockhash
+  // here gives the signed transaction the full window.
+  //
+  // Only re-fetched when we actually simulated — otherwise nothing consumed the
+  // window and the extra round trip would be pure cost.
+  // Best-effort: if the re-fetch fails we keep the pre-simulation blockhash and
+  // proceed exactly as before this optimization existed. A transient RPC hiccup
+  // here must never turn a send that used to work into a hard failure.
+  if (shouldAutoSize) {
+    try {
+      latestBlockhash = (await rpc.getLatestBlockhash().send()).value;
+    } catch {
+      // keep `latestBlockhash` as fetched before the simulation
+    }
+  }
+
+  const message = buildMessage(units, latestBlockhash);
 
   // Attach any extra keypair signers (e.g. a freshly generated ANT mint) so kit
   // can satisfy their SIGNER roles. `addSignersToTransactionMessage` walks the
