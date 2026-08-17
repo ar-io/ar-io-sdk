@@ -492,18 +492,22 @@ export async function spawnSolanaANT(
   // the mint signer on the message alongside the fee payer signer.
   // Signer-aware fee (see sendAndConfirm): wallet signers get the market
   // rate their own estimator would pick; keypairs keep the cheap base rate.
-  const [{ value: latestBlockhash }, microLamports] = await Promise.all([
+  // The blockhash here only has to make the SIMULATION message compile —
+  // `estimateComputeUnitLimit` simulates with `replaceRecentBlockhash: true`.
+  // The one that matters is re-fetched after simulation (see below).
+  const [{ value: initialBlockhash }, microLamports] = await Promise.all([
     rpc.getLatestBlockhash().send(),
     isTransactionModifyingSigner(signer)
       ? estimateQuotePriorityFeeMicroLamports(rpc)
       : estimatePriorityFeeMicroLamports(rpc),
   ]);
+  let latestBlockhash = initialBlockhash;
 
-  const buildMessage = (units: number) =>
+  const buildMessage = (units: number, blockhash: typeof latestBlockhash) =>
     pipe(
       createTransactionMessage({ version: 0 }),
       (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
       (tx) =>
         appendTransactionMessageInstructions(
           [
@@ -528,14 +532,29 @@ export async function spawnSolanaANT(
   // interferes with that and trips the guard. The wallet rewrite is captured by
   // the modifying-signer flow below, so `computeUnitLimit` (the ceiling) is left
   // generous for them.
-  const units = isTransactionModifyingSigner(signer)
-    ? computeUnitLimit
-    : await estimateComputeUnitLimit(
+  const shouldAutoSize = !isTransactionModifyingSigner(signer);
+  const units = shouldAutoSize
+    ? await estimateComputeUnitLimit(
         rpc,
-        buildMessage(computeUnitLimit),
+        buildMessage(computeUnitLimit, latestBlockhash),
         computeUnitLimit,
-      );
-  const message = buildMessage(units);
+      )
+    : computeUnitLimit;
+
+  // Re-fetch after simulation so the SIGNED message gets the full ~150-block
+  // (~60s) validity window rather than whatever is left of it once the
+  // `simulateTransaction` round trip returns. Mirrors `sendAndConfirm`; see the
+  // longer note there for the mainnet expiry this fixes.
+  // Best-effort, as in `sendAndConfirm`: on failure keep the pre-simulation
+  // blockhash so this can only ever match the old behaviour, never worsen it.
+  if (shouldAutoSize) {
+    try {
+      latestBlockhash = (await rpc.getLatestBlockhash().send()).value;
+    } catch {
+      // keep `latestBlockhash` as fetched before the simulation
+    }
+  }
+  const message = buildMessage(units, latestBlockhash);
 
   // Attach the mint signer so kit can satisfy the WRITABLE_SIGNER role on the
   // mint account. `addSignersToTransactionMessage` walks the message's account

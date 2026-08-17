@@ -1,3 +1,19 @@
+## [4.1.4](https://github.com/ar-io/ar-io-sdk/compare/v4.1.3...v4.1.4) (2026-08-14)
+
+
+### Bug Fixes
+
+* **solana:** report the live SPL mint supply in getTokenSupply ([40e64bd](https://github.com/ar-io/ar-io-sdk/commit/40e64bd62fc7797275ee288aee01802abe214bf9))
+* **solana:** take the lifetime blockhash after CU simulation ([70ac303](https://github.com/ar-io/ar-io-sdk/commit/70ac3031196605a9c4284741b10e3e974ebb231a))
+
+## [4.1.4-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.3...v4.1.4-alpha.1) (2026-08-14)
+
+
+### Bug Fixes
+
+* **solana:** report the live SPL mint supply in getTokenSupply ([40e64bd](https://github.com/ar-io/ar-io-sdk/commit/40e64bd62fc7797275ee288aee01802abe214bf9))
+* **solana:** take the lifetime blockhash after CU simulation ([70ac303](https://github.com/ar-io/ar-io-sdk/commit/70ac3031196605a9c4284741b10e3e974ebb231a))
+
 ## [4.1.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.2...v4.1.3) (2026-08-14)
 
 

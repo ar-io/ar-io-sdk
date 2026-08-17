@@ -773,6 +773,8 @@ export class SolanaARIOReadable {
     if (!configAccount.exists) {
       throw new Error('ArioConfig account not found');
     }
+    // The mint comes off the config we already fetched, so reading its live
+    // supply below costs no extra config round-trip.
     const config = deserializeArioConfig(Buffer.from(configAccount.data));
 
     // Supply counters from GatewaySettings (staked/delegated/withdrawn).
@@ -823,9 +825,36 @@ export class SolanaARIOReadable {
       }
     }
 
+    // `total` is the LIVE SPL mint supply, not the frozen
+    // `ArioConfig.total_supply` genesis declaration. ARIO is a standard SPL
+    // token: any holder can burn their own tokens (e.g. via a wallet-cleanup
+    // incinerator), so real supply drifts below the 1B genesis mint over time.
+    // `config.total_supply` is written once at `finalize_supply` and never
+    // tracks those burns; the mint's `supply` field does. Fall back to the
+    // config value only if the mint can't be read (e.g. pre-init).
+    let total = config.totalSupply;
+    const liveSupply = await this.getMintSupply(config.mint);
+    if (liveSupply !== null) total = liveSupply;
+
+    // `circulating` is DERIVED so the six buckets always reconcile to `total`
+    //   circulating + locked + staked + delegated + withdrawn + protocolBalance == total
+    // and self-correct as `total` drifts down via burns. Falls back to the
+    // stored `circulating_supply` only if the derivation would go negative
+    // (buckets exceed the live total — a data anomaly, e.g. an over-funded
+    // reserve).
+    const derivedCirculating =
+      total -
+      config.lockedSupply -
+      staked -
+      delegated -
+      withdrawn -
+      protocolBalance;
+    const circulating =
+      derivedCirculating >= 0 ? derivedCirculating : config.circulatingSupply;
+
     return {
-      total: config.totalSupply,
-      circulating: config.circulatingSupply,
+      total,
+      circulating,
       locked: config.lockedSupply,
       staked,
       delegated,
@@ -857,16 +886,36 @@ export class SolanaARIOReadable {
     return Number(amount);
   }
 
+  /**
+   * Live total supply (in mARIO) of the ARIO SPL mint, read from the mint's
+   * `supply` field (bytes [36, 44) of the SPL Mint layout). This is the
+   * authoritative total — it tracks burns/mints in real time, unlike the frozen
+   * `ArioConfig.total_supply` genesis declaration. Returns `null` if the mint
+   * can't be read. Uses the same portable little-endian u64 decode as
+   * {@link getTokenAccountAmount} (some browser bundlers strip the BigInt
+   * readers from the `buffer` shim's prototype).
+   */
+  private async getMintSupply(mint: Address): Promise<number | null> {
+    const account = await this.getAccount(mint);
+    if (!account.exists) return null;
+    const data = account.data;
+    if (data.length < 44) return null;
+    let amount = 0n;
+    for (let i = 7; i >= 0; i--) {
+      amount = (amount << 8n) | BigInt(data[36 + i]);
+    }
+    // ARIO supply caps at 1B * 1e6 mARIO ≈ 2^50, well under MAX_SAFE_INTEGER.
+    return Number(amount);
+  }
+
   // =========================================
   // Balance read methods
   // =========================================
 
   /**
-   * Resolve the ARIO SPL mint address from the on-chain `ArioConfig`.
-   *
-   * `ArioConfig` layout: [8 disc][32 authority][32 mint][...]. We decode
-   * the mint at offset 40 and cache it for the lifetime of this instance —
-   * the mint never changes once the protocol is deployed.
+   * Resolve the ARIO SPL mint address from the on-chain `ArioConfig`, cached
+   * for the lifetime of this instance — the mint never changes once the
+   * protocol is deployed.
    */
   protected async getArioMint(): Promise<Address> {
     if (this._arioMint) return this._arioMint;
@@ -877,8 +926,7 @@ export class SolanaARIOReadable {
         `ArioConfig not found at ${configPda} on coreProgram ${this.coreProgram} — is the program deployed and initialized?`,
       );
     }
-    const data = Buffer.from(account.data);
-    const mint = addressDecoder.decode(data.subarray(40, 72));
+    const { mint } = deserializeArioConfig(Buffer.from(account.data));
     this._arioMint = mint;
     return mint;
   }
