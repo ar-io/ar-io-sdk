@@ -27,9 +27,7 @@
  * ```
  */
 
-import { Logger } from '../common/logger.js';
-
-const logger = new Logger({ level: 'error' });
+import { ILogger, Logger } from '../common/logger.js';
 
 export interface RetryOptions {
   /** Maximum number of attempts (first call + retries). @default 3 */
@@ -41,6 +39,10 @@ export interface RetryOptions {
   /** Predicate that decides whether a thrown error is retryable.
    *  Defaults to {@link isRetryableError}. */
   isRetryable?: (error: unknown) => boolean;
+  /** Logger for retry diagnostics. Defaults to the shared
+   *  {@link Logger.default}, so consumers control verbosity via
+   *  `Logger.default.setLogLevel(...)`. */
+  logger?: ILogger;
 }
 
 const DEFAULT_MAX_ATTEMPTS = 3;
@@ -120,6 +122,7 @@ export async function withRetry<T>(
   const baseDelayMs = opts?.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
   const maxDelayMs = opts?.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
   const retryable = opts?.isRetryable ?? isRetryableError;
+  const logger = opts?.logger ?? Logger.default;
 
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -130,6 +133,24 @@ export async function withRetry<T>(
 
       const isLast = attempt === maxAttempts - 1;
       if (isLast || !retryable(error)) {
+        // Surface *why* we gave up. The rethrown error carries no retry
+        // context, so without this an operator cannot distinguish "failed
+        // once, not retryable" from "exhausted every attempt".
+        //
+        // `attempt > 0` is deliberately used instead of re-testing the
+        // predicate: `||` short-circuits, so on the final attempt
+        // `retryable()` has not been evaluated, and calling it here would
+        // let a throwing user-supplied predicate mask the operation's own
+        // error. Reaching the last attempt at all means earlier ones were
+        // retried, which already implies the error was retryable.
+        if (isLast && attempt > 0) {
+          logger.warn(
+            `[retry] exhausted ${maxAttempts} attempt(s), giving up`,
+            {
+              error: String(error),
+            },
+          );
+        }
         throw error;
       }
 
