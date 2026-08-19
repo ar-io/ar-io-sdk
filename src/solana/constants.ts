@@ -77,6 +77,17 @@ export const WITHDRAWAL_SEED = Buffer.from('withdrawal');
 export const WITHDRAWAL_COUNTER_SEED = Buffer.from('withdrawal_counter');
 export const ALLOWLIST_SEED = Buffer.from('allowlist');
 export const EPOCH_SEED = Buffer.from('epoch');
+/**
+ * Seed for the `EpochRentReceipt` PDA (ADR-0029). The receipt records which
+ * account funded an Epoch's rent so `close_epoch` can refund the creator
+ * rather than whoever wins the race to sign the close.
+ *
+ * Derived by hand rather than with a generated helper: the account is reached
+ * only through `remaining_accounts` and `admin_close_orphaned_epoch_rent_receipt`,
+ * so the IDL carries no seed metadata for it and Codama emits no
+ * `findEpochRentReceiptPda`.
+ */
+export const EPOCH_RENT_RECEIPT_SEED = Buffer.from('epoch_rent_receipt');
 export const EPOCH_SETTINGS_SEED = Buffer.from('epoch_settings');
 export const OBSERVATION_SEED = Buffer.from('observation');
 export const REDELEGATION_SEED = Buffer.from('redelegation');
