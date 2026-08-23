@@ -796,6 +796,22 @@ export class SolanaARIOReadable {
   // Protocol info
   // =========================================
 
+  /**
+   * Protocol info: on-chain supply/balance figures plus static protocol
+   * metadata.
+   *
+   * COSTS TWO ACCOUNT READS (ArioConfig + EpochSettings), which is worth
+   * knowing because only some of the result comes from chain:
+   *
+   * - From chain: `totalSupply`, `protocolBalance`, `epochSettings`.
+   * - Fixed literals: `Ticker` (`'ARIO'`), `Name` (`'AR.IO'`),
+   *   `Denomination` (`6`), `Handlers` (`[]`), `LastCreatedEpochIndex` (`0`).
+   *
+   * If all you need are the literals — a ticker or denomination for display —
+   * don't call this; hard-code them or read {@link TOKEN_DECIMALS}. Two RPC
+   * round trips for a string constant is a poor trade, and callers have
+   * reached for this method not realising that is what they were paying.
+   */
   async getInfo() {
     const [[configPda], [epochSettingsPda]] = await Promise.all([
       getArioConfigPDA(this.coreProgram),

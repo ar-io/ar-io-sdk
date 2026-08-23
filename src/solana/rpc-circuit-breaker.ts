@@ -29,9 +29,16 @@
  * ```ts
  * import { ARIO, createCircuitBreakerRpc } from '@ar.io/sdk';
  *
+ * // With a second endpoint to fall back to:
  * const rpc = createCircuitBreakerRpc({
  *   primaryUrl: 'https://my-premium-rpc.example.com',
- *   fallbackUrl: 'https://api.mainnet-beta.solana.com',
+ *   fallbackUrl: 'https://my-other-rpc.example.com',
+ * });
+ *
+ * // With only one endpoint — the circuit still protects it, and open-circuit
+ * // calls fail fast rather than being routed onto someone else's RPC:
+ * const rpc = createCircuitBreakerRpc({
+ *   primaryUrl: 'https://my-premium-rpc.example.com',
  * });
  *
  * const ario = ARIO.init({ rpc });
@@ -112,8 +119,21 @@ export interface CircuitBreakerRpcOptions {
 export interface CircuitBreakerRpcConfig {
   /** URL for the primary (preferred) RPC endpoint. */
   primaryUrl: string;
-  /** URL for the fallback RPC endpoint (used when the circuit opens). */
-  fallbackUrl: string;
+  /**
+   * URL for the fallback RPC endpoint, used while the circuit is open.
+   *
+   * OPTIONAL. Omit it when you have no second endpoint: the circuit still
+   * protects the primary, and calls made while it is open reject immediately
+   * (fail fast) instead of being routed anywhere else.
+   *
+   * Requiring this used to be a forcing function — a consumer with a single
+   * paid endpoint had nowhere to point it but a public RPC, so a degraded
+   * primary quietly turned into traffic aimed at shared infrastructure. Pass a
+   * fallback only when you actually have one to spare; {@link
+   * defaultFallbackUrl} exists for that case but is deliberately not applied
+   * for you.
+   */
+  fallbackUrl?: string;
   /** Opossum circuit-breaker tuning knobs. */
   circuitBreakerOptions?: CircuitBreakerRpcOptions;
 }
@@ -275,7 +295,10 @@ export function createCircuitBreakerRpc({
   circuitBreakerOptions: opts = {},
 }: CircuitBreakerRpcConfig): SolanaRpc {
   const primaryTransport = createDefaultRpcTransport({ url: primaryUrl });
-  const fallbackTransport = createDefaultRpcTransport({ url: fallbackUrl });
+  const fallbackTransport =
+    fallbackUrl !== undefined
+      ? createDefaultRpcTransport({ url: fallbackUrl })
+      : undefined;
 
   type TransportRequest = Parameters<typeof primaryTransport>[0];
 
@@ -363,17 +386,25 @@ export function createCircuitBreakerRpc({
   // Note both transports share one rate gate, so backing off on the fallback
   // also slows primary retries. That is the conservative direction, but a
   // per-transport gate would be a reasonable follow-up.
-  breaker.fallback(async (request: TransportRequest) => {
-    try {
-      return await fallbackTransport(request);
-    } catch (err) {
-      onError(err);
-      throw err;
-    }
-  });
+  // With no fallback configured we register none at all, so opossum rejects
+  // open-circuit calls outright rather than routing them anywhere.
+  if (fallbackTransport !== undefined) {
+    breaker.fallback(async (request: TransportRequest) => {
+      try {
+        return await fallbackTransport(request);
+      } catch (err) {
+        onError(err);
+        throw err;
+      }
+    });
+  }
 
   breaker.on('open', () => {
-    logger.warn('[rpc-circuit-breaker] circuit OPEN — routing to fallback RPC');
+    logger.warn(
+      fallbackTransport !== undefined
+        ? '[rpc-circuit-breaker] circuit OPEN — routing to fallback RPC'
+        : '[rpc-circuit-breaker] circuit OPEN — failing fast (no fallback configured)',
+    );
   });
   breaker.on('halfOpen', () => {
     logger.info(

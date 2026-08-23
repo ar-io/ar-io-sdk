@@ -378,6 +378,71 @@ describe('createCircuitBreakerRpc — adaptive throttle', () => {
   });
 });
 
+describe('createCircuitBreakerRpc — optional fallback', () => {
+  const servers: Array<{ close: () => Promise<void> }> = [];
+
+  afterEach(async () => {
+    await Promise.all(servers.map((s) => s.close()));
+    servers.length = 0;
+  });
+
+  it('works with no fallbackUrl at all', async () => {
+    const primary = await createStatusMockServer(() => ({
+      statusCode: 200,
+      result: { value: 'primary' },
+    }));
+    servers.push(primary);
+
+    const rpc = createCircuitBreakerRpc({ primaryUrl: primary.url });
+    const r = await rpc
+      .getLatestBlockhash()
+      .send({ abortSignal: AbortSignal.timeout(10_000) });
+    assert.deepStrictEqual(r, { value: 'primary' });
+  });
+
+  it('fails fast instead of routing anywhere when the circuit opens', async () => {
+    // The point of making fallbackUrl optional: a consumer with one endpoint
+    // should be able to decline a fallback rather than be pushed onto public
+    // infrastructure whenever their primary degrades.
+    let primaryHits = 0;
+    const primary = await createStatusMockServer(() => {
+      primaryHits++;
+      return { statusCode: 500 };
+    });
+    servers.push(primary);
+
+    const rpc = createCircuitBreakerRpc({
+      primaryUrl: primary.url,
+      circuitBreakerOptions: {
+        volumeThreshold: 1,
+        errorThresholdPercentage: 1,
+        timeout: false,
+        maxRequestsPerSecond: 50,
+        resetTimeout: 60_000,
+      },
+    });
+
+    // Trip the circuit.
+    for (let i = 0; i < 3; i++) {
+      await assert.rejects(() =>
+        rpc.getSlot().send({ abortSignal: AbortSignal.timeout(5_000) }),
+      );
+    }
+    const hitsWhenOpen = primaryHits;
+
+    // Open circuit: the call must reject rather than resolve via some other
+    // endpoint, and must not keep hammering the primary either.
+    await assert.rejects(() =>
+      rpc.getSlot().send({ abortSignal: AbortSignal.timeout(5_000) }),
+    );
+    assert.equal(
+      primaryHits,
+      hitsWhenOpen,
+      'an open circuit should not forward to the primary',
+    );
+  });
+});
+
 describe('defaultFallbackUrl', () => {
   it('returns devnet URL for devnet primary', () => {
     assert.equal(
