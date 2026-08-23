@@ -1,3 +1,17 @@
+## [4.1.4-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.1...v4.1.4-alpha.2) (2026-08-23)
+
+
+### Bug Fixes
+
+* **solana:** measure the single-flight TTL from settlement, not from start ([fa48766](https://github.com/ar-io/ar-io-sdk/commit/fa48766cbf1d624efb2405e241953071d1bd012d)), closes [#712](https://github.com/ar-io/ar-io-sdk/issues/712)
+
+
+### Performance Improvements
+
+* **solana:** batch gateway metadata and drop a dead read in discovery ([e89a871](https://github.com/ar-io/ar-io-sdk/commit/e89a8717348f10c1e52cfb039ec0adaf43d9ae5d))
+* **solana:** coalesce concurrent RPC reads behind in-flight caches ([2fbe69b](https://github.com/ar-io/ar-io-sdk/commit/2fbe69bf09b3b1a24547c15e30abbe79e776e9ae))
+* **solana:** fetch account chunks in a bounded pool, not one at a time ([0179255](https://github.com/ar-io/ar-io-sdk/commit/0179255688f326332f55c204e1411f4e2352a9cc))
+
 ## [4.1.4-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.3...v4.1.4-alpha.1) (2026-08-14)
 
 
