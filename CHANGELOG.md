@@ -1,3 +1,15 @@
+# [4.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.3...v4.2.0-alpha.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* **solana:** make the RPC throttle back off when it actually matters ([70dd2f6](https://github.com/ar-io/ar-io-sdk/commit/70dd2f6b2bf871ae7b37b168f471384edde4f656))
+
+
+### Features
+
+* **solana:** let consumers decline a public RPC fallback ([a1020c2](https://github.com/ar-io/ar-io-sdk/commit/a1020c2298241b50757e7835ac714209ca2fe0e9))
+
 ## [4.1.4-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.2...v4.1.4-alpha.3) (2026-08-23)
 
 
