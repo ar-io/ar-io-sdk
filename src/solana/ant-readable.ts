@@ -53,6 +53,11 @@ import type {
 import type { WalletAddress } from '../types/common.js';
 import type { GasEstimate } from '../types/io.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
+import {
+  ACCOUNT_FETCH_CONCURRENCY,
+  chunkArray,
+  mapWithConcurrency,
+} from './concurrency.js';
 import { ANT_CONFIG_VERSION, ARIO_ANT_PROGRAM_ID } from './constants.js';
 import {
   ACL_BOOTSTRAP_ACCOUNT_BYTES,
@@ -606,15 +611,19 @@ export class SolanaANTReadable {
       t.controllersPda,
       t.apexPda,
     ]);
-    type Acct = Awaited<ReturnType<typeof fetchEncodedAccounts>>[number];
-    const accounts: Acct[] = [];
-    for (let i = 0; i < allPdas.length; i += 100) {
-      const chunk = allPdas.slice(i, i + 100);
-      const res = await withRetry(() =>
-        fetchEncodedAccounts(this.rpc, chunk, { commitment: this.commitment }),
-      );
-      accounts.push(...res);
-    }
+    // Chunks run in a bounded pool. `accounts` is flattened in chunk order,
+    // which the decode loop below relies on absolutely: it reads each mint's
+    // three accounts at `i * 3`, so any reordering would attribute one ANT's
+    // config to another.
+    const perChunk = await mapWithConcurrency(
+      chunkArray(allPdas, 100),
+      ACCOUNT_FETCH_CONCURRENCY,
+      (pdas) =>
+        withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, { commitment: this.commitment }),
+        ),
+    );
+    const accounts = perChunk.flat();
 
     const recordDecoder = getAntRecordDecoder();
     const result: Record<string, ANTSummary> = {};
@@ -697,16 +706,17 @@ export class SolanaANTReadable {
       }),
     );
     const allPdas = pairs.flatMap((p) => [p.configPda, p.controllersPda]);
-    type Acct = Awaited<ReturnType<typeof fetchEncodedAccounts>>[number];
-    const accounts: Acct[] = [];
-    for (let i = 0; i < allPdas.length; i += 100) {
-      const res = await withRetry(() =>
-        fetchEncodedAccounts(this.rpc, allPdas.slice(i, i + 100), {
-          commitment: this.commitment,
-        }),
-      );
-      accounts.push(...res);
-    }
+    // As in getANTSummaries: bounded pool, flattened in chunk order because
+    // the decode loop indexes each mint's pair at `i * 2`.
+    const perChunk = await mapWithConcurrency(
+      chunkArray(allPdas, 100),
+      ACCOUNT_FETCH_CONCURRENCY,
+      (pdas) =>
+        withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, { commitment: this.commitment }),
+        ),
+    );
+    const accounts = perChunk.flat();
 
     const recordsByMint = await this._recordsByMint(
       opts?.includeMetadata === true,

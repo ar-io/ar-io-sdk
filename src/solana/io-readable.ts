@@ -119,6 +119,10 @@ import { SolanaANTReadable } from './ant-readable.js';
 import { SolanaANTRegistryReadable } from './ant-registry-readable.js';
 import { getAssociatedTokenAddressKit } from './ata.js';
 import {
+  ACCOUNT_FETCH_CONCURRENCY,
+  mapWithConcurrency,
+} from './concurrency.js';
+import {
   ARIO_ANT_PROGRAM_ID,
   ARIO_ARNS_PROGRAM_ID,
   ARIO_CORE_PROGRAM_ID,
@@ -724,17 +728,29 @@ export class SolanaARIOReadable {
     const unique = Array.from(new Set(operatorAddresses));
     if (unique.length === 0) return new Map();
     const out = new Map<string, bigint>();
-    for (const group of chunk(unique, 100)) {
-      const pdas = await Promise.all(
-        group.map(
-          async (op) => (await getGatewayPDA(address(op), this.garProgram))[0],
-        ),
-      );
-      const accounts = await withRetry(() =>
-        fetchEncodedAccounts(this.rpc, pdas, {
-          commitment: this.commitment,
-        }),
-      );
+    const groups = chunk(unique, 100);
+    // Chunks run in a bounded pool rather than one-after-another; results are
+    // still consumed in input order, so `group[i]` keeps pairing with the
+    // right operator.
+    const perGroup = await mapWithConcurrency(
+      groups,
+      ACCOUNT_FETCH_CONCURRENCY,
+      async (group) => {
+        const pdas = await Promise.all(
+          group.map(
+            async (op) =>
+              (await getGatewayPDA(address(op), this.garProgram))[0],
+          ),
+        );
+        return withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, {
+            commitment: this.commitment,
+          }),
+        );
+      },
+    );
+    groups.forEach((group, gi) => {
+      const accounts = perGroup[gi];
       for (let i = 0; i < accounts.length; i++) {
         const acct = accounts[i];
         if (!acct.exists) continue;
@@ -748,7 +764,7 @@ export class SolanaARIOReadable {
           // Skip malformed; the caller will fall back to the raw delegation amount.
         }
       }
-    }
+    });
     return out;
   }
 
@@ -1192,19 +1208,31 @@ export class SolanaARIOReadable {
     }
 
     // Batch fetch gateway PDAs (kit has no hard limit but keep 100-at-a-time
-    // for sensible RPC request sizes).
+    // for sensible RPC request sizes). Chunks run in a bounded pool; the
+    // results are appended in chunk order so registry ordering is preserved
+    // for callers that pass no `sortBy`.
     const allItems: GatewayWithAddress[] = [];
-    for (let i = 0; i < gatewayAddresses.length; i += 100) {
-      const batch = gatewayAddresses.slice(i, i + 100);
-      const pdas = await Promise.all(
-        batch.map(
-          async (addr) => (await getGatewayPDA(addr, this.garProgram))[0],
-        ),
-      );
-      const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
-        commitment: this.commitment,
-      });
+    const batches = chunk(gatewayAddresses, 100);
+    const perBatch = await mapWithConcurrency(
+      batches,
+      ACCOUNT_FETCH_CONCURRENCY,
+      async (batch) => {
+        const pdas = await Promise.all(
+          batch.map(
+            async (addr) => (await getGatewayPDA(addr, this.garProgram))[0],
+          ),
+        );
+        // Retried like every other batched read: raising concurrency without
+        // this would turn a transient 429 into a hard failure.
+        return withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, {
+            commitment: this.commitment,
+          }),
+        );
+      },
+    );
 
+    for (const accounts of perBatch) {
       for (const acct of accounts) {
         if (!acct.exists) continue;
         try {
