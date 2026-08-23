@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+#
+# CodeRabbit only auto-reviews pull requests whose BASE is the repository's
+# default branch (`main`). This project's contribution flow targets `alpha`
+# (see CONTRIBUTING.md: branch from main, PR into alpha, team promotes
+# alpha -> main), so in practice essentially no PR here was ever reviewed —
+# CodeRabbit posted a passing status check with "Review skipped: reviews are
+# disabled for this base branch", which reads as a green review unless you
+# open the comment.
+#
+# `base_branches` is additive to the default branch, so `main` stays covered.
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      # The prerelease branches from .releaserc — anything that can ship to npm
+      # should be reviewed before it gets there.
+      - alpha
+      - solana
