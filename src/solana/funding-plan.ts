@@ -51,13 +51,14 @@ import {
   type SolanaRpcApi,
   type SolanaRpcApiMainnet,
   fetchEncodedAccount,
+  fetchEncodedAccounts,
   getAddressDecoder,
 } from '@solana/kit';
 
 /**
  * The discovery + executor accept either the dev/test or the mainnet RPC API
  * shape — they only use methods that are common to both (`getProgramAccounts`,
- * `getAccountInfo`).
+ * `getAccountInfo`, `getMultipleAccounts`).
  */
 export type FundingPlanRpc = Rpc<SolanaRpcApi> | Rpc<SolanaRpcApiMainnet>;
 
@@ -251,13 +252,15 @@ export async function discoverFundingSources(
   });
   for (const d of delegations) sources.push(d);
 
-  // 5. Operator stake (Solana extension; only relevant when caller opts in).
-  //    Discovery requires checking each gateway the user might operate; we
-  //    only check the user's own gateway-as-operator PDA rather than scanning
-  //    all gateways.
-  const operatorSource = await fetchOperatorStake(rpc, owner, garProgram);
-  if (operatorSource) sources.push(operatorSource);
-
+  // 5. Operator stake (Solana extension) is NOT auto-discovered.
+  //
+  //    There used to be a `fetchOperatorStake` call here that read the
+  //    caller's gateway-as-operator PDA and then returned null on every code
+  //    path — the account was fetched and discarded, costing one round trip
+  //    per discovery for nothing. Removing it changes no output: operator
+  //    stake never appeared in the discovered set, so `fundAsOperator` has
+  //    always required the caller to pass explicit `sources`. Implementing
+  //    real discovery is a behavior change and belongs on its own.
   return sources;
 }
 
@@ -764,6 +767,9 @@ export async function predictResidueVaults(
 
 const ADDRESS_DECODER = getAddressDecoder();
 
+/** Solana caps `getMultipleAccounts` at 100 keys per request. */
+const ACCOUNT_BATCH_SIZE = 100;
+
 async function fetchUserWithdrawals(
   rpc: FundingPlanRpc,
   owner: Address,
@@ -854,7 +860,15 @@ async function fetchUserDelegations(
         encoding: 'base64',
       } as Parameters<typeof rpc.getProgramAccounts>[1])
       .send();
-    const out: DiscoveredFundingSource[] = [];
+    // Decode every delegation FIRST, then resolve gateway metadata for the
+    // whole set in one batch. Doing it inline cost a full round trip per
+    // delegation, serialized — 120 delegations meant 120 sequential
+    // `getAccountInfo` calls before discovery could return.
+    const decoded: Array<{
+      gateway: Address;
+      amount: bigint;
+      startTimestamp: bigint;
+    }> = [];
     for (const entry of result as unknown as Array<{
       account: { data: [string, string] };
     }>) {
@@ -864,11 +878,22 @@ async function fetchUserDelegations(
       const gateway = ADDRESS_DECODER.decode(data.subarray(8, 40));
       const amount = dv.getBigUint64(72, true);
       if (amount === 0n) continue;
-      const startTimestamp = BigInt(dv.getBigInt64(80, true));
-      // We need the gateway's min_delegation_amount + perf ratio to sort
-      // properly. Fetch each gateway lazily; cache in a map.
-      const meta = await fetchGatewayMeta(rpc, gateway, garProgram);
-      out.push({
+      decoded.push({
+        gateway,
+        amount,
+        startTimestamp: BigInt(dv.getBigInt64(80, true)),
+      });
+    }
+
+    const metas = await fetchGatewayMetas(
+      rpc,
+      decoded.map((d) => d.gateway),
+      garProgram,
+    );
+
+    return decoded.map(({ gateway, amount, startTimestamp }) => {
+      const meta = metas.get(gateway) ?? MISSING_GATEWAY_META;
+      return {
         kind: 'delegation',
         gateway,
         available: amount,
@@ -876,54 +901,79 @@ async function fetchUserDelegations(
         performanceRatio: meta.performanceRatio,
         totalDelegatedStake: meta.totalDelegatedStake,
         startTimestamp,
-      });
-    }
-    return out;
+      };
+    });
   } catch {
     return [];
   }
 }
 
-async function fetchGatewayMeta(
-  rpc: FundingPlanRpc,
-  gateway: Address,
-  garProgram: Address,
-): Promise<{
+type GatewayMeta = {
   minDelegationAmount: bigint;
   performanceRatio: number;
   totalDelegatedStake: bigint;
-}> {
-  const [pda] = await getGatewayPDA(gateway, garProgram);
-  const acct = await fetchEncodedAccount(rpc, pda);
-  if (!acct.exists) {
-    return {
-      minDelegationAmount: 0n,
-      performanceRatio: 1.0,
-      totalDelegatedStake: 0n,
-    };
-  }
-  // Gateway layout has these fields packed; rather than hand-parsing every
-  // offset (the struct is large and version-sensitive), we use safe defaults
-  // when in doubt — the Lua-faithful sort is best-effort, not load-bearing.
-  // Future: switch to the Codama-decoded Gateway type once it stabilizes.
-  return {
-    minDelegationAmount: 10_000_000n, // settings.min_delegate_stake default
-    performanceRatio: 1.0,
-    totalDelegatedStake: 0n,
-  };
-}
+};
 
-async function fetchOperatorStake(
+/** Values used for a gateway whose PDA doesn't exist (e.g. pruned). */
+const MISSING_GATEWAY_META: GatewayMeta = {
+  minDelegationAmount: 0n,
+  performanceRatio: 1.0,
+  totalDelegatedStake: 0n,
+};
+
+/**
+ * Values for a gateway that DOES exist.
+ *
+ * The Gateway struct is large and version-sensitive, so rather than
+ * hand-parsing every offset we use safe defaults — the Lua-faithful sort is
+ * best-effort, not load-bearing. Future: switch to the Codama-decoded Gateway
+ * type once it stabilizes, at which point these become real reads and the
+ * batch below starts earning its keep twice over.
+ */
+const DEFAULT_GATEWAY_META: GatewayMeta = {
+  minDelegationAmount: 10_000_000n, // settings.min_delegate_stake default
+  performanceRatio: 1.0,
+  totalDelegatedStake: 0n,
+};
+
+/**
+ * Resolve gateway metadata for many gateways at once.
+ *
+ * Only the account's EXISTENCE is consulted today (see the note on
+ * {@link DEFAULT_GATEWAY_META}), but that existence bit does change the
+ * resulting `minDelegationAmount` and therefore the drawdown sort, so the
+ * lookup can't simply be dropped. Batching it into `getMultipleAccounts`
+ * chunks of 100 keeps the semantics identical while turning N sequential
+ * round trips into ceil(N/100) parallel ones.
+ */
+async function fetchGatewayMetas(
   rpc: FundingPlanRpc,
-  owner: Address,
+  gateways: ReadonlyArray<Address>,
   garProgram: Address,
-): Promise<DiscoveredFundingSource | null> {
-  // The user might be a gateway operator; try fetching their gateway PDA.
-  const [pda] = await getGatewayPDA(owner, garProgram);
-  const acct = await fetchEncodedAccount(rpc, pda);
-  if (!acct.exists || acct.data.length < 80) return null;
-  // operator_stake is at offset 40 in Gateway layout (after disc + operator).
-  // Defensive: only emit if amount > 0 and gateway is Joined.
-  // Keeping conservative parse — see fetchGatewayMeta note about offsets.
-  return null; // operator-stake-as-funding requires opt-in; skip auto-detection by default
+): Promise<Map<Address, GatewayMeta>> {
+  const out = new Map<Address, GatewayMeta>();
+  const unique = Array.from(new Set(gateways));
+  if (unique.length === 0) return out;
+
+  const pdas = await Promise.all(
+    unique.map(async (g) => (await getGatewayPDA(g, garProgram))[0]),
+  );
+
+  const chunks: Array<{ start: number; pdas: Address[] }> = [];
+  for (let i = 0; i < pdas.length; i += ACCOUNT_BATCH_SIZE)
+    chunks.push({ start: i, pdas: pdas.slice(i, i + ACCOUNT_BATCH_SIZE) });
+
+  const fetched = await Promise.all(
+    chunks.map((c) => fetchEncodedAccounts(rpc, c.pdas)),
+  );
+
+  chunks.forEach((chunk, ci) => {
+    fetched[ci].forEach((acct, i) => {
+      out.set(
+        unique[chunk.start + i],
+        acct.exists ? DEFAULT_GATEWAY_META : MISSING_GATEWAY_META,
+      );
+    });
+  });
+  return out;
 }
