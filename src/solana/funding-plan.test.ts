@@ -15,6 +15,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { type Address } from '@solana/kit';
+import bs58 from 'bs58';
 
 import {
   type DiscoveredFundingSource,
@@ -22,6 +23,7 @@ import {
   MAX_FUNDING_SOURCES,
   buildFundingPlan,
   computeResidueIndexes,
+  discoverFundingSources,
 } from './funding-plan.js';
 
 const GATEWAY_A = 'GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' as Address;
@@ -526,5 +528,198 @@ describe('computeResidueIndexes', () => {
   it('skips Delegation when state is missing (undefined slot)', () => {
     const sources = [{ kind: 'delegation', amount: 12_000_000n }];
     assert.deepEqual(computeResidueIndexes(sources, [undefined]), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// discoverFundingSources — RPC shape
+//
+// This path had no coverage, so these tests were written against the ORIGINAL
+// implementation first and must keep passing unchanged: they pin the observable
+// output while the request pattern underneath it changes.
+// ---------------------------------------------------------------------------
+
+/** Real base58 pubkeys — kit rejects placeholder strings outright. */
+const addr32 = (fill: number) => bs58.encode(Buffer.alloc(32, fill)) as Address;
+const OWNER = addr32(1);
+const MINT = addr32(2);
+const GAR_PROGRAM = addr32(3);
+
+const DELEGATION_SIZE = 8 + 32 + 32 + 8 + 8 + 16 + 1 + 3;
+const WITHDRAWAL_SIZE = 8 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 3;
+
+/** Raw Delegation account bytes; the discovery path hand-parses these offsets. */
+function delegationBytes(opts: {
+  gateway: Uint8Array;
+  amount: bigint;
+  startTimestamp: bigint;
+}): string {
+  const b = Buffer.alloc(DELEGATION_SIZE);
+  Buffer.from(opts.gateway).copy(b, 8); // gateway pubkey
+  b.writeBigUInt64LE(opts.amount, 72); // amount
+  b.writeBigInt64LE(opts.startTimestamp, 80); // start_timestamp
+  return b.toString('base64');
+}
+
+/** SPL token account: amount lives at offset 64. */
+function ataBytes(amount: bigint): string {
+  const b = Buffer.alloc(165);
+  b.writeBigUInt64LE(amount, 64);
+  return b.toString('base64');
+}
+
+type DiscoveryCounts = {
+  getAccountInfo: number;
+  getMultipleAccounts: number;
+  getProgramAccounts: number;
+  accountsRequested: number;
+};
+
+/**
+ * Stub rpc for discovery. `existingGateways` decides which gateway PDAs come
+ * back as existing — the discovery path only ever used that existence bit.
+ */
+function discoveryRpc(
+  counts: DiscoveryCounts,
+  opts: { delegations: string[]; ataAmount?: bigint },
+) {
+  const accountValue = (data: string) => ({
+    data: [data, 'base64'] as readonly [string, string],
+    executable: false,
+    lamports: 1_000_000n,
+    owner: OWNER,
+    rentEpoch: 0n,
+    space: BigInt(Buffer.from(data, 'base64').length),
+  });
+  return {
+    getAccountInfo: (_addr: unknown) => ({
+      send: async () => {
+        counts.getAccountInfo++;
+        // First getAccountInfo is the owner's ATA; the rest are gateway PDAs
+        // in the original implementation.
+        return counts.getAccountInfo === 1 && opts.ataAmount !== undefined
+          ? { value: accountValue(ataBytes(opts.ataAmount)) }
+          : { value: accountValue(Buffer.alloc(400).toString('base64')) };
+      },
+    }),
+    getMultipleAccounts: (addrs: unknown[]) => ({
+      send: async () => {
+        counts.getMultipleAccounts++;
+        counts.accountsRequested += (addrs as unknown[]).length;
+        return {
+          value: (addrs as unknown[]).map(() =>
+            accountValue(Buffer.alloc(400).toString('base64')),
+          ),
+        };
+      },
+    }),
+    getProgramAccounts: (_program: unknown, cfg: any) => ({
+      send: async () => {
+        counts.getProgramAccounts++;
+        const size = cfg?.filters?.find((f: any) => f.dataSize)?.dataSize;
+        if (size === BigInt(WITHDRAWAL_SIZE)) return [];
+        if (size === BigInt(DELEGATION_SIZE))
+          return opts.delegations.map((d) => ({
+            pubkey: OWNER,
+            account: { data: [d, 'base64'] },
+          }));
+        return [];
+      },
+    }),
+  };
+}
+
+describe('discoverFundingSources', () => {
+  const gwABytes = Buffer.alloc(32, 7);
+  const gwBBytes = Buffer.alloc(32, 9);
+
+  it('returns balance + delegation sources with the documented shape', async () => {
+    const counts: DiscoveryCounts = {
+      getAccountInfo: 0,
+      getMultipleAccounts: 0,
+      getProgramAccounts: 0,
+      accountsRequested: 0,
+    };
+    const rpc = discoveryRpc(counts, {
+      ataAmount: 5_000_000n,
+      delegations: [
+        delegationBytes({
+          gateway: gwABytes,
+          amount: 1_000_000n,
+          startTimestamp: 100n,
+        }),
+        delegationBytes({
+          gateway: gwBBytes,
+          amount: 3_000_000n,
+          startTimestamp: 200n,
+        }),
+      ],
+    });
+
+    const sources = await discoverFundingSources(rpc as never, OWNER, {
+      arioMint: MINT,
+      garProgram: GAR_PROGRAM,
+    });
+
+    const balance = sources.filter((s) => s.kind === 'balance');
+    const delegations = sources.filter((s) => s.kind === 'delegation');
+    assert.equal(balance.length, 1);
+    assert.equal(balance[0].available, 5_000_000n);
+    assert.equal(delegations.length, 2);
+    // minDelegationAmount comes from the gateway existence check; both exist.
+    for (const d of delegations) {
+      assert.equal(d.minDelegationAmount, 10_000_000n);
+      assert.equal(d.performanceRatio, 1.0);
+      assert.equal(d.totalDelegatedStake, 0n);
+    }
+    // Lua sort: descending excess stake. Both are below the floor here, so
+    // excess is 0 for both and the tie breaks on later start timestamp.
+    assert.equal(delegations[0].available, 3_000_000n);
+    assert.equal(delegations[1].available, 1_000_000n);
+
+    // No operatorStake source is ever discovered: fundAsOperator requires
+    // explicit `sources`. Pinned so removing the dead fetch stays a no-op.
+    assert.equal(sources.filter((s) => s.kind === 'operatorStake').length, 0);
+  });
+
+  it('reads gateway metadata without one round trip per delegation', async () => {
+    const counts: DiscoveryCounts = {
+      getAccountInfo: 0,
+      getMultipleAccounts: 0,
+      getProgramAccounts: 0,
+      accountsRequested: 0,
+    };
+    const delegations = Array.from({ length: 120 }, (_, i) =>
+      delegationBytes({
+        gateway: Buffer.alloc(32, (i % 200) + 1),
+        amount: BigInt((i + 1) * 1_000),
+        startTimestamp: BigInt(i),
+      }),
+    );
+    const rpc = discoveryRpc(counts, { ataAmount: 1n, delegations });
+
+    const sources = await discoverFundingSources(rpc as never, OWNER, {
+      arioMint: MINT,
+      garProgram: GAR_PROGRAM,
+    });
+
+    assert.equal(
+      sources.filter((s) => s.kind === 'delegation').length,
+      120,
+      'every delegation is still discovered',
+    );
+    // The ATA read is the only legitimate single-account fetch here.
+    assert.equal(
+      counts.getAccountInfo,
+      1,
+      `gateway metadata must not cost one getAccountInfo per delegation ` +
+        `(saw ${counts.getAccountInfo})`,
+    );
+    assert.equal(
+      counts.getMultipleAccounts,
+      2,
+      '120 gateways should batch into 2 getMultipleAccounts calls of <=100',
+    );
+    assert.equal(counts.accountsRequested, 120);
   });
 });
