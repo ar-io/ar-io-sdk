@@ -254,6 +254,130 @@ describe('createCircuitBreakerRpc', () => {
   });
 });
 
+describe('createCircuitBreakerRpc — adaptive throttle', () => {
+  const servers: Array<{ close: () => Promise<void> }> = [];
+
+  afterEach(async () => {
+    await Promise.all(servers.map((s) => s.close()));
+    servers.length = 0;
+  });
+
+  /** A port with nothing listening, so the primary transport always fails. */
+  async function deadUrl(): Promise<string> {
+    const s = await createStatusMockServer(() => ({ statusCode: 200 }));
+    await s.close();
+    return s.url;
+  }
+
+  /** Drive `concurrency` callers for `ms`, swallowing the expected errors. */
+  async function drive(
+    rpc: ReturnType<typeof createCircuitBreakerRpc>,
+    ms: number,
+    concurrency: number,
+  ) {
+    const stop = Date.now() + ms;
+    await Promise.all(
+      Array.from({ length: concurrency }, async () => {
+        while (Date.now() < stop) {
+          try {
+            await rpc
+              .getSlot()
+              .send({ abortSignal: AbortSignal.timeout(5_000) });
+          } catch {
+            /* 429s and dead-primary errors are the point of these tests */
+          }
+        }
+      }),
+    );
+  }
+
+  it('throttles when the FALLBACK 429s and the circuit is open', async () => {
+    // The existing 429 test pins volumeThreshold high to keep the circuit
+    // CLOSED. That path works: opossum emits `failure`, which feeds the
+    // backoff. When the circuit is OPEN it emits `reject` and calls the
+    // fallback directly — no `failure` — so fallback 429s were invisible to
+    // the throttle and it stayed pinned at the ceiling for as long as the
+    // primary was down.
+    let fallbackHits = 0;
+    const fallback = await createStatusMockServer(() => {
+      fallbackHits++;
+      return { statusCode: 429, headers: { 'retry-after': '1' } };
+    });
+    servers.push(fallback);
+
+    const rpc = createCircuitBreakerRpc({
+      primaryUrl: await deadUrl(),
+      fallbackUrl: fallback.url,
+      circuitBreakerOptions: {
+        volumeThreshold: 1,
+        errorThresholdPercentage: 1,
+        timeout: false,
+        maxRequestsPerSecond: 20,
+        resetTimeout: 60_000,
+      },
+    });
+
+    await drive(rpc, 2_500, 4);
+
+    // At 20 r/s with no backoff this is ~50 requests. Backing off on the
+    // fallback's 429s should keep it far below that.
+    assert.ok(
+      fallbackHits < 20,
+      `fallback took ${fallbackHits} requests in 2.5s — the throttle never ` +
+        'saw its 429s (ceiling 20 r/s would allow ~50)',
+    );
+  });
+
+  it('treats an advertised rps-limit as a ceiling, never as permission to keep going', async () => {
+    // A 429 always means slow down. When the provider advertises a limit far
+    // above our ceiling (api.mainnet-beta.solana.com sends 250 against a
+    // default ceiling of 10) the header path resolved to the ceiling itself,
+    // so the rate never moved.
+    //
+    // `retry-after: 0` is deliberate: the per-429 cooldown otherwise dominates
+    // throughput and masks the rate entirely — measured, an absolute-count
+    // assertion could not tell the two cases apart. Removing the cooldown
+    // leaves throughput governed purely by the adaptive rate, which is what
+    // this bug is about. Compared against the known-good headerless case
+    // rather than an absolute number, so the assertion does not depend on
+    // machine speed.
+    async function hitsOver(headers: Record<string, string>): Promise<number> {
+      let hits = 0;
+      const primary = await createStatusMockServer(() => {
+        hits++;
+        return { statusCode: 429, headers: { 'retry-after': '0', ...headers } };
+      });
+      const fallback = await createStatusMockServer(() => ({
+        statusCode: 429,
+        headers: { 'retry-after': '0' },
+      }));
+      servers.push(primary, fallback);
+      const rpc = createCircuitBreakerRpc({
+        primaryUrl: primary.url,
+        fallbackUrl: fallback.url,
+        circuitBreakerOptions: {
+          volumeThreshold: 100, // keep the circuit closed so the primary keeps 429ing
+          timeout: false,
+          maxRequestsPerSecond: 20,
+          resetTimeout: 60_000,
+        },
+      });
+      await drive(rpc, 3_000, 4);
+      return hits;
+    }
+
+    const headerless = await hitsOver({});
+    const advertised = await hitsOver({ 'x-ratelimit-rps-limit': '250' });
+
+    assert.ok(
+      advertised <= headerless * 2,
+      `429s advertising rps-limit 250 served ${advertised} requests versus ` +
+        `${headerless} for identical headerless 429s — the advertised limit ` +
+        'is holding the rate at the ceiling instead of lowering it',
+    );
+  });
+});
+
 describe('defaultFallbackUrl', () => {
   it('returns devnet URL for devnet primary', () => {
     assert.equal(
