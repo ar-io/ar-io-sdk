@@ -188,6 +188,7 @@ import {
   estimateGasFee,
   estimateQuotePriorityFeeMicroLamports,
 } from './send.js';
+import { type InFlightStore, memoizeInFlight } from './single-flight.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
 const addressDecoder = getAddressDecoder();
@@ -293,6 +294,16 @@ const CONFIG_CACHE_TTL_MS = 30_000;
  * `getRecentPrioritizationFees` for every name.
  */
 const PRIORITY_FEE_CACHE_TTL_MS = 10_000;
+
+/**
+ * TTL for the memoized cluster clock (`getSlot` → `getBlockTime`).
+ *
+ * Deliberately short. The expensive case is a burst — a price table quoting
+ * every row at once — and the in-flight coalescing handles that regardless of
+ * TTL. Keeping the ceiling at one second means a UI that ticks a Dutch-auction
+ * price per second still sees it move.
+ */
+const CLUSTER_CLOCK_CACHE_TTL_MS = 1_000;
 
 /**
  * Resolve a `SortBy<T>` key against an item. `SortBy<T>` is `NestedKeys<T>`, so
@@ -501,29 +512,38 @@ export class SolanaARIOReadable {
   protected readonly arnsProgram: Address;
   protected readonly antProgram: Address;
 
+  // NOTE: every cache below stores the in-flight PROMISE rather than the
+  // resolved value (see `./single-flight.ts`). Storing the value only ever
+  // helped sequential callers — a burst of concurrent callers all miss before
+  // any of them fills the cache, so all of them hit the network, which is the
+  // exact case these caches exist to collapse.
+
   // Memoized ARIO mint address (read once from ArioConfig.mint and reused
-  // for every SPL-ATA derivation in getBalance/getBalances).
-  private _arioMint?: Address;
+  // for every SPL-ATA derivation in getBalance/getBalances). Never expires:
+  // the mint is fixed once the protocol is deployed.
+  private _arioMintCache: InFlightStore<'mint', Address> = new Map();
 
   // Short-TTL cache for slow-changing config-ish accounts (DemandFactor,
   // ArnsConfig, etc.). Collapses the many identical reads a UI fires in a
   // burst — e.g. the returned-names page running `getCostDetails` per row,
   // each re-reading the same DemandFactor PDA — into a single network call.
-  private _accountCache = new Map<
+  private _accountCache: InFlightStore<
     string,
-    {
-      account: Awaited<ReturnType<SolanaARIOReadable['getAccount']>>;
-      expiresAt: number;
-    }
-  >();
+    Awaited<ReturnType<SolanaARIOReadable['getAccount']>>
+  > = new Map();
 
   // Short-TTL memo of the estimated compute-unit price (priority fee), so
   // burst `getCostDetails` calls share one getRecentPrioritizationFees query.
-  private _priorityFeeCache?: { microLamports: bigint; expiresAt: number };
+  private _priorityFeeCache: InFlightStore<'fee', bigint> = new Map();
 
   // Memo of getMinimumBalanceForRentExemption results keyed by byte size.
   // Rent parameters are cluster constants in practice, so no TTL.
-  private _rentCache = new Map<number, number>();
+  private _rentCache: InFlightStore<number, number> = new Map();
+
+  // Short-TTL memo of the cluster clock (getSlot + getBlockTime). Kept brief:
+  // the in-flight coalescing is what collapses a price table's burst, while a
+  // 1s ceiling keeps a per-second auction UI honest.
+  private _clusterClockCache: InFlightStore<'clock', number> = new Map();
 
   constructor(
     config: SolanaReadConfig & {
@@ -541,6 +561,25 @@ export class SolanaARIOReadable {
     this.garProgram = config.garProgramId ?? ARIO_GAR_PROGRAM_ID;
     this.arnsProgram = config.arnsProgramId ?? ARIO_ARNS_PROGRAM_ID;
     this.antProgram = config.antProgramId ?? ARIO_ANT_PROGRAM_ID;
+  }
+
+  /**
+   * Quote-grade compute-unit price, memoized for
+   * {@link PRIORITY_FEE_CACHE_TTL_MS}.
+   *
+   * "Quote-grade" means it covers what a browser wallet will attach, not just
+   * the near-floor base rate a keypair send pays. Each miss costs THREE
+   * `getRecentPrioritizationFees` queries (one unscoped plus two scoped market
+   * references) at ~6.6 KiB apiece, which is why coalescing matters here more
+   * than anywhere else: ten concurrent quotes used to issue thirty of them.
+   */
+  private async getQuotePriorityFee(): Promise<bigint> {
+    return memoizeInFlight(
+      this._priorityFeeCache,
+      'fee',
+      PRIORITY_FEE_CACHE_TTL_MS,
+      () => estimateQuotePriorityFeeMicroLamports(this.rpc),
+    );
   }
 
   /** Helper to fetch an encoded account (kit's replacement for Connection.getAccountInfo). */
@@ -562,15 +601,15 @@ export class SolanaARIOReadable {
     pda: Address,
     ttlMs = CONFIG_CACHE_TTL_MS,
   ): Promise<Awaited<ReturnType<SolanaARIOReadable['getAccount']>>> {
-    const key = String(pda);
-    const now = Date.now();
-    const hit = this._accountCache.get(key);
-    if (hit && hit.expiresAt > now) return hit.account;
-    const account = await this.getAccount(pda);
-    if (account.exists) {
-      this._accountCache.set(key, { account, expiresAt: now + ttlMs });
-    }
-    return account;
+    return memoizeInFlight(
+      this._accountCache,
+      String(pda),
+      ttlMs,
+      () => this.getAccount(pda),
+      // Misses stay uncached, exactly as before — but a concurrent burst of
+      // callers still shares the single lookup that discovers the miss.
+      (account) => account.exists,
+    );
   }
 
   /**
@@ -588,18 +627,34 @@ export class SolanaARIOReadable {
    * Sourced via the latest slot's block time (`getSlot` → `getBlockTime`),
    * which the runtime derives from the same stake-weighted clock the on-chain
    * `Clock` sysvar exposes. Read-only: no signer, no transaction.
+   *
+   * Memoized for {@link CLUSTER_CLOCK_CACHE_TTL_MS}: this costs TWO sequential
+   * round trips (the block time needs the slot), and `getTokenCost` calls it on
+   * every quote — so a price table paid 2N calls for a value that advances in
+   * real time anyway. Staleness here is directionally safe: an older clock
+   * means less elapsed auction time, which OVER-quotes the returned-name
+   * premium rather than under-quoting it.
    */
   private async getClusterUnixTimestampSeconds(): Promise<number> {
-    const slot = await withRetry(() =>
-      this.rpc.getSlot({ commitment: this.commitment }).send(),
+    return memoizeInFlight(
+      this._clusterClockCache,
+      'clock',
+      CLUSTER_CLOCK_CACHE_TTL_MS,
+      async () => {
+        const slot = await withRetry(() =>
+          this.rpc.getSlot({ commitment: this.commitment }).send(),
+        );
+        const blockTime = await withRetry(() =>
+          this.rpc.getBlockTime(slot).send(),
+        );
+        if (blockTime == null) {
+          throw new Error(
+            `Cluster block time unavailable for slot ${slot}; cannot match on-chain Clock::get().unix_timestamp`,
+          );
+        }
+        return Number(blockTime);
+      },
     );
-    const blockTime = await withRetry(() => this.rpc.getBlockTime(slot).send());
-    if (blockTime == null) {
-      throw new Error(
-        `Cluster block time unavailable for slot ${slot}; cannot match on-chain Clock::get().unix_timestamp`,
-      );
-    }
-    return Number(blockTime);
   }
 
   /**
@@ -918,17 +973,22 @@ export class SolanaARIOReadable {
    * protocol is deployed.
    */
   protected async getArioMint(): Promise<Address> {
-    if (this._arioMint) return this._arioMint;
-    const [configPda] = await getArioConfigPDA(this.coreProgram);
-    const account = await this.getAccount(configPda);
-    if (!account.exists) {
-      throw new Error(
-        `ArioConfig not found at ${configPda} on coreProgram ${this.coreProgram} — is the program deployed and initialized?`,
-      );
-    }
-    const { mint } = deserializeArioConfig(Buffer.from(account.data));
-    this._arioMint = mint;
-    return mint;
+    return memoizeInFlight(
+      this._arioMintCache,
+      'mint',
+      Number.POSITIVE_INFINITY,
+      async () => {
+        const [configPda] = await getArioConfigPDA(this.coreProgram);
+        const account = await this.getAccount(configPda);
+        if (!account.exists) {
+          throw new Error(
+            `ArioConfig not found at ${configPda} on coreProgram ${this.coreProgram} — is the program deployed and initialized?`,
+          );
+        }
+        const { mint } = deserializeArioConfig(Buffer.from(account.data));
+        return mint;
+      },
+    );
   }
 
   /**
@@ -2053,15 +2113,7 @@ export class SolanaARIOReadable {
       computeUnitLimit?: number;
     } = {},
   ): Promise<GasEstimate> {
-    const now = Date.now();
-    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
-      this._priorityFeeCache = {
-        // Quote-grade rate: covers what a browser wallet will attach, not
-        // just the (near-floor) base estimate keypair sends pay.
-        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
-        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
-      };
-    }
+    const priorityFeeMicroLamports = await this.getQuotePriorityFee();
 
     // Conditional accounts: only created when the buyer doesn't already
     // have them. Unknown buyer → assume they're needed (over-quote rather
@@ -2106,18 +2158,19 @@ export class SolanaARIOReadable {
     });
 
     const rentKey = profile.accountBytes.reduce((sum, b) => sum + b, 0);
-    let rentLamports = this._rentCache.get(rentKey);
-    if (rentLamports === undefined) {
-      rentLamports = await estimateRentLamports(this.rpc, profile.accountBytes);
-      this._rentCache.set(rentKey, rentLamports);
-    }
+    const rentLamports = await memoizeInFlight(
+      this._rentCache,
+      rentKey,
+      Number.POSITIVE_INFINITY,
+      () => estimateRentLamports(this.rpc, profile.accountBytes),
+    );
 
     return estimateGasFee(this.rpc, {
       computeUnitLimit: opts.computeUnitLimit,
       signatureCount: profile.signatureCount,
       transactionCount: profile.transactionCount,
       rentLamports,
-      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+      priorityFeeMicroLamports,
     });
   }
 
@@ -2156,13 +2209,7 @@ export class SolanaARIOReadable {
     /** decrease-delegate-stake with instant payout (second transaction). */
     instant?: boolean;
   }): Promise<GasEstimate> {
-    const now = Date.now();
-    if (!this._priorityFeeCache || this._priorityFeeCache.expiresAt <= now) {
-      this._priorityFeeCache = {
-        microLamports: await estimateQuotePriorityFeeMicroLamports(this.rpc),
-        expiresAt: now + PRIORITY_FEE_CACHE_TTL_MS,
-      };
-    }
+    const priorityFeeMicroLamports = await this.getQuotePriorityFee();
 
     // Conditional accounts — checked live when the actor is known,
     // conservative (assume creation) otherwise. All best-effort.
@@ -2256,15 +2303,12 @@ export class SolanaARIOReadable {
       profile.accountBytes.reduce((sum, b) => sum + b, 0) +
       reallocBytes +
       profile.accountBytes.length;
-    let rentLamports = this._rentCache.get(rentKey);
-    if (rentLamports === undefined) {
-      rentLamports = await estimateRentLamports(
-        this.rpc,
-        profile.accountBytes,
-        reallocBytes,
-      );
-      this._rentCache.set(rentKey, rentLamports);
-    }
+    const rentLamports = await memoizeInFlight(
+      this._rentCache,
+      rentKey,
+      Number.POSITIVE_INFINITY,
+      () => estimateRentLamports(this.rpc, profile.accountBytes, reallocBytes),
+    );
 
     // Instant decrease: the second transaction immediately closes the
     // vault created by the first — its deposit round-trips back.
@@ -2282,7 +2326,7 @@ export class SolanaARIOReadable {
       transactionCount: profile.transactionCount,
       rentLamports,
       rentReclaimedLamports,
-      priorityFeeMicroLamports: this._priorityFeeCache.microLamports,
+      priorityFeeMicroLamports,
     });
   }
 
