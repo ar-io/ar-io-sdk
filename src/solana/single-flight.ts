@@ -34,6 +34,7 @@
 /** A cached in-flight or already-settled request. */
 type InFlightEntry<V> = {
   promise: Promise<V>;
+  /** Infinity while the request is in flight; a real deadline once settled. */
   expiresAt: number;
 };
 
@@ -62,12 +63,20 @@ export function memoizeInFlight<K, V>(
   produce: () => Promise<V>,
   keep: (value: V) => boolean = () => true,
 ): Promise<V> {
-  const now = Date.now();
   const hit = store.get(key);
-  if (hit !== undefined && hit.expiresAt > now) return hit.promise;
+  if (hit !== undefined && hit.expiresAt > Date.now()) return hit.promise;
 
+  // A PENDING entry never expires — its `expiresAt` stays at Infinity until it
+  // settles, and the TTL is measured from settlement below.
+  //
+  // Measuring the TTL from when the request STARTED meant a request slower
+  // than its own TTL looked expired while still in flight, so later callers
+  // began a second one — reopening the very stampede this helper closes. That
+  // is reachable in practice: CLUSTER_CLOCK_CACHE_TTL_MS is 1s and the
+  // cluster-clock read is two sequential RPCs, each wrapped in withRetry with
+  // a 1s base backoff, so a single retry exceeds it.
   const promise = produce();
-  store.set(key, { promise, expiresAt: now + ttlMs });
+  store.set(key, { promise, expiresAt: Number.POSITIVE_INFINITY });
 
   // Only ever evict OUR entry: by the time this settles the key may already
   // hold a newer promise (TTL expired, another caller started a fresh fetch),
@@ -81,7 +90,13 @@ export function memoizeInFlight<K, V>(
   // reporting an unhandled rejection for the cached promise; callers await the
   // ORIGINAL promise, so they still observe the error.
   void promise.then((value) => {
-    if (!keep(value)) evictSelf();
+    if (!keep(value)) {
+      evictSelf();
+      return;
+    }
+    // Settled and worth keeping: start the TTL now.
+    const entry = store.get(key);
+    if (entry?.promise === promise) entry.expiresAt = Date.now() + ttlMs;
   }, evictSelf);
 
   return promise;

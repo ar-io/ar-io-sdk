@@ -104,38 +104,80 @@ describe('memoizeInFlight', () => {
     assert.equal(calls, 2);
   });
 
-  it('a late settlement never evicts a newer entry for the same key', async () => {
-    // Real timers rather than `mock.timers`: that API needs Node >= 20.4 and
-    // this package supports Node >= 18. A short TTL plus a real sleep gets the
-    // same interleaving without the version floor.
-    const store: InFlightStore<string, string> = new Map();
-    const slow = deferred<string>();
+  it('does not start a duplicate request while one is still in flight, even past the TTL', async () => {
+    // Reported by CodeRabbit on #712. The TTL used to be measured from when
+    // the request STARTED, so a request slower than its own TTL was treated as
+    // expired while still in flight and later callers began a second one —
+    // reopening the exact stampede this helper exists to close.
+    //
+    // Not theoretical: CLUSTER_CLOCK_CACHE_TTL_MS is 1s and the cluster-clock
+    // read is two SEQUENTIAL RPCs, each wrapped in withRetry (3 attempts, 1s
+    // base backoff). One retry is enough to exceed the TTL.
+    const store: InFlightStore<string, number> = new Map();
     let calls = 0;
-
-    const first = memoizeInFlight(store, 'k', 10, () => {
+    const slow = deferred<number>();
+    const produce = () => {
       calls++;
       return slow.promise;
-    });
-    const firstSettled = first.catch(() => 'failed');
+    };
 
-    // Let the TTL lapse while the first request is still in flight.
-    await sleep(30);
-    const second = await memoizeInFlight(store, 'k', 60_000, async () => {
+    const first = memoizeInFlight(store, 'k', 10, produce);
+    await sleep(40); // TTL has lapsed, but the request has NOT settled
+    const second = memoizeInFlight(store, 'k', 10, produce);
+
+    slow.resolve(5);
+    assert.equal(await first, 5);
+    assert.equal(await second, 5);
+    assert.equal(
+      calls,
+      1,
+      'a caller arriving during a slow request must join it, not start another',
+    );
+  });
+
+  it('starts the TTL when the request settles, not when it began', async () => {
+    const store: InFlightStore<string, number> = new Map();
+    let calls = 0;
+    const produce = async () => {
       calls++;
-      return 'fresh';
-    });
-    assert.equal(second, 'fresh');
-    assert.equal(calls, 2);
+      await sleep(40);
+      return calls;
+    };
 
-    // The stale request now fails. Its eviction must not drop 'fresh'.
+    // ttl 60ms against a 40ms request: measured from the start it would have
+    // only ~20ms of life left, measured from settlement it has the full 60ms.
+    assert.equal(await memoizeInFlight(store, 'k', 60, produce), 1);
+    await sleep(30);
+    assert.equal(
+      await memoizeInFlight(store, 'k', 60, produce),
+      1,
+      'the settled value should still be within its TTL',
+    );
+    assert.equal(calls, 1);
+  });
+
+  it('a late settlement never evicts a newer entry for the same key', async () => {
+    // Now that pending entries never expire, two promises can only coexist for
+    // a key if one is swapped in directly — so drive that explicitly rather
+    // than via a TTL race, to keep the identity guard covered.
+    const store: InFlightStore<string, string> = new Map();
+    const slow = deferred<string>();
+    const stale = memoizeInFlight(store, 'k', 60_000, () => slow.promise);
+    const staleSettled = stale.catch(() => 'failed');
+
+    // Replace the entry as though a newer request had taken over the key.
+    const fresh = Promise.resolve('fresh');
+    store.set('k', { promise: fresh, expiresAt: Date.now() + 60_000 });
+
     slow.reject(new Error('stale'));
-    await firstSettled;
+    await staleSettled;
 
-    const third = await memoizeInFlight(store, 'k', 60_000, async () => {
+    let calls = 0;
+    const after = await memoizeInFlight(store, 'k', 60_000, async () => {
       calls++;
       return 'should not happen';
     });
-    assert.equal(third, 'fresh', 'newer entry survived the stale eviction');
-    assert.equal(calls, 2);
+    assert.equal(after, 'fresh', 'newer entry survived the stale eviction');
+    assert.equal(calls, 0);
   });
 });
