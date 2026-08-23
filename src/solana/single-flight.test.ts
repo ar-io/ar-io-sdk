@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { describe, it, mock } from 'node:test';
+import { describe, it } from 'node:test';
 
 import { type InFlightStore, memoizeInFlight } from './single-flight.js';
 
@@ -105,39 +105,37 @@ describe('memoizeInFlight', () => {
   });
 
   it('a late settlement never evicts a newer entry for the same key', async () => {
-    mock.timers.enable({ apis: ['Date'] });
-    try {
-      const store: InFlightStore<string, string> = new Map();
-      const slow = deferred<string>();
-      let calls = 0;
+    // Real timers rather than `mock.timers`: that API needs Node >= 20.4 and
+    // this package supports Node >= 18. A short TTL plus a real sleep gets the
+    // same interleaving without the version floor.
+    const store: InFlightStore<string, string> = new Map();
+    const slow = deferred<string>();
+    let calls = 0;
 
-      const first = memoizeInFlight(store, 'k', 1_000, () => {
-        calls++;
-        return slow.promise;
-      });
-      const firstSettled = first.catch(() => 'failed');
+    const first = memoizeInFlight(store, 'k', 10, () => {
+      calls++;
+      return slow.promise;
+    });
+    const firstSettled = first.catch(() => 'failed');
 
-      // TTL lapses while the first request is still in flight.
-      mock.timers.tick(2_000);
-      const second = await memoizeInFlight(store, 'k', 1_000, async () => {
-        calls++;
-        return 'fresh';
-      });
-      assert.equal(second, 'fresh');
-      assert.equal(calls, 2);
+    // Let the TTL lapse while the first request is still in flight.
+    await sleep(30);
+    const second = await memoizeInFlight(store, 'k', 60_000, async () => {
+      calls++;
+      return 'fresh';
+    });
+    assert.equal(second, 'fresh');
+    assert.equal(calls, 2);
 
-      // The stale request now fails. Its eviction must not drop 'fresh'.
-      slow.reject(new Error('stale'));
-      await firstSettled;
+    // The stale request now fails. Its eviction must not drop 'fresh'.
+    slow.reject(new Error('stale'));
+    await firstSettled;
 
-      const third = await memoizeInFlight(store, 'k', 1_000, async () => {
-        calls++;
-        return 'should not happen';
-      });
-      assert.equal(third, 'fresh', 'newer entry survived the stale eviction');
-      assert.equal(calls, 2);
-    } finally {
-      mock.timers.reset();
-    }
+    const third = await memoizeInFlight(store, 'k', 60_000, async () => {
+      calls++;
+      return 'should not happen';
+    });
+    assert.equal(third, 'fresh', 'newer entry survived the stale eviction');
+    assert.equal(calls, 2);
   });
 });
