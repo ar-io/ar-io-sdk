@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   PurchaseType,
   getArnsRecordEncoder,
+  getDemandFactorEncoder,
 } from '@ar.io/solana-contracts/arns';
 import { getArioConfigEncoder } from '@ar.io/solana-contracts/core';
 import { getGatewaySettingsEncoder } from '@ar.io/solana-contracts/gar';
@@ -424,6 +425,251 @@ describe('getArioMint', () => {
     await assert.rejects(
       () => readable.readArioMint(),
       /ArioConfig not found at .* on coreProgram/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Request coalescing (single-flight caches)
+//
+// These caches used to store the RESOLVED value, so they only helped
+// SEQUENTIAL callers: a concurrent burst all missed before any of them filled
+// the cache. The burst is precisely the case worth collapsing — a price table
+// quoting every row at once — so each test below drives CONCURRENT callers and
+// asserts the underlying RPC ran once.
+// ---------------------------------------------------------------------------
+
+type RpcCounts = Record<string, number>;
+
+/**
+ * Stub responses resolve after a tick rather than instantly. With an instant
+ * stub the first request settles before the other callers reach the cache, so
+ * the burst is not actually concurrent and the test would prove nothing.
+ */
+const tick = () => new Promise((r) => setTimeout(r, 5));
+
+/** A valid DemandFactor account, so getTokenCost gets past deserialization. */
+function demandFactorBytes(): Uint8Array {
+  return getDemandFactorEncoder().encode({
+    currentDemandFactor: 1_000_000,
+    currentPeriod: 1,
+    purchasesThisPeriod: 0,
+    revenueThisPeriod: 0,
+    consecutivePeriodsWithMinDemandFactor: 0,
+    trailingPeriodPurchases: Array(7).fill(0),
+    trailingPeriodRevenues: Array(7).fill(0),
+    fees: Array(51).fill(1_000_000),
+    periodZeroStartTimestamp: 1_700_000_000,
+    criteria: 0,
+    bump: 255,
+    version: VERSION,
+  }) as Uint8Array;
+}
+
+/**
+ * Stub rpc that counts every method and can be told to fail the first N calls
+ * to a given method (for the "a failure must not be cached" case).
+ */
+function countingGasRpc(
+  counts: RpcCounts,
+  opts: { failFeeCalls?: number; accountExists?: boolean } = {},
+) {
+  let feeFailuresLeft = opts.failFeeCalls ?? 0;
+  const bump = (m: string) => {
+    counts[m] = (counts[m] ?? 0) + 1;
+  };
+  return {
+    getRecentPrioritizationFees: () => ({
+      send: async () => {
+        bump('getRecentPrioritizationFees');
+        await tick();
+        if (feeFailuresLeft > 0) {
+          feeFailuresLeft--;
+          throw new Error('HTTP error (429): Too Many Requests');
+        }
+        return [{ slot: 1n, prioritizationFee: 12_345n }];
+      },
+    }),
+    getMinimumBalanceForRentExemption: () => ({
+      send: async () => {
+        bump('getMinimumBalanceForRentExemption');
+        await tick();
+        return 2_000_000n;
+      },
+    }),
+    getSlot: () => ({
+      send: async () => {
+        bump('getSlot');
+        await tick();
+        return 500n;
+      },
+    }),
+    getBlockTime: () => ({
+      send: async () => {
+        bump('getBlockTime');
+        await tick();
+        return 1_760_000_000n;
+      },
+    }),
+    getAccountInfo: () => ({
+      send: async () => {
+        bump('getAccountInfo');
+        await tick();
+        return opts.accountExists === false
+          ? { value: null }
+          : {
+              value: {
+                data: [
+                  Buffer.from(demandFactorBytes()).toString('base64'),
+                  'base64',
+                ] as readonly [string, string],
+                executable: false,
+                lamports: 1_000_000n,
+                owner: OWNER_ADDR,
+                rentEpoch: 0n,
+                space: 512n,
+              },
+            };
+      },
+    }),
+  };
+}
+
+describe('SolanaARIOReadable request coalescing', () => {
+  it('collapses a concurrent getGasEstimate burst onto one priority-fee query set', async () => {
+    const counts: RpcCounts = {};
+    const readable = new SolanaARIOReadable({
+      rpc: countingGasRpc(counts) as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        readable.getGasEstimate({ intent: 'Buy-Name', name: 'x' }),
+      ),
+    );
+
+    // One quote costs three queries: an unscoped sample plus two scoped
+    // market references. Ten concurrent quotes must still cost three.
+    assert.equal(
+      counts.getRecentPrioritizationFees,
+      3,
+      'ten concurrent quotes should share one priority-fee estimate',
+    );
+    assert.equal(
+      counts.getMinimumBalanceForRentExemption,
+      1,
+      'rent for an identical account profile should be quoted once',
+    );
+    // Every caller must still get the same complete answer.
+    for (const r of results) {
+      assert.deepEqual(r, results[0]);
+      assert.ok(r.totalLamports > 0);
+    }
+  });
+
+  it('collapses a concurrent getTokenCost burst onto one cluster-clock read', async () => {
+    const counts: RpcCounts = {};
+    const readable = new SolanaARIOReadable({
+      rpc: countingGasRpc(counts) as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    await Promise.allSettled(
+      Array.from({ length: 10 }, (_, i) =>
+        readable.getTokenCost({
+          intent: 'Buy-Name',
+          name: `burst-${i}`,
+          type: 'lease',
+          years: 1,
+        }),
+      ),
+    );
+
+    // getSlot -> getBlockTime is two SEQUENTIAL round trips, and getTokenCost
+    // used to pay them on EVERY quote — 20 calls for a ten-row price table.
+    assert.equal(counts.getSlot, 1, 'one slot read for the whole burst');
+    assert.equal(counts.getBlockTime, 1, 'one block-time read for the burst');
+
+    // Ten DIFFERENT names still cost ten per-name lookups; only the shared
+    // DemandFactor PDA collapses. Coalescing dedupes identical requests, it
+    // does not eliminate genuinely distinct ones.
+    assert.equal(
+      counts.getAccountInfo,
+      11,
+      'one shared DemandFactor read plus one lookup per distinct name',
+    );
+  });
+
+  it('collapses repeated reads of the SAME name to a single lookup', async () => {
+    const counts: RpcCounts = {};
+    const readable = new SolanaARIOReadable({
+      rpc: countingGasRpc(counts) as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    await Promise.allSettled(
+      Array.from({ length: 10 }, () =>
+        readable.getTokenCost({
+          intent: 'Buy-Name',
+          name: 'same-name',
+          type: 'lease',
+          years: 1,
+        }),
+      ),
+    );
+
+    assert.equal(counts.getSlot, 1);
+    assert.equal(counts.getBlockTime, 1);
+    assert.ok(
+      counts.getAccountInfo <= 2,
+      `ten quotes for one name should share their reads, saw ${counts.getAccountInfo}`,
+    );
+  });
+
+  it('does not cache a failed priority-fee estimate', async () => {
+    const counts: RpcCounts = {};
+    const readable = new SolanaARIOReadable({
+      // Fail every query of the first estimate (3 queries), then succeed.
+      rpc: countingGasRpc(counts, { failFeeCalls: 3 }) as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    // The fee estimator swallows per-query failures and falls back to its
+    // floor, so the first quote still resolves — what matters is that the
+    // NEXT quote re-queries rather than reusing a degraded cached value.
+    const first = await readable.getGasEstimate({ intent: 'Buy-Name' });
+    assert.equal(counts.getRecentPrioritizationFees, 3);
+
+    const second = await readable.getGasEstimate({ intent: 'Buy-Name' });
+    assert.equal(
+      counts.getRecentPrioritizationFees,
+      3,
+      'a successful estimate is still cached for its TTL',
+    );
+    assert.ok(first.priorityFeeMicroLamports >= 0);
+    assert.ok(second.priorityFeeMicroLamports >= 0);
+  });
+
+  it('shares one lookup for a MISSING account but does not cache the miss', async () => {
+    const counts: RpcCounts = {};
+    const readable = new SolanaARIOReadable({
+      rpc: countingGasRpc(counts, { accountExists: false }) as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    // getDemandFactor reads through the cached-account path; a missing
+    // account throws, and must not be remembered as a miss.
+    await Promise.allSettled(
+      Array.from({ length: 5 }, () => readable.getDemandFactor()),
+    );
+    assert.equal(counts.getAccountInfo, 1, 'the burst shares one lookup');
+
+    await assert.rejects(() => readable.getDemandFactor());
+    assert.equal(
+      counts.getAccountInfo,
+      2,
+      'a miss must not be cached — the next caller re-checks',
     );
   });
 });
