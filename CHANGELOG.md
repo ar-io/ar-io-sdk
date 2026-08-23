@@ -1,3 +1,10 @@
+## [4.1.4-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.2...v4.1.4-alpha.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* **solana:** don't report zero funding sources when discovery fails ([ab1b7fc](https://github.com/ar-io/ar-io-sdk/commit/ab1b7fc92368e90ecd64003c51b09c273976347c))
+
 ## [4.1.4-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.1...v4.1.4-alpha.2) (2026-08-23)
 
 
