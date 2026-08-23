@@ -63,6 +63,7 @@ import {
 export type FundingPlanRpc = Rpc<SolanaRpcApi> | Rpc<SolanaRpcApiMainnet>;
 
 import { ARIO_GAR_PROGRAM_ADDRESS as ARIO_GAR_PROGRAM_ID } from '@ar.io/solana-contracts/gar';
+import { Logger } from '../common/logger.js';
 import { type FundingSourceKind, type FundingSourceSpec } from '../types/io.js';
 import {
   getDelegationPDA,
@@ -70,6 +71,9 @@ import {
   getWithdrawalCounterPDA,
   getWithdrawalPDA,
 } from './pda.js';
+import { isRetryableError, withRetry } from './retry.js';
+
+const logger = Logger.default;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -770,6 +774,44 @@ const ADDRESS_DECODER = getAddressDecoder();
 /** Solana caps `getMultipleAccounts` at 100 keys per request. */
 const ACCOUNT_BATCH_SIZE = 100;
 
+/**
+ * Decide what an errored discovery query should return.
+ *
+ * These queries used to swallow EVERY failure and return `[]`, which made a
+ * transient rate-limit indistinguishable from "this wallet has no delegations".
+ * The planner would then build a plan from incomplete sources and quietly
+ * under-fund it — no error, no log, on the path that pays for ArNS purchases.
+ * Observed live: a burst of 429s from public devnet turned a wallet holding
+ * seven delegations into one reporting none.
+ *
+ * The empty-list fallback exists for a real case — many public RPCs disable
+ * `getProgramAccounts` outright — so it is kept for errors that are genuinely
+ * permanent, and now says so out loud. Transient failures (429/5xx/network)
+ * have already been retried by {@link withRetry} at the call site by the time
+ * they reach here, so they are surfaced instead of being reported as "no
+ * funds": a caller can retry or pass explicit `sources`, but it must not be
+ * told zero when the truth is unknown.
+ */
+function handleDiscoveryFailure(what: string, err: unknown): never[] {
+  if (isRetryableError(err)) {
+    throw new Error(
+      `Funding-source discovery (${what}) failed after retries: ${
+        err instanceof Error ? err.message : String(err)
+      }. Refusing to report zero sources for a transient failure — that would ` +
+        'silently under-fund the plan. Retry, or pass explicit `sources` to ' +
+        'skip discovery.',
+      { cause: err },
+    );
+  }
+  logger.warn(
+    `[funding-plan] ${what} discovery unavailable — continuing without those ` +
+      'sources. This is expected when the RPC disables getProgramAccounts; ' +
+      'pass explicit `sources` for a complete plan.',
+    { error: err instanceof Error ? err.message : String(err) },
+  );
+  return [];
+}
+
 async function fetchUserWithdrawals(
   rpc: FundingPlanRpc,
   owner: Address,
@@ -790,17 +832,21 @@ async function fetchUserWithdrawals(
   //   107..108 bump: u8
   //   108..111 version: SchemaVersion { major, minor, patch }
   try {
-    const result = await rpc
-      .getProgramAccounts(garProgram, {
-        filters: [
-          {
-            memcmp: { offset: 8n, bytes: owner, encoding: 'base58' as const },
-          },
-          { dataSize: BigInt(8 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 3) },
-        ],
-        encoding: 'base64',
-      } as Parameters<typeof rpc.getProgramAccounts>[1])
-      .send();
+    const result = await withRetry(() =>
+      rpc
+        .getProgramAccounts(garProgram, {
+          filters: [
+            {
+              memcmp: { offset: 8n, bytes: owner, encoding: 'base58' as const },
+            },
+            {
+              dataSize: BigInt(8 + 32 + 8 + 32 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 3),
+            },
+          ],
+          encoding: 'base64',
+        } as Parameters<typeof rpc.getProgramAccounts>[1])
+        .send(),
+    );
     const out: DiscoveredFundingSource[] = [];
     for (const entry of result as unknown as Array<{
       account: { data: [string, string] };
@@ -828,9 +874,8 @@ async function fetchUserWithdrawals(
       });
     }
     return out;
-  } catch {
-    // RPC doesn't support getProgramAccounts — caller must pass explicit sources.
-    return [];
+  } catch (err) {
+    return handleDiscoveryFailure('withdrawal vault', err);
   }
 }
 
@@ -849,17 +894,23 @@ async function fetchUserDelegations(
   //   104..105 bump: u8
   //   105..108 version: SchemaVersion { major, minor, patch }
   try {
-    const result = await rpc
-      .getProgramAccounts(garProgram, {
-        filters: [
-          {
-            memcmp: { offset: 40n, bytes: owner, encoding: 'base58' as const },
-          },
-          { dataSize: BigInt(8 + 32 + 32 + 8 + 8 + 16 + 1 + 3) },
-        ],
-        encoding: 'base64',
-      } as Parameters<typeof rpc.getProgramAccounts>[1])
-      .send();
+    const result = await withRetry(() =>
+      rpc
+        .getProgramAccounts(garProgram, {
+          filters: [
+            {
+              memcmp: {
+                offset: 40n,
+                bytes: owner,
+                encoding: 'base58' as const,
+              },
+            },
+            { dataSize: BigInt(8 + 32 + 32 + 8 + 8 + 16 + 1 + 3) },
+          ],
+          encoding: 'base64',
+        } as Parameters<typeof rpc.getProgramAccounts>[1])
+        .send(),
+    );
     // Decode every delegation FIRST, then resolve gateway metadata for the
     // whole set in one batch. Doing it inline cost a full round trip per
     // delegation, serialized — 120 delegations meant 120 sequential
@@ -903,8 +954,8 @@ async function fetchUserDelegations(
         startTimestamp,
       };
     });
-  } catch {
-    return [];
+  } catch (err) {
+    return handleDiscoveryFailure('delegation', err);
   }
 }
 
@@ -964,7 +1015,7 @@ async function fetchGatewayMetas(
     chunks.push({ start: i, pdas: pdas.slice(i, i + ACCOUNT_BATCH_SIZE) });
 
   const fetched = await Promise.all(
-    chunks.map((c) => fetchEncodedAccounts(rpc, c.pdas)),
+    chunks.map((c) => withRetry(() => fetchEncodedAccounts(rpc, c.pdas))),
   );
 
   chunks.forEach((chunk, ci) => {

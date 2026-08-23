@@ -722,4 +722,71 @@ describe('discoverFundingSources', () => {
     );
     assert.equal(counts.accountsRequested, 120);
   });
+
+  it('surfaces a transient RPC failure instead of reporting zero sources', async () => {
+    // The whole point: a 429 must not be indistinguishable from "this wallet
+    // has no delegations". Observed live against public devnet — a wallet
+    // holding seven delegations reported none, silently, and the planner would
+    // have under-funded from it.
+    const counts: DiscoveryCounts = {
+      getAccountInfo: 0,
+      getMultipleAccounts: 0,
+      getProgramAccounts: 0,
+      accountsRequested: 0,
+    };
+    const rpc = discoveryRpc(counts, { ataAmount: 1n, delegations: [] });
+    // Every getProgramAccounts 429s, through the retries.
+    rpc.getProgramAccounts = () => ({
+      send: async () => {
+        counts.getProgramAccounts++;
+        throw new Error('HTTP error (429): Too Many Requests');
+      },
+    });
+
+    await assert.rejects(
+      () =>
+        discoverFundingSources(rpc as never, OWNER, {
+          arioMint: MINT,
+          garProgram: GAR_PROGRAM,
+        }),
+      /Refusing to report zero sources for a transient failure/,
+    );
+    assert.ok(
+      counts.getProgramAccounts > 1,
+      `a transient failure should be retried before giving up, saw ${counts.getProgramAccounts} attempt(s)`,
+    );
+  });
+
+  it('still degrades to an empty list when getProgramAccounts is unsupported', async () => {
+    // Many public RPCs disable gPA outright. That is permanent, not transient,
+    // so the graceful fallback is still correct there — it just says so now.
+    const counts: DiscoveryCounts = {
+      getAccountInfo: 0,
+      getMultipleAccounts: 0,
+      getProgramAccounts: 0,
+      accountsRequested: 0,
+    };
+    const rpc = discoveryRpc(counts, { ataAmount: 7n, delegations: [] });
+    rpc.getProgramAccounts = () => ({
+      send: async () => {
+        counts.getProgramAccounts++;
+        throw new Error('Method not supported: getProgramAccounts');
+      },
+    });
+
+    const sources = await discoverFundingSources(rpc as never, OWNER, {
+      arioMint: MINT,
+      garProgram: GAR_PROGRAM,
+    });
+    // Balance still discovered; the gPA-backed sources are simply absent.
+    assert.deepEqual(
+      sources.map((s) => s.kind),
+      ['balance'],
+    );
+    assert.equal(
+      counts.getProgramAccounts,
+      2,
+      'a permanent error should not be retried (one attempt per scan)',
+    );
+  });
 });
