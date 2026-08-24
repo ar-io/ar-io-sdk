@@ -1559,20 +1559,15 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
-    let epochIndex: number;
-    if (params.epochIndex !== undefined) {
-      epochIndex = params.epochIndex;
-    } else {
-      const [settingsPda] = await getEpochSettingsPDA(this.garProgram);
-      const settingsAccount = await fetchEncodedAccount(this.rpc, settingsPda, {
-        commitment: this.commitment,
-      });
-      if (!settingsAccount.exists) throw new Error('EpochSettings not found');
-      const settings = deserializeEpochSettingsFull(
-        Buffer.from(settingsAccount.data),
-      );
-      epochIndex = settings.currentEpochIndex;
-    }
+    // Defaulting read `EpochSettings.current_epoch_index` directly, but that
+    // field is the NEXT epoch to be created — `create_epoch` increments it
+    // after initializing the PDA — so the observable epoch is one back.
+    // Targeting the raw value aimed every default-path submission at an epoch
+    // that does not exist yet, which is what `ar.io save-observations` does
+    // since the CLI never passes an index. `resolveEpochIndex()` already owns
+    // that adjustment (and the pre-bootstrap floor at 0), so defer to it
+    // rather than keep a second, divergent copy of the rule here.
+    const epochIndex = params.epochIndex ?? (await this.resolveEpochIndex());
 
     // Build the [u8; 375] gateway_results bitfield. On-chain convention:
     //   bit set (1) = passed, bit clear (0) = failed.

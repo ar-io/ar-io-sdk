@@ -1813,7 +1813,7 @@ export class SolanaARIOReadable {
    * - { epochIndex }: returns directly
    * - { timestamp }: computes from genesis timestamp and epoch duration
    */
-  private async resolveEpochIndex(epoch?: EpochInput): Promise<number> {
+  protected async resolveEpochIndex(epoch?: EpochInput): Promise<number> {
     if (epoch && 'epochIndex' in epoch) {
       return epoch.epochIndex;
     }

@@ -18,13 +18,18 @@ import {
   type Address,
   address,
   createSolanaRpc,
+  generateKeyPairSigner,
   getAddressEncoder,
 } from '@solana/kit';
 import bs58 from 'bs58';
 
-import { getEpochEncoder } from '@ar.io/solana-contracts/gar';
+import {
+  getEpochEncoder,
+  getSaveObservationsInstructionDataDecoder,
+} from '@ar.io/solana-contracts/gar';
 import { MAX_GATEWAYS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
+import { SolanaARIOWriteable } from './io-writeable.js';
 import {
   buildObservationBitmap,
   encodeReportTxId,
@@ -809,6 +814,131 @@ describe('buildObservationBitmap with an explicit active count', () => {
     const withDefault = buildObservationBitmap([PUBKEY_1, PUBKEY_2], []);
     const explicit = buildObservationBitmap([PUBKEY_1, PUBKEY_2], [], 2);
     assert.deepEqual(withDefault, explicit);
+  });
+});
+
+// =========================================================================
+// saveObservations wiring
+// =========================================================================
+//
+// The resolver + bitmap are unit-tested above; this covers the part that
+// actually regressed on mainnet — which value `saveObservations` puts on the
+// wire. Stubbing the two protected account reads keeps the test focused on
+// the wiring rather than re-testing decoders that have their own coverage.
+
+describe('SolanaARIOWriteable.saveObservations wiring', () => {
+  class StubWriteable extends SolanaARIOWriteable {
+    sentGatewayCount: number | undefined;
+    sentEpochIndex: bigint | undefined;
+    resolvedEpochCalls = 0;
+
+    constructor(
+      signer: Awaited<ReturnType<typeof generateKeyPairSigner>>,
+      private readonly stub: {
+        activeGatewayCount: number;
+        epochStartTimestamp: number;
+        slots: Array<{ address: string; startTimestamp: number }>;
+        currentEpochIndexMinusOne: number;
+      },
+    ) {
+      super({
+        rpc: {} as ReturnType<typeof createSolanaRpc>,
+        rpcSubscriptions: {} as any,
+        signer,
+      });
+    }
+
+    protected async resolveEpochIndex(): Promise<number> {
+      this.resolvedEpochCalls++;
+      return this.stub.currentEpochIndexMinusOne;
+    }
+
+    protected async fetchEpoch(_epochIndex: number): Promise<any> {
+      return {
+        activeGatewayCount: this.stub.activeGatewayCount,
+        startTimestamp: this.stub.epochStartTimestamp,
+      };
+    }
+
+    protected async getRegistryGatewaySlots(): Promise<
+      Array<{ address: string; startTimestamp: number }>
+    > {
+      return this.stub.slots;
+    }
+
+    protected async sendTransaction(instructions: any[]): Promise<string> {
+      const decoded = getSaveObservationsInstructionDataDecoder().decode(
+        instructions[0].data,
+      );
+      this.sentGatewayCount = decoded.gatewayCount;
+      this.sentEpochIndex = decoded.epochIndex;
+      return 'stub-signature';
+    }
+  }
+
+  it('puts the epoch snapshot count on the wire, not the live registry length', async () => {
+    // The mainnet epoch-523 shape: snapshot 3, one mid-epoch join, live 4.
+    // Sending 4 is what the chain rejected with InvalidObservation.
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      slots: [
+        ...[PUBKEY_1, PUBKEY_2, PUBKEY_3].map(preExistingSlot),
+        joinedMidEpochSlot(PUBKEY_4),
+      ],
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await w.saveObservations({
+      reportTxId: VALID_ARWEAVE_TX,
+      failedGateways: [PUBKEY_2],
+      epochIndex: 523,
+    });
+
+    assert.equal(w.sentGatewayCount, 3);
+  });
+
+  it('targets the active epoch, not EpochSettings.current_epoch_index', async () => {
+    // current_epoch_index is the NEXT epoch to create, so the default path
+    // must go through resolveEpochIndex(). The CLI relies on this — it never
+    // passes an index.
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 2,
+      epochStartTimestamp: EPOCH_START,
+      slots: [PUBKEY_1, PUBKEY_2].map(preExistingSlot),
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await w.saveObservations({
+      reportTxId: VALID_ARWEAVE_TX,
+      failedGateways: [],
+    });
+
+    assert.equal(w.resolvedEpochCalls, 1);
+    assert.equal(w.sentEpochIndex, 523n);
+  });
+
+  it('refuses to submit when the registry was reordered', async () => {
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      slots: [PUBKEY_1, PUBKEY_2].map(preExistingSlot),
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await assert.rejects(
+      () =>
+        w.saveObservations({
+          reportTxId: VALID_ARWEAVE_TX,
+          failedGateways: [],
+          epochIndex: 523,
+        }),
+      /reordered during epoch 523/,
+    );
+    assert.equal(w.sentGatewayCount, undefined);
   });
 });
 
