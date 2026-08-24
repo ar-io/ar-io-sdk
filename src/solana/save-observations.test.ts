@@ -725,20 +725,61 @@ describe('resolveObservationGatewayCount', () => {
     assert.equal(resolved.gatewayCount, 3);
   });
 
-  it('uses the epoch start as the boundary, not the observer clock', () => {
-    // A slot whose startTimestamp equals the epoch start was present at the
-    // snapshot — strictly-after is the correct comparison.
+  it('refuses a slot stamped with the epoch start second as ambiguous', () => {
+    // create_epoch and join_network can land in the same second, and
+    // second-resolution timestamps cannot say which ran first. Assuming the
+    // slot pre-existed would let the count equation balance for a registry
+    // where a reclaimed slot was refilled by that join — the exact silent
+    // reordering this guard exists to catch.
     const slots = [
       preExistingSlot(PUBKEY_1),
       { address: PUBKEY_2, startTimestamp: EPOCH_START },
     ];
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 2,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /exact start second/,
+    );
+  });
+
+  it('still refuses the boundary slot when the counts look append-only', () => {
+    // snapshot 1 + one boundary slot = live 2, which the arithmetic alone
+    // would happily accept as a clean mid-epoch join.
+    const slots = [
+      preExistingSlot(PUBKEY_1),
+      { address: PUBKEY_2, startTimestamp: EPOCH_START },
+    ];
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 1,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /exact start second/,
+    );
+  });
+
+  it('accepts a join one second after the epoch start', () => {
+    // The boundary is exact: one second later is unambiguously a mid-epoch
+    // join and must not trip the ambiguity guard.
+    const slots = [
+      preExistingSlot(PUBKEY_1),
+      { address: PUBKEY_2, startTimestamp: EPOCH_START + 1 },
+    ];
     const resolved = resolveObservationGatewayCount({
       registrySlots: slots,
-      activeGatewayCount: 2,
+      activeGatewayCount: 1,
       epochStartTimestamp: EPOCH_START,
       epochIndex: 523,
     });
-    assert.equal(resolved.gatewayCount, 2);
+    assert.equal(resolved.gatewayCount, 1);
   });
 });
 

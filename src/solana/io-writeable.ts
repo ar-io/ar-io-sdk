@@ -419,7 +419,11 @@ export function buildObservationBitmap(
  * `startTimestamp` after the epoch began. Any shortfall means at least one
  * slot was reclaimed and the positional mapping can no longer be trusted.
  *
- * @throws when the registry has been reordered by a removal — callers should
+ * Slots stamped with the epoch's exact start second are treated as unsafe
+ * rather than assigned to either side — see the inline note below.
+ *
+ * @throws when the registry has been reordered by a removal, or when a slot's
+ *   join time is indistinguishable from the epoch snapshot — callers should
  *   skip the epoch rather than submit misattributed results.
  */
 export function resolveObservationGatewayCount(opts: {
@@ -434,6 +438,30 @@ export function resolveObservationGatewayCount(opts: {
 }): { addresses: string[]; gatewayCount: number } {
   const { registrySlots, activeGatewayCount, epochStartTimestamp, epochIndex } =
     opts;
+
+  // A slot stamped with the epoch's own start second is genuinely ambiguous.
+  // `create_epoch` freezes `active_gateway_count` at whichever slot it landed
+  // in, and a `join_network` in that same second may have executed either side
+  // of it — the second-resolution timestamps cannot say which. Counting such a
+  // slot as pre-existing would let the arithmetic below balance for a registry
+  // where a reclaimed slot was refilled by that join, which is precisely the
+  // reordering this function exists to catch. Refusing costs one epoch's
+  // observation; guessing wrong writes permanent misattributed results, so
+  // treat ambiguity as unsafe.
+  const ambiguous = registrySlots.filter(
+    (slot) => slot.startTimestamp === epochStartTimestamp,
+  ).length;
+
+  if (ambiguous > 0) {
+    throw new Error(
+      `saveObservations: ${ambiguous} gateway registry slot(s) are stamped ` +
+        `with epoch ${epochIndex}'s exact start second ` +
+        `(${epochStartTimestamp}), so it cannot be determined whether they ` +
+        `were captured by the epoch snapshot or joined immediately after it. ` +
+        `The observation bitmap is positional and a miscount could attribute ` +
+        `results to the wrong gateways, so skip this epoch.`,
+    );
+  }
 
   const joinedMidEpoch = registrySlots.filter(
     (slot) => slot.startTimestamp > epochStartTimestamp,
