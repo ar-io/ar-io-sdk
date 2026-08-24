@@ -801,11 +801,19 @@ export class SolanaARIOReadable {
       const addr = addressDecoder.decode(
         registryData.subarray(slotOffset, slotOffset + 32),
       );
+      // Decode the i64 as two 32-bit halves rather than via
+      // `readBigInt64LE`. Some browser bundlers (notably arns-react's Vite
+      // output) strip the BigInt readers from the `buffer@6.0.3` shim's
+      // prototype — see the same note in `getTokenBalance`. The high word
+      // carries the sign, and a Unix-seconds timestamp is far below
+      // `Number.MAX_SAFE_INTEGER`, so this is exact.
+      const tsOffset = slotOffset + START_TIMESTAMP_OFFSET;
+      const startTimestamp =
+        registryData.readInt32LE(tsOffset + 4) * 2 ** 32 +
+        registryData.readUInt32LE(tsOffset);
       slots.push({
         address: addr as string,
-        startTimestamp: Number(
-          registryData.readBigInt64LE(slotOffset + START_TIMESTAMP_OFFSET),
-        ),
+        startTimestamp,
       });
     }
     return slots;
