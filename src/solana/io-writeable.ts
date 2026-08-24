@@ -207,7 +207,11 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
-import { ARIO_ANT_PROGRAM_ID, TOKEN_DECIMALS } from './constants.js';
+import {
+  ARIO_ANT_PROGRAM_ID,
+  MAX_GATEWAYS,
+  TOKEN_DECIMALS,
+} from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   getAntAuthorityPDA,
@@ -362,6 +366,7 @@ export function selectFinalizeGoneSwapOperator(
 export function buildObservationBitmap(
   registryAddresses: string[],
   failedGateways: string[],
+  activeGatewayCount: number = registryAddresses.length,
 ): Buffer {
   const buf = Buffer.alloc(375, 0xff);
   const failedSet = new Set(failedGateways);
@@ -372,10 +377,84 @@ export function buildObservationBitmap(
   }
   // Clear bits beyond the active gateway count so the bitmap is exactly
   // the prescribed shape (1s only at indices < gatewayCount that passed).
-  for (let i = registryAddresses.length; i < 3000; i++) {
+  //
+  // `activeGatewayCount` is the EPOCH's frozen count, which can be smaller
+  // than the live registry when gateways joined mid-epoch. The on-chain
+  // handler only reads bits below `gateway_count`, but leaving stale 1s
+  // above it would make two submissions of the same report differ byte for
+  // byte depending on when the registry was read — so normalize here.
+  for (let i = activeGatewayCount; i < MAX_GATEWAYS; i++) {
     buf[Math.floor(i / 8)] &= ~(1 << (i % 8));
   }
   return buf;
+}
+
+/**
+ * Reconcile the live gateway registry against the epoch's frozen snapshot so
+ * `save_observations` reports the count the on-chain handler expects.
+ *
+ * The observation bitmap is POSITIONAL: bit `i` is the verdict on the gateway
+ * occupying registry slot `i`. The chain validates the submitted
+ * `gateway_count` against `Epoch.active_gateway_count` — the value frozen when
+ * the epoch was created — and rejects any mismatch with
+ * `InvalidObservation` (6041, `ario-gar/src/instructions/observation.rs`).
+ * Reading the count off the LIVE registry therefore breaks every observer for
+ * the whole epoch as soon as one gateway joins or leaves mid-epoch.
+ *
+ * Two distinct kinds of mid-epoch churn have to be told apart:
+ *
+ *   - **Joins are safe.** `join_network` appends to the first free slot, and
+ *     with no removals there are no holes, so slots `0..activeGatewayCount`
+ *     still hold exactly the gateways they held at the snapshot. Truncating
+ *     the count is enough.
+ *   - **Removals are NOT safe.** `finalize_gone` reclaims a slot by moving the
+ *     LAST active slot into it, so every index at or after the freed slot can
+ *     now refer to a different gateway. Submitting a positional bitmap built
+ *     over the reordered registry would silently attribute one gateway's
+ *     failures to another — worse than a rejected transaction, because it
+ *     lands.
+ *
+ * A removal is detectable without any extra RPC: with only appends, the live
+ * length is exactly the snapshot plus however many slots carry a
+ * `startTimestamp` after the epoch began. Any shortfall means at least one
+ * slot was reclaimed and the positional mapping can no longer be trusted.
+ *
+ * @throws when the registry has been reordered by a removal — callers should
+ *   skip the epoch rather than submit misattributed results.
+ */
+export function resolveObservationGatewayCount(opts: {
+  /** Registry slots in index order (`getRegistryGatewaySlots()`). */
+  registrySlots: Array<{ address: string; startTimestamp: number }>;
+  /** `Epoch.active_gateway_count` — the frozen snapshot the chain checks. */
+  activeGatewayCount: number;
+  /** `Epoch.start_timestamp`, seconds, as stored on chain. */
+  epochStartTimestamp: number;
+  /** Epoch index, for the error message only. */
+  epochIndex: number;
+}): { addresses: string[]; gatewayCount: number } {
+  const { registrySlots, activeGatewayCount, epochStartTimestamp, epochIndex } =
+    opts;
+
+  const joinedMidEpoch = registrySlots.filter(
+    (slot) => slot.startTimestamp > epochStartTimestamp,
+  ).length;
+
+  if (registrySlots.length !== activeGatewayCount + joinedMidEpoch) {
+    throw new Error(
+      `saveObservations: the gateway registry was reordered during epoch ` +
+        `${epochIndex} — it holds ${registrySlots.length} slots but the epoch ` +
+        `snapshot recorded ${activeGatewayCount} and only ${joinedMidEpoch} ` +
+        `joined since it began, so at least one slot was reclaimed by ` +
+        `finalize_gone. The observation bitmap is positional, so submitting ` +
+        `it now would attribute results to the wrong gateways. Skip this ` +
+        `epoch.`,
+    );
+  }
+
+  return {
+    addresses: registrySlots.map((slot) => slot.address),
+    gatewayCount: activeGatewayCount,
+  };
 }
 
 /** Encode an Arweave TX ID into the on-chain `[u8; 32]` slot.
@@ -1476,11 +1555,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       resultsBuf.set(params.gatewayResults.subarray(0, 375));
       gatewayCount = params.gatewayCount ?? 0;
     } else {
-      const registryAddresses = await this.getRegistryGatewayAddresses();
-      gatewayCount = registryAddresses.length;
+      // The chain checks the submitted count against the epoch's frozen
+      // `active_gateway_count`, NOT the live registry length — see
+      // resolveObservationGatewayCount for why they diverge and when the
+      // divergence is unsafe rather than merely inconvenient.
+      const [epochData, registrySlots] = await Promise.all([
+        this.fetchEpoch(epochIndex),
+        this.getRegistryGatewaySlots(),
+      ]);
+      const resolved = resolveObservationGatewayCount({
+        registrySlots,
+        activeGatewayCount: epochData.activeGatewayCount,
+        epochStartTimestamp: epochData.startTimestamp,
+        epochIndex,
+      });
+      gatewayCount = resolved.gatewayCount;
       resultsBuf = buildObservationBitmap(
-        registryAddresses,
+        resolved.addresses,
         params.failedGateways,
+        resolved.gatewayCount,
       );
     }
 
