@@ -359,10 +359,27 @@ export function selectFinalizeGoneSwapOperator(
 //   - report_tx_id:    [u8; 32]    raw 32-byte Arweave hash (base64url
 //                                  decoded from its 43-char string form).
 
-/** Build the gateway_results bitmap for save_observations.
- *  All bits start as 1 (pass) for the first `registryAddresses.length`
- *  positions; positions named in `failedGateways` get cleared to 0; all
- *  positions beyond `registryAddresses.length` are 0. */
+/**
+ * Build the `gateway_results` bitmap for `save_observations`.
+ *
+ * The bitmap is **positional**: bit `i` is the verdict on the gateway
+ * occupying registry slot `i`, so `registryAddresses` must be the registry in
+ * slot order (`getRegistryGatewaySlots()`), not a sorted or filtered list.
+ * Bits start set (1 = passed), positions named in `failedGateways` are cleared
+ * to 0, and every position at or beyond `activeGatewayCount` is cleared.
+ *
+ * @param registryAddresses - Registry operator addresses in slot order. May be
+ *   longer than `activeGatewayCount` when gateways joined mid-epoch; the extra
+ *   trailing slots are ignored.
+ * @param failedGateways - Addresses to mark failed. Entries not present in
+ *   `registryAddresses` are ignored.
+ * @param activeGatewayCount - The epoch's frozen `active_gateway_count`, which
+ *   is the value the on-chain handler validates `gateway_count` against and the
+ *   point past which trailing bits are cleared. Defaults to the registry length
+ *   for callers that have already truncated it themselves. Passing the LIVE
+ *   registry length for an epoch whose snapshot is smaller produces a bitmap
+ *   the chain rejects — see {@link resolveObservationGatewayCount}.
+ */
 export function buildObservationBitmap(
   registryAddresses: string[],
   failedGateways: string[],
