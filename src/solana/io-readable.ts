@@ -128,6 +128,7 @@ import {
   ARIO_CORE_PROGRAM_ID,
   ARIO_GAR_PROGRAM_ID,
   ARNS_RECORD_ANT_OFFSET,
+  MAX_GATEWAYS,
   RATE_SCALE,
 } from './constants.js';
 import {
@@ -768,8 +769,20 @@ export class SolanaARIOReadable {
     return out;
   }
 
-  /** Read the gateway registry and return addresses in registry index order */
-  protected async getRegistryGatewayAddresses(): Promise<string[]> {
+  /**
+   * Read the gateway registry and return one entry per active slot, in
+   * registry index order.
+   *
+   * `startTimestamp` comes off the same account read as the address — the
+   * on-chain `GatewaySlot` already carries it — so callers that need to tell
+   * "joined during this epoch" from "was here at the snapshot" pay no extra
+   * RPC for it. Seconds since epoch, matching every other raw on-chain
+   * timestamp (the friendly `getGateway()` view is the one that converts to
+   * milliseconds).
+   */
+  protected async getRegistryGatewaySlots(): Promise<
+    Array<{ address: string; startTimestamp: number }>
+  > {
     const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
     const registryAccount = await this.getAccount(registryPda);
     if (!registryAccount.exists) return [];
@@ -781,15 +794,34 @@ export class SolanaARIOReadable {
     //            + status(1) + _padding(7) = 56 bytes (see ario-gar
     //            state/mod.rs::GatewaySlot).
     const SLOT_STRIDE = 56;
-    const addresses: string[] = [];
-    for (let i = 0; i < count && i < 3000; i++) {
+    const START_TIMESTAMP_OFFSET = 40; // 32 address + 8 composite_weight
+    const slots: Array<{ address: string; startTimestamp: number }> = [];
+    for (let i = 0; i < count && i < MAX_GATEWAYS; i++) {
       const slotOffset = slotsOffset + i * SLOT_STRIDE;
       const addr = addressDecoder.decode(
         registryData.subarray(slotOffset, slotOffset + 32),
       );
-      addresses.push(addr as string);
+      // Decode the i64 as two 32-bit halves rather than via
+      // `readBigInt64LE`. Some browser bundlers (notably arns-react's Vite
+      // output) strip the BigInt readers from the `buffer@6.0.3` shim's
+      // prototype — see the same note in `getTokenBalance`. The high word
+      // carries the sign, and a Unix-seconds timestamp is far below
+      // `Number.MAX_SAFE_INTEGER`, so this is exact.
+      const tsOffset = slotOffset + START_TIMESTAMP_OFFSET;
+      const startTimestamp =
+        registryData.readInt32LE(tsOffset + 4) * 2 ** 32 +
+        registryData.readUInt32LE(tsOffset);
+      slots.push({
+        address: addr as string,
+        startTimestamp,
+      });
     }
-    return addresses;
+    return slots;
+  }
+
+  /** Read the gateway registry and return addresses in registry index order */
+  protected async getRegistryGatewayAddresses(): Promise<string[]> {
+    return (await this.getRegistryGatewaySlots()).map((s) => s.address);
   }
 
   // =========================================
@@ -1789,7 +1821,7 @@ export class SolanaARIOReadable {
    * - { epochIndex }: returns directly
    * - { timestamp }: computes from genesis timestamp and epoch duration
    */
-  private async resolveEpochIndex(epoch?: EpochInput): Promise<number> {
+  protected async resolveEpochIndex(epoch?: EpochInput): Promise<number> {
     if (epoch && 'epochIndex' in epoch) {
       return epoch.epochIndex;
     }
@@ -1822,7 +1854,7 @@ export class SolanaARIOReadable {
   }
 
   /** Fetch and deserialize an Epoch account by index */
-  private async fetchEpoch(epochIndex: number) {
+  protected async fetchEpoch(epochIndex: number) {
     const [pda] = await getEpochPDA(epochIndex, this.garProgram);
     const account = await this.getAccount(pda);
     if (!account.exists) {

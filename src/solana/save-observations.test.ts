@@ -18,14 +18,23 @@ import {
   type Address,
   address,
   createSolanaRpc,
+  generateKeyPairSigner,
   getAddressEncoder,
 } from '@solana/kit';
 import bs58 from 'bs58';
 
-import { getEpochEncoder } from '@ar.io/solana-contracts/gar';
+import {
+  getEpochEncoder,
+  getSaveObservationsInstructionDataDecoder,
+} from '@ar.io/solana-contracts/gar';
 import { MAX_GATEWAYS } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
-import { buildObservationBitmap, encodeReportTxId } from './io-writeable.js';
+import { SolanaARIOWriteable } from './io-writeable.js';
+import {
+  buildObservationBitmap,
+  encodeReportTxId,
+  resolveObservationGatewayCount,
+} from './io-writeable.js';
 
 const PUBKEY_1 = 'GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const PUBKEY_2 = 'GatewayBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
@@ -614,6 +623,322 @@ describe('SolanaARIOReadable.getEpoch(undefined) — current_epoch_index off-by-
     // currentEpochIndex = 0 → floors at 0, fetches Epoch[0] (which may
     // or may not exist; for this test we mock its presence).
     assert.equal(epoch.epochIndex, 0);
+  });
+});
+
+// =========================================================================
+// resolveObservationGatewayCount — epoch snapshot vs live registry
+// =========================================================================
+//
+// Regression cover for the mainnet epoch-523 outage: the SDK sent the LIVE
+// registry length as `gateway_count`, the chain compares it against the
+// epoch's frozen `active_gateway_count`, and one gateway joining mid-epoch
+// made every observer's `save_observations` revert with InvalidObservation
+// (6041) for the entire epoch.
+
+const EPOCH_START = 1_787_529_850; // seconds, as stored on chain
+
+/** Registry slot that was present when the epoch snapshot was taken. */
+function preExistingSlot(address: string) {
+  return { address, startTimestamp: EPOCH_START - 86_400 };
+}
+
+/** Registry slot for a gateway that joined after the epoch began. */
+function joinedMidEpochSlot(address: string) {
+  return { address, startTimestamp: EPOCH_START + 3_600 };
+}
+
+describe('resolveObservationGatewayCount', () => {
+  it('returns the snapshot count when the registry has not changed', () => {
+    const slots = [PUBKEY_1, PUBKEY_2, PUBKEY_3].map(preExistingSlot);
+    const resolved = resolveObservationGatewayCount({
+      registrySlots: slots,
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      epochIndex: 523,
+    });
+    assert.equal(resolved.gatewayCount, 3);
+    assert.deepEqual(resolved.addresses, [PUBKEY_1, PUBKEY_2, PUBKEY_3]);
+  });
+
+  it('reports the epoch snapshot, not the live length, after a mid-epoch join', () => {
+    // The exact mainnet epoch-523 shape: snapshot 644, one gateway joined
+    // mid-epoch, live registry 645. Sending 645 is what the chain rejected.
+    const slots = [
+      ...[PUBKEY_1, PUBKEY_2, PUBKEY_3].map(preExistingSlot),
+      joinedMidEpochSlot(PUBKEY_4),
+    ];
+    const resolved = resolveObservationGatewayCount({
+      registrySlots: slots,
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      epochIndex: 523,
+    });
+    assert.equal(resolved.gatewayCount, 3);
+    // Addresses stay full-length: slots below the snapshot are unmoved, so
+    // the positional bitmap is still built over the whole registry and then
+    // truncated by gatewayCount.
+    assert.equal(resolved.addresses.length, 4);
+    assert.equal(resolved.addresses[3], PUBKEY_4);
+  });
+
+  it('throws when a slot was reclaimed (registry shorter than the snapshot)', () => {
+    const slots = [PUBKEY_1, PUBKEY_2].map(preExistingSlot);
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 3,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /reordered during epoch 523/,
+    );
+  });
+
+  it('throws when a join masks a removal and the counts happen to match', () => {
+    // The dangerous case: finalize_gone swap-removed a slot and a join
+    // refilled the count, so a naive length check sees 3 === 3 and submits a
+    // bitmap whose indices now point at different gateways.
+    const slots = [
+      ...[PUBKEY_1, PUBKEY_2].map(preExistingSlot),
+      joinedMidEpochSlot(PUBKEY_4),
+    ];
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 3,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /attribute results to the wrong gateways/,
+    );
+  });
+
+  it('treats a gateway that joined and left within the epoch as append-only', () => {
+    // A mid-epoch joiner occupies the LAST slot, so finalize_gone reclaims it
+    // without swapping anything — indices below the snapshot are untouched
+    // and the submission is still safe.
+    const slots = [PUBKEY_1, PUBKEY_2, PUBKEY_3].map(preExistingSlot);
+    const resolved = resolveObservationGatewayCount({
+      registrySlots: slots,
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      epochIndex: 523,
+    });
+    assert.equal(resolved.gatewayCount, 3);
+  });
+
+  it('refuses a slot stamped with the epoch start second as ambiguous', () => {
+    // create_epoch and join_network can land in the same second, and
+    // second-resolution timestamps cannot say which ran first. Assuming the
+    // slot pre-existed would let the count equation balance for a registry
+    // where a reclaimed slot was refilled by that join — the exact silent
+    // reordering this guard exists to catch.
+    const slots = [
+      preExistingSlot(PUBKEY_1),
+      { address: PUBKEY_2, startTimestamp: EPOCH_START },
+    ];
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 2,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /exact start second/,
+    );
+  });
+
+  it('still refuses the boundary slot when the counts look append-only', () => {
+    // snapshot 1 + one boundary slot = live 2, which the arithmetic alone
+    // would happily accept as a clean mid-epoch join.
+    const slots = [
+      preExistingSlot(PUBKEY_1),
+      { address: PUBKEY_2, startTimestamp: EPOCH_START },
+    ];
+    assert.throws(
+      () =>
+        resolveObservationGatewayCount({
+          registrySlots: slots,
+          activeGatewayCount: 1,
+          epochStartTimestamp: EPOCH_START,
+          epochIndex: 523,
+        }),
+      /exact start second/,
+    );
+  });
+
+  it('accepts a join one second after the epoch start', () => {
+    // The boundary is exact: one second later is unambiguously a mid-epoch
+    // join and must not trip the ambiguity guard.
+    const slots = [
+      preExistingSlot(PUBKEY_1),
+      { address: PUBKEY_2, startTimestamp: EPOCH_START + 1 },
+    ];
+    const resolved = resolveObservationGatewayCount({
+      registrySlots: slots,
+      activeGatewayCount: 1,
+      epochStartTimestamp: EPOCH_START,
+      epochIndex: 523,
+    });
+    assert.equal(resolved.gatewayCount, 1);
+  });
+});
+
+describe('buildObservationBitmap with an explicit active count', () => {
+  it('clears bits above the epoch snapshot count', () => {
+    // 4 live gateways but the epoch froze at 3: bit 3 must be cleared even
+    // though that gateway did not fail, so the payload is identical no
+    // matter when the registry was read.
+    const bitmap = buildObservationBitmap(
+      [PUBKEY_1, PUBKEY_2, PUBKEY_3, PUBKEY_4],
+      [],
+      3,
+    );
+    assert.equal(bitmap[0], 0b00000111);
+  });
+
+  it('still records failures for slots below the snapshot count', () => {
+    const bitmap = buildObservationBitmap(
+      [PUBKEY_1, PUBKEY_2, PUBKEY_3, PUBKEY_4],
+      [PUBKEY_2],
+      3,
+    );
+    assert.equal(bitmap[0], 0b00000101);
+  });
+
+  it('defaults to the registry length when no count is given', () => {
+    const withDefault = buildObservationBitmap([PUBKEY_1, PUBKEY_2], []);
+    const explicit = buildObservationBitmap([PUBKEY_1, PUBKEY_2], [], 2);
+    assert.deepEqual(withDefault, explicit);
+  });
+});
+
+// =========================================================================
+// saveObservations wiring
+// =========================================================================
+//
+// The resolver + bitmap are unit-tested above; this covers the part that
+// actually regressed on mainnet — which value `saveObservations` puts on the
+// wire. Stubbing the two protected account reads keeps the test focused on
+// the wiring rather than re-testing decoders that have their own coverage.
+
+describe('SolanaARIOWriteable.saveObservations wiring', () => {
+  class StubWriteable extends SolanaARIOWriteable {
+    sentGatewayCount: number | undefined;
+    sentEpochIndex: bigint | undefined;
+    resolvedEpochCalls = 0;
+
+    constructor(
+      signer: Awaited<ReturnType<typeof generateKeyPairSigner>>,
+      private readonly stub: {
+        activeGatewayCount: number;
+        epochStartTimestamp: number;
+        slots: Array<{ address: string; startTimestamp: number }>;
+        currentEpochIndexMinusOne: number;
+      },
+    ) {
+      super({
+        rpc: {} as ReturnType<typeof createSolanaRpc>,
+        rpcSubscriptions: {} as any,
+        signer,
+      });
+    }
+
+    protected async resolveEpochIndex(): Promise<number> {
+      this.resolvedEpochCalls++;
+      return this.stub.currentEpochIndexMinusOne;
+    }
+
+    protected async fetchEpoch(_epochIndex: number): Promise<any> {
+      return {
+        activeGatewayCount: this.stub.activeGatewayCount,
+        startTimestamp: this.stub.epochStartTimestamp,
+      };
+    }
+
+    protected async getRegistryGatewaySlots(): Promise<
+      Array<{ address: string; startTimestamp: number }>
+    > {
+      return this.stub.slots;
+    }
+
+    protected async sendTransaction(instructions: any[]): Promise<string> {
+      const decoded = getSaveObservationsInstructionDataDecoder().decode(
+        instructions[0].data,
+      );
+      this.sentGatewayCount = decoded.gatewayCount;
+      this.sentEpochIndex = decoded.epochIndex;
+      return 'stub-signature';
+    }
+  }
+
+  it('puts the epoch snapshot count on the wire, not the live registry length', async () => {
+    // The mainnet epoch-523 shape: snapshot 3, one mid-epoch join, live 4.
+    // Sending 4 is what the chain rejected with InvalidObservation.
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      slots: [
+        ...[PUBKEY_1, PUBKEY_2, PUBKEY_3].map(preExistingSlot),
+        joinedMidEpochSlot(PUBKEY_4),
+      ],
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await w.saveObservations({
+      reportTxId: VALID_ARWEAVE_TX,
+      failedGateways: [PUBKEY_2],
+      epochIndex: 523,
+    });
+
+    assert.equal(w.sentGatewayCount, 3);
+  });
+
+  it('targets the active epoch, not EpochSettings.current_epoch_index', async () => {
+    // current_epoch_index is the NEXT epoch to create, so the default path
+    // must go through resolveEpochIndex(). The CLI relies on this — it never
+    // passes an index.
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 2,
+      epochStartTimestamp: EPOCH_START,
+      slots: [PUBKEY_1, PUBKEY_2].map(preExistingSlot),
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await w.saveObservations({
+      reportTxId: VALID_ARWEAVE_TX,
+      failedGateways: [],
+    });
+
+    assert.equal(w.resolvedEpochCalls, 1);
+    assert.equal(w.sentEpochIndex, 523n);
+  });
+
+  it('refuses to submit when the registry was reordered', async () => {
+    const signer = await generateKeyPairSigner();
+    const w = new StubWriteable(signer, {
+      activeGatewayCount: 3,
+      epochStartTimestamp: EPOCH_START,
+      slots: [PUBKEY_1, PUBKEY_2].map(preExistingSlot),
+      currentEpochIndexMinusOne: 523,
+    });
+
+    await assert.rejects(
+      () =>
+        w.saveObservations({
+          reportTxId: VALID_ARWEAVE_TX,
+          failedGateways: [],
+          epochIndex: 523,
+        }),
+      /reordered during epoch 523/,
+    );
+    assert.equal(w.sentGatewayCount, undefined);
   });
 });
 
