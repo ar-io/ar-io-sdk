@@ -1,3 +1,28 @@
+# [4.2.0](https://github.com/ar-io/ar-io-sdk/compare/v4.1.5...v4.2.0) (2026-08-25)
+
+
+### Bug Fixes
+
+* **solana:** decode registry slot timestamps without BigInt Buffer readers ([f821226](https://github.com/ar-io/ar-io-sdk/commit/f821226d141b36629339f9d77115ec76757dfa9a))
+* **solana:** don't report zero funding sources when discovery fails ([ab1b7fc](https://github.com/ar-io/ar-io-sdk/commit/ab1b7fc92368e90ecd64003c51b09c273976347c))
+* **solana:** make the RPC throttle back off when it actually matters ([70dd2f6](https://github.com/ar-io/ar-io-sdk/commit/70dd2f6b2bf871ae7b37b168f471384edde4f656))
+* **solana:** measure the single-flight TTL from settlement, not from start ([fa48766](https://github.com/ar-io/ar-io-sdk/commit/fa48766cbf1d624efb2405e241953071d1bd012d)), closes [#712](https://github.com/ar-io/ar-io-sdk/issues/712)
+* **solana:** refuse observation slots stamped with the epoch start second ([fdbf20a](https://github.com/ar-io/ar-io-sdk/commit/fdbf20af79c955aa234f31d5f349066f370f64c6))
+* **solana:** send the epoch's frozen gateway count in save_observations ([4820c3b](https://github.com/ar-io/ar-io-sdk/commit/4820c3bfec7d92eb981503fc2653e429d3ce5716))
+* **solana:** target the active epoch when saveObservations defaults the index ([450c9f6](https://github.com/ar-io/ar-io-sdk/commit/450c9f6c046e3dc90b6ecf26aada8cd2ecc6d42a))
+
+
+### Features
+
+* **solana:** let consumers decline a public RPC fallback ([a1020c2](https://github.com/ar-io/ar-io-sdk/commit/a1020c2298241b50757e7835ac714209ca2fe0e9))
+
+
+### Performance Improvements
+
+* **solana:** batch gateway metadata and drop a dead read in discovery ([e89a871](https://github.com/ar-io/ar-io-sdk/commit/e89a8717348f10c1e52cfb039ec0adaf43d9ae5d))
+* **solana:** coalesce concurrent RPC reads behind in-flight caches ([2fbe69b](https://github.com/ar-io/ar-io-sdk/commit/2fbe69bf09b3b1a24547c15e30abbe79e776e9ae))
+* **solana:** fetch account chunks in a bounded pool, not one at a time ([0179255](https://github.com/ar-io/ar-io-sdk/commit/0179255688f326332f55c204e1411f4e2352a9cc))
+
 # [4.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0-alpha.2...v4.2.0-alpha.3) (2026-08-25)
 
 
