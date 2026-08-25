@@ -1,3 +1,13 @@
+# [4.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0-alpha.1...v4.2.0-alpha.2) (2026-08-25)
+
+
+### Bug Fixes
+
+* **solana:** decode registry slot timestamps without BigInt Buffer readers ([f821226](https://github.com/ar-io/ar-io-sdk/commit/f821226d141b36629339f9d77115ec76757dfa9a))
+* **solana:** refuse observation slots stamped with the epoch start second ([fdbf20a](https://github.com/ar-io/ar-io-sdk/commit/fdbf20af79c955aa234f31d5f349066f370f64c6))
+* **solana:** send the epoch's frozen gateway count in save_observations ([4820c3b](https://github.com/ar-io/ar-io-sdk/commit/4820c3bfec7d92eb981503fc2653e429d3ce5716))
+* **solana:** target the active epoch when saveObservations defaults the index ([450c9f6](https://github.com/ar-io/ar-io-sdk/commit/450c9f6c046e3dc90b6ecf26aada8cd2ecc6d42a))
+
 # [4.2.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.3...v4.2.0-alpha.1) (2026-08-23)
 
 
