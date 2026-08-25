@@ -1,3 +1,11 @@
+# [4.2.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0-alpha.2...v4.2.0-alpha.3) (2026-08-25)
+
+
+### Bug Fixes
+
+* **solana:** don't re-evaluate the retry predicate on the final attempt ([30ec333](https://github.com/ar-io/ar-io-sdk/commit/30ec33363794bc2bada4f91e4d9c8eeb01184df4))
+* **solana:** route retry/circuit-breaker logs through the shared Logger ([adefaa5](https://github.com/ar-io/ar-io-sdk/commit/adefaa5f1cab15b9797ff3659facfe05fcd791ed))
+
 # [4.2.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0-alpha.1...v4.2.0-alpha.2) (2026-08-25)
 
 
