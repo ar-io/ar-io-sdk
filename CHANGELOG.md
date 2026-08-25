@@ -20,6 +20,22 @@
 
 * **solana:** let consumers decline a public RPC fallback ([a1020c2](https://github.com/ar-io/ar-io-sdk/commit/a1020c2298241b50757e7835ac714209ca2fe0e9))
 
+## [4.1.5](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4...v4.1.5) (2026-08-17)
+
+
+### Bug Fixes
+
+* **solana:** don't re-evaluate the retry predicate on the final attempt ([30ec333](https://github.com/ar-io/ar-io-sdk/commit/30ec33363794bc2bada4f91e4d9c8eeb01184df4))
+* **solana:** route retry/circuit-breaker logs through the shared Logger ([adefaa5](https://github.com/ar-io/ar-io-sdk/commit/adefaa5f1cab15b9797ff3659facfe05fcd791ed))
+
+## [4.1.4](https://github.com/ar-io/ar-io-sdk/compare/v4.1.3...v4.1.4) (2026-08-14)
+
+
+### Bug Fixes
+
+* **solana:** report the live SPL mint supply in getTokenSupply ([40e64bd](https://github.com/ar-io/ar-io-sdk/commit/40e64bd62fc7797275ee288aee01802abe214bf9))
+* **solana:** take the lifetime blockhash after CU simulation ([70ac303](https://github.com/ar-io/ar-io-sdk/commit/70ac3031196605a9c4284741b10e3e974ebb231a))
+
 ## [4.1.4-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.1.4-alpha.2...v4.1.4-alpha.3) (2026-08-23)
 
 
@@ -200,6 +216,13 @@
 * **solana:** use epoch duration in seconds for finalize_gone window ([de99061](https://github.com/ar-io/ar-io-sdk/commit/de990613af7806a1b7a0c96a0d0e453eeb09f1aa))
 * **undername increase:** fix undername increase action ([83aa1de](https://github.com/ar-io/ar-io-sdk/commit/83aa1deb7944fcf73a8253cd9f31c5c98cf63438))
 
+## [4.0.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.1...v4.0.2) (2026-06-06)
+
+
+### Bug Fixes
+
+* **signing:** update signing to include compute budget and limit, update blockheight logic ([189dc44](https://github.com/ar-io/ar-io-sdk/commit/189dc4447917cd868b0e4d757615b7569acc9ac2))
+
 ## [4.0.2-alpha.10](https://github.com/ar-io/ar-io-sdk/compare/v4.0.2-alpha.9...v4.0.2-alpha.10) (2026-06-18)
 
 
@@ -275,13 +298,6 @@
 * **primary names:** fix primary names funding plan for permabought names ([0aac17c](https://github.com/ar-io/ar-io-sdk/commit/0aac17c7626f8487417e8bc4631c5954f89c558b))
 * **signing:** update signing to include compute budget and limit, update blockheight logic ([189dc44](https://github.com/ar-io/ar-io-sdk/commit/189dc4447917cd868b0e4d757615b7569acc9ac2))
 * **undername increase:** fix undername increase action ([83aa1de](https://github.com/ar-io/ar-io-sdk/commit/83aa1deb7944fcf73a8253cd9f31c5c98cf63438))
-
-## [4.0.2](https://github.com/ar-io/ar-io-sdk/compare/v4.0.1...v4.0.2) (2026-06-06)
-
-
-### Bug Fixes
-
-* **signing:** update signing to include compute budget and limit, update blockheight logic ([189dc44](https://github.com/ar-io/ar-io-sdk/commit/189dc4447917cd868b0e4d757615b7569acc9ac2))
 
 ## [4.0.1](https://github.com/ar-io/ar-io-sdk/compare/v4.0.0...v4.0.1) (2026-06-05)
 
@@ -1345,7 +1361,6 @@ remain AO-only. Major version bump per the plan: 3.24.0-solana → 4.0.0-solana.
 
 * **undername ownership:** add undername ownship tooling ([3aa520f](https://github.com/ar-io/ar-io-sdk/commit/3aa520f3ef2ee9606f74bd9692d287e557a64881))
 
-
 # [3.19.0](https://github.com/ar-io/ar-io-sdk/compare/v3.18.3...v3.19.0) (2025-09-10)
 
 
@@ -1408,7 +1423,6 @@ remain AO-only. Major version bump per the plan: 3.24.0-solana → 4.0.0-solana.
 ### Features
 
 * **arns:** add support for `setPrimaryName` API, which allows the owner of an ANT that controls an ArNS name set their primary name in a single API ([b21a36c](https://github.com/ar-io/ar-io-sdk/commit/b21a36c2868ad32b125a7801f83f68e187e7f535))
-
 
 ## [3.17.1](https://github.com/ar-io/ar-io-sdk/compare/v3.17.0...v3.17.1) (2025-08-08)
 
@@ -1477,7 +1491,6 @@ remain AO-only. Major version bump per the plan: 3.24.0-solana → 4.0.0-solana.
 ### Features
 
 * **ants:** add new API for fetching ants ([9a6c7b6](https://github.com/ar-io/ar-io-sdk/commit/9a6c7b6a2148fcc7ac0e5446843138228cec627e))
-
 
 # [3.14.0](https://github.com/ar-io/ar-io-sdk/compare/v3.13.0...v3.14.0) (2025-06-25)
 
@@ -1930,7 +1943,6 @@ PE-7225
 * **get demand factor settings:** init new IO method PE-6894 ([ad2eb36](https://github.com/ar-io/ar-io-sdk/commit/ad2eb366328439fa1693de10c7c2ced12623385f))
 * init get gateway registry settings PE-6895 ([bb7b6b4](https://github.com/ar-io/ar-io-sdk/commit/bb7b6b4581f2b5e39c800749f0d7e2414fb9dd1c))
 
-
 ## [2.5.5](https://github.com/ar-io/ar-io-sdk/compare/v2.5.4...v2.5.5) (2024-11-28)
 
 
@@ -2127,7 +2139,6 @@ PE-7225
 ### Bug Fixes
 
 * **types:** update type and tests ([877b03f](https://github.com/ar-io/ar-io-sdk/commit/877b03f4124894cafbd0bc60b9d55b8803365cec))
-
 
 ## [2.2.2](https://github.com/ar-io/ar-io-sdk/compare/v2.2.1...v2.2.2) (2024-09-23)
 
