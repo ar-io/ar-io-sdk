@@ -10,6 +10,14 @@ on:
       - main
       - alpha
       - solana
+  # Promotion PRs (alpha -> main) have `alpha` as their head, which the
+  # branches-ignore above skips — so they produced NO build/test checks at all
+  # and `main`'s required status checks could never be satisfied. Scoped to
+  # PRs targeting main so feature -> alpha PRs keep relying on the push run
+  # above instead of running the whole matrix twice.
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
   workflow_call:
 

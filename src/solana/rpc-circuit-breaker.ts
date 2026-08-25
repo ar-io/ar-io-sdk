@@ -29,9 +29,16 @@
  * ```ts
  * import { ARIO, createCircuitBreakerRpc } from '@ar.io/sdk';
  *
+ * // With a second endpoint to fall back to:
  * const rpc = createCircuitBreakerRpc({
  *   primaryUrl: 'https://my-premium-rpc.example.com',
- *   fallbackUrl: 'https://api.mainnet-beta.solana.com',
+ *   fallbackUrl: 'https://my-other-rpc.example.com',
+ * });
+ *
+ * // With only one endpoint — the circuit still protects it, and open-circuit
+ * // calls fail fast rather than being routed onto someone else's RPC:
+ * const rpc = createCircuitBreakerRpc({
+ *   primaryUrl: 'https://my-premium-rpc.example.com',
  * });
  *
  * const ario = ARIO.init({ rpc });
@@ -116,8 +123,21 @@ export interface CircuitBreakerRpcOptions {
 export interface CircuitBreakerRpcConfig {
   /** URL for the primary (preferred) RPC endpoint. */
   primaryUrl: string;
-  /** URL for the fallback RPC endpoint (used when the circuit opens). */
-  fallbackUrl: string;
+  /**
+   * URL for the fallback RPC endpoint, used while the circuit is open.
+   *
+   * OPTIONAL. Omit it when you have no second endpoint: the circuit still
+   * protects the primary, and calls made while it is open reject immediately
+   * (fail fast) instead of being routed anywhere else.
+   *
+   * Requiring this used to be a forcing function — a consumer with a single
+   * paid endpoint had nowhere to point it but a public RPC, so a degraded
+   * primary quietly turned into traffic aimed at shared infrastructure. Pass a
+   * fallback only when you actually have one to spare; {@link
+   * defaultFallbackUrl} exists for that case but is deliberately not applied
+   * for you.
+   */
+  fallbackUrl?: string;
   /** Opossum circuit-breaker tuning knobs. */
   circuitBreakerOptions?: CircuitBreakerRpcOptions;
 }
@@ -279,7 +299,10 @@ export function createCircuitBreakerRpc({
   circuitBreakerOptions: opts = {},
 }: CircuitBreakerRpcConfig): SolanaRpc {
   const primaryTransport = createDefaultRpcTransport({ url: primaryUrl });
-  const fallbackTransport = createDefaultRpcTransport({ url: fallbackUrl });
+  const fallbackTransport =
+    fallbackUrl !== undefined
+      ? createDefaultRpcTransport({ url: fallbackUrl })
+      : undefined;
 
   type TransportRequest = Parameters<typeof primaryTransport>[0];
 
@@ -300,14 +323,25 @@ export function createCircuitBreakerRpc({
     if (!headers) return; // only adapt to rate-limit (429) failures
     successStreak = 0;
 
+    // A 429 ALWAYS means slow down, so an advertised limit may only pull the
+    // rate further DOWN — it must never hold it up.
+    //
+    // This used to be `min(ceiling, advertised * SAFETY)`, which resolves to
+    // the ceiling itself whenever the provider advertises a limit above ours.
+    // api.mainnet-beta.solana.com sends `x-ratelimit-rps-limit: 250` against a
+    // default ceiling of 10, so the header path was a no-op there: the rate
+    // stayed pinned at the ceiling and only the cooldown applied. Measured
+    // with the cooldown removed, that served 68 requests where identical
+    // headerless 429s served 9.
     const advertised = parseRpsLimit(headers);
-    const next =
+    const fromHeader =
       advertised !== null
-        ? Math.min(
-            ceilingRate,
-            Math.max(MIN_RATE, advertised * RATE_SAFETY_FACTOR),
-          )
-        : Math.max(MIN_RATE, currentRate * AIMD_DECREASE);
+        ? advertised * RATE_SAFETY_FACTOR
+        : Number.POSITIVE_INFINITY;
+    const next = Math.max(
+      MIN_RATE,
+      Math.min(fromHeader, currentRate * AIMD_DECREASE),
+    );
     if (next !== currentRate) {
       currentRate = next;
       gate.setRate(currentRate);
@@ -343,10 +377,38 @@ export function createCircuitBreakerRpc({
     },
   );
 
-  breaker.fallback((request: TransportRequest) => fallbackTransport(request));
+  // The fallback's OWN failures have to feed the backoff too.
+  //
+  // opossum only emits `failure` on the closed-circuit path (`fail()` in
+  // lib/circuit.js). Once the circuit is OPEN it emits `reject` and calls this
+  // fallback directly, so nothing the fallback returns — 429s included — ever
+  // reached `onError`. The rate gate therefore stayed pinned at its ceiling
+  // for exactly as long as the primary was down, which is when backpressure
+  // matters most. Measured before this fix: a fallback returning nothing but
+  // 429s absorbed 58 requests in 2.5s at a ceiling of 20 r/s.
+  //
+  // Note both transports share one rate gate, so backing off on the fallback
+  // also slows primary retries. That is the conservative direction, but a
+  // per-transport gate would be a reasonable follow-up.
+  // With no fallback configured we register none at all, so opossum rejects
+  // open-circuit calls outright rather than routing them anywhere.
+  if (fallbackTransport !== undefined) {
+    breaker.fallback(async (request: TransportRequest) => {
+      try {
+        return await fallbackTransport(request);
+      } catch (err) {
+        onError(err);
+        throw err;
+      }
+    });
+  }
 
   breaker.on('open', () => {
-    logger.warn('[rpc-circuit-breaker] circuit OPEN — routing to fallback RPC');
+    logger.warn(
+      fallbackTransport !== undefined
+        ? '[rpc-circuit-breaker] circuit OPEN — routing to fallback RPC'
+        : '[rpc-circuit-breaker] circuit OPEN — failing fast (no fallback configured)',
+    );
   });
   breaker.on('halfOpen', () => {
     logger.info(
@@ -362,6 +424,10 @@ export function createCircuitBreakerRpc({
   // fallback then masks it by resolving `fire()`, and `success` fires on a
   // healthy primary call. A plain try/catch around `fire()` would miss the
   // fallback-masked 429s entirely.
+  //
+  // This covers the CLOSED-circuit path only. Once the circuit opens, opossum
+  // stops emitting `failure` altogether — the fallback wrapper above is what
+  // keeps the backoff alive in that state.
   breaker.on('failure', (err: unknown) => onError(err));
   breaker.on('success', () => onSuccess());
 
