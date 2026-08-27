@@ -142,13 +142,26 @@ export type {
   EscrowNetwork,
 } from './canonical-message.js';
 
-// ANT spawn (mint MPL Core asset + initialize ario-ant state in one tx)
+// ANT spawn (mint MPL Core asset + initialize ario-ant state in one tx).
+//
+// `buildSpawnAntInstructions` / `buildCreateAntInstruction` are exported for
+// callers who need to bundle a spawn into a larger transaction rather than send
+// it — notably a SPONSORED spawn, where one wallet pays and another owns. Both
+// were already public within the module and documented as such; without the
+// re-export, a consumer wanting that shape has to hand-copy the `CreateV1`
+// builder, and a copy silently drifts from the Attributes-plugin/ADR-028
+// authority shape that `ario_arns::buy_name` depends on (a mismatch surfaces
+// only later, as MPL Core 0x4 "Plugin not found", at purchase time).
 export {
   spawnSolanaANT,
+  buildSpawnAntInstructions,
+  buildCreateAntInstruction,
   ARIO_LOGO_TX_ID,
   DEFAULT_ANT_TRANSACTION_ID,
 } from './spawn-ant.js';
 export type {
+  AntAttribute,
+  SpawnAntInstructions,
   SpawnSolanaANTParams,
   SpawnSolanaANTResult,
   SpawnSolanaANTState,
@@ -272,6 +285,10 @@ export {
   estimatePriorityFeeMicroLamports,
   estimateQuotePriorityFeeMicroLamports,
   estimateWalletPriorityFeeMicroLamports,
+  // Consumers assembling their own instruction bundles (see
+  // `buildSpawnAntInstructions`) need the same send path the SDK uses
+  // internally, including its compute-budget and wallet-rewrite handling.
+  sendAndConfirm,
 } from './send.js';
 export {
   ACL_BOOTSTRAP_ACCOUNT_BYTES,

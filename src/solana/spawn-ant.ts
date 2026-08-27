@@ -361,11 +361,33 @@ export async function buildSpawnAntInstructions(params: {
   state: SpawnSolanaANTState;
   antProgramId?: Address;
   mintSigner?: KeyPairSigner;
+  /**
+   * Wallet that will OWN the new ANT. Defaults to `signer`, which is the
+   * existing behaviour — omitting it changes nothing.
+   *
+   * Supplying a different signer separates the two roles the spawn actually
+   * has: `signer` stays the fee payer and `CreateV1` authority (it funds the
+   * MPL Core asset's rent), while `owner` receives the NFT and signs
+   * `ario_ant::initialize`. That split is what a sponsored spawn needs — a
+   * service pays, the end user owns — and it is available on chain today:
+   * `CreateV1` takes `payer` and `owner` as separate accounts and `owner` is
+   * not a signer there.
+   *
+   * `owner` must still be a signer, because `ario_ant::initialize` declares
+   * `owner: Signer` and pins `payer = owner` for the three PDAs it creates
+   * (`AntConfig`, `AntControllers`, the root `AntRecord`). A sponsor
+   * therefore also has to fund those lamports on the owner's account — most
+   * simply with a `SystemTransfer` earlier in the same transaction. Callers
+   * assembling a partially-signed transaction for a remote owner can pass
+   * `createNoopSigner(ownerAddress)` and let the owner add the signature.
+   */
+  owner?: SolanaSigner;
 }): Promise<SpawnAntInstructions> {
   if (!params.state?.name || params.state.name.length === 0) {
     throw new Error('buildSpawnAntInstructions: state.name is required');
   }
   const { signer, state, antProgramId = ARIO_ANT_PROGRAM_ID } = params;
+  const owner = params.owner ?? signer;
   const mintSigner = params.mintSigner ?? (await generateKeyPairSigner());
   const mint = mintSigner.address;
 
@@ -392,8 +414,9 @@ export async function buildSpawnAntInstructions(params: {
   //
   // ADR-028: the asset's UpdateAuthority is the per-asset `ant_authority` PDA
   // and the Attributes plugin authority is `UpdateAuthority` (→ that PDA), so
-  // all MPL Core updates route through the ario-ant program. The owner (the
-  // spawning signer) keeps custody of the NFT.
+  // all MPL Core updates route through the ario-ant program. The owner keeps
+  // custody of the NFT — by default the spawning signer, or `params.owner`
+  // when a sponsor is paying on someone else's behalf.
   const [antAuthority] = await getAntAuthorityPDA(mint, antProgramId);
   const createIx = getCreateV1Instruction({
     asset: mintSigner,
@@ -401,9 +424,8 @@ export async function buildSpawnAntInstructions(params: {
     authority: signer,
     // `owner` MUST be explicit. MPL Core defaults owner to updateAuthority when
     // omitted, so with updateAuthority = the ant_authority PDA an omitted owner
-    // would make the PROGRAM PDA the NFT owner (user loses custody). Pin it to
-    // the spawning wallet.
-    owner: signer.address,
+    // would make the PROGRAM PDA the NFT owner (user loses custody).
+    owner: owner.address,
     updateAuthority: antAuthority,
     dataState: DataState.AccountState,
     name: state.name,
@@ -428,7 +450,9 @@ export async function buildSpawnAntInstructions(params: {
   const initIx = await buildInitializeAntIx({
     programId: antProgramId,
     mint,
-    signer,
+    // `ario_ant::initialize` declares `owner: Signer` and creates its PDAs with
+    // `payer = owner`, so this must be the OWNER, not the fee payer.
+    signer: owner,
     state,
   });
 
