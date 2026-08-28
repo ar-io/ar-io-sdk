@@ -1,3 +1,10 @@
+# [4.3.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0...v4.3.0-alpha.1) (2026-08-28)
+
+
+### Features
+
+* **solana:** allow a spawned ANT's owner to differ from the payer ([e5f3d57](https://github.com/ar-io/ar-io-sdk/commit/e5f3d57025d6e42f77153de8dd04fd179cfaba9d))
+
 # [4.2.0](https://github.com/ar-io/ar-io-sdk/compare/v4.1.5...v4.2.0) (2026-08-25)
 
 
