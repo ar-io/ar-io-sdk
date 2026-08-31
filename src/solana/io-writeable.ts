@@ -174,6 +174,8 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import {
   Protocol,
+  fetchMaybeEpoch,
+  fetchMaybeEpochRentReceipt,
   getAdminSetRewardRatiosInstructionAsync,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
@@ -224,6 +226,7 @@ import {
   getDelegationPDA,
   getDemandFactorPDA,
   getEpochPDA,
+  getEpochRentReceiptPDA,
   getEpochSettingsPDA,
   getGarSettingsPDA,
   getGatewayPDA,
@@ -289,6 +292,52 @@ function withRemainingAccounts<I extends Instruction>(
     ...remaining,
   ];
   return { ...ix, accounts } as I;
+}
+
+/**
+ * Build the `remaining_accounts` tail that `close_epoch` requires (ADR-0029).
+ *
+ * Mirrors `programs/ario-gar/src/instructions/epoch.rs::close_epoch`, which
+ * branches on `Epoch.has_rent_receipt` — **program-controlled state, never
+ * "did the caller pass a receipt?"**. That distinction is the whole security
+ * property: if the branch keyed off account presence, a scavenger would simply
+ * omit the receipt to fall through to the legacy `close = payer` path and
+ * pocket rent the epoch's creator paid for.
+ *
+ * - flag clear (every pre-ADR-0029 epoch) → no extra accounts; the program
+ *   refunds `payer` exactly as before, which is what lets un-upgraded crankers
+ *   keep closing old epochs during the ~8-day transition window.
+ * - flag set → exactly two accounts, in this order, both writable because both
+ *   are drained: `[receipt, creator]`. The program rejects a missing or
+ *   read-only entry with `MissingEpochRentReceipt`, a wrong-PDA or
+ *   foreign-owned receipt with `InvalidEpochRentReceipt`, and a creator that
+ *   does not match `receipt.creator` with `WrongEpochCreator`.
+ *
+ * @param hasRentReceipt `Epoch.hasRentReceipt`. Any non-zero value counts — the
+ *   byte was padding before ADR-0029 and the program itself treats it as
+ *   boolean (`epoch.has_rent_receipt != 0`).
+ * @param creator `EpochRentReceipt.creator`, or `null` if no receipt account
+ *   exists at the derived address.
+ */
+export function buildCloseEpochRentAccounts(
+  hasRentReceipt: number,
+  receiptPda: Address,
+  creator: Address | null,
+  epochIndex: number,
+): AccountMeta[] {
+  if (hasRentReceipt === 0) return [];
+  if (creator === null) {
+    throw new Error(
+      `Epoch ${epochIndex} is flagged as having a rent receipt but none exists ` +
+        `at ${receiptPda}. close_epoch would fail with MissingEpochRentReceipt; ` +
+        `an authority can clear the orphan with ` +
+        `admin_close_orphaned_epoch_rent_receipt.`,
+    );
+  }
+  return [
+    { address: receiptPda, role: AccountRole.WRITABLE },
+    { address: creator, role: AccountRole.WRITABLE },
+  ];
 }
 
 /**
@@ -4117,7 +4166,27 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const sig = await this.sendTransaction([ix], 1_000_000);
+    // ADR-0029: record who funded the Epoch's rent so `close_epoch` can refund
+    // the creator instead of whoever wins the race to sign the close.
+    //
+    // The receipt rides as a trailing `remaining_accounts` entry, NOT a declared
+    // account, so `create_epoch`'s IDL account list is unchanged and crankers
+    // running an older client keep working — they simply omit it and the epoch
+    // is created with `has_rent_receipt = 0`, taking the legacy refund path.
+    // On-chain: `create_epoch` reads `ctx.remaining_accounts.first()`.
+    const [receiptPda] = await getEpochRentReceiptPDA(
+      epochIndex,
+      this.garProgram,
+    );
+
+    const sig = await this.sendTransaction(
+      [
+        withRemainingAccounts(ix, [
+          { address: receiptPda, role: AccountRole.WRITABLE },
+        ]),
+      ],
+      1_000_000,
+    );
     return { id: sig };
   }
 
@@ -4286,7 +4355,51 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const sig = await this.sendTransaction([ix]);
+    // ADR-0029: `close_epoch` decides where the rent goes by reading
+    // `Epoch.hasRentReceipt` — program-controlled state, deliberately NOT
+    // "did the caller pass a receipt?" (that would let a scavenger omit the
+    // receipt to force the legacy `close = payer` branch and pocket the rent).
+    //
+    // So mirror the program: read the flag, and only when it is set append the
+    // two accounts the receipted branch requires, in this exact order:
+    //   remaining_accounts[0] = the EpochRentReceipt PDA   (writable — closed)
+    //   remaining_accounts[1] = receipt.creator            (writable — paid)
+    // Both are mandatory in that branch; omitting either is
+    // `MissingEpochRentReceipt`. Epochs created before this upgrade have the
+    // flag clear and need no extra accounts, which is what keeps the ~8-day
+    // mixed-version transition window working in both directions.
+    const [epochPda] = await getEpochPDA(params.epochIndex, this.garProgram);
+    const epochAccount = await fetchMaybeEpoch(this.rpc, epochPda, {
+      commitment: this.commitment,
+    });
+    const hasRentReceipt = epochAccount.exists
+      ? epochAccount.data.hasRentReceipt
+      : 0;
+
+    const [receiptPda] = await getEpochRentReceiptPDA(
+      params.epochIndex,
+      this.garProgram,
+    );
+    let creator: Address | null = null;
+    if (hasRentReceipt !== 0) {
+      const receipt = await fetchMaybeEpochRentReceipt(this.rpc, receiptPda, {
+        commitment: this.commitment,
+      });
+      creator = receipt.exists ? receipt.data.creator : null;
+    }
+
+    const remainingAccounts = buildCloseEpochRentAccounts(
+      hasRentReceipt,
+      receiptPda,
+      creator,
+      params.epochIndex,
+    );
+
+    const sig = await this.sendTransaction([
+      remainingAccounts.length > 0
+        ? withRemainingAccounts(ix, remainingAccounts)
+        : ix,
+    ]);
     return { id: sig };
   }
 

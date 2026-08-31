@@ -51,6 +51,7 @@ import {
   BALANCE_SEED,
   DELEGATION_SEED,
   DEMAND_FACTOR_SEED,
+  EPOCH_RENT_RECEIPT_SEED,
   EPOCH_SEED,
   EPOCH_SETTINGS_SEED,
   ESCROW_ANT_SEED,
@@ -259,6 +260,28 @@ export async function getEpochPDA(
   return getProgramDerivedAddress({
     programAddress: programId,
     seeds: [EPOCH_SEED, indexBuf],
+  });
+}
+
+/**
+ * `EpochRentReceipt` PDA for an epoch (ADR-0029) — seeds
+ * `["epoch_rent_receipt", u64_le(epochIndex)]`.
+ *
+ * `create_epoch` initialises this as a trailing `remaining_accounts` entry and
+ * sets `Epoch.hasRentReceipt`; `close_epoch` then refunds the Epoch's rent to
+ * the recorded `creator` instead of the closing signer. Hand-rolled because the
+ * account never appears in a declared `Accounts` struct for those two
+ * instructions, so the IDL has no seeds for it and Codama generates no finder.
+ */
+export async function getEpochRentReceiptPDA(
+  epochIndex: number | bigint,
+  programId: Address = ARIO_GAR_PROGRAM_ID,
+): Promise<Pda> {
+  const indexBuf = Buffer.alloc(8);
+  indexBuf.writeBigUInt64LE(BigInt(epochIndex));
+  return getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [EPOCH_RENT_RECEIPT_SEED, indexBuf],
   });
 }
 
