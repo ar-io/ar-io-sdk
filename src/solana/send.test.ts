@@ -132,21 +132,28 @@ describe('sendAndConfirm blockhash lifetime', () => {
 
 /**
  * `reclaimLookupTablesForSigner` discovers the ephemeral ALTs it should clean
- * up by replaying the signer's own transaction history. That read is the one
- * place in the SDK exposed to Solana's transaction-v1 rollout (SIMD-0296 size
- * ceiling, SIMD-0385 format, mainnet at epoch 1035): `getTransaction` answers
- * a client that declares only `maxSupportedTransactionVersion: 0` with
- * JSON-RPC -32015 for every v1 transaction in the range.
+ * up by replaying the signer's own transaction history. Two separate hazards
+ * meet in that one read.
  *
- * Two independent guards, because either alone still loses the rent:
- * declaring v1 keeps the common case working, and per-signature error
- * handling keeps ONE unreadable entry from aborting a 500-signature scan.
+ * 1. Solana's transaction-v1 rollout (SIMD-0296 size ceiling, SIMD-0385
+ *    format, mainnet at epoch 1035). `getTransaction` answers a client that
+ *    declares only `maxSupportedTransactionVersion: 0` with JSON-RPC -32015
+ *    for every v1 transaction in range.
+ * 2. What the scan does when a read fails. Reporting zero reclaimable tables
+ *    because the RPC was rate-limiting is indistinguishable from "nothing to
+ *    clean up", and hides unreclaimed rent indefinitely — the same
+ *    phantom-empty failure fixed in funding-source discovery, whose ruling
+ *    was that being told zero when the truth is unknown is never acceptable.
+ *
+ * So: transient failures are retried and then SURFACED; only a permanently
+ * unreadable single signature is skipped, and it is logged when it is.
  */
 
 // Valid base58 addresses; the stub RPC only ever compares them as strings.
 const TABLE_A = 'AddressLookupTab1e1111111111111111111111111';
 const TABLE_B = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
 
+/** Permanent for one signature: this client cannot decode that version. */
 const V1_UNSUPPORTED = Object.assign(
   new Error(
     'Transaction version (1) is not supported by the requesting client. ' +
@@ -156,6 +163,12 @@ const V1_UNSUPPORTED = Object.assign(
   { code: -32015 },
 );
 
+/** Transient: exactly what a public RPC returns under a 500-signature scan. */
+const RATE_LIMITED = new Error('HTTP error (429): Too Many Requests');
+
+/** Keep the retry backoff out of the test runtime. */
+const FAST_RETRY = { maxAttempts: 3, baseDelayMs: 1, maxDelayMs: 2 };
+
 /** A `getTransaction` response carrying one address-table lookup. */
 function txWithTable(accountKey: string) {
   return {
@@ -163,11 +176,17 @@ function txWithTable(accountKey: string) {
   };
 }
 
+/**
+ * Stub RPC. A `transactions` entry may be a value, an Error to throw, or a
+ * function of the attempt number so a test can fail once and then succeed.
+ */
 function makeReclaimRpc(transactions: Record<string, unknown>) {
   const configs: Record<string, unknown>[] = [];
+  const attempts: Record<string, number> = {};
   const signatures = Object.keys(transactions);
   return {
     configs,
+    attempts,
     rpc: {
       getSignaturesForAddress: () => ({
         send: async () => signatures.map((signature) => ({ signature })),
@@ -175,9 +194,14 @@ function makeReclaimRpc(transactions: Record<string, unknown>) {
       getTransaction: (signature: string, config: Record<string, unknown>) => ({
         send: async () => {
           configs.push(config);
+          attempts[signature] = (attempts[signature] ?? 0) + 1;
           const entry = transactions[signature];
-          if (entry instanceof Error) throw entry;
-          return entry;
+          const resolved =
+            typeof entry === 'function'
+              ? (entry as (n: number) => unknown)(attempts[signature])
+              : entry;
+          if (resolved instanceof Error) throw resolved;
+          return resolved;
         },
       }),
       getSlot: () => ({ send: async () => 1000n }),
@@ -198,6 +222,7 @@ describe('reclaimLookupTablesForSigner history scan', () => {
       rpcSubscriptions: undefined as never,
       signer,
       allowedEntryOwners: [MEMO],
+      retryOptions: FAST_RETRY,
     });
 
     assert.equal(configs.length, 1, 'expected one getTransaction call');
@@ -208,7 +233,7 @@ describe('reclaimLookupTablesForSigner history scan', () => {
     );
   });
 
-  it('skips an unreadable signature instead of aborting the pass', async () => {
+  it('skips a permanently unreadable signature without losing the others', async () => {
     const signer = await generateKeyPairSigner();
     const { rpc } = makeReclaimRpc({
       sigA: txWithTable(TABLE_A),
@@ -221,6 +246,7 @@ describe('reclaimLookupTablesForSigner history scan', () => {
       rpcSubscriptions: undefined as never,
       signer,
       allowedEntryOwners: [MEMO],
+      retryOptions: FAST_RETRY,
     });
 
     assert.equal(result.scannedSignatures, 3);
@@ -231,11 +257,25 @@ describe('reclaimLookupTablesForSigner history scan', () => {
     );
   });
 
-  it('reports zero candidates rather than throwing when every read fails', async () => {
+  it('does not retry a permanent failure', async () => {
     const signer = await generateKeyPairSigner();
-    const { rpc } = makeReclaimRpc({
-      sigA: V1_UNSUPPORTED,
-      sigB: V1_UNSUPPORTED,
+    const { rpc, attempts } = makeReclaimRpc({ sigA: V1_UNSUPPORTED });
+
+    await reclaimLookupTablesForSigner({
+      rpc,
+      rpcSubscriptions: undefined as never,
+      signer,
+      allowedEntryOwners: [MEMO],
+      retryOptions: FAST_RETRY,
+    });
+
+    assert.equal(attempts.sigA, 1, 'a -32015 is not worth a second attempt');
+  });
+
+  it('retries a transient failure and recovers', async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc, attempts } = makeReclaimRpc({
+      sigA: (n: number) => (n === 1 ? RATE_LIMITED : txWithTable(TABLE_A)),
     });
 
     const result = await reclaimLookupTablesForSigner({
@@ -243,15 +283,35 @@ describe('reclaimLookupTablesForSigner history scan', () => {
       rpcSubscriptions: undefined as never,
       signer,
       allowedEntryOwners: [MEMO],
+      retryOptions: FAST_RETRY,
     });
 
-    assert.deepEqual(
-      {
-        deactivated: result.deactivated,
-        closed: result.closed,
-        candidates: result.candidates,
+    assert.equal(attempts.sigA, 2, 'expected one retry after the 429');
+    assert.equal(result.candidates, 1, 'the table must survive the retry');
+  });
+
+  it('THROWS rather than reporting zero when a transient failure persists', async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc } = makeReclaimRpc({
+      sigA: txWithTable(TABLE_A),
+      sigRateLimited: RATE_LIMITED,
+    });
+
+    // Reporting `candidates: 0` here would read as "nothing to reclaim" while
+    // the rent of every table this signer created keeps sitting there.
+    await assert.rejects(
+      reclaimLookupTablesForSigner({
+        rpc,
+        rpcSubscriptions: undefined as never,
+        signer,
+        allowedEntryOwners: [MEMO],
+        retryOptions: FAST_RETRY,
+      }),
+      (err: Error) => {
+        assert.match(err.message, /Refusing to report zero reclaimable tables/);
+        assert.equal((err.cause as Error)?.message, RATE_LIMITED.message);
+        return true;
       },
-      { deactivated: 0, closed: 0, candidates: 0 },
     );
   });
 });

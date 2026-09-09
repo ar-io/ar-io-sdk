@@ -59,8 +59,12 @@ import {
   signTransactionMessageWithSigners,
 } from '@solana/kit';
 
+import { Logger } from '../common/logger.js';
 import type { GasEstimate } from '../types/io.js';
+import { type RetryOptions, isRetryableError, withRetry } from './retry.js';
 import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
+
+const logger = Logger.default;
 
 /**
  * Floor for the auto-estimated priority fee (micro-lamports per CU). Ensures a
@@ -890,6 +894,7 @@ export async function reclaimLookupTablesForSigner({
   commitment = 'confirmed',
   maxTables = 10,
   scanLimit = 500,
+  retryOptions,
 }: {
   rpc: SolanaRpc;
   rpcSubscriptions: SolanaRpcSubscriptions;
@@ -903,6 +908,8 @@ export async function reclaimLookupTablesForSigner({
   commitment?: Commitment;
   maxTables?: number;
   scanLimit?: number;
+  /** Retry tuning for the history reads. Defaults to {@link withRetry}'s. */
+  retryOptions?: RetryOptions;
 }): Promise<{
   deactivated: number;
   closed: number;
@@ -927,35 +934,67 @@ export async function reclaimLookupTablesForSigner({
     // A little headroom over maxTables so already-closed candidates don't
     // starve the budget; the rest get picked up next pass.
     if (candidates.size >= maxTables * 3) break;
+    let tx: unknown;
     try {
-      const tx = await rpc
-        .getTransaction(signature, {
-          encoding: 'json',
-          // Declare v1 (SIMD-0385) support. A client that declares only v0 is
-          // answered with JSON-RPC -32015 ("Transaction version (1) is not
-          // supported by the requesting client") for EVERY v1 transaction it
-          // reads back. v1 activates on mainnet at epoch 1035, so a cranker
-          // signer that has sent even one would otherwise poison this scan.
-          // v1 carries no address table lookups (the format dropped them), so
-          // these entries contribute nothing — they just must not throw.
-          maxSupportedTransactionVersion: 1,
-          commitment: historyCommitment,
-        })
-        .send();
-      const lookups =
-        (
-          tx as unknown as {
-            transaction?: {
-              message?: { addressTableLookups?: { accountKey: string }[] };
-            };
-          } | null
-        )?.transaction?.message?.addressTableLookups ?? [];
-      for (const l of lookups) candidates.add(l.accountKey);
-    } catch {
-      // Best-effort, matching the reclaim loop below: one signature we cannot
-      // read (pruned by the RPC, an unsupported future version, a transient
-      // failure) must not cost us the other 499 and strand their rent.
+      tx = await withRetry(
+        () =>
+          rpc
+            .getTransaction(signature, {
+              encoding: 'json',
+              // Declare v1 (SIMD-0385) support. A client that declares only v0
+              // is answered with JSON-RPC -32015 ("Transaction version (1) is
+              // not supported by the requesting client") for EVERY v1
+              // transaction it reads back. v1 activates on mainnet at epoch
+              // 1035, so a cranker signer that has sent even one would
+              // otherwise poison this scan. v1 carries no address table
+              // lookups (the format dropped them), so these entries contribute
+              // nothing to discovery — they just must not break it.
+              maxSupportedTransactionVersion: 1,
+              commitment: historyCommitment,
+            })
+            .send(),
+        retryOptions,
+      );
+    } catch (err) {
+      if (isRetryableError(err)) {
+        // A transient failure that outlived withRetry means the truth is
+        // UNKNOWN. Returning here would report zero reclaimable tables, which
+        // is indistinguishable from "nothing to clean up" — while the rent of
+        // every ephemeral table this signer created keeps sitting there. That
+        // is the same phantom-empty failure funding-source discovery was fixed
+        // for, and the ruling there applies verbatim: being told zero when the
+        // truth is unknown is never acceptable. Surface it; the pass is
+        // throttled and permissionless, so the caller can simply run it again.
+        throw new Error(
+          `ALT reclaim discovery failed after retries while reading ${signature}: ${
+            err instanceof Error ? err.message : String(err)
+          }. Refusing to report zero reclaimable tables for a transient ` +
+            'failure — that would hide unreclaimed rent behind an empty ' +
+            'result. Retry the cleanup pass.',
+          { cause: err },
+        );
+      }
+      // Permanent for THIS signature alone — pruned out of the RPC's history,
+      // or a transaction this client cannot decode. Skipping is right, but it
+      // is said out loud: a silent skip is exactly how a systematic problem
+      // disguises itself as "no candidates found".
+      logger.warn(
+        `[solana-send] skipping unreadable signature ${signature} during ALT ` +
+          'reclaim discovery; any lookup table it referenced will be retried ' +
+          'on the next pass.',
+        { error: err instanceof Error ? err.message : String(err) },
+      );
+      continue;
     }
+    const lookups =
+      (
+        tx as unknown as {
+          transaction?: {
+            message?: { addressTableLookups?: { accountKey: string }[] };
+          };
+        } | null
+      )?.transaction?.message?.addressTableLookups ?? [];
+    for (const l of lookups) candidates.add(l.accountKey);
   }
 
   // --- Reclaim ----------------------------------------------------------------
