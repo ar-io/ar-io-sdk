@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { address, generateKeyPairSigner } from '@solana/kit';
-import { sendAndConfirm } from './send.js';
+import { reclaimLookupTablesForSigner, sendAndConfirm } from './send.js';
 
 /**
  * A blockhash is only valid for ~150 blocks (~60s) from ISSUE, not from send.
@@ -126,6 +126,132 @@ describe('sendAndConfirm blockhash lifetime', () => {
       calls.filter((c) => c === 'getLatestBlockhash').length,
       1,
       `expected exactly one blockhash fetch, got order: ${calls.join(' -> ')}`,
+    );
+  });
+});
+
+/**
+ * `reclaimLookupTablesForSigner` discovers the ephemeral ALTs it should clean
+ * up by replaying the signer's own transaction history. That read is the one
+ * place in the SDK exposed to Solana's transaction-v1 rollout (SIMD-0296 size
+ * ceiling, SIMD-0385 format, mainnet at epoch 1035): `getTransaction` answers
+ * a client that declares only `maxSupportedTransactionVersion: 0` with
+ * JSON-RPC -32015 for every v1 transaction in the range.
+ *
+ * Two independent guards, because either alone still loses the rent:
+ * declaring v1 keeps the common case working, and per-signature error
+ * handling keeps ONE unreadable entry from aborting a 500-signature scan.
+ */
+
+// Valid base58 addresses; the stub RPC only ever compares them as strings.
+const TABLE_A = 'AddressLookupTab1e1111111111111111111111111';
+const TABLE_B = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr';
+
+const V1_UNSUPPORTED = Object.assign(
+  new Error(
+    'Transaction version (1) is not supported by the requesting client. ' +
+      'Please try the request again with the following configuration ' +
+      'parameter: "maxSupportedTransactionVersion": 1',
+  ),
+  { code: -32015 },
+);
+
+/** A `getTransaction` response carrying one address-table lookup. */
+function txWithTable(accountKey: string) {
+  return {
+    transaction: { message: { addressTableLookups: [{ accountKey }] } },
+  };
+}
+
+function makeReclaimRpc(transactions: Record<string, unknown>) {
+  const configs: Record<string, unknown>[] = [];
+  const signatures = Object.keys(transactions);
+  return {
+    configs,
+    rpc: {
+      getSignaturesForAddress: () => ({
+        send: async () => signatures.map((signature) => ({ signature })),
+      }),
+      getTransaction: (signature: string, config: Record<string, unknown>) => ({
+        send: async () => {
+          configs.push(config);
+          const entry = transactions[signature];
+          if (entry instanceof Error) throw entry;
+          return entry;
+        },
+      }),
+      getSlot: () => ({ send: async () => 1000n }),
+      // Every discovered candidate reads back as already-closed, so the
+      // reclaim loop short-circuits and no transaction is ever sent.
+      getAccountInfo: () => ({ send: async () => ({ value: null }) }),
+    } as never,
+  };
+}
+
+describe('reclaimLookupTablesForSigner history scan', () => {
+  it('declares transaction-v1 support on getTransaction', async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc, configs } = makeReclaimRpc({ sigA: txWithTable(TABLE_A) });
+
+    await reclaimLookupTablesForSigner({
+      rpc,
+      rpcSubscriptions: undefined as never,
+      signer,
+      allowedEntryOwners: [MEMO],
+    });
+
+    assert.equal(configs.length, 1, 'expected one getTransaction call');
+    assert.equal(
+      configs[0].maxSupportedTransactionVersion,
+      1,
+      'declaring only v0 earns JSON-RPC -32015 on every v1 transaction',
+    );
+  });
+
+  it('skips an unreadable signature instead of aborting the pass', async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc } = makeReclaimRpc({
+      sigA: txWithTable(TABLE_A),
+      sigUnreadable: V1_UNSUPPORTED,
+      sigB: txWithTable(TABLE_B),
+    });
+
+    const result = await reclaimLookupTablesForSigner({
+      rpc,
+      rpcSubscriptions: undefined as never,
+      signer,
+      allowedEntryOwners: [MEMO],
+    });
+
+    assert.equal(result.scannedSignatures, 3);
+    assert.equal(
+      result.candidates,
+      2,
+      'the tables on either side of the failure must still be discovered',
+    );
+  });
+
+  it('reports zero candidates rather than throwing when every read fails', async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc } = makeReclaimRpc({
+      sigA: V1_UNSUPPORTED,
+      sigB: V1_UNSUPPORTED,
+    });
+
+    const result = await reclaimLookupTablesForSigner({
+      rpc,
+      rpcSubscriptions: undefined as never,
+      signer,
+      allowedEntryOwners: [MEMO],
+    });
+
+    assert.deepEqual(
+      {
+        deactivated: result.deactivated,
+        closed: result.closed,
+        candidates: result.candidates,
+      },
+      { deactivated: 0, closed: 0, candidates: 0 },
     );
   });
 });

@@ -635,7 +635,16 @@ async function logSimulationDiagnostics(
   }
 }
 
-/** Solana's hard cap on a serialized transaction (signatures + message). */
+/**
+ * Hard cap on a serialized legacy/v0 transaction (signatures + message).
+ *
+ * SIMD-0296 raises the ceiling to 4096 bytes, but only for the v1 transaction
+ * format (SIMD-0385) — which this SDK does not emit, and currently cannot:
+ * `@solana/kit` still excludes version 1 from `createTransactionMessage`.
+ * Every transaction built here is v0, so 1232 stays the number that matters.
+ * v1 also drops address lookup tables entirely, so the ALT compression below
+ * remains the only way past the inline account limit.
+ */
 export const MAX_TX_SIZE_BYTES = 1232;
 
 /**
@@ -918,22 +927,35 @@ export async function reclaimLookupTablesForSigner({
     // A little headroom over maxTables so already-closed candidates don't
     // starve the budget; the rest get picked up next pass.
     if (candidates.size >= maxTables * 3) break;
-    const tx = await rpc
-      .getTransaction(signature, {
-        encoding: 'json',
-        maxSupportedTransactionVersion: 0,
-        commitment: historyCommitment,
-      })
-      .send();
-    const lookups =
-      (
-        tx as unknown as {
-          transaction?: {
-            message?: { addressTableLookups?: { accountKey: string }[] };
-          };
-        } | null
-      )?.transaction?.message?.addressTableLookups ?? [];
-    for (const l of lookups) candidates.add(l.accountKey);
+    try {
+      const tx = await rpc
+        .getTransaction(signature, {
+          encoding: 'json',
+          // Declare v1 (SIMD-0385) support. A client that declares only v0 is
+          // answered with JSON-RPC -32015 ("Transaction version (1) is not
+          // supported by the requesting client") for EVERY v1 transaction it
+          // reads back. v1 activates on mainnet at epoch 1035, so a cranker
+          // signer that has sent even one would otherwise poison this scan.
+          // v1 carries no address table lookups (the format dropped them), so
+          // these entries contribute nothing — they just must not throw.
+          maxSupportedTransactionVersion: 1,
+          commitment: historyCommitment,
+        })
+        .send();
+      const lookups =
+        (
+          tx as unknown as {
+            transaction?: {
+              message?: { addressTableLookups?: { accountKey: string }[] };
+            };
+          } | null
+        )?.transaction?.message?.addressTableLookups ?? [];
+      for (const l of lookups) candidates.add(l.accountKey);
+    } catch {
+      // Best-effort, matching the reclaim loop below: one signature we cannot
+      // read (pruned by the RPC, an unsupported future version, a transient
+      // failure) must not cost us the other 499 and strand their rent.
+    }
   }
 
   // --- Reclaim ----------------------------------------------------------------
