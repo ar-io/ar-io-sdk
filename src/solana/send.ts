@@ -920,6 +920,12 @@ export async function reclaimLookupTablesForSigner({
   const ACTIVE = 0xff_ff_ff_ff_ff_ff_ff_ffn; // u64::MAX = not yet deactivated
   const COOLDOWN_SLOTS = 513n; // deactivation_slot must age out of SlotHashes
   const allowed = new Set<string>(allowedEntryOwners as unknown as string[]);
+  // Classify post-exhaustion failures with the SAME predicate withRetry used.
+  // A caller who supplies a custom `isRetryable` would otherwise have an error
+  // retried as transient and then classified as permanent here — skipped, and
+  // silently truncating the candidate set. That divergence is exactly the
+  // phantom-empty result this handler exists to prevent.
+  const isTransient = retryOptions?.isRetryable ?? isRetryableError;
   const addressDecoder = getAddressDecoder();
   // getTransaction only honours 'confirmed' | 'finalized'.
   const historyCommitment =
@@ -956,7 +962,7 @@ export async function reclaimLookupTablesForSigner({
         retryOptions,
       );
     } catch (err) {
-      if (isRetryableError(err)) {
+      if (isTransient(err)) {
         // A transient failure that outlived withRetry means the truth is
         // UNKNOWN. Returning here would report zero reclaimable tables, which
         // is indistinguishable from "nothing to clean up" — while the rent of

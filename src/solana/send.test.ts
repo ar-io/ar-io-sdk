@@ -290,6 +290,32 @@ describe('reclaimLookupTablesForSigner history scan', () => {
     assert.equal(result.candidates, 1, 'the table must survive the retry');
   });
 
+  it("classifies post-exhaustion failures with the caller's own predicate", async () => {
+    const signer = await generateKeyPairSigner();
+    const { rpc, attempts } = makeReclaimRpc({ sigA: V1_UNSUPPORTED });
+
+    // -32015 is permanent by the default heuristic. A caller who knows their
+    // RPC better can say otherwise, and withRetry honours that — so the
+    // post-exhaustion branch must honour it too. Classifying with the default
+    // here would retry the error as transient and then skip it as permanent,
+    // silently truncating the candidate set.
+    await assert.rejects(
+      reclaimLookupTablesForSigner({
+        rpc,
+        rpcSubscriptions: undefined as never,
+        signer,
+        allowedEntryOwners: [MEMO],
+        retryOptions: { ...FAST_RETRY, isRetryable: () => true },
+      }),
+      /Refusing to report zero reclaimable tables/,
+    );
+    assert.equal(
+      attempts.sigA,
+      FAST_RETRY.maxAttempts,
+      'the caller predicate should have driven the retries too',
+    );
+  });
+
   it('THROWS rather than reporting zero when a transient failure persists', async () => {
     const signer = await generateKeyPairSigner();
     const { rpc } = makeReclaimRpc({
