@@ -1,3 +1,12 @@
+# [4.3.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0-alpha.2...v4.3.0-alpha.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* **solana:** declare transaction-v1 support in ALT history scan ([131eab1](https://github.com/ar-io/ar-io-sdk/commit/131eab1ba49201745ec394abe03866b7beed4ab4))
+* **solana:** honor the caller's retry classifier after exhaustion ([9dae356](https://github.com/ar-io/ar-io-sdk/commit/9dae3562026cf80062fc791f1c0ddd8576466788))
+* **solana:** surface transient ALT-discovery failures instead of zero ([75ed0cb](https://github.com/ar-io/ar-io-sdk/commit/75ed0cb0a8411e036a600ea2626d2de62a634e42))
+
 # [4.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0-alpha.1...v4.3.0-alpha.2) (2026-08-30)
 
 
