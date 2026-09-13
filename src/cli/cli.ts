@@ -563,6 +563,7 @@ makeCommand({
 makeCommand({
   name: 'leave-network',
   description: 'Leave a gateway from the AR.IO network',
+  options: writeActionOptions,
   action: leaveNetwork,
 });
 
@@ -602,14 +603,14 @@ makeCommand({
   name: 'instant-withdrawal',
   description:
     'Instantly withdraw stake from an existing gateway withdrawal vault',
-  options: addressAndVaultIdOptions,
+  options: [...writeActionOptions, ...addressAndVaultIdOptions],
   action: instantWithdrawal,
 });
 
 makeCommand({
   name: 'cancel-withdrawal',
   description: 'Cancel a pending gateway withdrawal vault',
-  options: addressAndVaultIdOptions,
+  options: [...writeActionOptions, ...addressAndVaultIdOptions],
   action: cancelWithdrawal,
 });
 
