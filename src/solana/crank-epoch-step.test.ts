@@ -72,11 +72,23 @@ class TestCranker extends SolanaARIOWriteable {
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async getEpochRaw(i: number): Promise<any> {
     this.calls.push(`getEpochRaw:${i}`);
-    return this.epochs[i] ?? null;
+    // Return a COPY. The real implementation decodes a fresh object per call;
+    // handing out the live fixture lets a caller alias harness state, which
+    // silently breaks before/after comparisons.
+    const e = this.epochs[i];
+    return e ? { ...e } : null;
   }
-  async getRegistryGatewayPDAs(start: number, n: number): Promise<Address[]> {
+  async getRegistryGatewayPDAs(
+    start: number,
+    n: number,
+    cap?: number,
+  ): Promise<Address[]> {
     this.calls.push(`batch:${start}:${n}`);
-    return Array.from({ length: Math.min(n, 5) }, (_, k) => pk(start + k + 10));
+    // Honour the cap the way the real implementation does: the range is bounded
+    // by the epoch's frozen activeGatewayCount, not by the live registry count.
+    const end = Math.min(start + n, cap ?? Number.MAX_SAFE_INTEGER);
+    const len = Math.max(0, Math.min(n, 5, end - start));
+    return Array.from({ length: len }, (_, k) => pk(start + k + 10));
   }
   async getAllRegistryGatewayPDAs(): Promise<Address[]> {
     this.calls.push('getAllRegistryGatewayPDAs'); // must NEVER be called by crankEpochStep
@@ -94,11 +106,31 @@ class TestCranker extends SolanaARIOWriteable {
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async tallyWeights(p: any): Promise<any> {
     this.calls.push(`tally:${p.gatewayAccounts.length}`);
+    // Advance the cursor the way the chain does — one slot per supplied
+    // remaining_account. Without this the mock can never satisfy the D4a
+    // progress assertion, and worse, it would mask the very defect that
+    // assertion exists to catch (a tx that succeeds while advancing nothing).
+    const e = this.epochs[p.epochIndex];
+    if (e) {
+      e.tallyIndex = Math.min(
+        e.activeGatewayCount,
+        e.tallyIndex + p.gatewayAccounts.length,
+      );
+      if (e.tallyIndex >= e.activeGatewayCount) e.weightsTallied = 1;
+    }
     return { id: 'tx-tally' };
   }
   // biome-ignore lint/suspicious/noExplicitAny: test stubs
   async distributeEpoch(p: any): Promise<any> {
     this.calls.push(`distribute:${p.gatewayAccounts.length}`);
+    const e = this.epochs[p.epochIndex];
+    if (e) {
+      e.distributionIndex = Math.min(
+        e.activeGatewayCount,
+        e.distributionIndex + p.gatewayAccounts.length,
+      );
+      if (e.distributionIndex >= e.activeGatewayCount) e.rewardsDistributed = 1;
+    }
     return { id: 'tx-distribute' };
   }
   closeEpochError: Error | null = null;
@@ -1155,5 +1187,74 @@ describe('crankEpochStep — ArNS lease lifecycle (prune_name_to_returned / prun
     const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
     assert.equal(r.action, 'idle');
     assert.equal(r.reason, 'waiting_for_observations');
+  });
+});
+
+describe('D4a — a distribute/tally that advances nothing must fail loudly', () => {
+  // The defect these guard against is a SUCCESSFUL transaction. When the
+  // supplied remaining_accounts do not cover the slots the on-chain loop needs
+  // (registry.count having fallen below the epoch's frozen activeGatewayCount),
+  // the loop body never runs, the cursor is written back unchanged, and the tx
+  // confirms with no error. Mainnet epoch 542 and staging epoch 817 both sat
+  // this way, looking healthy in transaction logs.
+  const stuck: EpochRaw = {
+    ...liveEpoch,
+    activeGatewayCount: 647,
+    distributionIndex: 633,
+    weightsTallied: 1,
+    prescriptionsDone: 1,
+    rewardsDistributed: 0,
+    endTimestamp: 1090,
+  };
+
+  it('throws when distribute leaves the cursor unmoved', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    // Simulate the silent no-op: the tx "succeeds" but advances nothing.
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    c.distributeEpoch = async (): Promise<any> => ({ id: 'tx-noop' });
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 2000 }),
+      /distribute of epoch 0 did not advance: cursor still 633\/647/,
+    );
+  });
+
+  it('throws when tally leaves the cursor unmoved', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck, weightsTallied: 0, tallyIndex: 100 };
+    // biome-ignore lint/suspicious/noExplicitAny: test stub
+    c.tallyWeights = async (): Promise<any> => ({ id: 'tx-noop' });
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 2000 }),
+      /tally of epoch 0 did not advance: cursor still 100\/647/,
+    );
+  });
+
+  it('does NOT throw when the cursor advances normally', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    const r = await c.crankEpochStep({ now: 2000 });
+    assert.equal(r.action, 'distribute');
+  });
+
+  it('caps the batch range by activeGatewayCount, not registry.count', async () => {
+    const c = new TestCranker();
+    let sawCap: number | undefined;
+    const orig = c.getRegistryGatewayPDAs.bind(c);
+    c.getRegistryGatewayPDAs = async (
+      sIdx: number,
+      n: number,
+      cap?: number,
+    ) => {
+      sawCap = cap;
+      return orig(sIdx, n, cap);
+    };
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    await c.crankEpochStep({ now: 2000 });
+    assert.equal(sawCap, 647);
   });
 });
