@@ -2,9 +2,17 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
+  AccountRole,
   type Address,
+  type Instruction,
+  appendTransactionMessageInstructions,
+  compileTransactionMessage,
+  createTransactionMessage,
   getAddressDecoder,
   getAddressEncoder,
+  pipe,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
 } from '@solana/kit';
 
 import { SolanaARIOWriteable } from './io-writeable.js';
@@ -131,4 +139,84 @@ describe('getRegistryGatewayPDAs — zeroed-slot coverage (D4)', () => {
     const c = client(null);
     assert.deepEqual(await c.getRegistryGatewayPDAs(0, 30, 5), []);
   });
+});
+
+describe('tally/distribute batches with zeroed-slot fillers compile (D4)', () => {
+  // The suite above only inspects the addresses getRegistryGatewayPDAs
+  // returns. The filler it emits is the GAR program address — the program the
+  // transaction invokes — and a message that marks an invoked program WRITABLE
+  // is rejected when compiled. That surfaces only when a real message is
+  // built, never from the address list, so these build and compile one.
+
+  async function captureInstructions(
+    run: (c: SolanaARIOWriteable) => Promise<unknown>,
+  ): Promise<Instruction[]> {
+    const c = client(null);
+    let captured: Instruction[] = [];
+    Object.assign(c, {
+      sendTransaction: async (ixs: Instruction[]) => {
+        captured = ixs;
+        return 'sig';
+      },
+      getGarConfig: async () => ({
+        mint: pk(20),
+        stakeTokenAccount: pk(21),
+        protocolTokenAccount: pk(22),
+      }),
+    });
+    await run(c);
+    return captured;
+  }
+
+  function compile(ixs: Instruction[]) {
+    return compileTransactionMessage(
+      pipe(
+        createTransactionMessage({ version: 0 }),
+        (m) => setTransactionMessageFeePayer(pk(99), m),
+        (m) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            { blockhash: GAR as never, lastValidBlockHeight: 1n },
+            m,
+          ),
+        (m) => appendTransactionMessageInstructions(ixs, m),
+      ),
+    );
+  }
+
+  const cases: Array<
+    [string, (c: SolanaARIOWriteable, accounts: Address[]) => Promise<unknown>]
+  > = [
+    [
+      'tallyWeights',
+      (c, gatewayAccounts) =>
+        c.tallyWeights({ epochIndex: 543, gatewayAccounts }),
+    ],
+    [
+      'distributeEpoch',
+      (c, gatewayAccounts) =>
+        c.distributeEpoch({ epochIndex: 543, gatewayAccounts }),
+    ],
+  ];
+
+  for (const [name, send] of cases) {
+    it(`${name}: fillers are read-only and the message compiles`, async () => {
+      // One real gateway followed by two zeroed-slot fillers — the shape of a
+      // batch that reaches the tail left behind by finalize_gone.
+      const [gateway] = await getGatewayPDA(pk(10), GAR);
+      const ixs = await captureInstructions((c) =>
+        send(c, [gateway, GAR, GAR]),
+      );
+      assert.doesNotThrow(() => compile(ixs));
+      const ix = ixs[ixs.length - 1];
+      const batch = (ix.accounts ?? []).slice(-3);
+      assert.deepEqual(
+        batch.map((a) => [a.address, a.role]),
+        [
+          [gateway, AccountRole.WRITABLE],
+          [GAR, AccountRole.READONLY],
+          [GAR, AccountRole.READONLY],
+        ],
+      );
+    });
+  }
 });

@@ -4210,10 +4210,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const remaining = params.gatewayAccounts.map((address) => ({
-      address,
-      role: AccountRole.WRITABLE,
-    }));
+    const remaining = this.batchRemainingAccounts(params.gatewayAccounts);
 
     const sig = await this.sendTransaction(
       [withRemainingAccounts(ix, remaining)],
@@ -4327,10 +4324,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const remaining = params.gatewayAccounts.map((address) => ({
-      address,
-      role: AccountRole.WRITABLE,
-    }));
+    const remaining = this.batchRemainingAccounts(params.gatewayAccounts);
 
     const sig = await this.sendTransaction(
       [withRemainingAccounts(ix, remaining)],
@@ -4408,42 +4402,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // =========================================
 
   /**
-   * Get gateway PDAs for a batch starting at registryIndex.
-   * Reads the GatewayRegistry and derives PDAs for the next `batchSize`
-   * active gateways.
+   * Account metas for a tally/distribute batch from
+   * {@link getRegistryGatewayPDAs}. Gateway PDAs are writable; a zeroed-slot
+   * filler must be READ-ONLY. The filler is the GAR program address, which is
+   * also the program the transaction invokes, and a message that marks an
+   * invoked program writable does not compile ("Program addresses may not be
+   * writable") — so a writable filler fails in exactly the zeroed-slot case the
+   * filler exists for. Read-only is safe on-chain: both handlers skip a zeroed
+   * slot before their owner and `is_writable` checks.
    */
-  /**
-   * Gateway PDAs for one tally/distribute batch, starting at `startIndex`.
-   *
-   * Two things here are load-bearing and were both wrong before ADR-0032's
-   * incident review (mainnet epochs 540 and 542, staging 817):
-   *
-   * 1. **The range is capped by `slotCap`, not by `registry.count`.**
-   *    `tally_weights` and `distribute_epoch` both walk to the epoch's
-   *    `active_gateway_count`, which is FROZEN at epoch creation, while the
-   *    registry is live. A `finalize_gone` mid-epoch drops `registry.count`
-   *    below it and zeroes the trailing slots. Ranging over the live count
-   *    then supplies nothing for those slots.
-   *
-   * 2. **A zeroed slot yields a filler account, it is not skipped.** Both
-   *    on-chain loops iterate `remaining_accounts` and, for a slot whose
-   *    address is the default pubkey, do `idx += 1; continue` — which
-   *    CONSUMES one remaining account. Omitting them starves the loop, so the
-   *    cursor stops at the first zeroed slot. This is not limited to the tail:
-   *    any zeroed slot inside the range does it.
-   *
-   * Getting either wrong produces a SILENT no-op: the loop body never runs,
-   * the cursor is written back unchanged, and the transaction SUCCEEDS. There
-   * is no error to catch — see the progress assertion in `crankEpochStep`.
-   *
-   * The filler is the program address itself: already present in the message
-   * (it is the invoked program), so it adds no account slot, and it is never
-   * dereferenced because the skip runs before any owner/writability check.
-   *
-   * @param slotCap Exclusive upper bound — pass the epoch's
-   *   `activeGatewayCount`. Defaults to the live `registry.count`, which is
-   *   only correct when the two have not diverged.
-   */
+  private batchRemainingAccounts(gatewayAccounts: Address[]) {
+    return gatewayAccounts.map((address) => ({
+      address,
+      role:
+        address === this.garProgram
+          ? AccountRole.READONLY
+          : AccountRole.WRITABLE,
+    }));
+  }
+
   /**
    * ADR-0032/D4a. Re-read a cursor after a batched tally/distribute and fail
    * loudly if it did not move.
@@ -4481,6 +4458,39 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     );
   }
 
+  /**
+   * Gateway PDAs for one tally/distribute batch, starting at `startIndex`.
+   *
+   * Two things here are load-bearing and were both wrong before ADR-0032's
+   * incident review (mainnet epochs 540 and 542, staging 817):
+   *
+   * 1. **The range is capped by `slotCap`, not by `registry.count`.**
+   *    `tally_weights` and `distribute_epoch` both walk to the epoch's
+   *    `active_gateway_count`, which is FROZEN at epoch creation, while the
+   *    registry is live. A `finalize_gone` mid-epoch drops `registry.count`
+   *    below it and zeroes the trailing slots. Ranging over the live count
+   *    then supplies nothing for those slots.
+   *
+   * 2. **A zeroed slot yields a filler account, it is not skipped.** Both
+   *    on-chain loops iterate `remaining_accounts` and, for a slot whose
+   *    address is the default pubkey, do `idx += 1; continue` — which
+   *    CONSUMES one remaining account. Omitting them starves the loop, so the
+   *    cursor stops at the first zeroed slot. This is not limited to the tail:
+   *    any zeroed slot inside the range does it.
+   *
+   * Getting either wrong produces a SILENT no-op: the loop body never runs,
+   * the cursor is written back unchanged, and the transaction SUCCEEDS. There
+   * is no error to catch — see the progress assertion in `crankEpochStep`.
+   *
+   * The filler is the program address itself: already present in the message
+   * (it is the invoked program), so it adds no account slot, and it is never
+   * dereferenced because the skip runs before any owner/writability check. It
+   * must be sent READ-ONLY — see {@link batchRemainingAccounts}.
+   *
+   * @param slotCap Exclusive upper bound — pass the epoch's
+   *   `activeGatewayCount`. Defaults to the live `registry.count`, which is
+   *   only correct when the two have not diverged.
+   */
   async getRegistryGatewayPDAs(
     startIndex: number,
     batchSize: number,
@@ -4505,8 +4515,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const zero = '11111111111111111111111111111111' as Address;
     for (let i = startIndex; i < end && i < 3000; i++) {
       const slotOffset = slotsOffset + i * SLOT_STRIDE;
-      // Past the live tail the slot bytes may not exist at all; treat anything
-      // beyond `count` as zeroed, which is what the on-chain registry holds.
+      // Slots at or beyond `count` are zero on-chain (finalize_gone zeroes the
+      // vacated tail), so treat them as zeroed without decoding them.
       const addr =
         i < count
           ? addressDecoder.decode(
@@ -4515,6 +4525,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           : zero;
       if (addr === zero) {
         // Filler: consumed by the on-chain zeroed-slot skip, never dereferenced.
+        // Sent READ-ONLY — see batchRemainingAccounts.
         pdas.push(this.garProgram);
         continue;
       }
