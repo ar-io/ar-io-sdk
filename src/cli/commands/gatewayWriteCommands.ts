@@ -37,9 +37,9 @@ import {
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
   requiredMARIOFromOptions,
-  stringArrayFromOptions,
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
+  stringArrayFromOptions,
   stringifyJsonForCLIDisplay,
   writeARIOFromOptions,
 } from '../utils.js';

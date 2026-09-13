@@ -193,7 +193,8 @@ export const optionMap = {
   },
   operatorStake: {
     alias: '--operator-stake <operatorStake>',
-    description: 'The operator stake to interact with',
+    description:
+      'The operator stake to interact with, denominated in ARIO (converted to mARIO before sending)',
   },
   name: {
     alias: '--name <name>',

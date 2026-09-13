@@ -20,8 +20,8 @@
  */
 
 import { strict as assert } from 'node:assert';
-import { program } from 'commander';
 import { describe, it } from 'node:test';
+import { program } from 'commander';
 
 // Imported for its side effects: every `makeCommand` call registers onto
 // commander's `program` singleton. `cli.ts` only calls `program.parse()` when
