@@ -1,3 +1,16 @@
+## [4.3.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0...v4.3.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* **cli:** make gateway-operator write commands automatable ([0ccf81b](https://github.com/ar-io/ar-io-sdk/commit/0ccf81bc900ae422b025c3e4bb0aab0c4e44e901))
+* **cli:** sort imports and state the ARIO unit on --operator-stake ([60c0734](https://github.com/ar-io/ar-io-sdk/commit/60c07349fd5c89714d7bf432757c5cfac7cf6c38))
+* **solana:** cover zeroed registry slots and assert cursor progress (D4/D4a) ([1e9fb16](https://github.com/ar-io/ar-io-sdk/commit/1e9fb16b81384c058512457f46e094d647043938))
+* **solana:** declare transaction-v1 support in ALT history scan ([131eab1](https://github.com/ar-io/ar-io-sdk/commit/131eab1ba49201745ec394abe03866b7beed4ab4))
+* **solana:** honor the caller's retry classifier after exhaustion ([9dae356](https://github.com/ar-io/ar-io-sdk/commit/9dae3562026cf80062fc791f1c0ddd8576466788))
+* **solana:** send zeroed-slot fillers read-only so the batch compiles ([e527908](https://github.com/ar-io/ar-io-sdk/commit/e5279083a41319db30386afd1e94c3a5a4454582))
+* **solana:** surface transient ALT-discovery failures instead of zero ([75ed0cb](https://github.com/ar-io/ar-io-sdk/commit/75ed0cb0a8411e036a600ea2626d2de62a634e42))
+
 ## [4.3.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1-alpha.2...v4.3.1-alpha.3) (2026-09-15)
 
 
