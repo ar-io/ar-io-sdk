@@ -37,9 +37,9 @@ import {
   redelegateParamsFromOptions,
   requiredAddressFromOptions,
   requiredMARIOFromOptions,
-  requiredStringArrayFromOptions,
   requiredStringFromOptions,
   requiredTargetAndQuantityFromOptions,
+  stringArrayFromOptions,
   stringifyJsonForCLIDisplay,
   writeARIOFromOptions,
 } from '../utils.js';
@@ -152,20 +152,25 @@ export async function saveObservations(
     transactionId?: string;
   },
 ) {
-  const failedGateways = requiredStringArrayFromOptions(o, 'failedGateways');
+  // An all-pass epoch is the healthy, common case for an observer, so an
+  // omitted --failed-gateways means "nothing failed", not "you forgot an
+  // argument". Requiring a non-empty list made a clean report unsubmittable.
+  const failedGateways = stringArrayFromOptions(o, 'failedGateways') ?? [];
   const reportTxId = requiredStringFromOptions(o, 'transactionId');
 
   await assertConfirmationPrompt(
-    `You are about to save the following failed gateways to the AR.IO network:\n\n${failedGateways.join(
-      '\n',
-    )}\n\nTransaction ID: ${reportTxId}\n\nAre you sure?`,
+    `You are about to save the following failed gateways to the AR.IO network:\n\n${
+      failedGateways.length > 0
+        ? failedGateways.join('\n')
+        : '(none — all gateways passed)'
+    }\n\nTransaction ID: ${reportTxId}\n\nAre you sure?`,
     o,
   );
 
   return (await writeARIOFromOptions(o)).ario.saveObservations(
     {
-      failedGateways: requiredStringArrayFromOptions(o, 'failedGateways'),
-      reportTxId: requiredStringFromOptions(o, 'transactionId'),
+      failedGateways,
+      reportTxId,
     },
     customTagsFromOptions(o),
   );
