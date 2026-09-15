@@ -7,6 +7,14 @@
 * **solana:** honor the caller's retry classifier after exhaustion ([9dae356](https://github.com/ar-io/ar-io-sdk/commit/9dae3562026cf80062fc791f1c0ddd8576466788))
 * **solana:** surface transient ALT-discovery failures instead of zero ([75ed0cb](https://github.com/ar-io/ar-io-sdk/commit/75ed0cb0a8411e036a600ea2626d2de62a634e42))
 
+# [4.3.0](https://github.com/ar-io/ar-io-sdk/compare/v4.2.0...v4.3.0) (2026-08-31)
+
+
+### Features
+
+* **solana:** allow a spawned ANT's owner to differ from the payer ([e5f3d57](https://github.com/ar-io/ar-io-sdk/commit/e5f3d57025d6e42f77153de8dd04fd179cfaba9d))
+* **solana:** route epoch rent to the creator (ADR-0029) ([cc69c37](https://github.com/ar-io/ar-io-sdk/commit/cc69c379639f5f14e8d8f24d47fb950fc1bad58e)), closes [#121](https://github.com/ar-io/ar-io-sdk/issues/121)
+
 # [4.3.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0-alpha.1...v4.3.0-alpha.2) (2026-08-30)
 
 
