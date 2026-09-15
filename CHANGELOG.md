@@ -1,3 +1,11 @@
+## [4.3.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1-alpha.1...v4.3.1-alpha.2) (2026-09-15)
+
+
+### Bug Fixes
+
+* **solana:** cover zeroed registry slots and assert cursor progress (D4/D4a) ([1e9fb16](https://github.com/ar-io/ar-io-sdk/commit/1e9fb16b81384c058512457f46e094d647043938))
+* **solana:** send zeroed-slot fillers read-only so the batch compiles ([e527908](https://github.com/ar-io/ar-io-sdk/commit/e5279083a41319db30386afd1e94c3a5a4454582))
+
 ## [4.3.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0...v4.3.1-alpha.1) (2026-09-15)
 
 
