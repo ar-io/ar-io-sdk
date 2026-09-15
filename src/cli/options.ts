@@ -136,7 +136,13 @@ export const optionMap = {
   },
   minDelegatedStake: {
     alias: '--min-delegated-stake <minDelegatedStake>',
-    description: 'The minimum delegated stake allowed',
+    // NOTE: unlike --operator-stake (ARIO), this value is passed through to the
+    // protocol verbatim and is therefore denominated in mARIO. Supplying an
+    // ARIO-scaled number here reads as 1,000,000x too small and is rejected
+    // on-chain with DelegationBelowMinimum once it falls under the protocol
+    // floor. Stated explicitly because the two flags sit in the same command.
+    description:
+      'The minimum delegated stake allowed, denominated in mARIO (1 ARIO = 1,000,000 mARIO)',
   },
   delegateRewardShareRatio: {
     alias: '--delegate-reward-share-ratio <delegateRewardShareRatio>',
@@ -187,7 +193,8 @@ export const optionMap = {
   },
   operatorStake: {
     alias: '--operator-stake <operatorStake>',
-    description: 'The operator stake to interact with',
+    description:
+      'The operator stake to interact with, denominated in ARIO (converted to mARIO before sending)',
   },
   name: {
     alias: '--name <name>',
