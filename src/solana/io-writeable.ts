@@ -4210,10 +4210,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const remaining = params.gatewayAccounts.map((address) => ({
-      address,
-      role: AccountRole.WRITABLE,
-    }));
+    const remaining = this.batchRemainingAccounts(params.gatewayAccounts);
 
     const sig = await this.sendTransaction(
       [withRemainingAccounts(ix, remaining)],
@@ -4327,10 +4324,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    const remaining = params.gatewayAccounts.map((address) => ({
-      address,
-      role: AccountRole.WRITABLE,
-    }));
+    const remaining = this.batchRemainingAccounts(params.gatewayAccounts);
 
     const sig = await this.sendTransaction(
       [withRemainingAccounts(ix, remaining)],
@@ -4408,13 +4402,99 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // =========================================
 
   /**
-   * Get gateway PDAs for a batch starting at registryIndex.
-   * Reads the GatewayRegistry and derives PDAs for the next `batchSize`
-   * active gateways.
+   * Account metas for a tally/distribute batch from
+   * {@link getRegistryGatewayPDAs}. Gateway PDAs are writable; a zeroed-slot
+   * filler must be READ-ONLY. The filler is the GAR program address, which is
+   * also the program the transaction invokes, and a message that marks an
+   * invoked program writable does not compile ("Program addresses may not be
+   * writable") — so a writable filler fails in exactly the zeroed-slot case the
+   * filler exists for. Read-only is safe on-chain: both handlers skip a zeroed
+   * slot before their owner and `is_writable` checks.
+   */
+  private batchRemainingAccounts(gatewayAccounts: Address[]) {
+    return gatewayAccounts.map((address) => ({
+      address,
+      role:
+        address === this.garProgram
+          ? AccountRole.READONLY
+          : AccountRole.WRITABLE,
+    }));
+  }
+
+  /**
+   * ADR-0032/D4a. Re-read a cursor after a batched tally/distribute and fail
+   * loudly if it did not move.
+   *
+   * This exists because the failure mode it catches is a SUCCESSFUL
+   * transaction. When the supplied `remaining_accounts` do not cover the slots
+   * the on-chain loop needs, the loop body never executes, the cursor is
+   * written back unchanged, and the transaction confirms with no error. No
+   * try/catch and no error-rate monitoring can see that — a stalled cursor is
+   * the only available signal. Mainnet epoch 542 and staging epoch 817 both sat
+   * this way, each looking healthy in transaction logs.
+   *
+   * Throwing (rather than returning a flag) is deliberate: it stops the crank
+   * tick BEFORE it can reach `createEpoch`. That matters, because creating the
+   * next epoch lets its tally overwrite the stuck epoch's weights and destroy
+   * its rewards permanently — which is exactly how mainnet epoch 540 lost its
+   * tail. A stalled epoch must freeze progression, not be advanced past.
+   */
+  private assertCursorAdvanced(
+    label: 'tally' | 'distribute',
+    epochIndex: number,
+    before: number,
+    after: number,
+    total: number,
+    txId: string,
+  ): void {
+    if (after > before) return;
+    throw new Error(
+      `${label} of epoch ${epochIndex} did not advance: cursor still ${before}/${total} ` +
+        `after tx ${txId}. The transaction SUCCEEDED, so this is almost certainly ` +
+        `missing remaining_accounts for zeroed registry slots (registry.count has ` +
+        `fallen below the epoch's frozen active_gateway_count). Do NOT create the ` +
+        `next epoch while this one is undistributed — its weights would be ` +
+        `overwritten by the next tally and its rewards lost permanently.`,
+    );
+  }
+
+  /**
+   * Gateway PDAs for one tally/distribute batch, starting at `startIndex`.
+   *
+   * Two things here are load-bearing and were both wrong before ADR-0032's
+   * incident review (mainnet epochs 540 and 542, staging 817):
+   *
+   * 1. **The range is capped by `slotCap`, not by `registry.count`.**
+   *    `tally_weights` and `distribute_epoch` both walk to the epoch's
+   *    `active_gateway_count`, which is FROZEN at epoch creation, while the
+   *    registry is live. A `finalize_gone` mid-epoch drops `registry.count`
+   *    below it and zeroes the trailing slots. Ranging over the live count
+   *    then supplies nothing for those slots.
+   *
+   * 2. **A zeroed slot yields a filler account, it is not skipped.** Both
+   *    on-chain loops iterate `remaining_accounts` and, for a slot whose
+   *    address is the default pubkey, do `idx += 1; continue` — which
+   *    CONSUMES one remaining account. Omitting them starves the loop, so the
+   *    cursor stops at the first zeroed slot. This is not limited to the tail:
+   *    any zeroed slot inside the range does it.
+   *
+   * Getting either wrong produces a SILENT no-op: the loop body never runs,
+   * the cursor is written back unchanged, and the transaction SUCCEEDS. There
+   * is no error to catch — see the progress assertion in `crankEpochStep`.
+   *
+   * The filler is the program address itself: already present in the message
+   * (it is the invoked program), so it adds no account slot, and it is never
+   * dereferenced because the skip runs before any owner/writability check. It
+   * must be sent READ-ONLY — see {@link batchRemainingAccounts}.
+   *
+   * @param slotCap Exclusive upper bound — pass the epoch's
+   *   `activeGatewayCount`. Defaults to the live `registry.count`, which is
+   *   only correct when the two have not diverged.
    */
   async getRegistryGatewayPDAs(
     startIndex: number,
     batchSize: number,
+    slotCap?: number,
   ): Promise<Address[]> {
     const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
     const registryAccount = await fetchEncodedAccount(this.rpc, registryPda, {
@@ -4430,14 +4510,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const SLOT_STRIDE = 56;
 
     const pdas: Address[] = [];
-    const end = Math.min(startIndex + batchSize, count);
+    const cap = slotCap ?? count;
+    const end = Math.min(startIndex + batchSize, cap);
     const zero = '11111111111111111111111111111111' as Address;
     for (let i = startIndex; i < end && i < 3000; i++) {
       const slotOffset = slotsOffset + i * SLOT_STRIDE;
-      const addr = addressDecoder.decode(
-        registryData.subarray(slotOffset, slotOffset + 32),
-      );
-      if (addr === zero) continue;
+      // Slots at or beyond `count` are zero on-chain (finalize_gone zeroes the
+      // vacated tail), so treat them as zeroed without decoding them.
+      const addr =
+        i < count
+          ? addressDecoder.decode(
+              registryData.subarray(slotOffset, slotOffset + 32),
+            )
+          : zero;
+      if (addr === zero) {
+        // Filler: consumed by the on-chain zeroed-slot skip, never dereferenced.
+        // Sent READ-ONLY — see batchRemainingAccounts.
+        pdas.push(this.garProgram);
+        continue;
+      }
       const [gatewayPda] = await getGatewayPDA(addr, this.garProgram);
       pdas.push(gatewayPda);
     }
@@ -4736,12 +4827,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     if (epoch.weightsTallied === 0) {
       const gatewayAccounts =
         epoch.activeGatewayCount > 0
-          ? await this.getRegistryGatewayPDAs(epoch.tallyIndex, batchSize)
+          ? await this.getRegistryGatewayPDAs(
+              epoch.tallyIndex,
+              batchSize,
+              epoch.activeGatewayCount,
+            )
           : [];
+      // Snapshot before sending: `epoch` must not be re-read for the "before"
+      // value, or an aliased/mutated object silently defeats the check.
+      const tallyCursorBefore = epoch.tallyIndex;
       const { id } = await this.tallyWeights({
         epochIndex: targetEpochIndex,
         gatewayAccounts,
       });
+      if (epoch.activeGatewayCount > 0) {
+        const after = await this.getEpochRaw(targetEpochIndex);
+        this.assertCursorAdvanced(
+          'tally',
+          targetEpochIndex,
+          tallyCursorBefore,
+          after?.weightsTallied === 1
+            ? epoch.activeGatewayCount
+            : (after?.tallyIndex ?? tallyCursorBefore),
+          epoch.activeGatewayCount,
+          id,
+        );
+      }
       return {
         action: 'tally',
         epochIndex: targetEpochIndex,
@@ -4786,12 +4897,27 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           ? await this.getRegistryGatewayPDAs(
               epoch.distributionIndex,
               batchSize,
+              epoch.activeGatewayCount,
             )
           : [];
+      const distCursorBefore = epoch.distributionIndex;
       const { id } = await this.distributeEpoch({
         epochIndex: targetEpochIndex,
         gatewayAccounts,
       });
+      if (epoch.activeGatewayCount > 0) {
+        const after = await this.getEpochRaw(targetEpochIndex);
+        this.assertCursorAdvanced(
+          'distribute',
+          targetEpochIndex,
+          distCursorBefore,
+          after?.rewardsDistributed === 1
+            ? epoch.activeGatewayCount
+            : (after?.distributionIndex ?? distCursorBefore),
+          epoch.activeGatewayCount,
+          id,
+        );
+      }
       return {
         action: 'distribute',
         epochIndex: targetEpochIndex,
