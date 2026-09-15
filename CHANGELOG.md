@@ -1,3 +1,11 @@
+## [4.3.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1-alpha.2...v4.3.1-alpha.3) (2026-09-15)
+
+
+### Bug Fixes
+
+* **cli:** make gateway-operator write commands automatable ([0ccf81b](https://github.com/ar-io/ar-io-sdk/commit/0ccf81bc900ae422b025c3e4bb0aab0c4e44e901))
+* **cli:** sort imports and state the ARIO unit on --operator-stake ([60c0734](https://github.com/ar-io/ar-io-sdk/commit/60c07349fd5c89714d7bf432757c5cfac7cf6c38))
+
 ## [4.3.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1-alpha.1...v4.3.1-alpha.2) (2026-09-15)
 
 
