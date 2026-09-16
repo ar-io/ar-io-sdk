@@ -97,7 +97,11 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 import type { ILogger } from '../common/logger.js';
-import type { MessageResult, WriteOptions } from '../types/common.js';
+import type {
+  MessageResult,
+  WalletAddress,
+  WriteOptions,
+} from '../types/common.js';
 import type {
   ArNSPurchaseParams,
   BuyRecordParams,
@@ -111,6 +115,7 @@ import type {
   JoinNetworkParams,
   RedelegateStakeParams,
   RevokeVaultParams,
+  UpdateGatewayMetadataParams,
   UpdateGatewaySettingsParams,
   VaultedTransferParams,
 } from '../types/io.js';
@@ -126,6 +131,7 @@ import {
   deserializeDemandFactor,
   deserializeEpochSettingsFull,
   deserializePrimaryName,
+  isOperationsAddressSet,
 } from './deserialize.js';
 import {
   type DiscoveredFundingSource,
@@ -170,6 +176,7 @@ import {
   getVaultedTransferInstructionAsync,
 } from '@ar.io/solana-contracts/core';
 import {
+  type Gateway as GarGatewayAccount,
   getDelegationDecoder,
   getGatewayDecoder,
 } from '@ar.io/solana-contracts/gar';
@@ -199,14 +206,18 @@ import {
   getInstantWithdrawalInstructionAsync,
   getJoinNetworkInstructionAsync,
   getLeaveNetworkInstructionAsync,
+  getMigrateGatewayInstruction,
   getPrescribeEpochInstructionAsync,
   getPruneGatewayInstructionAsync,
   getRedelegateStakeInstructionAsync,
   getSaveObservationsInstructionAsync,
   getSetAllowlistEnabledInstructionAsync,
   getTallyWeightsInstructionAsync,
+  getTransferEpochSettingsAuthorityInstruction,
+  getUpdateGatewayMetadataInstruction,
   getUpdateGatewaySettingsInstructionAsync,
   getUpdateObserverAddressInstructionAsync,
+  getUpdateOperationsAddressInstruction,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
@@ -879,6 +890,17 @@ export function isInvalidGatewayAccountError(error: unknown): boolean {
   );
 }
 
+/** The zero pubkey (the System Program id); authorises nobody on chain. */
+const DEFAULT_ADDRESS = address('11111111111111111111111111111111');
+
+/**
+ * `migrate_gateway` instructions per transaction in `migrateGateways`. Each adds
+ * two unique accounts (operator, gateway); 8 keeps the transaction inside the
+ * 1232-byte limit without an address lookup table (asserted in
+ * gateway-operations.test.ts).
+ */
+export const MIGRATE_GATEWAYS_BATCH_SIZE = 8;
+
 export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected readonly signer: SolanaSigner;
   protected readonly rpcSubscriptions: SolanaRpcSubscriptions;
@@ -1459,6 +1481,260 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
 
     const sig = await this.sendTransaction(ixs, 1_000_000);
+    return { id: sig };
+  }
+
+  // =========================================
+  // ADR-0030 / ADR-0031
+  // =========================================
+
+  /**
+   * Read and decode a Gateway PDA, or `null` if it does not exist. Protected so
+   * tests can supply account state without an RPC.
+   */
+  protected async fetchGatewayAccount(
+    gateway: Address,
+  ): Promise<GarGatewayAccount | null> {
+    const account = await fetchEncodedAccount(this.rpc, gateway, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) return null;
+    return getGatewayDecoder().decode(account.data);
+  }
+
+  private buildMigrateGatewayInstruction(
+    operator: Address,
+    gateway: Address,
+  ): Instruction {
+    return getMigrateGatewayInstruction(
+      { operator, gateway, payer: this.signer },
+      { programAddress: this.garProgram },
+    );
+  }
+
+  /**
+   * ADR-0030: authorise a second address to update this gateway's metadata and
+   * spend its ArNS discount. Operator-only — the signer must be the gateway's
+   * operator. Pass the operator's own address to revoke a delegation.
+   *
+   * A gateway below schema 1.2.0 cannot hold an operations address (the
+   * program refuses with `GatewayNotMigrated`), so `migrate_gateway` is
+   * prepended to the same transaction when needed.
+   */
+  async updateOperationsAddress(
+    params: { operationsAddress: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const operator = this.signer.address;
+    const newOperationsAddress = address(params.operationsAddress);
+    if (newOperationsAddress === DEFAULT_ADDRESS) {
+      throw new Error(
+        'updateOperationsAddress: the zero address authorises nobody; pass the operator address to revoke a delegation',
+      );
+    }
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      throw new Error(
+        `updateOperationsAddress: no gateway found for operator ${operator}`,
+      );
+    }
+
+    const migrated = isOperationsAddressSet(gateway.version);
+    // What the program will compare against: a migration sets the field to
+    // the operator, and the program refuses a no-op rotation.
+    const current = migrated ? gateway.operationsAddress : operator;
+    if (newOperationsAddress === current) {
+      throw new Error(
+        `updateOperationsAddress: ${newOperationsAddress} is already this gateway's operations address`,
+      );
+    }
+
+    const instructions: Instruction[] = [];
+    if (!migrated) {
+      instructions.push(
+        this.buildMigrateGatewayInstruction(operator, gatewayPda),
+      );
+    }
+    instructions.push(
+      getUpdateOperationsAddressInstruction(
+        {
+          gateway: gatewayPda,
+          operator: this.signer,
+          newOperationsAddress,
+        },
+        { programAddress: this.garProgram },
+      ),
+    );
+
+    const sig = await this.sendTransaction(instructions, 1_000_000);
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: update a gateway's routing/presentation metadata. Signable by the
+   * operator or by the gateway's operations address; when signing as the
+   * operations address, pass the operator as `gatewayAddress`.
+   */
+  async updateGatewayMetadata(
+    params: UpdateGatewayMetadataParams,
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const { gatewayAddress, label, fqdn, port, protocol, properties, note } =
+      params;
+    if (
+      label === undefined &&
+      fqdn === undefined &&
+      port === undefined &&
+      protocol === undefined &&
+      properties === undefined &&
+      note === undefined
+    ) {
+      throw new Error(
+        'updateGatewayMetadata: provide at least one of label, fqdn, port, protocol, properties, note',
+      );
+    }
+
+    const operator =
+      gatewayAddress !== undefined
+        ? address(gatewayAddress)
+        : this.signer.address;
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+
+    if (operator !== this.signer.address) {
+      // Mirror the program's rule so a doomed transaction is never sent: the
+      // operations address counts only once the gateway is at 1.2.0.
+      const gateway = await this.fetchGatewayAccount(gatewayPda);
+      if (gateway === null) {
+        throw new Error(
+          `updateGatewayMetadata: no gateway found for operator ${operator}`,
+        );
+      }
+      if (!isOperationsAddressSet(gateway.version)) {
+        throw new Error(
+          `updateGatewayMetadata: gateway ${operator} has not been migrated, so only its operator can update it`,
+        );
+      }
+      if (gateway.operationsAddress !== this.signer.address) {
+        throw new Error(
+          `updateGatewayMetadata: ${this.signer.address} is neither the operator nor the operations address of gateway ${operator}`,
+        );
+      }
+    }
+
+    const ix = getUpdateGatewayMetadataInstruction(
+      {
+        operator,
+        gateway: gatewayPda,
+        signer: this.signer,
+        label: label ?? null,
+        fqdn: fqdn ?? null,
+        port: port ?? null,
+        protocol:
+          protocol === undefined
+            ? null
+            : protocol === 'http'
+              ? Protocol.Http
+              : Protocol.Https,
+        properties: properties ?? null,
+        note: note ?? null,
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix], 1_000_000);
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: migrate one Gateway to schema 1.2.0. Permissionless — the signer
+   * pays the small rent top-up (32 bytes).
+   */
+  async migrateGateway(
+    params: { gatewayAddress: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const operator = address(params.gatewayAddress);
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      throw new Error(
+        `migrateGateway: no gateway found for operator ${operator}`,
+      );
+    }
+    if (isOperationsAddressSet(gateway.version)) {
+      throw new Error(
+        `migrateGateway: gateway ${operator} is already migrated`,
+      );
+    }
+    const sig = await this.sendTransaction(
+      [this.buildMigrateGatewayInstruction(operator, gatewayPda)],
+      1_000_000,
+    );
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: migrate many Gateways, a batch per transaction. With no
+   * `gatewayAddresses`, migrates every gateway still below 1.2.0. Stops at the
+   * first failed batch and reports what already succeeded.
+   */
+  async migrateGateways(
+    params: { gatewayAddresses?: WalletAddress[]; batchSize?: number } = {},
+  ): Promise<{ migrated: Address[]; signatures: string[] }> {
+    const batchSize = params.batchSize ?? MIGRATE_GATEWAYS_BATCH_SIZE;
+    if (!Number.isInteger(batchSize) || batchSize < 1) {
+      throw new Error('migrateGateways: batchSize must be a positive integer');
+    }
+    const operators =
+      params.gatewayAddresses !== undefined
+        ? params.gatewayAddresses.map((a) => address(a))
+        : await this.getUnmigratedGatewayAddresses();
+
+    const migrated: Address[] = [];
+    const signatures: string[] = [];
+    for (let i = 0; i < operators.length; i += batchSize) {
+      const batch = operators.slice(i, i + batchSize);
+      const instructions: Instruction[] = [];
+      for (const operator of batch) {
+        const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+        instructions.push(
+          this.buildMigrateGatewayInstruction(operator, gatewayPda),
+        );
+      }
+      try {
+        signatures.push(await this.sendTransaction(instructions, 1_400_000));
+      } catch (err) {
+        throw new Error(
+          `migrateGateways: batch starting at ${batch[0]} failed after ${migrated.length} of ${operators.length} gateways were migrated: ${err instanceof Error ? err.message : String(err)}`,
+          { cause: err },
+        );
+      }
+      migrated.push(...batch);
+    }
+    return { migrated, signatures };
+  }
+
+  /**
+   * ADR-0031: hand `EpochSettings.authority` to a new address (e.g. a
+   * multisig). Signed by the current epoch-settings authority.
+   */
+  async transferEpochSettingsAuthority(
+    params: { newAuthority: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const newAuthority = address(params.newAuthority);
+    if (newAuthority === DEFAULT_ADDRESS) {
+      throw new Error(
+        'transferEpochSettingsAuthority: the new authority must not be the zero address',
+      );
+    }
+    const [epochSettings] = await getEpochSettingsPDA(this.garProgram);
+    const ix = getTransferEpochSettingsAuthorityInstruction(
+      { epochSettings, authority: this.signer, newAuthority },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix], 1_000_000);
     return { id: sig };
   }
 

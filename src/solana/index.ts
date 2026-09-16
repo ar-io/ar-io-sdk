@@ -217,6 +217,8 @@ export {
   BorshReader,
   BorshWriter,
   deserializeGateway,
+  isOperationsAddressSet,
+  OPERATIONS_ADDRESS_SINCE,
   deserializeArnsRecord,
   deserializeVault,
   deserializeDelegation,

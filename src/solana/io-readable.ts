@@ -157,6 +157,7 @@ import {
   deserializeReturnedName,
   deserializeVault,
   deserializeWithdrawal,
+  isOperationsAddressSet,
 } from './deserialize.js';
 import {
   GAR_COMPUTE_UNIT_LIMIT,
@@ -3402,6 +3403,27 @@ export class SolanaARIOReadable {
       } catch {
         // skip malformed
       }
+    }
+    return out;
+  }
+
+  /**
+   * ADR-0030: operators of every Gateway still below schema 1.2.0, i.e. not
+   * yet run through `migrate_gateway`. Until migrated, a gateway's operations
+   * address is ignored by the program and cannot be set.
+   */
+  async getUnmigratedGatewayAddresses(): Promise<Address[]> {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Address[] = [];
+    for (const { data } of accounts) {
+      // No silent skip here: an account this decoder cannot read would also be
+      // one the sweep can never migrate, so the caller must hear about it.
+      const g = decoder.decode(data);
+      if (!isOperationsAddressSet(g.version)) out.push(g.operator);
     }
     return out;
   }

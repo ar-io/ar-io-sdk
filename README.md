@@ -866,6 +866,66 @@ const { id: txId } = await ario.updateGatewaySettings(
 );
 ```
 
+#### `updateOperationsAddress({ operationsAddress })`
+
+Authorises a second address to update the caller's gateway metadata (see `updateGatewayMetadata`) and to spend the gateway's ArNS discount. Staking, delegation settings and the operations address itself stay operator-only. Pass the operator's own address to revoke a delegation.
+
+A gateway that has not yet been migrated to schema 1.2.0 cannot hold an operations address; in that case `migrate_gateway` is added to the same transaction automatically.
+
+_Note: Solana-only, so it is on `SolanaARIOWriteable` rather than the cross-backend `ARIOWrite` type. Must be signed by the gateway operator._
+
+```typescript
+import { SolanaARIOWriteable } from "@ar.io/sdk";
+
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.updateOperationsAddress({
+  operationsAddress: "DeLegateAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+});
+```
+
+#### `updateGatewayMetadata({ gatewayAddress?, ...metadata })`
+
+Updates a gateway's `label`, `fqdn`, `port`, `protocol`, `properties` and/or `note`. Can be signed by the gateway operator, or by its operations address — in which case pass the operator as `gatewayAddress`. An operations address is only honoured once the gateway is at schema 1.2.0.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+// signed by the gateway's operations address
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.updateGatewayMetadata({
+  gatewayAddress: "GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  fqdn: "gateway.example.com",
+  port: 443,
+});
+```
+
+When reading gateways, `operationsAddress` is only present for gateways at schema 1.2.0 or later; below that the program ignores the field and only the operator can act.
+
+#### `migrateGateway({ gatewayAddress })` / `migrateGateways({ gatewayAddresses?, batchSize? })`
+
+Migrates Gateway accounts to schema 1.2.0 (ADR-0030). Permissionless — the signer pays a small rent top-up (32 bytes per gateway). `migrateGateways` with no `gatewayAddresses` migrates every gateway still below 1.2.0 (see `getUnmigratedGatewayAddresses()`), 8 per transaction by default, and stops at the first failed batch.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const pending = await ario.getUnmigratedGatewayAddresses();
+const { migrated, signatures } = await ario.migrateGateways();
+```
+
+#### `transferEpochSettingsAuthority({ newAuthority })`
+
+Hands `EpochSettings.authority` — the key for epoch admin instructions — to a new address, such as a multisig (ADR-0031). Must be signed by the current authority.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.transferEpochSettingsAuthority({
+  newAuthority: "MuLtisigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+});
+```
+
 #### `increaseDelegateStake({ target, qty })`
 
 Increases the callers stake on the target gateway.
