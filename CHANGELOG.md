@@ -1,3 +1,12 @@
+## [4.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.1...v4.3.2-alpha.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **solana:** don't call a stall on a stale post-write cursor read ([3b098d5](https://github.com/ar-io/ar-io-sdk/commit/3b098d58ed92437515d96a35c06e5a71b115c5c9))
+* **solana:** fail loudly instead of falling back to an unpinned cursor read ([51b124c](https://github.com/ar-io/ar-io-sdk/commit/51b124cdc4f2ae652644b73e7daf0745719d76fc))
+* **solana:** treat an empty post-write read as a freshness failure ([6766116](https://github.com/ar-io/ar-io-sdk/commit/676611629b7ccd93b11909082f553ddd5306e07f))
+
 ## [4.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1...v4.3.2-alpha.1) (2026-09-16)
 
 
