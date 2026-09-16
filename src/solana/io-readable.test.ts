@@ -45,6 +45,10 @@ class TestReadable extends SolanaARIOReadable {
   async readAccumulators(operatorAddresses: string[]) {
     return this.getGatewayAccumulators(operatorAddresses);
   }
+
+  async readProcessIds(names: string[]) {
+    return this.getArnsRecordProcessIds(names);
+  }
 }
 
 function makeReadable(counts: Counts) {
@@ -851,6 +855,106 @@ describe('getPrimaryNames — processId enrichment', () => {
     );
     assert.equal(counts.gmaAccts, 250, 'every name is still looked up');
     assert.equal(counts.gpa, 1, 'still exactly one program scan');
+  });
+
+  it('skips an account that carries the discriminator but will not decode', async () => {
+    // The scan filters on a discriminator, not on a decodable layout, so a
+    // stray or stale account can come back. It is skipped, not thrown — the
+    // per-name loop this replaced swallowed exactly the same case.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const good = primaryNameBytes(OWNER_ADDR, 'alice', 1);
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('alice'), arnsRecordBytesForAnt('alice', mint(1))],
+    ]);
+
+    const readable = new SolanaARIOReadable({
+      rpc: {
+        getProgramAccounts: () => ({
+          send: async () => {
+            counts.gpa++;
+            return [
+              { pubkey: OWNER_ADDR, account: { data: [b64(good), 'base64'] } },
+              // Not a PrimaryName: too short to decode.
+              {
+                pubkey: OWNER_ADDR,
+                account: { data: [b64(new Uint8Array(4)), 'base64'] },
+              },
+            ];
+          },
+        }),
+        getMultipleAccounts: (addrs: unknown[]) => ({
+          send: async () => {
+            counts.gma++;
+            counts.gmaAccts += addrs.length;
+            return {
+              value: (addrs as string[]).map((a) => {
+                const bytes = recordsByPda.get(String(a));
+                if (!bytes) return null;
+                return {
+                  data: [b64(bytes), 'base64'] as readonly [string, string],
+                  executable: false,
+                  lamports: 1_000_000n,
+                  owner: OWNER_ADDR,
+                  rentEpoch: 0n,
+                  space: BigInt(bytes.length),
+                };
+              }),
+            };
+          },
+        }),
+      } as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 100 });
+
+    assert.equal(items.length, 1, 'the undecodable account is dropped');
+    assert.equal(items[0].name, 'alice');
+    assert.equal(
+      counts.gmaAccts,
+      1,
+      'and it is not looked up — only the decodable name is enriched',
+    );
+  });
+
+  it('treats a name whose ArNS record will not decode as orphaned', async () => {
+    // Symmetric to the account-side skip: a record that comes back but cannot
+    // be deserialized must not take the whole call down, and must not yield a
+    // half-built PrimaryName either.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('alice'), arnsRecordBytesForAnt('alice', mint(1))],
+      // Present on chain, but not a decodable ArnsRecord.
+      [await recordPdaFor('bob'), new Uint8Array(4)],
+    ]);
+
+    const readable = new SolanaARIOReadable({
+      rpc: primaryNameRpc(
+        [
+          { owner: OWNER_ADDR, name: 'alice' },
+          { owner: OWNER_ADDR, name: 'bob' },
+        ],
+        recordsByPda,
+        counts,
+      ) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 100 });
+
+    assert.deepEqual(
+      items.map((i) => i.name),
+      ['alice'],
+      'bob is dropped, alice is unaffected',
+    );
+  });
+
+  it('getArnsRecordProcessIds makes no request for an empty name list', async () => {
+    const counts: Counts = { gma: 0, gmaAccts: 0 };
+    const readable = makeReadable(counts);
+
+    assert.deepEqual(await readable.readProcessIds([]), new Map());
+    assert.equal(counts.gma, 0, 'no names, no round trip');
   });
 
   it('does not issue a batch read when there are no primary names', async () => {
