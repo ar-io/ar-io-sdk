@@ -67,6 +67,7 @@ import { type ILogger, Logger } from '../common/logger.js';
 import type {
   PrimaryName,
   PrimaryNameRequest,
+  ProcessId,
   RedelegationFeeInfo,
   WalletAddress,
 } from '../types/common.js';
@@ -2844,16 +2845,18 @@ export class SolanaARIOReadable {
     // that PrimaryName.processId expects lives on the matching ArnsRecord
     // (looked up by the base name). Both lookup paths below deserialize the
     // on-chain account and then enrich with the ArnsRecord lookup.
-    const baseNameOf = (n: string): string => {
-      const parts = n.toLowerCase().split('_');
-      return parts.length === 2 ? parts[1] : parts[0];
-    };
+    //
+    // Uses `splitPrimaryName` — the contract's own `splitn(2, '_')` rule — for
+    // the same reason `getPrimaryNames` does, and so the singular and plural
+    // readers cannot disagree about which record a name resolves through.
     const enrich = async (pn: {
       owner: string;
       name: string;
       startTimestamp: number;
     }): Promise<PrimaryName> => {
-      const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
+      const rec = await this.getArNSRecord({
+        name: splitPrimaryName(pn.name).baseName,
+      });
       return { ...pn, processId: rec.processId };
     };
 
@@ -2931,26 +2934,107 @@ export class SolanaARIOReadable {
       PRIMARY_NAME_DISCRIMINATOR,
     );
 
+    // `deserializePrimaryName` yields everything but `processId` — that field
+    // is not on the account (see below), so these are not `PrimaryName` yet.
+    const primaryNames: ReturnType<typeof deserializePrimaryName>[] = [];
+    for (const { data } of accounts) {
+      try {
+        primaryNames.push(deserializePrimaryName(data));
+      } catch {
+        // Skip malformed.
+      }
+    }
+    // Nothing to enrich, and no reason to pay for the batch read below.
+    if (primaryNames.length === 0) return paginate<PrimaryName>([], params);
+
     // Enrich each on-chain PrimaryName with its ArnsRecord.processId (the
     // on-chain account doesn't store it; see deserializePrimaryName).
     // Records that no longer have a matching ArnsRecord are silently
     // skipped — same forgiveness the per-name lookup already applies.
-    const baseNameOf = (n: string): string => {
-      const parts = n.toLowerCase().split('_');
-      return parts.length === 2 ? parts[1] : parts[0];
-    };
+    //
+    // The base name is resolved with `splitPrimaryName`, the same
+    // `splitn(2, '_')` rule the on-chain handler uses. The loop this replaces
+    // used an inline `split('_')` with a `parts.length === 2` check, which
+    // returns the UNDERNAME rather than the base for any name carrying two or
+    // more underscores (`a_b_c` -> `a`, where the contract says `b_c`). Such a
+    // name silently failed its lookup and was dropped from the results. No
+    // name on mainnet or devnet has two underscores today, so this fixes a
+    // latent bug rather than changing any current output.
+    //
+    // Read in batches rather than one `getAccountInfo` per name. The per-name
+    // lookup made this O(n) sequential round trips: on mainnet that is ~230
+    // reads for a single call to this method, and measured on a portal that
+    // polls it, that one loop was the large majority of the application's
+    // whole RPC bill. Batched it is ceil(n/100) `getMultipleAccounts`, run
+    // concurrently — same records, same forgiveness, ~2 orders of magnitude
+    // fewer calls. Mirrors getGatewayAccumulators.
+    const processIds = await this.getArnsRecordProcessIds(
+      primaryNames.map((pn) => splitPrimaryName(pn.name).baseName),
+    );
+
     const items: PrimaryName[] = [];
-    for (const { data } of accounts) {
-      try {
-        const pn = deserializePrimaryName(data);
-        const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
-        items.push({ ...pn, processId: rec.processId });
-      } catch {
-        // Skip malformed or orphaned (ArnsRecord missing).
-      }
+    for (const pn of primaryNames) {
+      const processId = processIds.get(splitPrimaryName(pn.name).baseName);
+      // Orphaned: the ArnsRecord this name resolved through is gone.
+      if (processId === undefined) continue;
+      items.push({ ...pn, processId });
     }
 
     return paginate(items, params);
+  }
+
+  /**
+   * Resolve `name -> ArnsRecord.processId` for many names in batched reads.
+   *
+   * Deliberately a batched `getMultipleAccounts` rather than a whole-program
+   * scan of the ArNS registry: the caller here has far fewer names than the
+   * registry has records, which is the same break-even
+   * {@link getArNSRecordsByAntMints} documents. Missing records are simply
+   * absent from the returned map — callers decide whether that is an error.
+   */
+  protected async getArnsRecordProcessIds(
+    names: string[],
+  ): Promise<Map<string, ProcessId>> {
+    const unique = Array.from(new Set(names));
+    const out = new Map<string, ProcessId>();
+    if (unique.length === 0) return out;
+
+    const groups = chunk(unique, 100);
+    // Chunks run in a bounded pool rather than one-after-another; results are
+    // still consumed in input order, so `group[i]` keeps pairing with the
+    // right name.
+    const perGroup = await mapWithConcurrency(
+      groups,
+      ACCOUNT_FETCH_CONCURRENCY,
+      async (group) => {
+        const pdas = await Promise.all(
+          group.map(
+            async (name) => (await getArnsRecordPDA(name, this.arnsProgram))[0],
+          ),
+        );
+        return withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, {
+            commitment: this.commitment,
+          }),
+        );
+      },
+    );
+    groups.forEach((group, gi) => {
+      const accounts = perGroup[gi];
+      for (let i = 0; i < accounts.length; i++) {
+        const acct = accounts[i];
+        if (!acct.exists) continue;
+        try {
+          out.set(
+            group[i],
+            deserializeArnsRecord(Buffer.from(acct.data)).processId,
+          );
+        } catch {
+          // Skip malformed; the name is treated as orphaned by the caller.
+        }
+      }
+    });
+    return out;
   }
 
   // =========================================

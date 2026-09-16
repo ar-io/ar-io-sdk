@@ -1,3 +1,15 @@
+## [4.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1...v4.3.2-alpha.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **solana:** apply the contract split rule to getPrimaryName too ([ca6634d](https://github.com/ar-io/ar-io-sdk/commit/ca6634d2889cd65eeeec1a3d053c901cecbb5869))
+
+
+### Performance Improvements
+
+* **solana:** batch getPrimaryNames processId enrichment ([59b939d](https://github.com/ar-io/ar-io-sdk/commit/59b939d99d61b9427baae773da164a427ea0e2f3))
+
 ## [4.3.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0...v4.3.1) (2026-09-15)
 
 
