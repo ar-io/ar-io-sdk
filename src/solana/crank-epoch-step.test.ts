@@ -1331,6 +1331,35 @@ describe('D4a — a distribute/tally that advances nothing must fail loudly', ()
     );
   });
 
+  it('never falls back to an unpinned read once the slot is known', async () => {
+    // An unpinned read here would return the pre-write cursor — the exact
+    // stale answer pinning exists to reject — and the assertion would then
+    // report a stall that never happened, reintroducing the bug.
+    const c = new TestCranker({
+      getSignatureStatuses: () => ({
+        send: async () => ({ value: [{ slot: 12345n }] }),
+      }),
+    });
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    const seen: (bigint | undefined)[] = [];
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> => {
+      seen.push(cfg?.minContextSlot);
+      // A non-retryable failure keeps this test fast: withRetry gives up on the
+      // first attempt, reaching the same exhaustion path a persistent -32016
+      // arrives at once its budget runs out.
+      if (cfg?.minContextSlot !== undefined) throw new Error('rpc unavailable');
+      return real(i, cfg);
+    };
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 2000, cursorRereadDelayMs: 0 }),
+      /could not verify the post-write cursor for epoch 0/,
+    );
+    // The tick's own state read, then the pinned attempt — and nothing after.
+    assert.deepEqual(seen, [undefined, 12345n]);
+  });
+
   it('caps the batch range by activeGatewayCount, not registry.count', async () => {
     const c = new TestCranker();
     let sawCap: number | undefined;

@@ -4530,15 +4530,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * completed normally, which is the tell: a real D4a stall cannot make
    * progress.
    *
-   * Two defences, in order:
-   *  1. Pin the read to the slot that executed the transaction via
-   *     `minContextSlot`. A node behind that slot answers JSON-RPC -32016,
-   *     which {@link isRetryableError} already classifies as transient, so
-   *     {@link withRetry} waits for the node to catch up instead of reporting
-   *     stale state as fact. A pinned read is authoritative, so no further
-   *     attempts are made.
-   *  2. When the slot cannot be resolved, re-read up to `attempts` times and
-   *     accept the first read showing movement.
+   * Two defences, and which one applies is decided by whether the executing
+   * slot is known:
+   *  1. Slot known — pin the read to it via `minContextSlot`. A node behind
+   *     that slot answers JSON-RPC -32016, which {@link isRetryableError}
+   *     already classifies as transient, so {@link withRetry} waits for the
+   *     node to catch up instead of reporting stale state as fact. A pinned
+   *     read is authoritative, so no further attempts are made — and if no
+   *     pinned read succeeds, this throws rather than falling back to an
+   *     unpinned one, because at that moment an unpinned read is precisely the
+   *     pre-write answer pinning exists to reject.
+   *  2. Slot unknown — re-read up to `attempts` times and accept the first
+   *     read showing movement. Sampling is the best evidence available when
+   *     the provider cannot say which slot ran the transaction; a read showing
+   *     movement is still proof of movement, since a cursor never rewinds.
    *
    * Deciding whether a stall occurred is deliberately left to the assertion: a
    * genuine no-op never advances, so it survives both defences unchanged.
@@ -4558,19 +4563,33 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           { logger: this.logger },
         );
       } catch (error) {
-        // The node never reached the write's slot within the retry budget.
-        // Fall through to the unpinned path: an unproven read that happens to
-        // show movement is still proof of movement, and if it shows none the
-        // assertion reports a stall that a human must confirm anyway.
+        // Deliberately NO unpinned fallback. Reaching here means no read at or
+        // after the write's slot succeeded, so an unpinned read would return
+        // the pre-write cursor — the exact stale answer pinning exists to
+        // reject — and handing that to the assertion would manufacture the
+        // false stall this whole path prevents.
+        //
+        // Report what is actually known instead: the cursor could not be read.
+        // That is a degraded RPC, not a stalled epoch, and it must not be
+        // mistaken for one. The crank retries on its next tick, and a genuine
+        // stall cannot advance in the meantime, so nothing is lost by waiting
+        // for an answer that can be trusted.
         this.logger.warn(
-          'Could not pin the post-write epoch read to the transaction slot; ' +
-            'falling back to an unpinned re-read.',
+          'Could not read the post-write epoch cursor at or after the slot ' +
+            'that executed the transaction.',
           {
             epochIndex,
             txId,
             minContextSlot: minContextSlot.toString(),
             error: error instanceof Error ? error.message : String(error),
           },
+        );
+        throw new Error(
+          `could not verify the post-write cursor for epoch ${epochIndex} ` +
+            `after tx ${txId}: no read at or after slot ${minContextSlot} ` +
+            `succeeded. This is an RPC freshness failure, NOT a stalled ` +
+            `epoch — do not treat it as one.`,
+          { cause: error },
         );
       }
     }
