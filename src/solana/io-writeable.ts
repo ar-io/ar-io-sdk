@@ -248,7 +248,7 @@ import {
   type RegistrySlotWeight,
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
-import { withRetry } from './retry.js';
+import { isRetryableError, withRetry } from './retry.js';
 import {
   DEFAULT_COMPUTE_UNIT_LIMIT,
   MAX_TX_SIZE_BYTES,
@@ -272,6 +272,17 @@ const addressDecoder = getAddressDecoder();
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+/**
+ * A post-write epoch read that came back with nothing — a missing account or a
+ * decode failure, never "the cursor did not move".
+ *
+ * It exists so the retry layer can tell the two apart. `getEpochRaw` reports
+ * both an absent account and a failed decode as `null`, and a `null` handed to
+ * the D4a assertion collapses to the pre-write cursor, which reads as a stall
+ * that never happened.
+ */
+class UnreadableEpochAccount extends Error {}
 
 /** Resolve mARIOToken | number to a plain number */
 function toAmount(qty: number | mARIOToken): number {
@@ -4547,6 +4558,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    *
    * Deciding whether a stall occurred is deliberately left to the assertion: a
    * genuine no-op never advances, so it survives both defences unchanged.
+   *
+   * Never resolves `null`. `getEpochRaw` reports a missing account and a failed
+   * decode the same way, and either handed to the assertion collapses to the
+   * pre-write cursor and reads as a stall — so an empty read throws as a
+   * freshness failure instead.
    */
   private async rereadEpochAfterWrite(
     epochIndex: number,
@@ -4554,13 +4570,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     hasAdvanced: (epoch: EpochRawState) => boolean,
     attempts: number,
     delayMs: number,
-  ): Promise<EpochRawState | null> {
+  ): Promise<EpochRawState> {
     const minContextSlot = await this.confirmedSlotOf(txId);
     if (minContextSlot !== undefined) {
       try {
         return await withRetry(
-          () => this.getEpochRaw(epochIndex, { minContextSlot }),
-          { logger: this.logger },
+          async () => {
+            const pinned = await this.getEpochRaw(epochIndex, {
+              minContextSlot,
+            });
+            // Nothing came back. That is a failed read, not a verdict on the
+            // cursor, so raise it as one and let withRetry try again. Returning
+            // null instead would reach the assertion as the pre-write cursor
+            // and be reported as a stall that never happened.
+            if (pinned === null) {
+              throw new UnreadableEpochAccount(
+                `epoch ${epochIndex} account was not readable at or after slot ${minContextSlot}`,
+              );
+            }
+            return pinned;
+          },
+          {
+            logger: this.logger,
+            isRetryable: (error) =>
+              error instanceof UnreadableEpochAccount ||
+              isRetryableError(error),
+          },
         );
       } catch (error) {
         // Deliberately NO unpinned fallback. Reaching here means no read at or
@@ -4599,6 +4634,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       if (latest !== null && hasAdvanced(latest)) return latest;
       await delay(delayMs);
       latest = await this.getEpochRaw(epochIndex);
+    }
+    // Every attempt came back empty. Same rule as the pinned path: an absent or
+    // undecodable account says nothing about the cursor, and passing it on as
+    // the pre-write value would convict a healthy crank of stalling.
+    if (latest === null) {
+      throw new Error(
+        `could not verify the post-write cursor for epoch ${epochIndex} ` +
+          `after tx ${txId}: every re-read returned no epoch account. This is ` +
+          `an RPC or decoding failure, NOT a stalled epoch — do not treat it ` +
+          `as one.`,
+      );
     }
     return latest;
   }
@@ -4999,9 +5045,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           'tally',
           targetEpochIndex,
           tallyCursorBefore,
-          after?.weightsTallied === 1
+          after.weightsTallied === 1
             ? epoch.activeGatewayCount
-            : (after?.tallyIndex ?? tallyCursorBefore),
+            : after.tallyIndex,
           epoch.activeGatewayCount,
           id,
         );
@@ -5072,9 +5118,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           'distribute',
           targetEpochIndex,
           distCursorBefore,
-          after?.rewardsDistributed === 1
+          after.rewardsDistributed === 1
             ? epoch.activeGatewayCount
-            : (after?.distributionIndex ?? distCursorBefore),
+            : after.distributionIndex,
           epoch.activeGatewayCount,
           id,
         );

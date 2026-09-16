@@ -1360,6 +1360,55 @@ describe('D4a — a distribute/tally that advances nothing must fail loudly', ()
     assert.deepEqual(seen, [undefined, 12345n]);
   });
 
+  // getEpochRaw reports BOTH a missing account and a failed decode as null. A
+  // null reaching assertCursorAdvanced collapses to the pre-write cursor, so an
+  // empty read would be convicted as a stall — the same false alarm by a
+  // different route.
+  it('reports a freshness failure when every re-read comes back empty', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    let reads = 0;
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> => {
+      reads += 1;
+      // The tick's own state read succeeds; every post-write re-read is empty.
+      return reads === 1 ? real(i, cfg) : null;
+    };
+    await assert.rejects(
+      () =>
+        c.crankEpochStep({
+          now: 2000,
+          cursorRereadDelayMs: 0,
+          cursorRereadAttempts: 2,
+        }),
+      (err: Error) =>
+        /could not verify the post-write cursor for epoch 0/.test(
+          err.message,
+        ) && !/did not advance/.test(err.message),
+    );
+  });
+
+  it('reports a freshness failure when the pinned read comes back empty', async () => {
+    const c = new TestCranker({
+      getSignatureStatuses: () => ({
+        send: async () => ({ value: [{ slot: 12345n }] }),
+      }),
+    });
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> =>
+      cfg?.minContextSlot === undefined ? real(i, cfg) : null;
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 2000, cursorRereadDelayMs: 0 }),
+      (err: Error) =>
+        /could not verify the post-write cursor for epoch 0/.test(
+          err.message,
+        ) && !/did not advance/.test(err.message),
+    );
+  });
+
   it('caps the batch range by activeGatewayCount, not registry.count', async () => {
     const c = new TestCranker();
     let sawCap: number | undefined;
