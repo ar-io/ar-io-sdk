@@ -39,6 +39,7 @@ import {
   type Address,
   type Instruction,
   type KeyPairSigner,
+  type Signature,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -247,6 +248,7 @@ import {
   type RegistrySlotWeight,
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
+import { withRetry } from './retry.js';
 import {
   DEFAULT_COMPUTE_UNIT_LIMIT,
   MAX_TX_SIZE_BYTES,
@@ -266,6 +268,10 @@ import type {
 } from './types.js';
 
 const addressDecoder = getAddressDecoder();
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 /** Resolve mARIOToken | number to a plain number */
 function toAmount(qty: number | mARIOToken): number {
@@ -674,10 +680,38 @@ export type CrankAction =
   | 'close'
   | 'idle';
 
+/** Cranker-relevant fields decoded from the raw Epoch account. */
+export interface EpochRawState {
+  tallyIndex: number;
+  distributionIndex: number;
+  weightsTallied: number;
+  prescriptionsDone: number;
+  rewardsDistributed: number;
+  observationsSubmitted: number;
+  observationsClosed: number;
+  activeGatewayCount: number;
+  endTimestamp: number;
+}
+
 /** Options for {@link SolanaARIOWriteable.crankEpochStep}. */
 export interface CrankEpochStepOptions {
   /** Gateways per tally/distribute batch. Default 30. */
   batchSize?: number;
+  /**
+   * How many times to read the tally/distribute cursor after a write before
+   * concluding it did not advance. Default 3; values below 1 are treated as 1.
+   *
+   * The D4a check treats an unchanged cursor as proof the transaction did
+   * nothing, which is only sound if the read reflects that transaction. When
+   * the executing slot can be resolved the read is pinned to it and these
+   * extra attempts are unnecessary; they are the fallback for RPCs that cannot
+   * report it.
+   */
+  cursorRereadAttempts?: number;
+  /**
+   * Delay between unpinned cursor re-reads (ms). Default 300. Set 0 in tests.
+   */
+  cursorRereadDelayMs?: number;
   /**
    * NameRegistry account for the name-prescription leg. Defaults to the
    * registry derived from the configured ArNS program. Pass `null` to disable
@@ -4459,6 +4493,98 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The slot that executed `txId`, or undefined when it cannot be determined.
+   *
+   * Best-effort by design: a provider that does not answer
+   * `getSignatureStatuses`, or has already aged the signature out of its
+   * status cache, must degrade to the unpinned re-read path rather than fail
+   * the crank. Callers treat undefined as "freshness unknown", never as
+   * "not confirmed".
+   */
+  private async confirmedSlotOf(txId: string): Promise<bigint | undefined> {
+    try {
+      const statuses = await this.rpc
+        .getSignatureStatuses([txId as Signature])
+        .send();
+      const slot = statuses?.value?.[0]?.slot;
+      return typeof slot === 'bigint' ? slot : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Re-read the epoch after a tally/distribute write, tolerating an RPC
+   * replica that has not yet caught up to that write.
+   *
+   * {@link assertCursorAdvanced} reads an unchanged cursor as proof of a
+   * silent no-op. That inference is only valid if the read actually reflects
+   * the transaction. A multi-node RPC endpoint can answer the
+   * immediately-following read from a node a few slots behind the one that
+   * executed the write, returning PRE-transaction state for a transaction that
+   * did real work — so the crank reports a stall that never happened. Mainnet
+   * epoch 545 (2026-09-16) produced 17 such false alarms in 27 minutes: every
+   * cited signature had `err: null` and carried `DistributeEpoch` +
+   * `ReleaseTreasuryToRecipient`, and the cursor quoted by successive alarms
+   * kept climbing — the writes landed, the reads lagged. Distribution
+   * completed normally, which is the tell: a real D4a stall cannot make
+   * progress.
+   *
+   * Two defences, in order:
+   *  1. Pin the read to the slot that executed the transaction via
+   *     `minContextSlot`. A node behind that slot answers JSON-RPC -32016,
+   *     which {@link isRetryableError} already classifies as transient, so
+   *     {@link withRetry} waits for the node to catch up instead of reporting
+   *     stale state as fact. A pinned read is authoritative, so no further
+   *     attempts are made.
+   *  2. When the slot cannot be resolved, re-read up to `attempts` times and
+   *     accept the first read showing movement.
+   *
+   * Deciding whether a stall occurred is deliberately left to the assertion: a
+   * genuine no-op never advances, so it survives both defences unchanged.
+   */
+  private async rereadEpochAfterWrite(
+    epochIndex: number,
+    txId: string,
+    hasAdvanced: (epoch: EpochRawState) => boolean,
+    attempts: number,
+    delayMs: number,
+  ): Promise<EpochRawState | null> {
+    const minContextSlot = await this.confirmedSlotOf(txId);
+    if (minContextSlot !== undefined) {
+      try {
+        return await withRetry(
+          () => this.getEpochRaw(epochIndex, { minContextSlot }),
+          { logger: this.logger },
+        );
+      } catch (error) {
+        // The node never reached the write's slot within the retry budget.
+        // Fall through to the unpinned path: an unproven read that happens to
+        // show movement is still proof of movement, and if it shows none the
+        // assertion reports a stall that a human must confirm anyway.
+        this.logger.warn(
+          'Could not pin the post-write epoch read to the transaction slot; ' +
+            'falling back to an unpinned re-read.',
+          {
+            epochIndex,
+            txId,
+            minContextSlot: minContextSlot.toString(),
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
+      }
+    }
+
+    let latest = await this.getEpochRaw(epochIndex);
+    for (let attempt = 1; attempt < attempts; attempt++) {
+      if (latest !== null && hasAdvanced(latest)) return latest;
+      await delay(delayMs);
+      latest = await this.getEpochRaw(epochIndex);
+    }
+    return latest;
+  }
+
+  /**
    * Gateway PDAs for one tally/distribute batch, starting at `startIndex`.
    *
    * Two things here are load-bearing and were both wrong before ADR-0032's
@@ -4789,6 +4915,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const enablePrune = opts.enablePrune ?? true;
     const enablePruneToReturned = opts.enablePruneToReturned ?? true;
     const enablePruneExpired = opts.enablePruneExpired ?? true;
+    const cursorRereadAttempts = Math.max(1, opts.cursorRereadAttempts ?? 3);
+    const cursorRereadDelayMs = opts.cursorRereadDelayMs ?? 300;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -4841,7 +4969,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         gatewayAccounts,
       });
       if (epoch.activeGatewayCount > 0) {
-        const after = await this.getEpochRaw(targetEpochIndex);
+        const after = await this.rereadEpochAfterWrite(
+          targetEpochIndex,
+          id,
+          (e) => e.weightsTallied === 1 || e.tallyIndex > tallyCursorBefore,
+          cursorRereadAttempts,
+          cursorRereadDelayMs,
+        );
         this.assertCursorAdvanced(
           'tally',
           targetEpochIndex,
@@ -4906,7 +5040,15 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         gatewayAccounts,
       });
       if (epoch.activeGatewayCount > 0) {
-        const after = await this.getEpochRaw(targetEpochIndex);
+        const after = await this.rereadEpochAfterWrite(
+          targetEpochIndex,
+          id,
+          (e) =>
+            e.rewardsDistributed === 1 ||
+            e.distributionIndex > distCursorBefore,
+          cursorRereadAttempts,
+          cursorRereadDelayMs,
+        );
         this.assertCursorAdvanced(
           'distribute',
           targetEpochIndex,
@@ -5256,20 +5398,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Read the raw epoch account data for cranker state inspection.
    * Returns null if the epoch account doesn't exist yet.
    */
-  async getEpochRaw(epochIndex: number): Promise<{
-    tallyIndex: number;
-    distributionIndex: number;
-    weightsTallied: number;
-    prescriptionsDone: number;
-    rewardsDistributed: number;
-    observationsSubmitted: number;
-    observationsClosed: number;
-    activeGatewayCount: number;
-    endTimestamp: number;
-  } | null> {
+  async getEpochRaw(
+    epochIndex: number,
+    config?: { minContextSlot?: bigint },
+  ): Promise<EpochRawState | null> {
     const [epochPda] = await getEpochPDA(epochIndex, this.garProgram);
     const account = await fetchEncodedAccount(this.rpc, epochPda, {
       commitment: this.commitment,
+      ...(config?.minContextSlot !== undefined
+        ? { minContextSlot: config.minContextSlot }
+        : {}),
     });
     if (!account.exists) return null;
 

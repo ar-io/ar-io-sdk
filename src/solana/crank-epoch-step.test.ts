@@ -57,9 +57,12 @@ class TestCranker extends SolanaARIOWriteable {
   prescribeError: (attempt: number) => Error | null = () => null;
   private prescribeAttempts = 0;
 
-  constructor() {
+  // `rpc` is injectable so a test can model an endpoint that reports the slot
+  // a transaction executed in. The default bare stub exercises the opposite
+  // case: an RPC that cannot, which is what forces the unpinned re-read path.
+  constructor(rpc: unknown = {}) {
     super({
-      rpc: {} as never,
+      rpc: rpc as never,
       rpcSubscriptions: {} as never,
       signer: { address: pk(99) } as never,
     } as never);
@@ -1238,6 +1241,94 @@ describe('D4a — a distribute/tally that advances nothing must fail loudly', ()
     c.epochs[0] = { ...stuck };
     const r = await c.crankEpochStep({ now: 2000 });
     assert.equal(r.action, 'distribute');
+  });
+
+  // Regression: mainnet epoch 545 (2026-09-16) raised 17 of these alarms in 27
+  // minutes against transactions that had all succeeded and paid rewards out —
+  // the writes landed and the reads lagged behind them. An alarm that fires on
+  // healthy work teaches operators to ignore the one error that means a human
+  // must intervene, so a read must be known to reflect the write before its
+  // answer is treated as evidence.
+  it('tolerates a stale post-write read instead of reporting a stall', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    const preWrite = { ...stuck };
+    let reads = 0;
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> => {
+      reads += 1;
+      // Read 1 is the tick's own state read. Read 2 is the post-write re-read,
+      // answered by a replica still behind the slot that executed the write.
+      if (reads === 2) return { ...preWrite };
+      return real(i, cfg);
+    };
+    const r = await c.crankEpochStep({ now: 2000, cursorRereadDelayMs: 0 });
+    assert.equal(r.action, 'distribute');
+    assert.ok(
+      reads >= 3,
+      `expected a re-read after the stale answer, got ${reads}`,
+    );
+  });
+
+  it('still throws when every re-read shows the cursor unmoved', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    c.distributeEpoch = async (): Promise<any> => ({ id: 'tx-noop' });
+    let reads = 0;
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> => {
+      reads += 1;
+      return real(i, cfg);
+    };
+    await assert.rejects(
+      () =>
+        c.crankEpochStep({
+          now: 2000,
+          cursorRereadDelayMs: 0,
+          cursorRereadAttempts: 3,
+        }),
+      /distribute of epoch 0 did not advance: cursor still 633\/647/,
+    );
+    // 1 tick read + 3 re-reads: the guard keeps its teeth, it just stops
+    // convicting on a single possibly-stale sample.
+    assert.equal(reads, 4);
+  });
+
+  it('pins the post-write read to the slot that executed the tx', async () => {
+    const c = new TestCranker({
+      getSignatureStatuses: () => ({
+        send: async () => ({ value: [{ slot: 12345n }] }),
+      }),
+    });
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    const seen: (bigint | undefined)[] = [];
+    const real = c.getEpochRaw.bind(c);
+    c.getEpochRaw = async (i: number, cfg?: any): Promise<any> => {
+      seen.push(cfg?.minContextSlot);
+      return real(i, cfg);
+    };
+    const r = await c.crankEpochStep({ now: 2000, cursorRereadDelayMs: 0 });
+    assert.equal(r.action, 'distribute');
+    // A pinned read cannot be stale, so exactly one is taken.
+    assert.deepEqual(seen, [undefined, 12345n]);
+  });
+
+  it('still fails loudly when a pinned read shows no movement', async () => {
+    const c = new TestCranker({
+      getSignatureStatuses: () => ({
+        send: async () => ({ value: [{ slot: 12345n }] }),
+      }),
+    });
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...stuck };
+    c.distributeEpoch = async (): Promise<any> => ({ id: 'tx-noop' });
+    await assert.rejects(
+      () => c.crankEpochStep({ now: 2000, cursorRereadDelayMs: 0 }),
+      /distribute of epoch 0 did not advance: cursor still 633\/647/,
+    );
   });
 
   it('caps the batch range by activeGatewayCount, not registry.count', async () => {
