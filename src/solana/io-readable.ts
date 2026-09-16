@@ -2845,16 +2845,18 @@ export class SolanaARIOReadable {
     // that PrimaryName.processId expects lives on the matching ArnsRecord
     // (looked up by the base name). Both lookup paths below deserialize the
     // on-chain account and then enrich with the ArnsRecord lookup.
-    const baseNameOf = (n: string): string => {
-      const parts = n.toLowerCase().split('_');
-      return parts.length === 2 ? parts[1] : parts[0];
-    };
+    //
+    // Uses `splitPrimaryName` — the contract's own `splitn(2, '_')` rule — for
+    // the same reason `getPrimaryNames` does, and so the singular and plural
+    // readers cannot disagree about which record a name resolves through.
     const enrich = async (pn: {
       owner: string;
       name: string;
       startTimestamp: number;
     }): Promise<PrimaryName> => {
-      const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
+      const rec = await this.getArNSRecord({
+        name: splitPrimaryName(pn.name).baseName,
+      });
       return { ...pn, processId: rec.processId };
     };
 

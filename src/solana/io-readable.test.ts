@@ -829,6 +829,50 @@ describe('getPrimaryNames — processId enrichment', () => {
     );
   });
 
+  it('getPrimaryName (singular) agrees with getPrimaryNames on the split rule', async () => {
+    // The two public readers must not disagree about which ArnsRecord a name
+    // resolves through. Both go via the contract's `splitn(2, '_')`, so
+    // `a_b_c` resolves through `b_c` in each.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('b_c'), arnsRecordBytesForAnt('b_c', mint(3))],
+    ]);
+    const pnBytes = primaryNameBytes(OWNER_ADDR, 'a_b_c', 1);
+
+    const readable = new SolanaARIOReadable({
+      rpc: {
+        // Serves the PrimaryName account for the by-address path...
+        getAccountInfo: (addr: unknown) => ({
+          send: async () => {
+            counts.gai++;
+            const rec = recordsByPda.get(String(addr));
+            const bytes = rec ?? pnBytes;
+            return {
+              value: {
+                data: [b64(bytes), 'base64'] as readonly [string, string],
+                executable: false,
+                lamports: 1_000_000n,
+                owner: OWNER_ADDR,
+                rentEpoch: 0n,
+                space: BigInt(bytes.length),
+              },
+            };
+          },
+        }),
+      } as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const single = await readable.getPrimaryName({ address: OWNER_ADDR });
+
+    assert.equal(single.name, 'a_b_c');
+    assert.equal(
+      single.processId,
+      mint(3),
+      'a_b_c must resolve through b_c here too, not through a',
+    );
+  });
+
   it('batches the enrichment instead of one getAccountInfo per name', async () => {
     const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
     const primaryNames = Array.from({ length: 250 }, (_, i) => ({
