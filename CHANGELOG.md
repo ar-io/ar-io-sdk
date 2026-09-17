@@ -1,3 +1,15 @@
+# [4.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.2...v4.4.0-alpha.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **solana:** cap migrateGateways batches at the measured limit; review fixes ([a20fc92](https://github.com/ar-io/ar-io-sdk/commit/a20fc92421ae0ab9966325349091b4ea5968418b))
+
+
+### Features
+
+* **solana:** gateway operations address, gateway migration, epoch-settings authority transfer ([6c88ed9](https://github.com/ar-io/ar-io-sdk/commit/6c88ed9ebc3805975616b749c4eb5b8a593c7adc)), closes [#142](https://github.com/ar-io/ar-io-sdk/issues/142) [#127](https://github.com/ar-io/ar-io-sdk/issues/127)
+
 ## [4.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.1...v4.3.2-alpha.2) (2026-09-16)
 
 
