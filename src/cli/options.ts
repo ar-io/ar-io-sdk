@@ -336,6 +336,13 @@ export const optionMap = {
     description:
       'Gateway operator address for funding from stakes. Required when --fund-from is "stakes"',
   },
+  discountGatewayAddress: {
+    alias: '--discount-gateway-address <discountGatewayAddress>',
+    description:
+      'Operator address of the gateway to claim the ArNS operator discount through ' +
+      '(Solana). The signer must be its operator or operations address. Defaults to ' +
+      "the signer's own gateway, applied only when it qualifies.",
+  },
   fundAsOperator: {
     alias: '--fund-as-operator',
     description:
@@ -517,6 +524,7 @@ export const arnsPurchaseOptions = [
   optionMap.fundFrom,
   optionMap.gatewayAddress,
   optionMap.fundAsOperator,
+  optionMap.discountGatewayAddress,
   optionMap.withdrawalId,
   optionMap.fundingPlanJson,
   optionMap.paidBy,
@@ -552,6 +560,7 @@ export const tokenCostOptions = [
   optionMap.quantity,
   optionMap.address,
   optionMap.fundFrom,
+  optionMap.discountGatewayAddress,
 ];
 
 export const transferOptions = [

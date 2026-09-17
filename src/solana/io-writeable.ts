@@ -142,6 +142,11 @@ import {
   computeResidueIndexes,
   predictResidueVaults,
 } from './funding-plan.js';
+import {
+  applyGatewayOperatorDiscount,
+  describeGatewayDiscountIneligibility,
+  gatewayDiscountIneligibility,
+} from './gateway-discount.js';
 
 /** Maps the SDK's user-facing FundingSourceKind string union to the
  *  Codama-generated enum used by the on-chain ix payload. */
@@ -320,6 +325,54 @@ function withRemainingAccounts<I extends Instruction>(
     ...remaining,
   ];
   return { ...ix, accounts } as I;
+}
+
+/**
+ * The total a funding plan must cover: the program checks the plan against the
+ * cost AFTER the discount.
+ */
+function discountedCost(
+  cost: bigint,
+  discountGateway: Address | undefined,
+): bigint {
+  return discountGateway === undefined
+    ? cost
+    : applyGatewayOperatorDiscount(cost);
+}
+
+/**
+ * Remaining accounts for an ArNS `_from_funding_plan` instruction: the
+ * `discount_account_count` discount gateways first, then the funding sources.
+ */
+function withFundingPlanAccounts<I extends Instruction>(
+  ix: I,
+  discountGateway: Address | undefined,
+  fundingAccounts: AccountMeta[],
+): I {
+  const remaining: AccountMeta[] = [
+    ...(discountGateway === undefined
+      ? []
+      : [{ address: discountGateway, role: AccountRole.READONLY }]),
+    ...fundingAccounts,
+  ];
+  return remaining.length > 0 ? withRemainingAccounts(ix, remaining) : ix;
+}
+
+/**
+ * Attach the operator-discount gateway to a single-source ArNS purchase, where
+ * the program reads it from `remaining_accounts[0]`. Those instructions take no
+ * other remaining accounts. Funding-plan variants instead put it first and set
+ * `discount_account_count`.
+ */
+function withOperatorDiscount<I extends Instruction>(
+  ix: I,
+  discountGateway: Address | undefined,
+): I {
+  return discountGateway === undefined
+    ? ix
+    : withRemainingAccounts(ix, [
+        { address: discountGateway, role: AccountRole.READONLY },
+      ]);
 }
 
 /**
@@ -1508,6 +1561,55 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     return getGatewayDecoder().decode(account.data);
   }
 
+  /**
+   * The Gateway PDA to attach to an ArNS purchase for the gateway-operator
+   * discount, or `undefined` for no discount.
+   *
+   * The program rejects a purchase whose discount gateway does not qualify
+   * (it never falls back to full price), so this runs the same checks first —
+   * see `gateway-discount.ts`. With `discountGatewayAddress` the caller asked
+   * for the discount explicitly, so a gateway that does not qualify is an
+   * error. Otherwise the signer's own gateway is tried and silently skipped
+   * when it does not qualify, which is the common case for non-operators.
+   *
+   * Uses the cluster clock, as the program does. A pass-rate change landing
+   * between this read and execution fails the purchase with
+   * `GatewayNotActive`; retrying re-evaluates.
+   */
+  protected async resolveOperatorDiscountGateway(params: {
+    discountGatewayAddress?: string;
+  }): Promise<Address | undefined> {
+    const explicit = params.discountGatewayAddress !== undefined;
+    const operator = explicit
+      ? address(params.discountGatewayAddress as string)
+      : this.signer.address;
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      if (explicit) {
+        throw new Error(
+          `No gateway found for operator ${operator}; cannot claim the operator discount through it.`,
+        );
+      }
+      return undefined;
+    }
+    const nowSeconds = BigInt(await this.getClusterUnixTimestampSeconds());
+    const reason = gatewayDiscountIneligibility(
+      gateway,
+      this.signer.address,
+      nowSeconds,
+    );
+    if (reason !== undefined) {
+      if (explicit) {
+        throw new Error(
+          `Gateway ${operator} does not qualify for the operator discount: ${describeGatewayDiscountIneligibility(reason)}.`,
+        );
+      }
+      return undefined;
+    }
+    return gatewayPda;
+  }
+
   private buildMigrateGatewayInstruction(
     operator: Address,
     gateway: Address,
@@ -2138,11 +2240,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       ant: antPubkey,
     };
 
+    const discountGateway = await this.resolveOperatorDiscountGateway(params);
+
     // Phase 4 of FUND_FROM_PLAN.md: dispatch on params.fundFrom. The pre-Phase-4
     // path always fell through to the balance-funded `buyName` ix even when
     // CLI-set `--fund-from stakes`; we now route to the corresponding on-chain
     // wrapper for each mode.
     let ix;
+    // The funding-plan builder attaches the discount itself (it also changes
+    // the plan total); every other branch gets it appended below.
+    let discountAttached = false;
     if (params.fundFrom === 'stakes' && params.gatewayAddress) {
       const gatewayAddr = address(params.gatewayAddress);
       const garConfig = await this.getGarConfig();
@@ -2227,7 +2334,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         returnedNameCheck,
         buyNameParams,
         arnsConfig,
+        discountGateway,
       });
+      discountAttached = true;
     } else if (
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -2251,6 +2360,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         `unsupported fundFrom mode '${params.fundFrom}' for buyRecord`,
       );
     }
+    if (!discountAttached) ix = withOperatorDiscount(ix, discountGateway);
 
     // Spawn-and-buy: prepend `[CreateV1, initialize]` and attach the mint
     // signer. We DON'T bundle `sync_attributes` here — the asset doesn't exist
@@ -2550,6 +2660,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       ant: Address;
     };
     arnsConfig: { mint: Address; treasury: Address };
+    discountGateway: Address | undefined;
   }) {
     const garConfig = await this.getGarConfig();
     const [garSettings] = await getGarSettingsPDA(this.garProgram);
@@ -2563,7 +2674,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       years: args.buyNameParams.years,
       purchaseType: args.buyNameParams.purchaseType,
     });
-    const plan = await this._resolveFundingPlan(args.params, cost);
+    const plan = await this._resolveFundingPlan(
+      args.params,
+      discountedCost(cost, args.discountGateway),
+    );
     const { remainingAccounts, withdrawalCounter, residueVaultCount } =
       await this._materializeFundingPlan(args.params, plan);
 
@@ -2584,16 +2698,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         garProgram: this.garProgram,
         params: args.buyNameParams,
         sources: plan.sources.map(toGeneratedFundingSourceSpec),
-        discountAccountCount: 0,
+        discountAccountCount: args.discountGateway === undefined ? 0 : 1,
         residueVaultCount,
       },
       {
         programAddress: this.arnsProgram,
       },
     ).then((ix) =>
-      remainingAccounts.length > 0
-        ? withRemainingAccounts(ix, remainingAccounts)
-        : ix,
+      withFundingPlanAccounts(ix, args.discountGateway, remainingAccounts),
     );
   }
 
@@ -3030,6 +3142,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       args.params.name,
       this.arnsProgram,
     );
+    const discountGateway = await this.resolveOperatorDiscountGateway(
+      args.params,
+    );
+    // Single-source paths below return through this; the funding-plan path
+    // attaches the discount itself.
+    const discounted = <I extends Instruction>(ix: Promise<I>) =>
+      ix.then((built) => withOperatorDiscount(built, discountGateway));
 
     // Balance / undefined → original direct-transfer ix (matches pre-Phase-4).
     if (
@@ -3044,19 +3163,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         caller: this.signer,
       });
       if (args.operation === 'upgrade') {
-        return getUpgradeNameInstructionAsync(baseAccounts, {
-          programAddress: this.arnsProgram,
-        });
-      }
-      if (args.operation === 'extend') {
-        return getExtendLeaseInstructionAsync(
-          { ...baseAccounts, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameInstructionAsync(baseAccounts, {
+            programAddress: this.arnsProgram,
+          }),
         );
       }
-      return getIncreaseUndernameLimitInstructionAsync(
-        { ...baseAccounts, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend') {
+        return discounted(
+          getExtendLeaseInstructionAsync(
+            { ...baseAccounts, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      }
+      return discounted(
+        getIncreaseUndernameLimitInstructionAsync(
+          { ...baseAccounts, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -3080,17 +3205,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       const stakeBase = { ...sharedManageBase, gateway: gatewayPda };
       if (args.params.fundAsOperator) {
         if (args.operation === 'upgrade')
-          return getUpgradeNameFromOperatorStakeInstructionAsync(stakeBase, {
-            programAddress: this.arnsProgram,
-          });
-        if (args.operation === 'extend')
-          return getExtendLeaseFromOperatorStakeInstructionAsync(
-            { ...stakeBase, years: args.years! },
-            { programAddress: this.arnsProgram },
+          return discounted(
+            getUpgradeNameFromOperatorStakeInstructionAsync(stakeBase, {
+              programAddress: this.arnsProgram,
+            }),
           );
-        return getIncreaseUndernameLimitFromOperatorStakeInstructionAsync(
-          { ...stakeBase, quantity: args.quantity! },
-          { programAddress: this.arnsProgram },
+        if (args.operation === 'extend')
+          return discounted(
+            getExtendLeaseFromOperatorStakeInstructionAsync(
+              { ...stakeBase, years: args.years! },
+              { programAddress: this.arnsProgram },
+            ),
+          );
+        return discounted(
+          getIncreaseUndernameLimitFromOperatorStakeInstructionAsync(
+            { ...stakeBase, quantity: args.quantity! },
+            { programAddress: this.arnsProgram },
+          ),
         );
       }
       const [delegationPda] = await getDelegationPDA(
@@ -3100,17 +3231,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
       const delBase = { ...stakeBase, delegation: delegationPda };
       if (args.operation === 'upgrade')
-        return getUpgradeNameFromDelegationInstructionAsync(delBase, {
-          programAddress: this.arnsProgram,
-        });
-      if (args.operation === 'extend')
-        return getExtendLeaseFromDelegationInstructionAsync(
-          { ...delBase, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameFromDelegationInstructionAsync(delBase, {
+            programAddress: this.arnsProgram,
+          }),
         );
-      return getIncreaseUndernameLimitFromDelegationInstructionAsync(
-        { ...delBase, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend')
+        return discounted(
+          getExtendLeaseFromDelegationInstructionAsync(
+            { ...delBase, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      return discounted(
+        getIncreaseUndernameLimitFromDelegationInstructionAsync(
+          { ...delBase, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -3125,17 +3262,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
       const wBase = { ...sharedManageBase, withdrawal: withdrawalPda };
       if (args.operation === 'upgrade')
-        return getUpgradeNameFromWithdrawalInstructionAsync(wBase, {
-          programAddress: this.arnsProgram,
-        });
-      if (args.operation === 'extend')
-        return getExtendLeaseFromWithdrawalInstructionAsync(
-          { ...wBase, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameFromWithdrawalInstructionAsync(wBase, {
+            programAddress: this.arnsProgram,
+          }),
         );
-      return getIncreaseUndernameLimitFromWithdrawalInstructionAsync(
-        { ...wBase, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend')
+        return discounted(
+          getExtendLeaseFromWithdrawalInstructionAsync(
+            { ...wBase, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      return discounted(
+        getIncreaseUndernameLimitFromWithdrawalInstructionAsync(
+          { ...wBase, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -3180,7 +3323,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         quantity: args.quantity,
         purchaseType,
       });
-      const plan = await this._resolveFundingPlan(args.params, cost);
+      const plan = await this._resolveFundingPlan(
+        args.params,
+        discountedCost(cost, discountGateway),
+      );
       const buyerATA = await getAssociatedTokenAddressKit(
         arnsConfig.mint,
         this.signer.address,
@@ -3199,7 +3345,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         withdrawalCounter,
         garProgram: this.garProgram,
         sources: plan.sources.map(toGeneratedFundingSourceSpec),
-        discountAccountCount: 0,
+        discountAccountCount: discountGateway === undefined ? 0 : 1,
         residueVaultCount,
       };
       let ix;
@@ -3217,9 +3363,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           { ...fpBase, quantity: args.quantity! },
           { programAddress: this.arnsProgram },
         );
-      return remainingAccounts.length > 0
-        ? withRemainingAccounts(ix, remainingAccounts)
-        : ix;
+      return withFundingPlanAccounts(ix, discountGateway, remainingAccounts);
     }
 
     throw new Error(
@@ -4080,7 +4224,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       // 'any' with nothing found → falls through to the balance path.
     }
 
+    const discountGateway = await this.resolveOperatorDiscountGateway(params);
+
     let ix;
+    // Set by the funding-plan branch, which attaches the discount itself.
+    let discountAttached = false;
     const useBalance =
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -4168,7 +4316,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         });
         const plan = await this._resolveFundingPlan(
           params as ArNSPurchaseParams,
-          cost,
+          discountedCost(cost, discountGateway),
         );
         const { remainingAccounts, withdrawalCounter, residueVaultCount } =
           await this._materializeFundingPlan(
@@ -4181,19 +4329,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
             payerTokenAccount: plan.hasBalanceSource ? buyerATA : undefined,
             withdrawalCounter,
             sources: plan.sources.map(toGeneratedFundingSourceSpec),
-            discountAccountCount: 0,
+            discountAccountCount: discountGateway === undefined ? 0 : 1,
             residueVaultCount,
           },
           { programAddress: this.arnsProgram },
         );
-        if (remainingAccounts.length > 0)
-          ix = withRemainingAccounts(ix, remainingAccounts);
+        ix = withFundingPlanAccounts(ix, discountGateway, remainingAccounts);
+        discountAttached = true;
       } else {
         throw new Error(
           `unsupported fundFrom mode '${params.fundFrom}' for buyReturnedName`,
         );
       }
     }
+    if (!discountAttached) ix = withOperatorDiscount(ix, discountGateway);
 
     // The on-chain `buy_returned_name*` handlers take `initiator_token_account`
     // and `buyer_token_account` as `Account<TokenAccount>` (NOT `init`), so

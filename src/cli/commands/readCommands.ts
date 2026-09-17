@@ -217,6 +217,7 @@ export async function getCostDetails(
   const costDetails = await readARIOFromOptions(o).getCostDetails({
     ...getTokenCostParamsFromOptions(o),
     fundFrom: fundFromFromOptions(o),
+    discountGatewayAddress: o.discountGatewayAddress,
   });
 
   const output = {
