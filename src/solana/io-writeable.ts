@@ -4188,6 +4188,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // stakes/withdrawal/any without naming a specific gateway/vault,
     // auto-resolve a single source with enough stake to cover the
     // (premium-inclusive) cost.
+    // Resolved first: the discount also lowers what a single stake source has
+    // to cover when one is picked automatically below.
+    const discountGateway = await this.resolveOperatorDiscountGateway(params);
+
     let resolvedGateway = params.gatewayAddress;
     let resolvedFundAsOperator = params.fundAsOperator ?? false;
     let resolvedWithdrawalId = params.withdrawalId;
@@ -4201,7 +4205,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       resolvedWithdrawalId === undefined &&
       !params.sources?.length
     ) {
-      const picked = await this._autoPickReturnedNameStakeSource(params);
+      const picked = await this._autoPickReturnedNameStakeSource(
+        params,
+        discountGateway,
+      );
       if (picked?.kind === 'delegation') {
         resolvedGateway = picked.gateway;
         resolvedFundAsOperator = false;
@@ -4223,8 +4230,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       }
       // 'any' with nothing found → falls through to the balance path.
     }
-
-    const discountGateway = await this.resolveOperatorDiscountGateway(params);
 
     let ix;
     // Set by the funding-plan branch, which attaches the discount itself.
@@ -4392,24 +4397,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * we only need to pick ONE source with enough stake. We size the pick against
    * the premium-inclusive estimate (an upper bound, since the price only falls
    * from now) and choose the largest matching source. Returns `null` when no
-   * single source covers the estimate.
+   * single source covers the estimate. When the purchase carries the operator
+   * discount, the program draws the discounted cost, so the pick is sized to
+   * that.
    */
-  private async _autoPickReturnedNameStakeSource(params: {
-    name: string;
-    type: 'lease' | 'permabuy';
-    years?: number;
-    fundFrom?: FundFrom;
-    fundAsOperator?: boolean;
-  }): Promise<DiscoveredFundingSource | null> {
-    const estimate = BigInt(
-      Math.ceil(
-        await this.getTokenCost({
-          intent: 'Buy-Name',
-          name: params.name,
-          type: params.type,
-          years: params.years ?? 1,
-        }),
+  private async _autoPickReturnedNameStakeSource(
+    params: {
+      name: string;
+      type: 'lease' | 'permabuy';
+      years?: number;
+      fundFrom?: FundFrom;
+      fundAsOperator?: boolean;
+    },
+    discountGateway: Address | undefined,
+  ): Promise<DiscoveredFundingSource | null> {
+    const estimate = discountedCost(
+      BigInt(
+        Math.ceil(
+          await this.getTokenCost({
+            intent: 'Buy-Name',
+            name: params.name,
+            type: params.type,
+            years: params.years ?? 1,
+          }),
+        ),
       ),
+      discountGateway,
     );
     const arnsConfig = await this.getArnsConfig();
     const { discoverFundingSources } = await import('./funding-plan.js');

@@ -18,6 +18,7 @@ import {
   createSolanaRpc,
   generateKeyPairSigner,
   getAddressDecoder,
+  getAddressEncoder,
 } from '@solana/kit';
 
 import {
@@ -748,5 +749,72 @@ describe('getCostDetails operator discount', () => {
       fromAddress: OPERATOR,
     });
     assert.deepEqual(res.discounts, []);
+  });
+});
+
+describe('returned-name stake auto-pick', () => {
+  // A delegation that covers the discounted price but not the full one.
+  const FULL = 1_000_000;
+  const HELD = 900_000n;
+
+  function discoveryRpc(delegator: Address) {
+    const row = Buffer.alloc(108);
+    row.set(new Uint8Array(32).fill(9), 8); // gateway
+    row.set(Buffer.from(getAddressEncoder().encode(delegator)), 40);
+    row.writeBigUInt64LE(HELD, 72);
+    return {
+      getAccountInfo: () => ({
+        send: async () => ({ context: { slot: 0n }, value: null }),
+      }),
+      getMultipleAccounts: (addresses: Address[]) => ({
+        send: async () => ({
+          context: { slot: 0n },
+          value: addresses.map(() => null),
+        }),
+      }),
+      getProgramAccounts: (
+        _program: Address,
+        config: { filters: Array<{ memcmp?: { offset: bigint } }> },
+      ) => ({
+        send: async () =>
+          config.filters[0]?.memcmp?.offset === 40n
+            ? [
+                {
+                  pubkey: addressFor(60),
+                  account: { data: [row.toString('base64'), 'base64'] },
+                },
+              ]
+            : [],
+      }),
+    };
+  }
+
+  it('sizes the pick to the discounted price when the discount applies', async () => {
+    const signer = await generateKeyPairSigner();
+    const { w, pdaOf } = await stubWith(
+      signer,
+      [],
+      discoveryRpc(signer.address),
+    );
+    const self = w as any;
+    self.getTokenCost = async () => FULL;
+    const params = {
+      name: 'n',
+      type: 'permabuy' as const,
+      fundFrom: 'stakes' as const,
+    };
+
+    const withDiscount = await self._autoPickReturnedNameStakeSource(
+      params,
+      await pdaOf(signer.address),
+    );
+    assert.equal(withDiscount?.kind, 'delegation');
+    assert.equal(withDiscount?.available, HELD);
+
+    const without = await self._autoPickReturnedNameStakeSource(
+      params,
+      undefined,
+    );
+    assert.equal(without, null);
   });
 });
