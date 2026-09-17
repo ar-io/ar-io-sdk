@@ -102,6 +102,14 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     // GATEWAY_VERSION 1.1.0 GatewaySettings2 additions (Fix #6/#7). Omitted = None.
     pendingDelegateRewardShareRatio?: number; // raw u16 (e.g. 5000 = 50%)
     delegationDisabledAt?: bigint; // unix seconds
+    // Stored SchemaVersion. Omitted = 1.1.0, the version every live gateway has
+    // before the ADR-0030 migration.
+    version?: [number, number, number];
+    // ADR-0030: written after `version` only for version >= 1.2.0.
+    operationsAddress?: Uint8Array;
+    // Bytes to leave after the content of a pre-1.2.0 account, mimicking what an
+    // earlier, longer serialization leaves behind (Anchor never clears them).
+    staleTail?: Uint8Array;
   }): Buffer {
     // Option<u16> = 1 tag (+2 if Some); Option<i64> = 1 tag (+8 if Some)
     const pendingBytes =
@@ -238,10 +246,25 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     buf.writeUInt8(255, off);
     off += 1;
     // version: SchemaVersion { major, minor, patch } — 3 bytes
+    const [major, minor, patch] = opts.version ?? [1, 1, 0];
+    buf.writeUInt8(major, off);
+    buf.writeUInt8(minor, off + 1);
+    buf.writeUInt8(patch, off + 2);
     off += 3;
 
     assert.equal(off, SIZE, 'buffer build size mismatch');
-    return buf;
+
+    // Real accounts are never exactly the content length: they are allocated at
+    // the program's SIZE (964 bytes before ADR-0030, 996 after) and the bytes
+    // after the content are whatever is there. Build the same shape.
+    const migrated = major > 1 || (major === 1 && minor >= 2);
+    const tail = Buffer.alloc(migrated ? 996 - SIZE : 964 - SIZE);
+    if (migrated) {
+      Buffer.from(opts.operationsAddress ?? new Uint8Array(32)).copy(tail, 0);
+    } else if (opts.staleTail !== undefined) {
+      Buffer.from(opts.staleTail).copy(tail, 0);
+    }
+    return Buffer.concat([buf, tail]);
   }
 
   it('extracts cumulativeRewardPerToken at the expected offset', () => {

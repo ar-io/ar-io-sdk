@@ -366,6 +366,32 @@ class BorshWriter {
 // Gateway deserialization
 // =========================================
 
+/**
+ * First Gateway schema version whose `operations_address` was written by the
+ * program (ADR-0030). Mirrors `OPERATIONS_ADDRESS_SINCE` in ario-gar.
+ */
+export const OPERATIONS_ADDRESS_SINCE = { major: 1, minor: 2, patch: 0 };
+
+/**
+ * Does a Gateway stamped `version` carry a real operations address?
+ *
+ * Below 1.2.0 the field decodes from whatever bytes follow `version`, which are
+ * not reliably zero (30 of 620 mainnet gateways had leftover bytes there), so
+ * it must be ignored — exactly as the program does.
+ */
+export function isOperationsAddressSet(version: {
+  major: number;
+  minor: number;
+  patch: number;
+}): boolean {
+  const since = OPERATIONS_ADDRESS_SINCE;
+  if (version.major !== since.major) return version.major > since.major;
+  if (version.minor !== since.minor) return version.minor > since.minor;
+  return version.patch >= since.patch;
+}
+
+const DEFAULT_PUBKEY = '11111111111111111111111111111111';
+
 export function deserializeGatewayWithAccumulator(
   data: Buffer,
 ): Gateway & { operator: string; cumulativeRewardPerToken: bigint } {
@@ -448,6 +474,11 @@ export function deserializeGatewayWithAccumulator(
     status: d.status === GatewayStatus.Joined ? 'joined' : 'leaving',
     weights,
     cumulativeRewardPerToken: d.cumulativeRewardPerToken,
+    // Only surfaced when the program itself would honour it.
+    ...(isOperationsAddressSet(d.version) &&
+    (d.operationsAddress as string) !== DEFAULT_PUBKEY
+      ? { operationsAddress: d.operationsAddress as string }
+      : {}),
   };
 }
 

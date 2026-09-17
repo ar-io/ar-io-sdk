@@ -429,6 +429,34 @@ export const optionMap = {
       'Explicit ReturnedName PDAs to prune. Default: discover via getExpiredReturnedNames.',
     type: 'array',
   },
+  operationsAddress: {
+    alias: '--operations-address <operationsAddress>',
+    description:
+      'The address to authorise for gateway metadata updates and the ArNS discount. Pass the operator address to revoke.',
+  },
+  metadataGatewayAddress: {
+    alias: '--gateway-address <gatewayAddress>',
+    description:
+      'The gateway operator (staking wallet). Defaults to the signer; set it when signing as the gateway operations address.',
+  },
+  gateways: {
+    alias: '--gateways <gateways...>',
+    description:
+      'Explicit gateway operator addresses to migrate. Default: every gateway below schema 1.2.0.',
+    type: 'array',
+  },
+  batchSize: {
+    alias: '--batch-size <batchSize>',
+    description: 'migrate_gateway instructions per transaction (default 8)',
+  },
+  migrationGateway: {
+    alias: '--gateway <gateway>',
+    description: 'The operator address of the gateway to migrate',
+  },
+  newAuthority: {
+    alias: '--new-authority <newAuthority>',
+    description: 'The address that will become the EpochSettings authority',
+  },
 };
 
 export const walletOptions = [
@@ -450,6 +478,38 @@ export const globalOptions = [
 ];
 
 export const writeActionOptions = [optionMap.skipConfirmation, optionMap.tags];
+
+export const updateOperationsAddressOptions = [
+  ...writeActionOptions,
+  optionMap.operationsAddress,
+];
+
+export const updateGatewayMetadataOptions = [
+  ...writeActionOptions,
+  optionMap.metadataGatewayAddress,
+  optionMap.label,
+  optionMap.note,
+  optionMap.properties,
+  optionMap.fqdn,
+  optionMap.port,
+  optionMap.protocol,
+];
+
+export const migrateGatewayOptions = [
+  ...writeActionOptions,
+  optionMap.migrationGateway,
+];
+
+export const migrateGatewaysOptions = [
+  ...writeActionOptions,
+  optionMap.gateways,
+  optionMap.batchSize,
+];
+
+export const transferEpochSettingsAuthorityOptions = [
+  ...writeActionOptions,
+  optionMap.newAuthority,
+];
 
 export const arnsPurchaseOptions = [
   ...writeActionOptions,
