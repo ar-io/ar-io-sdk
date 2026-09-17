@@ -51,6 +51,7 @@ import {
 import { SolanaARIOReadable } from './io-readable.js';
 import {
   MIGRATE_GATEWAYS_BATCH_SIZE,
+  MIGRATE_GATEWAYS_MAX_BATCH_SIZE,
   SolanaARIOWriteable,
 } from './io-writeable.js';
 import { getEpochSettingsPDA, getGatewayPDA } from './pda.js';
@@ -229,6 +230,28 @@ describe('SolanaARIOReadable.getUnmigratedGatewayAddresses', () => {
         operationsAddress: DELEGATE,
       }),
     ]);
+    assert.deepEqual(await r.getUnmigratedGatewayAddresses(), [OPERATOR]);
+  });
+
+  it('reads a raw pre-ADR-0030 account: 964 bytes, stamped 1.1.0, stale tail', async () => {
+    // The shape every live gateway has before migration. The 1.4.0 codec
+    // reads operationsAddress from the 32 bytes after `version`; a real
+    // account always has them, because its content is far shorter than the
+    // 964 bytes it is allocated (largest live gateway: 467 bytes).
+    const content = encodeGateway({
+      operator: OPERATOR,
+      version: V1_1_0,
+      operationsAddress: ZERO,
+    }).slice(0, -32); // the previous layout ends at `version`
+    const legacy = new Uint8Array(964);
+    legacy.set(content, 0);
+    legacy.set([0xfd, 0x01, 0x01, 0x00], content.length); // leftover bytes
+    assert.ok(
+      964 - content.length >= 32,
+      `legacy content is ${content.length} bytes; the codec needs 32 after it`,
+    );
+
+    const r = readableOver([legacy]);
     assert.deepEqual(await r.getUnmigratedGatewayAddresses(), [OPERATOR]);
   });
 
@@ -551,6 +574,28 @@ describe('SolanaARIOWriteable.migrateGateway(s)', () => {
     assert.equal(w.sent.length, 1);
   });
 
+  it('rejects a batch size too large for one transaction', async () => {
+    const payer = await generateKeyPairSigner();
+    const w = await writeableAs(payer, OPERATOR, null);
+    await assert.rejects(
+      () =>
+        w.migrateGateways({
+          gatewayAddresses: operators(20),
+          batchSize: MIGRATE_GATEWAYS_MAX_BATCH_SIZE + 1,
+        }),
+      /exceeds 12/,
+    );
+    assert.equal(w.sent.length, 0);
+    await w.migrateGateways({
+      gatewayAddresses: operators(20),
+      batchSize: MIGRATE_GATEWAYS_MAX_BATCH_SIZE,
+    });
+    assert.deepEqual(
+      w.sent.map((ixs) => ixs.length),
+      [12, 8],
+    );
+  });
+
   it('rejects a non-positive batch size', async () => {
     const payer = await generateKeyPairSigner();
     const w = await writeableAs(payer, OPERATOR, null);
@@ -560,33 +605,58 @@ describe('SolanaARIOWriteable.migrateGateway(s)', () => {
     );
   });
 
-  it('a full batch fits in one transaction (1232-byte limit)', async () => {
+  it('batch sizes match the 1232-byte transaction limit', async () => {
     const payer = await generateKeyPairSigner();
-    const w = await writeableAs(payer, OPERATOR, null);
-    await w.migrateGateways({ gatewayAddresses: operators(8) });
-    const message = pipe(
-      createTransactionMessage({ version: 0 }),
-      (m) => setTransactionMessageFeePayerSigner(payer, m),
-      (m) =>
-        setTransactionMessageLifetimeUsingBlockhash(
-          {
-            blockhash: '11111111111111111111111111111111' as Blockhash,
-            lastValidBlockHeight: 0n,
-          },
-          m,
-        ),
-      (m) =>
-        appendTransactionMessageInstructions(
-          [
-            getSetComputeUnitLimitInstruction({ units: 1_400_000 }),
-            getSetComputeUnitPriceInstruction({ microLamports: 1n }),
-            ...w.sent[0],
-          ],
-          m,
-        ),
+    const sizeOf = async (n: number): Promise<number> => {
+      const w = await writeableAs(payer, OPERATOR, null);
+      await w.migrateGateways({
+        gatewayAddresses: operators(n),
+        batchSize: n > 12 ? 12 : n,
+      });
+      const ixs = w.sent.flat().slice(0, n);
+      const message = pipe(
+        createTransactionMessage({ version: 0 }),
+        (m) => setTransactionMessageFeePayerSigner(payer, m),
+        (m) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            {
+              blockhash: '11111111111111111111111111111111' as Blockhash,
+              lastValidBlockHeight: 0n,
+            },
+            m,
+          ),
+        (m) =>
+          appendTransactionMessageInstructions(
+            [
+              // Same two compute-budget instructions sendAndConfirm prepends;
+              // both are fixed-size, so the values do not affect the length.
+              getSetComputeUnitLimitInstruction({ units: 1_400_000 }),
+              getSetComputeUnitPriceInstruction({ microLamports: 2_000_000n }),
+              ...ixs,
+            ],
+            m,
+          ),
+      );
+      return getTransactionSize(compileTransaction(message));
+    };
+    // Every assert.ok here carries an explicit message: without one, node's
+    // assert parses the call-site source to build a message, which stalls
+    // under the tsx loader and turns a failure into a whole-file timeout.
+    const atDefault = await sizeOf(MIGRATE_GATEWAYS_BATCH_SIZE);
+    assert.ok(
+      atDefault <= 1232,
+      `default batch (${MIGRATE_GATEWAYS_BATCH_SIZE}) takes ${atDefault} bytes`,
     );
-    const size = getTransactionSize(compileTransaction(message));
-    assert.ok(size <= 1232, `8 migrations take ${size} bytes`);
+    const atMax = await sizeOf(MIGRATE_GATEWAYS_MAX_BATCH_SIZE);
+    assert.ok(
+      atMax <= 1232,
+      `max batch (${MIGRATE_GATEWAYS_MAX_BATCH_SIZE}) takes ${atMax} bytes`,
+    );
+    const overMax = await sizeOf(MIGRATE_GATEWAYS_MAX_BATCH_SIZE + 1);
+    assert.ok(
+      overMax > 1232,
+      `MIGRATE_GATEWAYS_MAX_BATCH_SIZE must be the largest batch that fits; ${MIGRATE_GATEWAYS_MAX_BATCH_SIZE + 1} takes only ${overMax} bytes`,
+    );
   });
 });
 

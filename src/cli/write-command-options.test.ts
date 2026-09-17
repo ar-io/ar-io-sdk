@@ -121,6 +121,15 @@ describe('ADR-0030 / ADR-0031 commands', () => {
     });
   }
 
+  it('describes --gateway accurately on migrate-gateway', () => {
+    const command = program.commands.find(
+      (c) => c.name() === 'migrate-gateway',
+    );
+    const option = command?.options.find((o) => o.long === '--gateway');
+    assert.ok(option !== undefined, 'migrate-gateway must register --gateway');
+    assert.doesNotMatch(option.description, /prune|finalize/i);
+  });
+
   it('describes --gateway-address accurately on update-gateway-metadata', () => {
     // The shared `gatewayAddress` option is worded for funding ArNS purchases
     // from stakes; the metadata command must not show that help text.
@@ -128,7 +137,10 @@ describe('ADR-0030 / ADR-0031 commands', () => {
       (c) => c.name() === 'update-gateway-metadata',
     );
     const option = command?.options.find((o) => o.long === '--gateway-address');
-    assert.ok(option !== undefined);
+    assert.ok(
+      option !== undefined,
+      'update-gateway-metadata must register --gateway-address',
+    );
     assert.doesNotMatch(option.description, /fund/i);
   });
 });

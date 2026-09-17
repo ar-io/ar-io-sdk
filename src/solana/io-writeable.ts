@@ -894,12 +894,18 @@ export function isInvalidGatewayAccountError(error: unknown): boolean {
 const DEFAULT_ADDRESS = address('11111111111111111111111111111111');
 
 /**
- * `migrate_gateway` instructions per transaction in `migrateGateways`. Each adds
- * two unique accounts (operator, gateway); 8 keeps the transaction inside the
- * 1232-byte limit without an address lookup table (asserted in
- * gateway-operations.test.ts).
+ * Default `migrate_gateway` instructions per transaction in `migrateGateways`.
+ * Each adds two unique accounts (operator, gateway) — 79 bytes of a signed
+ * transaction including both compute-budget instructions — so 8 leaves
+ * headroom under the 1232-byte limit without an address lookup table.
  */
 export const MIGRATE_GATEWAYS_BATCH_SIZE = 8;
+
+/**
+ * Largest batch that still fits one transaction: 12 serializes to 1200 bytes,
+ * 13 to 1279. Both boundaries are asserted in gateway-operations.test.ts.
+ */
+export const MIGRATE_GATEWAYS_MAX_BATCH_SIZE = 12;
 
 export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected readonly signer: SolanaSigner;
@@ -1685,6 +1691,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const batchSize = params.batchSize ?? MIGRATE_GATEWAYS_BATCH_SIZE;
     if (!Number.isInteger(batchSize) || batchSize < 1) {
       throw new Error('migrateGateways: batchSize must be a positive integer');
+    }
+    // Refused rather than silently capped: a batch this large cannot fit a
+    // single transaction, and quietly changing the caller's value would hide it.
+    if (batchSize > MIGRATE_GATEWAYS_MAX_BATCH_SIZE) {
+      throw new Error(
+        `migrateGateways: batchSize ${batchSize} exceeds ${MIGRATE_GATEWAYS_MAX_BATCH_SIZE}, the most migrate_gateway instructions that fit in one transaction`,
+      );
     }
     const operators =
       params.gatewayAddresses !== undefined

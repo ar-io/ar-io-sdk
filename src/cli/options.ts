@@ -449,6 +449,10 @@ export const optionMap = {
     alias: '--batch-size <batchSize>',
     description: 'migrate_gateway instructions per transaction (default 8)',
   },
+  migrationGateway: {
+    alias: '--gateway <gateway>',
+    description: 'The operator address of the gateway to migrate',
+  },
   newAuthority: {
     alias: '--new-authority <newAuthority>',
     description: 'The address that will become the EpochSettings authority',
@@ -491,7 +495,10 @@ export const updateGatewayMetadataOptions = [
   optionMap.protocol,
 ];
 
-export const migrateGatewayOptions = [...writeActionOptions, optionMap.gateway];
+export const migrateGatewayOptions = [
+  ...writeActionOptions,
+  optionMap.migrationGateway,
+];
 
 export const migrateGatewaysOptions = [
   ...writeActionOptions,
