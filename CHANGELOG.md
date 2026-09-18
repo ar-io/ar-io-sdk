@@ -1,3 +1,12 @@
+# [4.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.1...v4.4.0-alpha.2) (2026-09-18)
+
+
+### Bug Fixes
+
+* **solana:** apply the gateway operator discount the quote promises ([9e5616c](https://github.com/ar-io/ar-io-sdk/commit/9e5616c19ba6edec0c789b46d452328e107696e0))
+* **solana:** never let the discount push a purchase over the size limit ([83dfc9d](https://github.com/ar-io/ar-io-sdk/commit/83dfc9d8ac0de21b44a72e2c46dc65f95e2af5db))
+* **solana:** size returned-name stake auto-pick to the discounted price ([a0ca901](https://github.com/ar-io/ar-io-sdk/commit/a0ca9014ca38905840c29c1f6b2920c95f14ff9f))
+
 # [4.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.2...v4.4.0-alpha.1) (2026-09-17)
 
 
