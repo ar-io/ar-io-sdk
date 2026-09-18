@@ -166,6 +166,11 @@ import {
   getGarWorkflowGasProfile,
   getIntentGasProfile,
 } from './gas.js';
+import {
+  OPERATOR_DISCOUNT_INTENTS,
+  applyGatewayOperatorDiscount,
+  gatewayDiscountIneligibility,
+} from './gateway-discount.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getAclConfigPDA,
@@ -642,7 +647,7 @@ export class SolanaARIOReadable {
    * means less elapsed auction time, which OVER-quotes the returned-name
    * premium rather than under-quoting it.
    */
-  private async getClusterUnixTimestampSeconds(): Promise<number> {
+  protected async getClusterUnixTimestampSeconds(): Promise<number> {
     return memoizeInFlight(
       this._clusterClockCache,
       'clock',
@@ -2579,49 +2584,37 @@ export class SolanaARIOReadable {
       multiplier: number;
     }> = [];
 
-    if (params.fromAddress) {
+    if (params.fromAddress && OPERATOR_DISCOUNT_INTENTS.has(params.intent)) {
+      // Operator discount — the same checks as ario-arns
+      // `try_apply_gateway_discount`, and the same gateway the writeable
+      // attaches to the purchase (`discountGatewayAddress`, else the caller's
+      // own). Read through the short-TTL cache (NOT public `getGateway`, which
+      // stays fresh for gateway pages): a price table calls this many times for
+      // the same wallet. The cluster clock is already memoized by
+      // `getTokenCost` above, so this adds no round trip.
       try {
-        // Operator-discount check. Read the gateway PDA through the short-TTL
-        // cache (NOT public `getGateway`, which stays fresh for gateway pages):
-        // a price table calls `getCostDetails` many times for the SAME
-        // `fromAddress`, so this collapses N redundant gateway reads to one.
         const [gwPda] = await getGatewayPDA(
-          address(params.fromAddress),
+          address(params.discountGatewayAddress ?? params.fromAddress),
           this.garProgram,
         );
         const gwAccount = await this.getCachedAccount(gwPda);
         if (gwAccount.exists) {
-          const gw = deserializeGateway(Buffer.from(gwAccount.data));
-          if (gw.status === 'joined') {
-            // Match on-chain eligibility from ario-arns pricing.rs
-            // `try_apply_gateway_discount`:
-            // 1. Tenure: gateway running >= 180 days (15_552_000 seconds)
-            // (This is a coarse 180-day eligibility gate, not the
-            // premium/auction math fixed above; sub-minute cluster-clock drift
-            // is immaterial at this granularity, so the client wall clock is
-            // fine here and we avoid an extra RPC round trip.)
-            const GATEWAY_DISCOUNT_MIN_TENURE_S = 15_552_000;
-            const nowSeconds = Math.floor(Date.now() / 1000);
-            const timeRunning = nowSeconds - gw.startTimestamp;
-            // 2. Performance: >= 90% epoch pass rate
-            const passRate =
-              ((1 + gw.stats.passedEpochCount) /
-                (1 + gw.stats.totalEpochCount)) *
-              1_000_000;
-
-            if (
-              timeRunning >= GATEWAY_DISCOUNT_MIN_TENURE_S &&
-              passRate >= 900_000
-            ) {
-              const discountAmount = Math.floor(
-                (tokenCost * 200_000) / RATE_SCALE,
-              );
-              discounts.push({
-                name: 'Gateway Operator',
-                discountTotal: discountAmount,
-                multiplier: 0.8,
-              });
-            }
+          const gateway = getGatewayDecoder().decode(gwAccount.data);
+          const nowSeconds = BigInt(
+            await this.getClusterUnixTimestampSeconds(),
+          );
+          const ineligible = gatewayDiscountIneligibility(
+            gateway,
+            address(params.fromAddress),
+            nowSeconds,
+          );
+          if (ineligible === undefined) {
+            const cost = BigInt(tokenCost);
+            discounts.push({
+              name: 'Gateway Operator',
+              discountTotal: Number(cost - applyGatewayOperatorDiscount(cost)),
+              multiplier: 0.8,
+            });
           }
         }
       } catch {

@@ -1702,6 +1702,8 @@ Calculates the expanded cost details for the interaction in question, e.g a 'Buy
 
 On Solana, the result also includes a `gasEstimate` — the total SOL (in lamports) the wallet needs to execute the intent: transaction fees (quoted from recent on-chain prioritization fees) plus rent-exempt deposits for the accounts the flow creates. For `Buy-Name` that covers both transactions (ANT spawn + buy) and the rent for the spawned asset/PDAs and the ArNS record; first-time buyers with no ACL accounts yet are quoted the ACL bootstrap rent as well (pass `fromAddress` so that check can be made). The fee side is a conservative upper bound: the write path tightens the compute-unit limit from a pre-send simulation, so the landed fee is usually lower.
 
+**Gateway operator discount (Solana).** ArNS purchases (`Buy-Name`, `Extend-Lease`, `Increase-Undername-Limit`, `Upgrade-Name`) are 20% cheaper when the payer is a gateway's operator — or, once the gateway is migrated, its operations address — and that gateway is joined, has run for at least 180 days, and passes at least 90% of epochs. Primary-name fees are never discounted. The quote and the purchase methods (`buyRecord`, `buyReturnedName`, `extendLease`, `increaseUndernameLimit`, `upgradeRecord`) apply the same rule: by default they use the payer's own gateway and add the discount only when it qualifies (the program rejects a purchase whose discount gateway does not qualify). An operations address names the gateway with `discountGatewayAddress` (its operator address); naming a gateway that does not qualify is an error. CLI: `--discount-gateway-address`.
+
 ```typescript
 const costDetails = await ario.getCostDetails({
   intent: "Buy-Name",

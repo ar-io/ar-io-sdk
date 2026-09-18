@@ -562,6 +562,15 @@ export type FundingSourceSpec = {
 
 export type GetCostDetailsParams = TokenCostParams & {
   fundFrom?: FundFrom;
+  /**
+   * Gateway (its operator address) to claim the ArNS gateway-operator discount
+   * through. The signer must be that gateway's operator or, once the gateway is
+   * migrated, its operations address (ADR-0030). Defaults to the signer's own
+   * gateway. When given explicitly, a gateway that does not qualify is an
+   * error; the default applies the discount only when it qualifies. Solana
+   * only; primary-name fees are never discounted.
+   */
+  discountGatewayAddress?: WalletAddress;
 };
 
 export type FundingPlan = {
@@ -673,6 +682,15 @@ export type ArNSPurchaseParams = ArNSNameParams & {
    * single-gateway invariant. Solana only.
    */
   sources?: FundingSourceSpec[];
+  /**
+   * Gateway (its operator address) to claim the ArNS gateway-operator discount
+   * through. The signer must be that gateway's operator or, once the gateway is
+   * migrated, its operations address (ADR-0030). Defaults to the signer's own
+   * gateway. When given explicitly, a gateway that does not qualify is an
+   * error; the default applies the discount only when it qualifies. Solana
+   * only; primary-name fees are never discounted.
+   */
+  discountGatewayAddress?: WalletAddress;
   paidBy?: WalletAddress | WalletAddress[];
   referrer?: string;
 };
