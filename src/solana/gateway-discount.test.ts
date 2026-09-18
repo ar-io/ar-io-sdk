@@ -26,6 +26,8 @@ import {
   getBuyNameFromFundingPlanInstructionDataDecoder,
   getBuyReturnedNameFromFundingPlanInstructionDataDecoder,
   getExtendLeaseFromFundingPlanInstructionDataDecoder,
+  getIncreaseUndernameLimitFromFundingPlanInstructionDataDecoder,
+  getUpgradeNameFromFundingPlanInstructionDataDecoder,
   identifyArioArnsInstruction,
 } from '@ar.io/solana-contracts/arns';
 import {
@@ -560,30 +562,31 @@ describe('manage operations operator discount', () => {
   });
 });
 
-describe('buyReturnedName operator discount', () => {
-  function returnedNameRpc(name: string) {
-    // The SDK reads only [disc][u32 len][name][32][initiator 32].
-    const nameBytes = Buffer.from(name);
-    const data = Buffer.alloc(8 + 4 + nameBytes.length + 32 + 32 + 32);
-    data.writeUInt32LE(nameBytes.length, 8);
-    nameBytes.copy(data, 12);
-    data.set(INITIATOR_BYTES, 12 + nameBytes.length + 32);
-    return {
-      getAccountInfo: () => ({
-        send: async () => ({
-          context: { slot: 0n },
-          value: {
-            data: [data.toString('base64'), 'base64'],
-            executable: false,
-            lamports: 1n,
-            owner: ZERO,
-            space: BigInt(data.length),
-          },
-        }),
+/** An rpc stub whose only account is the returned-name record for `name`. */
+function returnedNameRpc(name: string) {
+  // The SDK reads only [disc][u32 len][name][32][initiator 32].
+  const nameBytes = Buffer.from(name);
+  const data = Buffer.alloc(8 + 4 + nameBytes.length + 32 + 32 + 32);
+  data.writeUInt32LE(nameBytes.length, 8);
+  nameBytes.copy(data, 12);
+  data.set(INITIATOR_BYTES, 12 + nameBytes.length + 32);
+  return {
+    getAccountInfo: () => ({
+      send: async () => ({
+        context: { slot: 0n },
+        value: {
+          data: [data.toString('base64'), 'base64'],
+          executable: false,
+          lamports: 1n,
+          owner: ZERO,
+          space: BigInt(data.length),
+        },
       }),
-    };
-  }
+    }),
+  };
+}
 
+describe('buyReturnedName operator discount', () => {
   it('balance path attaches the gateway; plan path sets the count', async () => {
     const signer = await generateKeyPairSigner();
     const { w, pdaOf } = await stubWith(
@@ -765,14 +768,17 @@ describe('oversized transactions drop the discount instead of failing', () => {
     signer: Awaited<ReturnType<typeof generateKeyPairSigner>>,
     n: number,
     withGateway: boolean,
-  ): Promise<StubWriteable> {
-    const { w } = await stubWith(
+    rpc?: object,
+  ): Promise<{ w: StubWriteable; pda: Address }> {
+    const { w, pdaOf } = await stubWith(
       signer,
       withGateway
         ? [[signer.address, gateway({ operator: signer.address })]]
         : [],
+      rpc,
     );
-    (w as any)._materializeFundingPlan = async () => ({
+    const self = w as any;
+    self._materializeFundingPlan = async () => ({
       remainingAccounts: Array.from({ length: n }, (_, i) => ({
         address: addressFor(30 + i),
         role: AccountRole.WRITABLE,
@@ -780,76 +786,159 @@ describe('oversized transactions drop the discount instead of failing', () => {
       withdrawalCounter: WITHDRAWAL_COUNTER,
       residueVaultCount: 0,
     });
-    return w;
+    // `increaseUndernameLimit`'s plan path prices from the record's purchase
+    // type, which it reads back off chain.
+    self.getArNSRecord = async () => ({ type: 'lease' });
+    return { w, pda: await pdaOf(signer.address) };
   }
 
-  const buy = (w: StubWriteable) =>
-    w.buyRecord({
-      name: NAME,
-      type: 'permabuy',
-      processId: ANT,
-      fundFrom: 'any',
-    });
+  /**
+   * Every caller that attaches the discount to a funding plan. Each one wires
+   * `dropDiscountIfOversized` with its own instruction index and rebuild
+   * callback, so each is calibrated and asserted separately — a miswired index
+   * would rebuild the wrong instruction and is invisible from the shared
+   * helper's own tests.
+   */
+  type PlanCaller = {
+    label: string;
+    kind: ArioArnsInstruction;
+    decode: (data: Uint8Array) => {
+      discountAccountCount: number;
+      sources: readonly { amount: bigint }[];
+    };
+    run: (w: StubWriteable, name: string) => Promise<unknown>;
+    /** Only the returned-name path reads an account to build its purchase. */
+    rpc?: (name: string) => object;
+  };
 
-  it('buyRecord: keeps the purchase, at full price', async () => {
-    const signer = await generateKeyPairSigner();
-    // Calibrate: the largest plan that fits WITHOUT the discount. Adding the
-    // discount's one account to that plan must overflow, because each account
-    // costs ~33 bytes and the next size up already exceeds the limit.
-    let fits = 0;
-    for (let n = 1; n <= 14; n++) {
-      const w = await planStub(signer, n, false);
-      await buy(w);
-      const size = estimateCompiledTxSize({ signer, instructions: w.sent[0] });
-      if (size <= 1232) fits = n;
-      else break;
+  const CALLERS: PlanCaller[] = [
+    {
+      label: 'buyRecord',
+      kind: ArioArnsInstruction.BuyNameFromFundingPlan,
+      decode: (d) =>
+        getBuyNameFromFundingPlanInstructionDataDecoder().decode(d),
+      run: (w, name) =>
+        w.buyRecord({
+          name,
+          type: 'permabuy',
+          processId: ANT,
+          fundFrom: 'any',
+        }),
+    },
+    {
+      label: 'extendLease',
+      kind: ArioArnsInstruction.ExtendLeaseFromFundingPlan,
+      decode: (d) =>
+        getExtendLeaseFromFundingPlanInstructionDataDecoder().decode(d),
+      run: (w, name) => w.extendLease({ name, years: 2, fundFrom: 'plan' }),
+    },
+    {
+      label: 'increaseUndernameLimit',
+      kind: ArioArnsInstruction.IncreaseUndernameLimitFromFundingPlan,
+      decode: (d) =>
+        getIncreaseUndernameLimitFromFundingPlanInstructionDataDecoder().decode(
+          d,
+        ),
+      run: (w, name) =>
+        w.increaseUndernameLimit({
+          name,
+          increaseCount: 5,
+          fundFrom: 'plan',
+        }),
+    },
+    {
+      label: 'upgradeRecord',
+      kind: ArioArnsInstruction.UpgradeNameFromFundingPlan,
+      decode: (d) =>
+        getUpgradeNameFromFundingPlanInstructionDataDecoder().decode(d),
+      run: (w, name) => w.upgradeRecord({ name, fundFrom: 'plan' }),
+    },
+    {
+      label: 'buyReturnedName',
+      kind: ArioArnsInstruction.BuyReturnedNameFromFundingPlan,
+      decode: (d) =>
+        getBuyReturnedNameFromFundingPlanInstructionDataDecoder().decode(d),
+      rpc: returnedNameRpc,
+      run: (w, name) =>
+        w.buyReturnedName({
+          name,
+          type: 'permabuy',
+          processId: ANT,
+          fundFrom: 'plan',
+          sources: [{ kind: 'balance', amount: 1n }],
+        }),
+    },
+  ];
+
+  for (const caller of CALLERS) {
+    /**
+     * The largest plan that fits WITHOUT the discount. Adding the discount's
+     * one account to that plan must overflow, because each account costs ~33
+     * bytes and the next size up already exceeds the limit. Calibrated per
+     * caller: they carry different account counts and bundled instructions.
+     */
+    async function largestFittingPlan(
+      signer: Awaited<ReturnType<typeof generateKeyPairSigner>>,
+    ): Promise<number> {
+      let fits = 0;
+      for (let n = 1; n <= 40; n++) {
+        const { w } = await planStub(signer, n, false, caller.rpc?.(NAME));
+        await caller.run(w, NAME);
+        const size = estimateCompiledTxSize({
+          signer,
+          instructions: w.sent[0],
+        });
+        if (size > 1232) {
+          assert.ok(fits > 0, `${caller.label}: no plan size fit at all`);
+          return fits;
+        }
+        fits = n;
+      }
+      assert.fail(
+        `${caller.label}: 40 plan accounts still fit — widen the sweep or this test proves nothing`,
+      );
     }
-    assert.ok(fits > 0, 'expected some plan size to fit');
 
-    const w = await planStub(signer, fits, true);
-    await buy(w);
-    const ix = arnsIx(w.sent, ArioArnsInstruction.BuyNameFromFundingPlan);
-    const data = getBuyNameFromFundingPlanInstructionDataDecoder().decode(
-      ix.data,
-    );
-    assert.equal(
-      data.discountAccountCount,
-      0,
-      `the discount should have been dropped at ${fits} accounts`,
-    );
-    assert.equal(
-      data.sources[0].amount,
-      COST,
-      'and the plan re-sized to the undiscounted cost',
-    );
-    // Resolved twice: once with the discount, once without.
-    assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST), COST]);
-    const size = estimateCompiledTxSize({ signer, instructions: w.sent[0] });
-    assert.ok(size <= 1232, `sent ${size} bytes`);
-  });
+    it(`${caller.label}: drops the discount and keeps the purchase, at full price`, async () => {
+      const signer = await generateKeyPairSigner();
+      const fits = await largestFittingPlan(signer);
 
-  it('keeps the discount when it still fits', async () => {
-    const signer = await generateKeyPairSigner();
-    const { w, pdaOf } = await stubWith(signer, [
-      [signer.address, gateway({ operator: signer.address })],
-    ]);
-    await w.buyRecord({
-      name: 'short',
-      type: 'permabuy',
-      processId: ANT,
-      fundFrom: 'any',
+      const { w } = await planStub(signer, fits, true, caller.rpc?.(NAME));
+      await caller.run(w, NAME);
+      const data = caller.decode(arnsIx(w.sent, caller.kind).data);
+      assert.equal(
+        data.discountAccountCount,
+        0,
+        `the discount should have been dropped at ${fits} accounts`,
+      );
+      assert.equal(
+        data.sources[0].amount,
+        COST,
+        'and the plan re-sized to the undiscounted cost',
+      );
+      // Resolved twice: once with the discount, once without.
+      assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST), COST]);
+      const size = estimateCompiledTxSize({ signer, instructions: w.sent[0] });
+      assert.ok(size <= 1232, `sent ${size} bytes`);
     });
-    const ix = arnsIx(w.sent, ArioArnsInstruction.BuyNameFromFundingPlan);
-    const data = getBuyNameFromFundingPlanInstructionDataDecoder().decode(
-      ix.data,
-    );
-    assert.equal(data.discountAccountCount, 1);
-    assert.equal(
-      ix.accounts[ix.accounts.length - 2].address,
-      await pdaOf(signer.address),
-    );
-    assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST)]);
-  });
+
+    it(`${caller.label}: keeps the discount when it still fits`, async () => {
+      const signer = await generateKeyPairSigner();
+      const { w, pda } = await planStub(signer, 1, true, caller.rpc?.(NAME));
+      await caller.run(w, NAME);
+      const ix = arnsIx(w.sent, caller.kind);
+      const data = caller.decode(ix.data);
+      assert.equal(data.discountAccountCount, 1);
+      assert.equal(
+        data.sources[0].amount,
+        applyGatewayOperatorDiscount(COST),
+        'the plan is sized to the discounted cost',
+      );
+      // The discount account leads the plan's own accounts.
+      assert.equal(ix.accounts[ix.accounts.length - 2].address, pda);
+      assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST)]);
+    });
+  }
 });
 
 describe('returned-name stake auto-pick', () => {
