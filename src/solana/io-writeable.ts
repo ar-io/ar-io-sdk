@@ -1610,6 +1610,54 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     return gatewayPda;
   }
 
+  /**
+   * Drop the operator discount if the assembled transaction would not fit.
+   *
+   * The discount adds one account (~33 bytes) to the ArNS instruction. A
+   * multi-source funding plan can already sit within that of the 1232-byte
+   * limit — measured bands: a 6-account buy plan (1229 -> 1262), an 8-account
+   * undername plan (1220 -> 1253), a 2-account returned-name plan (1214 ->
+   * 1247). Charging full price is strictly better than failing the purchase,
+   * so when it does not fit we rebuild the instruction without the discount.
+   *
+   * `rebuildWithout` re-derives the instruction with no discount — for a
+   * funding plan that also re-sizes the plan to the undiscounted cost, which is
+   * what the program will charge. If the transaction is over the limit even
+   * without the discount, the discounted version is kept and the send reports
+   * the size error, exactly as it would have before this method existed.
+   */
+  private async dropDiscountIfOversized(
+    instructions: Instruction[],
+    index: number,
+    rebuildWithout: () => Promise<Instruction>,
+    options?: { computeUnitLimit?: number; extraSigners?: KeyPairSigner[] },
+  ): Promise<Instruction[]> {
+    const measure = (ixs: Instruction[]) =>
+      estimateCompiledTxSize({
+        signer: this.signer,
+        instructions: ixs,
+        ...(options?.computeUnitLimit === undefined
+          ? {}
+          : { computeUnitLimit: options.computeUnitLimit }),
+        ...(options?.extraSigners === undefined
+          ? {}
+          : { extraSigners: options.extraSigners }),
+      });
+    const withDiscount = measure(instructions);
+    if (withDiscount <= MAX_TX_SIZE_BYTES) return instructions;
+
+    const undiscounted = [...instructions];
+    undiscounted[index] = await rebuildWithout();
+    const withoutDiscount = measure(undiscounted);
+    if (withoutDiscount > MAX_TX_SIZE_BYTES) return instructions;
+
+    this.logger.warn(
+      '[arns] operator discount dropped: the transaction would exceed the size limit',
+      { withDiscount, withoutDiscount, limit: MAX_TX_SIZE_BYTES },
+    );
+    return undiscounted;
+  }
+
   private buildMigrateGatewayInstruction(
     operator: Address,
     gateway: Address,
@@ -2422,7 +2470,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       antPubkey,
     );
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    let instructions = syncIx ? [ix, syncIx] : [ix];
+    if (discountGateway !== undefined && discountAttached) {
+      instructions = await this.dropDiscountIfOversized(instructions, 0, () =>
+        this._buildBuyNameFromFundingPlanIx({
+          params,
+          antPubkey,
+          arnsRecord,
+          reservedNameCheck,
+          returnedNameCheck,
+          buyNameParams,
+          arnsConfig,
+          discountGateway: undefined,
+        }),
+      );
+    }
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -2971,9 +3034,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       operation: 'upgrade',
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(
+    const instructions = await this.dropDiscountIfOversized(
       syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'upgrade',
+          forceNoDiscount: true,
+        }),
     );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -3093,7 +3164,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
     // BD-095: extend_lease changes only `end_timestamp`, which isn't
     // mirrored in any Metaplex Attributes plugin trait. No bundle.
-    const sig = await this.sendTransaction([...migrateIxs, ix]);
+    const instructions = await this.dropDiscountIfOversized(
+      [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'extend',
+          years: params.years,
+          forceNoDiscount: true,
+        }),
+    );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -3110,9 +3192,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       quantity: params.increaseCount,
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(
+    const instructions = await this.dropDiscountIfOversized(
       syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'increaseUndername',
+          quantity: params.increaseCount,
+          forceNoDiscount: true,
+        }),
     );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -3132,6 +3223,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     operation: 'upgrade' | 'extend' | 'increaseUndername';
     years?: number;
     quantity?: number;
+    /** Set by `dropDiscountIfOversized`'s rebuild to re-derive without it. */
+    forceNoDiscount?: boolean;
   }) {
     const arnsConfig = await this.getArnsConfig();
     const callerATA = await getAssociatedTokenAddressKit(
@@ -3142,9 +3235,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       args.params.name,
       this.arnsProgram,
     );
-    const discountGateway = await this.resolveOperatorDiscountGateway(
-      args.params,
-    );
+    const discountGateway =
+      args.forceNoDiscount === true
+        ? undefined
+        : await this.resolveOperatorDiscountGateway(args.params);
     // Single-source paths below return through this; the funding-plan path
     // attaches the discount itself.
     const discounted = <I extends Instruction>(ix: Promise<I>) =>
@@ -4234,6 +4328,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     let ix;
     // Set by the funding-plan branch, which attaches the discount itself.
     let discountAttached = false;
+    let buildPlanIx:
+      | ((dg: Address | undefined) => Promise<Instruction>)
+      | undefined;
     const useBalance =
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -4319,27 +4416,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           years: buyParams.years,
           purchaseType: buyParams.purchaseType,
         });
-        const plan = await this._resolveFundingPlan(
-          params as ArNSPurchaseParams,
-          discountedCost(cost, discountGateway),
-        );
-        const { remainingAccounts, withdrawalCounter, residueVaultCount } =
-          await this._materializeFundingPlan(
+        // Re-derivable so `dropDiscountIfOversized` can rebuild it without the
+        // discount, which also re-sizes the plan to the undiscounted cost.
+        buildPlanIx = async (dg: Address | undefined) => {
+          const plan = await this._resolveFundingPlan(
             params as ArNSPurchaseParams,
-            plan,
+            discountedCost(cost, dg),
           );
-        ix = await getBuyReturnedNameFromFundingPlanInstructionAsync(
-          {
-            ...sharedReturnedBase,
-            payerTokenAccount: plan.hasBalanceSource ? buyerATA : undefined,
-            withdrawalCounter,
-            sources: plan.sources.map(toGeneratedFundingSourceSpec),
-            discountAccountCount: discountGateway === undefined ? 0 : 1,
-            residueVaultCount,
-          },
-          { programAddress: this.arnsProgram },
-        );
-        ix = withFundingPlanAccounts(ix, discountGateway, remainingAccounts);
+          const { remainingAccounts, withdrawalCounter, residueVaultCount } =
+            await this._materializeFundingPlan(
+              params as ArNSPurchaseParams,
+              plan,
+            );
+          const built = await getBuyReturnedNameFromFundingPlanInstructionAsync(
+            {
+              ...sharedReturnedBase,
+              payerTokenAccount: plan.hasBalanceSource ? buyerATA : undefined,
+              withdrawalCounter,
+              sources: plan.sources.map(toGeneratedFundingSourceSpec),
+              discountAccountCount: dg === undefined ? 0 : 1,
+              residueVaultCount,
+            },
+            { programAddress: this.arnsProgram },
+          );
+          return withFundingPlanAccounts(built, dg, remainingAccounts);
+        };
+        ix = await buildPlanIx(discountGateway);
         discountAttached = true;
       } else {
         throw new Error(
@@ -4378,12 +4480,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       antPubkey,
     );
-    const sig = await this.sendTransaction([
+    let instructions = [
       createBuyerAtaIx,
       createInitiatorAtaIx,
       ix,
       ...(syncIx ? [syncIx] : []),
-    ]);
+    ];
+    if (discountGateway !== undefined && buildPlanIx !== undefined) {
+      const rebuild = buildPlanIx;
+      instructions = await this.dropDiscountIfOversized(instructions, 2, () =>
+        rebuild(undefined),
+      );
+    }
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 

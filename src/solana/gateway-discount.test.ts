@@ -752,6 +752,106 @@ describe('getCostDetails operator discount', () => {
   });
 });
 
+describe('oversized transactions drop the discount instead of failing', () => {
+  // The discount adds one account (~33 bytes). A multi-source funding plan can
+  // already sit within that of the 1232-byte limit, so attaching it would turn
+  // a purchase that lands today into one that fails. Charging full price is
+  // strictly better, so it must be dropped — measured band for a buy plan is 6
+  // per-source accounts (1229 -> 1262).
+  const NAME = 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklm';
+
+  /** A stub whose funding plan carries `n` per-source accounts. */
+  async function planStub(
+    signer: Awaited<ReturnType<typeof generateKeyPairSigner>>,
+    n: number,
+    withGateway: boolean,
+  ): Promise<StubWriteable> {
+    const { w } = await stubWith(
+      signer,
+      withGateway
+        ? [[signer.address, gateway({ operator: signer.address })]]
+        : [],
+    );
+    (w as any)._materializeFundingPlan = async () => ({
+      remainingAccounts: Array.from({ length: n }, (_, i) => ({
+        address: addressFor(30 + i),
+        role: AccountRole.WRITABLE,
+      })),
+      withdrawalCounter: WITHDRAWAL_COUNTER,
+      residueVaultCount: 0,
+    });
+    return w;
+  }
+
+  const buy = (w: StubWriteable) =>
+    w.buyRecord({
+      name: NAME,
+      type: 'permabuy',
+      processId: ANT,
+      fundFrom: 'any',
+    });
+
+  it('buyRecord: keeps the purchase, at full price', async () => {
+    const signer = await generateKeyPairSigner();
+    // Calibrate: the largest plan that fits WITHOUT the discount. Adding the
+    // discount's one account to that plan must overflow, because each account
+    // costs ~33 bytes and the next size up already exceeds the limit.
+    let fits = 0;
+    for (let n = 1; n <= 14; n++) {
+      const w = await planStub(signer, n, false);
+      await buy(w);
+      const size = estimateCompiledTxSize({ signer, instructions: w.sent[0] });
+      if (size <= 1232) fits = n;
+      else break;
+    }
+    assert.ok(fits > 0, 'expected some plan size to fit');
+
+    const w = await planStub(signer, fits, true);
+    await buy(w);
+    const ix = arnsIx(w.sent, ArioArnsInstruction.BuyNameFromFundingPlan);
+    const data = getBuyNameFromFundingPlanInstructionDataDecoder().decode(
+      ix.data,
+    );
+    assert.equal(
+      data.discountAccountCount,
+      0,
+      `the discount should have been dropped at ${fits} accounts`,
+    );
+    assert.equal(
+      data.sources[0].amount,
+      COST,
+      'and the plan re-sized to the undiscounted cost',
+    );
+    // Resolved twice: once with the discount, once without.
+    assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST), COST]);
+    const size = estimateCompiledTxSize({ signer, instructions: w.sent[0] });
+    assert.ok(size <= 1232, `sent ${size} bytes`);
+  });
+
+  it('keeps the discount when it still fits', async () => {
+    const signer = await generateKeyPairSigner();
+    const { w, pdaOf } = await stubWith(signer, [
+      [signer.address, gateway({ operator: signer.address })],
+    ]);
+    await w.buyRecord({
+      name: 'short',
+      type: 'permabuy',
+      processId: ANT,
+      fundFrom: 'any',
+    });
+    const ix = arnsIx(w.sent, ArioArnsInstruction.BuyNameFromFundingPlan);
+    const data = getBuyNameFromFundingPlanInstructionDataDecoder().decode(
+      ix.data,
+    );
+    assert.equal(data.discountAccountCount, 1);
+    assert.equal(
+      ix.accounts[ix.accounts.length - 2].address,
+      await pdaOf(signer.address),
+    );
+    assert.deepEqual(w.planCosts, [applyGatewayOperatorDiscount(COST)]);
+  });
+});
+
 describe('returned-name stake auto-pick', () => {
   // A delegation that covers the discounted price but not the full one.
   const FULL = 1_000_000;
