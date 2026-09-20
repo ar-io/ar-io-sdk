@@ -67,7 +67,6 @@ import { getAntAuthorityPDA, getAntRecordPDA } from './pda.js';
 import {
   estimateComputeUnitLimit,
   estimatePriorityFeeMicroLamports,
-  estimateQuotePriorityFeeMicroLamports,
 } from './send.js';
 import type {
   SolanaRpc,
@@ -514,16 +513,12 @@ export async function spawnSolanaANT(
   // them up from the account metadata roles: accounts marked as SIGNER roles
   // must have a matching `TransactionSigner` attached. We do that by placing
   // the mint signer on the message alongside the fee payer signer.
-  // Signer-aware fee (see sendAndConfirm): wallet signers get the market
-  // rate their own estimator would pick; keypairs keep the cheap base rate.
   // The blockhash here only has to make the SIMULATION message compile —
   // `estimateComputeUnitLimit` simulates with `replaceRecentBlockhash: true`.
   // The one that matters is re-fetched after simulation (see below).
   const [{ value: initialBlockhash }, microLamports] = await Promise.all([
     rpc.getLatestBlockhash().send(),
-    isTransactionModifyingSigner(signer)
-      ? estimateQuotePriorityFeeMicroLamports(rpc)
-      : estimatePriorityFeeMicroLamports(rpc),
+    estimatePriorityFeeMicroLamports(rpc),
   ]);
   let latestBlockhash = initialBlockhash;
 
@@ -536,10 +531,6 @@ export async function spawnSolanaANT(
         appendTransactionMessageInstructions(
           [
             getSetComputeUnitLimitInstruction({ units }),
-            // Pin a non-zero priority fee (see `estimatePriorityFeeMicroLamports`).
-            // A real fee both lands the tx and, per Phantom's docs, stops the
-            // wallet from injecting its own fee. The paired mint-keypair signing
-            // is handled below.
             getSetComputeUnitPriceInstruction({ microLamports }),
             createIx,
             initIx,
@@ -549,21 +540,11 @@ export async function spawnSolanaANT(
         ),
     );
 
-  // Right-size the CU limit from a pre-send simulation — but ONLY for
-  // non-modifying (keypair) signers. Message-modifying wallets (Phantom etc.)
-  // re-optimize the compute budget themselves and attach simulation-based
-  // guards (Lighthouse) keyed to the budget they expect; a tightly-sized limit
-  // interferes with that and trips the guard. The wallet rewrite is captured by
-  // the modifying-signer flow below, so `computeUnitLimit` (the ceiling) is left
-  // generous for them.
-  const shouldAutoSize = !isTransactionModifyingSigner(signer);
-  const units = shouldAutoSize
-    ? await estimateComputeUnitLimit(
-        rpc,
-        buildMessage(computeUnitLimit, latestBlockhash),
-        computeUnitLimit,
-      )
-    : computeUnitLimit;
+  const units = await estimateComputeUnitLimit(
+    rpc,
+    buildMessage(computeUnitLimit, latestBlockhash),
+    computeUnitLimit,
+  );
 
   // Re-fetch after simulation so the SIGNED message gets the full ~150-block
   // (~60s) validity window rather than whatever is left of it once the
@@ -571,12 +552,10 @@ export async function spawnSolanaANT(
   // longer note there for the mainnet expiry this fixes.
   // Best-effort, as in `sendAndConfirm`: on failure keep the pre-simulation
   // blockhash so this can only ever match the old behaviour, never worsen it.
-  if (shouldAutoSize) {
-    try {
-      latestBlockhash = (await rpc.getLatestBlockhash().send()).value;
-    } catch {
-      // keep `latestBlockhash` as fetched before the simulation
-    }
+  try {
+    latestBlockhash = (await rpc.getLatestBlockhash().send()).value;
+  } catch {
+    // Keep the initial blockhash if the refresh fails.
   }
   const message = buildMessage(units, latestBlockhash);
 
