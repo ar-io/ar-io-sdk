@@ -1,7 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { address, generateKeyPairSigner } from '@solana/kit';
-import { reclaimLookupTablesForSigner, sendAndConfirm } from './send.js';
+import {
+  address,
+  generateKeyPairSigner,
+  getBase58Decoder,
+  getCompiledTransactionMessageDecoder,
+} from '@solana/kit';
+import {
+  estimatePriorityFeeMicroLamports,
+  reclaimLookupTablesForSigner,
+  sendAndConfirm,
+} from './send.js';
 
 /**
  * A blockhash is only valid for ~150 blocks (~60s) from ISSUE, not from send.
@@ -19,7 +28,9 @@ const MEMO = address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 // Two distinct, valid-looking blockhashes so we can tell which one was used.
 const BLOCKHASH_BEFORE_SIM = '11111111111111111111111111111111';
-const BLOCKHASH_AFTER_SIM = '22222222222222222222222222222222';
+const BLOCKHASH_AFTER_SIM = getBase58Decoder().decode(
+  new Uint8Array(32).fill(2),
+);
 
 function makeRpc() {
   const calls: string[] = [];
@@ -339,5 +350,122 @@ describe('reclaimLookupTablesForSigner history scan', () => {
         return true;
       },
     );
+  });
+});
+
+describe('wallet compute-unit sizing', () => {
+  it('hands a modifying wallet the simulated budget and a fresh blockhash', async () => {
+    const { rpc } = makeRpc();
+    const payer = await generateKeyPairSigner();
+    const stop = new Error('stop before signing or broadcasting');
+    let capturedUnits = 0;
+    let capturedBlockhash = '';
+    await assert.rejects(
+      sendAndConfirm({
+        rpc,
+        rpcSubscriptions: undefined as never,
+        signer: {
+          address: payer.address,
+          modifyAndSignTransactions: async ([tx]) => {
+            const message = getCompiledTransactionMessageDecoder().decode(
+              tx.messageBytes,
+            );
+            capturedBlockhash = message.lifetimeToken;
+            const data = message.instructions[0].data!;
+            capturedUnits = new DataView(
+              data.buffer,
+              data.byteOffset,
+              data.byteLength,
+            ).getUint32(1, true);
+            throw stop;
+          },
+        },
+        instructions: [
+          { programAddress: MEMO, accounts: [], data: new Uint8Array([1]) },
+        ],
+        computeUnitLimit: 1_000_000,
+        priorityFeeMicroLamports: 1000n,
+      }),
+      (error) => error === stop,
+    );
+    assert.equal(capturedBlockhash, BLOCKHASH_AFTER_SIM);
+    assert.equal(capturedUnits, 10_000);
+  });
+});
+
+describe('block-sampled priority fees', () => {
+  const encode = getBase58Decoder();
+  function transaction(price: bigint, failed = false) {
+    const data = new Uint8Array(9);
+    data[0] = 3;
+    new DataView(data.buffer).setBigUint64(1, price, true);
+    return {
+      version: 'legacy',
+      meta: {
+        err: failed ? { InstructionError: [1, 'InvalidArgument'] } : null,
+      },
+      transaction: {
+        message: {
+          header: { numRequiredSignatures: 1 },
+          accountKeys: ['ComputeBudget111111111111111111111111111111'],
+          instructions: [{ programIdIndex: 0, data: encode.decode(data) }],
+        },
+      },
+    };
+  }
+  it('pools zeros, failed transactions and native v1 fees while excluding simple votes', async () => {
+    const vote = transaction(0n);
+    vote.transaction.message.accountKeys[0] =
+      'Vote111111111111111111111111111111111111111';
+    const native = {
+      version: 1,
+      meta: { err: null },
+      transaction: {
+        message: {
+          header: { numRequiredSignatures: 1 },
+          accountKeys: [],
+          instructions: [],
+          transactionConfig: { priorityFee: 3, computeUnitLimit: 1000 },
+        },
+      },
+    };
+    const blocks = new Map<bigint, unknown[]>([
+      [1n, [transaction(0n), transaction(0n), transaction(4000n)]],
+      [13n, [transaction(2000n, true)]],
+      [26n, [native]],
+      [38n, Array(20).fill(vote)],
+      [50n, [transaction(9000n)]],
+    ]);
+    const rpc = {
+      getSlot: () => ({ send: async () => 50n }),
+      getBlocks: () => ({
+        send: async () => Array.from({ length: 50 }, (_, i) => BigInt(i + 1)),
+      }),
+      getBlock: (slot: bigint) => ({
+        send: async () => ({ transactions: blocks.get(slot) }),
+      }),
+    };
+    assert.equal(await estimatePriorityFeeMicroLamports(rpc as never), 2000n);
+  });
+  it('caps high sampled prices and falls back to the floor when sampling fails', async () => {
+    const rpc = {
+      getSlot: () => ({ send: async () => 50n }),
+      getBlocks: () => ({
+        send: async () => Array.from({ length: 50 }, (_, i) => BigInt(i + 1)),
+      }),
+      getBlock: () => ({
+        send: async () => ({ transactions: [transaction(9_000_000n)] }),
+      }),
+    };
+    assert.equal(
+      await estimatePriorityFeeMicroLamports(rpc as never),
+      2_000_000n,
+    );
+    rpc.getBlock = () => ({
+      send: async () => {
+        throw new Error('RPC unavailable');
+      },
+    });
+    assert.equal(await estimatePriorityFeeMicroLamports(rpc as never), 1000n);
   });
 });

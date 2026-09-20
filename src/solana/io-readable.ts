@@ -576,14 +576,8 @@ export class SolanaARIOReadable {
   }
 
   /**
-   * Quote-grade compute-unit price, memoized for
-   * {@link PRIORITY_FEE_CACHE_TTL_MS}.
-   *
-   * "Quote-grade" means it covers what a browser wallet will attach, not just
-   * the near-floor base rate a keypair send pays. Each miss costs THREE
-   * `getRecentPrioritizationFees` queries (one unscoped plus two scoped market
-   * references) at ~6.6 KiB apiece, which is why coalescing matters here more
-   * than anywhere else: ten concurrent quotes used to issue thirty of them.
+   * Shared block-sampled price, memoized for {@link PRIORITY_FEE_CACHE_TTL_MS}.
+   * Coalesce concurrent quotes so they reuse the same five-block sample.
    */
   private async getQuotePriorityFee(): Promise<bigint> {
     return memoizeInFlight(
