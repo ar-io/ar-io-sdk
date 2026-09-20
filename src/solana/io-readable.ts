@@ -545,7 +545,7 @@ export class SolanaARIOReadable {
   > = new Map();
 
   // Short-TTL memo of the estimated compute-unit price (priority fee), so
-  // burst `getCostDetails` calls share one getRecentPrioritizationFees query.
+  // burst `getCostDetails` calls share one block sample.
   private _priorityFeeCache: InFlightStore<'fee', bigint> = new Map();
 
   // Memo of getMinimumBalanceForRentExemption results keyed by byte size.
