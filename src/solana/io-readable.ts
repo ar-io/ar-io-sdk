@@ -196,10 +196,7 @@ import {
   getWithdrawalPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
-import {
-  estimateGasFee,
-  estimateQuotePriorityFeeMicroLamports,
-} from './send.js';
+import { estimateGasFee, estimatePriorityFeeMicroLamports } from './send.js';
 import { type InFlightStore, memoizeInFlight } from './single-flight.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
@@ -584,7 +581,7 @@ export class SolanaARIOReadable {
       this._priorityFeeCache,
       'fee',
       PRIORITY_FEE_CACHE_TTL_MS,
-      () => estimateQuotePriorityFeeMicroLamports(this.rpc),
+      () => estimatePriorityFeeMicroLamports(this.rpc),
     );
   }
 

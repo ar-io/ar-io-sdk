@@ -1,6 +1,5 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-
 import bs58 from 'bs58';
 
 import { Logger } from '../common/logger.js';
@@ -31,45 +30,14 @@ function stubRpc(
   return {
     counts,
     rpc: {
-      getSlot: () => ({
+      getRecentPrioritizationFees: () => ({
         send: async () => {
           counts.feeCalls++;
           if (opts.fees === 'throws') throw new Error('rpc down');
-          return 50n;
-        },
-      }),
-      getBlocks: () => ({
-        send: async () => {
-          counts.feeCalls++;
-          return Array.from({ length: 50 }, (_, i) => BigInt(i + 1));
-        },
-      }),
-      getBlock: () => ({
-        send: async () => {
-          counts.feeCalls++;
-          const fees = opts.fees === 'throws' ? [] : (opts.fees ?? []);
-          return {
-            transactions: fees.map((price) => {
-              const data = Buffer.alloc(9);
-              data[0] = 3;
-              data.writeBigUInt64LE(BigInt(price), 1);
-              return {
-                version: 'legacy',
-                meta: { err: null },
-                transaction: {
-                  message: {
-                    header: { numRequiredSignatures: 1 },
-                    accountKeys: [
-                      'ComputeBudget111111111111111111111111111111',
-                    ],
-                    instructions: [
-                      { programIdIndex: 0, data: bs58.encode(data) },
-                    ],
-                  },
-                },
-              };
-            }),
-          };
+          return (opts.fees ?? []).map((price, slot) => ({
+            slot: BigInt(slot),
+            prioritizationFee: BigInt(price),
+          }));
         },
       }),
       getMinimumBalanceForRentExemption: (bytes: bigint) => ({
@@ -152,14 +120,14 @@ describe('estimateGasFee', () => {
   it('falls back to the floor price when the fee query fails', async () => {
     const { rpc } = stubRpc({ fees: 'throws' });
     const quote = await estimateGasFee(rpc as never);
-    assert.equal(quote.priorityFeeMicroLamports, 1_000);
-    assert.equal(quote.priorityFeeLamports, 400);
+    assert.equal(quote.priorityFeeMicroLamports, 10_000);
+    assert.equal(quote.priorityFeeLamports, 4_000);
   });
 
   it('keeps the floor on clusters with no fee market (devnet)', async () => {
     const { rpc } = stubRpc({ fees: [] });
     const quote = await estimateGasFee(rpc as never);
-    assert.equal(quote.priorityFeeMicroLamports, 1_000);
+    assert.equal(quote.priorityFeeMicroLamports, 10_000);
   });
 });
 
@@ -256,7 +224,7 @@ describe('SolanaARIOReadable.getGasEstimate', () => {
       intent: 'Buy-Name',
       name: 'brandybuck35',
     });
-    assert.equal(counts.feeCalls, 7, 'priority fee memoized within TTL');
+    assert.equal(counts.feeCalls, 1, 'priority fee memoized within TTL');
     assert.equal(counts.rentCalls, 1, 'rent memoized per byte size');
     assert.equal(second.totalLamports, quote.totalLamports);
   });

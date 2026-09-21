@@ -65,8 +65,10 @@ import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
 import { ARIO_ANT_PROGRAM_ID } from './constants.js';
 import { getAntAuthorityPDA, getAntRecordPDA } from './pda.js';
 import {
+  WALLET_COMPUTE_UNIT_HEADROOM,
   estimateComputeUnitLimit,
   estimatePriorityFeeMicroLamports,
+  getWritableAccounts,
 } from './send.js';
 import type {
   SolanaRpc,
@@ -518,7 +520,10 @@ export async function spawnSolanaANT(
   // The one that matters is re-fetched after simulation (see below).
   const [{ value: initialBlockhash }, microLamports] = await Promise.all([
     rpc.getLatestBlockhash().send(),
-    estimatePriorityFeeMicroLamports(rpc),
+    estimatePriorityFeeMicroLamports(
+      rpc,
+      getWritableAccounts([createIx, initIx, ...aclIxs], signer.address),
+    ),
   ]);
   let latestBlockhash = initialBlockhash;
 
@@ -544,6 +549,7 @@ export async function spawnSolanaANT(
     rpc,
     buildMessage(computeUnitLimit, latestBlockhash),
     computeUnitLimit,
+    isTransactionModifyingSigner(signer) ? WALLET_COMPUTE_UNIT_HEADROOM : 0,
   );
 
   // Re-fetch after simulation so the SIGNED message gets the full ~150-block

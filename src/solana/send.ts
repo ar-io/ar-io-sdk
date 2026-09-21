@@ -47,10 +47,10 @@ import {
   compressTransactionMessageUsingAddressLookupTables,
   createTransactionMessage,
   getAddressDecoder,
-  getBase58Encoder,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
   isTransactionModifyingSigner,
+  isWritableRole,
   partiallySignTransaction,
   pipe,
   sendAndConfirmTransactionFactory,
@@ -67,7 +67,7 @@ import type { SolanaRpc, SolanaRpcSubscriptions } from './types.js';
 const logger = Logger.default;
 
 /** Bounds for automatically estimated prices, in micro-lamports per CU. */
-const MIN_PRIORITY_FEE_MICRO_LAMPORTS = 1_000n;
+const MIN_PRIORITY_FEE_MICRO_LAMPORTS = 10_000n;
 /** Cap so a spiky fee market can't blow up the fee unexpectedly. */
 const MAX_PRIORITY_FEE_MICRO_LAMPORTS = 2_000_000n;
 
@@ -84,6 +84,8 @@ const COMPUTE_UNIT_LIMIT_BUFFER = 1.3;
 const MIN_COMPUTE_UNIT_LIMIT = 10_000;
 /** Solana's hard per-transaction compute-unit ceiling. */
 const MAX_COMPUTE_UNIT_LIMIT = 1_400_000;
+/** Extra budget for instructions a modifying wallet may add after simulation. */
+export const WALLET_COMPUTE_UNIT_HEADROOM = 30_000;
 
 /** Flat base fee Solana charges per signature, in lamports. */
 export const BASE_FEE_LAMPORTS_PER_SIGNATURE = 5_000;
@@ -95,105 +97,32 @@ export const BASE_FEE_LAMPORTS_PER_SIGNATURE = 5_000;
  */
 export const DEFAULT_COMPUTE_UNIT_LIMIT = 400_000;
 
-const base58 = getBase58Encoder();
-
-/**
- * Pool non-vote transaction prices from five blocks spaced across the latest
- * 50 produced blocks. Include zero prices and failed transactions.
- */
-export async function estimatePriorityFeeMicroLamports(
-  rpc: SolanaRpc,
-): Promise<bigint> {
-  try {
-    const tip = await rpc.getSlot({ commitment: 'confirmed' }).send();
-    const slots = (
-      await rpc
-        .getBlocks(tip > 1000n ? tip - 1000n : 0n, tip, {
-          commitment: 'confirmed',
-        })
-        .send()
-    ).slice(-50);
-    if (slots.length < 50) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
-    const blocks = await Promise.all(
-      [0, 12, 25, 37, 49].map((index) =>
-        rpc
-          .getBlock(slots[index], {
-            commitment: 'confirmed',
-            encoding: 'json',
-            transactionDetails: 'full',
-            rewards: false,
-            // The RPC supports v1 before Kit's type declarations do.
-            maxSupportedTransactionVersion: 1 as 0,
-          })
-          .send(),
-      ),
-    );
-    const prices: bigint[] = [];
-    for (const block of blocks) {
-      if (!block) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
-      for (const entry of block.transactions) {
-        if (!entry.meta) continue;
-        const message = entry.transaction.message;
-        const keys = [
-          ...message.accountKeys,
-          ...(entry.meta.loadedAddresses?.writable ?? []),
-          ...(entry.meta.loadedAddresses?.readonly ?? []),
-        ];
-        if (
-          entry.version === 'legacy' &&
-          message.header.numRequiredSignatures <= 2 &&
-          message.instructions.length === 1 &&
-          keys[message.instructions[0].programIdIndex] ===
-            'Vote111111111111111111111111111111111111111'
-        ) {
-          continue;
-        }
-        let price = 0n;
-        if ((entry.version as number | 'legacy') === 1) {
-          const config = (
-            message as typeof message & {
-              transactionConfig?: {
-                priorityFee?: number | bigint;
-                computeUnitLimit?: number | bigint;
-              };
-            }
-          ).transactionConfig;
-          if (!config) continue;
-          const fee = BigInt(config.priorityFee ?? 0);
-          const limit = BigInt(config.computeUnitLimit ?? 0);
-          if (fee > 0n && limit === 0n) continue;
-          price =
-            fee === 0n
-              ? 0n
-              : (fee * 1_000_000n) / (limit > 1_400_000n ? 1_400_000n : limit);
-        } else {
-          let priceInstructions = 0;
-          let supported = true;
-          for (const instruction of message.instructions) {
-            if (
-              keys[instruction.programIdIndex] !==
-              'ComputeBudget111111111111111111111111111111'
-            )
-              continue;
-            const data = base58.encode(instruction.data);
-            if (data[0] === 0) supported = false;
-            if (data[0] === 3) {
-              if (data.length !== 9 || ++priceInstructions > 1) {
-                supported = false;
-                break;
-              }
-              price = new DataView(
-                data.buffer,
-                data.byteOffset,
-                data.byteLength,
-              ).getBigUint64(1, true);
-            }
-          }
-          if (!supported) continue;
-        }
-        prices.push(price);
+/** Collect writable instruction accounts, excluding the transaction fee payer. */
+export function getWritableAccounts(
+  instructions: readonly Instruction[],
+  feePayer: Address,
+): Address[] {
+  const accounts = new Set<Address>();
+  for (const instruction of instructions) {
+    for (const account of instruction.accounts ?? []) {
+      if (account.address !== feePayer && isWritableRole(account.role)) {
+        accounts.add(account.address);
       }
     }
+  }
+  return [...accounts];
+}
+
+/** Estimate a bounded median price from recent per-slot writable-account fees. */
+export async function estimatePriorityFeeMicroLamports(
+  rpc: SolanaRpc,
+  writableAccounts: readonly Address[] = [],
+): Promise<bigint> {
+  try {
+    const fees = await rpc
+      .getRecentPrioritizationFees([...new Set(writableAccounts)].slice(0, 128))
+      .send();
+    const prices = fees.map(({ prioritizationFee }) => prioritizationFee);
     if (prices.length === 0) return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
     prices.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     const median = prices[Math.ceil(prices.length * 0.5) - 1];
@@ -203,18 +132,21 @@ export async function estimatePriorityFeeMicroLamports(
         ? MAX_PRIORITY_FEE_MICRO_LAMPORTS
         : median;
   } catch {
+    logger.warn(
+      '[solana-send] priority-fee query failed, using 10000 micro-lamports/CU',
+    );
     return MIN_PRIORITY_FEE_MICRO_LAMPORTS;
   }
 }
 
-/** Wallets and keypair signers use the same sampled price. */
+/** @deprecated Use estimatePriorityFeeMicroLamports instead. */
 export async function estimateWalletPriorityFeeMicroLamports(
   rpc: SolanaRpc,
 ): Promise<bigint> {
   return estimatePriorityFeeMicroLamports(rpc);
 }
 
-/** Quotes use the same estimator as transaction submission. */
+/** @deprecated Use estimatePriorityFeeMicroLamports instead. */
 export async function estimateQuotePriorityFeeMicroLamports(
   rpc: SolanaRpc,
 ): Promise<bigint> {
@@ -223,8 +155,8 @@ export async function estimateQuotePriorityFeeMicroLamports(
 
 /**
  * Simulate `message` (sig-verify off) to learn its actual `unitsConsumed`, then
- * return a tight compute-unit limit: `unitsConsumed * COMPUTE_UNIT_LIMIT_BUFFER`,
- * clamped to [{@link MIN_COMPUTE_UNIT_LIMIT}, `fallback`].
+ * return a compute-unit limit with percentage and optional fixed headroom,
+ * clamped to [MIN_COMPUTE_UNIT_LIMIT, fallback].
  *
  * Best-effort: on any simulation error (including a program error — let the real
  * send surface it) we fall back to `fallback` so behavior never regresses.
@@ -233,6 +165,7 @@ export async function estimateComputeUnitLimit(
   rpc: SolanaRpc,
   message: unknown,
   fallback: number,
+  extraUnits = 0,
 ): Promise<number> {
   try {
     const compiled = compileTransaction(message as never);
@@ -248,7 +181,7 @@ export async function estimateComputeUnitLimit(
     if (sim.value.err != null || consumed == null) return fallback;
     const sized = Math.ceil(Number(consumed) * COMPUTE_UNIT_LIMIT_BUFFER);
     return Math.min(
-      Math.max(sized, MIN_COMPUTE_UNIT_LIMIT),
+      Math.max(sized, MIN_COMPUTE_UNIT_LIMIT) + extraUnits,
       Math.min(fallback, MAX_COMPUTE_UNIT_LIMIT),
     );
   } catch {
@@ -264,12 +197,10 @@ export async function estimateComputeUnitLimit(
  * The compute-unit price comes from {@link estimatePriorityFeeMicroLamports}
  * unless pinned by the caller.
  *
- * The fee side mirrors what {@link sendAndConfirm} will actually attach: the
- * same default CU limit and the same auto price estimate. It's a conservative
- * upper bound — the runtime charges the priority fee on the pinned LIMIT, and
- * `sendAndConfirm` tightens that limit from a pre-send simulation for keypair
- * signers, so the landed fee is usually lower. Never throws: the only RPC
- * call is the priority-fee query, which falls back to its floor internally.
+ * Quotes use unscoped fee samples and the caller's CU ceiling. Sends scope
+ * samples to writable accounts and size the limit through simulation.
+ * A wallet may also adjust the transaction before signing.
+ * The fee query falls back to its floor on RPC failure.
  */
 export async function estimateGasFee(
   rpc: SolanaRpc,
@@ -298,7 +229,7 @@ export async function estimateGasFee(
   const microLamports =
     priorityFeeMicroLamports !== undefined
       ? BigInt(priorityFeeMicroLamports)
-      : await estimateQuotePriorityFeeMicroLamports(rpc);
+      : await estimatePriorityFeeMicroLamports(rpc);
   const baseFeeLamports = BASE_FEE_LAMPORTS_PER_SIGNATURE * signatureCount;
   // Ceil-divide micro-lamports → lamports per transaction; the runtime
   // rounds the prioritization fee up to whole lamports.
@@ -352,13 +283,13 @@ export async function sendAndConfirm({
    */
   computeUnitLimit?: number;
   /**
-   * When true (default), simulate before signing and apply the same CU sizing
-   * to every signer. When false, pin computeUnitLimit verbatim.
+   * When true (default), simulate before signing. Modifying wallets receive
+   * additional headroom. When false, pin computeUnitLimit verbatim.
    */
   autoComputeUnitLimit?: boolean;
   /**
    * Compute-unit price (priority fee), in micro-lamports per CU.
-   * - 'auto' (default): use the bounded block-sampled median.
+   * - 'auto' (default): use the bounded writable-account fee median.
    * - a `number`/`bigint`: pin exactly this price.
    * - false: explicitly set the priority price to zero.
    */
@@ -385,7 +316,10 @@ export async function sendAndConfirm({
 }): Promise<string> {
   const microLamports =
     priorityFeeMicroLamports === 'auto'
-      ? await estimatePriorityFeeMicroLamports(rpc)
+      ? await estimatePriorityFeeMicroLamports(
+          rpc,
+          getWritableAccounts(instructions, signer.address),
+        )
       : priorityFeeMicroLamports === false
         ? 0n
         : BigInt(priorityFeeMicroLamports);
@@ -430,6 +364,7 @@ export async function sendAndConfirm({
         rpc,
         buildMessage(computeUnitLimit, latestBlockhash),
         computeUnitLimit,
+        isTransactionModifyingSigner(signer) ? WALLET_COMPUTE_UNIT_HEADROOM : 0,
       )
     : computeUnitLimit;
 
