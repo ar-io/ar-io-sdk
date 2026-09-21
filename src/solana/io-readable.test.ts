@@ -477,7 +477,7 @@ function demandFactorBytes(): Uint8Array {
   }) as Uint8Array;
 }
 
-/** Count RPC calls and optionally fail block sampling or account lookup. */
+/** Count RPC calls and optionally fail fee queries or account lookup. */
 function countingGasRpc(
   counts: RpcCounts,
   opts: { failFeeCalls?: number; accountExists?: boolean } = {},
@@ -487,41 +487,16 @@ function countingGasRpc(
     counts[m] = (counts[m] ?? 0) + 1;
   };
   return {
-    getBlocks: () => ({
+    getRecentPrioritizationFees: (accounts: readonly Address[]) => ({
       send: async () => {
-        bump('getBlocks');
-        await tick();
-        return Array.from({ length: 50 }, (_, i) => BigInt(451 + i));
-      },
-    }),
-    getBlock: () => ({
-      send: async () => {
-        bump('getBlock');
+        assert.deepEqual(accounts, [], 'quotes use unscoped fee samples');
+        bump('getRecentPrioritizationFees');
         await tick();
         if (feeFailuresLeft > 0) {
           feeFailuresLeft--;
           throw new Error('HTTP error (429): Too Many Requests');
         }
-        const data = Buffer.alloc(9);
-        data[0] = 3;
-        data.writeBigUInt64LE(12_345n, 1);
-        return {
-          transactions: [
-            {
-              version: 'legacy',
-              meta: { err: null },
-              transaction: {
-                message: {
-                  header: { numRequiredSignatures: 1 },
-                  accountKeys: ['ComputeBudget111111111111111111111111111111'],
-                  instructions: [
-                    { programIdIndex: 0, data: bs58.encode(data) },
-                  ],
-                },
-              },
-            },
-          ],
-        };
+        return [{ slot: 500n, prioritizationFee: 12_345n }];
       },
     }),
     getMinimumBalanceForRentExemption: () => ({
@@ -570,7 +545,7 @@ function countingGasRpc(
 }
 
 describe('SolanaARIOReadable request coalescing', () => {
-  it('collapses a concurrent getGasEstimate burst onto one priority-fee query set', async () => {
+  it('collapses a concurrent getGasEstimate burst onto one priority-fee query', async () => {
     const counts: RpcCounts = {};
     const readable = new SolanaARIOReadable({
       rpc: countingGasRpc(counts) as never,
@@ -583,9 +558,7 @@ describe('SolanaARIOReadable request coalescing', () => {
       ),
     );
 
-    assert.equal(counts.getSlot, 1);
-    assert.equal(counts.getBlocks, 1);
-    assert.equal(counts.getBlock, 5);
+    assert.equal(counts.getRecentPrioritizationFees, 1);
     assert.equal(
       counts.getMinimumBalanceForRentExemption,
       1,
@@ -662,24 +635,22 @@ describe('SolanaARIOReadable request coalescing', () => {
     t.mock.method(Date, 'now', () => now);
     const counts: RpcCounts = {};
     const readable = new SolanaARIOReadable({
-      rpc: countingGasRpc(counts, { failFeeCalls: 5 }) as never,
+      rpc: countingGasRpc(counts, { failFeeCalls: 1 }) as never,
       logger: new Logger({ level: 'none' }),
     });
 
     const first = await readable.getGasEstimate({ intent: 'Buy-Name' });
-    assert.equal(first.priorityFeeMicroLamports, 1_000);
-    assert.equal(counts.getBlock, 5);
+    assert.equal(first.priorityFeeMicroLamports, 10_000);
+    assert.equal(counts.getRecentPrioritizationFees, 1);
 
     const second = await readable.getGasEstimate({ intent: 'Buy-Name' });
-    assert.equal(second.priorityFeeMicroLamports, 1_000);
-    assert.equal(counts.getBlock, 5);
+    assert.equal(second.priorityFeeMicroLamports, 10_000);
+    assert.equal(counts.getRecentPrioritizationFees, 1);
 
     now += 10_001;
     const refreshed = await readable.getGasEstimate({ intent: 'Buy-Name' });
     assert.equal(refreshed.priorityFeeMicroLamports, 12_345);
-    assert.equal(counts.getSlot, 2);
-    assert.equal(counts.getBlocks, 2);
-    assert.equal(counts.getBlock, 10);
+    assert.equal(counts.getRecentPrioritizationFees, 2);
   });
 
   it('shares one lookup for a MISSING account but does not cache the miss', async () => {

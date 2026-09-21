@@ -197,10 +197,7 @@ import {
   getWithdrawalPDA,
 } from './pda.js';
 import { withRetry } from './retry.js';
-import {
-  estimateGasFee,
-  estimateQuotePriorityFeeMicroLamports,
-} from './send.js';
+import { estimateGasFee, estimatePriorityFeeMicroLamports } from './send.js';
 import { type InFlightStore, memoizeInFlight } from './single-flight.js';
 import type { SolanaReadConfig, SolanaRpc } from './types.js';
 
@@ -555,8 +552,6 @@ export class SolanaARIOReadable {
     Awaited<ReturnType<SolanaARIOReadable['getAccount']>>
   > = new Map();
 
-  // Short-TTL memo of the estimated compute-unit price (priority fee), so
-  // burst `getCostDetails` calls share one block sample.
   private _priorityFeeCache: InFlightStore<'fee', bigint> = new Map();
 
   // Memo of getMinimumBalanceForRentExemption results keyed by byte size.
@@ -586,16 +581,12 @@ export class SolanaARIOReadable {
     this.antProgram = config.antProgramId ?? ARIO_ANT_PROGRAM_ID;
   }
 
-  /**
-   * Shared block-sampled price, memoized for {@link PRIORITY_FEE_CACHE_TTL_MS}.
-   * Coalesce concurrent quotes so they reuse the same five-block sample.
-   */
   private async getQuotePriorityFee(): Promise<bigint> {
     return memoizeInFlight(
       this._priorityFeeCache,
       'fee',
       PRIORITY_FEE_CACHE_TTL_MS,
-      () => estimateQuotePriorityFeeMicroLamports(this.rpc),
+      () => estimatePriorityFeeMicroLamports(this.rpc),
     );
   }
 
