@@ -466,15 +466,9 @@ export async function sendAndConfirm({
       ? addSignersToTransactionMessage(extraSigners, message)
       : message;
 
-  // Signing order matters when both an extra keypair AND a message-modifying
-  // wallet (Phantom) are involved: the wallet REWRITES an unsigned tx (injecting
-  // priority-fee / Lighthouse-guard ixs), which invalidates any keypair
-  // signature added after → "address is not a signer". Per Phantom's docs it
-  // leaves a tx alone once it already carries a signature, so we pre-sign with
-  // the extra keypairs FIRST, then hand the partially-signed tx to the wallet.
-  // kit's own pipeline can't express this order (it always runs modifying
-  // signers before partial ones), so we orchestrate it manually here. Keypair
-  // fee-payers (node/tests) carry no rewrite risk and use kit's normal pipeline.
+  // Pre-sign extra keypairs before requesting the wallet signature. Phantom and
+  // Solflare declined safeguard enrichment for partially signed transactions
+  // in our tests. Any later message change invalidates the existing signatures.
   let signedTx;
   if (extraSigners.length > 0 && isTransactionModifyingSigner(signer)) {
     const compiled = compileTransaction(messageWithSigners);

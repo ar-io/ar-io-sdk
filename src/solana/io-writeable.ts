@@ -697,8 +697,8 @@ export const MAX_COMPOUND_BATCH = 6;
  * CU ceiling for the atomic spawn-and-buy tx (`[CreateV1, initialize,
  * buy_name]`). buy_name CPIs into MPL Core `UpdatePluginV1` on top of the MPL
  * Core mint + ario-ant initialize, so it needs more headroom than a plain
- * buy (`DEFAULT_COMPUTE_UNIT_LIMIT`). Keypair signers auto-size below this from
- * a pre-send simulation; message-modifying wallets keep this generous ceiling.
+ * buy (`DEFAULT_COMPUTE_UNIT_LIMIT`). Both signer types use simulation-based
+ * sizing; this value remains the ceiling and simulation-failure fallback.
  */
 const SPAWN_AND_BUY_COMPUTE_UNIT_LIMIT = 800_000;
 /**

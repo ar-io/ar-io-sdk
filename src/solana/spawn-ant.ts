@@ -565,17 +565,9 @@ export async function spawnSolanaANT(
   // `signTransactionMessageWithSigners` then looks up to produce signatures.
   const withMintSigner = addSignersToTransactionMessage([mintSigner], message);
 
-  // Multi-signer spawn (fee-payer wallet + fresh mint keypair). Browser wallets
-  // like Phantom REWRITE transactions that carry no signature yet (injecting
-  // priority-fee / Lighthouse-guard instructions) — which invalidates the mint
-  // keypair's signature → "address is not a signer" (#5663015). Per Phantom's
-  // docs it leaves a transaction alone once it already has a signature. So when
-  // the wallet is a modifying signer, sign with the mint keypair FIRST, then let
-  // the wallet sign: it sees the existing mint signature and won't rewrite,
-  // keeping both signatures valid. kit's own pipeline can't express this order
-  // (it always runs modifying signers before partial ones), so we orchestrate
-  // it manually here. Non-modifying signers (keypairs in node/tests) carry no
-  // rewrite risk and use kit's normal pipeline.
+  // Pre-sign the mint before requesting the wallet signature. Phantom and
+  // Solflare declined safeguard enrichment for partially signed transactions
+  // in our tests. Any later message change invalidates the mint signature.
   let signedTx;
   if (isTransactionModifyingSigner(signer)) {
     const compiled = compileTransaction(withMintSigner);
