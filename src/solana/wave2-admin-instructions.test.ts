@@ -35,6 +35,7 @@ import {
 import { ARIO_GAR_PROGRAM_ID } from './constants.js';
 import { SolanaARIOWriteable } from './io-writeable.js';
 import { getGarSettingsPDA, getGatewayPDA } from './pda.js';
+import { MAX_TX_SIZE_BYTES, estimateCompiledTxSize } from './send.js';
 
 const dec = getAddressDecoder();
 function pk(tag: number): Address {
@@ -49,6 +50,9 @@ const SIGNER = pk(99);
 class Capture extends SolanaARIOWriteable {
   captured: Instruction[] = [];
   computeUnitLimits: (number | undefined)[] = [];
+  /** Which send path the routing chose. */
+  route: 'inline' | 'alt' | null = null;
+  lookupAddresses: Address[] = [];
   constructor() {
     super({
       rpc: {} as never,
@@ -62,7 +66,19 @@ class Capture extends SolanaARIOWriteable {
   ): Promise<string> {
     this.captured.push(...ixs);
     this.computeUnitLimits.push(computeUnitLimit);
+    this.route = 'inline';
     return 'tx-stub';
+  }
+  protected async sendViaLookupTable(
+    ixs: Instruction[],
+    lookupAddresses: Address[],
+    computeUnitLimit?: number,
+  ): Promise<string> {
+    this.captured.push(...ixs);
+    this.computeUnitLimits.push(computeUnitLimit);
+    this.route = 'alt';
+    this.lookupAddresses = lookupAddresses;
+    return 'tx-stub-alt';
   }
 }
 
@@ -181,6 +197,104 @@ describe('ADR-0037 — admin_reconcile_delegated_stake', () => {
     assert.ok(
       manyCu <= 1_400_000,
       'and must stay within Solana’s per-transaction ceiling',
+    );
+  });
+
+  // --- transaction size, the binding constraint ----------------------------
+  //
+  // Each delegation adds ~33 bytes to the compiled message, so the inline form
+  // crosses the 1232-byte limit at ~28 delegations. Since the reconcile
+  // requires EVERY delegation of the gateway, a well-delegated gateway cannot
+  // be reconciled inline at all — without the ALT route it would silently
+  // build a transaction that can never be submitted.
+
+  it('sends a small reconcile inline, with no lookup table', async () => {
+    const c = new Capture();
+    await c.adminReconcileDelegatedStake({
+      gatewayOperator: OPERATOR,
+      delegations: DELEGATIONS,
+      expectedCounter: 1n,
+      expectedRemoved: 1n,
+    });
+    assert.equal(c.route, 'inline', '3 delegations must not pay for an ALT');
+
+    const size = estimateCompiledTxSize({
+      signer: { address: SIGNER } as never,
+      instructions: c.captured,
+      computeUnitLimit: c.computeUnitLimits[0] ?? undefined,
+    });
+    assert.ok(size <= MAX_TX_SIZE_BYTES, `inline path must fit: ${size} bytes`);
+  });
+
+  it('routes an oversized delegation set through an ephemeral lookup table', async () => {
+    const c = new Capture();
+    const many = Array.from({ length: 50 }, (_, i) => pk(300 + i));
+    await c.adminReconcileDelegatedStake({
+      gatewayOperator: OPERATOR,
+      delegations: many,
+      expectedCounter: 1n,
+      expectedRemoved: 1n,
+    });
+
+    assert.equal(
+      c.route,
+      'alt',
+      '50 delegations compile to ~1964 bytes inline — far past the 1232-byte limit, so this MUST NOT go inline',
+    );
+    // Every delegation is a read-only non-signer, so all of them are
+    // compressible. The signer must stay inline.
+    for (const d of many) {
+      assert.ok(
+        c.lookupAddresses.includes(d),
+        'every delegation must be compressed into the table',
+      );
+    }
+    assert.ok(
+      !c.lookupAddresses.includes(SIGNER),
+      'the fee payer signs, so it cannot be compressed',
+    );
+  });
+
+  it('crosses from inline to ALT at the measured size boundary, not a guessed count', async () => {
+    // Walk the boundary: the last inline count must fit, and the first ALT
+    // count must not. This pins the routing to the real size limit, so a
+    // future change to the instruction (an extra account, longer data) moves
+    // the threshold instead of silently overflowing.
+    let lastInline = -1;
+    let firstAlt = -1;
+    for (let n = 1; n <= 40; n++) {
+      const c = new Capture();
+      await c.adminReconcileDelegatedStake({
+        gatewayOperator: OPERATOR,
+        delegations: Array.from({ length: n }, (_, i) => pk(400 + i)),
+        expectedCounter: 1n,
+        expectedRemoved: 1n,
+      });
+      const size = estimateCompiledTxSize({
+        signer: { address: SIGNER } as never,
+        instructions: c.captured,
+        computeUnitLimit: c.computeUnitLimits[0] ?? undefined,
+      });
+      if (c.route === 'inline') {
+        lastInline = n;
+        assert.ok(
+          size <= MAX_TX_SIZE_BYTES,
+          `n=${n} routed inline but compiles to ${size} bytes — over the limit`,
+        );
+      } else if (firstAlt === -1) {
+        firstAlt = n;
+        assert.ok(
+          size > MAX_TX_SIZE_BYTES,
+          `n=${n} routed to ALT but would have fit inline at ${size} bytes`,
+        );
+      }
+    }
+    assert.ok(lastInline > 0, 'some count must route inline');
+    assert.ok(firstAlt > 0, 'some count must route to ALT within 40');
+    assert.equal(
+      firstAlt,
+      lastInline + 1,
+      'the switch must happen exactly once, at the size boundary',
     );
   });
 });

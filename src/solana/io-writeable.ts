@@ -1001,6 +1001,31 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
   }
 
+  /**
+   * Send via an ephemeral Address Lookup Table, for instruction sets whose
+   * inline form exceeds `MAX_TX_SIZE_BYTES`. Costs two extra transactions
+   * (create + extend) and table rent, so callers should only reach for it
+   * when {@link estimateCompiledTxSize} says the inline form does not fit.
+   *
+   * A `protected` seam, like {@link sendTransaction}, so the routing decision
+   * is observable in tests without standing up an RPC.
+   */
+  protected async sendViaLookupTable(
+    instructions: Instruction[],
+    lookupAddresses: Address[],
+    computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+  ): Promise<string> {
+    return sendWithEphemeralLookupTable({
+      rpc: this.rpc,
+      rpcSubscriptions: this.rpcSubscriptions,
+      signer: this.signer,
+      instructions,
+      lookupAddresses,
+      commitment: this.commitment,
+      computeUnitLimit,
+    });
+  }
+
   /** Helper to get the ARIO mint and treasury from ArioConfig */
   private async getCoreConfig(): Promise<{
     mint: Address;
@@ -5553,6 +5578,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * The program derives each Delegation PDA from its stored bump rather than
    * searching, but a large reconcile still costs real compute, so the CU limit
    * is raised in proportion to the number of delegations supplied.
+   *
+   * **Transaction size, not compute, is the binding constraint.** Each
+   * delegation adds ~33 bytes to the compiled message, so the inline form
+   * crosses Solana's 1232-byte limit at roughly **28 delegations** — and the
+   * reconcile requires EVERY delegation of the gateway, so a well-delegated
+   * gateway cannot be reconciled inline at all. Above the threshold this routes
+   * through an ephemeral Address Lookup Table (the same escape hatch
+   * `prescribe_epoch` uses for its observer set), which compresses every
+   * non-signer account to a one-byte index. The delegations are read-only
+   * non-signers, so they are all ALT-eligible.
+   *
+   * The ALT path costs two extra transactions and table rent, so it is taken
+   * only when the measured inline size does not fit — small reconciles stay a
+   * single transaction.
    */
   async adminReconcileDelegatedStake(
     params: {
@@ -5596,13 +5635,29 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           )
         : ix;
 
-    const sig = await this.sendTransaction(
-      [withDelegations],
-      Math.min(
-        1_400_000,
-        DEFAULT_COMPUTE_UNIT_LIMIT + params.delegations.length * 10_000,
-      ),
+    const instructions = [withDelegations];
+    const computeUnitLimit = Math.min(
+      1_400_000,
+      DEFAULT_COMPUTE_UNIT_LIMIT + params.delegations.length * 10_000,
     );
+
+    // Measure rather than guess at a delegation count: the threshold depends
+    // on how many of the declared accounts happen to collide with the
+    // delegation set, and on the instruction data length.
+    const inlineSize = estimateCompiledTxSize({
+      signer: this.signer,
+      instructions,
+      computeUnitLimit,
+    });
+
+    const sig =
+      inlineSize <= MAX_TX_SIZE_BYTES
+        ? await this.sendTransaction(instructions, computeUnitLimit)
+        : await this.sendViaLookupTable(
+            instructions,
+            altEligibleAddresses(instructions, [this.signer.address]),
+            computeUnitLimit,
+          );
     return { id: sig };
   }
 
