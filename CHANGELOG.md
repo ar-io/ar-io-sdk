@@ -1,3 +1,15 @@
+# [4.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.5...v4.4.0-alpha.6) (2026-09-22)
+
+
+### Bug Fixes
+
+* **solana:** harden windowed getGateways against full-account replies ([a2a96fa](https://github.com/ar-io/ar-io-sdk/commit/a2a96fa9cc8112ac9fdf3ab6d3ed9c7f2b9a6284))
+
+
+### Performance Improvements
+
+* **solana:** window unsorted, unfiltered getGateways to the requested page ([bf8dc6e](https://github.com/ar-io/ar-io-sdk/commit/bf8dc6efd2b845068d7c419399c99f636eaee929)), closes [#716](https://github.com/ar-io/ar-io-sdk/issues/716)
+
 # [4.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.4...v4.4.0-alpha.5) (2026-09-22)
 
 
