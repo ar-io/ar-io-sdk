@@ -1,3 +1,15 @@
+# [4.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.3...v4.4.0-alpha.4) (2026-09-22)
+
+
+### Bug Fixes
+
+* **solana:** route oversized reconciles through an ephemeral lookup table ([1bc566c](https://github.com/ar-io/ar-io-sdk/commit/1bc566c5d33260f937579d73216546909579dd18))
+
+
+### Features
+
+* **solana:** add the ADR-0037 admin builders, bump contracts to staging.33 ([89e9849](https://github.com/ar-io/ar-io-sdk/commit/89e9849493e9da764de3343fa5c5489c1f5bf86e)), closes [#738](https://github.com/ar-io/ar-io-sdk/issues/738) [#738](https://github.com/ar-io/ar-io-sdk/issues/738)
+
 # [4.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.2...v4.4.0-alpha.3) (2026-09-22)
 
 
