@@ -189,6 +189,8 @@ import {
   Protocol,
   fetchMaybeEpoch,
   fetchMaybeEpochRentReceipt,
+  getAdminReconcileDelegatedStakeInstruction,
+  getAdminResyncSupplyCountersInstruction,
   getAdminSetRewardRatiosInstructionAsync,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
@@ -4738,20 +4740,29 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // which is how the supply counter drifted 80,442.894868 ARIO behind the sum
     // of the gateway counters on mainnet.
     //
-    // Appended as a TRAILING account rather than a declared one. On-chain it is
-    // the LAST entry of `CompoundDelegationRewards`, and Anchor treats extra
-    // trailing accounts as `remaining_accounts` — so this single call works
-    // against both the pre-ADR-0037 program (which ignores it) and the upgraded
-    // one (which requires it). That is what lets this client ship BEFORE the
-    // program upgrade, which it must: an un-upgraded client fails outright once
-    // the upgrade lands.
+    // It is the LAST account of `CompoundDelegationRewards`, and Anchor treats
+    // extra trailing accounts as `remaining_accounts` — so this single call
+    // works against both the pre-ADR-0037 program (which ignores it) and the
+    // upgraded one (which requires it). That is what lets this client ship
+    // BEFORE the program upgrade, which it must: an un-upgraded client fails
+    // outright once the upgrade lands.
+    //
+    // Passed as a DECLARED account since `@ar.io/solana-contracts@1.4.0-staging.33`,
+    // whose IDL carries it. This is wire-identical to the trailing form it
+    // replaced — the generated builder emits
+    // `[gateway, delegation, delegator, settings]`, i.e. settings last and
+    // writable, exactly the meta `withRemainingAccounts` appended — so the
+    // ship-before-upgrade property is unchanged. Keep it LAST if this is ever
+    // rewritten.
     const [garSettingsPda] = await getGarSettingsPDA(this.garProgram);
-    return withRemainingAccounts(
-      getCompoundDelegationRewardsInstruction(
-        { gateway: gatewayPda, delegation: delegationPda, delegator },
-        { programAddress: this.garProgram },
-      ),
-      [{ address: garSettingsPda, role: AccountRole.WRITABLE }],
+    return getCompoundDelegationRewardsInstruction(
+      {
+        gateway: gatewayPda,
+        delegation: delegationPda,
+        delegator,
+        settings: garSettingsPda,
+      },
+      { programAddress: this.garProgram },
     );
   }
 
@@ -5502,6 +5513,138 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         authority: this.signer,
         gatewayRewardRatio: BigInt(params.gatewayRewardRatio),
         observerRewardRatio: BigInt(params.observerRewardRatio),
+      },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0037. Lower one gateway's `total_delegated_stake` to the proven sum of
+   * the `Delegation` accounts behind it, and lower `GatewaySettings.
+   * total_delegated` by the same amount. Authority-gated. Solana-only.
+   *
+   * This exists because the AO import wrote each gateway's counter from AO's
+   * total while only creating `Delegation` accounts for delegators who had a
+   * Solana address. The remainder went to the migration authority's pot and
+   * never entered the pool, so `counter − Σ Delegation.amount` is invariant
+   * under every other instruction and can never reach zero on its own.
+   *
+   * **You MUST pass every `Delegation` PDA of the gateway.** The program sums
+   * exactly what you give it and requires `expectedCounter − Σ = expectedRemoved`,
+   * so an incomplete list does not silently under-correct — it is refused with
+   * `DelegationReconcileMismatch`. That check is only as good as its inputs,
+   * though, which is why this method takes the list explicitly rather than
+   * discovering it: `expectedRemoved` must be derived from the **genesis
+   * snapshot**, never from the same `getProgramAccounts` read that produced
+   * `delegations`, or the completeness check is vacuous and a missed delegation
+   * strands that delegate's stake.
+   *
+   * Beware any size-filtered delegation fetch when assembling `delegations` —
+   * a `dataSize` filter silently drops any account that is not that length,
+   * which is exactly the omitted-delegation path this guard exists to catch.
+   *
+   * Ordering (ADR-0037): reconcile EVERY gateway first, then
+   * {@link adminResyncSupplyCounters}. Resyncing first makes each later
+   * reconcile subtract from an already-corrected counter, underflowing the
+   * supply counter and leaving it half-corrected.
+   *
+   * The program derives each Delegation PDA from its stored bump rather than
+   * searching, but a large reconcile still costs real compute, so the CU limit
+   * is raised in proportion to the number of delegations supplied.
+   */
+  async adminReconcileDelegatedStake(
+    params: {
+      gatewayOperator: string;
+      /** EVERY Delegation PDA of this gateway. See the completeness note above. */
+      delegations: string[];
+      /** The gateway's CURRENT `total_delegated_stake`, read before this call. */
+      expectedCounter: number | bigint;
+      /** `expectedCounter − Σ Delegation.amount`, from the genesis snapshot. */
+      expectedRemoved: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [settings] = await getGarSettingsPDA(this.garProgram);
+    const [gateway] = await getGatewayPDA(
+      address(params.gatewayOperator),
+      this.garProgram,
+    );
+    const ix = getAdminReconcileDelegatedStakeInstruction(
+      {
+        settings,
+        gateway,
+        authority: this.signer,
+        expectedCounter: BigInt(params.expectedCounter),
+        expectedRemoved: BigInt(params.expectedRemoved),
+      },
+      { programAddress: this.garProgram },
+    );
+
+    // The Delegation accounts are read-only proof, appended as
+    // remaining_accounts. The program validates each one's owner, discriminator
+    // and derived PDA, and refuses duplicates.
+    const withDelegations =
+      params.delegations.length > 0
+        ? withRemainingAccounts(
+            ix,
+            params.delegations.map((d) => ({
+              address: address(d),
+              role: AccountRole.READONLY,
+            })),
+          )
+        : ix;
+
+    const sig = await this.sendTransaction(
+      [withDelegations],
+      Math.min(
+        1_400_000,
+        DEFAULT_COMPUTE_UNIT_LIMIT + params.delegations.length * 10_000,
+      ),
+    );
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0037. Resync `GatewaySettings.total_staked` / `total_delegated` to
+   * values you have proven off-chain by summing every `Gateway` account.
+   * Authority-gated. Solana-only.
+   *
+   * Run this ONCE, and only AFTER every gateway has been reconciled with
+   * {@link adminReconcileDelegatedStake} — see the ordering note there.
+   *
+   * This is a **compare-and-swap**, not a blind write. Each counter takes both
+   * the value you believe is currently stored (`expected*`) and the value to
+   * write (`new*`); the program refuses the whole instruction if either
+   * `expected*` does not match what it actually holds. So a read that went
+   * stale between your off-chain sum and the transaction landing — another
+   * reconcile, a stake change, a compound — is rejected rather than silently
+   * overwriting someone else's correction. On rejection, re-read, re-derive,
+   * and resubmit.
+   */
+  async adminResyncSupplyCounters(
+    params: {
+      /** `total_staked` as currently stored on-chain. */
+      expectedStaked: number | bigint;
+      /** The proven sum of every `Gateway.operator_stake`. */
+      newStaked: number | bigint;
+      /** `total_delegated` as currently stored on-chain. */
+      expectedDelegated: number | bigint;
+      /** The proven sum of every `Gateway.total_delegated_stake`. */
+      newDelegated: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [settings] = await getGarSettingsPDA(this.garProgram);
+    const ix = getAdminResyncSupplyCountersInstruction(
+      {
+        settings,
+        authority: this.signer,
+        expectedStaked: BigInt(params.expectedStaked),
+        newStaked: BigInt(params.newStaked),
+        expectedDelegated: BigInt(params.expectedDelegated),
+        newDelegated: BigInt(params.newDelegated),
       },
       { programAddress: this.garProgram },
     );
