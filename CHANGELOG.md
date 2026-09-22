@@ -1,3 +1,10 @@
+# [4.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.2...v4.4.0-alpha.3) (2026-09-22)
+
+
+### Features
+
+* **solana:** append the Wave 2 trailing accounts, clients-first ([8f44605](https://github.com/ar-io/ar-io-sdk/commit/8f44605ee4c0afd35108cd0a3a6a0f40276a153e)), closes [#149](https://github.com/ar-io/ar-io-sdk/issues/149)
+
 # [4.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.1...v4.4.0-alpha.2) (2026-09-18)
 
 
