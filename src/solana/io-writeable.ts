@@ -4732,9 +4732,26 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       delegator,
       this.garProgram,
     );
-    return getCompoundDelegationRewardsInstruction(
-      { gateway: gatewayPda, delegation: delegationPda, delegator },
-      { programAddress: this.garProgram },
+    // ADR-0037: `settings` (mut), so the program can raise
+    // `GatewaySettings.total_delegated` by whatever this compound settles.
+    // Compounding was the one settling instruction with no `settings` account,
+    // which is how the supply counter drifted 80,442.894868 ARIO behind the sum
+    // of the gateway counters on mainnet.
+    //
+    // Appended as a TRAILING account rather than a declared one. On-chain it is
+    // the LAST entry of `CompoundDelegationRewards`, and Anchor treats extra
+    // trailing accounts as `remaining_accounts` — so this single call works
+    // against both the pre-ADR-0037 program (which ignores it) and the upgraded
+    // one (which requires it). That is what lets this client ship BEFORE the
+    // program upgrade, which it must: an un-upgraded client fails outright once
+    // the upgrade lands.
+    const [garSettingsPda] = await getGarSettingsPDA(this.garProgram);
+    return withRemainingAccounts(
+      getCompoundDelegationRewardsInstruction(
+        { gateway: gatewayPda, delegation: delegationPda, delegator },
+        { programAddress: this.garProgram },
+      ),
+      [{ address: garSettingsPda, role: AccountRole.WRITABLE }],
     );
   }
 
@@ -4778,18 +4795,36 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // account, so `create_epoch`'s IDL account list is unchanged and crankers
     // running an older client keep working — they simply omit it and the epoch
     // is created with `has_rent_receipt = 0`, taking the legacy refund path.
-    // On-chain: `create_epoch` reads `ctx.remaining_accounts.first()`.
+    // On-chain (pre-ADR-0034): `create_epoch` reads
+    // `ctx.remaining_accounts.first()`.
     const [receiptPda] = await getEpochRentReceiptPDA(
       epochIndex,
       this.garProgram,
     );
 
+    // ADR-0034: the previous Epoch, so the program can confirm it is finished
+    // (`rewards_distributed == 1`, or absent because it was written off) before
+    // allowing this one to supersede it. Omitted at index 0, which has no
+    // predecessor.
+    //
+    // ORDERING IS LOAD-BEARING AND MUST NOT BE REVERSED. The post-ADR-0034
+    // program finds both entries BY KEY, so order is irrelevant to it — but the
+    // pre-ADR-0034 program reads position 0 as the rent receipt. Putting the
+    // Epoch first would hand it to `init_epoch_rent_receipt`, which rejects it
+    // (`InvalidEpochRentReceipt`), stalling epoch creation network-wide until
+    // the program upgrade lands. Receipt first, previous Epoch second, always.
+    //
+    // The receipt must also always be PRESENT for the same reason.
+    const remaining: { address: Address; role: AccountRole }[] = [
+      { address: receiptPda, role: AccountRole.WRITABLE },
+    ];
+    if (epochIndex > 0) {
+      const [prevEpochPda] = await getEpochPDA(epochIndex - 1, this.garProgram);
+      remaining.push({ address: prevEpochPda, role: AccountRole.READONLY });
+    }
+
     const sig = await this.sendTransaction(
-      [
-        withRemainingAccounts(ix, [
-          { address: receiptPda, role: AccountRole.WRITABLE },
-        ]),
-      ],
+      [withRemainingAccounts(ix, remaining)],
       1_000_000,
     );
     return { id: sig };
@@ -6275,6 +6310,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The latest Epoch PDA, for the shared ADR-0034 / ADR-0036 "is the latest
+   * epoch finished?" predicate.
+   *
+   * `create_epoch` always creates `epoch[current_epoch_index]` and then
+   * increments, so the latest epoch is exactly `current_epoch_index - 1`.
+   * Returns `null` when no epoch has ever been created, which is the one case
+   * the program does not require the account for.
+   *
+   * The PDA is returned even when the account does not exist on chain: absence
+   * is how a written-off epoch reads as "finished" (only this program can own
+   * an account at its own PDA), and the program needs the address supplied in
+   * order to observe that absence. Omitting it is refused with
+   * `MissingLatestEpochAccount`, deliberately distinct from
+   * `LatestEpochUnfinished` so a stale client gets "you are missing an account"
+   * rather than a false "the epoch is unfinished".
+   */
+  private async getLatestEpochPdaForGate(): Promise<Address | null> {
+    const [epochSettingsPda] = await getEpochSettingsPDA(this.garProgram);
+    const settingsAccount = await fetchEncodedAccount(
+      this.rpc,
+      epochSettingsPda,
+      { commitment: this.commitment },
+    );
+    if (!settingsAccount.exists) return null;
+    const settings = deserializeEpochSettingsFull(
+      Buffer.from(settingsAccount.data),
+    );
+    if (settings.currentEpochIndex === 0) return null;
+    const [pda] = await getEpochPDA(
+      settings.currentEpochIndex - 1,
+      this.garProgram,
+    );
+    return pda;
+  }
+
+  /**
    * GC a `Leaving`/`Gone` gateway whose leave window has fully elapsed.
    * Closes the Gateway PDA and refunds rent to the caller. Permissionless.
    */
@@ -6313,16 +6384,37 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    let finalIx = ix;
+    // ADR-0036: registry positions are frozen while an epoch is unfinished, so
+    // the program needs the latest Epoch to evaluate that. `finalize_gone` is
+    // the ONLY instruction that moves a slot or shrinks `registry.count`, and
+    // observations and distribution both address gateways BY POSITION — a
+    // swap-remove between an epoch's snapshot and its distribution mis-scores
+    // gateways. On mainnet epoch 542 it paid a gateway all 11 observers had
+    // failed; on epoch 550 a single mid-epoch sweep zeroed the entire epoch's
+    // observations.
+    //
+    // ORDERING: swapped gateway FIRST, latest Epoch second. The post-ADR-0036
+    // program finds both by key, but the pre-ADR-0036 program reads position 0
+    // as the swapped gateway — so this order works against both, which is what
+    // lets the client ship before the program upgrade.
+    const remaining: { address: Address; role: AccountRole }[] = [];
     if (swappedOperator !== null) {
       const [swappedGatewayPda] = await getGatewayPDA(
         address(swappedOperator),
         this.garProgram,
       );
-      finalIx = withRemainingAccounts(ix, [
-        { address: swappedGatewayPda, role: AccountRole.WRITABLE },
-      ]);
+      remaining.push({
+        address: swappedGatewayPda,
+        role: AccountRole.WRITABLE,
+      });
     }
+    const latestEpochPda = await this.getLatestEpochPdaForGate();
+    if (latestEpochPda !== null) {
+      remaining.push({ address: latestEpochPda, role: AccountRole.READONLY });
+    }
+
+    const finalIx =
+      remaining.length > 0 ? withRemainingAccounts(ix, remaining) : ix;
 
     const sig = await this.sendTransaction([finalIx]);
     return { id: sig };
