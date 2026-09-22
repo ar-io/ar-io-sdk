@@ -464,12 +464,26 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
   };
 }
 
+/**
+ * Parse `--allow-delegated-staking [value]`. The bare flag means true;
+ * otherwise only `true` or `false` are accepted.
+ */
+export function allowDelegatedStakingFromOption(
+  value: string | boolean | undefined,
+): boolean | undefined {
+  if (value === undefined || typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(
+    `--allow-delegated-staking must be true or false, received "${value}"`,
+  );
+}
+
 export function gatewaySettingsFromOptions(
   options: UpdateGatewaySettingsCLIOptions,
 ): UpdateGatewaySettingsParams {
   const {
     allowDelegatedStaking,
-    autoStake,
     delegateRewardShareRatio,
     fqdn,
     label,
@@ -482,8 +496,9 @@ export function gatewaySettingsFromOptions(
   } = options;
   return {
     observerAddress,
-    allowDelegatedStaking,
-    autoStake,
+    allowDelegatedStaking: allowDelegatedStakingFromOption(
+      allowDelegatedStaking,
+    ),
     delegateRewardShareRatio:
       delegateRewardShareRatio !== undefined
         ? +delegateRewardShareRatio

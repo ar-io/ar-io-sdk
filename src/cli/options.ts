@@ -124,15 +124,12 @@ export const optionMap = {
     alias: '-q, --quantity <quantity>',
     description: 'The quantity of ARIO to interact with',
   },
-  autoStake: {
-    alias: '--auto-stake',
-    description: 'Enable auto-staking of operator rewards',
-    type: 'boolean',
-  },
   allowDelegatedStaking: {
-    alias: '--allow-delegated-staking',
-    description: 'Allow delegating stake to the gateway',
-    type: 'boolean',
+    // Optional value so `--allow-delegated-staking false` is honoured. As a
+    // bare boolean flag, commander set it to true and dropped the `false`.
+    alias: '--allow-delegated-staking [allowDelegatedStaking]',
+    description:
+      'Allow delegating stake to the gateway: true or false (the bare flag means true)',
   },
   minDelegatedStake: {
     alias: '--min-delegated-stake <minDelegatedStake>',
@@ -593,7 +590,6 @@ export const decreaseDelegateStakeOptions = [
 
 export const updateGatewaySettingsOptions = [
   ...writeActionOptions,
-  optionMap.autoStake,
   optionMap.allowDelegatedStaking,
   optionMap.allowedDelegates,
   optionMap.minDelegatedStake,
