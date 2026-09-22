@@ -1531,9 +1531,18 @@ describe(
         !logs.includes('AclEntryNotFound'),
         `transfer logs must not contain AclEntryNotFound:\n${logs}`,
       );
-      assert.match(
-        logs,
-        /Instruction: RegisterAclConfig/,
+      // A `RegisterAclConfig` log line alone proves nothing: the recipient is
+      // also a fresh wallet, so its own destination prep emits one in the
+      // same tx. The heal is the only thing that creates the SENDER's
+      // AclConfig, and the transfer never closes it, so check it on chain.
+      const senderAclConfigAfter = await fetchEncodedAccount(
+        rpc,
+        senderAclConfig,
+        { commitment: 'confirmed' },
+      );
+      assert.equal(
+        senderAclConfigAfter.exists,
+        true,
         'heal must bootstrap the sender AclConfig in the transfer tx',
       );
       assert.match(
