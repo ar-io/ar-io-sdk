@@ -622,18 +622,23 @@ export class SolanaARIOReadable {
     pda: Address,
     offset: number,
     length: number,
-  ): Promise<Buffer | null> {
+    minContextSlot?: bigint,
+  ): Promise<{ data: Buffer; slot: bigint } | null> {
     const res = await withRetry(() =>
       this.rpc
         .getAccountInfo(pda, {
           encoding: 'base64',
           commitment: this.commitment,
           dataSlice: { offset, length },
+          ...(minContextSlot !== undefined ? { minContextSlot } : {}),
         })
         .send(),
     );
     if (!res.value) return null;
-    return Buffer.from(res.value.data[0], 'base64');
+    return {
+      data: Buffer.from(res.value.data[0], 'base64'),
+      slot: res.context.slot,
+    };
   }
 
   /**
@@ -1314,20 +1319,29 @@ export class SolanaARIOReadable {
    *    `totalItems`, `hasMore` and `nextCursor` therefore match whenever the
    *    full scan's gateway list is the same length as this address list.
    * 2. It is, because the full scan only drops an address when its Gateway
-   *    account is missing or undecodable, and the GAR program does not leave a
-   *    non-empty slot pointing at a closed account: `join_network` writes the
-   *    slot and creates the PDA in one instruction, and `finalize_gone` zeroes
-   *    the slot and closes the PDA in one instruction. (The one-off AO
-   *    migration imported slots and accounts separately; on mainnet every
-   *    non-empty slot resolves to a readable gateway, checked when this path
-   *    was added.)
+   *    account is missing or undecodable, and the GAR program keeps every slot
+   *    below `count` pointing at a live gateway: `join_network` writes the slot
+   *    and creates the PDA in one instruction, and `finalize_gone` swap-removes
+   *    (moves the last slot into the vacated index, zeroes the last slot and
+   *    decrements `count`) and closes the PDA in the same instruction. The
+   *    registry is therefore dense; the `DEFAULT_ADDRESS` skip mirrors the full
+   *    scan rather than handling holes the program creates.
    *
    * As a guard on (2), a missing or undecodable account inside the fetched
-   * window — a gateway finalized between the two reads, say — returns
-   * `undefined` so the caller falls back to the full scan rather than serving
-   * a page that could disagree with it. A dangling slot OUTSIDE the window
-   * cannot be seen without fetching it; that is the one case where the two
-   * paths could differ, and only if (2) were broken on chain.
+   * window returns `undefined` so the caller falls back to the full scan
+   * rather than serving a page that could disagree with it. The slot read is
+   * pinned to the header read's slot (`minContextSlot`) so a lagging RPC node
+   * can't pair a new `count` with old slots.
+   *
+   * Accepted residual risk: an address OUTSIDE the window whose account is
+   * missing or undecodable cannot be seen without fetching it. That happens
+   * if (2) is broken on chain, or if the SDK can't decode a Gateway layout
+   * (e.g. it lags a contract upgrade). Then pages served by this path count
+   * that address while pages that fall back to the full scan don't, so
+   * `totalItems` can differ between pages and a traversal can repeat a row.
+   * Swap-remove also means a gateway leaving mid-traversal moves the last row
+   * to an earlier index, which a cursor walk can skip; the full scan has the
+   * same behaviour.
    */
   private async getGatewaysWindowed(
     params?: PaginationParams<GatewayWithAddress>,
@@ -1339,22 +1353,29 @@ export class SolanaARIOReadable {
       GATEWAY_REGISTRY_SLOTS_OFFSET,
     );
     if (header === null) return paginate<GatewayWithAddress>([], params);
-    if (header.length < GATEWAY_REGISTRY_SLOTS_OFFSET) return undefined;
+    // Exact lengths: an RPC that ignores `dataSlice` returns the whole
+    // account, and reading slots from it at the sliced offsets would be wrong.
+    if (header.data.length !== GATEWAY_REGISTRY_SLOTS_OFFSET) return undefined;
 
     const count = Math.min(
-      header.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET),
+      header.data.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET),
       MAX_GATEWAYS,
     );
     const addresses: Address[] = [];
     if (count > 0) {
-      const slots = await this.getAccountSlice(
+      const slotsRead = await this.getAccountSlice(
         registryPda,
         GATEWAY_REGISTRY_SLOTS_OFFSET,
         count * GATEWAY_SLOT_STRIDE,
+        header.slot,
       );
-      if (slots === null || slots.length < count * GATEWAY_SLOT_STRIDE) {
+      if (
+        slotsRead === null ||
+        slotsRead.data.length !== count * GATEWAY_SLOT_STRIDE
+      ) {
         return undefined;
       }
+      const slots = slotsRead.data;
       for (let i = 0; i < count; i++) {
         const slotOffset = i * GATEWAY_SLOT_STRIDE;
         const addr = addressDecoder.decode(

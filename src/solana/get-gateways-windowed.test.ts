@@ -129,12 +129,19 @@ async function fixture(opts: {
   holes: number[];
   /** Operators whose Gateway PDA is absent (closed) on chain. */
   missing?: number[];
+  /** Simulate an RPC that ignores `dataSlice` and returns the whole account. */
+  ignoreDataSlice?: boolean;
+  /** Override the header's `count` (e.g. beyond MAX_GATEWAYS). */
+  headerCount?: number;
 }) {
   const slots: (Address | null)[] = [];
   for (let i = 0; i < opts.size; i++) {
     slots.push(opts.holes.includes(i) ? null : pk(1000 + i));
   }
   const registry = buildRegistry(slots);
+  if (opts.headerCount !== undefined) {
+    registry.writeUInt32LE(opts.headerCount, 40);
+  }
   const [registryPda] = await getGatewayRegistryPDA(GAR);
 
   const gatewayByPda = new Map<string, Buffer>();
@@ -153,23 +160,28 @@ async function fixture(opts: {
     bytes: 0,
     fullRegistryReads: 0,
   };
+  const minContextSlots: (bigint | undefined)[] = [];
   const rpc = {
     getAccountInfo: (
       addr: Address,
-      cfg?: { dataSlice?: { offset: number; length: number } },
+      cfg?: {
+        dataSlice?: { offset: number; length: number };
+        minContextSlot?: bigint;
+      },
     ) => ({
       send: async () => {
         counts.getAccountInfo++;
         if (addr !== registryPda) return { context: { slot: 1n }, value: null };
+        if (cfg?.dataSlice) minContextSlots.push(cfg.minContextSlot);
         let data = registry;
-        if (cfg?.dataSlice) {
+        if (cfg?.dataSlice && !opts.ignoreDataSlice) {
           const { offset, length } = cfg.dataSlice;
           data = registry.subarray(offset, offset + length);
         } else {
           counts.fullRegistryReads++;
         }
         counts.bytes += data.length;
-        return { context: { slot: 1n }, value: accountValue(data) };
+        return { context: { slot: 42n }, value: accountValue(data) };
       },
     }),
     getMultipleAccounts: (addrs: Address[]) => ({
@@ -200,7 +212,7 @@ async function fixture(opts: {
     for (const k of Object.keys(counts) as (keyof Counts)[]) counts[k] = 0;
   };
   const operators = slots.filter((s): s is Address => s !== null) as string[];
-  return { client, counts, reset, operators };
+  return { client, counts, reset, operators, minContextSlots };
 }
 
 describe('getGateways windowed read (#716)', () => {
@@ -261,7 +273,7 @@ describe('getGateways windowed read (#716)', () => {
     }
   });
 
-  it('matches the full scan on an empty registry and a missing registry', async () => {
+  it('matches the full scan on empty and fully vacated registries', async () => {
     const { client } = await fixture({ size: 0, holes: [] });
     assert.deepStrictEqual(
       await client.getGateways(),
@@ -347,6 +359,51 @@ describe('getGateways windowed read (#716)', () => {
       sorted.items.map((g) => g.operatorStake),
       [1_000_029, 1_000_028, 1_000_027],
     );
+  });
+
+  it('falls back to the full scan when the RPC ignores dataSlice', async () => {
+    // A whole-account response must not be read as if it were the slice:
+    // slot addresses would be decoded 48 bytes off. Empty pages (cursor past
+    // the end, limit 0) have no gateways to catch it, so the length check is
+    // the only guard there.
+    const { client, counts, reset } = await fixture({
+      size: 20,
+      holes: [3, 9, 15],
+      ignoreDataSlice: true,
+    });
+    for (const params of [
+      { cursor: '50' },
+      { limit: 0 },
+      { limit: 5, cursor: '5' },
+    ]) {
+      reset();
+      const res = await client.getGateways(params);
+      assert.equal(counts.getAccountInfo, 2, JSON.stringify(params));
+      assert.deepStrictEqual(
+        res,
+        await client.getGateways({ ...params, filters: {} }),
+        JSON.stringify(params),
+      );
+      assert.equal(res.totalItems, 17, JSON.stringify(params));
+    }
+  });
+
+  it("pins the slot read to the header read's context slot", async () => {
+    const { client, minContextSlots } = await fixture({ size: 12, holes: [] });
+    await client.getGateways({ limit: 5 });
+    assert.deepEqual(minContextSlots, [undefined, 42n]);
+  });
+
+  it('clamps an over-large header count to MAX_GATEWAYS', async () => {
+    const { client, counts, reset } = await fixture({
+      size: 3000,
+      holes: [],
+      headerCount: 5000,
+    });
+    reset();
+    const res = await client.getGateways({ limit: 3 });
+    assert.equal(counts.fullRegistryReads, 0, 'stayed on the windowed path');
+    assert.equal(res.totalItems, 3000);
   });
 
   it('falls back to the full scan when a gateway in the window is missing', async () => {
