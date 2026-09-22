@@ -29,7 +29,11 @@ import { program } from 'commander';
 import './cli.js';
 import { gatewayMetadataFromOptions } from './commands/gatewayOperationsCommands.js';
 import { saveObservations } from './commands/gatewayWriteCommands.js';
-import { stringArrayFromOptions } from './utils.js';
+import {
+  allowDelegatedStakingFromOption,
+  gatewaySettingsFromOptions,
+  stringArrayFromOptions,
+} from './utils.js';
 
 const flagsFor = (name: string): string[] => {
   const command = program.commands.find((c) => c.name() === name);
@@ -182,6 +186,59 @@ describe('gatewayMetadataFromOptions', () => {
     assert.throws(
       () => gatewayMetadataFromOptions({ gatewayAddress: 'op' }),
       /No metadata provided/,
+    );
+  });
+});
+
+// #629: `--allow-delegated-staking false` landed a gateway with delegation
+// enabled, and `--auto-stake` was a no-op flag for a deprecated field.
+describe('gateway staking flags (#629)', () => {
+  const parseFlags = (name: string, argv: string[]) => {
+    const command = program.commands.find((c) => c.name() === name);
+    assert.ok(command !== undefined, `command '${name}' is not registered`);
+    for (const key of Object.keys(command.opts())) {
+      command.setOptionValue(key, undefined);
+    }
+    const { operands } = command.parseOptions(argv);
+    return { opts: command.opts(), operands };
+  };
+
+  for (const name of ['join-network', 'update-gateway-settings']) {
+    it(`${name} no longer registers --auto-stake`, () => {
+      assert.ok(!flagsFor(name).includes('--auto-stake'));
+    });
+
+    it(`${name} keeps the value passed to --allow-delegated-staking`, () => {
+      const off = parseFlags(name, ['--allow-delegated-staking', 'false']);
+      assert.equal(off.opts.allowDelegatedStaking, 'false');
+      assert.deepEqual(off.operands, []);
+      assert.equal(
+        gatewaySettingsFromOptions(off.opts).allowDelegatedStaking,
+        false,
+      );
+
+      const bare = parseFlags(name, ['--allow-delegated-staking']);
+      assert.equal(
+        gatewaySettingsFromOptions(bare.opts).allowDelegatedStaking,
+        true,
+      );
+
+      const unset = parseFlags(name, []);
+      assert.equal(
+        gatewaySettingsFromOptions(unset.opts).allowDelegatedStaking,
+        undefined,
+      );
+    });
+  }
+
+  it('accepts only true or false', () => {
+    assert.equal(allowDelegatedStakingFromOption('true'), true);
+    assert.equal(allowDelegatedStakingFromOption('false'), false);
+    assert.equal(allowDelegatedStakingFromOption(true), true);
+    assert.equal(allowDelegatedStakingFromOption(undefined), undefined);
+    assert.throws(
+      () => allowDelegatedStakingFromOption('no'),
+      /--allow-delegated-staking must be true or false/,
     );
   });
 });
