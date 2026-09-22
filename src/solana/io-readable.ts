@@ -207,6 +207,16 @@ const addressDecoder = getAddressDecoder();
 /** All-zero address — equivalent of web3.js `PublicKey.default`. */
 const DEFAULT_ADDRESS: Address = address('11111111111111111111111111111111');
 
+/**
+ * GatewayRegistry layout (ario-gar `state/mod.rs::GatewayRegistry`): 8-byte
+ * discriminator + 32 authority + u32 `count` + 4 padding, then
+ * `GatewaySlot[3000]`. A slot is address(32) + composite_weight(8) +
+ * start_timestamp(8) + status(1) + delegated_at_tally(1) + padding(6).
+ */
+const GATEWAY_REGISTRY_COUNT_OFFSET = 40;
+const GATEWAY_REGISTRY_SLOTS_OFFSET = 48;
+const GATEWAY_SLOT_STRIDE = 56;
+
 // Memcmp filter shape for kit's getProgramAccounts.
 type MemcmpFilter = {
   memcmp: { offset: bigint; bytes: string; encoding: 'base58' | 'base64' };
@@ -601,6 +611,29 @@ export class SolanaARIOReadable {
         commitment: this.commitment,
       }),
     );
+  }
+
+  /**
+   * Fetch `length` bytes of an account starting at `offset`, via the RPC's
+   * `dataSlice`, so large fixed-size accounts (the ~168 KB gateway registry)
+   * can be read piecemeal. Returns `null` when the account does not exist.
+   */
+  private async getAccountSlice(
+    pda: Address,
+    offset: number,
+    length: number,
+  ): Promise<Buffer | null> {
+    const res = await withRetry(() =>
+      this.rpc
+        .getAccountInfo(pda, {
+          encoding: 'base64',
+          commitment: this.commitment,
+          dataSlice: { offset, length },
+        })
+        .send(),
+    );
+    if (!res.value) return null;
+    return Buffer.from(res.value.data[0], 'base64');
   }
 
   /**
@@ -1232,7 +1265,124 @@ export class SolanaARIOReadable {
     return toMsTimestamps(gateway);
   }
 
+  /**
+   * List gateways, one page at a time, in registry index order unless
+   * `sortBy` is given.
+   *
+   * **Two read strategies, one result.** Which one runs depends only on the
+   * parameters; the returned page, `totalItems`, `hasMore` and `nextCursor`
+   * are the same either way.
+   *
+   * - **Windowed** (no `sortBy` and no `filters`): reads the registry header
+   *   for the slot count, then only the slot addresses up to that count (a
+   *   `dataSlice` of 56 bytes per slot rather than the whole ~168 KB
+   *   registry), then fetches the Gateway accounts for the requested page
+   *   alone. Cost scales with the page size, not with the registry.
+   * - **Full scan** (`sortBy` or `filters` present): fetches every gateway,
+   *   then filters, sorts and slices client-side. Sorting and filtering need
+   *   the whole set, so there is nothing to window.
+   *
+   * `totalItems` counts the non-empty registry slots and the cursor is a
+   * stringified index into that same sequence, exactly as the full scan
+   * computes them. Both strategies skip vacated (all-zero) slots the same way
+   * before any index is taken, so a cursor minted by one path means the same
+   * row on the other. If any gateway in the requested page cannot be read,
+   * the windowed path defers to the full scan.
+   *
+   * @param params - Optional `cursor`, `limit` (default 100), `sortBy`,
+   *   `sortOrder` and `filters`.
+   * @returns One page of gateways with pagination metadata.
+   */
   async getGateways(
+    params?: PaginationParams<GatewayWithAddress>,
+  ): Promise<PaginationResult<GatewayWithAddress>> {
+    if (params?.sortBy === undefined && params?.filters === undefined) {
+      const windowed = await this.getGatewaysWindowed(params);
+      if (windowed !== undefined) return windowed;
+    }
+    return this.getGatewaysFullScan(params);
+  }
+
+  /**
+   * Unsorted, unfiltered `getGateways` that fetches only the requested page.
+   *
+   * Equivalence with {@link getGatewaysFullScan} rests on two facts:
+   *
+   * 1. The address sequence is built by the identical loop over the identical
+   *    slots (`i < count && i < MAX_GATEWAYS`, skipping `DEFAULT_ADDRESS`), and
+   *    is then paged by the same {@link paginate} call. `items` positions,
+   *    `totalItems`, `hasMore` and `nextCursor` therefore match whenever the
+   *    full scan's gateway list is the same length as this address list.
+   * 2. It is, because the full scan only drops an address when its Gateway
+   *    account is missing or undecodable, and the GAR program does not leave a
+   *    non-empty slot pointing at a closed account: `join_network` writes the
+   *    slot and creates the PDA in one instruction, and `finalize_gone` zeroes
+   *    the slot and closes the PDA in one instruction. (The one-off AO
+   *    migration imported slots and accounts separately; on mainnet every
+   *    non-empty slot resolves to a readable gateway, checked when this path
+   *    was added.)
+   *
+   * As a guard on (2), a missing or undecodable account inside the fetched
+   * window — a gateway finalized between the two reads, say — returns
+   * `undefined` so the caller falls back to the full scan rather than serving
+   * a page that could disagree with it. A dangling slot OUTSIDE the window
+   * cannot be seen without fetching it; that is the one case where the two
+   * paths could differ, and only if (2) were broken on chain.
+   */
+  private async getGatewaysWindowed(
+    params?: PaginationParams<GatewayWithAddress>,
+  ): Promise<PaginationResult<GatewayWithAddress> | undefined> {
+    const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
+    const header = await this.getAccountSlice(
+      registryPda,
+      0,
+      GATEWAY_REGISTRY_SLOTS_OFFSET,
+    );
+    if (header === null) return paginate<GatewayWithAddress>([], params);
+    if (header.length < GATEWAY_REGISTRY_SLOTS_OFFSET) return undefined;
+
+    const count = Math.min(
+      header.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET),
+      MAX_GATEWAYS,
+    );
+    const addresses: Address[] = [];
+    if (count > 0) {
+      const slots = await this.getAccountSlice(
+        registryPda,
+        GATEWAY_REGISTRY_SLOTS_OFFSET,
+        count * GATEWAY_SLOT_STRIDE,
+      );
+      if (slots === null || slots.length < count * GATEWAY_SLOT_STRIDE) {
+        return undefined;
+      }
+      for (let i = 0; i < count; i++) {
+        const slotOffset = i * GATEWAY_SLOT_STRIDE;
+        const addr = addressDecoder.decode(
+          slots.subarray(slotOffset, slotOffset + 32),
+        );
+        if (addr !== DEFAULT_ADDRESS) addresses.push(addr);
+      }
+    }
+
+    // Same paging arithmetic as the full scan, applied to the address list.
+    const page = paginate(addresses, {
+      cursor: params?.cursor,
+      limit: params?.limit,
+      sortOrder: params?.sortOrder,
+    });
+    const gateways = await this.fetchGatewaysByAddress(page.items);
+    const items: GatewayWithAddress[] = [];
+    for (const gw of gateways) {
+      if (gw === undefined) return undefined;
+      items.push(gw);
+    }
+    // `sortBy` is always undefined on this path; restating it narrows the type
+    // from the address list's key space to the gateway's.
+    return { ...page, sortBy: undefined, items };
+  }
+
+  /** `getGateways` over the fully materialised registry. */
+  private async getGatewaysFullScan(
     params?: PaginationParams<GatewayWithAddress>,
   ): Promise<PaginationResult<GatewayWithAddress>> {
     const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
@@ -1242,18 +1392,14 @@ export class SolanaARIOReadable {
     }
 
     const registryData = Buffer.from(registryAccount.data);
-    const count = registryData.readUInt32LE(40);
-    const slotsOffset = 48;
+    const count = registryData.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET);
 
-    // GatewaySlot = address(32) + composite_weight(8) + start_timestamp(8)
-    //              + status(1) + _padding(7) = 56 bytes (see ario-gar
-    //              state/mod.rs::GatewaySlot). A previous off-by-16-bytes-per-slot
-    //              stride silently read garbage for slots 1+, returning at most
-    //              one gateway no matter how many had joined.
-    const SLOT_STRIDE = 56;
+    // A previous off-by-16-bytes-per-slot stride silently read garbage for
+    // slots 1+, returning at most one gateway no matter how many had joined.
     const gatewayAddresses: Address[] = [];
-    for (let i = 0; i < count && i < 3000; i++) {
-      const slotOffset = slotsOffset + i * SLOT_STRIDE;
+    for (let i = 0; i < count && i < MAX_GATEWAYS; i++) {
+      const slotOffset =
+        GATEWAY_REGISTRY_SLOTS_OFFSET + i * GATEWAY_SLOT_STRIDE;
       const addr = addressDecoder.decode(
         registryData.subarray(slotOffset, slotOffset + 32),
       );
@@ -1262,12 +1408,25 @@ export class SolanaARIOReadable {
       }
     }
 
+    const allItems = (
+      await this.fetchGatewaysByAddress(gatewayAddresses)
+    ).filter((gw): gw is GatewayWithAddress => gw !== undefined);
+    return paginate(allItems, params);
+  }
+
+  /**
+   * Fetch and decode the Gateway account for each operator address, keeping
+   * input order. A missing or undecodable account yields `undefined` at its
+   * position so callers can choose to skip it or to distrust the batch.
+   */
+  private async fetchGatewaysByAddress(
+    operators: Address[],
+  ): Promise<Array<GatewayWithAddress | undefined>> {
     // Batch fetch gateway PDAs (kit has no hard limit but keep 100-at-a-time
     // for sensible RPC request sizes). Chunks run in a bounded pool; the
     // results are appended in chunk order so registry ordering is preserved
     // for callers that pass no `sortBy`.
-    const allItems: GatewayWithAddress[] = [];
-    const batches = chunk(gatewayAddresses, 100);
+    const batches = chunk(operators, 100);
     const perBatch = await mapWithConcurrency(
       batches,
       ACCOUNT_FETCH_CONCURRENCY,
@@ -1287,19 +1446,22 @@ export class SolanaARIOReadable {
       },
     );
 
+    const out: Array<GatewayWithAddress | undefined> = [];
     for (const accounts of perBatch) {
       for (const acct of accounts) {
-        if (!acct.exists) continue;
+        if (!acct.exists) {
+          out.push(undefined);
+          continue;
+        }
         try {
           const gw = deserializeGateway(Buffer.from(acct.data));
-          allItems.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
+          out.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
         } catch {
-          // Skip malformed
+          out.push(undefined); // malformed
         }
       }
     }
-
-    return paginate(allItems, params);
+    return out;
   }
 
   async getGatewayDelegates(
