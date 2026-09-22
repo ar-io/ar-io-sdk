@@ -1,3 +1,10 @@
+# [4.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.4...v4.4.0-alpha.5) (2026-09-22)
+
+
+### Bug Fixes
+
+* **cli:** honor --allow-delegated-staking false and drop --auto-stake ([be5e469](https://github.com/ar-io/ar-io-sdk/commit/be5e469ff0d0f1cd3fd5358c2d72f6f9ca0183ab)), closes [#629](https://github.com/ar-io/ar-io-sdk/issues/629)
+
 # [4.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.3...v4.4.0-alpha.4) (2026-09-22)
 
 
