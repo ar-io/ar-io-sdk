@@ -1,3 +1,10 @@
+# [4.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.6...v4.4.0-alpha.7) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cli:** abort the command when a confirmation prompt is declined ([b0d3962](https://github.com/ar-io/ar-io-sdk/commit/b0d3962509480e37b62f9f7bcb746934d53f1ce7)), closes [#745](https://github.com/ar-io/ar-io-sdk/issues/745)
+
 # [4.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.5...v4.4.0-alpha.6) (2026-09-22)
 
 
