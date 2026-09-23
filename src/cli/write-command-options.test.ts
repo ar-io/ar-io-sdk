@@ -31,6 +31,7 @@ import { gatewayMetadataFromOptions } from './commands/gatewayOperationsCommands
 import { saveObservations } from './commands/gatewayWriteCommands.js';
 import {
   allowDelegatedStakingFromOption,
+  cliFallbackUrl,
   gatewaySettingsFromOptions,
   stringArrayFromOptions,
 } from './utils.js';
@@ -239,6 +240,41 @@ describe('gateway staking flags (#629)', () => {
     assert.throws(
       () => allowDelegatedStakingFromOption('no'),
       /--allow-delegated-staking must be true or false/,
+    );
+  });
+});
+
+// A failing --rpc-url used to route the command at PUBLIC MAINNET, because
+// the breaker's fallback answered mainnet for any URL without "devnet" in it.
+describe('CLI RPC fallback stays on the same cluster', () => {
+  it('has no fallback for a local validator', () => {
+    for (const url of [
+      'http://localhost:8899',
+      'http://127.0.0.1:8899',
+      'http://0.0.0.0:8899',
+    ]) {
+      assert.equal(cliFallbackUrl(url), undefined, url);
+    }
+  });
+
+  it('has no fallback for a host that does not name its cluster', () => {
+    assert.equal(cliFallbackUrl('https://rpc.example.com'), undefined);
+    assert.equal(cliFallbackUrl('https://my-node.internal:8899'), undefined);
+    assert.equal(cliFallbackUrl('not a url'), undefined);
+  });
+
+  it('falls back to the matching public RPC when the cluster is named', () => {
+    assert.equal(
+      cliFallbackUrl('https://api.devnet.solana.com'),
+      'https://api.devnet.solana.com',
+    );
+    assert.equal(
+      cliFallbackUrl('https://sneaky.devnet.rpcpool.com'),
+      'https://api.devnet.solana.com',
+    );
+    assert.equal(
+      cliFallbackUrl('https://x.mainnet.rpcpool.com'),
+      'https://api.mainnet-beta.solana.com',
     );
   });
 });

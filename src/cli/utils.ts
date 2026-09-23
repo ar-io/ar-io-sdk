@@ -220,10 +220,43 @@ function wsUrlFromRpcUrl(rpcUrl: string): string {
  * Create a {@link SolanaRpc} wrapped with a circuit-breaker that falls back to
  * the cluster's public RPC when the primary endpoint becomes unhealthy.
  */
+/**
+ * Public fallback for `--rpc-url`, or `undefined` when guessing one would
+ * change CLUSTER rather than just endpoint.
+ *
+ * The breaker's fallback exists for a flaky endpoint, not a different chain.
+ * {@link defaultFallbackUrl} answers mainnet for anything that doesn't say
+ * "devnet", so a localnet or Surfpool URL that stops responding used to route
+ * the command — reads and writes alike — at public mainnet. Only fall back
+ * when the primary URL names its cluster; otherwise run with no fallback, so
+ * the breaker fails fast instead of silently moving clusters.
+ */
+export function cliFallbackUrl(rpcUrl: string): string | undefined {
+  let hostname: string;
+  try {
+    hostname = new URL(rpcUrl).hostname;
+  } catch {
+    return undefined;
+  }
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname === '::1'
+  ) {
+    return undefined;
+  }
+  if (/devnet/i.test(rpcUrl) || /mainnet/i.test(rpcUrl)) {
+    return defaultFallbackUrl(rpcUrl);
+  }
+  return undefined;
+}
+
 function createCliRpc(rpcUrl: string) {
+  const fallbackUrl = cliFallbackUrl(rpcUrl);
   return createCircuitBreakerRpc({
     primaryUrl: rpcUrl,
-    fallbackUrl: defaultFallbackUrl(rpcUrl),
+    ...(fallbackUrl !== undefined ? { fallbackUrl } : {}),
   });
 }
 
@@ -494,6 +527,12 @@ export function gatewaySettingsFromOptions(
     properties,
     allowedDelegates,
   } = options;
+  // Drop the keys the operator didn't set. Returning every key with an
+  // `undefined` value made `Object.keys(...)` always report 10, which
+  // silently disabled two guards: `update-gateway-settings`' "No gateway
+  // settings provided" check could never fire, and the SDK's
+  // `Object.keys(settingsFields).length > 0` was always true, so an
+  // observer-address-only update still sent an all-null settings ix.
   return {
     observerAddress,
     allowDelegatedStaking: allowDelegatedStakingFromOption(
@@ -512,153 +551,6 @@ export function gatewaySettingsFromOptions(
     port: port !== undefined ? +port : undefined,
     properties,
   };
-}
-
-export function requiredTargetAndQuantityFromOptions(
-  options: TransferCLIOptions,
-): { target: string; arioQuantity: ARIOToken } {
-  if (options.target === undefined) {
-    throw new Error('No target provided. Use --target');
-  }
-  if (options.quantity === undefined) {
-    throw new Error('No quantity provided. Use --quantity');
-  }
-  return {
-    target: options.target,
-    arioQuantity: new ARIOToken(+options.quantity),
-  };
-}
-
-export function redelegateParamsFromOptions(
-  options: RedelegateStakeCLIOptions,
-): RedelegateStakeParams & { stakeQty: mARIOToken } {
-  const { target, arioQuantity: aRIOQuantity } =
-    requiredTargetAndQuantityFromOptions(options);
-  const source = options.source;
-  if (source === undefined) {
-    throw new Error('No source provided. Use --source');
-  }
-
-  return {
-    target,
-    source,
-    vaultId: options.vaultId,
-    stakeQty: aRIOQuantity.toMARIO(),
-  };
-}
-
-export function recordTypeFromOptions<O extends { type?: string }>(
-  options: O,
-): 'lease' | 'permabuy' {
-  options.type ??= 'lease';
-  if (options.type !== 'lease' && options.type !== 'permabuy') {
-    throw new Error(`Invalid type. Valid types are: lease, permabuy`);
-  }
-  return options.type;
-}
-
-export function requiredMARIOFromOptions<O extends GlobalCLIOptions>(
-  options: O,
-  key: string,
-): mARIOToken {
-  if (options[key] === undefined) {
-    throw new Error(`No ${key} provided. Use --${key} denominated in ARIO`);
-  }
-  return new ARIOToken(+options[key]).toMARIO();
-}
-
-export async function assertEnoughBalanceForArNSPurchase({
-  ario,
-  address,
-  costDetailsParams,
-}: {
-  ario: ARIORead;
-  address: string;
-  costDetailsParams: GetCostDetailsParams;
-}) {
-  if (costDetailsParams.fundFrom === 'turbo') {
-    // TODO: Get turbo balance and assert it is enough -- retain paid-by from balance result and pass to CLI logic
-    return;
-  }
-
-  const costDetails = await ario.getCostDetails(costDetailsParams);
-  if (costDetails.fundingPlan) {
-    if (costDetails.fundingPlan.shortfall > 0) {
-      throw new Error(
-        `Insufficient balance for action. Shortfall: ${formatMARIOToARIOWithCommas(
-          new mARIOToken(costDetails.fundingPlan.shortfall),
-        )}\n${JSON.stringify(costDetails, null, 2)}`,
-      );
-    }
-  } else {
-    await assertEnoughMARIOBalance({
-      ario,
-      address,
-      mARIOQuantity: costDetails.tokenCost,
-    });
-  }
-}
-
-export async function assertEnoughMARIOBalance({
-  address,
-  ario,
-  mARIOQuantity,
-}: {
-  ario: ARIORead;
-  address: string;
-  mARIOQuantity: mARIOToken | number;
-}) {
-  if (typeof mARIOQuantity === 'number') {
-    mARIOQuantity = new mARIOToken(mARIOQuantity);
-  }
-  const balance = await ario.getBalance({ address });
-
-  if (balance < mARIOQuantity.valueOf()) {
-    throw new Error(
-      `Insufficient ARIO balance for action. Balance available: ${formatMARIOToARIOWithCommas(
-        new mARIOToken(balance),
-      )} ARIO`,
-    );
-  }
-}
-
-export async function confirmationPrompt(message: string): Promise<boolean> {
-  const { confirm } = await prompts({
-    type: 'confirm',
-    name: 'confirm',
-    message,
-  });
-  return confirm;
-}
-
-/** Thrown when the operator declines (or cancels) a confirmation prompt. */
-export class ConfirmationDeclinedError extends Error {
-  constructor() {
-    super('Aborted: confirmation declined');
-    this.name = 'ConfirmationDeclinedError';
-  }
-}
-
-/**
- * Show a confirmation prompt and ABORT the command unless the operator
- * confirms — the "assert" is the point: every one of this function's ~50 call
- * sites `await`s it without reading the result, so returning `false` used to
- * let a declined write sail on into `sendAndConfirm`. Throwing is what makes
- * "no" mean no for all of them at once. A cancelled prompt (Ctrl-C, which
- * leaves `confirm` undefined) aborts too.
- *
- * `--skip-confirmation` bypasses the prompt, as before.
- */
-export async function assertConfirmationPrompt<
-  O extends { skipConfirmation?: boolean },
->(message: string, options: O): Promise<true> {
-  if (options.skipConfirmation) {
-    return true;
-  }
-  if (!(await confirmationPrompt(message))) {
-    throw new ConfirmationDeclinedError();
-  }
-  return true;
 }
 
 export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
