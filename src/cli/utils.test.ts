@@ -10,7 +10,11 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
+import prompts from 'prompts';
+
 import {
+  ConfirmationDeclinedError,
+  assertConfirmationPrompt,
   buyAntStateFromOptions,
   fundingPlanFromOptions,
   requiredAddressFromOptions,
@@ -286,5 +290,40 @@ describe('buyAntStateFromOptions', () => {
   it('does not set TTL (not settable at mint)', () => {
     const state = buyAntStateFromOptions({ transactionId: 'tx1' });
     assert.ok(state && !('ttlSeconds' in state));
+  });
+});
+
+// Answering "no" used to be discarded by every caller, so a declined write
+// went on to sign and send anyway.
+describe('assertConfirmationPrompt', () => {
+  it('throws when the operator declines', async () => {
+    prompts.inject([false]);
+    await assert.rejects(
+      () => assertConfirmationPrompt('send it?', {}),
+      (err: unknown) =>
+        err instanceof ConfirmationDeclinedError &&
+        /confirmation declined/.test(err.message),
+    );
+  });
+
+  it('throws when the prompt is cancelled (Ctrl-C leaves it undefined)', async () => {
+    prompts.inject([undefined]);
+    await assert.rejects(
+      () => assertConfirmationPrompt('send it?', {}),
+      ConfirmationDeclinedError,
+    );
+  });
+
+  it('returns true when the operator confirms', async () => {
+    prompts.inject([true]);
+    assert.equal(await assertConfirmationPrompt('send it?', {}), true);
+  });
+
+  it('skips the prompt entirely with --skip-confirmation', async () => {
+    // No injection: a prompt here would hang or consume the next injection.
+    assert.equal(
+      await assertConfirmationPrompt('send it?', { skipConfirmation: true }),
+      true,
+    );
   });
 });
