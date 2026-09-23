@@ -631,13 +631,34 @@ export async function confirmationPrompt(message: string): Promise<boolean> {
   return confirm;
 }
 
+/** Thrown when the operator declines (or cancels) a confirmation prompt. */
+export class ConfirmationDeclinedError extends Error {
+  constructor() {
+    super('Aborted: confirmation declined');
+    this.name = 'ConfirmationDeclinedError';
+  }
+}
+
+/**
+ * Show a confirmation prompt and ABORT the command unless the operator
+ * confirms — the "assert" is the point: every one of this function's ~50 call
+ * sites `await`s it without reading the result, so returning `false` used to
+ * let a declined write sail on into `sendAndConfirm`. Throwing is what makes
+ * "no" mean no for all of them at once. A cancelled prompt (Ctrl-C, which
+ * leaves `confirm` undefined) aborts too.
+ *
+ * `--skip-confirmation` bypasses the prompt, as before.
+ */
 export async function assertConfirmationPrompt<
   O extends { skipConfirmation?: boolean },
->(message: string, options: O): Promise<boolean> {
+>(message: string, options: O): Promise<true> {
   if (options.skipConfirmation) {
     return true;
   }
-  return confirmationPrompt(message);
+  if (!(await confirmationPrompt(message))) {
+    throw new ConfirmationDeclinedError();
+  }
+  return true;
 }
 
 export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(
