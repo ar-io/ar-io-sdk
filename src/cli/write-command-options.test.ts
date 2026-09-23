@@ -278,3 +278,29 @@ describe('CLI RPC fallback stays on the same cluster', () => {
     );
   });
 });
+
+// `gatewaySettingsFromOptions` used to return all 10 keys with `undefined`
+// values, so "did the operator set anything?" checks could never fire.
+describe('gatewaySettingsFromOptions omits unset keys', () => {
+  it('returns an empty object when nothing is set', () => {
+    assert.deepEqual(gatewaySettingsFromOptions({}), {});
+    assert.equal(Object.keys(gatewaySettingsFromOptions({})).length, 0);
+  });
+
+  it('keeps only what was passed', () => {
+    assert.deepEqual(gatewaySettingsFromOptions({ observerAddress: 'obs' }), {
+      observerAddress: 'obs',
+    });
+    assert.deepEqual(
+      gatewaySettingsFromOptions({ label: 'gw', port: '8443' }),
+      { label: 'gw', port: 8443 },
+    );
+  });
+
+  it('keeps an explicit false', () => {
+    assert.deepEqual(
+      gatewaySettingsFromOptions({ allowDelegatedStaking: 'false' }),
+      { allowDelegatedStaking: false },
+    );
+  });
+});
