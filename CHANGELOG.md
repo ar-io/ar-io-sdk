@@ -1,3 +1,12 @@
+# [4.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.7...v4.4.0-alpha.8) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cli:** keep the RPC fallback on the same cluster ([b562948](https://github.com/ar-io/ar-io-sdk/commit/b562948f80baf8513318bd91ee86cf48adb2abef))
+* **cli:** omit unset gateway settings so empty-update guards work ([4d04851](https://github.com/ar-io/ar-io-sdk/commit/4d0485186fc06bd19a6b814dda033b9b591b5276))
+* **cli:** treat *.localhost as local and read the cluster from host+path ([605bd6d](https://github.com/ar-io/ar-io-sdk/commit/605bd6d2f58d5916af181d6b663b18ea2c7dd315))
+
 # [4.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.6...v4.4.0-alpha.7) (2026-09-23)
 
 
