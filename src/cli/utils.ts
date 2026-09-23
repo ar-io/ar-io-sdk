@@ -220,10 +220,49 @@ function wsUrlFromRpcUrl(rpcUrl: string): string {
  * Create a {@link SolanaRpc} wrapped with a circuit-breaker that falls back to
  * the cluster's public RPC when the primary endpoint becomes unhealthy.
  */
+/**
+ * Public fallback for `--rpc-url`, or `undefined` when guessing one would
+ * change CLUSTER rather than just endpoint.
+ *
+ * The breaker's fallback exists for a flaky endpoint, not a different chain.
+ * {@link defaultFallbackUrl} answers mainnet for anything that doesn't say
+ * "devnet", so a localnet or Surfpool URL that stops responding used to route
+ * the command — reads and writes alike — at public mainnet. Only fall back
+ * when the primary URL names its cluster; otherwise run with no fallback, so
+ * the breaker fails fast instead of silently moving clusters.
+ */
+export function cliFallbackUrl(rpcUrl: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(rpcUrl);
+  } catch {
+    return undefined;
+  }
+  // RFC 6761 reserves `localhost` AND every `*.localhost` name for loopback,
+  // so `http://mainnet.localhost:8899` is a local validator, not mainnet.
+  const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '0.0.0.0' ||
+    hostname === '::1' ||
+    /^127\./.test(hostname)
+  ) {
+    return undefined;
+  }
+  // Read the cluster from the host and path only: an API key or query
+  // parameter that happens to contain "mainnet" must not pick a cluster.
+  const clusterHint = `${hostname}${url.pathname}`;
+  if (/devnet/i.test(clusterHint)) return defaultFallbackUrl('devnet');
+  if (/mainnet/i.test(clusterHint)) return defaultFallbackUrl('mainnet');
+  return undefined;
+}
+
 function createCliRpc(rpcUrl: string) {
+  const fallbackUrl = cliFallbackUrl(rpcUrl);
   return createCircuitBreakerRpc({
     primaryUrl: rpcUrl,
-    fallbackUrl: defaultFallbackUrl(rpcUrl),
+    ...(fallbackUrl !== undefined ? { fallbackUrl } : {}),
   });
 }
 
@@ -494,7 +533,13 @@ export function gatewaySettingsFromOptions(
     properties,
     allowedDelegates,
   } = options;
-  return {
+  // Drop the keys the operator didn't set. Returning every key with an
+  // `undefined` value made `Object.keys(...)` always report 10, which
+  // silently disabled two guards: `update-gateway-settings`' "No gateway
+  // settings provided" check could never fire, and the SDK's
+  // `Object.keys(settingsFields).length > 0` was always true, so an
+  // observer-address-only update still sent an all-null settings ix.
+  return definedOnly({
     observerAddress,
     allowDelegatedStaking: allowDelegatedStakingFromOption(
       allowDelegatedStaking,
@@ -511,7 +556,14 @@ export function gatewaySettingsFromOptions(
     note,
     port: port !== undefined ? +port : undefined,
     properties,
-  };
+  });
+}
+
+/** Strip `undefined`-valued keys, preserving the value type. */
+function definedOnly<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
 }
 
 export function requiredTargetAndQuantityFromOptions(
