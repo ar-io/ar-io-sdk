@@ -232,23 +232,29 @@ function wsUrlFromRpcUrl(rpcUrl: string): string {
  * the breaker fails fast instead of silently moving clusters.
  */
 export function cliFallbackUrl(rpcUrl: string): string | undefined {
-  let hostname: string;
+  let url: URL;
   try {
-    hostname = new URL(rpcUrl).hostname;
+    url = new URL(rpcUrl);
   } catch {
     return undefined;
   }
+  // RFC 6761 reserves `localhost` AND every `*.localhost` name for loopback,
+  // so `http://mainnet.localhost:8899` is a local validator, not mainnet.
+  const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
   if (
     hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost') ||
     hostname === '0.0.0.0' ||
-    hostname === '::1'
+    hostname === '::1' ||
+    /^127\./.test(hostname)
   ) {
     return undefined;
   }
-  if (/devnet/i.test(rpcUrl) || /mainnet/i.test(rpcUrl)) {
-    return defaultFallbackUrl(rpcUrl);
-  }
+  // Read the cluster from the host and path only: an API key or query
+  // parameter that happens to contain "mainnet" must not pick a cluster.
+  const clusterHint = `${hostname}${url.pathname}`;
+  if (/devnet/i.test(clusterHint)) return defaultFallbackUrl('devnet');
+  if (/mainnet/i.test(clusterHint)) return defaultFallbackUrl('mainnet');
   return undefined;
 }
 

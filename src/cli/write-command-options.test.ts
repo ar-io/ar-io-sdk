@@ -252,6 +252,11 @@ describe('CLI RPC fallback stays on the same cluster', () => {
       'http://localhost:8899',
       'http://127.0.0.1:8899',
       'http://0.0.0.0:8899',
+      'http://127.0.0.2:8899',
+      'http://[::1]:8899',
+      // RFC 6761 reserves every *.localhost name for loopback.
+      'http://mainnet.localhost:8899',
+      'http://devnet.localhost:8899',
     ]) {
       assert.equal(cliFallbackUrl(url), undefined, url);
     }
@@ -261,6 +266,15 @@ describe('CLI RPC fallback stays on the same cluster', () => {
     assert.equal(cliFallbackUrl('https://rpc.example.com'), undefined);
     assert.equal(cliFallbackUrl('https://my-node.internal:8899'), undefined);
     assert.equal(cliFallbackUrl('not a url'), undefined);
+    // A cluster name in the query or fragment is not a cluster.
+    assert.equal(
+      cliFallbackUrl('https://rpc.example.com/?apiKey=mainnet-abc123'),
+      undefined,
+    );
+    assert.equal(
+      cliFallbackUrl('https://rpc.example.com/rpc#devnet'),
+      undefined,
+    );
   });
 
   it('falls back to the matching public RPC when the cluster is named', () => {
@@ -275,6 +289,11 @@ describe('CLI RPC fallback stays on the same cluster', () => {
     assert.equal(
       cliFallbackUrl('https://x.mainnet.rpcpool.com'),
       'https://api.mainnet-beta.solana.com',
+    );
+    // ...including when the cluster is in the path rather than the host.
+    assert.equal(
+      cliFallbackUrl('https://rpc.example.com/solana/devnet'),
+      'https://api.devnet.solana.com',
     );
   });
 });
