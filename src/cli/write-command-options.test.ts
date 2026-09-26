@@ -257,6 +257,11 @@ describe('CLI RPC fallback stays on the same cluster', () => {
       // RFC 6761 reserves every *.localhost name for loopback.
       'http://mainnet.localhost:8899',
       'http://devnet.localhost:8899',
+      // Fully qualified (trailing-dot) forms are the same loopback names.
+      'http://localhost.:8899',
+      'http://mainnet.localhost.:8899',
+      'http://devnet.localhost.:8899',
+      'http://MAINNET.LOCALHOST.:8899',
     ]) {
       assert.equal(cliFallbackUrl(url), undefined, url);
     }
@@ -288,6 +293,11 @@ describe('CLI RPC fallback stays on the same cluster', () => {
     );
     assert.equal(
       cliFallbackUrl('https://x.mainnet.rpcpool.com'),
+      'https://api.mainnet-beta.solana.com',
+    );
+    // A fully qualified public host still names its cluster.
+    assert.equal(
+      cliFallbackUrl('https://api.mainnet-beta.solana.com.'),
       'https://api.mainnet-beta.solana.com',
     );
     // ...including when the cluster is in the path rather than the host.
