@@ -1,6 +1,5 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-
 import bs58 from 'bs58';
 
 import { Logger } from '../common/logger.js';
@@ -22,8 +21,6 @@ const RENT_PER_BYTE = 6960n;
 function stubRpc(
   opts: {
     fees?: number[] | 'throws';
-    /** fees returned for the address-scoped (wallet market) query */
-    scopedFees?: number[];
     rentThrows?: boolean;
     /** lamports per account returned by getMultipleAccounts (null = missing) */
     accountLamports?: (number | null)[];
@@ -33,16 +30,13 @@ function stubRpc(
   return {
     counts,
     rpc: {
-      getRecentPrioritizationFees: (addresses?: unknown[]) => ({
+      getRecentPrioritizationFees: () => ({
         send: async () => {
           counts.feeCalls++;
           if (opts.fees === 'throws') throw new Error('rpc down');
-          const fees = addresses
-            ? (opts.scopedFees ?? opts.fees ?? [])
-            : (opts.fees ?? []);
-          return fees.map((prioritizationFee) => ({
-            prioritizationFee,
-            slot: 1n,
+          return (opts.fees ?? []).map((price, slot) => ({
+            slot: BigInt(slot),
+            prioritizationFee: BigInt(price),
           }));
         },
       }),
@@ -115,42 +109,24 @@ describe('estimateGasFee', () => {
   it('estimates the compute-unit price from recent on-chain fees', async () => {
     const { rpc } = stubRpc({
       fees: [20_000, 50_000, 30_000, 40_000],
-      scopedFees: [],
     });
     const quote = await estimateGasFee(rpc as never);
-    // p75 of the sorted non-zero fees is 50_000 µ◎/CU.
-    assert.equal(quote.priorityFeeMicroLamports, 50_000);
-    assert.equal(quote.priorityFeeLamports, 20_000); // 400k × 50_000 / 1e6
+    assert.equal(quote.priorityFeeMicroLamports, 30_000);
+    assert.equal(quote.priorityFeeLamports, 12_000);
     assert.equal(quote.rentLamports, 0);
-    assert.equal(quote.totalLamports, BASE_FEE_LAMPORTS_PER_SIGNATURE + 20_000);
+    assert.equal(quote.totalLamports, BASE_FEE_LAMPORTS_PER_SIGNATURE + 12_000);
   });
 
   it('falls back to the floor price when the fee query fails', async () => {
     const { rpc } = stubRpc({ fees: 'throws' });
     const quote = await estimateGasFee(rpc as never);
     assert.equal(quote.priorityFeeMicroLamports, 10_000);
-    assert.equal(quote.priorityFeeLamports, 4_000); // 400k × 10_000 / 1e6
-  });
-
-  it('quotes the wallet market rate when it exceeds the base estimate', async () => {
-    // Global per-slot minimums are quiet, but the busy-reference (wallet)
-    // queries report what fee-paying transactions actually attach — the
-    // quote must cover the wallet rate, since that's what Phantom charges.
-    const { rpc } = stubRpc({
-      fees: [20_000],
-      scopedFees: [400_000, 500_000, 600_000],
-    });
-    const quote = await estimateGasFee(rpc as never);
-    // pooled p85 (600_000) shrunk toward the 500_000 prior → 550_000,
-    // which wins over the global p75 (20_000)
-    assert.equal(quote.priorityFeeMicroLamports, 550_000);
-    assert.equal(quote.priorityFeeLamports, 220_000); // 400k × 550_000 / 1e6
+    assert.equal(quote.priorityFeeLamports, 4_000);
   });
 
   it('keeps the floor on clusters with no fee market (devnet)', async () => {
-    const { rpc } = stubRpc({ fees: [], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [] });
     const quote = await estimateGasFee(rpc as never);
-    // no fee-paying slots anywhere → floor, NOT the wallet prior
     assert.equal(quote.priorityFeeMicroLamports, 10_000);
   });
 });
@@ -227,7 +203,7 @@ describe('estimateRentLamports', () => {
 
 describe('SolanaARIOReadable.getGasEstimate', () => {
   it('includes ANT spawn + record rent for Buy-Name and memoizes queries', async () => {
-    const { rpc, counts } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc, counts } = stubRpc({ fees: [100_000] });
     const readable = new SolanaARIOReadable({
       rpc: rpc as never,
       logger: new Logger({ level: 'none' }),
@@ -248,14 +224,13 @@ describe('SolanaARIOReadable.getGasEstimate', () => {
       intent: 'Buy-Name',
       name: 'brandybuck35',
     });
-    // one refresh = three queries (global + two wallet-market references)
-    assert.equal(counts.feeCalls, 3, 'priority fee memoized within TTL');
+    assert.equal(counts.feeCalls, 1, 'priority fee memoized within TTL');
     assert.equal(counts.rentCalls, 1, 'rent memoized per byte size');
     assert.equal(second.totalLamports, quote.totalLamports);
   });
 
   it('quotes a single cheap transaction for Extend-Lease', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const readable = new SolanaARIOReadable({
       rpc: rpc as never,
       logger: new Logger({ level: 'none' }),
@@ -286,7 +261,6 @@ describe('SolanaANTReadable.getGasEstimate', () => {
   it('reports the live record deposit as reclaimed rent on remove-record', async () => {
     const { rpc } = stubRpc({
       fees: [100_000],
-      scopedFees: [],
       // record account holds 3_090_240 lamports; no metadata PDA
       accountLamports: [3_090_240, null],
     });
@@ -301,7 +275,7 @@ describe('SolanaANTReadable.getGasEstimate', () => {
   });
 
   it('quotes record rent for set-record', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeAnt(rpc).getGasEstimate({
       workflow: 'set-record',
       undername: 'docs',
@@ -315,7 +289,7 @@ describe('SolanaANTReadable.getGasEstimate', () => {
   });
 
   it('quotes the recipient ACL bootstrap for transfers to fresh wallets', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] }); // getAccountInfo → null
+    const { rpc } = stubRpc({ fees: [100_000] }); // getAccountInfo -> null
     const quote = await makeAnt(rpc).getGasEstimate({
       workflow: 'transfer',
       recipient: bs58.encode(Buffer.alloc(32, 9)),
@@ -326,7 +300,7 @@ describe('SolanaANTReadable.getGasEstimate', () => {
   });
 
   it('quotes fees only for reassign-name', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeAnt(rpc).getGasEstimate({
       workflow: 'reassign-name',
     });
@@ -345,7 +319,7 @@ describe('SolanaARIOReadable.getGarGasEstimate', () => {
   }
 
   it('quotes gateway + observer-lookup rent and registry realloc on join', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeReadable(rpc).getGarGasEstimate({
       workflow: 'join-network',
     });
@@ -361,7 +335,7 @@ describe('SolanaARIOReadable.getGarGasEstimate', () => {
 
   it('quotes a withdrawal vault (and first-time counter) on decrease', async () => {
     // getAccountInfo stub → null: no withdrawal counter yet
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeReadable(rpc).getGarGasEstimate({
       workflow: 'decrease-delegate-stake',
       fromAddress: bs58.encode(Buffer.alloc(32, 5)),
@@ -373,7 +347,7 @@ describe('SolanaARIOReadable.getGarGasEstimate', () => {
   });
 
   it('reports the vault rent as reclaimed for instant decreases', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeReadable(rpc).getGarGasEstimate({
       workflow: 'decrease-delegate-stake',
       fromAddress: bs58.encode(Buffer.alloc(32, 5)),
@@ -384,7 +358,7 @@ describe('SolanaARIOReadable.getGarGasEstimate', () => {
   });
 
   it('quotes fees only for settings updates', async () => {
-    const { rpc } = stubRpc({ fees: [100_000], scopedFees: [] });
+    const { rpc } = stubRpc({ fees: [100_000] });
     const quote = await makeReadable(rpc).getGarGasEstimate({
       workflow: 'update-gateway-settings',
     });

@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { address, generateKeyPairSigner } from '@solana/kit';
-import { reclaimLookupTablesForSigner, sendAndConfirm } from './send.js';
+import {
+  AccountRole,
+  type Address,
+  address,
+  generateKeyPairSigner,
+  getBase58Decoder,
+  getCompiledTransactionMessageDecoder,
+} from '@solana/kit';
+import {
+  estimatePriorityFeeMicroLamports,
+  reclaimLookupTablesForSigner,
+  sendAndConfirm,
+} from './send.js';
 
 /**
  * A blockhash is only valid for ~150 blocks (~60s) from ISSUE, not from send.
@@ -19,9 +30,11 @@ const MEMO = address('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 // Two distinct, valid-looking blockhashes so we can tell which one was used.
 const BLOCKHASH_BEFORE_SIM = '11111111111111111111111111111111';
-const BLOCKHASH_AFTER_SIM = '22222222222222222222222222222222';
+const BLOCKHASH_AFTER_SIM = getBase58Decoder().decode(
+  new Uint8Array(32).fill(2),
+);
 
-function makeRpc() {
+function makeRpc(unitsConsumed = 5000n) {
   const calls: string[] = [];
   let blockhashCalls = 0;
   return {
@@ -45,7 +58,7 @@ function makeRpc() {
       simulateTransaction: () => ({
         send: async () => {
           calls.push('simulateTransaction');
-          return { value: { err: null, unitsConsumed: 5000n, logs: [] } };
+          return { value: { err: null, unitsConsumed, logs: [] } };
         },
       }),
       getRecentPrioritizationFees: () => ({
@@ -339,5 +352,190 @@ describe('reclaimLookupTablesForSigner history scan', () => {
         return true;
       },
     );
+  });
+});
+
+describe('transaction fee and compute-unit sizing', () => {
+  for (const { name, modifying, ceiling, expectedUnits } of [
+    {
+      name: 'keypair',
+      modifying: false,
+      ceiling: 400_000,
+      expectedUnits: 13_000,
+    },
+    {
+      name: 'wallet',
+      modifying: true,
+      ceiling: 400_000,
+      expectedUnits: 43_000,
+    },
+    {
+      name: 'wallet at ceiling',
+      modifying: true,
+      ceiling: 20_000,
+      expectedUnits: 20_000,
+    },
+  ]) {
+    it(`sizes the ${name} budget and signs with a fresh blockhash`, async () => {
+      const { rpc } = makeRpc(10_000n);
+      const payer = await generateKeyPairSigner();
+      const stop = new Error('stop before signing or broadcasting');
+      const inspect = async ([tx]: Parameters<
+        typeof payer.signTransactions
+      >[0]) => {
+        const message = getCompiledTransactionMessageDecoder().decode(
+          tx.messageBytes,
+        );
+        assert.equal(message.lifetimeToken, BLOCKHASH_AFTER_SIM);
+        const data = message.instructions[0].data!;
+        assert.equal(
+          new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(
+            1,
+            true,
+          ),
+          expectedUnits,
+        );
+        throw stop;
+      };
+      const signer = modifying
+        ? { address: payer.address, modifyAndSignTransactions: inspect }
+        : { ...payer, signTransactions: inspect };
+      await assert.rejects(
+        sendAndConfirm({
+          rpc,
+          rpcSubscriptions: undefined as never,
+          signer,
+          instructions: [
+            { programAddress: MEMO, accounts: [], data: new Uint8Array([1]) },
+          ],
+          computeUnitLimit: ceiling,
+          priorityFeeMicroLamports: 1000n,
+        }),
+        (error) => error === stop,
+      );
+    });
+  }
+
+  it('scopes one fee request to unique writable accounts, excluding the payer', async () => {
+    const { rpc } = makeRpc();
+    const payer = await generateKeyPairSigner();
+    const writable = address(TABLE_A);
+    const readonly = address('11111111111111111111111111111111');
+    const requests: Address[][] = [];
+    const stop = new Error('stop before signing or broadcasting');
+    const scopedRpc = {
+      ...(rpc as object),
+      getRecentPrioritizationFees: (accounts: Address[]) => ({
+        send: async () => {
+          requests.push(accounts);
+          return [{ slot: 1n, prioritizationFee: 50_000n }];
+        },
+      }),
+    };
+    await assert.rejects(
+      sendAndConfirm({
+        rpc: scopedRpc as never,
+        rpcSubscriptions: undefined as never,
+        signer: {
+          address: payer.address,
+          modifyAndSignTransactions: async ([tx]) => {
+            const message = getCompiledTransactionMessageDecoder().decode(
+              tx.messageBytes,
+            );
+            const data = message.instructions[1].data!;
+            assert.equal(
+              new DataView(
+                data.buffer,
+                data.byteOffset,
+                data.byteLength,
+              ).getBigUint64(1, true),
+              50_000n,
+            );
+            throw stop;
+          },
+        },
+        instructions: [
+          {
+            programAddress: MEMO,
+            accounts: [
+              { address: payer.address, role: AccountRole.WRITABLE_SIGNER },
+              { address: readonly, role: AccountRole.READONLY },
+              { address: writable, role: AccountRole.READONLY },
+              { address: writable, role: AccountRole.WRITABLE },
+              { address: writable, role: AccountRole.WRITABLE },
+            ],
+            data: new Uint8Array([1]),
+          },
+        ],
+      }),
+      (error) => error === stop,
+    );
+    assert.deepEqual(requests, [[writable]]);
+  });
+});
+
+describe('scoped priority fees', () => {
+  it('uses one fee RPC call, with deduplication before the 128-account cap', async () => {
+    const accounts = Array.from({ length: 130 }, (_, i) =>
+      address(getBase58Decoder().decode(new Uint8Array(32).fill(i + 1))),
+    );
+    const requests: Address[][] = [];
+    let blockCalls = 0;
+    const rpc = {
+      getRecentPrioritizationFees: (keys: Address[]) => ({
+        send: async () => {
+          requests.push(keys);
+          return [90_000n, 0n, 50_000n, 30_000n].map(
+            (prioritizationFee, slot) => ({
+              slot: BigInt(slot),
+              prioritizationFee,
+            }),
+          );
+        },
+      }),
+      getBlock: () => {
+        blockCalls++;
+        throw new Error('full blocks must not be fetched');
+      },
+    };
+    assert.equal(
+      await estimatePriorityFeeMicroLamports(rpc as never, [
+        accounts[0],
+        ...accounts,
+      ]),
+      30_000n,
+    );
+    assert.deepEqual(requests, [accounts.slice(0, 128)]);
+    assert.equal(blockCalls, 0);
+  });
+
+  for (const { name, fees, expected } of [
+    { name: 'empty cache', fees: [], expected: 10_000n },
+    { name: 'zero median', fees: [0n, 0n, 100_000n], expected: 10_000n },
+    { name: 'price cap', fees: [9_000_000n], expected: 2_000_000n },
+  ]) {
+    it(`bounds the ${name}`, async () => {
+      const rpc = {
+        getRecentPrioritizationFees: () => ({
+          send: async () =>
+            fees.map((prioritizationFee) => ({ slot: 1n, prioritizationFee })),
+        }),
+      };
+      assert.equal(
+        await estimatePriorityFeeMicroLamports(rpc as never),
+        expected,
+      );
+    });
+  }
+
+  it('returns the floor on an RPC error', async () => {
+    const rpc = {
+      getRecentPrioritizationFees: () => ({
+        send: async () => {
+          throw new Error('HTTP 429');
+        },
+      }),
+    };
+    assert.equal(await estimatePriorityFeeMicroLamports(rpc as never), 10_000n);
   });
 });

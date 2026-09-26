@@ -477,10 +477,7 @@ function demandFactorBytes(): Uint8Array {
   }) as Uint8Array;
 }
 
-/**
- * Stub rpc that counts every method and can be told to fail the first N calls
- * to a given method (for the "a failure must not be cached" case).
- */
+/** Count RPC calls and optionally fail fee queries or account lookup. */
 function countingGasRpc(
   counts: RpcCounts,
   opts: { failFeeCalls?: number; accountExists?: boolean } = {},
@@ -490,15 +487,16 @@ function countingGasRpc(
     counts[m] = (counts[m] ?? 0) + 1;
   };
   return {
-    getRecentPrioritizationFees: () => ({
+    getRecentPrioritizationFees: (accounts: readonly Address[]) => ({
       send: async () => {
+        assert.deepEqual(accounts, [], 'quotes use unscoped fee samples');
         bump('getRecentPrioritizationFees');
         await tick();
         if (feeFailuresLeft > 0) {
           feeFailuresLeft--;
           throw new Error('HTTP error (429): Too Many Requests');
         }
-        return [{ slot: 1n, prioritizationFee: 12_345n }];
+        return [{ slot: 500n, prioritizationFee: 12_345n }];
       },
     }),
     getMinimumBalanceForRentExemption: () => ({
@@ -547,7 +545,7 @@ function countingGasRpc(
 }
 
 describe('SolanaARIOReadable request coalescing', () => {
-  it('collapses a concurrent getGasEstimate burst onto one priority-fee query set', async () => {
+  it('collapses a concurrent getGasEstimate burst onto one priority-fee query', async () => {
     const counts: RpcCounts = {};
     const readable = new SolanaARIOReadable({
       rpc: countingGasRpc(counts) as never,
@@ -560,13 +558,7 @@ describe('SolanaARIOReadable request coalescing', () => {
       ),
     );
 
-    // One quote costs three queries: an unscoped sample plus two scoped
-    // market references. Ten concurrent quotes must still cost three.
-    assert.equal(
-      counts.getRecentPrioritizationFees,
-      3,
-      'ten concurrent quotes should share one priority-fee estimate',
-    );
+    assert.equal(counts.getRecentPrioritizationFees, 1);
     assert.equal(
       counts.getMinimumBalanceForRentExemption,
       1,
@@ -575,7 +567,7 @@ describe('SolanaARIOReadable request coalescing', () => {
     // Every caller must still get the same complete answer.
     for (const r of results) {
       assert.deepEqual(r, results[0]);
-      assert.ok(r.totalLamports > 0);
+      assert.equal(r.priorityFeeMicroLamports, 12_345);
     }
   });
 
@@ -638,28 +630,27 @@ describe('SolanaARIOReadable request coalescing', () => {
     );
   });
 
-  it('does not cache a failed priority-fee estimate', async () => {
+  it('caches the fallback price until expiry, then samples again', async (t) => {
+    let now = Date.now();
+    t.mock.method(Date, 'now', () => now);
     const counts: RpcCounts = {};
     const readable = new SolanaARIOReadable({
-      // Fail every query of the first estimate (3 queries), then succeed.
-      rpc: countingGasRpc(counts, { failFeeCalls: 3 }) as never,
+      rpc: countingGasRpc(counts, { failFeeCalls: 1 }) as never,
       logger: new Logger({ level: 'none' }),
     });
 
-    // The fee estimator swallows per-query failures and falls back to its
-    // floor, so the first quote still resolves — what matters is that the
-    // NEXT quote re-queries rather than reusing a degraded cached value.
     const first = await readable.getGasEstimate({ intent: 'Buy-Name' });
-    assert.equal(counts.getRecentPrioritizationFees, 3);
+    assert.equal(first.priorityFeeMicroLamports, 10_000);
+    assert.equal(counts.getRecentPrioritizationFees, 1);
 
     const second = await readable.getGasEstimate({ intent: 'Buy-Name' });
-    assert.equal(
-      counts.getRecentPrioritizationFees,
-      3,
-      'a successful estimate is still cached for its TTL',
-    );
-    assert.ok(first.priorityFeeMicroLamports >= 0);
-    assert.ok(second.priorityFeeMicroLamports >= 0);
+    assert.equal(second.priorityFeeMicroLamports, 10_000);
+    assert.equal(counts.getRecentPrioritizationFees, 1);
+
+    now += 10_001;
+    const refreshed = await readable.getGasEstimate({ intent: 'Buy-Name' });
+    assert.equal(refreshed.priorityFeeMicroLamports, 12_345);
+    assert.equal(counts.getRecentPrioritizationFees, 2);
   });
 
   it('shares one lookup for a MISSING account but does not cache the miss', async () => {
