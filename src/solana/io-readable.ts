@@ -169,6 +169,7 @@ import {
 import {
   OPERATOR_DISCOUNT_INTENTS,
   applyGatewayOperatorDiscount,
+  describeGatewayDiscountIneligibility,
   gatewayDiscountIneligibility,
 } from './gateway-discount.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
@@ -2775,11 +2776,18 @@ export class SolanaARIOReadable {
       // stays fresh for gateway pages): a price table calls this many times for
       // the same wallet. The cluster clock is already memoized by
       // `getTokenCost` above, so this adds no round trip.
+      //
+      // Mirrors `resolveOperatorDiscountGateway` in the writeable: a gateway
+      // named explicitly that does not qualify is an error (the purchase would
+      // throw the same one), while the caller's own gateway is only tried and
+      // silently skipped. Quoting full price for an explicit request would
+      // hide why the discount the caller asked for is not coming.
+      const explicit = params.discountGatewayAddress !== undefined;
       try {
-        const [gwPda] = await getGatewayPDA(
-          address(params.discountGatewayAddress ?? params.fromAddress),
-          this.garProgram,
+        const operator = address(
+          params.discountGatewayAddress ?? params.fromAddress,
         );
+        const [gwPda] = await getGatewayPDA(operator, this.garProgram);
         const gwAccount = await this.getCachedAccount(gwPda);
         if (gwAccount.exists) {
           const gateway = getGatewayDecoder().decode(gwAccount.data);
@@ -2798,10 +2806,19 @@ export class SolanaARIOReadable {
               discountTotal: Number(cost - applyGatewayOperatorDiscount(cost)),
               multiplier: 0.8,
             });
+          } else if (explicit) {
+            throw new Error(
+              `Gateway ${operator} does not qualify for the operator discount: ${describeGatewayDiscountIneligibility(ineligible)}.`,
+            );
           }
+        } else if (explicit) {
+          throw new Error(
+            `No gateway found for operator ${operator}; cannot claim the operator discount through it.`,
+          );
         }
-      } catch {
-        // Not a gateway operator — no discount
+      } catch (error) {
+        // Implicit: not a gateway operator — no discount.
+        if (explicit) throw error;
       }
     }
 
