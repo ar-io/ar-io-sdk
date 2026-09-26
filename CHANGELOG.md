@@ -1,3 +1,12 @@
+# [4.4.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.8...v4.4.0-alpha.9) (2026-09-26)
+
+
+### Bug Fixes
+
+* **cli:** treat fully qualified *.localhost. names as local ([3115faf](https://github.com/ar-io/ar-io-sdk/commit/3115faf184004760aceefd1fdd5f981241bcd863))
+* **solana:** an explicit discount gateway that does not qualify fails the quote ([913a976](https://github.com/ar-io/ar-io-sdk/commit/913a97679d2444a22d813169c2692a21104093c2))
+* **solana:** reject an explicit discount gateway with no caller to authorise ([586670b](https://github.com/ar-io/ar-io-sdk/commit/586670bbfa095d20308be581a22666da9af0c2a3))
+
 # [4.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.7...v4.4.0-alpha.8) (2026-09-23)
 
 
