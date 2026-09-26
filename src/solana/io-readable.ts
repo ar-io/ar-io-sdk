@@ -2768,6 +2768,19 @@ export class SolanaARIOReadable {
       multiplier: number;
     }> = [];
 
+    // A named discount gateway is an explicit request, and it can only be
+    // judged against the caller who would claim it: without one, quoting full
+    // price would hide that the request was never evaluated.
+    if (
+      params.discountGatewayAddress !== undefined &&
+      !params.fromAddress &&
+      OPERATOR_DISCOUNT_INTENTS.has(params.intent)
+    ) {
+      throw new Error(
+        'fromAddress is required when discountGatewayAddress is specified: the operator discount is authorised against the caller.',
+      );
+    }
+
     if (params.fromAddress && OPERATOR_DISCOUNT_INTENTS.has(params.intent)) {
       // Operator discount — the same checks as ario-arns
       // `try_apply_gateway_discount`, and the same gateway the writeable

@@ -798,6 +798,30 @@ describe('getCostDetails operator discount', () => {
     );
   });
 
+  it('rejects an explicitly named gateway when there is no caller to authorise', async () => {
+    const pda = (await getGatewayPDA(OPERATOR))[0];
+    const r = readableWith(new Map([[pda, encodeGateway()]]), 1_000_000);
+    await assert.rejects(
+      r.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'n',
+        discountGatewayAddress: OPERATOR,
+      }),
+      /fromAddress is required when discountGatewayAddress is specified/,
+    );
+    // Without a named gateway, no caller simply means no discount.
+    const res = await r.getCostDetails({ intent: 'Buy-Name', name: 'n' });
+    assert.deepEqual(res.discounts, []);
+    assert.equal(res.tokenCost, 1_000_000);
+    // Primary names are never discounted, so there is nothing to reject.
+    const primary = await r.getCostDetails({
+      intent: 'Primary-Name-Request',
+      name: 'n',
+      discountGatewayAddress: OPERATOR,
+    });
+    assert.deepEqual(primary.discounts, []);
+  });
+
   it('never discounts a primary name, even with an explicit gateway, and does not throw', async () => {
     const r = readableWith(new Map(), 1_000_000);
     const res = await r.getCostDetails({
