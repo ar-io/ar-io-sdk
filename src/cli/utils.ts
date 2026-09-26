@@ -240,7 +240,13 @@ export function cliFallbackUrl(rpcUrl: string): string | undefined {
   }
   // RFC 6761 reserves `localhost` AND every `*.localhost` name for loopback,
   // so `http://mainnet.localhost:8899` is a local validator, not mainnet.
-  const hostname = url.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  // `URL` keeps a fully qualified name's trailing dot (`mainnet.localhost.`),
+  // which would slip past the `.localhost` test and pick public mainnet, so
+  // drop one trailing dot first.
+  const hostname = url.hostname
+    .replace(/^\[|\]$/g, '')
+    .toLowerCase()
+    .replace(/\.$/, '');
   if (
     hostname === 'localhost' ||
     hostname.endsWith('.localhost') ||

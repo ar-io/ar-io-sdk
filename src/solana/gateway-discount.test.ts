@@ -737,7 +737,101 @@ describe('getCostDetails operator discount', () => {
       ]),
       1_000_000,
     );
-    assert.equal((await quote(stale, OPERATOR)).tokenCost, 1_000_000);
+    // Named explicitly, a gateway whose operations address cannot authorise
+    // the caller is an error, exactly as the purchase would be.
+    await assert.rejects(
+      quote(stale, OPERATOR),
+      /does not qualify for the operator discount/,
+    );
+  });
+
+  it('rejects an explicitly named gateway that does not exist', async () => {
+    const r = readableWith(new Map(), 1_000_000);
+    await assert.rejects(
+      r.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'n',
+        fromAddress: OPERATOR,
+        discountGatewayAddress: OPERATOR,
+      }),
+      /No gateway found for operator/,
+    );
+  });
+
+  it('rejects an explicitly named gateway the program would refuse', async () => {
+    const pda = (await getGatewayPDA(OPERATOR))[0];
+    const r = readableWith(
+      new Map([[pda, encodeGateway({ passedEpochs: 7, totalEpochs: 9 })]]),
+      1_000_000,
+    );
+    await assert.rejects(
+      r.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'n',
+        fromAddress: OPERATOR,
+        discountGatewayAddress: OPERATOR,
+      }),
+      /does not qualify for the operator discount/,
+    );
+  });
+
+  it('a failed gateway lookup quotes full price for the caller’s own gateway, but surfaces for a named one', async () => {
+    const r = readableWith(new Map(), 1_000_000);
+    (r as any).getCachedAccount = async () => {
+      throw new Error('rpc unavailable');
+    };
+    const implicit = await r.getCostDetails({
+      intent: 'Buy-Name',
+      name: 'n',
+      fromAddress: OPERATOR,
+    });
+    assert.deepEqual(implicit.discounts, []);
+    assert.equal(implicit.tokenCost, 1_000_000);
+    await assert.rejects(
+      r.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'n',
+        fromAddress: OPERATOR,
+        discountGatewayAddress: OPERATOR,
+      }),
+      /rpc unavailable/,
+    );
+  });
+
+  it('rejects an explicitly named gateway when there is no caller to authorise', async () => {
+    const pda = (await getGatewayPDA(OPERATOR))[0];
+    const r = readableWith(new Map([[pda, encodeGateway()]]), 1_000_000);
+    await assert.rejects(
+      r.getCostDetails({
+        intent: 'Buy-Name',
+        name: 'n',
+        discountGatewayAddress: OPERATOR,
+      }),
+      /fromAddress is required when discountGatewayAddress is specified/,
+    );
+    // Without a named gateway, no caller simply means no discount.
+    const res = await r.getCostDetails({ intent: 'Buy-Name', name: 'n' });
+    assert.deepEqual(res.discounts, []);
+    assert.equal(res.tokenCost, 1_000_000);
+    // Primary names are never discounted, so there is nothing to reject.
+    const primary = await r.getCostDetails({
+      intent: 'Primary-Name-Request',
+      name: 'n',
+      discountGatewayAddress: OPERATOR,
+    });
+    assert.deepEqual(primary.discounts, []);
+  });
+
+  it('never discounts a primary name, even with an explicit gateway, and does not throw', async () => {
+    const r = readableWith(new Map(), 1_000_000);
+    const res = await r.getCostDetails({
+      intent: 'Primary-Name-Request',
+      name: 'n',
+      fromAddress: OPERATOR,
+      discountGatewayAddress: OPERATOR,
+    });
+    assert.deepEqual(res.discounts, []);
+    assert.equal(res.tokenCost, 1_000_000);
   });
 
   it('does not quote a discount the program would refuse', async () => {
