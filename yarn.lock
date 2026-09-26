@@ -30,10 +30,10 @@
   resolved "https://registry.yarnpkg.com/@actions/io/-/io-3.0.2.tgz#6f89b27a159d109836d983efa283997c23b92284"
   integrity sha512-nRBchcMM+QK1pdjO7/idu86rbJI5YHUKCvKs0KxnSYbVe3F51UfGxuZX4Qy/fWlp6l7gWFwIkrOzN+oUK03kfw==
 
-"@ar.io/solana-contracts@1.4.0-staging.33":
-  version "1.4.0-staging.33"
-  resolved "https://registry.yarnpkg.com/@ar.io/solana-contracts/-/solana-contracts-1.4.0-staging.33.tgz#301f6fe3fb9fc743db3376c16448a05fe1aa353b"
-  integrity sha512-6cbW/rvMxbDacilf8qztxESwDPvBMQUgK3qDKI8wXKjADzL3+e9qmp9weByj4YGth9xZ2RiMnP87xyBS1IWfEw==
+"@ar.io/solana-contracts@1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@ar.io/solana-contracts/-/solana-contracts-1.4.0.tgz#5902ca5cc9cea5a7044bf396a4678ab25ee41c9d"
+  integrity sha512-hvWukXbEnhLoQH+V+xcQsiJ2/VF+GcyKTE0mPzZzKZdKJpwZIyKVDrBxukT34VZWdakRheQFiIbmp5raMDzcMA==
   dependencies:
     "@noble/hashes" "^1.5.0"
     bs58 "^6.0.0"
