@@ -816,7 +816,6 @@ const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
 const { id: txId } = await ario.joinNetwork(
   {
     qty: new ARIOToken(10_000).toMARIO(), // minimum operator stake allowed
-    autoStake: true, // auto-stake operator rewards to the gateway
     allowDelegatedStaking: true, // allows delegated staking
     minDelegatedStake: new ARIOToken(100).toMARIO(), // minimum delegated stake allowed
     delegateRewardShareRatio: 10, // percentage of rewards to share with delegates (e.g. 10%)
@@ -864,6 +863,66 @@ const { id: txId } = await ario.updateGatewaySettings(
   // optional additional tags
   { tags: [{ name: "App-Name", value: "My-Awesome-App" }] },
 );
+```
+
+#### `updateOperationsAddress({ operationsAddress })`
+
+Authorises a second address to update the caller's gateway metadata (see `updateGatewayMetadata`) and to spend the gateway's ArNS discount. Staking, delegation settings and the operations address itself stay operator-only. Pass the operator's own address to revoke a delegation.
+
+A gateway that has not yet been migrated to schema 1.2.0 cannot hold an operations address; in that case `migrate_gateway` is added to the same transaction automatically.
+
+_Note: Solana-only, so it is on `SolanaARIOWriteable` rather than the cross-backend `ARIOWrite` type. Must be signed by the gateway operator._
+
+```typescript
+import { SolanaARIOWriteable } from "@ar.io/sdk";
+
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.updateOperationsAddress({
+  operationsAddress: "DeLegateAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+});
+```
+
+#### `updateGatewayMetadata({ gatewayAddress?, ...metadata })`
+
+Updates a gateway's `label`, `fqdn`, `port`, `protocol`, `properties` and/or `note`. Can be signed by the gateway operator, or by its operations address — in which case pass the operator as `gatewayAddress`. An operations address is only honoured once the gateway is at schema 1.2.0.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+// signed by the gateway's operations address
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.updateGatewayMetadata({
+  gatewayAddress: "GatewayAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  fqdn: "gateway.example.com",
+  port: 443,
+});
+```
+
+When reading gateways, `operationsAddress` is only present for gateways at schema 1.2.0 or later; below that the program ignores the field and only the operator can act.
+
+#### `migrateGateway({ gatewayAddress })` / `migrateGateways({ gatewayAddresses?, batchSize? })`
+
+Migrates Gateway accounts to schema 1.2.0 (ADR-0030). Permissionless — the signer pays a small rent top-up (32 bytes per gateway). `migrateGateways` with no `gatewayAddresses` migrates every gateway still below 1.2.0 (see `getUnmigratedGatewayAddresses()`), 8 per transaction by default, and stops at the first failed batch.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const pending = await ario.getUnmigratedGatewayAddresses();
+const { migrated, signatures } = await ario.migrateGateways();
+```
+
+#### `transferEpochSettingsAuthority({ newAuthority })`
+
+Hands `EpochSettings.authority` — the key for epoch admin instructions — to a new address, such as a multisig (ADR-0031). Must be signed by the current authority.
+
+_Note: Solana-only (`SolanaARIOWriteable`)._
+
+```typescript
+const ario = new SolanaARIOWriteable({ rpc, rpcSubscriptions, signer });
+const { id: txId } = await ario.transferEpochSettingsAuthority({
+  newAuthority: "MuLtisigAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+});
 ```
 
 #### `increaseDelegateStake({ target, qty })`
@@ -1641,6 +1700,8 @@ const price = await ario
 Calculates the expanded cost details for the interaction in question, e.g a 'Buy-Name' interaction, where args are the specific params for that interaction. The fromAddress is the address that would be charged for the interaction, and fundFrom is where the funds would be taken from, either `balance`, `stakes`, or `any`.
 
 On Solana, the result also includes a `gasEstimate` — the total SOL (in lamports) the wallet needs to execute the intent: transaction fees (quoted from recent on-chain prioritization fees) plus rent-exempt deposits for the accounts the flow creates. For `Buy-Name` that covers both transactions (ANT spawn + buy) and the rent for the spawned asset/PDAs and the ArNS record; first-time buyers with no ACL accounts yet are quoted the ACL bootstrap rent as well (pass `fromAddress` so that check can be made). The fee side is a conservative upper bound: the write path tightens the compute-unit limit from a pre-send simulation, so the landed fee is usually lower.
+
+**Gateway operator discount (Solana).** ArNS purchases (`Buy-Name`, `Extend-Lease`, `Increase-Undername-Limit`, `Upgrade-Name`) are 20% cheaper when the payer is a gateway's operator — or, once the gateway is migrated, its operations address — and that gateway is joined, has run for at least 180 days, and passes at least 90% of epochs. Primary-name fees are never discounted. The quote and the purchase methods (`buyRecord`, `buyReturnedName`, `extendLease`, `increaseUndernameLimit`, `upgradeRecord`) apply the same rule: by default they use the payer's own gateway and add the discount only when it qualifies (the program rejects a purchase whose discount gateway does not qualify). An operations address names the gateway with `discountGatewayAddress` (its operator address); naming a gateway that does not qualify is an error. CLI: `--discount-gateway-address`.
 
 ```typescript
 const costDetails = await ario.getCostDetails({

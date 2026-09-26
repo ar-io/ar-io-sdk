@@ -37,6 +37,7 @@ import {
   createSolanaRpcSubscriptions,
   fetchEncodedAccount,
   getAddressEncoder,
+  signature,
 } from '@solana/kit';
 
 import { ANT } from '../common/ant.js';
@@ -47,13 +48,14 @@ import { deserializeWithdrawal } from './deserialize.js';
 import { SolanaARIOWriteable } from './io-writeable.js';
 import { fetchMplCoreOwner } from './mpl-core.js';
 import {
+  getAclConfigPDA,
   getArioConfigPDA,
   getPrimaryNamePDA,
   getPrimaryNameReversePDA,
   getWithdrawalPDA,
 } from './pda.js';
 import { sendAndConfirm } from './send.js';
-import { spawnSolanaANT } from './spawn-ant.js';
+import { buildSpawnAntInstructions, spawnSolanaANT } from './spawn-ant.js';
 
 const RPC_URL =
   process.env.LOCALNET_RPC_URL ?? process.env.RPC_URL ?? undefined;
@@ -1382,12 +1384,9 @@ describe(
       // normal path — `oldOwnerSource` is non-null, `oldOwnerHealIxs`
       // stays empty, transfer proceeds as before.
       //
-      // The heal-path proper isn't testable on a fresh localnet without
-      // a way to construct an ANT with no ACL entry (contract surgery
-      // or a fixture from a pre-ACL deployment). Treat this test as a
-      // regression guard that the PR's refactor of the resolution logic
-      // didn't break the happy path.
-      // TODO(#646): add a heal-path test once an unseeded-ACL fixture exists.
+      // Treat this test as a regression guard that the PR's refactor of
+      // the resolution logic didn't break the happy path. The heal branch
+      // itself is covered by the next test (#646).
       const sender = await freshSigner(scratch, 'antx-sender');
       const recipient = await freshSigner(scratch, 'antx-recipient');
       await airdrop(sender.keypairPath, 5);
@@ -1432,6 +1431,147 @@ describe(
         info.Owner.toLowerCase(),
         (recipient.signer.address as string).toLowerCase(),
         'post-transfer Owner must be the recipient',
+      );
+    });
+
+    it('ANT.transfer heals a missing old-owner ACL entry (unseeded-ACL heal path, #646)', async () => {
+      // Fixture: an ANT whose owner has NO `(asset, Owner)` ACL entry — the
+      // state of an ANT acquired before the ACL system existed or through a
+      // marketplace transfer that bypassed this SDK. We get there without
+      // cheatcodes: `buildSpawnAntInstructions` returns only
+      // `[CreateV1, ario_ant::initialize]`, and the ACL seeding lives in
+      // `spawnSolanaANT` (`bootstrapOwnerOnSpawn`). Sending just the two
+      // spawn ixs mints a real, initialized ANT and never creates the
+      // owner's `AclConfig`, so `resolveSourceAclAccountsForEntry` returns
+      // null and `transfer` must build `oldOwnerHealIxs`.
+      const sender = await freshSigner(scratch, 'antheal-sender');
+      const recipient = await freshSigner(scratch, 'antheal-recipient');
+      await airdrop(sender.keypairPath, 5);
+
+      const rpc = createSolanaRpc(RPC_URL!);
+      const rpcSubs = createSolanaRpcSubscriptions(WS_URL!);
+      const antProgramId = address(ANT_ID!);
+
+      const spawn = await buildSpawnAntInstructions({
+        signer: sender.signer,
+        antProgramId,
+        state: {
+          name: 'Transfer heal',
+          ticker: 'HEAL',
+          description: 'unseeded-ACL transfer',
+          uri: 'ar://heal',
+        },
+      });
+      await sendAndConfirm({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        signer: sender.signer,
+        instructions: spawn.instructions,
+        extraSigners: [spawn.mintSigner],
+      });
+      const processId = spawn.mint as string;
+
+      // Precondition: the fixture really is unseeded. Without this, a
+      // future change that seeds the ACL inside `initialize` would turn
+      // this test into a second copy of the happy-path guard.
+      const [senderAclConfig] = await getAclConfigPDA(
+        sender.signer.address,
+        antProgramId,
+      );
+      const senderAclBefore = await fetchEncodedAccount(rpc, senderAclConfig, {
+        commitment: 'confirmed',
+      });
+      assert.equal(
+        senderAclBefore.exists,
+        false,
+        'fixture: sender AclConfig must not exist before the transfer',
+      );
+      const registry = new SolanaANTRegistryReadable({ rpc, antProgramId });
+      assert.ok(
+        !(
+          await registry.accessControlList({
+            address: sender.signer.address as string,
+          })
+        ).Owned.includes(processId),
+        'fixture: sender must have no (asset, Owner) ACL entry',
+      );
+      assert.equal(
+        await fetchMplCoreOwner(rpc, spawn.mint, { commitment: 'confirmed' }),
+        sender.signer.address,
+        'fixture: sender must own the Core asset',
+      );
+
+      const antClient = await ANT.init({
+        rpc,
+        rpcSubscriptions: rpcSubs,
+        processId,
+        signer: sender.signer,
+        antProgramId,
+      });
+      const xfer = await antClient.transfer({
+        target: recipient.signer.address as string,
+      });
+      assert.ok(xfer.id, 'transfer must return a tx id');
+
+      // The transfer tx's logs: the heal ixs ran in the same tx, and the
+      // wrapped transfer handler's `swap_remove` found the entry.
+      const tx = await rpc
+        .getTransaction(signature(xfer.id), {
+          commitment: 'confirmed',
+          encoding: 'json',
+          // Declare v1 support (see CLAUDE.md): reading back without it
+          // gets JSON-RPC -32015 for any v1 transaction.
+          maxSupportedTransactionVersion: 1,
+        } as Parameters<typeof rpc.getTransaction>[1])
+        .send();
+      assert.ok(tx, 'transfer tx must be retrievable');
+      assert.equal(tx.meta?.err ?? null, null, 'transfer tx must succeed');
+      const logs = (tx.meta?.logMessages ?? []).join('\n');
+      assert.ok(
+        !logs.includes('AclEntryNotFound'),
+        `transfer logs must not contain AclEntryNotFound:\n${logs}`,
+      );
+      // A `RegisterAclConfig` log line alone proves nothing: the recipient is
+      // also a fresh wallet, so its own destination prep emits one in the
+      // same tx. The heal is the only thing that creates the SENDER's
+      // AclConfig, and the transfer never closes it, so check it on chain.
+      const senderAclConfigAfter = await fetchEncodedAccount(
+        rpc,
+        senderAclConfig,
+        { commitment: 'confirmed' },
+      );
+      assert.equal(
+        senderAclConfigAfter.exists,
+        true,
+        'heal must bootstrap the sender AclConfig in the transfer tx',
+      );
+      assert.match(
+        logs,
+        /Instruction: RecordAclOwner/,
+        'heal must record the sender (asset, Owner) entry in the transfer tx',
+      );
+
+      // On-chain end state: the recipient owns the asset and holds the
+      // `(asset, Owner)` ACL entry; the healed sender entry was removed
+      // by the wrapped transfer handler.
+      assert.equal(
+        await fetchMplCoreOwner(rpc, spawn.mint, { commitment: 'confirmed' }),
+        recipient.signer.address,
+        'post-transfer Core asset owner must be the recipient',
+      );
+      const recipientAcl = await registry.accessControlList({
+        address: recipient.signer.address as string,
+      });
+      assert.ok(
+        recipientAcl.Owned.includes(processId),
+        'recipient must hold the (asset, Owner) ACL entry after the transfer',
+      );
+      const senderAclAfter = await registry.accessControlList({
+        address: sender.signer.address as string,
+      });
+      assert.ok(
+        !senderAclAfter.Owned.includes(processId),
+        'healed sender (asset, Owner) entry must be removed by the transfer',
       );
     });
   },

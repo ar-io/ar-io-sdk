@@ -67,6 +67,7 @@ import { type ILogger, Logger } from '../common/logger.js';
 import type {
   PrimaryName,
   PrimaryNameRequest,
+  ProcessId,
   RedelegationFeeInfo,
   WalletAddress,
 } from '../types/common.js';
@@ -156,6 +157,7 @@ import {
   deserializeReturnedName,
   deserializeVault,
   deserializeWithdrawal,
+  isOperationsAddressSet,
 } from './deserialize.js';
 import {
   GAR_COMPUTE_UNIT_LIMIT,
@@ -164,6 +166,12 @@ import {
   getGarWorkflowGasProfile,
   getIntentGasProfile,
 } from './gas.js';
+import {
+  OPERATOR_DISCOUNT_INTENTS,
+  applyGatewayOperatorDiscount,
+  describeGatewayDiscountIneligibility,
+  gatewayDiscountIneligibility,
+} from './gateway-discount.js';
 import { TOKEN_PROGRAM_ADDRESS } from './instruction.js';
 import {
   getAclConfigPDA,
@@ -199,6 +207,16 @@ import type { SolanaReadConfig, SolanaRpc } from './types.js';
 const addressDecoder = getAddressDecoder();
 /** All-zero address — equivalent of web3.js `PublicKey.default`. */
 const DEFAULT_ADDRESS: Address = address('11111111111111111111111111111111');
+
+/**
+ * GatewayRegistry layout (ario-gar `state/mod.rs::GatewayRegistry`): 8-byte
+ * discriminator + 32 authority + u32 `count` + 4 padding, then
+ * `GatewaySlot[3000]`. A slot is address(32) + composite_weight(8) +
+ * start_timestamp(8) + status(1) + delegated_at_tally(1) + padding(6).
+ */
+const GATEWAY_REGISTRY_COUNT_OFFSET = 40;
+const GATEWAY_REGISTRY_SLOTS_OFFSET = 48;
+const GATEWAY_SLOT_STRIDE = 56;
 
 // Memcmp filter shape for kit's getProgramAccounts.
 type MemcmpFilter = {
@@ -597,6 +615,34 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Fetch `length` bytes of an account starting at `offset`, via the RPC's
+   * `dataSlice`, so large fixed-size accounts (the ~168 KB gateway registry)
+   * can be read piecemeal. Returns `null` when the account does not exist.
+   */
+  private async getAccountSlice(
+    pda: Address,
+    offset: number,
+    length: number,
+    minContextSlot?: bigint,
+  ): Promise<{ data: Buffer; slot: bigint } | null> {
+    const res = await withRetry(() =>
+      this.rpc
+        .getAccountInfo(pda, {
+          encoding: 'base64',
+          commitment: this.commitment,
+          dataSlice: { offset, length },
+          ...(minContextSlot !== undefined ? { minContextSlot } : {}),
+        })
+        .send(),
+    );
+    if (!res.value) return null;
+    return {
+      data: Buffer.from(res.value.data[0], 'base64'),
+      slot: res.context.slot,
+    };
+  }
+
+  /**
    * Like {@link getAccount} but caches the result per-PDA for `ttlMs`. Use only
    * for accounts that change slowly (DemandFactor, ArnsConfig) where a few
    * seconds of staleness is acceptable in exchange for collapsing repeated
@@ -640,7 +686,7 @@ export class SolanaARIOReadable {
    * means less elapsed auction time, which OVER-quotes the returned-name
    * premium rather than under-quoting it.
    */
-  private async getClusterUnixTimestampSeconds(): Promise<number> {
+  protected async getClusterUnixTimestampSeconds(): Promise<number> {
     return memoizeInFlight(
       this._clusterClockCache,
       'clock',
@@ -1225,7 +1271,140 @@ export class SolanaARIOReadable {
     return toMsTimestamps(gateway);
   }
 
+  /**
+   * List gateways, one page at a time, in registry index order unless
+   * `sortBy` is given.
+   *
+   * **Two read strategies, one result.** Which one runs depends only on the
+   * parameters; the returned page, `totalItems`, `hasMore` and `nextCursor`
+   * are the same either way.
+   *
+   * - **Windowed** (no `sortBy` and no `filters`): reads the registry header
+   *   for the slot count, then only the slot addresses up to that count (a
+   *   `dataSlice` of 56 bytes per slot rather than the whole ~168 KB
+   *   registry), then fetches the Gateway accounts for the requested page
+   *   alone. Cost scales with the page size, not with the registry.
+   * - **Full scan** (`sortBy` or `filters` present): fetches every gateway,
+   *   then filters, sorts and slices client-side. Sorting and filtering need
+   *   the whole set, so there is nothing to window.
+   *
+   * `totalItems` counts the non-empty registry slots and the cursor is a
+   * stringified index into that same sequence, exactly as the full scan
+   * computes them. Both strategies skip vacated (all-zero) slots the same way
+   * before any index is taken, so a cursor minted by one path means the same
+   * row on the other. If any gateway in the requested page cannot be read,
+   * the windowed path defers to the full scan.
+   *
+   * @param params - Optional `cursor`, `limit` (default 100), `sortBy`,
+   *   `sortOrder` and `filters`.
+   * @returns One page of gateways with pagination metadata.
+   */
   async getGateways(
+    params?: PaginationParams<GatewayWithAddress>,
+  ): Promise<PaginationResult<GatewayWithAddress>> {
+    if (params?.sortBy === undefined && params?.filters === undefined) {
+      const windowed = await this.getGatewaysWindowed(params);
+      if (windowed !== undefined) return windowed;
+    }
+    return this.getGatewaysFullScan(params);
+  }
+
+  /**
+   * Unsorted, unfiltered `getGateways` that fetches only the requested page.
+   *
+   * Equivalence with {@link getGatewaysFullScan} rests on two facts:
+   *
+   * 1. The address sequence is built by the identical loop over the identical
+   *    slots (`i < count && i < MAX_GATEWAYS`, skipping `DEFAULT_ADDRESS`), and
+   *    is then paged by the same {@link paginate} call. `items` positions,
+   *    `totalItems`, `hasMore` and `nextCursor` therefore match whenever the
+   *    full scan's gateway list is the same length as this address list.
+   * 2. It is, because the full scan only drops an address when its Gateway
+   *    account is missing or undecodable, and the GAR program keeps every slot
+   *    below `count` pointing at a live gateway: `join_network` writes the slot
+   *    and creates the PDA in one instruction, and `finalize_gone` swap-removes
+   *    (moves the last slot into the vacated index, zeroes the last slot and
+   *    decrements `count`) and closes the PDA in the same instruction. The
+   *    registry is therefore dense; the `DEFAULT_ADDRESS` skip mirrors the full
+   *    scan rather than handling holes the program creates.
+   *
+   * As a guard on (2), a missing or undecodable account inside the fetched
+   * window returns `undefined` so the caller falls back to the full scan
+   * rather than serving a page that could disagree with it. The slot read is
+   * pinned to the header read's slot (`minContextSlot`) so a lagging RPC node
+   * can't pair a new `count` with old slots.
+   *
+   * Accepted residual risk: an address OUTSIDE the window whose account is
+   * missing or undecodable cannot be seen without fetching it. That happens
+   * if (2) is broken on chain, or if the SDK can't decode a Gateway layout
+   * (e.g. it lags a contract upgrade). Then pages served by this path count
+   * that address while pages that fall back to the full scan don't, so
+   * `totalItems` can differ between pages and a traversal can repeat a row.
+   * Swap-remove also means a gateway leaving mid-traversal moves the last row
+   * to an earlier index, which a cursor walk can skip; the full scan has the
+   * same behaviour.
+   */
+  private async getGatewaysWindowed(
+    params?: PaginationParams<GatewayWithAddress>,
+  ): Promise<PaginationResult<GatewayWithAddress> | undefined> {
+    const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
+    const header = await this.getAccountSlice(
+      registryPda,
+      0,
+      GATEWAY_REGISTRY_SLOTS_OFFSET,
+    );
+    if (header === null) return paginate<GatewayWithAddress>([], params);
+    // Exact lengths: an RPC that ignores `dataSlice` returns the whole
+    // account, and reading slots from it at the sliced offsets would be wrong.
+    if (header.data.length !== GATEWAY_REGISTRY_SLOTS_OFFSET) return undefined;
+
+    const count = Math.min(
+      header.data.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET),
+      MAX_GATEWAYS,
+    );
+    const addresses: Address[] = [];
+    if (count > 0) {
+      const slotsRead = await this.getAccountSlice(
+        registryPda,
+        GATEWAY_REGISTRY_SLOTS_OFFSET,
+        count * GATEWAY_SLOT_STRIDE,
+        header.slot,
+      );
+      if (
+        slotsRead === null ||
+        slotsRead.data.length !== count * GATEWAY_SLOT_STRIDE
+      ) {
+        return undefined;
+      }
+      const slots = slotsRead.data;
+      for (let i = 0; i < count; i++) {
+        const slotOffset = i * GATEWAY_SLOT_STRIDE;
+        const addr = addressDecoder.decode(
+          slots.subarray(slotOffset, slotOffset + 32),
+        );
+        if (addr !== DEFAULT_ADDRESS) addresses.push(addr);
+      }
+    }
+
+    // Same paging arithmetic as the full scan, applied to the address list.
+    const page = paginate(addresses, {
+      cursor: params?.cursor,
+      limit: params?.limit,
+      sortOrder: params?.sortOrder,
+    });
+    const gateways = await this.fetchGatewaysByAddress(page.items);
+    const items: GatewayWithAddress[] = [];
+    for (const gw of gateways) {
+      if (gw === undefined) return undefined;
+      items.push(gw);
+    }
+    // `sortBy` is always undefined on this path; restating it narrows the type
+    // from the address list's key space to the gateway's.
+    return { ...page, sortBy: undefined, items };
+  }
+
+  /** `getGateways` over the fully materialised registry. */
+  private async getGatewaysFullScan(
     params?: PaginationParams<GatewayWithAddress>,
   ): Promise<PaginationResult<GatewayWithAddress>> {
     const [registryPda] = await getGatewayRegistryPDA(this.garProgram);
@@ -1235,18 +1414,14 @@ export class SolanaARIOReadable {
     }
 
     const registryData = Buffer.from(registryAccount.data);
-    const count = registryData.readUInt32LE(40);
-    const slotsOffset = 48;
+    const count = registryData.readUInt32LE(GATEWAY_REGISTRY_COUNT_OFFSET);
 
-    // GatewaySlot = address(32) + composite_weight(8) + start_timestamp(8)
-    //              + status(1) + _padding(7) = 56 bytes (see ario-gar
-    //              state/mod.rs::GatewaySlot). A previous off-by-16-bytes-per-slot
-    //              stride silently read garbage for slots 1+, returning at most
-    //              one gateway no matter how many had joined.
-    const SLOT_STRIDE = 56;
+    // A previous off-by-16-bytes-per-slot stride silently read garbage for
+    // slots 1+, returning at most one gateway no matter how many had joined.
     const gatewayAddresses: Address[] = [];
-    for (let i = 0; i < count && i < 3000; i++) {
-      const slotOffset = slotsOffset + i * SLOT_STRIDE;
+    for (let i = 0; i < count && i < MAX_GATEWAYS; i++) {
+      const slotOffset =
+        GATEWAY_REGISTRY_SLOTS_OFFSET + i * GATEWAY_SLOT_STRIDE;
       const addr = addressDecoder.decode(
         registryData.subarray(slotOffset, slotOffset + 32),
       );
@@ -1255,12 +1430,25 @@ export class SolanaARIOReadable {
       }
     }
 
+    const allItems = (
+      await this.fetchGatewaysByAddress(gatewayAddresses)
+    ).filter((gw): gw is GatewayWithAddress => gw !== undefined);
+    return paginate(allItems, params);
+  }
+
+  /**
+   * Fetch and decode the Gateway account for each operator address, keeping
+   * input order. A missing or undecodable account yields `undefined` at its
+   * position so callers can choose to skip it or to distrust the batch.
+   */
+  private async fetchGatewaysByAddress(
+    operators: Address[],
+  ): Promise<Array<GatewayWithAddress | undefined>> {
     // Batch fetch gateway PDAs (kit has no hard limit but keep 100-at-a-time
     // for sensible RPC request sizes). Chunks run in a bounded pool; the
     // results are appended in chunk order so registry ordering is preserved
     // for callers that pass no `sortBy`.
-    const allItems: GatewayWithAddress[] = [];
-    const batches = chunk(gatewayAddresses, 100);
+    const batches = chunk(operators, 100);
     const perBatch = await mapWithConcurrency(
       batches,
       ACCOUNT_FETCH_CONCURRENCY,
@@ -1280,19 +1468,22 @@ export class SolanaARIOReadable {
       },
     );
 
+    const out: Array<GatewayWithAddress | undefined> = [];
     for (const accounts of perBatch) {
       for (const acct of accounts) {
-        if (!acct.exists) continue;
+        if (!acct.exists) {
+          out.push(undefined);
+          continue;
+        }
         try {
           const gw = deserializeGateway(Buffer.from(acct.data));
-          allItems.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
+          out.push(toMsTimestamps({ ...gw, gatewayAddress: gw.operator }));
         } catch {
-          // Skip malformed
+          out.push(undefined); // malformed
         }
       }
     }
-
-    return paginate(allItems, params);
+    return out;
   }
 
   async getGatewayDelegates(
@@ -2577,53 +2768,70 @@ export class SolanaARIOReadable {
       multiplier: number;
     }> = [];
 
-    if (params.fromAddress) {
+    // A named discount gateway is an explicit request, and it can only be
+    // judged against the caller who would claim it: without one, quoting full
+    // price would hide that the request was never evaluated.
+    if (
+      params.discountGatewayAddress !== undefined &&
+      !params.fromAddress &&
+      OPERATOR_DISCOUNT_INTENTS.has(params.intent)
+    ) {
+      throw new Error(
+        'fromAddress is required when discountGatewayAddress is specified: the operator discount is authorised against the caller.',
+      );
+    }
+
+    if (params.fromAddress && OPERATOR_DISCOUNT_INTENTS.has(params.intent)) {
+      // Operator discount — the same checks as ario-arns
+      // `try_apply_gateway_discount`, and the same gateway the writeable
+      // attaches to the purchase (`discountGatewayAddress`, else the caller's
+      // own). Read through the short-TTL cache (NOT public `getGateway`, which
+      // stays fresh for gateway pages): a price table calls this many times for
+      // the same wallet. The cluster clock is already memoized by
+      // `getTokenCost` above, so this adds no round trip.
+      //
+      // Mirrors `resolveOperatorDiscountGateway` in the writeable: a gateway
+      // named explicitly that does not qualify is an error (the purchase would
+      // throw the same one), while the caller's own gateway is only tried and
+      // silently skipped. Quoting full price for an explicit request would
+      // hide why the discount the caller asked for is not coming.
+      const explicit = params.discountGatewayAddress !== undefined;
       try {
-        // Operator-discount check. Read the gateway PDA through the short-TTL
-        // cache (NOT public `getGateway`, which stays fresh for gateway pages):
-        // a price table calls `getCostDetails` many times for the SAME
-        // `fromAddress`, so this collapses N redundant gateway reads to one.
-        const [gwPda] = await getGatewayPDA(
-          address(params.fromAddress),
-          this.garProgram,
+        const operator = address(
+          params.discountGatewayAddress ?? params.fromAddress,
         );
+        const [gwPda] = await getGatewayPDA(operator, this.garProgram);
         const gwAccount = await this.getCachedAccount(gwPda);
         if (gwAccount.exists) {
-          const gw = deserializeGateway(Buffer.from(gwAccount.data));
-          if (gw.status === 'joined') {
-            // Match on-chain eligibility from ario-arns pricing.rs
-            // `try_apply_gateway_discount`:
-            // 1. Tenure: gateway running >= 180 days (15_552_000 seconds)
-            // (This is a coarse 180-day eligibility gate, not the
-            // premium/auction math fixed above; sub-minute cluster-clock drift
-            // is immaterial at this granularity, so the client wall clock is
-            // fine here and we avoid an extra RPC round trip.)
-            const GATEWAY_DISCOUNT_MIN_TENURE_S = 15_552_000;
-            const nowSeconds = Math.floor(Date.now() / 1000);
-            const timeRunning = nowSeconds - gw.startTimestamp;
-            // 2. Performance: >= 90% epoch pass rate
-            const passRate =
-              ((1 + gw.stats.passedEpochCount) /
-                (1 + gw.stats.totalEpochCount)) *
-              1_000_000;
-
-            if (
-              timeRunning >= GATEWAY_DISCOUNT_MIN_TENURE_S &&
-              passRate >= 900_000
-            ) {
-              const discountAmount = Math.floor(
-                (tokenCost * 200_000) / RATE_SCALE,
-              );
-              discounts.push({
-                name: 'Gateway Operator',
-                discountTotal: discountAmount,
-                multiplier: 0.8,
-              });
-            }
+          const gateway = getGatewayDecoder().decode(gwAccount.data);
+          const nowSeconds = BigInt(
+            await this.getClusterUnixTimestampSeconds(),
+          );
+          const ineligible = gatewayDiscountIneligibility(
+            gateway,
+            address(params.fromAddress),
+            nowSeconds,
+          );
+          if (ineligible === undefined) {
+            const cost = BigInt(tokenCost);
+            discounts.push({
+              name: 'Gateway Operator',
+              discountTotal: Number(cost - applyGatewayOperatorDiscount(cost)),
+              multiplier: 0.8,
+            });
+          } else if (explicit) {
+            throw new Error(
+              `Gateway ${operator} does not qualify for the operator discount: ${describeGatewayDiscountIneligibility(ineligible)}.`,
+            );
           }
+        } else if (explicit) {
+          throw new Error(
+            `No gateway found for operator ${operator}; cannot claim the operator discount through it.`,
+          );
         }
-      } catch {
-        // Not a gateway operator — no discount
+      } catch (error) {
+        // Implicit: not a gateway operator — no discount.
+        if (explicit) throw error;
       }
     }
 
@@ -2844,16 +3052,18 @@ export class SolanaARIOReadable {
     // that PrimaryName.processId expects lives on the matching ArnsRecord
     // (looked up by the base name). Both lookup paths below deserialize the
     // on-chain account and then enrich with the ArnsRecord lookup.
-    const baseNameOf = (n: string): string => {
-      const parts = n.toLowerCase().split('_');
-      return parts.length === 2 ? parts[1] : parts[0];
-    };
+    //
+    // Uses `splitPrimaryName` — the contract's own `splitn(2, '_')` rule — for
+    // the same reason `getPrimaryNames` does, and so the singular and plural
+    // readers cannot disagree about which record a name resolves through.
     const enrich = async (pn: {
       owner: string;
       name: string;
       startTimestamp: number;
     }): Promise<PrimaryName> => {
-      const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
+      const rec = await this.getArNSRecord({
+        name: splitPrimaryName(pn.name).baseName,
+      });
       return { ...pn, processId: rec.processId };
     };
 
@@ -2931,26 +3141,107 @@ export class SolanaARIOReadable {
       PRIMARY_NAME_DISCRIMINATOR,
     );
 
+    // `deserializePrimaryName` yields everything but `processId` — that field
+    // is not on the account (see below), so these are not `PrimaryName` yet.
+    const primaryNames: ReturnType<typeof deserializePrimaryName>[] = [];
+    for (const { data } of accounts) {
+      try {
+        primaryNames.push(deserializePrimaryName(data));
+      } catch {
+        // Skip malformed.
+      }
+    }
+    // Nothing to enrich, and no reason to pay for the batch read below.
+    if (primaryNames.length === 0) return paginate<PrimaryName>([], params);
+
     // Enrich each on-chain PrimaryName with its ArnsRecord.processId (the
     // on-chain account doesn't store it; see deserializePrimaryName).
     // Records that no longer have a matching ArnsRecord are silently
     // skipped — same forgiveness the per-name lookup already applies.
-    const baseNameOf = (n: string): string => {
-      const parts = n.toLowerCase().split('_');
-      return parts.length === 2 ? parts[1] : parts[0];
-    };
+    //
+    // The base name is resolved with `splitPrimaryName`, the same
+    // `splitn(2, '_')` rule the on-chain handler uses. The loop this replaces
+    // used an inline `split('_')` with a `parts.length === 2` check, which
+    // returns the UNDERNAME rather than the base for any name carrying two or
+    // more underscores (`a_b_c` -> `a`, where the contract says `b_c`). Such a
+    // name silently failed its lookup and was dropped from the results. No
+    // name on mainnet or devnet has two underscores today, so this fixes a
+    // latent bug rather than changing any current output.
+    //
+    // Read in batches rather than one `getAccountInfo` per name. The per-name
+    // lookup made this O(n) sequential round trips: on mainnet that is ~230
+    // reads for a single call to this method, and measured on a portal that
+    // polls it, that one loop was the large majority of the application's
+    // whole RPC bill. Batched it is ceil(n/100) `getMultipleAccounts`, run
+    // concurrently — same records, same forgiveness, ~2 orders of magnitude
+    // fewer calls. Mirrors getGatewayAccumulators.
+    const processIds = await this.getArnsRecordProcessIds(
+      primaryNames.map((pn) => splitPrimaryName(pn.name).baseName),
+    );
+
     const items: PrimaryName[] = [];
-    for (const { data } of accounts) {
-      try {
-        const pn = deserializePrimaryName(data);
-        const rec = await this.getArNSRecord({ name: baseNameOf(pn.name) });
-        items.push({ ...pn, processId: rec.processId });
-      } catch {
-        // Skip malformed or orphaned (ArnsRecord missing).
-      }
+    for (const pn of primaryNames) {
+      const processId = processIds.get(splitPrimaryName(pn.name).baseName);
+      // Orphaned: the ArnsRecord this name resolved through is gone.
+      if (processId === undefined) continue;
+      items.push({ ...pn, processId });
     }
 
     return paginate(items, params);
+  }
+
+  /**
+   * Resolve `name -> ArnsRecord.processId` for many names in batched reads.
+   *
+   * Deliberately a batched `getMultipleAccounts` rather than a whole-program
+   * scan of the ArNS registry: the caller here has far fewer names than the
+   * registry has records, which is the same break-even
+   * {@link getArNSRecordsByAntMints} documents. Missing records are simply
+   * absent from the returned map — callers decide whether that is an error.
+   */
+  protected async getArnsRecordProcessIds(
+    names: string[],
+  ): Promise<Map<string, ProcessId>> {
+    const unique = Array.from(new Set(names));
+    const out = new Map<string, ProcessId>();
+    if (unique.length === 0) return out;
+
+    const groups = chunk(unique, 100);
+    // Chunks run in a bounded pool rather than one-after-another; results are
+    // still consumed in input order, so `group[i]` keeps pairing with the
+    // right name.
+    const perGroup = await mapWithConcurrency(
+      groups,
+      ACCOUNT_FETCH_CONCURRENCY,
+      async (group) => {
+        const pdas = await Promise.all(
+          group.map(
+            async (name) => (await getArnsRecordPDA(name, this.arnsProgram))[0],
+          ),
+        );
+        return withRetry(() =>
+          fetchEncodedAccounts(this.rpc, pdas, {
+            commitment: this.commitment,
+          }),
+        );
+      },
+    );
+    groups.forEach((group, gi) => {
+      const accounts = perGroup[gi];
+      for (let i = 0; i < accounts.length; i++) {
+        const acct = accounts[i];
+        if (!acct.exists) continue;
+        try {
+          out.set(
+            group[i],
+            deserializeArnsRecord(Buffer.from(acct.data)).processId,
+          );
+        } catch {
+          // Skip malformed; the name is treated as orphaned by the caller.
+        }
+      }
+    });
+    return out;
   }
 
   // =========================================
@@ -3318,6 +3609,27 @@ export class SolanaARIOReadable {
       } catch {
         // skip malformed
       }
+    }
+    return out;
+  }
+
+  /**
+   * ADR-0030: operators of every Gateway still below schema 1.2.0, i.e. not
+   * yet run through `migrate_gateway`. Until migrated, a gateway's operations
+   * address is ignored by the program and cannot be set.
+   */
+  async getUnmigratedGatewayAddresses(): Promise<Address[]> {
+    const accounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const decoder = getGatewayDecoder();
+    const out: Address[] = [];
+    for (const { data } of accounts) {
+      // No silent skip here: an account this decoder cannot read would also be
+      // one the sweep can never migrate, so the caller must hear about it.
+      const g = decoder.decode(data);
+      if (!isOperationsAddressSet(g.version)) out.push(g.operator);
     }
     return out;
   }

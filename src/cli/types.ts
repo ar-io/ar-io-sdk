@@ -146,6 +146,33 @@ export type UpdateGatewaySettingsCLIOptions = Omit<
   'operatorStake'
 >;
 
+export type UpdateOperationsAddressCLIOptions = WriteActionCLIOptions & {
+  operationsAddress?: string;
+};
+
+export type UpdateGatewayMetadataCLIOptions = WriteActionCLIOptions & {
+  gatewayAddress?: string;
+  label?: string;
+  note?: string;
+  properties?: string;
+  fqdn?: string;
+  port?: string;
+  protocol?: string;
+};
+
+export type MigrateGatewayCLIOptions = WriteActionCLIOptions & {
+  gateway?: string;
+};
+
+export type MigrateGatewaysCLIOptions = WriteActionCLIOptions & {
+  gateways?: string[];
+  batchSize?: string;
+};
+
+export type TransferEpochSettingsAuthorityCLIOptions = WriteActionCLIOptions & {
+  newAuthority?: string;
+};
+
 export type DelegateStakeCLIOptions = TransferCLIOptions;
 
 export type RedelegateStakeCLIOptions = TransferCLIOptions & {

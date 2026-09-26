@@ -129,12 +129,14 @@ export const ACL_BOOTSTRAP_ACCOUNT_BYTES = [ACL_CONFIG_BYTES, ACL_PAGE_BYTES];
  * GAR account sizes. The fixed-size accounts come straight from the codama
  * clients (verified byte-identical against live mainnet accounts), so they
  * track program upgrades with the `@ar.io/solana-contracts` dependency.
- * Only two need measured values: the Gateway account is variable-size
- * (964 measured for a typical label/fqdn — varies a few tens of bytes),
- * and the gateway registry grows by one 32-byte pubkey per join (realloc
- * on a long-lived account, not a creation).
+ * Two need hand-written values: the Gateway account has variable-length
+ * fields, so codama emits no size helper — but `join_network` always allocates
+ * the program's fixed `Gateway::SIZE`, which is what rent is charged on (996
+ * since ADR-0030 appended `operations_address`; 964 before) — and the gateway
+ * registry grows by one 32-byte pubkey per join (realloc on a long-lived
+ * account, not a creation).
  */
-const GAR_GATEWAY_BYTES = 964;
+const GAR_GATEWAY_BYTES = 996;
 const GAR_OBSERVER_LOOKUP_BYTES = getObserverLookupSize();
 const GAR_REGISTRY_ENTRY_REALLOC_BYTES = 32;
 const GAR_DELEGATION_BYTES = getDelegationSize();

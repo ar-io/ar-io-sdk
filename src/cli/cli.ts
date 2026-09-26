@@ -44,6 +44,13 @@ import {
   escrowUpdateRecipientCLICommand,
 } from './commands/escrowCommands.js';
 import {
+  migrateGateway,
+  migrateGateways,
+  transferEpochSettingsAuthority,
+  updateGatewayMetadata,
+  updateOperationsAddress,
+} from './commands/gatewayOperationsCommands.js';
+import {
   cancelWithdrawal,
   claimWithdrawal,
   decreaseDelegateStake,
@@ -116,6 +123,8 @@ import {
   getVaultOptions,
   globalOptions,
   joinNetworkOptions,
+  migrateGatewayOptions,
+  migrateGatewaysOptions,
   operatorStakeOptions,
   optionMap,
   paginationAddressOptions,
@@ -124,9 +133,12 @@ import {
   setAntBaseNameOptions,
   setAntUndernameOptions,
   tokenCostOptions,
+  transferEpochSettingsAuthorityOptions,
   transferOptions,
   transferRecordOwnershipOptions,
+  updateGatewayMetadataOptions,
   updateGatewaySettingsOptions,
+  updateOperationsAddressOptions,
   vaultedTransferOptions,
   writeActionOptions,
 } from './options.js';
@@ -572,6 +584,46 @@ makeCommand({
   description: 'Update AR.IO gateway settings',
   options: updateGatewaySettingsOptions,
   action: updateGatewaySettings,
+});
+
+makeCommand({
+  name: 'update-operations-address',
+  description:
+    'Authorise a second address to update gateway metadata and spend the ArNS discount (Solana-only)',
+  options: updateOperationsAddressOptions,
+  action: updateOperationsAddress,
+});
+
+makeCommand({
+  name: 'update-gateway-metadata',
+  description:
+    'Update gateway label/fqdn/port/protocol/properties/note as the operator or its operations address (Solana-only)',
+  options: updateGatewayMetadataOptions,
+  action: updateGatewayMetadata,
+});
+
+makeCommand({
+  name: 'migrate-gateway',
+  description:
+    'Migrate one gateway to schema 1.2.0 (permissionless; Solana-only)',
+  options: migrateGatewayOptions,
+  action: migrateGateway,
+});
+
+makeCommand({
+  name: 'migrate-gateways',
+  description:
+    'Migrate every gateway below schema 1.2.0, in batches (permissionless; Solana-only)',
+  options: migrateGatewaysOptions,
+  action: migrateGateways,
+});
+
+makeCommand({
+  name: 'transfer-epoch-settings-authority',
+  description:
+    'Hand EpochSettings.authority to a new address; signed by the current authority (Solana-only)',
+  options: transferEpochSettingsAuthorityOptions,
+  action: transferEpochSettingsAuthority,
 });
 
 makeCommand({

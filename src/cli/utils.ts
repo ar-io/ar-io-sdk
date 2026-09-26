@@ -220,10 +220,55 @@ function wsUrlFromRpcUrl(rpcUrl: string): string {
  * Create a {@link SolanaRpc} wrapped with a circuit-breaker that falls back to
  * the cluster's public RPC when the primary endpoint becomes unhealthy.
  */
+/**
+ * Public fallback for `--rpc-url`, or `undefined` when guessing one would
+ * change CLUSTER rather than just endpoint.
+ *
+ * The breaker's fallback exists for a flaky endpoint, not a different chain.
+ * {@link defaultFallbackUrl} answers mainnet for anything that doesn't say
+ * "devnet", so a localnet or Surfpool URL that stops responding used to route
+ * the command — reads and writes alike — at public mainnet. Only fall back
+ * when the primary URL names its cluster; otherwise run with no fallback, so
+ * the breaker fails fast instead of silently moving clusters.
+ */
+export function cliFallbackUrl(rpcUrl: string): string | undefined {
+  let url: URL;
+  try {
+    url = new URL(rpcUrl);
+  } catch {
+    return undefined;
+  }
+  // RFC 6761 reserves `localhost` AND every `*.localhost` name for loopback,
+  // so `http://mainnet.localhost:8899` is a local validator, not mainnet.
+  // `URL` keeps a fully qualified name's trailing dot (`mainnet.localhost.`),
+  // which would slip past the `.localhost` test and pick public mainnet, so
+  // drop one trailing dot first.
+  const hostname = url.hostname
+    .replace(/^\[|\]$/g, '')
+    .toLowerCase()
+    .replace(/\.$/, '');
+  if (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname === '0.0.0.0' ||
+    hostname === '::1' ||
+    /^127\./.test(hostname)
+  ) {
+    return undefined;
+  }
+  // Read the cluster from the host and path only: an API key or query
+  // parameter that happens to contain "mainnet" must not pick a cluster.
+  const clusterHint = `${hostname}${url.pathname}`;
+  if (/devnet/i.test(clusterHint)) return defaultFallbackUrl('devnet');
+  if (/mainnet/i.test(clusterHint)) return defaultFallbackUrl('mainnet');
+  return undefined;
+}
+
 function createCliRpc(rpcUrl: string) {
+  const fallbackUrl = cliFallbackUrl(rpcUrl);
   return createCircuitBreakerRpc({
     primaryUrl: rpcUrl,
-    fallbackUrl: defaultFallbackUrl(rpcUrl),
+    ...(fallbackUrl !== undefined ? { fallbackUrl } : {}),
   });
 }
 
@@ -464,12 +509,26 @@ export function customTagsFromOptions<O extends WriteActionCLIOptions>(
   };
 }
 
+/**
+ * Parse `--allow-delegated-staking [value]`. The bare flag means true;
+ * otherwise only `true` or `false` are accepted.
+ */
+export function allowDelegatedStakingFromOption(
+  value: string | boolean | undefined,
+): boolean | undefined {
+  if (value === undefined || typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(
+    `--allow-delegated-staking must be true or false, received "${value}"`,
+  );
+}
+
 export function gatewaySettingsFromOptions(
   options: UpdateGatewaySettingsCLIOptions,
 ): UpdateGatewaySettingsParams {
   const {
     allowDelegatedStaking,
-    autoStake,
     delegateRewardShareRatio,
     fqdn,
     label,
@@ -480,10 +539,17 @@ export function gatewaySettingsFromOptions(
     properties,
     allowedDelegates,
   } = options;
-  return {
+  // Drop the keys the operator didn't set. Returning every key with an
+  // `undefined` value made `Object.keys(...)` always report 10, which
+  // silently disabled two guards: `update-gateway-settings`' "No gateway
+  // settings provided" check could never fire, and the SDK's
+  // `Object.keys(settingsFields).length > 0` was always true, so an
+  // observer-address-only update still sent an all-null settings ix.
+  return definedOnly({
     observerAddress,
-    allowDelegatedStaking,
-    autoStake,
+    allowDelegatedStaking: allowDelegatedStakingFromOption(
+      allowDelegatedStaking,
+    ),
     delegateRewardShareRatio:
       delegateRewardShareRatio !== undefined
         ? +delegateRewardShareRatio
@@ -496,7 +562,14 @@ export function gatewaySettingsFromOptions(
     note,
     port: port !== undefined ? +port : undefined,
     properties,
-  };
+  });
+}
+
+/** Strip `undefined`-valued keys, preserving the value type. */
+function definedOnly<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
 }
 
 export function requiredTargetAndQuantityFromOptions(
@@ -616,13 +689,34 @@ export async function confirmationPrompt(message: string): Promise<boolean> {
   return confirm;
 }
 
+/** Thrown when the operator declines (or cancels) a confirmation prompt. */
+export class ConfirmationDeclinedError extends Error {
+  constructor() {
+    super('Aborted: confirmation declined');
+    this.name = 'ConfirmationDeclinedError';
+  }
+}
+
+/**
+ * Show a confirmation prompt and ABORT the command unless the operator
+ * confirms — the "assert" is the point: every one of this function's ~50 call
+ * sites `await`s it without reading the result, so returning `false` used to
+ * let a declined write sail on into `sendAndConfirm`. Throwing is what makes
+ * "no" mean no for all of them at once. A cancelled prompt (Ctrl-C, which
+ * leaves `confirm` undefined) aborts too.
+ *
+ * `--skip-confirmation` bypasses the prompt, as before.
+ */
 export async function assertConfirmationPrompt<
   O extends { skipConfirmation?: boolean },
->(message: string, options: O): Promise<boolean> {
+>(message: string, options: O): Promise<true> {
   if (options.skipConfirmation) {
     return true;
   }
-  return confirmationPrompt(message);
+  if (!(await confirmationPrompt(message))) {
+    throw new ConfirmationDeclinedError();
+  }
+  return true;
 }
 
 export function requiredProcessIdFromOptions<O extends ProcessIdCLIOptions>(

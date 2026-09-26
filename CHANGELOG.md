@@ -1,3 +1,108 @@
+# [4.4.0-alpha.9](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.8...v4.4.0-alpha.9) (2026-09-26)
+
+
+### Bug Fixes
+
+* **cli:** treat fully qualified *.localhost. names as local ([3115faf](https://github.com/ar-io/ar-io-sdk/commit/3115faf184004760aceefd1fdd5f981241bcd863))
+* **solana:** an explicit discount gateway that does not qualify fails the quote ([913a976](https://github.com/ar-io/ar-io-sdk/commit/913a97679d2444a22d813169c2692a21104093c2))
+* **solana:** reject an explicit discount gateway with no caller to authorise ([586670b](https://github.com/ar-io/ar-io-sdk/commit/586670bbfa095d20308be581a22666da9af0c2a3))
+
+# [4.4.0-alpha.8](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.7...v4.4.0-alpha.8) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cli:** keep the RPC fallback on the same cluster ([b562948](https://github.com/ar-io/ar-io-sdk/commit/b562948f80baf8513318bd91ee86cf48adb2abef))
+* **cli:** omit unset gateway settings so empty-update guards work ([4d04851](https://github.com/ar-io/ar-io-sdk/commit/4d0485186fc06bd19a6b814dda033b9b591b5276))
+* **cli:** treat *.localhost as local and read the cluster from host+path ([605bd6d](https://github.com/ar-io/ar-io-sdk/commit/605bd6d2f58d5916af181d6b663b18ea2c7dd315))
+
+# [4.4.0-alpha.7](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.6...v4.4.0-alpha.7) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cli:** abort the command when a confirmation prompt is declined ([b0d3962](https://github.com/ar-io/ar-io-sdk/commit/b0d3962509480e37b62f9f7bcb746934d53f1ce7)), closes [#745](https://github.com/ar-io/ar-io-sdk/issues/745)
+
+# [4.4.0-alpha.6](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.5...v4.4.0-alpha.6) (2026-09-22)
+
+
+### Bug Fixes
+
+* **solana:** harden windowed getGateways against full-account replies ([a2a96fa](https://github.com/ar-io/ar-io-sdk/commit/a2a96fa9cc8112ac9fdf3ab6d3ed9c7f2b9a6284))
+
+
+### Performance Improvements
+
+* **solana:** window unsorted, unfiltered getGateways to the requested page ([bf8dc6e](https://github.com/ar-io/ar-io-sdk/commit/bf8dc6efd2b845068d7c419399c99f636eaee929)), closes [#716](https://github.com/ar-io/ar-io-sdk/issues/716)
+
+# [4.4.0-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.4...v4.4.0-alpha.5) (2026-09-22)
+
+
+### Bug Fixes
+
+* **cli:** honor --allow-delegated-staking false and drop --auto-stake ([be5e469](https://github.com/ar-io/ar-io-sdk/commit/be5e469ff0d0f1cd3fd5358c2d72f6f9ca0183ab)), closes [#629](https://github.com/ar-io/ar-io-sdk/issues/629)
+
+# [4.4.0-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.3...v4.4.0-alpha.4) (2026-09-22)
+
+
+### Bug Fixes
+
+* **solana:** route oversized reconciles through an ephemeral lookup table ([1bc566c](https://github.com/ar-io/ar-io-sdk/commit/1bc566c5d33260f937579d73216546909579dd18))
+
+
+### Features
+
+* **solana:** add the ADR-0037 admin builders, bump contracts to staging.33 ([89e9849](https://github.com/ar-io/ar-io-sdk/commit/89e9849493e9da764de3343fa5c5489c1f5bf86e)), closes [#738](https://github.com/ar-io/ar-io-sdk/issues/738) [#738](https://github.com/ar-io/ar-io-sdk/issues/738)
+
+# [4.4.0-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.2...v4.4.0-alpha.3) (2026-09-22)
+
+
+### Features
+
+* **solana:** append the Wave 2 trailing accounts, clients-first ([8f44605](https://github.com/ar-io/ar-io-sdk/commit/8f44605ee4c0afd35108cd0a3a6a0f40276a153e)), closes [#149](https://github.com/ar-io/ar-io-sdk/issues/149)
+
+# [4.4.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0-alpha.1...v4.4.0-alpha.2) (2026-09-18)
+
+
+### Bug Fixes
+
+* **solana:** apply the gateway operator discount the quote promises ([9e5616c](https://github.com/ar-io/ar-io-sdk/commit/9e5616c19ba6edec0c789b46d452328e107696e0))
+* **solana:** never let the discount push a purchase over the size limit ([83dfc9d](https://github.com/ar-io/ar-io-sdk/commit/83dfc9d8ac0de21b44a72e2c46dc65f95e2af5db))
+* **solana:** size returned-name stake auto-pick to the discounted price ([a0ca901](https://github.com/ar-io/ar-io-sdk/commit/a0ca9014ca38905840c29c1f6b2920c95f14ff9f))
+
+# [4.4.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.2...v4.4.0-alpha.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **solana:** cap migrateGateways batches at the measured limit; review fixes ([a20fc92](https://github.com/ar-io/ar-io-sdk/commit/a20fc92421ae0ab9966325349091b4ea5968418b))
+
+
+### Features
+
+* **solana:** gateway operations address, gateway migration, epoch-settings authority transfer ([6c88ed9](https://github.com/ar-io/ar-io-sdk/commit/6c88ed9ebc3805975616b749c4eb5b8a593c7adc)), closes [#142](https://github.com/ar-io/ar-io-sdk/issues/142) [#127](https://github.com/ar-io/ar-io-sdk/issues/127)
+
+## [4.3.2-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.3.2-alpha.1...v4.3.2-alpha.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* **solana:** don't call a stall on a stale post-write cursor read ([3b098d5](https://github.com/ar-io/ar-io-sdk/commit/3b098d58ed92437515d96a35c06e5a71b115c5c9))
+* **solana:** fail loudly instead of falling back to an unpinned cursor read ([51b124c](https://github.com/ar-io/ar-io-sdk/commit/51b124cdc4f2ae652644b73e7daf0745719d76fc))
+* **solana:** treat an empty post-write read as a freshness failure ([6766116](https://github.com/ar-io/ar-io-sdk/commit/676611629b7ccd93b11909082f553ddd5306e07f))
+
+## [4.3.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1...v4.3.2-alpha.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* **solana:** apply the contract split rule to getPrimaryName too ([ca6634d](https://github.com/ar-io/ar-io-sdk/commit/ca6634d2889cd65eeeec1a3d053c901cecbb5869))
+
+
+### Performance Improvements
+
+* **solana:** batch getPrimaryNames processId enrichment ([59b939d](https://github.com/ar-io/ar-io-sdk/commit/59b939d99d61b9427baae773da164a427ea0e2f3))
+
 ## [4.3.1](https://github.com/ar-io/ar-io-sdk/compare/v4.3.0...v4.3.1) (2026-09-15)
 
 

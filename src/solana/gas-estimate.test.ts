@@ -349,9 +349,10 @@ describe('SolanaARIOReadable.getGarGasEstimate', () => {
     const quote = await makeReadable(rpc).getGarGasEstimate({
       workflow: 'join-network',
     });
-    // gateway(964) + observerLookup(44) + inter-account overhead(128)
-    // + registry realloc(32); the rpc quote adds the final 128.
-    const expectedRent = Number((128n + 1168n) * RENT_PER_BYTE);
+    // gateway(996, Gateway::SIZE since ADR-0030) + observerLookup(44)
+    // + inter-account overhead(128) + registry realloc(32); the rpc quote adds
+    // the final 128.
+    const expectedRent = Number((128n + 1200n) * RENT_PER_BYTE);
     assert.equal(quote.rentLamports, expectedRent);
     // GAR writes pin a 1M CU limit — fees are quoted on it
     assert.equal(quote.computeUnitLimit, 1_000_000);

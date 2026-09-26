@@ -273,6 +273,16 @@ export type Gateway = {
   status: 'joined' | 'leaving';
   weights: GatewayWeights;
   services?: GatewayServices;
+  /**
+   * ADR-0030: a second address the operator has authorised to update this
+   * gateway's metadata and to spend its ArNS discount. Equal to the operator
+   * unless the operator delegated.
+   *
+   * Absent when the gateway has not been migrated to schema 1.2.0: below that
+   * the program ignores the field entirely (its bytes are stale data, not a
+   * delegation), so only the operator can act.
+   */
+  operationsAddress?: WalletAddress;
 };
 
 export type GatewayStats = {
@@ -429,6 +439,24 @@ export type UpdateGatewaySettingsParams = AtLeastOne<
   Omit<JoinNetworkParams, 'operatorStake'>
 >;
 
+/**
+ * ADR-0030 `update_gateway_metadata`: the routing/presentation fields only.
+ * Signable by the operator or by the gateway's operations address.
+ */
+export type UpdateGatewayMetadataParams = {
+  /**
+   * The gateway's operator (staking wallet). Defaults to the signer; set it
+   * when signing as the gateway's operations address.
+   */
+  gatewayAddress?: WalletAddress;
+  label?: string;
+  fqdn?: string;
+  port?: number;
+  protocol?: 'http' | 'https';
+  properties?: string;
+  note?: string;
+};
+
 export type ArNSNameParams = {
   name: string;
 };
@@ -534,6 +562,15 @@ export type FundingSourceSpec = {
 
 export type GetCostDetailsParams = TokenCostParams & {
   fundFrom?: FundFrom;
+  /**
+   * Gateway (its operator address) to claim the ArNS gateway-operator discount
+   * through. The signer must be that gateway's operator or, once the gateway is
+   * migrated, its operations address (ADR-0030). Defaults to the signer's own
+   * gateway. When given explicitly, a gateway that does not qualify is an
+   * error; the default applies the discount only when it qualifies. Solana
+   * only; primary-name fees are never discounted.
+   */
+  discountGatewayAddress?: WalletAddress;
 };
 
 export type FundingPlan = {
@@ -645,6 +682,15 @@ export type ArNSPurchaseParams = ArNSNameParams & {
    * single-gateway invariant. Solana only.
    */
   sources?: FundingSourceSpec[];
+  /**
+   * Gateway (its operator address) to claim the ArNS gateway-operator discount
+   * through. The signer must be that gateway's operator or, once the gateway is
+   * migrated, its operations address (ADR-0030). Defaults to the signer's own
+   * gateway. When given explicitly, a gateway that does not qualify is an
+   * error; the default applies the discount only when it qualifies. Solana
+   * only; primary-name fees are never discounted.
+   */
+  discountGatewayAddress?: WalletAddress;
   paidBy?: WalletAddress | WalletAddress[];
   referrer?: string;
 };

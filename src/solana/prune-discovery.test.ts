@@ -384,6 +384,8 @@ function makeGatewayBytes(
     cumulativeRewardPerToken: 0n,
     bump: 250,
     version: VERSION,
+    // ADR-0030 (contracts 1.4.0): appended after `version`.
+    operationsAddress: operator,
   });
 }
 

@@ -39,6 +39,7 @@ import {
   type Address,
   type Instruction,
   type KeyPairSigner,
+  type Signature,
   address,
   appendTransactionMessageInstructions,
   compileTransaction,
@@ -96,7 +97,11 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { FundingSourceKind as GeneratedFundingSourceKindEnum } from '@ar.io/solana-contracts/gar';
 import type { ILogger } from '../common/logger.js';
-import type { MessageResult, WriteOptions } from '../types/common.js';
+import type {
+  MessageResult,
+  WalletAddress,
+  WriteOptions,
+} from '../types/common.js';
 import type {
   ArNSPurchaseParams,
   BuyRecordParams,
@@ -110,6 +115,7 @@ import type {
   JoinNetworkParams,
   RedelegateStakeParams,
   RevokeVaultParams,
+  UpdateGatewayMetadataParams,
   UpdateGatewaySettingsParams,
   VaultedTransferParams,
 } from '../types/io.js';
@@ -125,6 +131,7 @@ import {
   deserializeDemandFactor,
   deserializeEpochSettingsFull,
   deserializePrimaryName,
+  isOperationsAddressSet,
 } from './deserialize.js';
 import {
   type DiscoveredFundingSource,
@@ -135,6 +142,11 @@ import {
   computeResidueIndexes,
   predictResidueVaults,
 } from './funding-plan.js';
+import {
+  applyGatewayOperatorDiscount,
+  describeGatewayDiscountIneligibility,
+  gatewayDiscountIneligibility,
+} from './gateway-discount.js';
 
 /** Maps the SDK's user-facing FundingSourceKind string union to the
  *  Codama-generated enum used by the on-chain ix payload. */
@@ -169,6 +181,7 @@ import {
   getVaultedTransferInstructionAsync,
 } from '@ar.io/solana-contracts/core';
 import {
+  type Gateway as GarGatewayAccount,
   getDelegationDecoder,
   getGatewayDecoder,
 } from '@ar.io/solana-contracts/gar';
@@ -176,6 +189,8 @@ import {
   Protocol,
   fetchMaybeEpoch,
   fetchMaybeEpochRentReceipt,
+  getAdminReconcileDelegatedStakeInstruction,
+  getAdminResyncSupplyCountersInstruction,
   getAdminSetRewardRatiosInstructionAsync,
   getAllowDelegateInstructionAsync,
   getCancelWithdrawalInstruction,
@@ -198,14 +213,18 @@ import {
   getInstantWithdrawalInstructionAsync,
   getJoinNetworkInstructionAsync,
   getLeaveNetworkInstructionAsync,
+  getMigrateGatewayInstruction,
   getPrescribeEpochInstructionAsync,
   getPruneGatewayInstructionAsync,
   getRedelegateStakeInstructionAsync,
   getSaveObservationsInstructionAsync,
   getSetAllowlistEnabledInstructionAsync,
   getTallyWeightsInstructionAsync,
+  getTransferEpochSettingsAuthorityInstruction,
+  getUpdateGatewayMetadataInstruction,
   getUpdateGatewaySettingsInstructionAsync,
   getUpdateObserverAddressInstructionAsync,
+  getUpdateOperationsAddressInstruction,
 } from '@ar.io/solana-contracts/gar';
 import { getTransferCheckedInstruction } from '@solana-program/token';
 import { SolanaANTRegistryWriteable } from './ant-registry-writeable.js';
@@ -247,6 +266,7 @@ import {
   type RegistrySlotWeight,
   predictPrescribedObservers,
 } from './predict-prescribed-observers.js';
+import { isRetryableError, withRetry } from './retry.js';
 import {
   DEFAULT_COMPUTE_UNIT_LIMIT,
   MAX_TX_SIZE_BYTES,
@@ -266,6 +286,21 @@ import type {
 } from './types.js';
 
 const addressDecoder = getAddressDecoder();
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * A post-write epoch read that came back with nothing — a missing account or a
+ * decode failure, never "the cursor did not move".
+ *
+ * It exists so the retry layer can tell the two apart. `getEpochRaw` reports
+ * both an absent account and a failed decode as `null`, and a `null` handed to
+ * the D4a assertion collapses to the pre-write cursor, which reads as a stall
+ * that never happened.
+ */
+class UnreadableEpochAccount extends Error {}
 
 /** Resolve mARIOToken | number to a plain number */
 function toAmount(qty: number | mARIOToken): number {
@@ -292,6 +327,54 @@ function withRemainingAccounts<I extends Instruction>(
     ...remaining,
   ];
   return { ...ix, accounts } as I;
+}
+
+/**
+ * The total a funding plan must cover: the program checks the plan against the
+ * cost AFTER the discount.
+ */
+function discountedCost(
+  cost: bigint,
+  discountGateway: Address | undefined,
+): bigint {
+  return discountGateway === undefined
+    ? cost
+    : applyGatewayOperatorDiscount(cost);
+}
+
+/**
+ * Remaining accounts for an ArNS `_from_funding_plan` instruction: the
+ * `discount_account_count` discount gateways first, then the funding sources.
+ */
+function withFundingPlanAccounts<I extends Instruction>(
+  ix: I,
+  discountGateway: Address | undefined,
+  fundingAccounts: AccountMeta[],
+): I {
+  const remaining: AccountMeta[] = [
+    ...(discountGateway === undefined
+      ? []
+      : [{ address: discountGateway, role: AccountRole.READONLY }]),
+    ...fundingAccounts,
+  ];
+  return remaining.length > 0 ? withRemainingAccounts(ix, remaining) : ix;
+}
+
+/**
+ * Attach the operator-discount gateway to a single-source ArNS purchase, where
+ * the program reads it from `remaining_accounts[0]`. Those instructions take no
+ * other remaining accounts. Funding-plan variants instead put it first and set
+ * `discount_account_count`.
+ */
+function withOperatorDiscount<I extends Instruction>(
+  ix: I,
+  discountGateway: Address | undefined,
+): I {
+  return discountGateway === undefined
+    ? ix
+    : withRemainingAccounts(ix, [
+        { address: discountGateway, role: AccountRole.READONLY },
+      ]);
 }
 
 /**
@@ -674,10 +757,38 @@ export type CrankAction =
   | 'close'
   | 'idle';
 
+/** Cranker-relevant fields decoded from the raw Epoch account. */
+export interface EpochRawState {
+  tallyIndex: number;
+  distributionIndex: number;
+  weightsTallied: number;
+  prescriptionsDone: number;
+  rewardsDistributed: number;
+  observationsSubmitted: number;
+  observationsClosed: number;
+  activeGatewayCount: number;
+  endTimestamp: number;
+}
+
 /** Options for {@link SolanaARIOWriteable.crankEpochStep}. */
 export interface CrankEpochStepOptions {
   /** Gateways per tally/distribute batch. Default 30. */
   batchSize?: number;
+  /**
+   * How many times to read the tally/distribute cursor after a write before
+   * concluding it did not advance. Default 3; values below 1 are treated as 1.
+   *
+   * The D4a check treats an unchanged cursor as proof the transaction did
+   * nothing, which is only sound if the read reflects that transaction. When
+   * the executing slot can be resolved the read is pinned to it and these
+   * extra attempts are unnecessary; they are the fallback for RPCs that cannot
+   * report it.
+   */
+  cursorRereadAttempts?: number;
+  /**
+   * Delay between unpinned cursor re-reads (ms). Default 300. Set 0 in tests.
+   */
+  cursorRereadDelayMs?: number;
   /**
    * NameRegistry account for the name-prescription leg. Defaults to the
    * registry derived from the configured ArNS program. Pass `null` to disable
@@ -834,6 +945,23 @@ export function isInvalidGatewayAccountError(error: unknown): boolean {
   );
 }
 
+/** The zero pubkey (the System Program id); authorises nobody on chain. */
+const DEFAULT_ADDRESS = address('11111111111111111111111111111111');
+
+/**
+ * Default `migrate_gateway` instructions per transaction in `migrateGateways`.
+ * Each adds two unique accounts (operator, gateway) — 79 bytes of a signed
+ * transaction including both compute-budget instructions — so 8 leaves
+ * headroom under the 1232-byte limit without an address lookup table.
+ */
+export const MIGRATE_GATEWAYS_BATCH_SIZE = 8;
+
+/**
+ * Largest batch that still fits one transaction: 12 serializes to 1200 bytes,
+ * 13 to 1279. Both boundaries are asserted in gateway-operations.test.ts.
+ */
+export const MIGRATE_GATEWAYS_MAX_BATCH_SIZE = 12;
+
 export class SolanaARIOWriteable extends SolanaARIOReadable {
   protected readonly signer: SolanaSigner;
   protected readonly rpcSubscriptions: SolanaRpcSubscriptions;
@@ -870,6 +998,31 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       commitment: this.commitment,
       computeUnitLimit,
       extraSigners,
+    });
+  }
+
+  /**
+   * Send via an ephemeral Address Lookup Table, for instruction sets whose
+   * inline form exceeds `MAX_TX_SIZE_BYTES`. Costs two extra transactions
+   * (create + extend) and table rent, so callers should only reach for it
+   * when {@link estimateCompiledTxSize} says the inline form does not fit.
+   *
+   * A `protected` seam, like {@link sendTransaction}, so the routing decision
+   * is observable in tests without standing up an RPC.
+   */
+  protected async sendViaLookupTable(
+    instructions: Instruction[],
+    lookupAddresses: Address[],
+    computeUnitLimit = DEFAULT_COMPUTE_UNIT_LIMIT,
+  ): Promise<string> {
+    return sendWithEphemeralLookupTable({
+      rpc: this.rpc,
+      rpcSubscriptions: this.rpcSubscriptions,
+      signer: this.signer,
+      instructions,
+      lookupAddresses,
+      commitment: this.commitment,
+      computeUnitLimit,
     });
   }
 
@@ -1417,6 +1570,364 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     return { id: sig };
   }
 
+  // =========================================
+  // ADR-0030 / ADR-0031
+  // =========================================
+
+  /**
+   * Read and decode a Gateway PDA, or `null` if it does not exist. Protected so
+   * tests can supply account state without an RPC.
+   */
+  protected async fetchGatewayAccount(
+    gateway: Address,
+  ): Promise<GarGatewayAccount | null> {
+    const account = await fetchEncodedAccount(this.rpc, gateway, {
+      commitment: this.commitment,
+    });
+    if (!account.exists) return null;
+    return getGatewayDecoder().decode(account.data);
+  }
+
+  /**
+   * The Gateway PDA to attach to an ArNS purchase for the gateway-operator
+   * discount, or `undefined` for no discount.
+   *
+   * The program rejects a purchase whose discount gateway does not qualify
+   * (it never falls back to full price), so this runs the same checks first —
+   * see `gateway-discount.ts`. With `discountGatewayAddress` the caller asked
+   * for the discount explicitly, so a gateway that does not qualify is an
+   * error. Otherwise the signer's own gateway is tried and silently skipped
+   * when it does not qualify, which is the common case for non-operators.
+   *
+   * Uses the cluster clock, as the program does. A pass-rate change landing
+   * between this read and execution fails the purchase with
+   * `GatewayNotActive`; retrying re-evaluates.
+   */
+  protected async resolveOperatorDiscountGateway(params: {
+    discountGatewayAddress?: string;
+  }): Promise<Address | undefined> {
+    const explicit = params.discountGatewayAddress !== undefined;
+    const operator = explicit
+      ? address(params.discountGatewayAddress as string)
+      : this.signer.address;
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      if (explicit) {
+        throw new Error(
+          `No gateway found for operator ${operator}; cannot claim the operator discount through it.`,
+        );
+      }
+      return undefined;
+    }
+    const nowSeconds = BigInt(await this.getClusterUnixTimestampSeconds());
+    const reason = gatewayDiscountIneligibility(
+      gateway,
+      this.signer.address,
+      nowSeconds,
+    );
+    if (reason !== undefined) {
+      if (explicit) {
+        throw new Error(
+          `Gateway ${operator} does not qualify for the operator discount: ${describeGatewayDiscountIneligibility(reason)}.`,
+        );
+      }
+      return undefined;
+    }
+    return gatewayPda;
+  }
+
+  /**
+   * Drop the operator discount if the assembled transaction would not fit.
+   *
+   * The discount adds one account (~33 bytes) to the ArNS instruction. A
+   * multi-source funding plan can already sit within that of the 1232-byte
+   * limit — measured bands: a 6-account buy plan (1229 -> 1262), an 8-account
+   * undername plan (1220 -> 1253), a 2-account returned-name plan (1214 ->
+   * 1247). Charging full price is strictly better than failing the purchase,
+   * so when it does not fit we rebuild the instruction without the discount.
+   *
+   * `rebuildWithout` re-derives the instruction with no discount — for a
+   * funding plan that also re-sizes the plan to the undiscounted cost, which is
+   * what the program will charge. If the transaction is over the limit even
+   * without the discount, the discounted version is kept and the send reports
+   * the size error, exactly as it would have before this method existed.
+   */
+  private async dropDiscountIfOversized(
+    instructions: Instruction[],
+    index: number,
+    rebuildWithout: () => Promise<Instruction>,
+    options?: { computeUnitLimit?: number; extraSigners?: KeyPairSigner[] },
+  ): Promise<Instruction[]> {
+    const measure = (ixs: Instruction[]) =>
+      estimateCompiledTxSize({
+        signer: this.signer,
+        instructions: ixs,
+        ...(options?.computeUnitLimit === undefined
+          ? {}
+          : { computeUnitLimit: options.computeUnitLimit }),
+        ...(options?.extraSigners === undefined
+          ? {}
+          : { extraSigners: options.extraSigners }),
+      });
+    const withDiscount = measure(instructions);
+    if (withDiscount <= MAX_TX_SIZE_BYTES) return instructions;
+
+    const undiscounted = [...instructions];
+    undiscounted[index] = await rebuildWithout();
+    const withoutDiscount = measure(undiscounted);
+    if (withoutDiscount > MAX_TX_SIZE_BYTES) return instructions;
+
+    this.logger.warn(
+      '[arns] operator discount dropped: the transaction would exceed the size limit',
+      { withDiscount, withoutDiscount, limit: MAX_TX_SIZE_BYTES },
+    );
+    return undiscounted;
+  }
+
+  private buildMigrateGatewayInstruction(
+    operator: Address,
+    gateway: Address,
+  ): Instruction {
+    return getMigrateGatewayInstruction(
+      { operator, gateway, payer: this.signer },
+      { programAddress: this.garProgram },
+    );
+  }
+
+  /**
+   * ADR-0030: authorise a second address to update this gateway's metadata and
+   * spend its ArNS discount. Operator-only — the signer must be the gateway's
+   * operator. Pass the operator's own address to revoke a delegation.
+   *
+   * A gateway below schema 1.2.0 cannot hold an operations address (the
+   * program refuses with `GatewayNotMigrated`), so `migrate_gateway` is
+   * prepended to the same transaction when needed.
+   */
+  async updateOperationsAddress(
+    params: { operationsAddress: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const operator = this.signer.address;
+    const newOperationsAddress = address(params.operationsAddress);
+    if (newOperationsAddress === DEFAULT_ADDRESS) {
+      throw new Error(
+        'updateOperationsAddress: the zero address authorises nobody; pass the operator address to revoke a delegation',
+      );
+    }
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      throw new Error(
+        `updateOperationsAddress: no gateway found for operator ${operator}`,
+      );
+    }
+
+    const migrated = isOperationsAddressSet(gateway.version);
+    // What the program will compare against: a migration sets the field to
+    // the operator, and the program refuses a no-op rotation.
+    const current = migrated ? gateway.operationsAddress : operator;
+    if (newOperationsAddress === current) {
+      throw new Error(
+        `updateOperationsAddress: ${newOperationsAddress} is already this gateway's operations address`,
+      );
+    }
+
+    const instructions: Instruction[] = [];
+    if (!migrated) {
+      instructions.push(
+        this.buildMigrateGatewayInstruction(operator, gatewayPda),
+      );
+    }
+    instructions.push(
+      getUpdateOperationsAddressInstruction(
+        {
+          gateway: gatewayPda,
+          operator: this.signer,
+          newOperationsAddress,
+        },
+        { programAddress: this.garProgram },
+      ),
+    );
+
+    const sig = await this.sendTransaction(instructions, 1_000_000);
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: update a gateway's routing/presentation metadata. Signable by the
+   * operator or by the gateway's operations address; when signing as the
+   * operations address, pass the operator as `gatewayAddress`.
+   */
+  async updateGatewayMetadata(
+    params: UpdateGatewayMetadataParams,
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const { gatewayAddress, label, fqdn, port, protocol, properties, note } =
+      params;
+    if (
+      label === undefined &&
+      fqdn === undefined &&
+      port === undefined &&
+      protocol === undefined &&
+      properties === undefined &&
+      note === undefined
+    ) {
+      throw new Error(
+        'updateGatewayMetadata: provide at least one of label, fqdn, port, protocol, properties, note',
+      );
+    }
+
+    const operator =
+      gatewayAddress !== undefined
+        ? address(gatewayAddress)
+        : this.signer.address;
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+
+    if (operator !== this.signer.address) {
+      // Mirror the program's rule so a doomed transaction is never sent: the
+      // operations address counts only once the gateway is at 1.2.0.
+      const gateway = await this.fetchGatewayAccount(gatewayPda);
+      if (gateway === null) {
+        throw new Error(
+          `updateGatewayMetadata: no gateway found for operator ${operator}`,
+        );
+      }
+      if (!isOperationsAddressSet(gateway.version)) {
+        throw new Error(
+          `updateGatewayMetadata: gateway ${operator} has not been migrated, so only its operator can update it`,
+        );
+      }
+      if (gateway.operationsAddress !== this.signer.address) {
+        throw new Error(
+          `updateGatewayMetadata: ${this.signer.address} is neither the operator nor the operations address of gateway ${operator}`,
+        );
+      }
+    }
+
+    const ix = getUpdateGatewayMetadataInstruction(
+      {
+        operator,
+        gateway: gatewayPda,
+        signer: this.signer,
+        label: label ?? null,
+        fqdn: fqdn ?? null,
+        port: port ?? null,
+        protocol:
+          protocol === undefined
+            ? null
+            : protocol === 'http'
+              ? Protocol.Http
+              : Protocol.Https,
+        properties: properties ?? null,
+        note: note ?? null,
+      },
+      { programAddress: this.garProgram },
+    );
+
+    const sig = await this.sendTransaction([ix], 1_000_000);
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: migrate one Gateway to schema 1.2.0. Permissionless — the signer
+   * pays the small rent top-up (32 bytes).
+   */
+  async migrateGateway(
+    params: { gatewayAddress: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const operator = address(params.gatewayAddress);
+    const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+    const gateway = await this.fetchGatewayAccount(gatewayPda);
+    if (gateway === null) {
+      throw new Error(
+        `migrateGateway: no gateway found for operator ${operator}`,
+      );
+    }
+    if (isOperationsAddressSet(gateway.version)) {
+      throw new Error(
+        `migrateGateway: gateway ${operator} is already migrated`,
+      );
+    }
+    const sig = await this.sendTransaction(
+      [this.buildMigrateGatewayInstruction(operator, gatewayPda)],
+      1_000_000,
+    );
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0030: migrate many Gateways, a batch per transaction. With no
+   * `gatewayAddresses`, migrates every gateway still below 1.2.0. Stops at the
+   * first failed batch and reports what already succeeded.
+   */
+  async migrateGateways(
+    params: { gatewayAddresses?: WalletAddress[]; batchSize?: number } = {},
+  ): Promise<{ migrated: Address[]; signatures: string[] }> {
+    const batchSize = params.batchSize ?? MIGRATE_GATEWAYS_BATCH_SIZE;
+    if (!Number.isInteger(batchSize) || batchSize < 1) {
+      throw new Error('migrateGateways: batchSize must be a positive integer');
+    }
+    // Refused rather than silently capped: a batch this large cannot fit a
+    // single transaction, and quietly changing the caller's value would hide it.
+    if (batchSize > MIGRATE_GATEWAYS_MAX_BATCH_SIZE) {
+      throw new Error(
+        `migrateGateways: batchSize ${batchSize} exceeds ${MIGRATE_GATEWAYS_MAX_BATCH_SIZE}, the most migrate_gateway instructions that fit in one transaction`,
+      );
+    }
+    const operators =
+      params.gatewayAddresses !== undefined
+        ? params.gatewayAddresses.map((a) => address(a))
+        : await this.getUnmigratedGatewayAddresses();
+
+    const migrated: Address[] = [];
+    const signatures: string[] = [];
+    for (let i = 0; i < operators.length; i += batchSize) {
+      const batch = operators.slice(i, i + batchSize);
+      const instructions: Instruction[] = [];
+      for (const operator of batch) {
+        const [gatewayPda] = await getGatewayPDA(operator, this.garProgram);
+        instructions.push(
+          this.buildMigrateGatewayInstruction(operator, gatewayPda),
+        );
+      }
+      try {
+        signatures.push(await this.sendTransaction(instructions, 1_400_000));
+      } catch (err) {
+        throw new Error(
+          `migrateGateways: batch starting at ${batch[0]} failed after ${migrated.length} of ${operators.length} gateways were migrated: ${err instanceof Error ? err.message : String(err)}`,
+          { cause: err },
+        );
+      }
+      migrated.push(...batch);
+    }
+    return { migrated, signatures };
+  }
+
+  /**
+   * ADR-0031: hand `EpochSettings.authority` to a new address (e.g. a
+   * multisig). Signed by the current epoch-settings authority.
+   */
+  async transferEpochSettingsAuthority(
+    params: { newAuthority: WalletAddress },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const newAuthority = address(params.newAuthority);
+    if (newAuthority === DEFAULT_ADDRESS) {
+      throw new Error(
+        'transferEpochSettingsAuthority: the new authority must not be the zero address',
+      );
+    }
+    const [epochSettings] = await getEpochSettingsPDA(this.garProgram);
+    const ix = getTransferEpochSettingsAuthorityInstruction(
+      { epochSettings, authority: this.signer, newAuthority },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix], 1_000_000);
+    return { id: sig };
+  }
+
   async increaseOperatorStake(
     params: { increaseQty: number | mARIOToken },
     _options?: WriteOptions,
@@ -1804,11 +2315,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       ant: antPubkey,
     };
 
+    const discountGateway = await this.resolveOperatorDiscountGateway(params);
+
     // Phase 4 of FUND_FROM_PLAN.md: dispatch on params.fundFrom. The pre-Phase-4
     // path always fell through to the balance-funded `buyName` ix even when
     // CLI-set `--fund-from stakes`; we now route to the corresponding on-chain
     // wrapper for each mode.
     let ix;
+    // The funding-plan builder attaches the discount itself (it also changes
+    // the plan total); every other branch gets it appended below.
+    let discountAttached = false;
     if (params.fundFrom === 'stakes' && params.gatewayAddress) {
       const gatewayAddr = address(params.gatewayAddress);
       const garConfig = await this.getGarConfig();
@@ -1893,7 +2409,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         returnedNameCheck,
         buyNameParams,
         arnsConfig,
+        discountGateway,
       });
+      discountAttached = true;
     } else if (
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -1917,6 +2435,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         `unsupported fundFrom mode '${params.fundFrom}' for buyRecord`,
       );
     }
+    if (!discountAttached) ix = withOperatorDiscount(ix, discountGateway);
 
     // Spawn-and-buy: prepend `[CreateV1, initialize]` and attach the mint
     // signer. We DON'T bundle `sync_attributes` here — the asset doesn't exist
@@ -1978,7 +2497,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       antPubkey,
     );
-    const sig = await this.sendTransaction(syncIx ? [ix, syncIx] : [ix]);
+    let instructions = syncIx ? [ix, syncIx] : [ix];
+    if (discountGateway !== undefined && discountAttached) {
+      instructions = await this.dropDiscountIfOversized(instructions, 0, () =>
+        this._buildBuyNameFromFundingPlanIx({
+          params,
+          antPubkey,
+          arnsRecord,
+          reservedNameCheck,
+          returnedNameCheck,
+          buyNameParams,
+          arnsConfig,
+          discountGateway: undefined,
+        }),
+      );
+    }
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -2216,6 +2750,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       ant: Address;
     };
     arnsConfig: { mint: Address; treasury: Address };
+    discountGateway: Address | undefined;
   }) {
     const garConfig = await this.getGarConfig();
     const [garSettings] = await getGarSettingsPDA(this.garProgram);
@@ -2229,7 +2764,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       years: args.buyNameParams.years,
       purchaseType: args.buyNameParams.purchaseType,
     });
-    const plan = await this._resolveFundingPlan(args.params, cost);
+    const plan = await this._resolveFundingPlan(
+      args.params,
+      discountedCost(cost, args.discountGateway),
+    );
     const { remainingAccounts, withdrawalCounter, residueVaultCount } =
       await this._materializeFundingPlan(args.params, plan);
 
@@ -2250,16 +2788,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         garProgram: this.garProgram,
         params: args.buyNameParams,
         sources: plan.sources.map(toGeneratedFundingSourceSpec),
-        discountAccountCount: 0,
+        discountAccountCount: args.discountGateway === undefined ? 0 : 1,
         residueVaultCount,
       },
       {
         programAddress: this.arnsProgram,
       },
     ).then((ix) =>
-      remainingAccounts.length > 0
-        ? withRemainingAccounts(ix, remainingAccounts)
-        : ix,
+      withFundingPlanAccounts(ix, args.discountGateway, remainingAccounts),
     );
   }
 
@@ -2525,9 +3061,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       operation: 'upgrade',
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(
+    const instructions = await this.dropDiscountIfOversized(
       syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'upgrade',
+          forceNoDiscount: true,
+        }),
     );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -2647,7 +3191,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     });
     // BD-095: extend_lease changes only `end_timestamp`, which isn't
     // mirrored in any Metaplex Attributes plugin trait. No bundle.
-    const sig = await this.sendTransaction([...migrateIxs, ix]);
+    const instructions = await this.dropDiscountIfOversized(
+      [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'extend',
+          years: params.years,
+          forceNoDiscount: true,
+        }),
+    );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -2664,9 +3219,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       quantity: params.increaseCount,
     });
     const syncIx = await this._buildSyncAttributesIxIfOwner(params.name);
-    const sig = await this.sendTransaction(
+    const instructions = await this.dropDiscountIfOversized(
       syncIx ? [...migrateIxs, ix, syncIx] : [...migrateIxs, ix],
+      migrateIxs.length,
+      () =>
+        this._buildManageStakeIx({
+          params,
+          operation: 'increaseUndername',
+          quantity: params.increaseCount,
+          forceNoDiscount: true,
+        }),
     );
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -2686,6 +3250,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     operation: 'upgrade' | 'extend' | 'increaseUndername';
     years?: number;
     quantity?: number;
+    /** Set by `dropDiscountIfOversized`'s rebuild to re-derive without it. */
+    forceNoDiscount?: boolean;
   }) {
     const arnsConfig = await this.getArnsConfig();
     const callerATA = await getAssociatedTokenAddressKit(
@@ -2696,6 +3262,14 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       args.params.name,
       this.arnsProgram,
     );
+    const discountGateway =
+      args.forceNoDiscount === true
+        ? undefined
+        : await this.resolveOperatorDiscountGateway(args.params);
+    // Single-source paths below return through this; the funding-plan path
+    // attaches the discount itself.
+    const discounted = <I extends Instruction>(ix: Promise<I>) =>
+      ix.then((built) => withOperatorDiscount(built, discountGateway));
 
     // Balance / undefined → original direct-transfer ix (matches pre-Phase-4).
     if (
@@ -2710,19 +3284,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         caller: this.signer,
       });
       if (args.operation === 'upgrade') {
-        return getUpgradeNameInstructionAsync(baseAccounts, {
-          programAddress: this.arnsProgram,
-        });
-      }
-      if (args.operation === 'extend') {
-        return getExtendLeaseInstructionAsync(
-          { ...baseAccounts, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameInstructionAsync(baseAccounts, {
+            programAddress: this.arnsProgram,
+          }),
         );
       }
-      return getIncreaseUndernameLimitInstructionAsync(
-        { ...baseAccounts, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend') {
+        return discounted(
+          getExtendLeaseInstructionAsync(
+            { ...baseAccounts, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      }
+      return discounted(
+        getIncreaseUndernameLimitInstructionAsync(
+          { ...baseAccounts, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -2746,17 +3326,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       const stakeBase = { ...sharedManageBase, gateway: gatewayPda };
       if (args.params.fundAsOperator) {
         if (args.operation === 'upgrade')
-          return getUpgradeNameFromOperatorStakeInstructionAsync(stakeBase, {
-            programAddress: this.arnsProgram,
-          });
-        if (args.operation === 'extend')
-          return getExtendLeaseFromOperatorStakeInstructionAsync(
-            { ...stakeBase, years: args.years! },
-            { programAddress: this.arnsProgram },
+          return discounted(
+            getUpgradeNameFromOperatorStakeInstructionAsync(stakeBase, {
+              programAddress: this.arnsProgram,
+            }),
           );
-        return getIncreaseUndernameLimitFromOperatorStakeInstructionAsync(
-          { ...stakeBase, quantity: args.quantity! },
-          { programAddress: this.arnsProgram },
+        if (args.operation === 'extend')
+          return discounted(
+            getExtendLeaseFromOperatorStakeInstructionAsync(
+              { ...stakeBase, years: args.years! },
+              { programAddress: this.arnsProgram },
+            ),
+          );
+        return discounted(
+          getIncreaseUndernameLimitFromOperatorStakeInstructionAsync(
+            { ...stakeBase, quantity: args.quantity! },
+            { programAddress: this.arnsProgram },
+          ),
         );
       }
       const [delegationPda] = await getDelegationPDA(
@@ -2766,17 +3352,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
       const delBase = { ...stakeBase, delegation: delegationPda };
       if (args.operation === 'upgrade')
-        return getUpgradeNameFromDelegationInstructionAsync(delBase, {
-          programAddress: this.arnsProgram,
-        });
-      if (args.operation === 'extend')
-        return getExtendLeaseFromDelegationInstructionAsync(
-          { ...delBase, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameFromDelegationInstructionAsync(delBase, {
+            programAddress: this.arnsProgram,
+          }),
         );
-      return getIncreaseUndernameLimitFromDelegationInstructionAsync(
-        { ...delBase, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend')
+        return discounted(
+          getExtendLeaseFromDelegationInstructionAsync(
+            { ...delBase, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      return discounted(
+        getIncreaseUndernameLimitFromDelegationInstructionAsync(
+          { ...delBase, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -2791,17 +3383,23 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       );
       const wBase = { ...sharedManageBase, withdrawal: withdrawalPda };
       if (args.operation === 'upgrade')
-        return getUpgradeNameFromWithdrawalInstructionAsync(wBase, {
-          programAddress: this.arnsProgram,
-        });
-      if (args.operation === 'extend')
-        return getExtendLeaseFromWithdrawalInstructionAsync(
-          { ...wBase, years: args.years! },
-          { programAddress: this.arnsProgram },
+        return discounted(
+          getUpgradeNameFromWithdrawalInstructionAsync(wBase, {
+            programAddress: this.arnsProgram,
+          }),
         );
-      return getIncreaseUndernameLimitFromWithdrawalInstructionAsync(
-        { ...wBase, quantity: args.quantity! },
-        { programAddress: this.arnsProgram },
+      if (args.operation === 'extend')
+        return discounted(
+          getExtendLeaseFromWithdrawalInstructionAsync(
+            { ...wBase, years: args.years! },
+            { programAddress: this.arnsProgram },
+          ),
+        );
+      return discounted(
+        getIncreaseUndernameLimitFromWithdrawalInstructionAsync(
+          { ...wBase, quantity: args.quantity! },
+          { programAddress: this.arnsProgram },
+        ),
       );
     }
 
@@ -2846,7 +3444,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         quantity: args.quantity,
         purchaseType,
       });
-      const plan = await this._resolveFundingPlan(args.params, cost);
+      const plan = await this._resolveFundingPlan(
+        args.params,
+        discountedCost(cost, discountGateway),
+      );
       const buyerATA = await getAssociatedTokenAddressKit(
         arnsConfig.mint,
         this.signer.address,
@@ -2865,7 +3466,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         withdrawalCounter,
         garProgram: this.garProgram,
         sources: plan.sources.map(toGeneratedFundingSourceSpec),
-        discountAccountCount: 0,
+        discountAccountCount: discountGateway === undefined ? 0 : 1,
         residueVaultCount,
       };
       let ix;
@@ -2883,9 +3484,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           { ...fpBase, quantity: args.quantity! },
           { programAddress: this.arnsProgram },
         );
-      return remainingAccounts.length > 0
-        ? withRemainingAccounts(ix, remainingAccounts)
-        : ix;
+      return withFundingPlanAccounts(ix, discountGateway, remainingAccounts);
     }
 
     throw new Error(
@@ -3710,6 +4309,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // stakes/withdrawal/any without naming a specific gateway/vault,
     // auto-resolve a single source with enough stake to cover the
     // (premium-inclusive) cost.
+    // Resolved first: the discount also lowers what a single stake source has
+    // to cover when one is picked automatically below.
+    const discountGateway = await this.resolveOperatorDiscountGateway(params);
+
     let resolvedGateway = params.gatewayAddress;
     let resolvedFundAsOperator = params.fundAsOperator ?? false;
     let resolvedWithdrawalId = params.withdrawalId;
@@ -3723,7 +4326,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       resolvedWithdrawalId === undefined &&
       !params.sources?.length
     ) {
-      const picked = await this._autoPickReturnedNameStakeSource(params);
+      const picked = await this._autoPickReturnedNameStakeSource(
+        params,
+        discountGateway,
+      );
       if (picked?.kind === 'delegation') {
         resolvedGateway = picked.gateway;
         resolvedFundAsOperator = false;
@@ -3747,6 +4353,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     }
 
     let ix;
+    // Set by the funding-plan branch, which attaches the discount itself.
+    let discountAttached = false;
+    let buildPlanIx:
+      | ((dg: Address | undefined) => Promise<Instruction>)
+      | undefined;
     const useBalance =
       !params.fundFrom ||
       params.fundFrom === 'balance' ||
@@ -3832,34 +4443,40 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           years: buyParams.years,
           purchaseType: buyParams.purchaseType,
         });
-        const plan = await this._resolveFundingPlan(
-          params as ArNSPurchaseParams,
-          cost,
-        );
-        const { remainingAccounts, withdrawalCounter, residueVaultCount } =
-          await this._materializeFundingPlan(
+        // Re-derivable so `dropDiscountIfOversized` can rebuild it without the
+        // discount, which also re-sizes the plan to the undiscounted cost.
+        buildPlanIx = async (dg: Address | undefined) => {
+          const plan = await this._resolveFundingPlan(
             params as ArNSPurchaseParams,
-            plan,
+            discountedCost(cost, dg),
           );
-        ix = await getBuyReturnedNameFromFundingPlanInstructionAsync(
-          {
-            ...sharedReturnedBase,
-            payerTokenAccount: plan.hasBalanceSource ? buyerATA : undefined,
-            withdrawalCounter,
-            sources: plan.sources.map(toGeneratedFundingSourceSpec),
-            discountAccountCount: 0,
-            residueVaultCount,
-          },
-          { programAddress: this.arnsProgram },
-        );
-        if (remainingAccounts.length > 0)
-          ix = withRemainingAccounts(ix, remainingAccounts);
+          const { remainingAccounts, withdrawalCounter, residueVaultCount } =
+            await this._materializeFundingPlan(
+              params as ArNSPurchaseParams,
+              plan,
+            );
+          const built = await getBuyReturnedNameFromFundingPlanInstructionAsync(
+            {
+              ...sharedReturnedBase,
+              payerTokenAccount: plan.hasBalanceSource ? buyerATA : undefined,
+              withdrawalCounter,
+              sources: plan.sources.map(toGeneratedFundingSourceSpec),
+              discountAccountCount: dg === undefined ? 0 : 1,
+              residueVaultCount,
+            },
+            { programAddress: this.arnsProgram },
+          );
+          return withFundingPlanAccounts(built, dg, remainingAccounts);
+        };
+        ix = await buildPlanIx(discountGateway);
+        discountAttached = true;
       } else {
         throw new Error(
           `unsupported fundFrom mode '${params.fundFrom}' for buyReturnedName`,
         );
       }
     }
+    if (!discountAttached) ix = withOperatorDiscount(ix, discountGateway);
 
     // The on-chain `buy_returned_name*` handlers take `initiator_token_account`
     // and `buyer_token_account` as `Account<TokenAccount>` (NOT `init`), so
@@ -3890,12 +4507,19 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       params.name,
       antPubkey,
     );
-    const sig = await this.sendTransaction([
+    let instructions = [
       createBuyerAtaIx,
       createInitiatorAtaIx,
       ix,
       ...(syncIx ? [syncIx] : []),
-    ]);
+    ];
+    if (discountGateway !== undefined && buildPlanIx !== undefined) {
+      const rebuild = buildPlanIx;
+      instructions = await this.dropDiscountIfOversized(instructions, 2, () =>
+        rebuild(undefined),
+      );
+    }
+    const sig = await this.sendTransaction(instructions);
     return { id: sig };
   }
 
@@ -3909,24 +4533,32 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * we only need to pick ONE source with enough stake. We size the pick against
    * the premium-inclusive estimate (an upper bound, since the price only falls
    * from now) and choose the largest matching source. Returns `null` when no
-   * single source covers the estimate.
+   * single source covers the estimate. When the purchase carries the operator
+   * discount, the program draws the discounted cost, so the pick is sized to
+   * that.
    */
-  private async _autoPickReturnedNameStakeSource(params: {
-    name: string;
-    type: 'lease' | 'permabuy';
-    years?: number;
-    fundFrom?: FundFrom;
-    fundAsOperator?: boolean;
-  }): Promise<DiscoveredFundingSource | null> {
-    const estimate = BigInt(
-      Math.ceil(
-        await this.getTokenCost({
-          intent: 'Buy-Name',
-          name: params.name,
-          type: params.type,
-          years: params.years ?? 1,
-        }),
+  private async _autoPickReturnedNameStakeSource(
+    params: {
+      name: string;
+      type: 'lease' | 'permabuy';
+      years?: number;
+      fundFrom?: FundFrom;
+      fundAsOperator?: boolean;
+    },
+    discountGateway: Address | undefined,
+  ): Promise<DiscoveredFundingSource | null> {
+    const estimate = discountedCost(
+      BigInt(
+        Math.ceil(
+          await this.getTokenCost({
+            intent: 'Buy-Name',
+            name: params.name,
+            type: params.type,
+            years: params.years ?? 1,
+          }),
+        ),
       ),
+      discountGateway,
     );
     const arnsConfig = await this.getArnsConfig();
     const { discoverFundingSources } = await import('./funding-plan.js');
@@ -4127,8 +4759,34 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       delegator,
       this.garProgram,
     );
+    // ADR-0037: `settings` (mut), so the program can raise
+    // `GatewaySettings.total_delegated` by whatever this compound settles.
+    // Compounding was the one settling instruction with no `settings` account,
+    // which is how the supply counter drifted 80,442.894868 ARIO behind the sum
+    // of the gateway counters on mainnet.
+    //
+    // It is the LAST account of `CompoundDelegationRewards`, and Anchor treats
+    // extra trailing accounts as `remaining_accounts` — so this single call
+    // works against both the pre-ADR-0037 program (which ignores it) and the
+    // upgraded one (which requires it). That is what lets this client ship
+    // BEFORE the program upgrade, which it must: an un-upgraded client fails
+    // outright once the upgrade lands.
+    //
+    // Passed as a DECLARED account since `@ar.io/solana-contracts@1.4.0-staging.33`,
+    // whose IDL carries it. This is wire-identical to the trailing form it
+    // replaced — the generated builder emits
+    // `[gateway, delegation, delegator, settings]`, i.e. settings last and
+    // writable, exactly the meta `withRemainingAccounts` appended — so the
+    // ship-before-upgrade property is unchanged. Keep it LAST if this is ever
+    // rewritten.
+    const [garSettingsPda] = await getGarSettingsPDA(this.garProgram);
     return getCompoundDelegationRewardsInstruction(
-      { gateway: gatewayPda, delegation: delegationPda, delegator },
+      {
+        gateway: gatewayPda,
+        delegation: delegationPda,
+        delegator,
+        settings: garSettingsPda,
+      },
       { programAddress: this.garProgram },
     );
   }
@@ -4173,18 +4831,36 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // account, so `create_epoch`'s IDL account list is unchanged and crankers
     // running an older client keep working — they simply omit it and the epoch
     // is created with `has_rent_receipt = 0`, taking the legacy refund path.
-    // On-chain: `create_epoch` reads `ctx.remaining_accounts.first()`.
+    // On-chain (pre-ADR-0034): `create_epoch` reads
+    // `ctx.remaining_accounts.first()`.
     const [receiptPda] = await getEpochRentReceiptPDA(
       epochIndex,
       this.garProgram,
     );
 
+    // ADR-0034: the previous Epoch, so the program can confirm it is finished
+    // (`rewards_distributed == 1`, or absent because it was written off) before
+    // allowing this one to supersede it. Omitted at index 0, which has no
+    // predecessor.
+    //
+    // ORDERING IS LOAD-BEARING AND MUST NOT BE REVERSED. The post-ADR-0034
+    // program finds both entries BY KEY, so order is irrelevant to it — but the
+    // pre-ADR-0034 program reads position 0 as the rent receipt. Putting the
+    // Epoch first would hand it to `init_epoch_rent_receipt`, which rejects it
+    // (`InvalidEpochRentReceipt`), stalling epoch creation network-wide until
+    // the program upgrade lands. Receipt first, previous Epoch second, always.
+    //
+    // The receipt must also always be PRESENT for the same reason.
+    const remaining: { address: Address; role: AccountRole }[] = [
+      { address: receiptPda, role: AccountRole.WRITABLE },
+    ];
+    if (epochIndex > 0) {
+      const [prevEpochPda] = await getEpochPDA(epochIndex - 1, this.garProgram);
+      remaining.push({ address: prevEpochPda, role: AccountRole.READONLY });
+    }
+
     const sig = await this.sendTransaction(
-      [
-        withRemainingAccounts(ix, [
-          { address: receiptPda, role: AccountRole.WRITABLE },
-        ]),
-      ],
+      [withRemainingAccounts(ix, remaining)],
       1_000_000,
     );
     return { id: sig };
@@ -4459,6 +5135,152 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The slot that executed `txId`, or undefined when it cannot be determined.
+   *
+   * Best-effort by design: a provider that does not answer
+   * `getSignatureStatuses`, or has already aged the signature out of its
+   * status cache, must degrade to the unpinned re-read path rather than fail
+   * the crank. Callers treat undefined as "freshness unknown", never as
+   * "not confirmed".
+   */
+  private async confirmedSlotOf(txId: string): Promise<bigint | undefined> {
+    try {
+      const statuses = await this.rpc
+        .getSignatureStatuses([txId as Signature])
+        .send();
+      const slot = statuses?.value?.[0]?.slot;
+      return typeof slot === 'bigint' ? slot : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Re-read the epoch after a tally/distribute write, tolerating an RPC
+   * replica that has not yet caught up to that write.
+   *
+   * {@link assertCursorAdvanced} reads an unchanged cursor as proof of a
+   * silent no-op. That inference is only valid if the read actually reflects
+   * the transaction. A multi-node RPC endpoint can answer the
+   * immediately-following read from a node a few slots behind the one that
+   * executed the write, returning PRE-transaction state for a transaction that
+   * did real work — so the crank reports a stall that never happened. Mainnet
+   * epoch 545 (2026-09-16) produced 17 such false alarms in 27 minutes: every
+   * cited signature had `err: null` and carried `DistributeEpoch` +
+   * `ReleaseTreasuryToRecipient`, and the cursor quoted by successive alarms
+   * kept climbing — the writes landed, the reads lagged. Distribution
+   * completed normally, which is the tell: a real D4a stall cannot make
+   * progress.
+   *
+   * Two defences, and which one applies is decided by whether the executing
+   * slot is known:
+   *  1. Slot known — pin the read to it via `minContextSlot`. A node behind
+   *     that slot answers JSON-RPC -32016, which {@link isRetryableError}
+   *     already classifies as transient, so {@link withRetry} waits for the
+   *     node to catch up instead of reporting stale state as fact. A pinned
+   *     read is authoritative, so no further attempts are made — and if no
+   *     pinned read succeeds, this throws rather than falling back to an
+   *     unpinned one, because at that moment an unpinned read is precisely the
+   *     pre-write answer pinning exists to reject.
+   *  2. Slot unknown — re-read up to `attempts` times and accept the first
+   *     read showing movement. Sampling is the best evidence available when
+   *     the provider cannot say which slot ran the transaction; a read showing
+   *     movement is still proof of movement, since a cursor never rewinds.
+   *
+   * Deciding whether a stall occurred is deliberately left to the assertion: a
+   * genuine no-op never advances, so it survives both defences unchanged.
+   *
+   * Never resolves `null`. `getEpochRaw` reports a missing account and a failed
+   * decode the same way, and either handed to the assertion collapses to the
+   * pre-write cursor and reads as a stall — so an empty read throws as a
+   * freshness failure instead.
+   */
+  private async rereadEpochAfterWrite(
+    epochIndex: number,
+    txId: string,
+    hasAdvanced: (epoch: EpochRawState) => boolean,
+    attempts: number,
+    delayMs: number,
+  ): Promise<EpochRawState> {
+    const minContextSlot = await this.confirmedSlotOf(txId);
+    if (minContextSlot !== undefined) {
+      try {
+        return await withRetry(
+          async () => {
+            const pinned = await this.getEpochRaw(epochIndex, {
+              minContextSlot,
+            });
+            // Nothing came back. That is a failed read, not a verdict on the
+            // cursor, so raise it as one and let withRetry try again. Returning
+            // null instead would reach the assertion as the pre-write cursor
+            // and be reported as a stall that never happened.
+            if (pinned === null) {
+              throw new UnreadableEpochAccount(
+                `epoch ${epochIndex} account was not readable at or after slot ${minContextSlot}`,
+              );
+            }
+            return pinned;
+          },
+          {
+            logger: this.logger,
+            isRetryable: (error) =>
+              error instanceof UnreadableEpochAccount ||
+              isRetryableError(error),
+          },
+        );
+      } catch (error) {
+        // Deliberately NO unpinned fallback. Reaching here means no read at or
+        // after the write's slot succeeded, so an unpinned read would return
+        // the pre-write cursor — the exact stale answer pinning exists to
+        // reject — and handing that to the assertion would manufacture the
+        // false stall this whole path prevents.
+        //
+        // Report what is actually known instead: the cursor could not be read.
+        // That is a degraded RPC, not a stalled epoch, and it must not be
+        // mistaken for one. The crank retries on its next tick, and a genuine
+        // stall cannot advance in the meantime, so nothing is lost by waiting
+        // for an answer that can be trusted.
+        this.logger.warn(
+          'Could not read the post-write epoch cursor at or after the slot ' +
+            'that executed the transaction.',
+          {
+            epochIndex,
+            txId,
+            minContextSlot: minContextSlot.toString(),
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
+        throw new Error(
+          `could not verify the post-write cursor for epoch ${epochIndex} ` +
+            `after tx ${txId}: no read at or after slot ${minContextSlot} ` +
+            `succeeded. This is an RPC freshness failure, NOT a stalled ` +
+            `epoch — do not treat it as one.`,
+          { cause: error },
+        );
+      }
+    }
+
+    let latest = await this.getEpochRaw(epochIndex);
+    for (let attempt = 1; attempt < attempts; attempt++) {
+      if (latest !== null && hasAdvanced(latest)) return latest;
+      await delay(delayMs);
+      latest = await this.getEpochRaw(epochIndex);
+    }
+    // Every attempt came back empty. Same rule as the pinned path: an absent or
+    // undecodable account says nothing about the cursor, and passing it on as
+    // the pre-write value would convict a healthy crank of stalling.
+    if (latest === null) {
+      throw new Error(
+        `could not verify the post-write cursor for epoch ${epochIndex} ` +
+          `after tx ${txId}: every re-read returned no epoch account. This is ` +
+          `an RPC or decoding failure, NOT a stalled epoch — do not treat it ` +
+          `as one.`,
+      );
+    }
+    return latest;
+  }
+
+  /**
    * Gateway PDAs for one tally/distribute batch, starting at `startIndex`.
    *
    * Two things here are load-bearing and were both wrong before ADR-0032's
@@ -4724,6 +5546,168 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * ADR-0037. Lower one gateway's `total_delegated_stake` to the proven sum of
+   * the `Delegation` accounts behind it, and lower `GatewaySettings.
+   * total_delegated` by the same amount. Authority-gated. Solana-only.
+   *
+   * This exists because the AO import wrote each gateway's counter from AO's
+   * total while only creating `Delegation` accounts for delegators who had a
+   * Solana address. The remainder went to the migration authority's pot and
+   * never entered the pool, so `counter − Σ Delegation.amount` is invariant
+   * under every other instruction and can never reach zero on its own.
+   *
+   * **You MUST pass every `Delegation` PDA of the gateway.** The program sums
+   * exactly what you give it and requires `expectedCounter − Σ = expectedRemoved`,
+   * so an incomplete list does not silently under-correct — it is refused with
+   * `DelegationReconcileMismatch`. That check is only as good as its inputs,
+   * though, which is why this method takes the list explicitly rather than
+   * discovering it: `expectedRemoved` must be derived from the **genesis
+   * snapshot**, never from the same `getProgramAccounts` read that produced
+   * `delegations`, or the completeness check is vacuous and a missed delegation
+   * strands that delegate's stake.
+   *
+   * Beware any size-filtered delegation fetch when assembling `delegations` —
+   * a `dataSize` filter silently drops any account that is not that length,
+   * which is exactly the omitted-delegation path this guard exists to catch.
+   *
+   * Ordering (ADR-0037): reconcile EVERY gateway first, then
+   * {@link adminResyncSupplyCounters}. Resyncing first makes each later
+   * reconcile subtract from an already-corrected counter, underflowing the
+   * supply counter and leaving it half-corrected.
+   *
+   * The program derives each Delegation PDA from its stored bump rather than
+   * searching, but a large reconcile still costs real compute, so the CU limit
+   * is raised in proportion to the number of delegations supplied.
+   *
+   * **Transaction size, not compute, is the binding constraint.** Each
+   * delegation adds ~33 bytes to the compiled message, so the inline form
+   * crosses Solana's 1232-byte limit at roughly **28 delegations** — and the
+   * reconcile requires EVERY delegation of the gateway, so a well-delegated
+   * gateway cannot be reconciled inline at all. Above the threshold this routes
+   * through an ephemeral Address Lookup Table (the same escape hatch
+   * `prescribe_epoch` uses for its observer set), which compresses every
+   * non-signer account to a one-byte index. The delegations are read-only
+   * non-signers, so they are all ALT-eligible.
+   *
+   * The ALT path costs two extra transactions and table rent, so it is taken
+   * only when the measured inline size does not fit — small reconciles stay a
+   * single transaction.
+   */
+  async adminReconcileDelegatedStake(
+    params: {
+      gatewayOperator: string;
+      /** EVERY Delegation PDA of this gateway. See the completeness note above. */
+      delegations: string[];
+      /** The gateway's CURRENT `total_delegated_stake`, read before this call. */
+      expectedCounter: number | bigint;
+      /** `expectedCounter − Σ Delegation.amount`, from the genesis snapshot. */
+      expectedRemoved: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [settings] = await getGarSettingsPDA(this.garProgram);
+    const [gateway] = await getGatewayPDA(
+      address(params.gatewayOperator),
+      this.garProgram,
+    );
+    const ix = getAdminReconcileDelegatedStakeInstruction(
+      {
+        settings,
+        gateway,
+        authority: this.signer,
+        expectedCounter: BigInt(params.expectedCounter),
+        expectedRemoved: BigInt(params.expectedRemoved),
+      },
+      { programAddress: this.garProgram },
+    );
+
+    // The Delegation accounts are read-only proof, appended as
+    // remaining_accounts. The program validates each one's owner, discriminator
+    // and derived PDA, and refuses duplicates.
+    const withDelegations =
+      params.delegations.length > 0
+        ? withRemainingAccounts(
+            ix,
+            params.delegations.map((d) => ({
+              address: address(d),
+              role: AccountRole.READONLY,
+            })),
+          )
+        : ix;
+
+    const instructions = [withDelegations];
+    const computeUnitLimit = Math.min(
+      1_400_000,
+      DEFAULT_COMPUTE_UNIT_LIMIT + params.delegations.length * 10_000,
+    );
+
+    // Measure rather than guess at a delegation count: the threshold depends
+    // on how many of the declared accounts happen to collide with the
+    // delegation set, and on the instruction data length.
+    const inlineSize = estimateCompiledTxSize({
+      signer: this.signer,
+      instructions,
+      computeUnitLimit,
+    });
+
+    const sig =
+      inlineSize <= MAX_TX_SIZE_BYTES
+        ? await this.sendTransaction(instructions, computeUnitLimit)
+        : await this.sendViaLookupTable(
+            instructions,
+            altEligibleAddresses(instructions, [this.signer.address]),
+            computeUnitLimit,
+          );
+    return { id: sig };
+  }
+
+  /**
+   * ADR-0037. Resync `GatewaySettings.total_staked` / `total_delegated` to
+   * values you have proven off-chain by summing every `Gateway` account.
+   * Authority-gated. Solana-only.
+   *
+   * Run this ONCE, and only AFTER every gateway has been reconciled with
+   * {@link adminReconcileDelegatedStake} — see the ordering note there.
+   *
+   * This is a **compare-and-swap**, not a blind write. Each counter takes both
+   * the value you believe is currently stored (`expected*`) and the value to
+   * write (`new*`); the program refuses the whole instruction if either
+   * `expected*` does not match what it actually holds. So a read that went
+   * stale between your off-chain sum and the transaction landing — another
+   * reconcile, a stake change, a compound — is rejected rather than silently
+   * overwriting someone else's correction. On rejection, re-read, re-derive,
+   * and resubmit.
+   */
+  async adminResyncSupplyCounters(
+    params: {
+      /** `total_staked` as currently stored on-chain. */
+      expectedStaked: number | bigint;
+      /** The proven sum of every `Gateway.operator_stake`. */
+      newStaked: number | bigint;
+      /** `total_delegated` as currently stored on-chain. */
+      expectedDelegated: number | bigint;
+      /** The proven sum of every `Gateway.total_delegated_stake`. */
+      newDelegated: number | bigint;
+    },
+    _options?: WriteOptions,
+  ): Promise<MessageResult> {
+    const [settings] = await getGarSettingsPDA(this.garProgram);
+    const ix = getAdminResyncSupplyCountersInstruction(
+      {
+        settings,
+        authority: this.signer,
+        expectedStaked: BigInt(params.expectedStaked),
+        newStaked: BigInt(params.newStaked),
+        expectedDelegated: BigInt(params.expectedDelegated),
+        newDelegated: BigInt(params.newDelegated),
+      },
+      { programAddress: this.garProgram },
+    );
+    const sig = await this.sendTransaction([ix]);
+    return { id: sig };
+  }
+
+  /**
    * Submit `prescribe_epoch` using the off-chain-predicted observer set, with a
    * single re-predict-and-retry on `InvalidGatewayAccount` (covers a gateway
    * leaving the registry between the prediction read and the tx landing).
@@ -4789,6 +5773,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     const enablePrune = opts.enablePrune ?? true;
     const enablePruneToReturned = opts.enablePruneToReturned ?? true;
     const enablePruneExpired = opts.enablePruneExpired ?? true;
+    const cursorRereadAttempts = Math.max(1, opts.cursorRereadAttempts ?? 3);
+    const cursorRereadDelayMs = opts.cursorRereadDelayMs ?? 300;
     const now = opts.now ?? Math.floor(Date.now() / 1000);
 
     const settings = await this.getEpochSettingsFull();
@@ -4841,14 +5827,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         gatewayAccounts,
       });
       if (epoch.activeGatewayCount > 0) {
-        const after = await this.getEpochRaw(targetEpochIndex);
+        const after = await this.rereadEpochAfterWrite(
+          targetEpochIndex,
+          id,
+          (e) => e.weightsTallied === 1 || e.tallyIndex > tallyCursorBefore,
+          cursorRereadAttempts,
+          cursorRereadDelayMs,
+        );
         this.assertCursorAdvanced(
           'tally',
           targetEpochIndex,
           tallyCursorBefore,
-          after?.weightsTallied === 1
+          after.weightsTallied === 1
             ? epoch.activeGatewayCount
-            : (after?.tallyIndex ?? tallyCursorBefore),
+            : after.tallyIndex,
           epoch.activeGatewayCount,
           id,
         );
@@ -4906,14 +5898,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         gatewayAccounts,
       });
       if (epoch.activeGatewayCount > 0) {
-        const after = await this.getEpochRaw(targetEpochIndex);
+        const after = await this.rereadEpochAfterWrite(
+          targetEpochIndex,
+          id,
+          (e) =>
+            e.rewardsDistributed === 1 ||
+            e.distributionIndex > distCursorBefore,
+          cursorRereadAttempts,
+          cursorRereadDelayMs,
+        );
         this.assertCursorAdvanced(
           'distribute',
           targetEpochIndex,
           distCursorBefore,
-          after?.rewardsDistributed === 1
+          after.rewardsDistributed === 1
             ? epoch.activeGatewayCount
-            : (after?.distributionIndex ?? distCursorBefore),
+            : after.distributionIndex,
           epoch.activeGatewayCount,
           id,
         );
@@ -5256,20 +6256,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Read the raw epoch account data for cranker state inspection.
    * Returns null if the epoch account doesn't exist yet.
    */
-  async getEpochRaw(epochIndex: number): Promise<{
-    tallyIndex: number;
-    distributionIndex: number;
-    weightsTallied: number;
-    prescriptionsDone: number;
-    rewardsDistributed: number;
-    observationsSubmitted: number;
-    observationsClosed: number;
-    activeGatewayCount: number;
-    endTimestamp: number;
-  } | null> {
+  async getEpochRaw(
+    epochIndex: number,
+    config?: { minContextSlot?: bigint },
+  ): Promise<EpochRawState | null> {
     const [epochPda] = await getEpochPDA(epochIndex, this.garProgram);
     const account = await fetchEncodedAccount(this.rpc, epochPda, {
       commitment: this.commitment,
+      ...(config?.minContextSlot !== undefined
+        ? { minContextSlot: config.minContextSlot }
+        : {}),
     });
     if (!account.exists) return null;
 
@@ -5512,6 +6508,42 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The latest Epoch PDA, for the shared ADR-0034 / ADR-0036 "is the latest
+   * epoch finished?" predicate.
+   *
+   * `create_epoch` always creates `epoch[current_epoch_index]` and then
+   * increments, so the latest epoch is exactly `current_epoch_index - 1`.
+   * Returns `null` when no epoch has ever been created, which is the one case
+   * the program does not require the account for.
+   *
+   * The PDA is returned even when the account does not exist on chain: absence
+   * is how a written-off epoch reads as "finished" (only this program can own
+   * an account at its own PDA), and the program needs the address supplied in
+   * order to observe that absence. Omitting it is refused with
+   * `MissingLatestEpochAccount`, deliberately distinct from
+   * `LatestEpochUnfinished` so a stale client gets "you are missing an account"
+   * rather than a false "the epoch is unfinished".
+   */
+  private async getLatestEpochPdaForGate(): Promise<Address | null> {
+    const [epochSettingsPda] = await getEpochSettingsPDA(this.garProgram);
+    const settingsAccount = await fetchEncodedAccount(
+      this.rpc,
+      epochSettingsPda,
+      { commitment: this.commitment },
+    );
+    if (!settingsAccount.exists) return null;
+    const settings = deserializeEpochSettingsFull(
+      Buffer.from(settingsAccount.data),
+    );
+    if (settings.currentEpochIndex === 0) return null;
+    const [pda] = await getEpochPDA(
+      settings.currentEpochIndex - 1,
+      this.garProgram,
+    );
+    return pda;
+  }
+
+  /**
    * GC a `Leaving`/`Gone` gateway whose leave window has fully elapsed.
    * Closes the Gateway PDA and refunds rent to the caller. Permissionless.
    */
@@ -5550,16 +6582,37 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       { programAddress: this.garProgram },
     );
 
-    let finalIx = ix;
+    // ADR-0036: registry positions are frozen while an epoch is unfinished, so
+    // the program needs the latest Epoch to evaluate that. `finalize_gone` is
+    // the ONLY instruction that moves a slot or shrinks `registry.count`, and
+    // observations and distribution both address gateways BY POSITION — a
+    // swap-remove between an epoch's snapshot and its distribution mis-scores
+    // gateways. On mainnet epoch 542 it paid a gateway all 11 observers had
+    // failed; on epoch 550 a single mid-epoch sweep zeroed the entire epoch's
+    // observations.
+    //
+    // ORDERING: swapped gateway FIRST, latest Epoch second. The post-ADR-0036
+    // program finds both by key, but the pre-ADR-0036 program reads position 0
+    // as the swapped gateway — so this order works against both, which is what
+    // lets the client ship before the program upgrade.
+    const remaining: { address: Address; role: AccountRole }[] = [];
     if (swappedOperator !== null) {
       const [swappedGatewayPda] = await getGatewayPDA(
         address(swappedOperator),
         this.garProgram,
       );
-      finalIx = withRemainingAccounts(ix, [
-        { address: swappedGatewayPda, role: AccountRole.WRITABLE },
-      ]);
+      remaining.push({
+        address: swappedGatewayPda,
+        role: AccountRole.WRITABLE,
+      });
     }
+    const latestEpochPda = await this.getLatestEpochPdaForGate();
+    if (latestEpochPda !== null) {
+      remaining.push({ address: latestEpochPda, role: AccountRole.READONLY });
+    }
+
+    const finalIx =
+      remaining.length > 0 ? withRemainingAccounts(ix, remaining) : ix;
 
     const sig = await this.sendTransaction([finalIx]);
     return { id: sig };

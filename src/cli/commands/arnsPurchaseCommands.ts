@@ -85,6 +85,7 @@ export async function buyRecordCLICommand(
         years,
         fundFrom,
         fromAddress: signerAddress,
+        discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       },
     });
 
@@ -107,6 +108,7 @@ export async function buyRecordCLICommand(
       years,
       fundFrom: fundFromFromOptions(o),
       gatewayAddress: o.gatewayAddress as string | undefined,
+      discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       fundAsOperator: o.fundAsOperator as boolean | undefined,
       withdrawalId: withdrawalIdFromOptions(o as { withdrawalId?: string }),
       sources: coerceFundingPlanSources(
@@ -145,6 +147,7 @@ export async function upgradeRecordCLICommand(
         name,
         fundFrom,
         fromAddress: signerAddress,
+        discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       },
     });
 
@@ -157,6 +160,7 @@ export async function upgradeRecordCLICommand(
     name,
     fundFrom,
     gatewayAddress: o.gatewayAddress as string | undefined,
+    discountGatewayAddress: o.discountGatewayAddress as string | undefined,
     fundAsOperator: o.fundAsOperator as boolean | undefined,
     paidBy: stringArrayFromOptions(o, 'paidBy'),
     referrer,
@@ -194,6 +198,7 @@ export async function extendLeaseCLICommand(
         years,
         fundFrom,
         fromAddress: signerAddress,
+        discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       },
     });
     await assertConfirmationPrompt(
@@ -207,6 +212,7 @@ export async function extendLeaseCLICommand(
       years,
       fundFrom,
       gatewayAddress: o.gatewayAddress as string | undefined,
+      discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       fundAsOperator: o.fundAsOperator as boolean | undefined,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
       referrer,
@@ -241,6 +247,7 @@ export async function increaseUndernameLimitCLICommand(
         quantity: increaseCount,
         fundFrom,
         fromAddress: signerAddress,
+        discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       },
     });
 
@@ -256,6 +263,7 @@ export async function increaseUndernameLimitCLICommand(
       increaseCount,
       fundFrom,
       gatewayAddress: o.gatewayAddress as string | undefined,
+      discountGatewayAddress: o.discountGatewayAddress as string | undefined,
       fundAsOperator: o.fundAsOperator as boolean | undefined,
       paidBy: stringArrayFromOptions(o, 'paidBy'),
       referrer,

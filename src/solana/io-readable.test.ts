@@ -6,7 +6,10 @@ import {
   getArnsRecordEncoder,
   getDemandFactorEncoder,
 } from '@ar.io/solana-contracts/arns';
-import { getArioConfigEncoder } from '@ar.io/solana-contracts/core';
+import {
+  getArioConfigEncoder,
+  getPrimaryNameEncoder,
+} from '@ar.io/solana-contracts/core';
 import { getGatewaySettingsEncoder } from '@ar.io/solana-contracts/gar';
 import { type Address } from '@solana/kit';
 import bs58 from 'bs58';
@@ -14,7 +17,11 @@ import bs58 from 'bs58';
 import { Logger } from '../common/logger.js';
 import { ARIO_CORE_PROGRAM_ID, ARIO_GAR_PROGRAM_ID } from './constants.js';
 import { SolanaARIOReadable } from './io-readable.js';
-import { getArioConfigPDA, getGarSettingsPDA } from './pda.js';
+import {
+  getArioConfigPDA,
+  getArnsRecordPDA,
+  getGarSettingsPDA,
+} from './pda.js';
 
 type Counts = { gma: number; gmaAccts: number };
 
@@ -37,6 +44,10 @@ function mint(n: number): string {
 class TestReadable extends SolanaARIOReadable {
   async readAccumulators(operatorAddresses: string[]) {
     return this.getGatewayAccumulators(operatorAddresses);
+  }
+
+  async readProcessIds(names: string[]) {
+    return this.getArnsRecordProcessIds(names);
   }
 }
 
@@ -671,5 +682,336 @@ describe('SolanaARIOReadable request coalescing', () => {
       2,
       'a miss must not be cached — the next caller re-checks',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPrimaryNames — batched processId enrichment
+//
+// This method used to attach `processId` with ONE `getAccountInfo` per name, a
+// sequential N+1 over every primary name on the cluster. These tests pin the
+// two things that changed: the reads are batched, and the base name is
+// resolved with the contract's own `splitn(2, '_')` rule.
+// ---------------------------------------------------------------------------
+
+function primaryNameBytes(
+  owner: string,
+  name: string,
+  setAt: number,
+): Uint8Array {
+  return getPrimaryNameEncoder().encode({
+    owner: owner as Address,
+    name,
+    setAt,
+    bump: 255,
+    version: VERSION,
+  }) as Uint8Array;
+}
+
+function arnsRecordBytesForAnt(name: string, ant: string): Uint8Array {
+  return getArnsRecordEncoder().encode({
+    nameHash: new Uint8Array(32),
+    owner: OWNER_ADDR,
+    ant: ant as Address,
+    purchaseType: PurchaseType.Permabuy,
+    startTimestamp: 1,
+    endTimestamp: null,
+    undernameLimit: 10,
+    purchasePrice: 0,
+    bump: 255,
+    name,
+    version: VERSION,
+  }) as Uint8Array;
+}
+
+const b64 = (b: Uint8Array) => Buffer.from(b).toString('base64');
+
+/**
+ * Serves primary-name accounts from `getProgramAccounts` and ArNS records from
+ * `getMultipleAccounts`, keyed by the PDA each base name derives to. Counts
+ * every call so a regression back to per-name reads fails loudly.
+ */
+function primaryNameRpc(
+  primaryNames: { owner: string; name: string }[],
+  recordsByPda: Map<string, Uint8Array>,
+  counts: { gpa: number; gma: number; gai: number; gmaAccts: number },
+) {
+  return {
+    getProgramAccounts: () => ({
+      send: async () => {
+        counts.gpa++;
+        return primaryNames.map((pn, i) => ({
+          pubkey: OWNER_ADDR,
+          account: {
+            data: [b64(primaryNameBytes(pn.owner, pn.name, i + 1)), 'base64'],
+          },
+        }));
+      },
+    }),
+    getMultipleAccounts: (addrs: unknown[]) => ({
+      send: async () => {
+        counts.gma++;
+        counts.gmaAccts += addrs.length;
+        return {
+          value: (addrs as string[]).map((a) => {
+            const bytes = recordsByPda.get(String(a));
+            if (!bytes) return null;
+            return {
+              data: [b64(bytes), 'base64'] as readonly [string, string],
+              executable: false,
+              lamports: 1_000_000n,
+              owner: OWNER_ADDR,
+              rentEpoch: 0n,
+              space: BigInt(bytes.length),
+            };
+          }),
+        };
+      },
+    }),
+    // Present so a return to the per-name path is counted, not an error.
+    getAccountInfo: () => ({
+      send: async () => {
+        counts.gai++;
+        return { value: null };
+      },
+    }),
+  };
+}
+
+async function recordPdaFor(name: string): Promise<string> {
+  const readable = new SolanaARIOReadable({
+    rpc: {} as any,
+    logger: new Logger({ level: 'none' }),
+  });
+  return String((await getArnsRecordPDA(name, readable.arnsProgram))[0]);
+}
+
+describe('getPrimaryNames — processId enrichment', () => {
+  it('resolves an undername through the contract split rule, not the first segment', async () => {
+    // `a_b_c` is undername `a` of base `b_c` per `splitn(2, '_')`. The previous
+    // inline rule (`parts.length === 2 ? parts[1] : parts[0]`) returned `a`,
+    // so such a name silently failed its lookup and vanished from the results.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('alice'), arnsRecordBytesForAnt('alice', mint(1))],
+      [await recordPdaFor('bob'), arnsRecordBytesForAnt('bob', mint(2))],
+      [await recordPdaFor('b_c'), arnsRecordBytesForAnt('b_c', mint(3))],
+    ]);
+
+    const readable = new SolanaARIOReadable({
+      rpc: primaryNameRpc(
+        [
+          { owner: OWNER_ADDR, name: 'alice' },
+          { owner: OWNER_ADDR, name: 'sub_bob' },
+          { owner: OWNER_ADDR, name: 'a_b_c' },
+          { owner: OWNER_ADDR, name: 'ghost' },
+        ],
+        recordsByPda,
+        counts,
+      ) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 100 });
+    const byName = new Map(items.map((i) => [i.name, i.processId]));
+
+    assert.equal(byName.get('alice'), mint(1), 'apex name resolves itself');
+    assert.equal(byName.get('sub_bob'), mint(2), 'undername resolves its base');
+    assert.equal(
+      byName.get('a_b_c'),
+      mint(3),
+      'a_b_c must resolve through b_c, not through a',
+    );
+    assert.equal(
+      byName.has('ghost'),
+      false,
+      'a name whose ArNS record is gone is skipped, as before',
+    );
+  });
+
+  it('getPrimaryName (singular) agrees with getPrimaryNames on the split rule', async () => {
+    // The two public readers must not disagree about which ArnsRecord a name
+    // resolves through. Both go via the contract's `splitn(2, '_')`, so
+    // `a_b_c` resolves through `b_c` in each.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('b_c'), arnsRecordBytesForAnt('b_c', mint(3))],
+    ]);
+    const pnBytes = primaryNameBytes(OWNER_ADDR, 'a_b_c', 1);
+
+    const readable = new SolanaARIOReadable({
+      rpc: {
+        // Serves the PrimaryName account for the by-address path...
+        getAccountInfo: (addr: unknown) => ({
+          send: async () => {
+            counts.gai++;
+            const rec = recordsByPda.get(String(addr));
+            const bytes = rec ?? pnBytes;
+            return {
+              value: {
+                data: [b64(bytes), 'base64'] as readonly [string, string],
+                executable: false,
+                lamports: 1_000_000n,
+                owner: OWNER_ADDR,
+                rentEpoch: 0n,
+                space: BigInt(bytes.length),
+              },
+            };
+          },
+        }),
+      } as never,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const single = await readable.getPrimaryName({ address: OWNER_ADDR });
+
+    assert.equal(single.name, 'a_b_c');
+    assert.equal(
+      single.processId,
+      mint(3),
+      'a_b_c must resolve through b_c here too, not through a',
+    );
+  });
+
+  it('batches the enrichment instead of one getAccountInfo per name', async () => {
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const primaryNames = Array.from({ length: 250 }, (_, i) => ({
+      owner: OWNER_ADDR,
+      name: `name${i}`,
+    }));
+
+    const readable = new SolanaARIOReadable({
+      rpc: primaryNameRpc(primaryNames, new Map(), counts) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    await readable.getPrimaryNames({ limit: 1000 });
+
+    assert.equal(
+      counts.gai,
+      0,
+      'no per-name getAccountInfo — that was the bug',
+    );
+    assert.equal(
+      counts.gma,
+      3,
+      '250 names should batch into 3 getMultipleAccounts',
+    );
+    assert.equal(counts.gmaAccts, 250, 'every name is still looked up');
+    assert.equal(counts.gpa, 1, 'still exactly one program scan');
+  });
+
+  it('skips an account that carries the discriminator but will not decode', async () => {
+    // The scan filters on a discriminator, not on a decodable layout, so a
+    // stray or stale account can come back. It is skipped, not thrown — the
+    // per-name loop this replaced swallowed exactly the same case.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const good = primaryNameBytes(OWNER_ADDR, 'alice', 1);
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('alice'), arnsRecordBytesForAnt('alice', mint(1))],
+    ]);
+
+    const readable = new SolanaARIOReadable({
+      rpc: {
+        getProgramAccounts: () => ({
+          send: async () => {
+            counts.gpa++;
+            return [
+              { pubkey: OWNER_ADDR, account: { data: [b64(good), 'base64'] } },
+              // Not a PrimaryName: too short to decode.
+              {
+                pubkey: OWNER_ADDR,
+                account: { data: [b64(new Uint8Array(4)), 'base64'] },
+              },
+            ];
+          },
+        }),
+        getMultipleAccounts: (addrs: unknown[]) => ({
+          send: async () => {
+            counts.gma++;
+            counts.gmaAccts += addrs.length;
+            return {
+              value: (addrs as string[]).map((a) => {
+                const bytes = recordsByPda.get(String(a));
+                if (!bytes) return null;
+                return {
+                  data: [b64(bytes), 'base64'] as readonly [string, string],
+                  executable: false,
+                  lamports: 1_000_000n,
+                  owner: OWNER_ADDR,
+                  rentEpoch: 0n,
+                  space: BigInt(bytes.length),
+                };
+              }),
+            };
+          },
+        }),
+      } as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 100 });
+
+    assert.equal(items.length, 1, 'the undecodable account is dropped');
+    assert.equal(items[0].name, 'alice');
+    assert.equal(
+      counts.gmaAccts,
+      1,
+      'and it is not looked up — only the decodable name is enriched',
+    );
+  });
+
+  it('treats a name whose ArNS record will not decode as orphaned', async () => {
+    // Symmetric to the account-side skip: a record that comes back but cannot
+    // be deserialized must not take the whole call down, and must not yield a
+    // half-built PrimaryName either.
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const recordsByPda = new Map<string, Uint8Array>([
+      [await recordPdaFor('alice'), arnsRecordBytesForAnt('alice', mint(1))],
+      // Present on chain, but not a decodable ArnsRecord.
+      [await recordPdaFor('bob'), new Uint8Array(4)],
+    ]);
+
+    const readable = new SolanaARIOReadable({
+      rpc: primaryNameRpc(
+        [
+          { owner: OWNER_ADDR, name: 'alice' },
+          { owner: OWNER_ADDR, name: 'bob' },
+        ],
+        recordsByPda,
+        counts,
+      ) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 100 });
+
+    assert.deepEqual(
+      items.map((i) => i.name),
+      ['alice'],
+      'bob is dropped, alice is unaffected',
+    );
+  });
+
+  it('getArnsRecordProcessIds makes no request for an empty name list', async () => {
+    const counts: Counts = { gma: 0, gmaAccts: 0 };
+    const readable = makeReadable(counts);
+
+    assert.deepEqual(await readable.readProcessIds([]), new Map());
+    assert.equal(counts.gma, 0, 'no names, no round trip');
+  });
+
+  it('does not issue a batch read when there are no primary names', async () => {
+    const counts = { gpa: 0, gma: 0, gai: 0, gmaAccts: 0 };
+    const readable = new SolanaARIOReadable({
+      rpc: primaryNameRpc([], new Map(), counts) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+    const { items } = await readable.getPrimaryNames({ limit: 10 });
+
+    assert.deepEqual(items, []);
+    assert.equal(counts.gma, 0, 'nothing to enrich, nothing to fetch');
+    assert.equal(counts.gai, 0);
   });
 });
