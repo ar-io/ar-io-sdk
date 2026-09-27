@@ -3837,6 +3837,84 @@ export class SolanaARIOReadable {
   }
 
   /**
+   * Enumerate delegations a cranker can move into their delegate's withdrawal
+   * vault, one entry per Delegation PDA:
+   *
+   * - `leaving`: the gateway is `Leaving`. Lua's `leaveNetwork` kicked every
+   *   delegate to a vault at once; on Solana each is claimed individually via
+   *   {@link SolanaARIOWriteable.claimDelegateFromLeavingGateway}. Until they
+   *   are, the stake earns nothing and the gateway can't be finalized
+   *   (`finalize_gone` requires `total_delegated_stake == 0`).
+   * - `disabled`: the gateway is `Joined` with delegation disabled (WP §6.3),
+   *   claimed via {@link SolanaARIOWriteable.claimDelegateFromDisabledGateway}.
+   *
+   * Only rows with a raw `amount > 0` are returned: both instructions reject a
+   * zero-amount delegation in their account constraints, before settling
+   * pending rewards. `gateway` is the gateway's operator address, which is how
+   * both the Delegation PDA seeds and the claim methods identify it.
+   */
+  async getClaimableDelegations(): Promise<
+    Array<{
+      gateway: Address;
+      delegator: Address;
+      amount: bigint;
+      reason: 'leaving' | 'disabled';
+    }>
+  > {
+    const gatewayAccounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      GATEWAY_DISCRIMINATOR,
+    );
+    const gatewayDecoder = getGatewayDecoder();
+    const reasonByOperator = new Map<string, 'leaving' | 'disabled'>();
+    for (const { data } of gatewayAccounts) {
+      try {
+        const g = gatewayDecoder.decode(data);
+        if (g.status === GatewayStatus.Leaving) {
+          reasonByOperator.set(g.operator, 'leaving');
+        } else if (
+          g.status === GatewayStatus.Joined &&
+          !g.settings.allowDelegatedStaking
+        ) {
+          reasonByOperator.set(g.operator, 'disabled');
+        }
+      } catch {
+        // skip malformed
+      }
+    }
+    if (reasonByOperator.size === 0) return [];
+
+    const delegationAccounts = await this.getAccountsByDiscriminator(
+      this.garProgram,
+      DELEGATION_DISCRIMINATOR,
+    );
+    const delegationDecoder = getDelegationDecoder();
+    const out: Array<{
+      gateway: Address;
+      delegator: Address;
+      amount: bigint;
+      reason: 'leaving' | 'disabled';
+    }> = [];
+    for (const { data } of delegationAccounts) {
+      try {
+        const d = delegationDecoder.decode(data);
+        if (d.amount === 0n) continue;
+        const reason = reasonByOperator.get(d.gateway);
+        if (reason === undefined) continue;
+        out.push({
+          gateway: d.gateway,
+          delegator: d.delegator,
+          amount: d.amount,
+          reason,
+        });
+      } catch {
+        // skip malformed
+      }
+    }
+    return out;
+  }
+
+  /**
    * Enumerate Delegation PDAs with `amount == 0`. Eligible for
    * `closeEmptyDelegation` (rent refund to the original delegator).
    */

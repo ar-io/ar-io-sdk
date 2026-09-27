@@ -753,6 +753,8 @@ export type CrankAction =
   | 'prune_name_to_returned'
   | 'prune_returned_names'
   | 'prune_expired_names'
+  | 'finalize_gone'
+  | 'claim_delegate'
   | 'close_observation'
   | 'close'
   | 'idle';
@@ -886,6 +888,47 @@ export interface CrankEpochStepOptions {
    * budget (the AR.IO cranker allows 50 across all six phases).
    */
   pruneToReturnedTxsPerCycle?: number;
+  /**
+   * Finalize departed gateways (`finalize_gone`) between one epoch's
+   * distribution and the next epoch's creation. Default true.
+   *
+   * ADR-0036 freezes registry positions while an epoch is unfinished, so this
+   * is the ONLY window in which `finalize_gone` succeeds: before creation the
+   * latest epoch is distributed, after it the new epoch is not. The step runs
+   * first in the post-distribution tail and never blocks creation — each
+   * gateway is tried at most twice per window, and failures are reported in
+   * `partialFailureReason` rather than thrown. Rent refunds to the cranker.
+   */
+  enableFinalizeGone?: boolean;
+  /** `finalize_gone` transactions per crank step. Default 10. */
+  finalizeGoneTxsPerStep?: number;
+  /**
+   * Most gateways to finalize in one inter-epoch window. Default 30. Bounds how
+   * long a backlog can delay `create_epoch`; the rest wait for the next window.
+   */
+  finalizeGoneMaxPerEpoch?: number;
+  /**
+   * Move delegations out of leaving gateways and gateways that disabled
+   * delegation into their delegates' withdrawal vaults
+   * (`claim_delegate_from_leaving_gateway` /
+   * `claim_delegate_from_disabled_gateway`). Default true. Runs during the
+   * observation window only, so it never delays `create_epoch`. Scan cadence
+   * follows {@link pruneScanIntervalMs}.
+   *
+   * Each claim creates a Withdrawal account whose rent the CRANKER pays and the
+   * delegate recovers when it is closed — about 0.0029 SOL at most per claim.
+   * See {@link delegateSweepMinPayerLamports}.
+   */
+  enableDelegateSweep?: boolean;
+  /** Claim transactions per scan. Default 10. */
+  delegateSweepTxsPerCycle?: number;
+  /**
+   * Skip the delegate sweep while the signer holds fewer lamports than this, so
+   * paying delegates' rent can never starve `create_epoch` (which fronts the
+   * new Epoch's rent). Default 500_000_000 (0.5 SOL). When the floor stops the
+   * sweep, the step reports it in `partialFailureReason`.
+   */
+  delegateSweepMinPayerLamports?: number | bigint;
   /** Unix seconds; defaults to the wall clock. Injectable for testing. */
   now?: number;
 }
@@ -4084,42 +4127,53 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   // Claim delegation from leaving gateway (ario-gar)
   // =========================================
 
-  /** Claim delegated stake from a gateway that is leaving the network. */
+  /**
+   * Claim a delegate's stake out of a gateway that is leaving the network,
+   * moving it into the delegate's own withdrawal vault. Lua's `leaveNetwork`
+   * kicked every delegate at once; on Solana the instruction is permissionless
+   * so a cranker can claim on each delegate's behalf, and `finalize_gone` can't
+   * close the gateway until they all are.
+   *
+   * @param params.gatewayAddress  The leaving gateway (its operator address).
+   * @param params.delegatorAddress  The delegate to claim for. Defaults to the
+   *   signer (self-claim). Pass another address to crank on a delegate's behalf;
+   *   the signer covers rent (`payer`) but stake still routes to the delegate's
+   *   own vault (the delegator key is bound by the delegation PDA seeds).
+   */
   async claimDelegateFromLeavingGateway(
-    params: { gatewayAddress: string },
+    params: { gatewayAddress: string; delegatorAddress?: string },
     _options?: WriteOptions,
   ): Promise<MessageResult> {
     const gateway = address(params.gatewayAddress);
+    const delegator = params.delegatorAddress
+      ? address(params.delegatorAddress)
+      : this.signer.address;
     const [gatewayPda] = await getGatewayPDA(gateway, this.garProgram);
     const [delegationPda] = await getDelegationPDA(
       gateway,
-      this.signer.address,
+      delegator,
       this.garProgram,
     );
-    const nextId = await this.getNextWithdrawalId(this.signer.address);
+    // Withdrawal counter + vault are PDA-seeded by the delegator, not the payer.
+    const nextId = await this.getNextWithdrawalId(delegator);
     const [withdrawalPda] = await getWithdrawalPDA(
-      this.signer.address,
+      delegator,
       nextId,
       this.garProgram,
     );
 
-    // The on-chain handler is permissionless since `af38a40` (delegator +
-    // payer split — anyone can crank). The IDL exposes both fields:
-    // `delegator: Address` (no signature, just the seeds-derivation key)
-    // and `payer: Signer` (covers rent on the init_if_needed withdrawal
-    // counter + the new withdrawal account). The SDK's primary self-
-    // claim path passes the signer for both roles; cranker callers can
-    // pass distinct addresses by adding a `payer?` param to this method
-    // (out of scope here — feature gap; tracked in
-    // docs/E2E_TEST_COVERAGE_PLAN.md Phase 3.3).
+    // `settings` MUST come from withGarDefaults: the generated builder derives
+    // it under the placeholder program id, which is initialized on no cluster.
     const ix = await getClaimDelegateFromLeavingGatewayInstructionAsync(
-      {
+      await this.withGarDefaults({
         gateway: gatewayPda,
         delegation: delegationPda,
         withdrawal: withdrawalPda,
-        delegator: this.signer.address,
+        // `delegator` is an unsigned seeds-derivation key; `payer` (the signer)
+        // covers rent on the init_if_needed counter + the new withdrawal.
+        delegator,
         payer: this.signer,
-      },
+      }),
       { programAddress: this.garProgram },
     );
 
@@ -4169,8 +4223,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       this.garProgram,
     );
 
+    // `settings` MUST come from withGarDefaults: the generated builder derives
+    // it under the placeholder program id, which is initialized on no cluster.
     const ix = await getClaimDelegateFromDisabledGatewayInstructionAsync(
-      {
+      await this.withGarDefaults({
         gateway: gatewayPda,
         delegation: delegationPda,
         withdrawal: withdrawalPda,
@@ -4178,7 +4234,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         // covers rent on the init_if_needed counter + the new withdrawal.
         delegator,
         payer: this.signer,
-      },
+      }),
       { programAddress: this.garProgram },
     );
 
@@ -5746,8 +5802,15 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * `MAX_TX_ACCOUNT_LOCKS = 64` on large registries — and it re-predicts and
    * retries once on `InvalidGatewayAccount`.
    *
-   * Errors propagate to the caller (classify/retry as you see fit); the only
-   * internally-handled error is the prescribe `InvalidGatewayAccount` retry.
+   * It also owns the gateway lifecycle the protocol leaves to cranks: during
+   * the observation window it claims delegations out of leaving and
+   * delegation-disabled gateways, and between distribution and `create_epoch`
+   * (the only window ADR-0036 allows) it finalizes departed gateways.
+   *
+   * Errors propagate to the caller (classify/retry as you see fit). Handled
+   * internally: the prescribe `InvalidGatewayAccount` retry, and failed
+   * `finalize_gone` / delegate claims, which are reported in
+   * `partialFailureReason` so they can never hold back `create_epoch`.
    */
   async crankEpochStep(
     opts: CrankEpochStepOptions = {},
@@ -5879,6 +5942,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         expired: enablePruneExpired,
       });
       if (pruned) return pruned;
+      if (opts.enableDelegateSweep ?? true) {
+        const swept = await this.maybeClaimDelegatesStep(opts);
+        if (swept) return swept;
+      }
       return { action: 'idle', reason: 'waiting_for_observations' };
     }
 
@@ -5927,6 +5994,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           total: epoch.activeGatewayCount,
         },
       };
+    }
+
+    // Finalize departed gateways. ADR-0036 lets `finalize_gone` succeed only
+    // while the latest epoch is distributed, and an epoch ends exactly when the
+    // next one is due, so the window is the gap between here and `create_epoch`
+    // below — there is no idle time in which a separate cleanup pass could do
+    // it. Go first in the tail to keep the race with other creators short.
+    if (opts.enableFinalizeGone ?? true) {
+      const finalized = await this.maybeFinalizeGoneStep(
+        opts,
+        targetEpochIndex,
+        now,
+      );
+      if (finalized) return finalized;
     }
 
     // Close a fully-distributed epoch past retention (GAR-006).
@@ -6058,6 +6139,166 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     if (periodForNow <= state.currentPeriod) return null; // same period — no-op
     const { id } = await this.updateDemandFactor();
     return { action: 'update_demand_factor', txId: id };
+  }
+
+  /**
+   * The departed gateways found for one inter-epoch window, keyed by the
+   * distributed epoch. Scanned once per window; each operator is tried at most
+   * twice so an unfinalizable gateway can't hold `create_epoch` back.
+   */
+  private finalizeGoneWindow: {
+    epochIndex: number;
+    pending: string[];
+    attempts: Map<string, number>;
+  } | null = null;
+
+  /**
+   * Up to {@link CrankEpochStepOptions.finalizeGoneTxsPerStep} `finalize_gone`
+   * transactions for the window after `epochIndex` was distributed, or `null`
+   * when none are left. Never throws for a failed finalize: the gateway is
+   * retried once and then left for the next window, and the failure is
+   * reported in `partialFailureReason`. A throw here would end the caller's
+   * drain before `create_epoch`, turning one bad gateway into a stalled epoch.
+   */
+  private async maybeFinalizeGoneStep(
+    opts: CrankEpochStepOptions,
+    epochIndex: number,
+    now: number,
+  ): Promise<CrankEpochStepResult | null> {
+    if (this.finalizeGoneWindow?.epochIndex !== epochIndex) {
+      const maxPerEpoch = Math.max(0, opts.finalizeGoneMaxPerEpoch ?? 30);
+      let found: Array<{ operator: Address }> = [];
+      try {
+        found = await this.getFinalizableGoneGateways(now);
+      } catch {
+        // Discovery failed: skip this window rather than block create_epoch.
+      }
+      this.finalizeGoneWindow = {
+        epochIndex,
+        pending: found.slice(0, maxPerEpoch).map((g) => g.operator as string),
+        attempts: new Map(),
+      };
+    }
+    const window = this.finalizeGoneWindow;
+    if (window.pending.length === 0) return null;
+
+    const perStep = Math.max(1, opts.finalizeGoneTxsPerStep ?? 10);
+    const batch = window.pending.splice(0, perStep);
+    const retry: string[] = [];
+    let finalized = 0;
+    let lastTxId: string | undefined;
+    let partialFailureReason: string | undefined;
+    for (const operator of batch) {
+      try {
+        const { id } = await this.finalizeGone({ gateway: operator });
+        lastTxId = id;
+        finalized++;
+      } catch (error) {
+        const attempts = (window.attempts.get(operator) ?? 0) + 1;
+        window.attempts.set(operator, attempts);
+        if (attempts < 2) retry.push(operator);
+        partialFailureReason = `finalize_gone ${operator}: ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+      }
+    }
+    window.pending.push(...retry);
+
+    return {
+      action: 'finalize_gone',
+      epochIndex,
+      ...(lastTxId !== undefined ? { txId: lastTxId } : {}),
+      progress: { index: finalized, total: finalized + window.pending.length },
+      ...(partialFailureReason !== undefined ? { partialFailureReason } : {}),
+    };
+  }
+
+  /** Wall-clock (ms) of the last delegate-sweep scan. */
+  private lastDelegateSweepScanMs = 0;
+
+  /**
+   * `${gateway}/${delegator}` claims that failed on an earlier scan. They are
+   * tried after every claim that hasn't failed, so a run of permanently
+   * failing claims can't occupy the whole per-scan budget and starve the rest.
+   */
+  private failedDelegateClaims = new Set<string>();
+
+  /** The signer's lamport balance. Overridable in tests. */
+  protected async getPayerLamports(): Promise<bigint> {
+    const { value } = await this.rpc
+      .getBalance(this.signer.address, { commitment: this.commitment })
+      .send();
+    return BigInt(value);
+  }
+
+  /**
+   * Up to {@link CrankEpochStepOptions.delegateSweepTxsPerCycle} claims moving
+   * delegations out of leaving or delegation-disabled gateways, or `null` when
+   * none are due or the scan is throttled. A failed claim doesn't stop the
+   * rest; it stays claimable and is retried after the claims that haven't
+   * failed, so failures can't starve the backlog. Stops before any
+   * claim that would start below
+   * {@link CrankEpochStepOptions.delegateSweepMinPayerLamports}.
+   */
+  private async maybeClaimDelegatesStep(
+    opts: CrankEpochStepOptions,
+  ): Promise<CrankEpochStepResult | null> {
+    const scanInterval = opts.pruneScanIntervalMs ?? 60_000;
+    const wallNow = Date.now();
+    if (wallNow - this.lastDelegateSweepScanMs < scanInterval) return null;
+    this.lastDelegateSweepScanMs = wallNow;
+
+    const claimable = await this.getClaimableDelegations();
+    const key = (c: { gateway: Address; delegator: Address }) =>
+      `${c.gateway}/${c.delegator}`;
+    // Forget failures that are no longer claimable, so the set stays bounded.
+    const live = new Set(claimable.map(key));
+    for (const k of this.failedDelegateClaims) {
+      if (!live.has(k)) this.failedDelegateClaims.delete(k);
+    }
+    if (claimable.length === 0) return null;
+    const ordered = [
+      ...claimable.filter((c) => !this.failedDelegateClaims.has(key(c))),
+      ...claimable.filter((c) => this.failedDelegateClaims.has(key(c))),
+    ];
+
+    const floor = BigInt(opts.delegateSweepMinPayerLamports ?? 500_000_000);
+    const budget = Math.max(1, opts.delegateSweepTxsPerCycle ?? 10);
+    let claimed = 0;
+    let lastTxId: string | undefined;
+    let partialFailureReason: string | undefined;
+    for (const c of ordered.slice(0, budget)) {
+      const lamports = await this.getPayerLamports();
+      if (lamports < floor) {
+        partialFailureReason = `delegate sweep paused: signer balance ${lamports} lamports is below delegateSweepMinPayerLamports ${floor}`;
+        break;
+      }
+      const params = {
+        gatewayAddress: c.gateway as string,
+        delegatorAddress: c.delegator as string,
+      };
+      try {
+        const { id } =
+          c.reason === 'leaving'
+            ? await this.claimDelegateFromLeavingGateway(params)
+            : await this.claimDelegateFromDisabledGateway(params);
+        lastTxId = id;
+        claimed++;
+        this.failedDelegateClaims.delete(key(c));
+      } catch (error) {
+        this.failedDelegateClaims.add(key(c));
+        partialFailureReason = `claim ${c.reason} ${c.gateway}/${c.delegator}: ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+      }
+    }
+
+    return {
+      action: 'claim_delegate',
+      ...(lastTxId !== undefined ? { txId: lastTxId } : {}),
+      progress: { index: claimed, total: claimable.length },
+      ...(partialFailureReason !== undefined ? { partialFailureReason } : {}),
+    };
   }
 
   /** Wall-clock (ms) of the last returned-name prune scan; throttles the

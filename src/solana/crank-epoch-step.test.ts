@@ -267,6 +267,66 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`pruneExpired:${p.arnsRecords.length}`);
     return { id: 'tx-prune-expired' };
   }
+
+  // --- Gateway lifecycle stubs (finalize_gone + delegate claims). Both default
+  // empty so every pre-existing test keeps its old behaviour. ---
+  finalizable: Address[] = [];
+  finalizableError: Error | null = null;
+  /** Operators whose finalize_gone always fails. */
+  finalizeFails = new Set<string>();
+  async getFinalizableGoneGateways(
+    _now: number,
+  ): Promise<Array<{ pubkey: Address; operator: Address }>> {
+    this.calls.push('getFinalizable');
+    if (this.finalizableError) throw this.finalizableError;
+    return this.finalizable.map((operator) => ({ pubkey: operator, operator }));
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async finalizeGone(p: any): Promise<any> {
+    this.calls.push(`finalize:${p.gateway}`);
+    if (this.finalizeFails.has(p.gateway)) {
+      throw new Error('LatestEpochUnfinished');
+    }
+    return { id: `tx-finalize-${p.gateway}` };
+  }
+
+  claimable: Array<{
+    gateway: Address;
+    delegator: Address;
+    amount: bigint;
+    reason: 'leaving' | 'disabled';
+  }> = [];
+  /** `${gateway}/${delegator}` pairs whose claim always fails. */
+  claimFails = new Set<string>();
+  payerLamports = 10_000_000_000n;
+  /** Lamports each successful claim costs the payer (Withdrawal rent). */
+  claimCostLamports = 0n;
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async getClaimableDelegations(): Promise<any> {
+    this.calls.push('getClaimable');
+    return this.claimable;
+  }
+  protected async getPayerLamports(): Promise<bigint> {
+    return this.payerLamports;
+  }
+  private claim(
+    kind: string,
+    p: { gatewayAddress: string; delegatorAddress?: string },
+  ) {
+    const key = `${p.gatewayAddress}/${p.delegatorAddress}`;
+    this.calls.push(`${kind}:${key}`);
+    if (this.claimFails.has(key)) throw new Error(`claim failed ${key}`);
+    this.payerLamports -= this.claimCostLamports;
+    return { id: `tx-${kind}` };
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async claimDelegateFromLeavingGateway(p: any): Promise<any> {
+    return this.claim('claimLeaving', p);
+  }
+  // biome-ignore lint/suspicious/noExplicitAny: test stubs
+  async claimDelegateFromDisabledGateway(p: any): Promise<any> {
+    return this.claim('claimDisabled', p);
+  }
 }
 
 const baseSettings: Settings = {
@@ -1425,5 +1485,289 @@ describe('D4a — a distribute/tally that advances nothing must fail loudly', ()
     c.epochs[0] = { ...stuck };
     await c.crankEpochStep({ now: 2000 });
     assert.equal(sawCap, 647);
+  });
+});
+
+describe('crankEpochStep — finalize departed gateways between epochs (ADR-0036)', () => {
+  // Epoch 2 is distributed and epoch 3 is due (nextEpochStart = 1300): the only
+  // window in which finalize_gone can succeed.
+  function inWindow(): TestCranker {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1300 };
+    return c;
+  }
+  const count = (c: TestCranker, prefix: string) =>
+    c.calls.filter((x) => x.startsWith(prefix)).length;
+
+  it('finalizes eligible gateways after distribution, BEFORE creating the next epoch', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5), pk(6)];
+    const first = await c.crankEpochStep({ now: 1400 });
+    assert.equal(first.action, 'finalize_gone');
+    assert.equal(first.epochIndex, 2);
+    assert.deepEqual(first.progress, { index: 2, total: 2 });
+    assert.equal(first.partialFailureReason, undefined);
+    assert.ok(
+      !c.calls.includes('createEpoch'),
+      'create must wait for finalize',
+    );
+
+    const second = await c.crankEpochStep({ now: 1400 });
+    assert.equal(second.action, 'create');
+    assert.equal(count(c, 'finalize:'), 2);
+    assert.ok(
+      c.calls.indexOf('createEpoch') > c.calls.lastIndexOf(`finalize:${pk(6)}`),
+    );
+  });
+
+  it('an always-failing gateway is tried twice, then the next epoch is still created', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5)];
+    c.finalizeFails.add(pk(5) as string);
+    const results = [];
+    for (let i = 0; i < 6; i++) {
+      const r = await c.crankEpochStep({ now: 1400 });
+      results.push(r);
+      if (r.action === 'create') break;
+    }
+    assert.deepEqual(
+      results.map((r) => r.action),
+      ['finalize_gone', 'finalize_gone', 'create'],
+    );
+    assert.equal(count(c, 'finalize:'), 2);
+    assert.match(
+      results[0].partialFailureReason ?? '',
+      /LatestEpochUnfinished/,
+    );
+    // Consecutive results must differ so a caller's no-progress guard doesn't
+    // end its drain before create.
+    assert.notDeepEqual(results[0].progress, results[1].progress);
+  });
+
+  it('a failure does not stop the rest of the batch', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5), pk(6), pk(7)];
+    c.finalizeFails.add(pk(6) as string);
+    const r = await c.crankEpochStep({ now: 1400 });
+    assert.equal(r.action, 'finalize_gone');
+    assert.equal(r.txId, `tx-finalize-${pk(7)}`);
+    assert.deepEqual(r.progress, { index: 2, total: 3 });
+    assert.ok(r.partialFailureReason);
+  });
+
+  it('never finalizes during the observation window or before distribution completes', async () => {
+    const live = new TestCranker();
+    live.settings = { ...baseSettings, currentEpochIndex: 1 };
+    live.epochs[0] = {
+      ...liveEpoch,
+      rewardsDistributed: 0,
+      endTimestamp: 9999,
+    };
+    live.finalizable = [pk(5)];
+    assert.equal((await live.crankEpochStep({ now: 5000 })).action, 'idle');
+
+    const undistributed = new TestCranker();
+    undistributed.settings = { ...baseSettings, currentEpochIndex: 1 };
+    undistributed.epochs[0] = {
+      ...liveEpoch,
+      rewardsDistributed: 0,
+      endTimestamp: 1000,
+    };
+    undistributed.finalizable = [pk(5)];
+    assert.equal(
+      (await undistributed.crankEpochStep({ now: 5000 })).action,
+      'distribute',
+    );
+
+    for (const c of [live, undistributed]) {
+      assert.equal(count(c, 'getFinalizable'), 0);
+      assert.equal(count(c, 'finalize:'), 0);
+    }
+  });
+
+  it('scans once per window, batches per step, and caps the window at finalizeGoneMaxPerEpoch', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5), pk(6), pk(7), pk(8), pk(9)];
+    const opts = {
+      now: 1400,
+      finalizeGoneTxsPerStep: 2,
+      finalizeGoneMaxPerEpoch: 3,
+    };
+    const a = await c.crankEpochStep(opts);
+    const b = await c.crankEpochStep(opts);
+    const d = await c.crankEpochStep(opts);
+    assert.deepEqual(a.progress, { index: 2, total: 3 });
+    assert.deepEqual(b.progress, { index: 1, total: 1 });
+    assert.equal(d.action, 'create');
+    assert.equal(count(c, 'getFinalizable'), 1);
+    assert.equal(count(c, 'finalize:'), 3);
+  });
+
+  it('rescans in the next window', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5)];
+    await c.crankEpochStep({ now: 1400 }); // finalize
+    await c.crankEpochStep({ now: 1400 }); // create 3
+    c.settings = { ...c.settings, currentEpochIndex: 4 };
+    c.epochs[3] = { ...liveEpoch, endTimestamp: 1400 };
+    c.finalizable = [pk(6)];
+    const r = await c.crankEpochStep({ now: 1500 });
+    assert.equal(r.action, 'finalize_gone');
+    assert.equal(r.epochIndex, 3);
+    assert.ok(c.calls.includes(`finalize:${pk(6)}`));
+    assert.equal(count(c, 'getFinalizable'), 2);
+  });
+
+  it('a discovery failure does not block creating the next epoch', async () => {
+    const c = inWindow();
+    c.finalizableError = new Error('429');
+    assert.equal((await c.crankEpochStep({ now: 1400 })).action, 'create');
+  });
+
+  it('enableFinalizeGone:false never finalizes', async () => {
+    const c = inWindow();
+    c.finalizable = [pk(5)];
+    const r = await c.crankEpochStep({ now: 1400, enableFinalizeGone: false });
+    assert.equal(r.action, 'create');
+    assert.equal(count(c, 'getFinalizable'), 0);
+  });
+});
+
+describe('crankEpochStep — claim delegations out of leaving / disabled gateways', () => {
+  function observing(): TestCranker {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 1 };
+    c.epochs[0] = { ...liveEpoch, rewardsDistributed: 0, endTimestamp: 9999 };
+    return c;
+  }
+  const leaving = {
+    gateway: pk(5),
+    delegator: pk(6),
+    amount: 10n,
+    reason: 'leaving' as const,
+  };
+  const disabled = {
+    gateway: pk(7),
+    delegator: pk(8),
+    amount: 20n,
+    reason: 'disabled' as const,
+  };
+
+  it("claims each delegation on the delegate's behalf with the matching instruction", async () => {
+    const c = observing();
+    c.claimable = [leaving, disabled];
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'claim_delegate');
+    assert.deepEqual(r.progress, { index: 2, total: 2 });
+    assert.equal(r.partialFailureReason, undefined);
+    assert.ok(c.calls.includes(`claimLeaving:${pk(5)}/${pk(6)}`));
+    assert.ok(c.calls.includes(`claimDisabled:${pk(7)}/${pk(8)}`));
+    assert.ok(!c.calls.includes(`claimDisabled:${pk(5)}/${pk(6)}`));
+    assert.ok(!c.calls.includes(`claimLeaving:${pk(7)}/${pk(8)}`));
+  });
+
+  it('a failing claim does not stop the rest, and is reported', async () => {
+    const c = observing();
+    c.claimable = [leaving, disabled];
+    c.claimFails.add(`${pk(5)}/${pk(6)}`);
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'claim_delegate');
+    assert.deepEqual(r.progress, { index: 1, total: 2 });
+    assert.match(r.partialFailureReason ?? '', /claim leaving/);
+  });
+
+  it('permanently failing claims cannot starve the rest of the backlog', async () => {
+    const c = observing();
+    // 3 failing claims fill a budget of 3; the 4th is healthy.
+    const failing = [pk(20), pk(21), pk(22)].map((d) => ({
+      ...leaving,
+      delegator: d,
+    }));
+    const healthy = { ...leaving, delegator: pk(23) };
+    c.claimable = [...failing, healthy];
+    for (const f of failing) c.claimFails.add(`${f.gateway}/${f.delegator}`);
+    const opts = {
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      delegateSweepTxsPerCycle: 3,
+    };
+    const first = await c.crankEpochStep(opts);
+    assert.deepEqual(first.progress, { index: 0, total: 4 });
+    const second = await c.crankEpochStep(opts);
+    assert.equal(second.progress?.index, 1);
+    assert.ok(c.calls.includes(`claimLeaving:${pk(5)}/${pk(23)}`));
+  });
+
+  it('checks the payer floor before EVERY claim and reports the pause', async () => {
+    const c = observing();
+    c.claimable = [leaving, disabled, { ...leaving, delegator: pk(9) }];
+    c.payerLamports = 1_000n;
+    c.claimCostLamports = 300n;
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      delegateSweepMinPayerLamports: 500n,
+    });
+    // 1000 → 700 → 400: the third claim would start below the floor.
+    assert.deepEqual(r.progress, { index: 2, total: 3 });
+    assert.match(
+      r.partialFailureReason ?? '',
+      /below delegateSweepMinPayerLamports/,
+    );
+  });
+
+  it('with the default floor, a signer under 0.5 SOL claims nothing', async () => {
+    const c = observing();
+    c.claimable = [leaving];
+    c.payerLamports = 499_999_999n;
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.deepEqual(r.progress, { index: 0, total: 1 });
+    assert.equal(c.calls.filter((x) => x.startsWith('claim')).length, 0);
+  });
+
+  it('is throttled by pruneScanIntervalMs, so a paused sweep lets the step go idle', async () => {
+    const c = observing();
+    c.claimable = [leaving];
+    c.payerLamports = 0n;
+    const first = await c.crankEpochStep({ now: 5000 });
+    assert.equal(first.action, 'claim_delegate');
+    const second = await c.crankEpochStep({ now: 5000 });
+    assert.equal(second.action, 'idle');
+    assert.equal(second.reason, 'waiting_for_observations');
+    assert.equal(c.calls.filter((x) => x === 'getClaimable').length, 1);
+  });
+
+  it('never claims in the post-distribution tail, so create_epoch is not delayed', async () => {
+    const c = new TestCranker();
+    c.settings = { ...baseSettings, currentEpochIndex: 3 };
+    c.epochs[2] = { ...liveEpoch, endTimestamp: 1300 };
+    c.claimable = [leaving];
+    const r = await c.crankEpochStep({ now: 1400, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'create');
+    assert.equal(c.calls.filter((x) => x === 'getClaimable').length, 0);
+  });
+
+  it('yields to the ArNS lease lifecycle, which has deadlines', async () => {
+    const c = observing();
+    c.claimable = [leaving];
+    c.pruneableToReturned = [
+      { pubkey: pk(40), name: 'late', endTimestamp: 1n },
+    ];
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'prune_name_to_returned');
+    assert.equal(c.calls.filter((x) => x === 'getClaimable').length, 0);
+  });
+
+  it('enableDelegateSweep:false never claims', async () => {
+    const c = observing();
+    c.claimable = [leaving];
+    const r = await c.crankEpochStep({
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      enableDelegateSweep: false,
+    });
+    assert.equal(r.action, 'idle');
+    assert.equal(c.calls.filter((x) => x === 'getClaimable').length, 0);
   });
 });
