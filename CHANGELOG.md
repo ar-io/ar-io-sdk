@@ -1,3 +1,10 @@
+# [4.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.0-alpha.1...v4.5.0-alpha.2) (2026-09-27)
+
+
+### Bug Fixes
+
+* **solana:** a failed balance read no longer rejects the delegate sweep ([dc96f12](https://github.com/ar-io/ar-io-sdk/commit/dc96f123b19be5c49018ea0afa03bf3df7ef7d36))
+
 # [4.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0...v4.5.0-alpha.1) (2026-09-27)
 
 
