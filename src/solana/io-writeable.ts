@@ -4112,14 +4112,16 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // pass distinct addresses by adding a `payer?` param to this method
     // (out of scope here — feature gap; tracked in
     // docs/E2E_TEST_COVERAGE_PLAN.md Phase 3.3).
+    // `settings` MUST come from withGarDefaults: the generated builder derives
+    // it under the placeholder program id, which is initialized on no cluster.
     const ix = await getClaimDelegateFromLeavingGatewayInstructionAsync(
-      {
+      await this.withGarDefaults({
         gateway: gatewayPda,
         delegation: delegationPda,
         withdrawal: withdrawalPda,
         delegator: this.signer.address,
         payer: this.signer,
-      },
+      }),
       { programAddress: this.garProgram },
     );
 
@@ -4169,8 +4171,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       this.garProgram,
     );
 
+    // `settings` MUST come from withGarDefaults: the generated builder derives
+    // it under the placeholder program id, which is initialized on no cluster.
     const ix = await getClaimDelegateFromDisabledGatewayInstructionAsync(
-      {
+      await this.withGarDefaults({
         gateway: gatewayPda,
         delegation: delegationPda,
         withdrawal: withdrawalPda,
@@ -4178,7 +4182,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         // covers rent on the init_if_needed counter + the new withdrawal.
         delegator,
         payer: this.signer,
-      },
+      }),
       { programAddress: this.garProgram },
     );
 
