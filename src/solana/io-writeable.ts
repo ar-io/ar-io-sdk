@@ -6268,7 +6268,18 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     let lastTxId: string | undefined;
     let partialFailureReason: string | undefined;
     for (const c of ordered.slice(0, budget)) {
-      const lamports = await this.getPayerLamports();
+      let lamports: bigint;
+      try {
+        lamports = await this.getPayerLamports();
+      } catch (error) {
+        // Without a balance the floor can't be checked, so stop here. Report
+        // it rather than throw: claims already sent this scan did land, and a
+        // rejection would drop them from the result.
+        partialFailureReason = `delegate sweep stopped: could not read signer balance: ${
+          error instanceof Error ? error.message : String(error)
+        }`;
+        break;
+      }
       if (lamports < floor) {
         partialFailureReason = `delegate sweep paused: signer balance ${lamports} lamports is below delegateSweepMinPayerLamports ${floor}`;
         break;

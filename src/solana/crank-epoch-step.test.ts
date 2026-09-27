@@ -306,7 +306,14 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push('getClaimable');
     return this.claimable;
   }
+  /** 1-based balance read that throws, for RPC-failure tests. */
+  payerLamportsFailOn?: number;
+  private payerLamportsReads = 0;
   protected async getPayerLamports(): Promise<bigint> {
+    this.payerLamportsReads++;
+    if (this.payerLamportsReads === this.payerLamportsFailOn) {
+      throw new Error('getBalance: 429 Too Many Requests');
+    }
     return this.payerLamports;
   }
   private claim(
@@ -1715,6 +1722,31 @@ describe('crankEpochStep — claim delegations out of leaving / disabled gateway
       r.partialFailureReason ?? '',
       /below delegateSweepMinPayerLamports/,
     );
+  });
+
+  it('a failed balance read stops the sweep but still reports the claims already sent', async () => {
+    const c = observing();
+    c.claimable = [leaving, disabled, { ...leaving, delegator: pk(9) }];
+    c.payerLamportsFailOn = 2;
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'claim_delegate');
+    assert.equal(r.txId, 'tx-claimLeaving');
+    assert.deepEqual(r.progress, { index: 1, total: 3 });
+    assert.match(
+      r.partialFailureReason ?? '',
+      /could not read signer balance: .*429/,
+    );
+    assert.equal(c.calls.filter((x) => x.startsWith('claim')).length, 1);
+  });
+
+  it('a failed balance read before any claim reports instead of throwing', async () => {
+    const c = observing();
+    c.claimable = [leaving];
+    c.payerLamportsFailOn = 1;
+    const r = await c.crankEpochStep({ now: 5000, pruneScanIntervalMs: 0 });
+    assert.equal(r.action, 'claim_delegate');
+    assert.deepEqual(r.progress, { index: 0, total: 1 });
+    assert.match(r.partialFailureReason ?? '', /could not read signer balance/);
   });
 
   it('with the default floor, a signer under 0.5 SOL claims nothing', async () => {
