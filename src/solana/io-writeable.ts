@@ -6216,6 +6216,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   /** Wall-clock (ms) of the last delegate-sweep scan. */
   private lastDelegateSweepScanMs = 0;
 
+  /**
+   * `${gateway}/${delegator}` claims that failed on an earlier scan. They are
+   * tried after every claim that hasn't failed, so a run of permanently
+   * failing claims can't occupy the whole per-scan budget and starve the rest.
+   */
+  private failedDelegateClaims = new Set<string>();
+
   /** The signer's lamport balance. Overridable in tests. */
   protected async getPayerLamports(): Promise<bigint> {
     const { value } = await this.rpc
@@ -6228,7 +6235,8 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * Up to {@link CrankEpochStepOptions.delegateSweepTxsPerCycle} claims moving
    * delegations out of leaving or delegation-disabled gateways, or `null` when
    * none are due or the scan is throttled. A failed claim doesn't stop the
-   * rest; it stays claimable and is retried on the next scan. Stops before any
+   * rest; it stays claimable and is retried after the claims that haven't
+   * failed, so failures can't starve the backlog. Stops before any
    * claim that would start below
    * {@link CrankEpochStepOptions.delegateSweepMinPayerLamports}.
    */
@@ -6241,14 +6249,25 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     this.lastDelegateSweepScanMs = wallNow;
 
     const claimable = await this.getClaimableDelegations();
+    const key = (c: { gateway: Address; delegator: Address }) =>
+      `${c.gateway}/${c.delegator}`;
+    // Forget failures that are no longer claimable, so the set stays bounded.
+    const live = new Set(claimable.map(key));
+    for (const k of this.failedDelegateClaims) {
+      if (!live.has(k)) this.failedDelegateClaims.delete(k);
+    }
     if (claimable.length === 0) return null;
+    const ordered = [
+      ...claimable.filter((c) => !this.failedDelegateClaims.has(key(c))),
+      ...claimable.filter((c) => this.failedDelegateClaims.has(key(c))),
+    ];
 
     const floor = BigInt(opts.delegateSweepMinPayerLamports ?? 500_000_000);
     const budget = Math.max(1, opts.delegateSweepTxsPerCycle ?? 10);
     let claimed = 0;
     let lastTxId: string | undefined;
     let partialFailureReason: string | undefined;
-    for (const c of claimable.slice(0, budget)) {
+    for (const c of ordered.slice(0, budget)) {
       const lamports = await this.getPayerLamports();
       if (lamports < floor) {
         partialFailureReason = `delegate sweep paused: signer balance ${lamports} lamports is below delegateSweepMinPayerLamports ${floor}`;
@@ -6265,7 +6284,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
             : await this.claimDelegateFromDisabledGateway(params);
         lastTxId = id;
         claimed++;
+        this.failedDelegateClaims.delete(key(c));
       } catch (error) {
+        this.failedDelegateClaims.add(key(c));
         partialFailureReason = `claim ${c.reason} ${c.gateway}/${c.delegator}: ${
           error instanceof Error ? error.message : String(error)
         }`;

@@ -1677,6 +1677,28 @@ describe('crankEpochStep — claim delegations out of leaving / disabled gateway
     assert.match(r.partialFailureReason ?? '', /claim leaving/);
   });
 
+  it('permanently failing claims cannot starve the rest of the backlog', async () => {
+    const c = observing();
+    // 3 failing claims fill a budget of 3; the 4th is healthy.
+    const failing = [pk(20), pk(21), pk(22)].map((d) => ({
+      ...leaving,
+      delegator: d,
+    }));
+    const healthy = { ...leaving, delegator: pk(23) };
+    c.claimable = [...failing, healthy];
+    for (const f of failing) c.claimFails.add(`${f.gateway}/${f.delegator}`);
+    const opts = {
+      now: 5000,
+      pruneScanIntervalMs: 0,
+      delegateSweepTxsPerCycle: 3,
+    };
+    const first = await c.crankEpochStep(opts);
+    assert.deepEqual(first.progress, { index: 0, total: 4 });
+    const second = await c.crankEpochStep(opts);
+    assert.equal(second.progress?.index, 1);
+    assert.ok(c.calls.includes(`claimLeaving:${pk(5)}/${pk(23)}`));
+  });
+
   it('checks the payer floor before EVERY claim and reports the pause', async () => {
     const c = observing();
     c.claimable = [leaving, disabled, { ...leaving, delegator: pk(9) }];
