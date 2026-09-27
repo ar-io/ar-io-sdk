@@ -1,3 +1,16 @@
+# [4.5.0-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0...v4.5.0-alpha.1) (2026-09-27)
+
+
+### Bug Fixes
+
+* **solana:** failing delegate claims no longer starve the rest of the sweep ([3b22fce](https://github.com/ar-io/ar-io-sdk/commit/3b22fce09afcdd14b5d2661f05f0426313658b68))
+* **solana:** pass the real GAR settings account to the delegate-claim builders ([ffb6d4c](https://github.com/ar-io/ar-io-sdk/commit/ffb6d4ca79579461bf0773c6f9503989c410b3ee))
+
+
+### Features
+
+* **solana:** crankEpochStep finalizes departed gateways and claims stranded delegations ([8e1b93b](https://github.com/ar-io/ar-io-sdk/commit/8e1b93bdfb376b01107a772785c9f9d7b52b9578))
+
 # [4.4.0](https://github.com/ar-io/ar-io-sdk/compare/v4.3.1...v4.4.0) (2026-09-26)
 
 
