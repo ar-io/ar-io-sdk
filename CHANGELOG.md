@@ -1,3 +1,17 @@
+# [4.5.0](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0...v4.5.0) (2026-09-28)
+
+
+### Bug Fixes
+
+* **solana:** a failed balance read no longer rejects the delegate sweep ([dc96f12](https://github.com/ar-io/ar-io-sdk/commit/dc96f123b19be5c49018ea0afa03bf3df7ef7d36))
+* **solana:** failing delegate claims no longer starve the rest of the sweep ([3b22fce](https://github.com/ar-io/ar-io-sdk/commit/3b22fce09afcdd14b5d2661f05f0426313658b68))
+* **solana:** pass the real GAR settings account to the delegate-claim builders ([ffb6d4c](https://github.com/ar-io/ar-io-sdk/commit/ffb6d4ca79579461bf0773c6f9503989c410b3ee))
+
+
+### Features
+
+* **solana:** crankEpochStep finalizes departed gateways and claims stranded delegations ([8e1b93b](https://github.com/ar-io/ar-io-sdk/commit/8e1b93bdfb376b01107a772785c9f9d7b52b9578))
+
 # [4.5.0-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.0-alpha.1...v4.5.0-alpha.2) (2026-09-27)
 
 
