@@ -6146,7 +6146,12 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * mirrors {@link filterLiveObservations}.
    *
    * One `getMultipleAccounts` of at most twelve keys, against the ~1MB scan
-   * pair it replaces.
+   * pair it replaces. Per-account reads are also less prone to the staleness
+   * of `getProgramAccounts`'s secondary index, though not immune — providers
+   * have been observed serving stale `confirmed` reads right after a write.
+   * The exposure here is small: an account is closed by someone else well
+   * before a sweep reads it, and a stale *live* answer costs one wasted fee,
+   * not a revert.
    */
   protected async filterLiveCompoundEntries(
     entries: Array<{ gateway: string; delegator: string }>,
@@ -6224,15 +6229,62 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       }
 
       const candidates = sweep.entries.splice(0, MAX_COMPOUND_BATCH);
-      const batch = await this.filterLiveCompoundEntries(candidates);
+
+      let batch: Array<{ gateway: string; delegator: string }>;
+      try {
+        batch = await this.filterLiveCompoundEntries(candidates);
+      } catch (error) {
+        // Never throw: a throw here ends the caller's drain before
+        // `create_epoch`, so a transient read failure would hold up epoch
+        // creation. Report it and let the next tick retry. These candidates
+        // are already spliced out, so they wait for the next epoch — nothing
+        // is lost, their rewards stay in the accumulator.
+        return {
+          action: 'compound',
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+          partialFailureReason: `compound re-validation: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
+
       if (batch.length === 0) continue;
 
-      const { id } = await this.compoundDelegationRewardsBatch(batch);
-      return {
-        action: 'compound',
-        txId: id,
-        progress: { index: batch.length, total: sweep.discovered },
-      };
+      try {
+        const { id } = await this.compoundDelegationRewardsBatch(batch);
+        return {
+          action: 'compound',
+          txId: id,
+          // Counts UP. Both the observer and ar-io-cranker end their drain
+          // when a step reports the same action and progress twice running,
+          // and they relied on the old shape — `index` pinned at the batch
+          // size while a freshly scanned `total` shrank. A cached sweep makes
+          // `total` constant, so the advance has to live in `index` or the
+          // drain stops after two batches and every epoch rollover waits for
+          // the next cycle.
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+        };
+      } catch (error) {
+        // Same reasoning as above. The batch stays dropped: its rewards are
+        // still in the accumulator and compound on the next epoch's sweep,
+        // where re-serving a batch that just failed risks a wedge.
+        return {
+          action: 'compound',
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+          partialFailureReason: `compound batch: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
     }
   }
 

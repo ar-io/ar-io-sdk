@@ -52,11 +52,18 @@ class SweepWriteable extends SolanaARIOWriteable {
   protected async filterLiveCompoundEntries(
     entries: Entry[],
   ): Promise<Entry[]> {
+    if (this.filterError) throw this.filterError;
     return entries.filter((e) => !this.closed.has(e.delegator));
   }
 
+  /** Set to make the next send throw, as a dropped tx would. */
+  sendError?: Error;
+  /** Set to make re-validation throw, as a transient RPC failure would. */
+  filterError?: Error;
+
   // biome-ignore lint/suspicious/noExplicitAny: test stub
   async compoundDelegationRewardsBatch(batch: Entry[]): Promise<any> {
+    if (this.sendError) throw this.sendError;
     this.sent.push(batch);
     const settled = new Set(batch.map((b) => b.delegator));
     this.pending = this.pending.filter((p) => !settled.has(p.delegatorAddress));
@@ -69,7 +76,12 @@ class SweepWriteable extends SolanaARIOWriteable {
         maybeCompoundStep: (
           min: number,
           epoch: number,
-        ) => Promise<{ progress?: { index: number; total: number } } | null>;
+        ) => Promise<{
+          action?: string;
+          txId?: string;
+          partialFailureReason?: string;
+          progress?: { index: number; total: number };
+        } | null>;
       }
     ).maybeCompoundStep(0, epochIndex);
   }
@@ -381,5 +393,141 @@ describe('filterLiveCompoundEntries', () => {
 
     assert.deepEqual(await w.run([]), []);
     assert.equal(w.calls, 0);
+  });
+});
+
+/**
+ * Both the observer (`epoch-cranker.ts`) and ar-io-cranker
+ * (`state-machine.ts`) end their drain when a step reports the same action and
+ * the same progress twice running, and their comments say they rely on the
+ * compound step to move one of the two numbers. The old shape pinned `index`
+ * at the batch size and let a freshly scanned `total` shrink; a cached sweep
+ * makes `total` constant, so `index` has to advance instead.
+ *
+ * Getting this wrong does not fail anything in this repo — it silently caps a
+ * drain at two batches, which on a 33-batch mainnet boundary delays every
+ * epoch rollover by roughly 15-20 minutes.
+ */
+describe('compound sweep: progress advances so a drain does not stop', () => {
+  const fingerprint = (
+    r: {
+      action?: string;
+      progress?: { index: number; total: number };
+    } | null,
+  ) => `${r?.action}:${r?.progress?.index}/${r?.progress?.total}`;
+
+  it('reports a different fingerprint on every consecutive batch', async () => {
+    const w = new SweepWriteable();
+    w.load(30);
+
+    const seen: string[] = [];
+    for (let i = 0; i < 5; i++) seen.push(fingerprint(await w.step()));
+
+    assert.equal(w.sent.length, 5, 'five batches ran');
+    assert.equal(
+      new Set(seen).size,
+      seen.length,
+      `consecutive steps repeated a progress fingerprint: ${seen.join(', ')}`,
+    );
+  });
+
+  it('counts up to the number discovered', async () => {
+    const w = new SweepWriteable();
+    w.load(20);
+
+    const first = await w.step();
+    const second = await w.step();
+    const third = await w.step();
+
+    assert.deepEqual(first?.progress, { index: 6, total: 20 });
+    assert.deepEqual(second?.progress, { index: 12, total: 20 });
+    assert.deepEqual(third?.progress, { index: 18, total: 20 });
+  });
+
+  it('keeps advancing across a whole drain', async () => {
+    const w = new SweepWriteable();
+    w.load(60);
+
+    const seen: string[] = [];
+    for (;;) {
+      const r = await w.step();
+      if (r === null) break;
+      seen.push(fingerprint(r));
+    }
+
+    assert.equal(seen.length, 10);
+    assert.equal(new Set(seen).size, 10, 'every step was distinguishable');
+  });
+});
+
+describe('compound sweep: failures never hold up epoch creation', () => {
+  /**
+   * An error thrown here ends the caller's drain before `create_epoch`, so a
+   * transient failure would delay the next epoch. The steps around this one
+   * report failures instead of throwing; this now does too.
+   */
+  it('reports a failed send instead of throwing', async () => {
+    const w = new SweepWriteable();
+    w.load(12);
+    w.sendError = new Error('blockhash not found');
+
+    const r = await w.step();
+
+    assert.equal(r?.action, 'compound');
+    assert.match(r?.partialFailureReason ?? '', /blockhash not found/);
+    assert.equal(r?.txId, undefined, 'no transaction id for a failed send');
+  });
+
+  it('reports a failed re-validation instead of throwing', async () => {
+    const w = new SweepWriteable();
+    w.load(12);
+    w.filterError = new Error('429 rate limited');
+
+    const r = await w.step();
+
+    assert.equal(r?.action, 'compound');
+    assert.match(r?.partialFailureReason ?? '', /429 rate limited/);
+    assert.equal(w.sent.length, 0, 'nothing was sent');
+  });
+
+  /**
+   * A failed batch stays dropped rather than being re-served: its rewards are
+   * still in the accumulator and compound on the next epoch's sweep, where
+   * re-serving a batch that just failed risks the wedge this design avoids.
+   */
+  it('advances past a failed batch rather than retrying it', async () => {
+    const w = new SweepWriteable();
+    w.load(12);
+    const doomed = w.pending
+      .slice(0, MAX_COMPOUND_BATCH)
+      .map((p) => p.delegatorAddress);
+
+    w.sendError = new Error('dropped');
+    await w.step();
+    w.sendError = undefined;
+    await w.step();
+
+    assert.equal(w.sent.length, 1, 'the second batch went out');
+    for (const e of w.sent[0]) {
+      assert.ok(
+        !doomed.includes(e.delegator),
+        'the failed batch was served again',
+      );
+    }
+  });
+
+  it('still reports progress that advances when a batch fails', async () => {
+    const w = new SweepWriteable();
+    w.load(18);
+    w.sendError = new Error('dropped');
+
+    const first = await w.step();
+    const second = await w.step();
+
+    assert.notEqual(
+      `${first?.progress?.index}/${first?.progress?.total}`,
+      `${second?.progress?.index}/${second?.progress?.total}`,
+      'two failed batches must still look like progress to the drain guard',
+    );
   });
 });
