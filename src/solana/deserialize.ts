@@ -727,6 +727,8 @@ export function deserializeWithdrawal(data: Buffer): {
   startTimestamp: number;
   endTimestamp: number;
   isDelegate: boolean;
+  isProtected: boolean;
+  isExitVault: boolean;
 } {
   const d = getWithdrawalDecoder().decode(new Uint8Array(data));
 
@@ -738,6 +740,8 @@ export function deserializeWithdrawal(data: Buffer): {
     startTimestamp: Number(d.createdAt),
     endTimestamp: Number(d.availableAt),
     isDelegate: d.isDelegate,
+    isProtected: d.isProtected,
+    isExitVault: d.isExitVault,
   };
 }
 
