@@ -17,11 +17,7 @@ import {
 
 import { selectCompoundableDelegations } from './delegation-math.js';
 import { MAX_COMPOUND_BATCH, SolanaARIOWriteable } from './io-writeable.js';
-import { estimateCompiledTxSize } from './send.js';
-
-// Solana's hard transaction-size limit (raw bytes). A versioned tx over this is
-// rejected by the RPC ("VersionedTransaction too large") and never lands.
-const MAX_TX_BYTES = 1232;
+import { MAX_TX_SIZE_BYTES, estimateCompiledTxSize } from './send.js';
 
 const dec = getAddressDecoder();
 function pk(tag: number): Address {
@@ -191,48 +187,52 @@ describe('compoundDelegationRewardsBatch', () => {
 
     const bytes = measure(w.sent[0].ixs, w.sent[0].cu);
     assert.ok(
-      bytes <= MAX_TX_BYTES,
+      bytes <= MAX_TX_SIZE_BYTES,
       `a full compound batch of ${MAX_COMPOUND_BATCH} compiled to ${bytes}B, ` +
-        `exceeding Solana's ${MAX_TX_BYTES}-byte tx limit`,
+        `exceeding Solana's ${MAX_TX_SIZE_BYTES}-byte tx limit`,
     );
   });
 
   /**
-   * The boundary the old measurement hid. Eight entries fit; nine do not, and
-   * measured without the compute-budget instructions nine reads as 1199B and
-   * passes. If a future change makes the instruction bigger, this is the test
-   * that should fail first.
+   * The guard measures rather than counts, because size follows the number of
+   * UNIQUE accounts, not entries. Driving it through the public method keeps
+   * the test on the contract a caller sees, and means the numbers here are the
+   * ones the guard itself computes.
    */
-  it('locates the size boundary between eight and nine distinct gateways', async () => {
-    const sizes = new Map<number, number>();
-    for (const n of [8, 9]) {
-      const w = new TestWriteable();
-      // Built directly: the batch method caps at MAX_COMPOUND_BATCH, and the
-      // point here is to measure past that cap, not to send it.
-      const ixs = await Promise.all(
-        distinctBatch(n).map((d) =>
-          (
-            w as unknown as {
-              buildCompoundDelegationRewardsInstruction: (p: {
-                gateway: string;
-                delegator: string;
-              }) => Promise<Instruction>;
-            }
-          ).buildCompoundDelegationRewardsInstruction(d),
-        ),
-      );
-      sizes.set(n, measure(ixs, 1_400_000));
-    }
+  it('accepts a batch that fits and refuses one that does not', async () => {
+    const fits = new TestWriteable();
+    await fits.compoundDelegationRewardsBatch(distinctBatch(8));
+    assert.equal(fits.sent.length, 1, 'eight distinct gateways fit');
 
-    assert.ok(
-      sizes.get(8)! <= MAX_TX_BYTES,
-      `eight distinct gateways measured ${sizes.get(8)}B, expected to fit`,
+    const over = new TestWriteable();
+    await assert.rejects(
+      () => over.compoundDelegationRewardsBatch(distinctBatch(9)),
+      /over Solana's 1232-byte transaction limit/,
+      'nine distinct gateways compile to 1251B',
     );
-    assert.ok(
-      sizes.get(9)! > MAX_TX_BYTES,
-      `nine distinct gateways measured ${sizes.get(9)}B, expected to exceed ` +
-        `${MAX_TX_BYTES}B — if this now fits, the instruction shrank and the ` +
-        `cap can be revisited`,
+    assert.equal(over.sent.length, 0, 'nothing was sent');
+  });
+
+  /**
+   * The reason a count is the wrong guard: twelve delegators on ONE gateway
+   * reuse its account and land at exactly the limit, while nine on distinct
+   * gateways do not. A count-based cap would reject the packing this method's
+   * own docs recommend.
+   */
+  it('accepts twelve delegators sharing one gateway', async () => {
+    const w = new TestWriteable();
+    const shared = Array.from({ length: 12 }, (_, i) => ({
+      gateway: pk(7),
+      delegator: pk(500 + i),
+    }));
+
+    await w.compoundDelegationRewardsBatch(shared);
+
+    assert.equal(w.sent.length, 1);
+    assert.equal(
+      measure(w.sent[0].ixs, w.sent[0].cu),
+      MAX_TX_SIZE_BYTES,
+      'exactly at the limit — the case a count would have rejected',
     );
   });
 
@@ -268,16 +268,6 @@ describe('compoundDelegationRewardsBatch', () => {
       52,
       'the two compute-budget instructions cost 52 bytes the old measurement missed',
     );
-  });
-
-  it('refuses a batch larger than the cap rather than building an oversized tx', async () => {
-    const w = new TestWriteable();
-    await assert.rejects(
-      () => w.compoundDelegationRewardsBatch(distinctBatch(9)),
-      /exceeds MAX_COMPOUND_BATCH/,
-      'a 9-entry batch compiles to 1251B and the RPC rejects it',
-    );
-    assert.equal(w.sent.length, 0, 'nothing was sent');
   });
 });
 

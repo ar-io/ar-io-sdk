@@ -696,6 +696,12 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
  */
 export const MAX_COMPOUND_BATCH = 6;
 /**
+ * CU ceiling requested for a compound batch. Named so the pre-send size guard
+ * measures the transaction the send actually builds — the compute-budget
+ * instructions are part of the wire size.
+ */
+export const COMPOUND_BATCH_COMPUTE_UNIT_LIMIT = 1_400_000;
+/**
  * CU ceiling for the atomic spawn-and-buy tx (`[CreateV1, initialize,
  * buy_name]`). buy_name CPIs into MPL Core `UpdatePluginV1` on top of the MPL
  * Core mint + ario-ant initialize, so it needs more headroom than a plain
@@ -4791,21 +4797,36 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         'compoundDelegationRewardsBatch: delegations list is empty',
       );
     }
-    // The cap is what keeps a worst-case batch inside the 1232-byte tx limit,
-    // and until now nothing held a caller to it: passing 9 all-distinct
-    // entries built a 1251-byte transaction that the RPC rejects, and the
-    // failure surfaced at send time with nothing pointing at the cause.
-    if (delegations.length > MAX_COMPOUND_BATCH) {
-      throw new Error(
-        `compoundDelegationRewardsBatch: ${delegations.length} delegations ` +
-          `exceeds MAX_COMPOUND_BATCH (${MAX_COMPOUND_BATCH}); a larger batch ` +
-          `can overflow Solana's 1232-byte transaction limit. Chunk the list.`,
-      );
-    }
     const ixs = await Promise.all(
       delegations.map((d) => this.buildCompoundDelegationRewardsInstruction(d)),
     );
-    const sig = await this.sendTransaction(ixs, 1_400_000);
+
+    // Measure, don't count. Nothing used to hold a caller to
+    // `MAX_COMPOUND_BATCH`, so an oversized list built a transaction the RPC
+    // rejects and the failure surfaced at send time with nothing pointing at
+    // the cause. A count is the wrong guard though: size depends on the number
+    // of UNIQUE accounts, not entries. Six all-distinct gateways is 918 bytes,
+    // nine is 1251 and does not land — but twelve delegators on ONE gateway is
+    // 1232 and does, which is the packing this method's own docs recommend.
+    // `MAX_COMPOUND_BATCH` stays the advisory chunk size it always was.
+    const size = estimateCompiledTxSize({
+      signer: this.signer,
+      instructions: ixs,
+      computeUnitLimit: COMPOUND_BATCH_COMPUTE_UNIT_LIMIT,
+    });
+    if (size > MAX_TX_SIZE_BYTES) {
+      throw new Error(
+        `compoundDelegationRewardsBatch: ${delegations.length} delegations ` +
+          `compile to ${size} bytes, over Solana's ${MAX_TX_SIZE_BYTES}-byte ` +
+          `transaction limit. Send fewer, or group entries that share a ` +
+          `gateway — a reused gateway account costs no extra keys.`,
+      );
+    }
+
+    const sig = await this.sendTransaction(
+      ixs,
+      COMPOUND_BATCH_COMPUTE_UNIT_LIMIT,
+    );
     return { id: sig };
   }
 
