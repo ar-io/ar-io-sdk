@@ -126,10 +126,13 @@ import {
   buildCreateAtaIdempotentIx,
   getAssociatedTokenAddressKit,
 } from './ata.js';
+import { selectCompoundableDelegations } from './delegation-math.js';
 import {
   deserializeArnsRecord,
+  deserializeDelegation,
   deserializeDemandFactor,
   deserializeEpochSettingsFull,
+  deserializeGatewayWithAccumulator,
   deserializePrimaryName,
   isOperationsAddressSet,
 } from './deserialize.js';
@@ -6129,32 +6132,46 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   };
 
   /**
-   * Drop any entry whose Delegation or Gateway account no longer exists.
+   * Re-check the candidates a cached sweep is about to send, against fresh
+   * reads of the two accounts each instruction touches.
    *
-   * **This is what makes a cached work list safe.** Value staleness is free:
-   * `compound_delegation_rewards` carries no `require!` at all, so an entry
-   * another cranker already settled, or whose gateway has since gone
-   * `Leaving`, simply settles zero and succeeds. Account staleness is not —
-   * `delegation` and `gateway` are Anchor `Account<'info, _>`, so a closed PDA
-   * raises `AccountNotInitialized` and **reverts all six instructions in the
-   * batch**, the fee included.
+   * **This is what makes a cached work list safe, and it is free.** The reads
+   * are needed anyway to rule out closed accounts, and their bytes carry
+   * everything the selection predicate uses — so the same
+   * `selectCompoundableDelegations` that chose an entry from the scan re-runs
+   * here against current state, for no extra request.
    *
-   * That is reachable: `claim_delegate_from_leaving_gateway` zeroes a
-   * delegation and the permissionless `close_empty_delegation` then closes it
-   * — and this SDK's own delegate sweep performs the first leg. The same
-   * wedge is already documented for `closeObservations`, which is where this
-   * mirrors {@link filterLiveObservations}.
+   * It closes every way a cached entry can be wrong:
    *
-   * One `getMultipleAccounts` of at most twelve keys, against the ~1MB scan
-   * pair it replaces. Per-account reads are also less prone to the staleness
-   * of `getProgramAccounts`'s secondary index, though not immune — providers
-   * have been observed serving stale `confirmed` reads right after a write.
-   * The exposure here is small: an account is closed by someone else well
-   * before a sweep reads it, and a stale *live* answer costs one wasted fee,
+   * - **Closed account — the only fatal one.** `delegation` and `gateway` are
+   *   Anchor `Account<'info, _>`, so a closed PDA raises
+   *   `AccountNotInitialized` and reverts all the instructions in the batch,
+   *   fee included. Reachable: `claim_delegate_from_leaving_gateway` zeroes a
+   *   delegation and the permissionless `close_empty_delegation` closes it,
+   *   and this SDK's own delegate sweep performs the first leg.
+   * - **Already settled** by another cranker, or by the delegator adding
+   *   stake (which settles first). Harmless on chain — the handler carries no
+   *   `require!` and simply settles zero — but it spends a fee to do nothing,
+   *   so drop it.
+   * - **Gateway left mid-sweep.** The uncached path filtered `leaving`
+   *   gateways as policy, routing them to the claim path instead; re-running
+   *   the predicate keeps that behaviour rather than quietly diverging.
+   *
+   * What remains is a TOCTOU window of milliseconds between this read and the
+   * send, against the epoch-long window a cached list would otherwise carry.
+   * If something closes inside it the batch fails, the step reports it, and
+   * the sweep moves on.
+   *
+   * One `getMultipleAccounts` of at most twice the batch size in keys, against
+   * the ~1MB scan pair it replaces. Per-account reads are also less prone to
+   * the staleness of `getProgramAccounts`'s secondary index, though not immune
+   * — providers have been observed serving stale `confirmed` reads right after
+   * a write. The exposure is small: a stale *live* answer costs one wasted fee,
    * not a revert.
    */
-  protected async filterLiveCompoundEntries(
+  protected async revalidateCompoundEntries(
     entries: Array<{ gateway: string; delegator: string }>,
+    minPendingRewards: number,
   ): Promise<Array<{ gateway: string; delegator: string }>> {
     if (entries.length === 0) return [];
 
@@ -6172,9 +6189,44 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       commitment: this.commitment,
     });
 
-    return entries.filter(
-      (_e, i) => accounts[i * 2]?.exists && accounts[i * 2 + 1]?.exists,
-    );
+    const live: Array<{ gateway: string; delegator: string }> = [];
+    for (const [i, entry] of entries.entries()) {
+      const delegationAccount = accounts[i * 2];
+      const gatewayAccount = accounts[i * 2 + 1];
+      if (!delegationAccount?.exists || !gatewayAccount?.exists) continue;
+
+      try {
+        const del = deserializeDelegation(Buffer.from(delegationAccount.data));
+        const gw = deserializeGatewayWithAccumulator(
+          Buffer.from(gatewayAccount.data),
+        );
+        const [still] = selectCompoundableDelegations(
+          [
+            {
+              gateway: entry.gateway,
+              delegator: entry.delegator,
+              delegatedStake: del.delegatedStake,
+              rewardDebt: del.rewardDebt,
+            },
+          ],
+          new Map([
+            [
+              entry.gateway,
+              {
+                cumulativeRewardPerToken: gw.cumulativeRewardPerToken,
+                status: gw.status,
+              },
+            ],
+          ]),
+          minPendingRewards,
+        );
+        if (still !== undefined) live.push(entry);
+      } catch {
+        // Undecodable is indistinguishable from gone: skip it rather than
+        // risk reverting the batch on it.
+      }
+    }
+    return live;
   }
 
   /**
@@ -6232,7 +6284,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
 
       let batch: Array<{ gateway: string; delegator: string }>;
       try {
-        batch = await this.filterLiveCompoundEntries(candidates);
+        batch = await this.revalidateCompoundEntries(
+          candidates,
+          minPendingRewards,
+        );
       } catch (error) {
         // Never throw: a throw here ends the caller's drain before
         // `create_epoch`, so a transient read failure would hold up epoch

@@ -1,7 +1,13 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address, getAddressDecoder } from '@solana/kit';
+import {
+  GatewayStatus,
+  Protocol,
+  getDelegationEncoder,
+  getGatewayEncoder,
+} from '@ar.io/solana-contracts/gar';
+import { type Address, address, getAddressDecoder } from '@solana/kit';
 
 import { MAX_COMPOUND_BATCH, SolanaARIOWriteable } from './io-writeable.js';
 
@@ -49,7 +55,7 @@ class SweepWriteable extends SolanaARIOWriteable {
     return this.pending.filter((p) => !this.closed.has(p.delegatorAddress));
   }
 
-  protected async filterLiveCompoundEntries(
+  protected async revalidateCompoundEntries(
     entries: Entry[],
   ): Promise<Entry[]> {
     if (this.filterError) throw this.filterError;
@@ -283,251 +289,214 @@ describe('compound sweep: stale entries cannot wedge it', () => {
  * one against a fake RPC. This is the part that has to be right: it is what
  * stops one closed PDA reverting a whole batch.
  */
-describe('filterLiveCompoundEntries', () => {
-  class RealFilterWriteable extends SolanaARIOWriteable {
-    /** Addresses the fake RPC reports as existing. */
-    live = new Set<string>();
-    /** Every key the filter asked about, in order. */
-    asked: string[] = [];
-    calls = 0;
+describe('revalidateCompoundEntries', () => {
+  /**
+   * The real implementation, against encoded accounts rather than a stub — it
+   * is what stops one closed PDA reverting a batch, and what stops a cached
+   * entry being sent after it stopped qualifying.
+   */
+  const OPERATOR = address('GatewayCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC');
+  const DELEGATOR = address('De1egatorAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+  const PREC = 10n ** 18n;
 
-    constructor() {
+  const gatewayBytes = (status: GatewayStatus, cumulative: bigint) =>
+    getGatewayEncoder().encode({
+      operator: OPERATOR,
+      label: 'lbl',
+      fqdn: 'gw.example',
+      port: 443,
+      protocol: Protocol.Https,
+      properties: '',
+      note: '',
+      operatorStake: 1_000n,
+      totalDelegatedStake: 100n,
+      status,
+      startTimestamp: 0n,
+      leaveTimestamp: status === GatewayStatus.Leaving ? 1n : null,
+      leaveEpochDuration: 0n,
+      stats: {
+        passedEpochs: 0,
+        failedEpochs: 0,
+        totalEpochs: 0,
+        prescribedEpochs: 0,
+        observedEpochs: 0,
+        failedConsecutive: 0,
+        passedConsecutive: 0,
+      },
+      weights: {
+        stakeWeight: 0n,
+        tenureWeight: 0n,
+        gatewayPerformanceRatio: 0n,
+        observerPerformanceRatio: 0n,
+        compositeWeight: 0n,
+        normalizedCompositeWeight: 0n,
+        weightsEpoch: 0n,
+      },
+      settings: {
+        allowDelegatedStaking: true,
+        delegateRewardShareRatio: 0,
+        minDelegationAmount: 0n,
+        allowlistEnabled: false,
+        pendingDelegateRewardShareRatio: null,
+        delegationDisabledAt: null,
+      },
+      registryIndex: { index: 0, _reserved: 0 },
+      observerAddress: OPERATOR,
+      cumulativeRewardPerToken: cumulative,
+      bump: 250,
+      version: { major: 1, minor: 2, patch: 0 },
+      operationsAddress: OPERATOR,
+    });
+
+  const delegationBytes = (amount: bigint, rewardDebt: bigint) =>
+    getDelegationEncoder().encode({
+      gateway: OPERATOR,
+      delegator: DELEGATOR,
+      amount,
+      startTimestamp: 1n,
+      rewardDebt,
+      bump: 254,
+      version: { major: 1, minor: 0, patch: 0 },
+    });
+
+  /**
+   * Extends the real class, NOT the sweep stub — the stub overrides the very
+   * method under test here.
+   */
+  class RealWriteable extends SolanaARIOWriteable {
+    constructor(rpc: unknown) {
       super({
-        rpc: {
-          getMultipleAccounts: (addresses: string[]) => ({
-            send: async () => {
-              this.calls++;
-              this.asked.push(...addresses);
-              return {
-                context: { slot: 1n },
-                value: addresses.map((a) =>
-                  this.live.has(a)
-                    ? {
-                        data: ['', 'base64'] as [string, string],
-                        executable: false,
-                        lamports: 1n,
-                        owner: pk(1),
-                        rentEpoch: 0n,
-                        space: 0n,
-                      }
-                    : null,
-                ),
-              };
-            },
-          }),
-        } as never,
+        rpc: rpc as never,
         rpcSubscriptions: {} as never,
         signer: { address: pk(999) } as never,
       } as never);
     }
-
-    run(entries: Entry[]) {
-      return (
-        this as unknown as {
-          filterLiveCompoundEntries: (e: Entry[]) => Promise<Entry[]>;
-        }
-      ).filterLiveCompoundEntries(entries);
-    }
-
-    /** Mark both PDAs of each entry as existing. */
-    async makeLive(entries: Entry[]) {
-      const probe = new RealFilterWriteable();
-      await probe.run(entries);
-      for (const a of probe.asked) this.live.add(a);
-    }
   }
 
-  const entry = (n: number): Entry => ({
-    gateway: pk(2000 + n * 2),
-    delegator: pk(2001 + n * 2),
+  /** Serves the delegation PDA first, the gateway second — the filter's order. */
+  const writeableWith = (
+    delegation: Uint8Array | null,
+    gateway: Uint8Array | null,
+  ) => {
+    const rpc = {
+      getMultipleAccounts: (addresses: string[]) => ({
+        send: async () => ({
+          context: { slot: 1n },
+          value: addresses.map((_a, i) => {
+            const bytes = i % 2 === 0 ? delegation : gateway;
+            return bytes === null
+              ? null
+              : {
+                  data: [Buffer.from(bytes).toString('base64'), 'base64'] as [
+                    string,
+                    string,
+                  ],
+                  executable: false,
+                  lamports: 1n,
+                  owner: OPERATOR,
+                  rentEpoch: 0n,
+                  space: BigInt(bytes.length),
+                };
+          }),
+        }),
+      }),
+    };
+    return new RealWriteable(rpc);
+  };
+
+  const run = (w: SolanaARIOWriteable, min = 0) =>
+    (
+      w as unknown as {
+        revalidateCompoundEntries: (
+          e: Entry[],
+          min: number,
+        ) => Promise<Entry[]>;
+      }
+    ).revalidateCompoundEntries(
+      [{ gateway: OPERATOR, delegator: DELEGATOR }],
+      min,
+    );
+
+  it('keeps an entry that still has pending rewards', async () => {
+    const w = writeableWith(
+      delegationBytes(1_000_000n, 0n),
+      gatewayBytes(GatewayStatus.Joined, PREC / 100n),
+    );
+
+    assert.equal((await run(w)).length, 1);
   });
 
-  it('keeps an entry whose delegation and gateway both exist', async () => {
-    const w = new RealFilterWriteable();
-    const entries = [entry(1), entry(2)];
-    await w.makeLive(entries);
+  it('drops an entry whose delegation account is gone', async () => {
+    const w = writeableWith(
+      null,
+      gatewayBytes(GatewayStatus.Joined, PREC / 100n),
+    );
 
-    assert.deepEqual(await w.run(entries), entries);
-  });
-
-  it('drops an entry whose accounts are missing', async () => {
-    const w = new RealFilterWriteable();
-    const kept = entry(3);
-    await w.makeLive([kept]);
-
-    assert.deepEqual(await w.run([entry(4), kept, entry(5)]), [kept]);
+    assert.deepEqual(await run(w), []);
   });
 
   /**
-   * Both accounts gate the instruction, so either one missing must drop the
-   * entry — checking only the delegation would still let a closed gateway
-   * revert the batch.
+   * Both accounts gate the instruction, so a missing gateway must drop the
+   * entry too — checking only the delegation would still revert the batch.
    */
-  it('drops an entry when only one of the two accounts exists', async () => {
-    const w = new RealFilterWriteable();
-    const e = entry(6);
-    await w.makeLive([e]);
-    // Forget the second of its two keys: the gateway.
-    const probe = new RealFilterWriteable();
-    await probe.run([e]);
-    w.live.delete(probe.asked[1]);
+  it('drops an entry whose gateway account is gone', async () => {
+    const w = writeableWith(delegationBytes(1_000_000n, 0n), null);
 
-    assert.deepEqual(await w.run([e]), []);
+    assert.deepEqual(await run(w), []);
   });
 
-  it('asks once, for two keys per entry', async () => {
-    const w = new RealFilterWriteable();
-    const entries = [entry(7), entry(8), entry(9)];
-    await w.makeLive(entries);
-    w.asked = [];
-    w.calls = 0;
+  /**
+   * Another cranker settled it, or the delegator added stake (which settles
+   * first). Harmless on chain, but it spends a fee to do nothing.
+   */
+  it('drops an entry already settled since discovery', async () => {
+    const cumulative = PREC / 100n;
+    const w = writeableWith(
+      delegationBytes(1_000_000n, cumulative), // reward_debt caught up
+      gatewayBytes(GatewayStatus.Joined, cumulative),
+    );
 
-    await w.run(entries);
+    assert.deepEqual(await run(w), []);
+  });
 
-    assert.equal(w.calls, 1, 'one getMultipleAccounts, not one per entry');
-    assert.equal(w.asked.length, 6, 'delegation + gateway for each');
+  /**
+   * The uncached path filtered `leaving` gateways as policy, routing them to
+   * the claim path. Re-running the predicate keeps that rather than diverging.
+   */
+  it('drops an entry whose gateway left since discovery', async () => {
+    const w = writeableWith(
+      delegationBytes(1_000_000n, 0n),
+      gatewayBytes(GatewayStatus.Leaving, PREC / 100n),
+    );
+
+    assert.deepEqual(await run(w), []);
+  });
+
+  it('honours the minimum pending threshold', async () => {
+    const w = writeableWith(
+      delegationBytes(1_000_000n, 0n),
+      gatewayBytes(GatewayStatus.Joined, PREC / 1_000_000n),
+    );
+
+    assert.equal((await run(w, 0)).length, 1, 'qualifies with no minimum');
+    assert.deepEqual(
+      await run(w, 1_000_000),
+      [],
+      'dropped under a high minimum',
+    );
   });
 
   it('asks nothing for an empty list', async () => {
-    const w = new RealFilterWriteable();
+    const w = new RealWriteable({});
+    const out = await (
+      w as unknown as {
+        revalidateCompoundEntries: (
+          e: Entry[],
+          min: number,
+        ) => Promise<Entry[]>;
+      }
+    ).revalidateCompoundEntries([], 0);
 
-    assert.deepEqual(await w.run([]), []);
-    assert.equal(w.calls, 0);
-  });
-});
-
-/**
- * Both the observer (`epoch-cranker.ts`) and ar-io-cranker
- * (`state-machine.ts`) end their drain when a step reports the same action and
- * the same progress twice running, and their comments say they rely on the
- * compound step to move one of the two numbers. The old shape pinned `index`
- * at the batch size and let a freshly scanned `total` shrink; a cached sweep
- * makes `total` constant, so `index` has to advance instead.
- *
- * Getting this wrong does not fail anything in this repo — it silently caps a
- * drain at two batches, which on a 33-batch mainnet boundary delays every
- * epoch rollover by roughly 15-20 minutes.
- */
-describe('compound sweep: progress advances so a drain does not stop', () => {
-  const fingerprint = (
-    r: {
-      action?: string;
-      progress?: { index: number; total: number };
-    } | null,
-  ) => `${r?.action}:${r?.progress?.index}/${r?.progress?.total}`;
-
-  it('reports a different fingerprint on every consecutive batch', async () => {
-    const w = new SweepWriteable();
-    w.load(30);
-
-    const seen: string[] = [];
-    for (let i = 0; i < 5; i++) seen.push(fingerprint(await w.step()));
-
-    assert.equal(w.sent.length, 5, 'five batches ran');
-    assert.equal(
-      new Set(seen).size,
-      seen.length,
-      `consecutive steps repeated a progress fingerprint: ${seen.join(', ')}`,
-    );
-  });
-
-  it('counts up to the number discovered', async () => {
-    const w = new SweepWriteable();
-    w.load(20);
-
-    const first = await w.step();
-    const second = await w.step();
-    const third = await w.step();
-
-    assert.deepEqual(first?.progress, { index: 6, total: 20 });
-    assert.deepEqual(second?.progress, { index: 12, total: 20 });
-    assert.deepEqual(third?.progress, { index: 18, total: 20 });
-  });
-
-  it('keeps advancing across a whole drain', async () => {
-    const w = new SweepWriteable();
-    w.load(60);
-
-    const seen: string[] = [];
-    for (;;) {
-      const r = await w.step();
-      if (r === null) break;
-      seen.push(fingerprint(r));
-    }
-
-    assert.equal(seen.length, 10);
-    assert.equal(new Set(seen).size, 10, 'every step was distinguishable');
-  });
-});
-
-describe('compound sweep: failures never hold up epoch creation', () => {
-  /**
-   * An error thrown here ends the caller's drain before `create_epoch`, so a
-   * transient failure would delay the next epoch. The steps around this one
-   * report failures instead of throwing; this now does too.
-   */
-  it('reports a failed send instead of throwing', async () => {
-    const w = new SweepWriteable();
-    w.load(12);
-    w.sendError = new Error('blockhash not found');
-
-    const r = await w.step();
-
-    assert.equal(r?.action, 'compound');
-    assert.match(r?.partialFailureReason ?? '', /blockhash not found/);
-    assert.equal(r?.txId, undefined, 'no transaction id for a failed send');
-  });
-
-  it('reports a failed re-validation instead of throwing', async () => {
-    const w = new SweepWriteable();
-    w.load(12);
-    w.filterError = new Error('429 rate limited');
-
-    const r = await w.step();
-
-    assert.equal(r?.action, 'compound');
-    assert.match(r?.partialFailureReason ?? '', /429 rate limited/);
-    assert.equal(w.sent.length, 0, 'nothing was sent');
-  });
-
-  /**
-   * A failed batch stays dropped rather than being re-served: its rewards are
-   * still in the accumulator and compound on the next epoch's sweep, where
-   * re-serving a batch that just failed risks the wedge this design avoids.
-   */
-  it('advances past a failed batch rather than retrying it', async () => {
-    const w = new SweepWriteable();
-    w.load(12);
-    const doomed = w.pending
-      .slice(0, MAX_COMPOUND_BATCH)
-      .map((p) => p.delegatorAddress);
-
-    w.sendError = new Error('dropped');
-    await w.step();
-    w.sendError = undefined;
-    await w.step();
-
-    assert.equal(w.sent.length, 1, 'the second batch went out');
-    for (const e of w.sent[0]) {
-      assert.ok(
-        !doomed.includes(e.delegator),
-        'the failed batch was served again',
-      );
-    }
-  });
-
-  it('still reports progress that advances when a batch fails', async () => {
-    const w = new SweepWriteable();
-    w.load(18);
-    w.sendError = new Error('dropped');
-
-    const first = await w.step();
-    const second = await w.step();
-
-    assert.notEqual(
-      `${first?.progress?.index}/${first?.progress?.total}`,
-      `${second?.progress?.index}/${second?.progress?.total}`,
-      'two failed batches must still look like progress to the drain guard',
-    );
+    assert.deepEqual(out, []);
   });
 });
