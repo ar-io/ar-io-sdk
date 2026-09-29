@@ -1,3 +1,16 @@
+## [4.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.2...v4.5.1-alpha.3) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** make compound progress advance so a drain does not stop early ([3789d92](https://github.com/ar-io/ar-io-sdk/commit/3789d92d206cbcdfe8e2bef13835dece493afd1d))
+* **solana:** re-run the full selection on a cached batch, not just existence ([f062efa](https://github.com/ar-io/ar-io-sdk/commit/f062efa223ce88fc320547e4fe3cdffa1907d99f))
+
+
+### Performance Improvements
+
+* **solana:** discover compound candidates once per epoch, not per tick ([3aed5dc](https://github.com/ar-io/ar-io-sdk/commit/3aed5dc1cc9ba7b14a5294c57257664cc3e68458))
+
 ## [4.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.1...v4.5.1-alpha.2) (2026-09-29)
 
 
