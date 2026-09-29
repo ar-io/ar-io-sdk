@@ -3362,11 +3362,16 @@ export class SolanaARIOReadable {
   > {
     const minPending = params?.minPendingRewards ?? 0;
 
-    // One scan for gateways → accumulator + status.
-    const gatewayAccounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      GATEWAY_DISCRIMINATOR,
-    );
+    // Two scans, issued together: one for gateways → accumulator + status, one
+    // for delegations. They are independent, and serialising them doubled the
+    // latency of the most expensive read the cranker makes (#755).
+    const [gatewayAccounts, delegationAccounts] = await Promise.all([
+      this.getAccountsByDiscriminator(this.garProgram, GATEWAY_DISCRIMINATOR),
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        DELEGATION_DISCRIMINATOR,
+      ),
+    ]);
     const gateways = new Map<
       string,
       { cumulativeRewardPerToken: bigint; status: string }
@@ -3383,12 +3388,8 @@ export class SolanaARIOReadable {
       }
     }
 
-    // One scan for delegations; decode then delegate the selection logic to the
-    // pure `selectCompoundableDelegations` (unit-tested in delegation-math).
-    const delegationAccounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      DELEGATION_DISCRIMINATOR,
-    );
+    // Decode, then delegate the selection logic to the pure
+    // `selectCompoundableDelegations` (unit-tested in delegation-math).
     const delegations: Array<{
       gateway: string;
       delegator: string;

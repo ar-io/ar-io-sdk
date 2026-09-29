@@ -6075,7 +6075,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // its period elapsed. Both are permissionless + idempotent, and run BEFORE
     // creating the next epoch so the compounded stake is in place for its tally.
     if (enableCompound) {
-      const compounded = await this.maybeCompoundStep(compoundMinPending);
+      const compounded = await this.maybeCompoundStep(
+        compoundMinPending,
+        currentIndex,
+      );
       if (compounded) return compounded;
     }
     if (enableDemandFactorRoll) {
@@ -6101,26 +6104,136 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The remaining compound candidates for one epoch's post-distribution
+   * sweep, discovered once and consumed {@link MAX_COMPOUND_BATCH} at a time.
+   *
+   * Discovery costs two whole-program `getProgramAccounts` scans — every
+   * Gateway and every Delegation account, decoded in full — and it used to run
+   * on every crank tick to select six entries. Draining 600 delegations took
+   * 202 scans and roughly 100MB, and the scans kept running on every idle tick
+   * afterwards just to learn there was nothing left to do (#755).
+   *
+   * Caching is sound precisely for the window this runs in. Pending rewards
+   * move only when `distribute_epoch` advances a gateway's
+   * `cumulative_reward_per_token`, and this step is reached only once the live
+   * epoch has `rewards_distributed == 1`. Within that window no delegation can
+   * *become* compoundable: a new delegation is created with `reward_debt`
+   * already equal to the accumulator, so its pending is zero. The list can
+   * only shrink — which is what makes one discovery per epoch enough.
+   */
+  private compoundSweep?: {
+    epochIndex: number;
+    entries: Array<{ gateway: string; delegator: string }>;
+    /** How many were due when the sweep was discovered. */
+    discovered: number;
+  };
+
+  /**
+   * Drop any entry whose Delegation or Gateway account no longer exists.
+   *
+   * **This is what makes a cached work list safe.** Value staleness is free:
+   * `compound_delegation_rewards` carries no `require!` at all, so an entry
+   * another cranker already settled, or whose gateway has since gone
+   * `Leaving`, simply settles zero and succeeds. Account staleness is not —
+   * `delegation` and `gateway` are Anchor `Account<'info, _>`, so a closed PDA
+   * raises `AccountNotInitialized` and **reverts all six instructions in the
+   * batch**, the fee included.
+   *
+   * That is reachable: `claim_delegate_from_leaving_gateway` zeroes a
+   * delegation and the permissionless `close_empty_delegation` then closes it
+   * — and this SDK's own delegate sweep performs the first leg. The same
+   * wedge is already documented for `closeObservations`, which is where this
+   * mirrors {@link filterLiveObservations}.
+   *
+   * One `getMultipleAccounts` of at most twelve keys, against the ~1MB scan
+   * pair it replaces.
+   */
+  protected async filterLiveCompoundEntries(
+    entries: Array<{ gateway: string; delegator: string }>,
+  ): Promise<Array<{ gateway: string; delegator: string }>> {
+    if (entries.length === 0) return [];
+
+    const pdas = await Promise.all(
+      entries.flatMap((e) => [
+        getDelegationPDA(
+          address(e.gateway),
+          address(e.delegator),
+          this.garProgram,
+        ).then(([pda]) => pda),
+        getGatewayPDA(address(e.gateway), this.garProgram).then(([pda]) => pda),
+      ]),
+    );
+    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
+      commitment: this.commitment,
+    });
+
+    return entries.filter(
+      (_e, i) => accounts[i * 2]?.exists && accounts[i * 2 + 1]?.exists,
+    );
+  }
+
+  /**
    * One compound batch over delegations with pending rewards (≤
    * {@link MAX_COMPOUND_BATCH} per tx), or `null` when none are due. Settling
    * is idempotent, so this converges over a few crank steps then no-ops until
    * the next epoch's distribution advances the accumulator again.
+   *
+   * Candidates come from {@link compoundSweep}, discovered once per epoch
+   * rather than once per tick. An exhausted sweep is re-discovered once before
+   * reporting no work, so a discovery that raced a lagging
+   * `getProgramAccounts` index heals itself instead of stalling the epoch.
+   *
+   * `progress.total` is the count due when the sweep was discovered, so it
+   * does not shrink as other crankers settle entries underneath it.
    */
   private async maybeCompoundStep(
     minPendingRewards: number,
+    epochIndex: number,
   ): Promise<CrankEpochStepResult | null> {
-    const pending = await this.getDelegationsToCompound({ minPendingRewards });
-    if (pending.length === 0) return null;
-    const batch = pending.slice(0, MAX_COMPOUND_BATCH).map((p) => ({
-      gateway: p.gatewayAddress,
-      delegator: p.delegatorAddress,
-    }));
-    const { id } = await this.compoundDelegationRewardsBatch(batch);
-    return {
-      action: 'compound',
-      txId: id,
-      progress: { index: batch.length, total: pending.length },
+    if (this.compoundSweep?.epochIndex !== epochIndex) {
+      this.compoundSweep = undefined;
+    }
+
+    let refilled = false;
+    const refill = async () => {
+      const pending = await this.getDelegationsToCompound({
+        minPendingRewards,
+      });
+      this.compoundSweep = {
+        epochIndex,
+        entries: pending.map((p) => ({
+          gateway: p.gatewayAddress,
+          delegator: p.delegatorAddress,
+        })),
+        discovered: pending.length,
+      };
+      refilled = true;
     };
+
+    if (this.compoundSweep === undefined) await refill();
+
+    // Consume until a batch survives re-validation. Entries that fail it are
+    // gone for good, so dropping them advances the sweep rather than retrying
+    // a doomed slice every tick — the wedge `closeObservations` documents.
+    for (;;) {
+      const sweep = this.compoundSweep!;
+      if (sweep.entries.length === 0) {
+        if (refilled) return null;
+        await refill();
+        continue;
+      }
+
+      const candidates = sweep.entries.splice(0, MAX_COMPOUND_BATCH);
+      const batch = await this.filterLiveCompoundEntries(candidates);
+      if (batch.length === 0) continue;
+
+      const { id } = await this.compoundDelegationRewardsBatch(batch);
+      return {
+        action: 'compound',
+        txId: id,
+        progress: { index: batch.length, total: sweep.discovered },
+      };
+    }
   }
 
   /**
