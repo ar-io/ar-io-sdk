@@ -1,3 +1,10 @@
+## [4.5.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.5.0...v4.5.1-alpha.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** report the real leave period and prune slash rate ([ed3253b](https://github.com/ar-io/ar-io-sdk/commit/ed3253b22d608a58148dc34ef46ea7bf1c702f20))
+
 # [4.5.0](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0...v4.5.0) (2026-09-28)
 
 
