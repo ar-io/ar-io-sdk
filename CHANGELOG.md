@@ -1,3 +1,11 @@
+## [4.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.1...v4.5.1-alpha.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** require the withdrawal flags rather than leaving them optional ([d16074c](https://github.com/ar-io/ar-io-sdk/commit/d16074c31bcdbfc7408eb69f14f03340024215b5))
+* **solana:** surface whether a withdrawal is a protected exit vault ([32c8366](https://github.com/ar-io/ar-io-sdk/commit/32c8366d70e9da28193e34524b92ba0c95f28dad))
+
 ## [4.5.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.5.0...v4.5.1-alpha.1) (2026-09-29)
 
 
