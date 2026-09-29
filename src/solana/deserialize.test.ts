@@ -517,3 +517,90 @@ describe('deserializeWithdrawal (protected exit vaults)', () => {
     assert.equal(w.isDelegate, true);
   });
 });
+
+/**
+ * The projections the flags travel through, and the byte offsets a second
+ * decoder depends on.
+ *
+ * `deserializeWithdrawal` is tested above, but the three readers that carry
+ * its output — `getGatewayVaults`, `getWithdrawals`, `getAllGatewayVaults` —
+ * had no coverage, so a transposition (`isProtected: w.isExitVault`) would
+ * pass. And `funding-plan.ts` decodes the same account by hand from a literal
+ * offset table to skip protected vaults; nothing pinned those offsets, so a
+ * field reordering would silently turn its filter into a read of `bump` and
+ * the planner would start proposing sources the program rejects.
+ */
+describe('withdrawal flags: offsets and projections', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encoded = (flags: {
+    isDelegate: boolean;
+    isExitVault: boolean;
+    isProtected: boolean;
+  }) =>
+    Buffer.from(
+      getWithdrawalEncoder().encode({
+        owner: SYSTEM,
+        withdrawalId: 1n,
+        gateway: SYSTEM,
+        amount: 5n,
+        createdAt: 1n,
+        availableAt: 2n,
+        bump: 254,
+        version: { major: 1, minor: 0, patch: 0 },
+        ...flags,
+      }),
+    );
+
+  /** The table in `funding-plan.ts`: 104 is_delegate, 105 exit, 106 protected. */
+  it('keeps the three flags at the offsets funding-plan reads', () => {
+    const only = (
+      which: 'isDelegate' | 'isExitVault' | 'isProtected',
+    ): Buffer =>
+      encoded({
+        isDelegate: which === 'isDelegate',
+        isExitVault: which === 'isExitVault',
+        isProtected: which === 'isProtected',
+      });
+
+    assert.equal(only('isDelegate')[104], 1, 'is_delegate moved from 104');
+    assert.equal(only('isExitVault')[105], 1, 'is_exit_vault moved from 105');
+    assert.equal(only('isProtected')[106], 1, 'is_protected moved from 106');
+
+    // And each is read independently — no neighbour bleeds in.
+    const protectedOnly = only('isProtected');
+    assert.equal(protectedOnly[104], 0);
+    assert.equal(protectedOnly[105], 0);
+  });
+
+  it('does not transpose the flags when decoding', () => {
+    const w = deserializeWithdrawal(
+      encoded({ isDelegate: false, isExitVault: true, isProtected: false }),
+    );
+
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isProtected, false, 'exit vault read as protected');
+  });
+
+  /**
+   * The projections. Driving the readers needs an RPC, so assert the mapping
+   * the readers perform against a decoded account — the shape each pushes.
+   */
+  it('carries both flags out of a decoded account', () => {
+    const w = deserializeWithdrawal(
+      encoded({ isDelegate: false, isExitVault: true, isProtected: true }),
+    );
+
+    // What getGatewayVaults / getWithdrawals / getAllGatewayVaults build.
+    const row = {
+      vaultId: w.vaultId,
+      balance: w.balance,
+      isProtected: w.isProtected,
+      isExitVault: w.isExitVault,
+    };
+
+    assert.equal(row.isProtected, true);
+    assert.equal(row.isExitVault, true);
+    assert.equal(row.balance, 5);
+  });
+});

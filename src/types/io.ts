@@ -413,17 +413,24 @@ export type GatewayVault = {
    * Offer an expedited withdrawal only when this is false, or the call is
    * guaranteed to fail for the whole 90-day lock.
    *
-   * Solana-only; undefined on AO, which has no equivalent.
+   * Required, deliberately. `!vault.isProtected` is the natural spelling of
+   * the sentence above, and it reads `undefined` as false — so an optional
+   * field would let a lost value re-introduce the exact bug this exists to
+   * prevent, with no type pressure anywhere. Every reader populates it.
    */
-  isProtected?: boolean;
+  isProtected: boolean;
   /**
-   * True when the vault was created by `leave_network` or `prune_gateway`
-   * rather than an ordinary stake decrease. Informational: it gates nothing
-   * on chain — `isProtected` carries the restriction.
+   * True when the vault was created by an exit rather than an ordinary stake
+   * decrease. Informational: no handler reads it on chain — `isProtected`
+   * carries the restriction.
    *
-   * Solana-only; undefined on AO.
+   * **Not comparable across the two exit paths.** `leave_network` sets it
+   * unconditionally, while `prune_gateway` sets it only when a protected
+   * amount survived the slash, so a gateway pruned with nothing left reports
+   * `false` for a vault an exit created. Do not filter analytics on it
+   * without accounting for that.
    */
-  isExitVault?: boolean;
+  isExitVault: boolean;
 };
 
 /** Operator stake being withdrawn from all gateway gateways */

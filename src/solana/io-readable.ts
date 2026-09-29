@@ -1644,6 +1644,10 @@ export class SolanaARIOReadable {
         // operator's own decreaseOperatorStake calls) belong on
         // `getWithdrawals` / `getGatewayVaults`, not `getDelegations`.
         if (!w.isDelegate) continue;
+        // No `isProtected`/`isExitVault` here, deliberately: this loop is
+        // narrowed to delegate withdrawals, and every `is_delegate` vault is
+        // written with both false (delegate.rs). Only operator-side exits can
+        // be protected.
         vaultItems.push({
           type: 'vault' as const,
           gatewayAddress: w.gateway,
