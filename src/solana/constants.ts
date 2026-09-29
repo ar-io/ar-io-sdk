@@ -184,6 +184,16 @@ export const MAX_TTL_SECONDS = 86_400;
 export const MAX_CONTROLLERS = 10;
 export const EPOCH_DURATION_SECONDS = 86_400;
 export const WITHDRAWAL_LOCK_PERIOD = 30 * 86_400; // 30 days in seconds
+/**
+ * How long a departing operator's *minimum* stake stays vaulted, in seconds.
+ *
+ * `GATEWAY_LEAVE_PERIOD` in ario-gar, a program constant with no settings
+ * field behind it: `admin_set_withdrawal_period` moves the excess vault, not
+ * this one. An exiting gateway gets two vaults — the minimum operator stake
+ * for this period, non-expedite-able, and anything above it for
+ * `WITHDRAWAL_LOCK_PERIOD` (ADR-0038).
+ */
+export const GATEWAY_LEAVE_PERIOD = 90 * 86_400; // 90 days in seconds
 export const MIN_OPERATOR_STAKE = 20_000 * ONE_TOKEN; // 20,000 ARIO
 export const MIN_DELEGATION_AMOUNT = 10 * ONE_TOKEN; // 10 ARIO
 export const LEASE_GRACE_PERIOD = 14 * 86_400; // 14 days
