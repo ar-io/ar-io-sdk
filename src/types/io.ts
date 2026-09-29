@@ -404,6 +404,33 @@ export type GatewayVault = {
   balance: number;
   endTimestamp: Timestamp;
   startTimestamp: Timestamp;
+  /**
+   * True for the protected exit vault holding a departing operator's minimum
+   * stake, which **cannot be expedited**: `instant_withdrawal` rejects it with
+   * `ProtectedVault`, and so does `deduct_withdrawal_for_payment`. Its only
+   * way out is `claimWithdrawal` once the leave period has elapsed.
+   *
+   * Offer an expedited withdrawal only when this is false, or the call is
+   * guaranteed to fail for the whole 90-day lock.
+   *
+   * Required, deliberately. `!vault.isProtected` is the natural spelling of
+   * the sentence above, and it reads `undefined` as false — so an optional
+   * field would let a lost value re-introduce the exact bug this exists to
+   * prevent, with no type pressure anywhere. Every reader populates it.
+   */
+  isProtected: boolean;
+  /**
+   * True when the vault was created by an exit rather than an ordinary stake
+   * decrease. Informational: no handler reads it on chain — `isProtected`
+   * carries the restriction.
+   *
+   * **Not comparable across the two exit paths.** `leave_network` sets it
+   * unconditionally, while `prune_gateway` sets it only when a protected
+   * amount survived the slash, so a gateway pruned with nothing left reports
+   * `false` for a vault an exit created. Do not filter analytics on it
+   * without accounting for that.
+   */
+  isExitVault: boolean;
 };
 
 /** Operator stake being withdrawn from all gateway gateways */
