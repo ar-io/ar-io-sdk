@@ -6129,6 +6129,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     entries: Array<{ gateway: string; delegator: string }>;
     /** How many were due when the sweep was discovered. */
     discovered: number;
+    /**
+     * Set once a re-discovery has confirmed there is nothing left. Without it
+     * every later tick in the same epoch pays one discovery — two full scans —
+     * to be told again that the sweep is done, which is most of the ticks in
+     * the post-distribution window.
+     */
+    exhausted: boolean;
   };
 
   /**
@@ -6249,6 +6256,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   ): Promise<CrankEpochStepResult | null> {
     if (this.compoundSweep?.epochIndex !== epochIndex) {
       this.compoundSweep = undefined;
+    } else if (this.compoundSweep.exhausted) {
+      // Settled for this epoch: nothing can become compoundable until the
+      // next distribution advances an accumulator, and that changes the key.
+      return null;
     }
 
     let refilled = false;
@@ -6263,6 +6274,7 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           delegator: p.delegatorAddress,
         })),
         discovered: pending.length,
+        exhausted: false,
       };
       refilled = true;
     };
@@ -6275,7 +6287,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     for (;;) {
       const sweep = this.compoundSweep!;
       if (sweep.entries.length === 0) {
-        if (refilled) return null;
+        if (refilled) {
+          sweep.exhausted = true;
+          return null;
+        }
         await refill();
         continue;
       }
