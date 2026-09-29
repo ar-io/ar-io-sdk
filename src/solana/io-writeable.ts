@@ -4791,6 +4791,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         'compoundDelegationRewardsBatch: delegations list is empty',
       );
     }
+    // The cap is what keeps a worst-case batch inside the 1232-byte tx limit,
+    // and until now nothing held a caller to it: passing 9 all-distinct
+    // entries built a 1251-byte transaction that the RPC rejects, and the
+    // failure surfaced at send time with nothing pointing at the cause.
+    if (delegations.length > MAX_COMPOUND_BATCH) {
+      throw new Error(
+        `compoundDelegationRewardsBatch: ${delegations.length} delegations ` +
+          `exceeds MAX_COMPOUND_BATCH (${MAX_COMPOUND_BATCH}); a larger batch ` +
+          `can overflow Solana's 1232-byte transaction limit. Chunk the list.`,
+      );
+    }
     const ixs = await Promise.all(
       delegations.map((d) => this.buildCompoundDelegationRewardsInstruction(d)),
     );

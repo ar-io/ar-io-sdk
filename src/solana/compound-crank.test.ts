@@ -17,6 +17,7 @@ import {
 
 import { selectCompoundableDelegations } from './delegation-math.js';
 import { MAX_COMPOUND_BATCH, SolanaARIOWriteable } from './io-writeable.js';
+import { estimateCompiledTxSize } from './send.js';
 
 // Solana's hard transaction-size limit (raw bytes). A versioned tx over this is
 // rejected by the RPC ("VersionedTransaction too large") and never lands.
@@ -154,42 +155,129 @@ describe('compoundDelegationRewardsBatch', () => {
     assert.equal(w.sent[0].ixs.length, 3, 'one instruction per delegation');
   });
 
-  it('a full MAX_COMPOUND_BATCH batch fits the 1232-byte tx limit (worst case: all-distinct gateways)', async () => {
-    const w = new TestWriteable();
-    // Worst case for tx size: every delegation a distinct gateway, so no account
-    // dedup shrinks the message. This is the shape that wedged epoch progression
-    // on staging-V2 — a full batch of 12 overflows the 1232B raw limit and threw
-    // in the post-distribution tail before create_epoch, so the cranker never
-    // advanced. The cap must keep a full batch sendable.
-    const dels = Array.from({ length: MAX_COMPOUND_BATCH }, (_, i) => ({
+  /**
+   * Measure the way `sendTransaction` actually builds: it prepends
+   * `SetComputeUnitLimit` and `SetComputeUnitPrice` before the caller's
+   * instructions, and the wire transaction carries a signature the raw
+   * message does not. Compiling the compound instructions alone undercounts
+   * by 52 bytes, which is enough to pass a batch the RPC would reject —
+   * nine all-distinct entries measure 1199B that way against a real 1251B.
+   *
+   * `estimateCompiledTxSize` is the sender's own measurement, so the test and
+   * the send path cannot drift apart.
+   */
+  const measure = (ixs: Instruction[], cu?: number) =>
+    estimateCompiledTxSize({
+      signer: { address: pk(99) } as never,
+      instructions: ixs,
+      computeUnitLimit: cu,
+    });
+
+  /** Worst case for size: every delegation a distinct gateway, so no dedup. */
+  const distinctBatch = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
       gateway: pk(100 + i * 3),
       delegator: pk(101 + i * 3),
     }));
-    await w.compoundDelegationRewardsBatch(dels);
+
+  it('a full MAX_COMPOUND_BATCH batch fits the 1232-byte tx limit (worst case: all-distinct gateways)', async () => {
+    const w = new TestWriteable();
+    // This is the shape that wedged epoch progression on staging-V2 — a full
+    // batch of 12 overflows the 1232B raw limit and threw in the
+    // post-distribution tail before create_epoch, so the cranker never
+    // advanced. The cap must keep a full batch sendable.
+    await w.compoundDelegationRewardsBatch(distinctBatch(MAX_COMPOUND_BATCH));
     assert.equal(w.sent.length, 1, 'a single transaction');
 
-    // Compile the captured instructions into a real wire transaction and measure
-    // it, mirroring how `sendTransaction` builds the v0 tx.
-    const wire = pipe(
-      createTransactionMessage({ version: 0 }),
-      (tx) => setTransactionMessageFeePayer(pk(99), tx),
-      (tx) =>
-        setTransactionMessageLifetimeUsingBlockhash(
-          {
-            blockhash: blockhash('11111111111111111111111111111111'),
-            lastValidBlockHeight: 0n,
-          },
-          tx,
-        ),
-      (tx) => appendTransactionMessageInstructions(w.sent[0].ixs, tx),
-      (tx) => getBase64EncodedWireTransaction(compileTransaction(tx)),
-    );
-    const bytes = Buffer.from(wire, 'base64').length;
+    const bytes = measure(w.sent[0].ixs, w.sent[0].cu);
     assert.ok(
       bytes <= MAX_TX_BYTES,
       `a full compound batch of ${MAX_COMPOUND_BATCH} compiled to ${bytes}B, ` +
         `exceeding Solana's ${MAX_TX_BYTES}-byte tx limit`,
     );
+  });
+
+  /**
+   * The boundary the old measurement hid. Eight entries fit; nine do not, and
+   * measured without the compute-budget instructions nine reads as 1199B and
+   * passes. If a future change makes the instruction bigger, this is the test
+   * that should fail first.
+   */
+  it('locates the size boundary between eight and nine distinct gateways', async () => {
+    const sizes = new Map<number, number>();
+    for (const n of [8, 9]) {
+      const w = new TestWriteable();
+      // Built directly: the batch method caps at MAX_COMPOUND_BATCH, and the
+      // point here is to measure past that cap, not to send it.
+      const ixs = await Promise.all(
+        distinctBatch(n).map((d) =>
+          (
+            w as unknown as {
+              buildCompoundDelegationRewardsInstruction: (p: {
+                gateway: string;
+                delegator: string;
+              }) => Promise<Instruction>;
+            }
+          ).buildCompoundDelegationRewardsInstruction(d),
+        ),
+      );
+      sizes.set(n, measure(ixs, 1_400_000));
+    }
+
+    assert.ok(
+      sizes.get(8)! <= MAX_TX_BYTES,
+      `eight distinct gateways measured ${sizes.get(8)}B, expected to fit`,
+    );
+    assert.ok(
+      sizes.get(9)! > MAX_TX_BYTES,
+      `nine distinct gateways measured ${sizes.get(9)}B, expected to exceed ` +
+        `${MAX_TX_BYTES}B — if this now fits, the instruction shrank and the ` +
+        `cap can be revisited`,
+    );
+  });
+
+  /**
+   * The compute-budget instructions are the whole point of the corrected
+   * measurement, so pin their cost rather than trusting it implicitly.
+   */
+  it('counts the compute-budget instructions the sender prepends', async () => {
+    const w = new TestWriteable();
+    await w.compoundDelegationRewardsBatch(distinctBatch(MAX_COMPOUND_BATCH));
+
+    const withBudget = measure(w.sent[0].ixs, w.sent[0].cu);
+    const withoutBudget = Buffer.from(
+      pipe(
+        createTransactionMessage({ version: 0 }),
+        (tx) => setTransactionMessageFeePayer(pk(99), tx),
+        (tx) =>
+          setTransactionMessageLifetimeUsingBlockhash(
+            {
+              blockhash: blockhash('11111111111111111111111111111111'),
+              lastValidBlockHeight: 0n,
+            },
+            tx,
+          ),
+        (tx) => appendTransactionMessageInstructions(w.sent[0].ixs, tx),
+        (tx) => getBase64EncodedWireTransaction(compileTransaction(tx)),
+      ),
+      'base64',
+    ).length;
+
+    assert.equal(
+      withBudget - withoutBudget,
+      52,
+      'the two compute-budget instructions cost 52 bytes the old measurement missed',
+    );
+  });
+
+  it('refuses a batch larger than the cap rather than building an oversized tx', async () => {
+    const w = new TestWriteable();
+    await assert.rejects(
+      () => w.compoundDelegationRewardsBatch(distinctBatch(9)),
+      /exceeds MAX_COMPOUND_BATCH/,
+      'a 9-entry batch compiles to 1251B and the RPC rejects it',
+    );
+    assert.equal(w.sent.length, 0, 'nothing was sent');
   });
 });
 
