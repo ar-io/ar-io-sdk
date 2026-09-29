@@ -1,12 +1,16 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { getWithdrawalEncoder } from '@ar.io/solana-contracts/gar';
+import type { Address } from '@solana/kit';
+
 import { REWARD_PRECISION } from './constants.js';
 import { computeLiveDelegationBalance } from './delegation-math.js';
 import {
   deserializeDelegation,
   deserializeGateway,
   deserializeGatewayWithAccumulator,
+  deserializeWithdrawal,
 } from './deserialize.js';
 
 /**
@@ -353,5 +357,76 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     );
     // And JSON.stringify must succeed (would throw on a bigint field).
     assert.doesNotThrow(() => JSON.stringify(gw));
+  });
+});
+
+/**
+ * `deserializeWithdrawal` decoded the whole account but projected only part of
+ * it, dropping `is_protected`. Consumers therefore could not tell a departing
+ * operator's protected exit vault from an ordinary withdrawal, and offered an
+ * expedited withdrawal that `instant_withdrawal` rejects with `ProtectedVault`
+ * for the entire 90-day lock.
+ */
+describe('deserializeWithdrawal (protected exit vaults)', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encode = (flags: {
+    isDelegate: boolean;
+    isExitVault: boolean;
+    isProtected: boolean;
+  }): Buffer =>
+    Buffer.from(
+      getWithdrawalEncoder().encode({
+        owner: SYSTEM,
+        withdrawalId: 7n,
+        gateway: SYSTEM,
+        amount: 20_000_000_000n,
+        createdAt: 1_759_000_000n,
+        availableAt: 1_766_776_000n,
+        bump: 255,
+        version: { major: 1, minor: 0, patch: 0 },
+        ...flags,
+      }),
+    );
+
+  it('surfaces the protected flag on an operator exit vault', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: true, isProtected: true }),
+    );
+
+    assert.equal(w.isProtected, true);
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isDelegate, false);
+  });
+
+  it('reports an ordinary stake decrease as neither', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: false, isProtected: false }),
+    );
+
+    assert.equal(w.isProtected, false);
+    assert.equal(w.isExitVault, false);
+  });
+
+  /** The excess vault of a leave: an exit vault, but expedite-able. */
+  it('distinguishes an exit vault that is not protected', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: true, isProtected: false }),
+    );
+
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isProtected, false);
+  });
+
+  it('still reads the fields it already reported', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: true, isExitVault: false, isProtected: false }),
+    );
+
+    assert.equal(w.vaultId, '7');
+    assert.equal(w.balance, 20_000_000_000);
+    assert.equal(w.startTimestamp, 1_759_000_000);
+    assert.equal(w.endTimestamp, 1_766_776_000);
+    assert.equal(w.isDelegate, true);
   });
 });

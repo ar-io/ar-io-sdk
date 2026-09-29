@@ -404,6 +404,26 @@ export type GatewayVault = {
   balance: number;
   endTimestamp: Timestamp;
   startTimestamp: Timestamp;
+  /**
+   * True for the protected exit vault holding a departing operator's minimum
+   * stake, which **cannot be expedited**: `instant_withdrawal` rejects it with
+   * `ProtectedVault`, and so does `deduct_withdrawal_for_payment`. Its only
+   * way out is `claimWithdrawal` once the leave period has elapsed.
+   *
+   * Offer an expedited withdrawal only when this is false, or the call is
+   * guaranteed to fail for the whole 90-day lock.
+   *
+   * Solana-only; undefined on AO, which has no equivalent.
+   */
+  isProtected?: boolean;
+  /**
+   * True when the vault was created by `leave_network` or `prune_gateway`
+   * rather than an ordinary stake decrease. Informational: it gates nothing
+   * on chain — `isProtected` carries the restriction.
+   *
+   * Solana-only; undefined on AO.
+   */
+  isExitVault?: boolean;
 };
 
 /** Operator stake being withdrawn from all gateway gateways */

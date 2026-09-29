@@ -1693,6 +1693,8 @@ export class SolanaARIOReadable {
             balance: w.balance,
             startTimestamp: secToMs(w.startTimestamp),
             endTimestamp: secToMs(w.endTimestamp),
+            isProtected: w.isProtected,
+            isExitVault: w.isExitVault,
           });
         }
       } catch {
@@ -1742,6 +1744,8 @@ export class SolanaARIOReadable {
           endTimestamp: secToMs(w.endTimestamp),
           gatewayAddress: w.gateway,
           isDelegate: w.isDelegate,
+          isProtected: w.isProtected,
+          isExitVault: w.isExitVault,
         });
       } catch {
         // Skip malformed
@@ -3431,6 +3435,8 @@ export class SolanaARIOReadable {
           startTimestamp: secToMs(w.startTimestamp),
           endTimestamp: secToMs(w.endTimestamp),
           gatewayAddress: w.gateway,
+          isProtected: w.isProtected,
+          isExitVault: w.isExitVault,
         });
       } catch {
         // Skip malformed
