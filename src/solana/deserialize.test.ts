@@ -1,13 +1,21 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { getWithdrawalEncoder } from '@ar.io/solana-contracts/gar';
+import {
+  getGatewaySettingsEncoder,
+  getWithdrawalEncoder,
+} from '@ar.io/solana-contracts/gar';
 import type { Address } from '@solana/kit';
 
-import { REWARD_PRECISION } from './constants.js';
+import {
+  GATEWAY_LEAVE_PERIOD,
+  REWARD_PRECISION,
+  WITHDRAWAL_LOCK_PERIOD,
+} from './constants.js';
 import { computeLiveDelegationBalance } from './delegation-math.js';
 import {
   deserializeDelegation,
+  deserializeGarSettings,
   deserializeGateway,
   deserializeGatewayWithAccumulator,
   deserializeWithdrawal,
@@ -357,6 +365,85 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     );
     // And JSON.stringify must succeed (would throw on a bigint field).
     assert.doesNotThrow(() => JSON.stringify(gw));
+  });
+});
+
+/**
+ * `deserializeGarSettings` reports several fields that the GAR settings
+ * account does not hold. Two of them were wrong, and both misled operators:
+ * `leaveLengthMs` aliased the 30-day withdrawal period where the program
+ * vaults the minimum stake for 90 (ADR-0038), and `failedGatewaySlashRate`
+ * reported 0 where `prune_gateway` takes the whole bond.
+ *
+ * These pin the constants against a real encoded account, so a future change
+ * to the settings layout cannot silently move them.
+ */
+describe('deserializeGarSettings (constants that are not on the account)', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encode = (withdrawalPeriodSeconds: number): Buffer =>
+    Buffer.from(
+      getGatewaySettingsEncoder().encode({
+        authority: SYSTEM,
+        mint: SYSTEM,
+        minOperatorStake: 20_000_000_000n,
+        minDelegateStake: 10_000_000n,
+        withdrawalPeriod: BigInt(withdrawalPeriodSeconds),
+        maxExpeditedWithdrawalPenalty: 500_000n,
+        minExpeditedWithdrawalPenalty: 100_000n,
+        minExpeditedWithdrawalAmount: 1_000_000n,
+        maxDelegatesPerGateway: 10_000,
+        migrationActive: false,
+        migrationAuthority: SYSTEM,
+        stakeTokenAccount: SYSTEM,
+        protocolTokenAccount: SYSTEM,
+        arnsProgramId: SYSTEM,
+        totalStaked: 0n,
+        totalDelegated: 0n,
+        totalWithdrawn: 0n,
+        bump: 255,
+        version: { major: 1, minor: 0, patch: 0 },
+      }),
+    );
+
+  it('reports the 90-day leave period, not the withdrawal period', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.leaveLengthMs, GATEWAY_LEAVE_PERIOD * 1000);
+    assert.equal(s.operators.withdrawLengthMs, WITHDRAWAL_LOCK_PERIOD * 1000);
+    assert.notEqual(s.operators.leaveLengthMs, s.operators.withdrawLengthMs);
+  });
+
+  /**
+   * The leave period is a program constant, so an admin moving the withdrawal
+   * period must not drag it along — that aliasing was the original bug.
+   */
+  it('holds the leave period when the withdrawal period changes', () => {
+    const s = deserializeGarSettings(encode(60 * 86_400));
+
+    assert.equal(s.operators.leaveLengthMs, GATEWAY_LEAVE_PERIOD * 1000);
+    assert.equal(s.operators.withdrawLengthMs, 60 * 86_400 * 1000);
+  });
+
+  it('reports a full slash of the minimum stake on prune', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.failedGatewaySlashRate, 1_000_000);
+  });
+
+  it('still reads the account for everything that is on it', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.minStake, 20_000_000_000);
+    assert.equal(s.delegates.minStake, 10_000_000);
+    assert.equal(
+      s.expeditedWithdrawals.maxExpeditedWithdrawalPenaltyRate,
+      500_000,
+    );
+    assert.equal(
+      s.expeditedWithdrawals.minExpeditedWithdrawalPenaltyRate,
+      100_000,
+    );
   });
 });
 

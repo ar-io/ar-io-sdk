@@ -796,9 +796,27 @@ export type GatewayRegistrySettings = {
   operators: {
     minStake: number;
     withdrawLengthMs: number;
+    /**
+     * How long a departing operator's **minimum** stake stays vaulted.
+     *
+     * On Solana an exit produces two vaults on separate schedules: the
+     * minimum operator stake for this period, which cannot be expedited, and
+     * anything above it for `withdrawLengthMs`, which can. The same applies
+     * whether the operator left voluntarily or was pruned (ADR-0038).
+     */
     leaveLengthMs: number;
     maxDelegateRewardSharePct: number;
     failedEpochCountMax: number;
+    /**
+     * The proportion slashed when a gateway is pruned for consecutive
+     * failures, in parts per million.
+     *
+     * **Applies to `minStake`, not to the operator's total stake.** On Solana
+     * `prune_gateway` takes `min(minStake, operatorStake)` — the whole
+     * security bond — so the rate is 1,000,000 and the amount it applies to is
+     * the minimum, not the balance. Multiplying an operator's full stake by
+     * this rate overstates the slash for anyone staked above the minimum.
+     */
     failedGatewaySlashRate: number;
   };
   redelegations: {
