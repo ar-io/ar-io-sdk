@@ -62,7 +62,9 @@ import {
   fetchEncodedAccount,
   fetchEncodedAccounts,
   getAddressDecoder,
+  isAddress,
 } from '@solana/kit';
+import { BadRequest } from '../common/error.js';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   PrimaryName,
@@ -1845,6 +1847,24 @@ export class SolanaARIOReadable {
   ): Promise<ArNSNameDataWithName[]> {
     const unique = Array.from(new Set(mints));
     if (unique.length === 0) return [];
+
+    /*
+      Reject an id that is not a Solana address, before choosing a path.
+
+      The per-mint path sent it to the RPC, which answered "Invalid method
+      parameter(s)"; the scan path would match it against nothing and return
+      no record. The same input must not fail or succeed depending on how many
+      ids came with it, so both now fail here, naming the id. An AO-style
+      process id (43-character base64url) is the likely culprit.
+    */
+    const invalid = unique.filter((mint) => !isAddress(mint));
+    if (invalid.length > 0) {
+      const shown = invalid.slice(0, 3).join(', ');
+      const more = invalid.length > 3 ? ` and ${invalid.length - 3} more` : '';
+      throw new BadRequest(
+        `Not a Solana address (ANT process id expected): ${shown}${more}`,
+      );
+    }
 
     /*
       Many mints: one scan of the whole registry, filtered here.

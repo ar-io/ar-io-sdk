@@ -1195,6 +1195,31 @@ describe('getArNSRecordsByAntMints — request budget', () => {
     assert.ok(!many.some((i) => i.name === 'bad'));
   });
 
+  /*
+    An invalid id used to throw on the per-mint path (the RPC rejected it) but
+    silently match nothing on the scan path. Both now throw the same error,
+    before any request is made.
+  */
+  it('rejects an id that is not a Solana address, on either path', async () => {
+    const registry = Array.from({ length: 40 }, (_, i) => ({
+      name: `n${i}`,
+      ant: mint(i + 1),
+    }));
+    const aoStyle = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10';
+    for (const mints of [
+      [mint(1), aoStyle],
+      [...registry.map((r) => r.ant), aoStyle],
+    ]) {
+      const stats = freshStats();
+      await assert.rejects(
+        readableFor(registry, stats).getArNSRecordsByAntMints({ mints }),
+        (err: Error) =>
+          err.name === 'BadRequest' && err.message.includes(aoStyle),
+      );
+      assert.equal(stats.scans + stats.perMint, 0);
+    }
+  });
+
   it('counts distinct mints when choosing, so duplicates cannot force a scan', async () => {
     const registry = [{ name: 'solo', ant: mint(7) }];
     const stats = freshStats();
