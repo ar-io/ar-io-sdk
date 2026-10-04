@@ -1015,3 +1015,121 @@ describe('getPrimaryNames — processId enrichment', () => {
     assert.equal(counts.gai, 0);
   });
 });
+
+/**
+ * Serves ArNS records from `getProgramAccounts`: a discriminator-only call is
+ * a registry scan (every record), a call with the ANT memcmp returns that
+ * mint's record. Counts calls and the most requests in flight at once.
+ */
+function arnsRegistryRpc(
+  registry: { name: string; ant: string }[],
+  stats: {
+    scans: number;
+    perMint: number;
+    inFlight: number;
+    maxInFlight: number;
+  },
+) {
+  return {
+    getProgramAccounts: (
+      _program: unknown,
+      opts: { filters: { memcmp: { bytes: string } }[] },
+    ) => ({
+      send: async () => {
+        stats.inFlight++;
+        stats.maxInFlight = Math.max(stats.maxInFlight, stats.inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        stats.inFlight--;
+        const antFilter = opts.filters[1]?.memcmp.bytes;
+        if (antFilter === undefined) stats.scans++;
+        else stats.perMint++;
+        return registry
+          .filter((r) => antFilter === undefined || r.ant === antFilter)
+          .map((r) => ({
+            // A distinct account per record, as on chain (results dedupe by it).
+            pubkey: r.ant as Address,
+            account: {
+              data: [b64(arnsRecordBytesForAnt(r.name, r.ant)), 'base64'],
+            },
+          }));
+      },
+    }),
+  };
+}
+
+describe('getArNSRecordsByAntMints — request budget', () => {
+  const freshStats = () => ({
+    scans: 0,
+    perMint: 0,
+    inFlight: 0,
+    maxInFlight: 0,
+  });
+  const readableFor = (
+    registry: { name: string; ant: string }[],
+    stats: ReturnType<typeof freshStats>,
+  ) =>
+    new SolanaARIOReadable({
+      rpc: arnsRegistryRpc(registry, stats) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+  it('queries per mint for a typical wallet, a few at a time', async () => {
+    const registry = Array.from({ length: 12 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint(i + 1),
+    }));
+    const stats = freshStats();
+    const wanted = registry.slice(0, 6).map((r) => r.ant);
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: wanted,
+    });
+    assert.deepEqual(
+      items.map((i) => i.name).sort(),
+      registry
+        .slice(0, 6)
+        .map((r) => r.name)
+        .sort(),
+    );
+    assert.equal(stats.perMint, 6);
+    assert.equal(stats.scans, 0);
+    // Never a burst: the fan-out is bounded, not all at once.
+    assert.ok(stats.maxInFlight <= 4, `max in flight ${stats.maxInFlight}`);
+  });
+
+  /*
+    The regression this guards: a wallet holding ~2.4k ANTs sent ~2.4k
+    getProgramAccounts at once, the RPC answered 429 and the page stalled.
+  */
+  it('scans the registry once for a wallet holding many ANTs', async () => {
+    const registry = Array.from({ length: 200 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint((i % 250) + 1),
+    }));
+    const stats = freshStats();
+    // 150 of the registry's 200 records, plus a mint with no record.
+    const wanted = [...registry.slice(0, 150).map((r) => r.ant), mint(251)];
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: wanted,
+    });
+    assert.equal(stats.scans, 1);
+    assert.equal(stats.perMint, 0);
+    assert.equal(items.length, 150);
+    // Only the wallet's records, never the rest of the registry.
+    const wantedSet = new Set(wanted);
+    assert.ok(items.every((i) => wantedSet.has(String(i.processId))));
+  });
+
+  it('counts distinct mints when choosing, so duplicates cannot force a scan', async () => {
+    const registry = [{ name: 'solo', ant: mint(7) }];
+    const stats = freshStats();
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: Array.from({ length: 100 }, () => mint(7)),
+    });
+    assert.equal(stats.scans, 0);
+    assert.equal(stats.perMint, 1);
+    assert.deepEqual(
+      items.map((i) => i.name),
+      ['solo'],
+    );
+  });
+});

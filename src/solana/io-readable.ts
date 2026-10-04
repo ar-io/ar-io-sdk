@@ -286,6 +286,18 @@ function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
  * Timestamps are converted from on-chain seconds to JS milliseconds here
  * (see `toMsTimestamps` above for rationale).
  */
+/**
+ * Above this many ANT mints, `fetchArnsRecordsByAntMints` scans the ArNS
+ * registry once instead of querying per mint.
+ *
+ * Per-mint requests are small and, at `ACCOUNT_FETCH_CONCURRENCY` in flight,
+ * 32 of them finish in about eight round trips. Past that, one registry scan
+ * (one request, roughly 0.7 MB for ~2.8k records) is cheaper in requests and
+ * in rate-limit budget, and stays one request however many mints a wallet
+ * holds.
+ */
+export const ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD = 32;
+
 function arnsRecordToWithName(
   record: ReturnType<typeof deserializeArnsRecord>,
 ): ArNSNameDataWithName {
@@ -1808,11 +1820,11 @@ export class SolanaARIOReadable {
   /**
    * Fetch every `ArnsRecord` whose `ant` field equals one of `mints`.
    *
-   * Issues one `getProgramAccounts` per mint with a memcmp filter at
-   * `ARNS_RECORD_ANT_OFFSET`, in parallel. Cheaper than scanning the
-   * whole registry as soon as the caller has fewer mints than the
-   * registry has records (today the break-even is ≈ a few hundred
-   * mints against ≈ 4k records, and rises as the registry grows).
+   * Up to `ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD` mints, issues one
+   * `getProgramAccounts` per mint with a memcmp filter at
+   * `ARNS_RECORD_ANT_OFFSET`, at most `ACCOUNT_FETCH_CONCURRENCY` in
+   * flight. Above it, scans the registry once and filters locally, so a
+   * wallet holding thousands of ANTs costs one request, not thousands.
    *
    * The shape mirrors `getArNSRecord` / `getArNSRecords` — same
    * `ArNSNameDataWithName` items, no pagination wrapper. Callers
@@ -1833,13 +1845,48 @@ export class SolanaARIOReadable {
     const unique = Array.from(new Set(mints));
     if (unique.length === 0) return [];
 
-    // Parallel fan-out: one filtered gPA per mint. Each request is
-    // selective (matches at most one record on a healthy registry),
-    // so the marginal cost is mostly the round trip; major RPCs index
-    // memcmp filters at stable offsets, keeping this O(N) in network
-    // round trips rather than O(N) in registry size.
-    const perMint = await Promise.all(
-      unique.map((mint) =>
+    /*
+      Many mints: one scan of the whole registry, filtered here.
+
+      The per-mint path below costs one `getProgramAccounts` per mint. A
+      wallet holding thousands of ANTs (a team or test wallet) sent thousands
+      at once, unbounded: the RPC answered 429, `withRetry` resent each one,
+      and the browser ran out of connections. Measured on devnet against a
+      2,771-record registry: 2,404 requests for one wallet, against a single
+      ~690 KB scan answered in ~210 ms. Above the threshold the scan is one
+      request whatever the holding.
+    */
+    if (unique.length > ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD) {
+      const wanted = new Set(unique);
+      const accounts = await this.getAccountsByDiscriminator(
+        this.arnsProgram,
+        ARNS_RECORD_DISCRIMINATOR,
+      );
+      const items: ArNSNameDataWithName[] = [];
+      for (const { data } of accounts) {
+        try {
+          const record = deserializeArnsRecord(data);
+          if (wanted.has(String(record.processId))) {
+            items.push(arnsRecordToWithName(record));
+          }
+        } catch {
+          // Skip malformed
+        }
+      }
+      return items;
+    }
+
+    /*
+      Few mints: one filtered gPA per mint, which for a typical wallet moves
+      far less data than a registry scan. Each request is selective (matches
+      at most one record on a healthy registry) and major RPCs index memcmp
+      filters at stable offsets. Bounded rather than all at once, so a burst
+      can never outrun the provider's rate limit.
+    */
+    const perMint = await mapWithConcurrency(
+      unique,
+      ACCOUNT_FETCH_CONCURRENCY,
+      (mint) =>
         this.getAccountsByDiscriminator(
           this.arnsProgram,
           ARNS_RECORD_DISCRIMINATOR,
@@ -1853,7 +1900,6 @@ export class SolanaARIOReadable {
             },
           ],
         ),
-      ),
     );
 
     const items: ArNSNameDataWithName[] = [];
