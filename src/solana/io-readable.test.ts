@@ -1025,7 +1025,7 @@ describe('getPrimaryNames — processId enrichment', () => {
  * mint's record. Counts calls and the most requests in flight at once.
  */
 function arnsRegistryRpc(
-  registry: { name: string; ant: string }[],
+  registry: { name: string; ant: string; garbage?: boolean }[],
   stats: {
     scans: number;
     perMint: number;
@@ -1052,7 +1052,12 @@ function arnsRegistryRpc(
             // A distinct account per record, as on chain (results dedupe by it).
             pubkey: r.ant as Address,
             account: {
-              data: [b64(arnsRecordBytesForAnt(r.name, r.ant)), 'base64'],
+              data: [
+                r.garbage
+                  ? b64(new Uint8Array([1, 2, 3]))
+                  : b64(arnsRecordBytesForAnt(r.name, r.ant)),
+                'base64',
+              ],
             },
           }));
       },
@@ -1068,7 +1073,7 @@ describe('getArNSRecordsByAntMints — request budget', () => {
     maxInFlight: 0,
   });
   const readableFor = (
-    registry: { name: string; ant: string }[],
+    registry: { name: string; ant: string; garbage?: boolean }[],
     stats: ReturnType<typeof freshStats>,
   ) =>
     new SolanaARIOReadable({
@@ -1163,6 +1168,31 @@ describe('getArNSRecordsByAntMints — request budget', () => {
       items.map((i) => String(i.processId)),
       wanted,
     );
+  });
+
+  it('skips an account that will not decode, on either path', async () => {
+    const registry = [
+      { name: 'good', ant: mint(1) },
+      { name: 'bad', ant: mint(2), garbage: true },
+      ...Array.from({ length: 40 }, (_, i) => ({
+        name: `n${i}`,
+        ant: mint(i + 3),
+      })),
+    ];
+    const few = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: [mint(1), mint(2)] });
+    assert.deepEqual(
+      few.map((i) => i.name),
+      ['good'],
+    );
+    const many = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: registry.map((r) => r.ant) });
+    assert.equal(many.length, 41);
+    assert.ok(!many.some((i) => i.name === 'bad'));
   });
 
   it('counts distinct mints when choosing, so duplicates cannot force a scan', async () => {
