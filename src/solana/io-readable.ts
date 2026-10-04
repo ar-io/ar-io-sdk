@@ -279,6 +279,19 @@ function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
 }
 
 /**
+ * Above this many ANT mints, `fetchArnsRecordsByAntMints` scans the ArNS
+ * registry once instead of querying per mint.
+ *
+ * Per-mint requests are small and, at `ACCOUNT_FETCH_CONCURRENCY` in flight,
+ * 32 of them finish in about eight round trips. Past that, one registry scan
+ * is cheaper in requests and in rate-limit budget, which is what fails first,
+ * and stays one request however many mints a wallet holds. Measured
+ * 2026-10-04: ~2.97k records on mainnet, ~1.4 MB of JSON (~0.54 MB gzipped
+ * on the wire), growing ~485 B (~180 B gzipped) per record.
+ */
+export const ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD = 32;
+
+/**
  * Drop the SDK-internal extras (`name`, `owner`) and the `processId` re-key
  * that `deserializeArnsRecord` adds, projecting back to the cross-backend
  * `ArNSNameDataWithName` shape consumers expect.
@@ -286,18 +299,6 @@ function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
  * Timestamps are converted from on-chain seconds to JS milliseconds here
  * (see `toMsTimestamps` above for rationale).
  */
-/**
- * Above this many ANT mints, `fetchArnsRecordsByAntMints` scans the ArNS
- * registry once instead of querying per mint.
- *
- * Per-mint requests are small and, at `ACCOUNT_FETCH_CONCURRENCY` in flight,
- * 32 of them finish in about eight round trips. Past that, one registry scan
- * (one request, roughly 0.7 MB for ~2.8k records) is cheaper in requests and
- * in rate-limit budget, and stays one request however many mints a wallet
- * holds.
- */
-export const ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD = 32;
-
 function arnsRecordToWithName(
   record: ReturnType<typeof deserializeArnsRecord>,
 ): ArNSNameDataWithName {
@@ -1853,27 +1854,33 @@ export class SolanaARIOReadable {
       at once, unbounded: the RPC answered 429, `withRetry` resent each one,
       and the browser ran out of connections. Measured on devnet against a
       2,771-record registry: 2,404 requests for one wallet, against a single
-      ~690 KB scan answered in ~210 ms. Above the threshold the scan is one
-      request whatever the holding.
+      scan of ~1.3 MB (~0.53 MB gzipped) answered in ~210 ms. Above the
+      threshold the scan is one request whatever the holding.
+
+      Results are put back in input order, as the per-mint path returns
+      them: the RPC's account order is not guaranteed between calls, and
+      `paginate` pages by offset, so an unsorted scan could repeat or skip
+      records across pages.
     */
     if (unique.length > ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD) {
-      const wanted = new Set(unique);
+      const order = new Map(unique.map((mint, i) => [mint, i]));
       const accounts = await this.getAccountsByDiscriminator(
         this.arnsProgram,
         ARNS_RECORD_DISCRIMINATOR,
       );
-      const items: ArNSNameDataWithName[] = [];
+      const matched: { at: number; item: ArNSNameDataWithName }[] = [];
       for (const { data } of accounts) {
         try {
           const record = deserializeArnsRecord(data);
-          if (wanted.has(String(record.processId))) {
-            items.push(arnsRecordToWithName(record));
+          const at = order.get(String(record.processId));
+          if (at !== undefined) {
+            matched.push({ at, item: arnsRecordToWithName(record) });
           }
         } catch {
           // Skip malformed
         }
       }
-      return items;
+      return matched.sort((a, b) => a.at - b.at).map((m) => m.item);
     }
 
     /*

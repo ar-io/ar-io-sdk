@@ -16,7 +16,10 @@ import bs58 from 'bs58';
 
 import { Logger } from '../common/logger.js';
 import { ARIO_CORE_PROGRAM_ID, ARIO_GAR_PROGRAM_ID } from './constants.js';
-import { SolanaARIOReadable } from './io-readable.js';
+import {
+  ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD,
+  SolanaARIOReadable,
+} from './io-readable.js';
 import {
   getArioConfigPDA,
   getArnsRecordPDA,
@@ -1117,6 +1120,49 @@ describe('getArNSRecordsByAntMints — request budget', () => {
     // Only the wallet's records, never the rest of the registry.
     const wantedSet = new Set(wanted);
     assert.ok(items.every((i) => wantedSet.has(String(i.processId))));
+  });
+
+  it('switches to the scan exactly one mint past the threshold', async () => {
+    const registry = Array.from(
+      { length: ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD + 1 },
+      (_, i) => ({ name: `name${i}`, ant: mint(i + 1) }),
+    );
+    const atThreshold = freshStats();
+    await readableFor(registry, atThreshold).getArNSRecordsByAntMints({
+      mints: registry
+        .slice(0, ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD)
+        .map((r) => r.ant),
+    });
+    assert.equal(atThreshold.scans, 0);
+    assert.equal(atThreshold.perMint, ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD);
+
+    const pastThreshold = freshStats();
+    await readableFor(registry, pastThreshold).getArNSRecordsByAntMints({
+      mints: registry.map((r) => r.ant),
+    });
+    assert.equal(pastThreshold.scans, 1);
+    assert.equal(pastThreshold.perMint, 0);
+  });
+
+  /*
+    The RPC's account order is not stable between calls, and getArNSRecords
+    pages by offset, so the scan must return the same order as the per-mint
+    path: the order the mints were given in.
+  */
+  it('returns scan results in the order the mints were given', async () => {
+    const registry = Array.from({ length: 60 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint(i + 1),
+    }));
+    const wanted = registry.map((r) => r.ant).reverse();
+    const items = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: wanted });
+    assert.deepEqual(
+      items.map((i) => String(i.processId)),
+      wanted,
+    );
   });
 
   it('counts distinct mints when choosing, so duplicates cannot force a scan', async () => {
