@@ -16,7 +16,10 @@ import bs58 from 'bs58';
 
 import { Logger } from '../common/logger.js';
 import { ARIO_CORE_PROGRAM_ID, ARIO_GAR_PROGRAM_ID } from './constants.js';
-import { SolanaARIOReadable } from './io-readable.js';
+import {
+  ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD,
+  SolanaARIOReadable,
+} from './io-readable.js';
 import {
   getArioConfigPDA,
   getArnsRecordPDA,
@@ -1013,5 +1016,221 @@ describe('getPrimaryNames — processId enrichment', () => {
     assert.deepEqual(items, []);
     assert.equal(counts.gma, 0, 'nothing to enrich, nothing to fetch');
     assert.equal(counts.gai, 0);
+  });
+});
+
+/**
+ * Serves ArNS records from `getProgramAccounts`: a discriminator-only call is
+ * a registry scan (every record), a call with the ANT memcmp returns that
+ * mint's record. Counts calls and the most requests in flight at once.
+ */
+function arnsRegistryRpc(
+  registry: { name: string; ant: string; garbage?: boolean }[],
+  stats: {
+    scans: number;
+    perMint: number;
+    inFlight: number;
+    maxInFlight: number;
+  },
+) {
+  return {
+    getProgramAccounts: (
+      _program: unknown,
+      opts: { filters: { memcmp: { bytes: string } }[] },
+    ) => ({
+      send: async () => {
+        stats.inFlight++;
+        stats.maxInFlight = Math.max(stats.maxInFlight, stats.inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        stats.inFlight--;
+        const antFilter = opts.filters[1]?.memcmp.bytes;
+        if (antFilter === undefined) stats.scans++;
+        else stats.perMint++;
+        return registry
+          .filter((r) => antFilter === undefined || r.ant === antFilter)
+          .map((r) => ({
+            // A distinct account per record, as on chain (results dedupe by it).
+            pubkey: r.ant as Address,
+            account: {
+              data: [
+                r.garbage
+                  ? b64(new Uint8Array([1, 2, 3]))
+                  : b64(arnsRecordBytesForAnt(r.name, r.ant)),
+                'base64',
+              ],
+            },
+          }));
+      },
+    }),
+  };
+}
+
+describe('getArNSRecordsByAntMints — request budget', () => {
+  const freshStats = () => ({
+    scans: 0,
+    perMint: 0,
+    inFlight: 0,
+    maxInFlight: 0,
+  });
+  const readableFor = (
+    registry: { name: string; ant: string; garbage?: boolean }[],
+    stats: ReturnType<typeof freshStats>,
+  ) =>
+    new SolanaARIOReadable({
+      rpc: arnsRegistryRpc(registry, stats) as any,
+      logger: new Logger({ level: 'none' }),
+    });
+
+  it('queries per mint for a typical wallet, a few at a time', async () => {
+    const registry = Array.from({ length: 12 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint(i + 1),
+    }));
+    const stats = freshStats();
+    const wanted = registry.slice(0, 6).map((r) => r.ant);
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: wanted,
+    });
+    assert.deepEqual(
+      items.map((i) => i.name).sort(),
+      registry
+        .slice(0, 6)
+        .map((r) => r.name)
+        .sort(),
+    );
+    assert.equal(stats.perMint, 6);
+    assert.equal(stats.scans, 0);
+    // Never a burst: the fan-out is bounded, not all at once.
+    assert.ok(stats.maxInFlight <= 4, `max in flight ${stats.maxInFlight}`);
+  });
+
+  /*
+    The regression this guards: a wallet holding ~2.4k ANTs sent ~2.4k
+    getProgramAccounts at once, the RPC answered 429 and the page stalled.
+  */
+  it('scans the registry once for a wallet holding many ANTs', async () => {
+    const registry = Array.from({ length: 200 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint((i % 250) + 1),
+    }));
+    const stats = freshStats();
+    // 150 of the registry's 200 records, plus a mint with no record.
+    const wanted = [...registry.slice(0, 150).map((r) => r.ant), mint(251)];
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: wanted,
+    });
+    assert.equal(stats.scans, 1);
+    assert.equal(stats.perMint, 0);
+    assert.equal(items.length, 150);
+    // Only the wallet's records, never the rest of the registry.
+    const wantedSet = new Set(wanted);
+    assert.ok(items.every((i) => wantedSet.has(String(i.processId))));
+  });
+
+  it('switches to the scan exactly one mint past the threshold', async () => {
+    const registry = Array.from(
+      { length: ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD + 1 },
+      (_, i) => ({ name: `name${i}`, ant: mint(i + 1) }),
+    );
+    const atThreshold = freshStats();
+    await readableFor(registry, atThreshold).getArNSRecordsByAntMints({
+      mints: registry
+        .slice(0, ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD)
+        .map((r) => r.ant),
+    });
+    assert.equal(atThreshold.scans, 0);
+    assert.equal(atThreshold.perMint, ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD);
+
+    const pastThreshold = freshStats();
+    await readableFor(registry, pastThreshold).getArNSRecordsByAntMints({
+      mints: registry.map((r) => r.ant),
+    });
+    assert.equal(pastThreshold.scans, 1);
+    assert.equal(pastThreshold.perMint, 0);
+  });
+
+  /*
+    The RPC's account order is not stable between calls, and getArNSRecords
+    pages by offset, so the scan must return the same order as the per-mint
+    path: the order the mints were given in.
+  */
+  it('returns scan results in the order the mints were given', async () => {
+    const registry = Array.from({ length: 60 }, (_, i) => ({
+      name: `name${i}`,
+      ant: mint(i + 1),
+    }));
+    const wanted = registry.map((r) => r.ant).reverse();
+    const items = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: wanted });
+    assert.deepEqual(
+      items.map((i) => String(i.processId)),
+      wanted,
+    );
+  });
+
+  it('skips an account that will not decode, on either path', async () => {
+    const registry = [
+      { name: 'good', ant: mint(1) },
+      { name: 'bad', ant: mint(2), garbage: true },
+      ...Array.from({ length: 40 }, (_, i) => ({
+        name: `n${i}`,
+        ant: mint(i + 3),
+      })),
+    ];
+    const few = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: [mint(1), mint(2)] });
+    assert.deepEqual(
+      few.map((i) => i.name),
+      ['good'],
+    );
+    const many = await readableFor(
+      registry,
+      freshStats(),
+    ).getArNSRecordsByAntMints({ mints: registry.map((r) => r.ant) });
+    assert.equal(many.length, 41);
+    assert.ok(!many.some((i) => i.name === 'bad'));
+  });
+
+  /*
+    An invalid id used to throw on the per-mint path (the RPC rejected it) but
+    silently match nothing on the scan path. Both now throw the same error,
+    before any request is made.
+  */
+  it('rejects an id that is not a Solana address, on either path', async () => {
+    const registry = Array.from({ length: 40 }, (_, i) => ({
+      name: `n${i}`,
+      ant: mint(i + 1),
+    }));
+    const aoStyle = 'xU9zFkq3X2ZQ6olwNVvr1vUWIjc3kXTWr7xKQD6dh10';
+    for (const mints of [
+      [mint(1), aoStyle],
+      [...registry.map((r) => r.ant), aoStyle],
+    ]) {
+      const stats = freshStats();
+      await assert.rejects(
+        readableFor(registry, stats).getArNSRecordsByAntMints({ mints }),
+        (err: Error) =>
+          err.name === 'BadRequest' && err.message.includes(aoStyle),
+      );
+      assert.equal(stats.scans + stats.perMint, 0);
+    }
+  });
+
+  it('counts distinct mints when choosing, so duplicates cannot force a scan', async () => {
+    const registry = [{ name: 'solo', ant: mint(7) }];
+    const stats = freshStats();
+    const items = await readableFor(registry, stats).getArNSRecordsByAntMints({
+      mints: Array.from({ length: 100 }, () => mint(7)),
+    });
+    assert.equal(stats.scans, 0);
+    assert.equal(stats.perMint, 1);
+    assert.deepEqual(
+      items.map((i) => i.name),
+      ['solo'],
+    );
   });
 });
