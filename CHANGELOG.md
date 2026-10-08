@@ -1,3 +1,10 @@
+## [4.5.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.3...v4.5.1-alpha.4) (2026-10-08)
+
+
+### Bug Fixes
+
+* **cli:** exempt existing delegators from the gateway minimum ([f2d2476](https://github.com/ar-io/ar-io-sdk/commit/f2d2476d0ca87ebf8e2d193b988d8201c79ec3a1))
+
 ## [4.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.2...v4.5.1-alpha.3) (2026-09-29)
 
 
