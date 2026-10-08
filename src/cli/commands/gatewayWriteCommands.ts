@@ -16,7 +16,7 @@
 import prompts from 'prompts';
 
 import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
-import type { ARIORead, StakeDelegation } from '../../types/io.js';
+import type { ARIORead, Delegation, StakeDelegation } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
@@ -354,6 +354,17 @@ export function delegationMeetsMinimum({
  * proportional to the stake, so the live balance is zero exactly when the
  * stored `delegation.amount` the program reads is zero.
  */
+export function isExistingStakeOn(
+  delegation: Delegation,
+  target: string,
+): boolean {
+  return (
+    delegation.type === 'stake' &&
+    delegation.gatewayAddress === target &&
+    delegation.balance > 0
+  );
+}
+
 async function getDelegationStanding({
   ario,
   target,
@@ -371,14 +382,8 @@ async function getDelegationStanding({
         limit: 1_000,
         cursor,
       });
-      for (const d of page.items) {
-        if (
-          d.type === 'stake' &&
-          d.gatewayAddress === target &&
-          d.balance > 0
-        ) {
-          return 'existing';
-        }
+      if (page.items.some((d) => isExistingStakeOn(d, target))) {
+        return 'existing';
       }
       cursor = page.nextCursor;
     } while (cursor);

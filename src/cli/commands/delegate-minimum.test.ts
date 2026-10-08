@@ -7,16 +7,22 @@
  * so refused, before sending anything, a top-up the program accepts: a wallet
  * holding 3,773.9 ARIO at a gateway whose minimum is 500 could not add 250.
  *
- * The cases below are that scenario and its boundaries. The last two matter
- * most: they pin the exemption to a *stake* row, because exempting a delegator
- * whose stake has been fully withdrawn would wave through an amount the
- * program still rejects.
+ * `delegationMeetsMinimum` covers that scenario and its boundaries.
+ * `isExistingStakeOn` covers which rows earn the exemption: only a live stake
+ * row on the target gateway. A vault row is a pending withdrawal, and a
+ * delegator who has withdrawn everything reads `delegation.amount == 0` on
+ * chain, so treating one as existing would wave through an amount the program
+ * still rejects — the same mistake as the bug above, pointing the other way.
  */
 
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { delegationMeetsMinimum } from './gatewayWriteCommands.js';
+import type { Delegation } from '../../types/io.js';
+import {
+  delegationMeetsMinimum,
+  isExistingStakeOn,
+} from './gatewayWriteCommands.js';
 
 // The reported mainnet case, in mARIO.
 const GATEWAY_MIN = 500_000_000;
@@ -110,5 +116,48 @@ describe('delegationMeetsMinimum', () => {
       }),
       true,
     );
+  });
+});
+
+describe('isExistingStakeOn', () => {
+  const TARGET = 'CNdAuzg212FoUtUR9SzsUgiqNBrm8datEmLUGT6zB6ZP';
+  const OTHER = '89fNiiwgpFSPHKuqfNUkgYTYjtAJAhyqHjXmgXeppGpf';
+
+  const stake = (over: Partial<Delegation> = {}): Delegation =>
+    ({
+      type: 'stake',
+      gatewayAddress: TARGET,
+      delegationId: '7M5nX2NWJUJYiSJLv3gSEnJNhnmFZPMPgmSZexx3omZy',
+      startTimestamp: 1_700_000_000_000,
+      balance: 3_845_604_203,
+      ...over,
+    }) as Delegation;
+
+  it('counts a live stake row on the target gateway', () => {
+    assert.equal(isExistingStakeOn(stake(), TARGET), true);
+  });
+
+  it('ignores a stake row on a different gateway', () => {
+    assert.equal(
+      isExistingStakeOn(stake({ gatewayAddress: OTHER }), TARGET),
+      false,
+    );
+  });
+
+  it('ignores a vault row, which is a pending withdrawal and not stake', () => {
+    // The program reads `delegation.amount`. A delegator mid-withdrawal can
+    // hold a vault while that field is zero, so a vault must not confer the
+    // exemption.
+    assert.equal(
+      isExistingStakeOn(
+        stake({ type: 'vault', vaultId: 1, endTimestamp: 1_800_000_000_000 }),
+        TARGET,
+      ),
+      false,
+    );
+  });
+
+  it('ignores a fully withdrawn stake row', () => {
+    assert.equal(isExistingStakeOn(stake({ balance: 0 }), TARGET), false);
   });
 });
