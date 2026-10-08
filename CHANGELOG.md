@@ -1,3 +1,12 @@
+## [4.5.1-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.4...v4.5.1-alpha.5) (2026-10-08)
+
+
+### Bug Fixes
+
+* **solana:** keep scan results in input order; review fixes ([d7ad7d5](https://github.com/ar-io/ar-io-sdk/commit/d7ad7d514cc1a2c66e8fcaf0e9304d07cab113f4))
+* **solana:** reject a non-address ANT id the same way on both lookup paths ([29faa08](https://github.com/ar-io/ar-io-sdk/commit/29faa085083af9f4d2ae6bd2704b8813b94e2651))
+* **solana:** scan the registry once for wallets holding many ANTs ([c4a2e80](https://github.com/ar-io/ar-io-sdk/commit/c4a2e80f8c38b146e97ce7ca4c8543880a38c0bc))
+
 ## [4.5.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.3...v4.5.1-alpha.4) (2026-10-08)
 
 
