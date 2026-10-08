@@ -16,7 +16,7 @@
 import prompts from 'prompts';
 
 import type { SolanaARIOWriteable } from '../../solana/io-writeable.js';
-import type { StakeDelegation } from '../../types/io.js';
+import type { ARIORead, Delegation, StakeDelegation } from '../../types/io.js';
 import { mARIOToken } from '../../types/token.js';
 import {
   AddressAndVaultIdCLIWriteOptions,
@@ -292,6 +292,107 @@ export async function cancelWithdrawal(o: AddressAndVaultIdCLIWriteOptions) {
   );
 }
 
+/**
+ * Whether the signer already holds delegated stake on a gateway.
+ *
+ * `unknown` is a real third state, not a stand-in for `new`: the lookup can
+ * fail, and the two failure directions are not equally bad. Treating an
+ * unknown as `new` re-applies the gateway minimum and blocks a legitimate
+ * top-up outright; treating it as `existing` at worst sends a transaction the
+ * program rejects, which costs a fee but cannot corrupt anything. So `unknown`
+ * is handled like `existing` and the chain arbitrates.
+ */
+export type DelegationStanding = 'existing' | 'new' | 'unknown';
+
+/**
+ * Mirror of the `delegate_stake` amount checks in `ario-gar`.
+ *
+ * The program requires `amount > 0` always, and `amount >=
+ * gateway.settings.min_delegation_amount` **only when
+ * `delegation.amount == 0`** — read before the handler mutates it, so a
+ * freshly initialized (`init_if_needed`) delegation counts as new and a new
+ * delegator is still held to the minimum.
+ *
+ * That exemption exists so an operator who *raises* their minimum cannot
+ * strand delegators already in, which is why this is deliberately NOT
+ * "resulting total >= minimum": under that rule a delegator holding less than
+ * a newly-raised minimum is still locked out, the exact case the rule was
+ * written for. The original Lua drops the floor to 1 mARIO once
+ * `delegatedStake ~= 0` (`gar.lua` `delegateStake`); the Solana program
+ * adopted the same guard, so `amount > 0` is that 1 mARIO floor.
+ */
+export function delegationMeetsMinimum({
+  amount,
+  effectiveMin,
+  standing,
+}: {
+  amount: number;
+  effectiveMin: number;
+  standing: DelegationStanding;
+}): boolean {
+  // `require!(amount > 0, GarError::InvalidAmount)` — unconditional on chain.
+  if (amount <= 0) {
+    return false;
+  }
+  if (standing === 'new') {
+    return amount >= effectiveMin;
+  }
+  return true;
+}
+
+/**
+ * Does the signer already hold delegated stake on `target`?
+ *
+ * Only a `stake` row counts. A `vault` row is a pending withdrawal, and a
+ * delegator who has withdrawn everything has `delegation.amount == 0` on
+ * chain while still showing a vault here — counting that as existing would
+ * exempt them from a minimum the program still enforces, which is the same
+ * class of mistake as the bug this fixes, pointing the other way.
+ *
+ * `balance` on a stake row is the live balance (raw stake plus unsettled
+ * rewards). That is safe for a `> 0` test specifically: pending rewards are
+ * proportional to the stake, so the live balance is zero exactly when the
+ * stored `delegation.amount` the program reads is zero.
+ */
+export function isExistingStakeOn(
+  delegation: Delegation,
+  target: string,
+): boolean {
+  return (
+    delegation.type === 'stake' &&
+    delegation.gatewayAddress === target &&
+    delegation.balance > 0
+  );
+}
+
+async function getDelegationStanding({
+  ario,
+  target,
+  signerAddress,
+}: {
+  ario: ARIORead;
+  target: string;
+  signerAddress: string;
+}): Promise<DelegationStanding> {
+  try {
+    let cursor: string | undefined;
+    do {
+      const page = await ario.getDelegations({
+        address: signerAddress,
+        limit: 1_000,
+        cursor,
+      });
+      if (page.items.some((d) => isExistingStakeOn(d, target))) {
+        return 'existing';
+      }
+      cursor = page.nextCursor;
+    } while (cursor);
+    return 'new';
+  } catch {
+    return 'unknown';
+  }
+}
+
 export async function delegateStake(options: TransferCLIOptions) {
   const { ario, signerAddress } = await writeARIOFromOptions(options);
 
@@ -316,6 +417,14 @@ export async function delegateStake(options: TransferCLIOptions) {
       throw new Error(`Gateway does not allow delegated staking: ${target}`);
     }
 
+    // Both checks below turn on whether the signer already holds stake here,
+    // so resolve it once.
+    const standing = await getDelegationStanding({
+      ario,
+      target,
+      signerAddress,
+    });
+
     // Check allowlist if gateway restricts delegation. `allowDelegatedStaking`
     // is `boolean | 'allowlist'`; the SDK maps `allowlist_enabled = true` on
     // Solana to the `'allowlist'` variant (see deserialize.ts).
@@ -324,12 +433,15 @@ export async function delegateStake(options: TransferCLIOptions) {
     // so we walk pages by cursor — the previous shape (plain `string[]`) was
     // never the actual return type and made the membership check dead code.
     //
-    // Note: the on-chain delegate handler also lets you bypass the allowlist
-    // if you already have stake > 0 with this gateway (delegate.rs). We
-    // can't easily check that client-side, so this preflight surfaces the
-    // most common case (new-delegator-not-on-list) but falls through any
-    // unexpected error to let the on-chain check arbitrate.
-    if (targetGateway.settings.allowDelegatedStaking === 'allowlist') {
+    // The on-chain handler lets you bypass the allowlist if you already have
+    // stake > 0 with this gateway (`already_staked` in delegate.rs), so an
+    // existing delegator is skipped here rather than refused for not being on
+    // a list that does not apply to them. Anything unexpected still falls
+    // through to let the on-chain check arbitrate.
+    if (
+      targetGateway.settings.allowDelegatedStaking === 'allowlist' &&
+      standing === 'new'
+    ) {
       try {
         let cursor: string | undefined;
         let onAllowlist = false;
@@ -372,7 +484,13 @@ export async function delegateStake(options: TransferCLIOptions) {
       targetGateway.settings.minDelegatedStake ?? contractMinDelegation;
     const effectiveMin = Math.max(contractMinDelegation, gatewayMinDelegation);
 
-    if (mARIOQuantity.valueOf() < effectiveMin) {
+    if (
+      !delegationMeetsMinimum({
+        amount: mARIOQuantity.valueOf(),
+        effectiveMin,
+        standing,
+      })
+    ) {
       throw new Error(
         `Delegation amount (${formatARIOWithCommas(arioQuantity)} ARIO) is below minimum (${formatARIOWithCommas(new mARIOToken(effectiveMin).toARIO())} ARIO).`,
       );
