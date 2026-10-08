@@ -18,7 +18,8 @@
  *
  * The program-ID constants in `./constants.ts` (e.g. `ARIO_CORE_PROGRAM_ID`)
  * are codama *placeholders* (`ARioCoreProgramXXX…`), not real on-chain
- * addresses — consumers must pass real IDs via `ARIO.init({ programIds })`.
+ * addresses. Consumers must pass real IDs to `ARIO.init` as `coreProgramId`,
+ * `garProgramId`, `arnsProgramId` and `antProgramId` (see `ARIOConfig`).
  * This module exposes the deployed sets per cluster: `MAINNET_PROGRAM_IDS`
  * and `DEVNET_PROGRAM_IDS`.
  *
@@ -41,10 +42,12 @@
  *   DEVNET_RPC_URL.replace(/^https/, 'wss'),
  * );
  * const ario = ARIO.init({
- *   backend: 'solana',
  *   rpc,
  *   rpcSubscriptions,
- *   programIds: DEVNET_PROGRAM_IDS,
+ *   coreProgramId: DEVNET_PROGRAM_IDS.core,
+ *   garProgramId: DEVNET_PROGRAM_IDS.gar,
+ *   arnsProgramId: DEVNET_PROGRAM_IDS.arns,
+ *   antProgramId: DEVNET_PROGRAM_IDS.ant,
  * });
  * ```
  */
@@ -71,8 +74,9 @@ export const DEVNET_RPC_URL = 'https://api.devnet.solana.com';
 /**
  * AR.IO program IDs deployed on Solana mainnet-beta.
  *
- * Shape matches the `programIds` argument of
- * `ARIO.init({ backend: 'solana', programIds, ... })`.
+ * Pass `core`, `gar`, `arns` and `ant` to `ARIO.init` as `coreProgramId`,
+ * `garProgramId`, `arnsProgramId` and `antProgramId`; `ARIO.init` has no
+ * `programIds` option. `antEscrow` is not consumed by `ARIO.init`.
  */
 export const MAINNET_PROGRAM_IDS = {
   core: address('73YoECm6NKXpVRoe5f1Q9BcP5DJGPFUjnFy6AxBE5Nvh'),
@@ -108,8 +112,9 @@ export const MAINNET_ARIO_MINT: Address = address(
 /**
  * AR.IO program IDs deployed on Solana devnet (staging).
  *
- * Shape matches the `programIds` argument of
- * `ARIO.init({ backend: 'solana', programIds, ... })`.
+ * Pass `core`, `gar`, `arns` and `ant` to `ARIO.init` as `coreProgramId`,
+ * `garProgramId`, `arnsProgramId` and `antProgramId`; `ARIO.init` has no
+ * `programIds` option. `antEscrow` is not consumed by `ARIO.init`.
  */
 export const DEVNET_PROGRAM_IDS = {
   core: address('8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1'),
