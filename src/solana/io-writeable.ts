@@ -6135,8 +6135,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   private compoundSweep?: {
     epochIndex: number;
     entries: Array<{ gateway: string; delegator: string }>;
-    /** How many were due when the sweep was discovered. */
-    discovered: number;
     /**
      * Set once a re-discovery has confirmed there is nothing left. Without it
      * every later tick in the same epoch pays one discovery — two full scans —
@@ -6275,8 +6273,9 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * entry that still fails is skipped until the next epoch. Together these
    * guarantee the sweep ends, so `create_epoch` is always reached.
    *
-   * `progress.total` is the count due when the sweep was discovered, so it
-   * does not shrink as other crankers settle entries underneath it.
+   * `progress.total` is the count due when the sweep was discovered plus any
+   * retries queued since, so it never shrinks as other crankers settle entries
+   * underneath it, and `progress.index` rises on every step.
    */
   private async maybeCompoundStep(
     minPendingRewards: number,
@@ -6309,7 +6308,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       this.compoundSweep = {
         epochIndex,
         entries,
-        discovered: entries.length,
         exhausted: false,
         discoveries: (previous?.discoveries ?? 0) + 1,
         retry: [],
