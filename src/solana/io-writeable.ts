@@ -698,6 +698,14 @@ export function encodeReportTxId(reportTxId: string | undefined): Buffer {
  * `compound-crank.test.ts` asserts this invariant against the live constant.
  */
 export const MAX_COMPOUND_BATCH = 6;
+
+/**
+ * Compound discoveries per epoch, the first included. Each later one picks up
+ * entries a lagging `getProgramAccounts` index hid or a failed re-validation
+ * dropped. The cap guarantees the sweep ends, and with it the wait for
+ * `create_epoch`, whatever keeps failing.
+ */
+export const MAX_COMPOUND_DISCOVERIES_PER_EPOCH = 3;
 /**
  * CU ceiling for the atomic spawn-and-buy tx (`[CreateV1, initialize,
  * buy_name]`). buy_name CPIs into MPL Core `UpdatePluginV1` on top of the MPL
@@ -6127,8 +6135,6 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   private compoundSweep?: {
     epochIndex: number;
     entries: Array<{ gateway: string; delegator: string }>;
-    /** How many were due when the sweep was discovered. */
-    discovered: number;
     /**
      * Set once a re-discovery has confirmed there is nothing left. Without it
      * every later tick in the same epoch pays one discovery — two full scans —
@@ -6136,6 +6142,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
      * the post-distribution window.
      */
     exhausted: boolean;
+    /** Discoveries run for this epoch, the first included. */
+    discoveries: number;
+    /**
+     * Entries from a failed multi-entry batch, each retried once on its own
+     * after the main list drains, so one entry that reverts can't keep the
+     * other five in its batch from compounding.
+     */
+    retry: Array<{ gateway: string; delegator: string }>;
+    /**
+     * Entries that failed on their own: skipped by every later discovery in
+     * this epoch. Their rewards stay in the accumulator and compound in a
+     * later epoch's sweep.
+     */
+    failed: Set<string>;
+    /** Entries planned so far, for `progress.total`: discovered + retries. */
+    planned: number;
   };
 
   /**
@@ -6243,12 +6265,17 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
    * the next epoch's distribution advances the accumulator again.
    *
    * Candidates come from {@link compoundSweep}, discovered once per epoch
-   * rather than once per tick. An exhausted sweep is re-discovered once before
+   * rather than once per tick. An exhausted sweep is re-discovered before
    * reporting no work, so a discovery that raced a lagging
-   * `getProgramAccounts` index heals itself instead of stalling the epoch.
+   * `getProgramAccounts` index heals itself instead of stalling the epoch, but
+   * at most {@link MAX_COMPOUND_DISCOVERIES_PER_EPOCH} times. A failed batch is
+   * never re-served: its entries are retried once each on their own, and an
+   * entry that still fails is skipped until the next epoch. Together these
+   * guarantee the sweep ends, so `create_epoch` is always reached.
    *
-   * `progress.total` is the count due when the sweep was discovered, so it
-   * does not shrink as other crankers settle entries underneath it.
+   * `progress.total` is the count due when the sweep was discovered plus any
+   * retries queued since, so it never shrinks as other crankers settle entries
+   * underneath it, and `progress.index` rises on every step.
    */
   private async maybeCompoundStep(
     minPendingRewards: number,
@@ -6262,19 +6289,30 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       return null;
     }
 
+    const key = (e: { gateway: string; delegator: string }) =>
+      `${e.gateway}|${e.delegator}`;
+
     let refilled = false;
     const refill = async () => {
+      const previous = this.compoundSweep;
+      const failed = previous?.failed ?? new Set<string>();
       const pending = await this.getDelegationsToCompound({
         minPendingRewards,
       });
-      this.compoundSweep = {
-        epochIndex,
-        entries: pending.map((p) => ({
+      const entries = pending
+        .map((p) => ({
           gateway: p.gatewayAddress,
           delegator: p.delegatorAddress,
-        })),
-        discovered: pending.length,
+        }))
+        .filter((e) => !failed.has(key(e)));
+      this.compoundSweep = {
+        epochIndex,
+        entries,
         exhausted: false,
+        discoveries: (previous?.discoveries ?? 0) + 1,
+        retry: [],
+        failed,
+        planned: entries.length,
       };
       refilled = true;
     };
@@ -6286,8 +6324,20 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // a doomed slice every tick — the wedge `closeObservations` documents.
     for (;;) {
       const sweep = this.compoundSweep!;
-      if (sweep.entries.length === 0) {
-        if (refilled) {
+      const progress = () => ({
+        index: sweep.planned - sweep.entries.length - sweep.retry.length,
+        total: sweep.planned,
+      });
+
+      if (sweep.entries.length === 0 && sweep.retry.length === 0) {
+        // Re-discovery picks up anything a lagging index hid or a failed
+        // re-validation dropped. It is capped per epoch so that no failure,
+        // however persistent, keeps this step from returning `null`: the
+        // caller creates the next epoch only after it does.
+        if (
+          refilled ||
+          sweep.discoveries >= MAX_COMPOUND_DISCOVERIES_PER_EPOCH
+        ) {
           sweep.exhausted = true;
           return null;
         }
@@ -6295,7 +6345,11 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
         continue;
       }
 
-      const candidates = sweep.entries.splice(0, MAX_COMPOUND_BATCH);
+      // The main list first, six at a time; then each retry on its own.
+      const single = sweep.entries.length === 0;
+      const candidates = single
+        ? sweep.retry.splice(0, 1)
+        : sweep.entries.splice(0, MAX_COMPOUND_BATCH);
 
       let batch: Array<{ gateway: string; delegator: string }>;
       try {
@@ -6306,15 +6360,13 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
       } catch (error) {
         // Never throw: a throw here ends the caller's drain before
         // `create_epoch`, so a transient read failure would hold up epoch
-        // creation. Report it and let the next tick retry. These candidates
-        // are already spliced out, so they wait for the next epoch — nothing
-        // is lost, their rewards stay in the accumulator.
+        // creation. Report it and let the next tick go on. These candidates
+        // are dropped from the list; a later re-discovery in this epoch can
+        // pick them up again, and otherwise their rewards stay in the
+        // accumulator for a later epoch.
         return {
           action: 'compound',
-          progress: {
-            index: sweep.discovered - sweep.entries.length,
-            total: sweep.discovered,
-          },
+          progress: progress(),
           partialFailureReason: `compound re-validation: ${
             error instanceof Error ? error.message : String(error)
           }`,
@@ -6335,21 +6387,22 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
           // `total` constant, so the advance has to live in `index` or the
           // drain stops after two batches and every epoch rollover waits for
           // the next cycle.
-          progress: {
-            index: sweep.discovered - sweep.entries.length,
-            total: sweep.discovered,
-          },
+          progress: progress(),
         };
       } catch (error) {
-        // Same reasoning as above. The batch stays dropped: its rewards are
-        // still in the accumulator and compound on the next epoch's sweep,
-        // where re-serving a batch that just failed risks a wedge.
+        // Never re-serve the batch that just failed. If it held more than one
+        // entry, retry each of them once on its own after the main list, so
+        // one entry that keeps reverting only holds back itself. An entry
+        // that fails on its own is skipped for the rest of this epoch.
+        if (batch.length > 1) {
+          sweep.retry.push(...batch);
+          sweep.planned += batch.length;
+        } else {
+          for (const e of batch) sweep.failed.add(key(e));
+        }
         return {
           action: 'compound',
-          progress: {
-            index: sweep.discovered - sweep.entries.length,
-            total: sweep.discovered,
-          },
+          progress: progress(),
           partialFailureReason: `compound batch: ${
             error instanceof Error ? error.message : String(error)
           }`,

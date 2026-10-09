@@ -9,7 +9,11 @@ import {
 } from '@ar.io/solana-contracts/gar';
 import { type Address, address, getAddressDecoder } from '@solana/kit';
 
-import { MAX_COMPOUND_BATCH, SolanaARIOWriteable } from './io-writeable.js';
+import {
+  MAX_COMPOUND_BATCH,
+  MAX_COMPOUND_DISCOVERIES_PER_EPOCH,
+  SolanaARIOWriteable,
+} from './io-writeable.js';
 
 const dec = getAddressDecoder();
 function pk(tag: number): Address {
@@ -67,9 +71,18 @@ class SweepWriteable extends SolanaARIOWriteable {
   /** Set to make re-validation throw, as a transient RPC failure would. */
   filterError?: Error;
 
+  /** Delegators whose compound reverts every time, in any batch. */
+  poison = new Set<string>();
+  /** Every batch handed to the send, whether or not it landed. */
+  attempted: Entry[][] = [];
+
   // biome-ignore lint/suspicious/noExplicitAny: test stub
   async compoundDelegationRewardsBatch(batch: Entry[]): Promise<any> {
+    this.attempted.push(batch);
     if (this.sendError) throw this.sendError;
+    if (batch.some((b) => this.poison.has(b.delegator))) {
+      throw new Error('custom program error: 0x1771');
+    }
     this.sent.push(batch);
     const settled = new Set(batch.map((b) => b.delegator));
     this.pending = this.pending.filter((p) => !settled.has(p.delegatorAddress));
@@ -669,5 +682,124 @@ describe('compound sweep: failures never hold up epoch creation', () => {
       `${second?.progress?.index}/${second?.progress?.total}`,
       'two failed batches must still look like progress to the drain guard',
     );
+  });
+});
+
+/**
+ * The sweep runs immediately before `create_epoch` and every cranker and
+ * observer runs it, so a sweep that never returns `null` stops new epochs
+ * network-wide until someone sends `create_epoch` by hand. These pin that it
+ * always ends, whatever keeps failing.
+ */
+describe('compound sweep: a persistent failure cannot stop epoch creation', () => {
+  it('ends when one delegation reverts every time', async () => {
+    const w = new SweepWriteable();
+    w.load(18);
+    const bad = w.pending[2].delegatorAddress;
+    w.poison.add(bad);
+
+    await w.drain(100);
+
+    const tries = w.attempted.filter((b) => b.some((e) => e.delegator === bad));
+    assert.equal(tries.length, 2, 'once in its batch, once on its own');
+    assert.equal(tries[1].length, 1);
+    assert.ok(
+      w.discoveries <= MAX_COMPOUND_DISCOVERIES_PER_EPOCH,
+      `discoveries capped (${w.discoveries})`,
+    );
+    assert.equal(await w.step(), null, 'settled for the epoch');
+  });
+
+  it('still compounds the healthy entries batched with the failing one', async () => {
+    const w = new SweepWriteable();
+    w.load(18);
+    const bad = w.pending[2].delegatorAddress;
+    w.poison.add(bad);
+
+    await w.drain(100);
+
+    const landed = new Set(w.sent.flat().map((e) => e.delegator));
+    assert.equal(landed.size, 17, 'every delegation but the failing one');
+    assert.ok(!landed.has(bad));
+    assert.deepEqual(
+      w.pending.map((p) => p.delegatorAddress),
+      [bad],
+      'only the failing delegation is left pending',
+    );
+  });
+
+  it('ends when every send fails, as during an RPC outage', async () => {
+    const w = new SweepWriteable();
+    w.load(18);
+    w.sendError = new Error('fetch failed');
+
+    await w.drain(200);
+
+    assert.equal(w.sent.length, 0);
+    assert.ok(w.discoveries <= MAX_COMPOUND_DISCOVERIES_PER_EPOCH);
+    assert.equal(await w.step(), null);
+  });
+
+  it('ends when re-validation fails on every tick', async () => {
+    const w = new SweepWriteable();
+    w.load(18);
+    w.filterError = new Error('429 rate limited');
+
+    await w.drain(200);
+
+    assert.equal(w.sent.length, 0);
+    assert.equal(w.discoveries, MAX_COMPOUND_DISCOVERIES_PER_EPOCH);
+    assert.equal(await w.step(), null);
+  });
+
+  it('compounds everything when a batch fails only once', async () => {
+    const w = new SweepWriteable();
+    w.load(12);
+    w.sendError = new Error('blockhash not found');
+    await w.step();
+    w.sendError = undefined;
+
+    await w.drain(100);
+
+    assert.equal(w.pending.length, 0, 'the failed batch compounded singly');
+    assert.equal(new Set(w.sent.flat().map((e) => e.delegator)).size, 12);
+  });
+
+  it('keeps reporting progress that advances through the retries', async () => {
+    const w = new SweepWriteable();
+    w.load(12);
+    w.poison.add(w.pending[0].delegatorAddress);
+
+    const seen: string[] = [];
+    for (;;) {
+      const r = await w.step();
+      if (r === null) break;
+      seen.push(`${r.progress?.index}/${r.progress?.total}`);
+      assert.ok(seen.length < 100, 'the sweep did not terminate');
+    }
+    for (let i = 1; i < seen.length; i++) {
+      assert.notEqual(
+        seen[i],
+        seen[i - 1],
+        `repeated progress at ${i}: ${seen}`,
+      );
+    }
+  });
+
+  it('tries a skipped delegation again in the next epoch', async () => {
+    const w = new SweepWriteable();
+    w.load(6);
+    const bad = w.pending[0].delegatorAddress;
+    w.poison.add(bad);
+    await w.drain(100);
+
+    w.poison.clear();
+    let ticks = 0;
+    while ((await w.step(6)) !== null) {
+      assert.ok(++ticks < 100, "the next epoch's sweep did not terminate");
+    }
+
+    assert.equal(w.pending.length, 0, 'compounded once the next epoch began');
+    assert.ok(w.sent.flat().some((e) => e.delegator === bad));
   });
 });
