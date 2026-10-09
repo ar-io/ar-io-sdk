@@ -126,10 +126,13 @@ import {
   buildCreateAtaIdempotentIx,
   getAssociatedTokenAddressKit,
 } from './ata.js';
+import { selectCompoundableDelegations } from './delegation-math.js';
 import {
   deserializeArnsRecord,
+  deserializeDelegation,
   deserializeDemandFactor,
   deserializeEpochSettingsFull,
+  deserializeGatewayWithAccumulator,
   deserializePrimaryName,
   isOperationsAddressSet,
 } from './deserialize.js';
@@ -6075,7 +6078,10 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
     // its period elapsed. Both are permissionless + idempotent, and run BEFORE
     // creating the next epoch so the compounded stake is in place for its tally.
     if (enableCompound) {
-      const compounded = await this.maybeCompoundStep(compoundMinPending);
+      const compounded = await this.maybeCompoundStep(
+        compoundMinPending,
+        currentIndex,
+      );
       if (compounded) return compounded;
     }
     if (enableDemandFactorRoll) {
@@ -6101,26 +6107,255 @@ export class SolanaARIOWriteable extends SolanaARIOReadable {
   }
 
   /**
+   * The remaining compound candidates for one epoch's post-distribution
+   * sweep, discovered once and consumed {@link MAX_COMPOUND_BATCH} at a time.
+   *
+   * Discovery costs two whole-program `getProgramAccounts` scans — every
+   * Gateway and every Delegation account, decoded in full — and it used to run
+   * on every crank tick to select six entries. Draining 600 delegations took
+   * 202 scans and roughly 100MB, and the scans kept running on every idle tick
+   * afterwards just to learn there was nothing left to do (#755).
+   *
+   * Caching is sound precisely for the window this runs in. Pending rewards
+   * move only when `distribute_epoch` advances a gateway's
+   * `cumulative_reward_per_token`, and this step is reached only once the live
+   * epoch has `rewards_distributed == 1`. Within that window no delegation can
+   * *become* compoundable: a new delegation is created with `reward_debt`
+   * already equal to the accumulator, so its pending is zero. The list can
+   * only shrink — which is what makes one discovery per epoch enough.
+   */
+  private compoundSweep?: {
+    epochIndex: number;
+    entries: Array<{ gateway: string; delegator: string }>;
+    /** How many were due when the sweep was discovered. */
+    discovered: number;
+    /**
+     * Set once a re-discovery has confirmed there is nothing left. Without it
+     * every later tick in the same epoch pays one discovery — two full scans —
+     * to be told again that the sweep is done, which is most of the ticks in
+     * the post-distribution window.
+     */
+    exhausted: boolean;
+  };
+
+  /**
+   * Re-check the candidates a cached sweep is about to send, against fresh
+   * reads of the two accounts each instruction touches.
+   *
+   * **This is what makes a cached work list safe, and it is free.** The reads
+   * are needed anyway to rule out closed accounts, and their bytes carry
+   * everything the selection predicate uses — so the same
+   * `selectCompoundableDelegations` that chose an entry from the scan re-runs
+   * here against current state, for no extra request.
+   *
+   * It closes every way a cached entry can be wrong:
+   *
+   * - **Closed account — the only fatal one.** `delegation` and `gateway` are
+   *   Anchor `Account<'info, _>`, so a closed PDA raises
+   *   `AccountNotInitialized` and reverts all the instructions in the batch,
+   *   fee included. Reachable: `claim_delegate_from_leaving_gateway` zeroes a
+   *   delegation and the permissionless `close_empty_delegation` closes it,
+   *   and this SDK's own delegate sweep performs the first leg.
+   * - **Already settled** by another cranker, or by the delegator adding
+   *   stake (which settles first). Harmless on chain — the handler carries no
+   *   `require!` and simply settles zero — but it spends a fee to do nothing,
+   *   so drop it.
+   * - **Gateway left mid-sweep.** The uncached path filtered `leaving`
+   *   gateways as policy, routing them to the claim path instead; re-running
+   *   the predicate keeps that behaviour rather than quietly diverging.
+   *
+   * What remains is a TOCTOU window of milliseconds between this read and the
+   * send, against the epoch-long window a cached list would otherwise carry.
+   * If something closes inside it the batch fails, the step reports it, and
+   * the sweep moves on.
+   *
+   * One `getMultipleAccounts` of at most twice the batch size in keys, against
+   * the ~1MB scan pair it replaces. Per-account reads are also less prone to
+   * the staleness of `getProgramAccounts`'s secondary index, though not immune
+   * — providers have been observed serving stale `confirmed` reads right after
+   * a write. The exposure is small: a stale *live* answer costs one wasted fee,
+   * not a revert.
+   */
+  protected async revalidateCompoundEntries(
+    entries: Array<{ gateway: string; delegator: string }>,
+    minPendingRewards: number,
+  ): Promise<Array<{ gateway: string; delegator: string }>> {
+    if (entries.length === 0) return [];
+
+    const pdas = await Promise.all(
+      entries.flatMap((e) => [
+        getDelegationPDA(
+          address(e.gateway),
+          address(e.delegator),
+          this.garProgram,
+        ).then(([pda]) => pda),
+        getGatewayPDA(address(e.gateway), this.garProgram).then(([pda]) => pda),
+      ]),
+    );
+    const accounts = await fetchEncodedAccounts(this.rpc, pdas, {
+      commitment: this.commitment,
+    });
+
+    const live: Array<{ gateway: string; delegator: string }> = [];
+    for (const [i, entry] of entries.entries()) {
+      const delegationAccount = accounts[i * 2];
+      const gatewayAccount = accounts[i * 2 + 1];
+      if (!delegationAccount?.exists || !gatewayAccount?.exists) continue;
+
+      try {
+        const del = deserializeDelegation(Buffer.from(delegationAccount.data));
+        const gw = deserializeGatewayWithAccumulator(
+          Buffer.from(gatewayAccount.data),
+        );
+        const [still] = selectCompoundableDelegations(
+          [
+            {
+              gateway: entry.gateway,
+              delegator: entry.delegator,
+              delegatedStake: del.delegatedStake,
+              rewardDebt: del.rewardDebt,
+            },
+          ],
+          new Map([
+            [
+              entry.gateway,
+              {
+                cumulativeRewardPerToken: gw.cumulativeRewardPerToken,
+                status: gw.status,
+              },
+            ],
+          ]),
+          minPendingRewards,
+        );
+        if (still !== undefined) live.push(entry);
+      } catch {
+        // Undecodable is indistinguishable from gone: skip it rather than
+        // risk reverting the batch on it.
+      }
+    }
+    return live;
+  }
+
+  /**
    * One compound batch over delegations with pending rewards (≤
    * {@link MAX_COMPOUND_BATCH} per tx), or `null` when none are due. Settling
    * is idempotent, so this converges over a few crank steps then no-ops until
    * the next epoch's distribution advances the accumulator again.
+   *
+   * Candidates come from {@link compoundSweep}, discovered once per epoch
+   * rather than once per tick. An exhausted sweep is re-discovered once before
+   * reporting no work, so a discovery that raced a lagging
+   * `getProgramAccounts` index heals itself instead of stalling the epoch.
+   *
+   * `progress.total` is the count due when the sweep was discovered, so it
+   * does not shrink as other crankers settle entries underneath it.
    */
   private async maybeCompoundStep(
     minPendingRewards: number,
+    epochIndex: number,
   ): Promise<CrankEpochStepResult | null> {
-    const pending = await this.getDelegationsToCompound({ minPendingRewards });
-    if (pending.length === 0) return null;
-    const batch = pending.slice(0, MAX_COMPOUND_BATCH).map((p) => ({
-      gateway: p.gatewayAddress,
-      delegator: p.delegatorAddress,
-    }));
-    const { id } = await this.compoundDelegationRewardsBatch(batch);
-    return {
-      action: 'compound',
-      txId: id,
-      progress: { index: batch.length, total: pending.length },
+    if (this.compoundSweep?.epochIndex !== epochIndex) {
+      this.compoundSweep = undefined;
+    } else if (this.compoundSweep.exhausted) {
+      // Settled for this epoch: nothing can become compoundable until the
+      // next distribution advances an accumulator, and that changes the key.
+      return null;
+    }
+
+    let refilled = false;
+    const refill = async () => {
+      const pending = await this.getDelegationsToCompound({
+        minPendingRewards,
+      });
+      this.compoundSweep = {
+        epochIndex,
+        entries: pending.map((p) => ({
+          gateway: p.gatewayAddress,
+          delegator: p.delegatorAddress,
+        })),
+        discovered: pending.length,
+        exhausted: false,
+      };
+      refilled = true;
     };
+
+    if (this.compoundSweep === undefined) await refill();
+
+    // Consume until a batch survives re-validation. Entries that fail it are
+    // gone for good, so dropping them advances the sweep rather than retrying
+    // a doomed slice every tick — the wedge `closeObservations` documents.
+    for (;;) {
+      const sweep = this.compoundSweep!;
+      if (sweep.entries.length === 0) {
+        if (refilled) {
+          sweep.exhausted = true;
+          return null;
+        }
+        await refill();
+        continue;
+      }
+
+      const candidates = sweep.entries.splice(0, MAX_COMPOUND_BATCH);
+
+      let batch: Array<{ gateway: string; delegator: string }>;
+      try {
+        batch = await this.revalidateCompoundEntries(
+          candidates,
+          minPendingRewards,
+        );
+      } catch (error) {
+        // Never throw: a throw here ends the caller's drain before
+        // `create_epoch`, so a transient read failure would hold up epoch
+        // creation. Report it and let the next tick retry. These candidates
+        // are already spliced out, so they wait for the next epoch — nothing
+        // is lost, their rewards stay in the accumulator.
+        return {
+          action: 'compound',
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+          partialFailureReason: `compound re-validation: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
+
+      if (batch.length === 0) continue;
+
+      try {
+        const { id } = await this.compoundDelegationRewardsBatch(batch);
+        return {
+          action: 'compound',
+          txId: id,
+          // Counts UP. Both the observer and ar-io-cranker end their drain
+          // when a step reports the same action and progress twice running,
+          // and they relied on the old shape — `index` pinned at the batch
+          // size while a freshly scanned `total` shrank. A cached sweep makes
+          // `total` constant, so the advance has to live in `index` or the
+          // drain stops after two batches and every epoch rollover waits for
+          // the next cycle.
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+        };
+      } catch (error) {
+        // Same reasoning as above. The batch stays dropped: its rewards are
+        // still in the accumulator and compound on the next epoch's sweep,
+        // where re-serving a batch that just failed risks a wedge.
+        return {
+          action: 'compound',
+          progress: {
+            index: sweep.discovered - sweep.entries.length,
+            total: sweep.discovered,
+          },
+          partialFailureReason: `compound batch: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        };
+      }
+    }
   }
 
   /**

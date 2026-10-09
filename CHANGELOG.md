@@ -1,3 +1,47 @@
+## [4.5.1-alpha.5](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.4...v4.5.1-alpha.5) (2026-10-08)
+
+
+### Bug Fixes
+
+* **solana:** keep scan results in input order; review fixes ([d7ad7d5](https://github.com/ar-io/ar-io-sdk/commit/d7ad7d514cc1a2c66e8fcaf0e9304d07cab113f4))
+* **solana:** reject a non-address ANT id the same way on both lookup paths ([29faa08](https://github.com/ar-io/ar-io-sdk/commit/29faa085083af9f4d2ae6bd2704b8813b94e2651))
+* **solana:** scan the registry once for wallets holding many ANTs ([c4a2e80](https://github.com/ar-io/ar-io-sdk/commit/c4a2e80f8c38b146e97ce7ca4c8543880a38c0bc))
+
+## [4.5.1-alpha.4](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.3...v4.5.1-alpha.4) (2026-10-08)
+
+
+### Bug Fixes
+
+* **cli:** exempt existing delegators from the gateway minimum ([f2d2476](https://github.com/ar-io/ar-io-sdk/commit/f2d2476d0ca87ebf8e2d193b988d8201c79ec3a1))
+
+## [4.5.1-alpha.3](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.2...v4.5.1-alpha.3) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** make compound progress advance so a drain does not stop early ([3789d92](https://github.com/ar-io/ar-io-sdk/commit/3789d92d206cbcdfe8e2bef13835dece493afd1d))
+* **solana:** re-run the full selection on a cached batch, not just existence ([f062efa](https://github.com/ar-io/ar-io-sdk/commit/f062efa223ce88fc320547e4fe3cdffa1907d99f))
+
+
+### Performance Improvements
+
+* **solana:** discover compound candidates once per epoch, not per tick ([3aed5dc](https://github.com/ar-io/ar-io-sdk/commit/3aed5dc1cc9ba7b14a5294c57257664cc3e68458))
+
+## [4.5.1-alpha.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1-alpha.1...v4.5.1-alpha.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** require the withdrawal flags rather than leaving them optional ([d16074c](https://github.com/ar-io/ar-io-sdk/commit/d16074c31bcdbfc7408eb69f14f03340024215b5))
+* **solana:** surface whether a withdrawal is a protected exit vault ([32c8366](https://github.com/ar-io/ar-io-sdk/commit/32c8366d70e9da28193e34524b92ba0c95f28dad))
+
+## [4.5.1-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.5.0...v4.5.1-alpha.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **solana:** report the real leave period and prune slash rate ([ed3253b](https://github.com/ar-io/ar-io-sdk/commit/ed3253b22d608a58148dc34ef46ea7bf1c702f20))
+
 # [4.5.0](https://github.com/ar-io/ar-io-sdk/compare/v4.4.0...v4.5.0) (2026-09-28)
 
 

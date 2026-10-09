@@ -62,7 +62,9 @@ import {
   fetchEncodedAccount,
   fetchEncodedAccounts,
   getAddressDecoder,
+  isAddress,
 } from '@solana/kit';
+import { BadRequest } from '../common/error.js';
 import { type ILogger, Logger } from '../common/logger.js';
 import type {
   PrimaryName,
@@ -277,6 +279,19 @@ function chunk<T>(items: ReadonlyArray<T>, size: number): T[][] {
   }
   return chunks;
 }
+
+/**
+ * Above this many ANT mints, `fetchArnsRecordsByAntMints` scans the ArNS
+ * registry once instead of querying per mint.
+ *
+ * Per-mint requests are small and, at `ACCOUNT_FETCH_CONCURRENCY` in flight,
+ * 32 of them finish in about eight round trips. Past that, one registry scan
+ * is cheaper in requests and in rate-limit budget, which is what fails first,
+ * and stays one request however many mints a wallet holds. Measured
+ * 2026-10-04: ~2.97k records on mainnet, ~1.4 MB of JSON (~0.54 MB gzipped
+ * on the wire), growing ~485 B (~180 B gzipped) per record.
+ */
+export const ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD = 32;
 
 /**
  * Drop the SDK-internal extras (`name`, `owner`) and the `processId` re-key
@@ -1644,6 +1659,10 @@ export class SolanaARIOReadable {
         // operator's own decreaseOperatorStake calls) belong on
         // `getWithdrawals` / `getGatewayVaults`, not `getDelegations`.
         if (!w.isDelegate) continue;
+        // No `isProtected`/`isExitVault` here, deliberately: this loop is
+        // narrowed to delegate withdrawals, and every `is_delegate` vault is
+        // written with both false (delegate.rs). Only operator-side exits can
+        // be protected.
         vaultItems.push({
           type: 'vault' as const,
           gatewayAddress: w.gateway,
@@ -1693,6 +1712,8 @@ export class SolanaARIOReadable {
             balance: w.balance,
             startTimestamp: secToMs(w.startTimestamp),
             endTimestamp: secToMs(w.endTimestamp),
+            isProtected: w.isProtected,
+            isExitVault: w.isExitVault,
           });
         }
       } catch {
@@ -1742,6 +1763,8 @@ export class SolanaARIOReadable {
           endTimestamp: secToMs(w.endTimestamp),
           gatewayAddress: w.gateway,
           isDelegate: w.isDelegate,
+          isProtected: w.isProtected,
+          isExitVault: w.isExitVault,
         });
       } catch {
         // Skip malformed
@@ -1800,11 +1823,11 @@ export class SolanaARIOReadable {
   /**
    * Fetch every `ArnsRecord` whose `ant` field equals one of `mints`.
    *
-   * Issues one `getProgramAccounts` per mint with a memcmp filter at
-   * `ARNS_RECORD_ANT_OFFSET`, in parallel. Cheaper than scanning the
-   * whole registry as soon as the caller has fewer mints than the
-   * registry has records (today the break-even is ≈ a few hundred
-   * mints against ≈ 4k records, and rises as the registry grows).
+   * Up to `ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD` mints, issues one
+   * `getProgramAccounts` per mint with a memcmp filter at
+   * `ARNS_RECORD_ANT_OFFSET`, at most `ACCOUNT_FETCH_CONCURRENCY` in
+   * flight. Above it, scans the registry once and filters locally, so a
+   * wallet holding thousands of ANTs costs one request, not thousands.
    *
    * The shape mirrors `getArNSRecord` / `getArNSRecords` — same
    * `ArNSNameDataWithName` items, no pagination wrapper. Callers
@@ -1825,13 +1848,72 @@ export class SolanaARIOReadable {
     const unique = Array.from(new Set(mints));
     if (unique.length === 0) return [];
 
-    // Parallel fan-out: one filtered gPA per mint. Each request is
-    // selective (matches at most one record on a healthy registry),
-    // so the marginal cost is mostly the round trip; major RPCs index
-    // memcmp filters at stable offsets, keeping this O(N) in network
-    // round trips rather than O(N) in registry size.
-    const perMint = await Promise.all(
-      unique.map((mint) =>
+    /*
+      Reject an id that is not a Solana address, before choosing a path.
+
+      The per-mint path sent it to the RPC, which answered "Invalid method
+      parameter(s)"; the scan path would match it against nothing and return
+      no record. The same input must not fail or succeed depending on how many
+      ids came with it, so both now fail here, naming the id. An AO-style
+      process id (43-character base64url) is the likely culprit.
+    */
+    const invalid = unique.filter((mint) => !isAddress(mint));
+    if (invalid.length > 0) {
+      const shown = invalid.slice(0, 3).join(', ');
+      const more = invalid.length > 3 ? ` and ${invalid.length - 3} more` : '';
+      throw new BadRequest(
+        `Not a Solana address (ANT process id expected): ${shown}${more}`,
+      );
+    }
+
+    /*
+      Many mints: one scan of the whole registry, filtered here.
+
+      The per-mint path below costs one `getProgramAccounts` per mint. A
+      wallet holding thousands of ANTs (a team or test wallet) sent thousands
+      at once, unbounded: the RPC answered 429, `withRetry` resent each one,
+      and the browser ran out of connections. Measured on devnet against a
+      2,771-record registry: 2,404 requests for one wallet, against a single
+      scan of ~1.3 MB (~0.53 MB gzipped) answered in ~210 ms. Above the
+      threshold the scan is one request whatever the holding.
+
+      Results are put back in input order, as the per-mint path returns
+      them: the RPC's account order is not guaranteed between calls, and
+      `paginate` pages by offset, so an unsorted scan could repeat or skip
+      records across pages.
+    */
+    if (unique.length > ARNS_RECORDS_BY_MINT_SCAN_THRESHOLD) {
+      const order = new Map(unique.map((mint, i) => [mint, i]));
+      const accounts = await this.getAccountsByDiscriminator(
+        this.arnsProgram,
+        ARNS_RECORD_DISCRIMINATOR,
+      );
+      const matched: { at: number; item: ArNSNameDataWithName }[] = [];
+      for (const { data } of accounts) {
+        try {
+          const record = deserializeArnsRecord(data);
+          const at = order.get(String(record.processId));
+          if (at !== undefined) {
+            matched.push({ at, item: arnsRecordToWithName(record) });
+          }
+        } catch {
+          // Skip malformed
+        }
+      }
+      return matched.sort((a, b) => a.at - b.at).map((m) => m.item);
+    }
+
+    /*
+      Few mints: one filtered gPA per mint, which for a typical wallet moves
+      far less data than a registry scan. Each request is selective (matches
+      at most one record on a healthy registry) and major RPCs index memcmp
+      filters at stable offsets. Bounded rather than all at once, so a burst
+      can never outrun the provider's rate limit.
+    */
+    const perMint = await mapWithConcurrency(
+      unique,
+      ACCOUNT_FETCH_CONCURRENCY,
+      (mint) =>
         this.getAccountsByDiscriminator(
           this.arnsProgram,
           ARNS_RECORD_DISCRIMINATOR,
@@ -1845,7 +1927,6 @@ export class SolanaARIOReadable {
             },
           ],
         ),
-      ),
     );
 
     const items: ArNSNameDataWithName[] = [];
@@ -3362,11 +3443,16 @@ export class SolanaARIOReadable {
   > {
     const minPending = params?.minPendingRewards ?? 0;
 
-    // One scan for gateways → accumulator + status.
-    const gatewayAccounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      GATEWAY_DISCRIMINATOR,
-    );
+    // Two scans, issued together: one for gateways → accumulator + status, one
+    // for delegations. They are independent, and serialising them doubled the
+    // latency of the most expensive read the cranker makes (#755).
+    const [gatewayAccounts, delegationAccounts] = await Promise.all([
+      this.getAccountsByDiscriminator(this.garProgram, GATEWAY_DISCRIMINATOR),
+      this.getAccountsByDiscriminator(
+        this.garProgram,
+        DELEGATION_DISCRIMINATOR,
+      ),
+    ]);
     const gateways = new Map<
       string,
       { cumulativeRewardPerToken: bigint; status: string }
@@ -3383,12 +3469,8 @@ export class SolanaARIOReadable {
       }
     }
 
-    // One scan for delegations; decode then delegate the selection logic to the
-    // pure `selectCompoundableDelegations` (unit-tested in delegation-math).
-    const delegationAccounts = await this.getAccountsByDiscriminator(
-      this.garProgram,
-      DELEGATION_DISCRIMINATOR,
-    );
+    // Decode, then delegate the selection logic to the pure
+    // `selectCompoundableDelegations` (unit-tested in delegation-math).
     const delegations: Array<{
       gateway: string;
       delegator: string;
@@ -3431,6 +3513,8 @@ export class SolanaARIOReadable {
           startTimestamp: secToMs(w.startTimestamp),
           endTimestamp: secToMs(w.endTimestamp),
           gatewayAddress: w.gateway,
+          isProtected: w.isProtected,
+          isExitVault: w.isExitVault,
         });
       } catch {
         // Skip malformed

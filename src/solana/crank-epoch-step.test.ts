@@ -195,6 +195,12 @@ class TestCranker extends SolanaARIOWriteable {
     this.calls.push(`compound:${b.length}`);
     return { id: 'tx-compound' };
   }
+  // The real one re-reads each candidate's PDAs to drop closed accounts
+  // before the atomic batch; these tests stub the RPC and cover sequencing,
+  // so keep every candidate. `compound-sweep.test.ts` covers the filter.
+  protected async revalidateCompoundEntries<T>(entries: T[]): Promise<T[]> {
+    return entries;
+  }
   dfPeriod: { currentPeriod: number; periodZeroStartTimestamp: number } | null =
     null;
   async getDemandFactorPeriodState(): Promise<{

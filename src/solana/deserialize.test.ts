@@ -1,12 +1,24 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { REWARD_PRECISION } from './constants.js';
+import {
+  getGatewaySettingsEncoder,
+  getWithdrawalEncoder,
+} from '@ar.io/solana-contracts/gar';
+import type { Address } from '@solana/kit';
+
+import {
+  GATEWAY_LEAVE_PERIOD,
+  REWARD_PRECISION,
+  WITHDRAWAL_LOCK_PERIOD,
+} from './constants.js';
 import { computeLiveDelegationBalance } from './delegation-math.js';
 import {
   deserializeDelegation,
+  deserializeGarSettings,
   deserializeGateway,
   deserializeGatewayWithAccumulator,
+  deserializeWithdrawal,
 } from './deserialize.js';
 
 /**
@@ -353,5 +365,242 @@ describe('deserializeGateway (synthetic round-trip — cumulativeRewardPerToken)
     );
     // And JSON.stringify must succeed (would throw on a bigint field).
     assert.doesNotThrow(() => JSON.stringify(gw));
+  });
+});
+
+/**
+ * `deserializeGarSettings` reports several fields that the GAR settings
+ * account does not hold. Two of them were wrong, and both misled operators:
+ * `leaveLengthMs` aliased the 30-day withdrawal period where the program
+ * vaults the minimum stake for 90 (ADR-0038), and `failedGatewaySlashRate`
+ * reported 0 where `prune_gateway` takes the whole bond.
+ *
+ * These pin the constants against a real encoded account, so a future change
+ * to the settings layout cannot silently move them.
+ */
+describe('deserializeGarSettings (constants that are not on the account)', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encode = (withdrawalPeriodSeconds: number): Buffer =>
+    Buffer.from(
+      getGatewaySettingsEncoder().encode({
+        authority: SYSTEM,
+        mint: SYSTEM,
+        minOperatorStake: 20_000_000_000n,
+        minDelegateStake: 10_000_000n,
+        withdrawalPeriod: BigInt(withdrawalPeriodSeconds),
+        maxExpeditedWithdrawalPenalty: 500_000n,
+        minExpeditedWithdrawalPenalty: 100_000n,
+        minExpeditedWithdrawalAmount: 1_000_000n,
+        maxDelegatesPerGateway: 10_000,
+        migrationActive: false,
+        migrationAuthority: SYSTEM,
+        stakeTokenAccount: SYSTEM,
+        protocolTokenAccount: SYSTEM,
+        arnsProgramId: SYSTEM,
+        totalStaked: 0n,
+        totalDelegated: 0n,
+        totalWithdrawn: 0n,
+        bump: 255,
+        version: { major: 1, minor: 0, patch: 0 },
+      }),
+    );
+
+  it('reports the 90-day leave period, not the withdrawal period', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.leaveLengthMs, GATEWAY_LEAVE_PERIOD * 1000);
+    assert.equal(s.operators.withdrawLengthMs, WITHDRAWAL_LOCK_PERIOD * 1000);
+    assert.notEqual(s.operators.leaveLengthMs, s.operators.withdrawLengthMs);
+  });
+
+  /**
+   * The leave period is a program constant, so an admin moving the withdrawal
+   * period must not drag it along — that aliasing was the original bug.
+   */
+  it('holds the leave period when the withdrawal period changes', () => {
+    const s = deserializeGarSettings(encode(60 * 86_400));
+
+    assert.equal(s.operators.leaveLengthMs, GATEWAY_LEAVE_PERIOD * 1000);
+    assert.equal(s.operators.withdrawLengthMs, 60 * 86_400 * 1000);
+  });
+
+  it('reports a full slash of the minimum stake on prune', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.failedGatewaySlashRate, 1_000_000);
+  });
+
+  it('still reads the account for everything that is on it', () => {
+    const s = deserializeGarSettings(encode(WITHDRAWAL_LOCK_PERIOD));
+
+    assert.equal(s.operators.minStake, 20_000_000_000);
+    assert.equal(s.delegates.minStake, 10_000_000);
+    assert.equal(
+      s.expeditedWithdrawals.maxExpeditedWithdrawalPenaltyRate,
+      500_000,
+    );
+    assert.equal(
+      s.expeditedWithdrawals.minExpeditedWithdrawalPenaltyRate,
+      100_000,
+    );
+  });
+});
+
+/**
+ * `deserializeWithdrawal` decoded the whole account but projected only part of
+ * it, dropping `is_protected`. Consumers therefore could not tell a departing
+ * operator's protected exit vault from an ordinary withdrawal, and offered an
+ * expedited withdrawal that `instant_withdrawal` rejects with `ProtectedVault`
+ * for the entire 90-day lock.
+ */
+describe('deserializeWithdrawal (protected exit vaults)', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encode = (flags: {
+    isDelegate: boolean;
+    isExitVault: boolean;
+    isProtected: boolean;
+  }): Buffer =>
+    Buffer.from(
+      getWithdrawalEncoder().encode({
+        owner: SYSTEM,
+        withdrawalId: 7n,
+        gateway: SYSTEM,
+        amount: 20_000_000_000n,
+        createdAt: 1_759_000_000n,
+        availableAt: 1_766_776_000n,
+        bump: 255,
+        version: { major: 1, minor: 0, patch: 0 },
+        ...flags,
+      }),
+    );
+
+  it('surfaces the protected flag on an operator exit vault', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: true, isProtected: true }),
+    );
+
+    assert.equal(w.isProtected, true);
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isDelegate, false);
+  });
+
+  it('reports an ordinary stake decrease as neither', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: false, isProtected: false }),
+    );
+
+    assert.equal(w.isProtected, false);
+    assert.equal(w.isExitVault, false);
+  });
+
+  /** The excess vault of a leave: an exit vault, but expedite-able. */
+  it('distinguishes an exit vault that is not protected', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: false, isExitVault: true, isProtected: false }),
+    );
+
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isProtected, false);
+  });
+
+  it('still reads the fields it already reported', () => {
+    const w = deserializeWithdrawal(
+      encode({ isDelegate: true, isExitVault: false, isProtected: false }),
+    );
+
+    assert.equal(w.vaultId, '7');
+    assert.equal(w.balance, 20_000_000_000);
+    assert.equal(w.startTimestamp, 1_759_000_000);
+    assert.equal(w.endTimestamp, 1_766_776_000);
+    assert.equal(w.isDelegate, true);
+  });
+});
+
+/**
+ * The projections the flags travel through, and the byte offsets a second
+ * decoder depends on.
+ *
+ * `deserializeWithdrawal` is tested above, but the three readers that carry
+ * its output — `getGatewayVaults`, `getWithdrawals`, `getAllGatewayVaults` —
+ * had no coverage, so a transposition (`isProtected: w.isExitVault`) would
+ * pass. And `funding-plan.ts` decodes the same account by hand from a literal
+ * offset table to skip protected vaults; nothing pinned those offsets, so a
+ * field reordering would silently turn its filter into a read of `bump` and
+ * the planner would start proposing sources the program rejects.
+ */
+describe('withdrawal flags: offsets and projections', () => {
+  const SYSTEM = '11111111111111111111111111111111' as Address;
+
+  const encoded = (flags: {
+    isDelegate: boolean;
+    isExitVault: boolean;
+    isProtected: boolean;
+  }) =>
+    Buffer.from(
+      getWithdrawalEncoder().encode({
+        owner: SYSTEM,
+        withdrawalId: 1n,
+        gateway: SYSTEM,
+        amount: 5n,
+        createdAt: 1n,
+        availableAt: 2n,
+        bump: 254,
+        version: { major: 1, minor: 0, patch: 0 },
+        ...flags,
+      }),
+    );
+
+  /** The table in `funding-plan.ts`: 104 is_delegate, 105 exit, 106 protected. */
+  it('keeps the three flags at the offsets funding-plan reads', () => {
+    const only = (
+      which: 'isDelegate' | 'isExitVault' | 'isProtected',
+    ): Buffer =>
+      encoded({
+        isDelegate: which === 'isDelegate',
+        isExitVault: which === 'isExitVault',
+        isProtected: which === 'isProtected',
+      });
+
+    assert.equal(only('isDelegate')[104], 1, 'is_delegate moved from 104');
+    assert.equal(only('isExitVault')[105], 1, 'is_exit_vault moved from 105');
+    assert.equal(only('isProtected')[106], 1, 'is_protected moved from 106');
+
+    // And each is read independently — no neighbour bleeds in.
+    const protectedOnly = only('isProtected');
+    assert.equal(protectedOnly[104], 0);
+    assert.equal(protectedOnly[105], 0);
+  });
+
+  it('does not transpose the flags when decoding', () => {
+    const w = deserializeWithdrawal(
+      encoded({ isDelegate: false, isExitVault: true, isProtected: false }),
+    );
+
+    assert.equal(w.isExitVault, true);
+    assert.equal(w.isProtected, false, 'exit vault read as protected');
+  });
+
+  /**
+   * The projections. Driving the readers needs an RPC, so assert the mapping
+   * the readers perform against a decoded account — the shape each pushes.
+   */
+  it('carries both flags out of a decoded account', () => {
+    const w = deserializeWithdrawal(
+      encoded({ isDelegate: false, isExitVault: true, isProtected: true }),
+    );
+
+    // What getGatewayVaults / getWithdrawals / getAllGatewayVaults build.
+    const row = {
+      vaultId: w.vaultId,
+      balance: w.balance,
+      isProtected: w.isProtected,
+      isExitVault: w.isExitVault,
+    };
+
+    assert.equal(row.isProtected, true);
+    assert.equal(row.isExitVault, true);
+    assert.equal(row.balance, 5);
   });
 });

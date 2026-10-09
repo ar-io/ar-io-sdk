@@ -74,7 +74,7 @@ import type {
   GatewayWeights,
   VaultData,
 } from '../types/io.js';
-import { RATE_SCALE } from './constants.js';
+import { GATEWAY_LEAVE_PERIOD, RATE_SCALE } from './constants.js';
 
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();
@@ -727,6 +727,8 @@ export function deserializeWithdrawal(data: Buffer): {
   startTimestamp: number;
   endTimestamp: number;
   isDelegate: boolean;
+  isProtected: boolean;
+  isExitVault: boolean;
 } {
   const d = getWithdrawalDecoder().decode(new Uint8Array(data));
 
@@ -738,6 +740,8 @@ export function deserializeWithdrawal(data: Buffer): {
     startTimestamp: Number(d.createdAt),
     endTimestamp: Number(d.availableAt),
     isDelegate: d.isDelegate,
+    isProtected: d.isProtected,
+    isExitVault: d.isExitVault,
   };
 }
 
@@ -785,6 +789,23 @@ export function deserializePrimaryNameRequest(data: Buffer): {
 // GAR Settings deserialization
 // =========================================
 
+/**
+ * Project the GAR settings account onto `GatewayRegistrySettings`.
+ *
+ * Some fields on that shape have no counterpart on this account and are
+ * reported as constants:
+ *
+ * - `operators.leaveLengthMs` is `GATEWAY_LEAVE_PERIOD`, a program constant.
+ * - `operators.failedGatewaySlashRate` is the whole minimum stake; see the
+ *   field's own docs for what the rate applies to.
+ * - `operators.maxDelegateRewardSharePct` is `MAX_DELEGATE_REWARD_SHARE`
+ *   (9500 basis points).
+ * - `operators.failedEpochCountMax`, `observers.tenureWeightDurationMs` and
+ *   `observers.maxTenureWeight` are governance-settable and live on the
+ *   **EpochSettings** account, not this one. They are reported here at their
+ *   current mainnet values; read `deserializeEpochSettingsFull` for the live
+ *   ones (`maxConsecutiveFailures`, `tenureWeightDuration`, `maxTenureWeight`).
+ */
 export function deserializeGarSettings(data: Buffer): GatewayRegistrySettings {
   const d = getGarSettingsDecoder().decode(new Uint8Array(data));
   const withdrawalPeriodMs = Number(d.withdrawalPeriod) * 1000;
@@ -801,10 +822,10 @@ export function deserializeGarSettings(data: Buffer): GatewayRegistrySettings {
     operators: {
       minStake: Number(d.minOperatorStake),
       withdrawLengthMs: withdrawalPeriodMs,
-      leaveLengthMs: withdrawalPeriodMs,
+      leaveLengthMs: GATEWAY_LEAVE_PERIOD * 1000,
       maxDelegateRewardSharePct: 95,
       failedEpochCountMax: 30,
-      failedGatewaySlashRate: 0,
+      failedGatewaySlashRate: 1_000_000,
     },
     redelegations: {
       minRedelegationPenaltyRate: 0,
