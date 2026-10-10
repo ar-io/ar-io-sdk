@@ -1,3 +1,10 @@
+## [4.5.2](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1...v4.5.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* **solana:** a compound that keeps failing can no longer stop epoch creation ([7b58376](https://github.com/ar-io/ar-io-sdk/commit/7b5837619fa48f108183b8be01bd2bf04777b37a)), closes [ar-io-sdk#767](https://github.com/ar-io-sdk/issues/767)
+
 ## [4.5.2-alpha.1](https://github.com/ar-io/ar-io-sdk/compare/v4.5.1...v4.5.2-alpha.1) (2026-10-09)
 
 
