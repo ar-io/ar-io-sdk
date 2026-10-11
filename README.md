@@ -256,7 +256,7 @@ const info = await ario.getInfo();
   "protocolBalance": 0,
   "epochSettings": {
     "durationMs": 86400000,
-    "prescribedNameCount": 25,
+    "prescribedNameCount": 2,
     "maxObservers": 50
   }
 }
