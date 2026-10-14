@@ -1471,7 +1471,7 @@ const record = await ario.buyRecord(
 
 #### `upgradeRecord({ name })`
 
-Upgrades an existing leased ArNS record to a permanent ownership. The record must be currently owned by the caller and be of type "lease".
+Upgrades a leased ArNS name to a permanent one. The lease must be active or within its grace period. Anyone can pay for the upgrade: the caller pays the permanent price in ARIO and does not need to own the name. If the caller owns the ANT, the ANT's attributes update in the same transaction; otherwise its owner can call `syncAttributes({ name })` later.
 
 _Note: Requires `signer` to be provided on `ARIO.init` to sign the transaction._
 
@@ -1657,7 +1657,9 @@ const { id: txId } = await ario.increaseUndernameLimit(
 
 #### `extendLease({ name, years })`
 
-Extends the lease of a registered ArNS domain, with an extension of 1-5 years depending on grace period status. Permanently registered domains cannot be extended.
+Extends a leased ArNS name by `years`. A lease can run at most 5 years ahead, so `years` can be at most 5 minus the years left on the lease, rounded up: a lease with 11 months left can take 4 more years. A lease in its grace period has no years left and can take 5. A longer extension fails with `ExtensionExceedsMax`.
+
+Anyone can pay to extend a lease that is active or within its grace period; the caller does not need to own the name. Permanent names cannot be extended.
 
 ```typescript
 const ario = ARIO.init({ rpc, rpcSubscriptions, signer });
