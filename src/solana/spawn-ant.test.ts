@@ -16,9 +16,16 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { type Address, type ReadonlyUint8Array, address } from '@solana/kit';
+import {
+  type Address,
+  type ReadonlyUint8Array,
+  address,
+  generateKeyPairSigner,
+  getBase58Decoder,
+  getCompiledTransactionMessageDecoder,
+} from '@solana/kit';
 
-import { buildCreateAntInstruction } from './spawn-ant.js';
+import { buildCreateAntInstruction, spawnSolanaANT } from './spawn-ant.js';
 
 const FIXED_MINT: Address = address('11111111111111111111111111111112');
 const FIXED_AUTH: Address = address('11111111111111111111111111111113');
@@ -190,4 +197,131 @@ describe('buildCreateAntInstruction (CreateV1 wire format)', () => {
         '0102',
     );
   });
+});
+
+describe('spawnSolanaANT fee and compute-unit sizing', () => {
+  for (const { name, modifying, ceiling, expectedUnits, simulationError } of [
+    {
+      name: 'keypair',
+      modifying: false,
+      ceiling: 400_000,
+      expectedUnits: 130_000,
+      simulationError: null,
+    },
+    {
+      name: 'wallet',
+      modifying: true,
+      ceiling: 400_000,
+      expectedUnits: 160_000,
+      simulationError: null,
+    },
+    {
+      name: 'wallet at ceiling',
+      modifying: true,
+      ceiling: 150_000,
+      expectedUnits: 150_000,
+      simulationError: null,
+    },
+    {
+      name: 'failed simulation',
+      modifying: true,
+      ceiling: 400_000,
+      expectedUnits: 400_000,
+      simulationError: 'simulation failed',
+    },
+  ]) {
+    it(`prepares the ${name} transaction with scoped fees and bounded headroom`, async () => {
+      const payer = await generateKeyPairSigner();
+      const mintSigner = await generateKeyPairSigner();
+      const stop = new Error('stop before wallet signing or broadcasting');
+      const freshBlockhash = getBase58Decoder().decode(
+        new Uint8Array(32).fill(2),
+      );
+      const feeRequests: Address[][] = [];
+      let blockhashCalls = 0;
+      const rpc = {
+        getAccountInfo: () => ({ send: async () => ({ value: null }) }),
+        getLatestBlockhash: () => ({
+          send: async () => ({
+            value: {
+              blockhash:
+                ++blockhashCalls === 1
+                  ? '11111111111111111111111111111111'
+                  : freshBlockhash,
+              lastValidBlockHeight: 100n,
+            },
+          }),
+        }),
+        simulateTransaction: () => ({
+          send: async () => ({
+            value: { err: simulationError, unitsConsumed: 100_000n },
+          }),
+        }),
+        getRecentPrioritizationFees: (accounts: Address[]) => ({
+          send: async () => {
+            feeRequests.push(accounts);
+            return [{ slot: 1n, prioritizationFee: 50_000n }];
+          },
+        }),
+      };
+      const inspect = async ([tx]: Parameters<
+        typeof payer.signTransactions
+      >[0]) => {
+        const message = getCompiledTransactionMessageDecoder().decode(
+          tx.messageBytes,
+        );
+        assert.equal(message.lifetimeToken, freshBlockhash);
+        const limit = message.instructions[0].data!;
+        assert.equal(
+          new DataView(
+            limit.buffer,
+            limit.byteOffset,
+            limit.byteLength,
+          ).getUint32(1, true),
+          expectedUnits,
+        );
+        const price = message.instructions[1].data!;
+        assert.equal(
+          new DataView(
+            price.buffer,
+            price.byteOffset,
+            price.byteLength,
+          ).getBigUint64(1, true),
+          50_000n,
+        );
+        const {
+          numSignerAccounts,
+          numReadonlySignerAccounts,
+          numReadonlyNonSignerAccounts,
+        } = message.header;
+        const writable = message.staticAccounts.filter(
+          (_, index) =>
+            index > 0 &&
+            (index < numSignerAccounts - numReadonlySignerAccounts ||
+              (index >= numSignerAccounts &&
+                index <
+                  message.staticAccounts.length -
+                    numReadonlyNonSignerAccounts)),
+        );
+        assert.equal(feeRequests.length, 1);
+        assert.deepEqual(new Set(feeRequests[0]), new Set(writable));
+        assert.ok(feeRequests[0].includes(mintSigner.address));
+        throw stop;
+      };
+      const signer = modifying
+        ? { address: payer.address, modifyAndSignTransactions: inspect }
+        : { ...payer, signTransactions: inspect };
+      await assert.rejects(
+        spawnSolanaANT({
+          rpc: rpc as never,
+          rpcSubscriptions: undefined as never,
+          signer,
+          mintSigner,
+          state: { name: 'test-ant' },
+          computeUnitLimit: ceiling,
+        }),
+        (error) => error === stop,
+      );
+    });
+  }
 });
